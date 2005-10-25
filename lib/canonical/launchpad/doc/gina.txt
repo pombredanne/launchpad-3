@@ -80,6 +80,8 @@ packages successfully (at least partially):
    * mkvmlinuz, a source package that generates one binary package,
      but which is missing a version field in its Sources file.
      Its breezy package has a version but is missing copyright and changelog.
+   * 3dchess, a source package that generates a binary package, but for
+     some reason has an invalid changelog.
 
 And one completely broken package:
 
@@ -117,12 +119,15 @@ And give her a spin:
 Check STDERR for the errors we expected:
 
     >>> print proc.stderr.read()
+    WARNING No changelog file found for 3dchess in 3dchess-0.8.1
+    WARNING Invalid format in db1-compat, assumed '1.0'
     WARNING Source package ed lacks section, assumed 'misc'
     ERROR   Unable to create SourcePackageData for mkvmlinuz
      -> http://...version: None)
     WARNING Invalid urgency in python-pam, None, assumed 'low'
     ERROR   Error processing package files for util-linux
      -> http://...dsc not in archive...))
+    WARNING No changelog file found for 3dchess in 3dchess-0.8.1
     ERROR   Error processing package files for bsdutils
      -> http://...deb not found)
     WARNING Binary package ed lacks valid priority, assumed 'extra'
@@ -135,8 +140,8 @@ Check STDERR for the errors we expected:
      -> http://...deb not found)
     ERROR   Error processing package files for util-linux
      -> http://...deb not found)
-    ERROR   Error processing package files for util-linux-locales
-     -> http://...deb not found)
+    ERROR   Unable to create BinaryPackageData for util-linux-locales
+     -> http://...installed_size'])
     ERROR   Invalid Sources stanza in /tmp/tmp...
      -> http://...bogus\n')
     WARNING No changelog file found for mkvmlinuz in mkvmlinuz-14ubuntu1
@@ -161,14 +166,14 @@ We should have more source packages in the database:
 
     >>> transaction.commit()
     >>> existing = 9
-    >>> hoary = 10 - 2   # 2 packages fail
+    >>> hoary = 11 - 2   # 2 packages fail
     >>> breezy = 9 - 3 - 2 + 1  # 3 packages are the same as in hoary, 2 fail,
     ... #one that is imported forcefully (ubuntu-meta)
     >>> hoary + breezy
-    13
+    14
     >>> count = SourcePackageRelease.select().count()
     >>> count - orig_spr_count
-    13
+    14
 
 Check that x11proto-damage has its Build-Depends-Indep value correctly set:
 
@@ -272,13 +277,13 @@ successfully processed.
       util-linux (again, poor thing)
 
     >>> print SSPPH.select().count() - orig_sspph_count
-    16
+    17
 
 Ensure all we published to was main, in the main pocket:
 
     >>> print SSPPH.selectBy(componentID=1,
     ...                     pocket=0).count() - orig_sspph_count
-    16
+    17
 
 === Testing Binary Package Results ===
 
@@ -290,11 +295,11 @@ We have 23 binary packages in breezy. db1-compat, ed, the 3 libcap packages and
 python-pam is unchanged.  python-sqlite fails. The 5 ubuntu-meta packages work.
 
     >>> BinaryPackageRelease.select().count() - orig_bpr_count
-    36
+    37
     >>> Build.select().count() - orig_build_count
-    9
+    10
     >>> SBPPH.select().count() - orig_sbpph_count
-    42
+    43
 
 Test all the data got to the ed BPR intact:
 
@@ -350,13 +355,13 @@ that we imported exactly 9 people (13 packages with 3 being uploaded by Kamion,
     >>> print p.name
     cjwatson
     >>> print Person.select().count() - orig_person_count
-    9
+    10
     >>> print TeamParticipation.select().count() - orig_tp_count 
-    9
+    10
     >>> print EmailAddress.select().count() - orig_email_count
-    9
+    10
     >>> print WikiName.select().count() - orig_wiki_count
-    9
+    10
 
 === Re-run Gina ===
 
@@ -381,8 +386,8 @@ packages that failed to import the last time.
      -> http://...deb not found)
     ERROR   Error processing package files for util-linux
      -> http://...deb not found)
-    ERROR   Error processing package files for util-linux-locales
-     -> http://...deb not found)
+    ERROR   Unable to create BinaryPackageData for util-linux-locales
+     -> http://...installed_size'])
     ERROR   Invalid Sources stanza in /tmp/tmp...
      -> http://...bogus\n')
     ERROR   Error processing package files for python-sqlite
@@ -398,24 +403,24 @@ packages that failed to import the last time.
 Nothing should happen to our data -- no counts should have changed, etc.
 
     >>> SourcePackageRelease.select().count() - orig_spr_count
-    13
+    14
     >>> print SecureSourcePackagePublishingHistory.select().count() \
     ...     - orig_sspph_count
-    16
+    17
     >>> print Person.select().count() - orig_person_count
-    9
+    10
     >>> print TeamParticipation.select().count() - orig_tp_count 
-    9
+    10
     >>> print EmailAddress.select().count() - orig_email_count
-    9
+    10
     >>> print WikiName.select().count() - orig_wiki_count
-    9
+    10
     >>> BinaryPackageRelease.select().count() - orig_bpr_count
-    36
+    37
     >>> Build.select().count() - orig_build_count
-    9
+    10
     >>> SBPPH.select().count() - orig_sbpph_count
-    42
+    43
 
 === Other tests ===
 
