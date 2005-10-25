@@ -997,6 +997,10 @@ input[type="image"] {
 .actions {
   margin: 0.5em 0;
 }
+.unavailable {
+  color: #999;
+  background: none;
+}
 .list {
   text-align: left;
 }
@@ -1051,6 +1055,7 @@ table.data>tbody>tr>th, table.data>tbody>tr>td, table.data>tfoot>tr>th,table.dat
   padding: 0.25em 0.125em 0.25em;
 }
 th.icon, td.icon {
+  vertical-align: top;
   width: 1px;
 }
 th.icon.left, td.icon.left {

@@ -174,6 +174,10 @@ bug_subscription = ContextId('Subscribe or unsubscribe from Bug #%s')
 
 bug_watch_add = LaunchbagBugID('Bug #%d - Add an External Bug Watch')
 
+buglisting_advanced = ContextTitle("Bugs in %s")
+
+buglisting_default = ContextTitle("Bugs in %s")
+
 def bugwatch_editform(context, view):
     return 'Bug #%d - Edit an External Bug Watch (%s in %s)' % (
         context.bug.id, context.remotebug, context.bugtracker.title)
@@ -196,13 +200,11 @@ bugtask_index = BugTaskPageTitle()
 
 bugtask_release_targeting = BugTaskTargetingTitle()
 
-bugtask_search_listing = ContextTitle('Bugs in %s')
-
 bugtask_view = BugTaskPageTitle()
 
 bugtask_edit = BugTaskPageTitle()
 
-# bugtask_search_listing contains only macros
+# bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
 
 bugtracker_edit = ContextTitle('Edit %s Details')
