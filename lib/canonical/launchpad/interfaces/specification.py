@@ -73,11 +73,13 @@ class ISpecification(IHasOwner):
         description=_(
             "The milestone in which we would like this feature to be delivered."))
     productseries = Choice(title=_('Targeted Product Series'), required=False,
-        vocabulary='FilteredProductSeries', description=_(
+        vocabulary='FilteredProductSeries',
+        description=_(
             "The release series to which this feature is targeted."))
     distrorelease = Choice(title=_('Targeted Release'), required=False,
-        vocabulary='FilteredDistroRelease', description=_('Select '
-        'the distribution release to which this feature is targeted.'))
+        vocabulary='FilteredDistroRelease',
+        description=_(
+            "The distribution release to which this feature is targeted."))
     whiteboard = Text(title=_('Status Whiteboard'), required=False,
         description=_(
             "Any notes on the status of this spec you would like to make. "

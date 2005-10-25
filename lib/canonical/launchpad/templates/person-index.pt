@@ -103,8 +103,7 @@
 
   </table>
 
-  <!-- Members of this team -->
-  <tal:block condition="context/isTeam">
+  <tal:members condition="context/isTeam">
     <h2>Team members</h2>
     <p>
       There are <span tal:replace="context/active_member_count">15</span>
@@ -169,11 +168,10 @@
         </ul>
       </tal:block>
     </tal:block>
-  </tal:block>
+  </tal:members>
 
 
-  <!-- Teams of which I'm a member -->
-  <tal:block condition="not: context/isTeam">
+  <tal:memberships condition="not: context/isTeam">
     <tal:block condition="context/myactivememberships">
       <h2>Team Memberships</h2>
 
@@ -194,7 +192,7 @@
       <span tal:replace="context/browsername">Foo Bar</span> is not an
       active member of any Launchpad teams.
     </p>
-  </tal:block>
+  </tal:memberships>
 
   <tal:block condition="context/isTeam">
     <h2>Your involvement</h2>

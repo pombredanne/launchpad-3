@@ -16,16 +16,11 @@
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Use this form to remove the link between the spec and a given
-      bug number.
-    </div>
+    <p metal:fill-slot="extra_info">
+      This will <em>remove</em> the link between the specification and
+      the bug report.
+    </p>
 
-  </div>
-
-  <div>
-    NB, this will <b>remove</b> any link between this spec and the bug
-    number!
   </div>
 
 </div>

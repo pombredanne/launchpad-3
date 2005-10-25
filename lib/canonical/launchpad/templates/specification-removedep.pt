@@ -16,15 +16,10 @@
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Use this form to remove the dependency of this spec on
-      another one.
-    </div>
+    <p metal:fill-slot="extra_info">
+      This will <em>remove</em> the dependency on the selected specification.
+    </p>
 
-  </div>
-
-  <div>
-    NB, this will <b>remove</b> the dependency on the selected spec!
   </div>
 
 </div>

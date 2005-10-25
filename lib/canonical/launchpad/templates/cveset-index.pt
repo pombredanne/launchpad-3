@@ -59,8 +59,7 @@
               </tal:block>
             </dl>
             <p tal:condition="not: view/matches">
-              <img src="/++resource++alert" />
-              No matching CVE entries were found.
+              <i>No matching CVE entries were found.</i>
             </p>
           </td>
         </tr>

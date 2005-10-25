@@ -4,8 +4,8 @@
   </tal:block>
 
   <p tal:condition="not: context/isTeam" class="portalMessage">
-    <span tal:replace="context/browsername" /> is not a team, so we cannot
-    display a list of members!
+    <span tal:replace="context/browsername" /> does not have members,
+    because <span tal:replace="context/browsername" /> is not a team.
   </p>
 
   <table class="listing" tal:condition="context/isTeam">

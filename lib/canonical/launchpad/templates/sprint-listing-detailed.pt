@@ -1,20 +1,28 @@
-<img src="/++resource++sprint" />
-<a tal:attributes="href context/fmt:url"
-   tal:content="context/title">Meeting Title Here</a>: 
+<tr>
+  <td class="icon left">
+    <img alt="" src="/@@/sprint" />
+  </td>
+  <td>
+    <div>
+      <strong><a tal:attributes="href context/fmt:url"
+      tal:content="context/title">Meeting Title Here</a></strong>: 
   <span tal:replace="context/time_starts/fmt:date">2005-10-05</span>
   to
   <span tal:replace="context/time_ends/fmt:date">2005-10-05</span>
-<div style="font-size: 80%; margin-left: 30px;">
+    </div>
+    <p>
   <span tal:replace="context/summary">summary here</span>
   <span tal:condition="not:context/summary"
         tal:replace="context/description/fmt:shorten/320">
     Description if there is not summary
   </span>
-  <br />
-  registered by
+    </p>
+    <p>
+      Registered by
   <img src="/++resource++user.gif" />&nbsp;<a
       tal:attributes="href context/owner/fmt:url"
       tal:content="context/owner/browsername">Foo Bar</a>
   on <span tal:replace="context/datecreated/fmt:date">2005-10-05</span>
-</div>
-<hr />
+    </p>
+  </td>
+</tr>

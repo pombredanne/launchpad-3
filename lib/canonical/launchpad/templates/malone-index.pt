@@ -51,7 +51,9 @@
       <a href="bugs/+package">File a Bug on a Package</a>
     </li>
     <li>
-      <!-- XXX kiko 2005-07-05 ubuntu is hardcoded -->
+      <tal:XXX condition="nothing">
+        kiko 2005-07-05: ubuntu is hardcoded
+      </tal:XXX>
       <a href="distros/ubuntu">View Ubuntu Bugs</a> - find and
         view bugs filed in Ubuntu.
     </li>
@@ -79,14 +81,16 @@
     </li>
   </ul>
 
-  <h2>Latest Bugs...</h2>
+  <h2>Latest Bugs Reported Across Launchpad</h2>
 
-  <p>The last few bugs filed in launchpad are listed below. Note that these
-  could be for any combination of upstream or distribution. Click on a bug
-  for detailed status and comments.</p>
-
-  <div tal:repeat="bug context/latest_bugs"
-       tal:replace="structure bug/@@+listing-detailed" />
+  <table>
+    <tbody>
+      <tr
+        tal:repeat="bug context/latest_bugs"
+        tal:replace="structure bug/@@+listing-detailed"
+      />
+    </tbody>
+  </table>
 
 </div>
 </body>

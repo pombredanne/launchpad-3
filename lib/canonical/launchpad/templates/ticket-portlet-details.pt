@@ -40,7 +40,6 @@
          tal:content="context/assignee/browsername">Foo Bar</a>
     </tal:block>
     <tal:block condition="not: context/assignee">
-      <img src="/++resource++alert" />
       <i>No assignee</i>
     </tal:block>
     <br />
@@ -52,7 +51,6 @@
          tal:content="context/answerer/browsername">Foo Bar</a>
     </tal:block>
     <tal:block condition="not: context/answerer">
-      <img src="/++resource++alert" />
       <i>Not yet answered</i>
     </tal:block>
     <br />

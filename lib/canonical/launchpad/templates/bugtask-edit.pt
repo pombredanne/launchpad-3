@@ -40,8 +40,9 @@
                i18n:translate="">
               There are <strong
               tal:content="view/errors/count:len"
-              i18n:name="num_errors">6</strong> input errors in the form
-              below. Please correct them and resubmit the form.
+              i18n:name="num_errors">6</strong>
+              problems with the information you entered.
+              Please fix them and try again.
             </p>
             <p tal:condition="not: context/required:launchpad.Edit"
                class="portalMessage">

@@ -19,14 +19,8 @@
 
   <h1>Conduct Review</h1>
 
-  <p class="documentDescription">
-    Use this page to indicate that you have conducted a review of this
-    specification.
-  </p>
-
   <p>
-    Choose "Review Complete" to remove this review request from your queue,
-    or "Cancel" to return to the specification page.
+    Have you completed your review of this specification?
   </p>
 
   <form action="." method="POST">
@@ -40,7 +34,7 @@
       <input tal:condition="view/review"
              type="submit"
              name="review"
-             value="Review Complete" />
+             value="Review Completed" />
     </div>
   </form>
 

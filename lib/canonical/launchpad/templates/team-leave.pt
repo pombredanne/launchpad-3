@@ -8,18 +8,15 @@
 
 <div metal:fill-slot="main">
 
+    <h1>Leaving &#8220;<span tal:replace="context/browsername" />&#8221;</h1>
     <tal:block tal:condition="view/userCanRequestToLeave">
-      <h3>Are you sure you want to leave 
-        <span tal:replace="context/browsername" />?</h3>
+      <p>
+        Are you sure you want to leave this team?
+      </p>
 
-      <form name="leave" action="" method="POST">
-        <table width="100%">
-          <tr><td>
+      <form class="actions" name="leave" action="" method="POST">
             <input type="submit" name="goback" value="Back to team" />
-          </td><td align="right">
             <input type="submit" name="leave" value="Leave" />
-          </td></tr>
-        </table>
       </form>
     </tal:block>
 

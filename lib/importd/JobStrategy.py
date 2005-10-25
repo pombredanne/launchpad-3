@@ -126,7 +126,8 @@ class CSCVSStrategy(JobStrategy):
         lastCommit = cscvs.arch.findLastCSCVSCommit(aVersion)
         if lastCommit is None:
             raise RuntimeError(
-                "No Commits have occured, cannot perform incremental tobaz")
+                "The incremental 'tobaz' was not performed because "
+                "there are no new commits.")
         bazpath=self.getTLADirPath(self.aJob, dir)
         if os.access(bazpath, os.F_OK):
             shutil.rmtree(bazpath)

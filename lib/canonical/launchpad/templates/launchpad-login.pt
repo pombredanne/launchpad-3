@@ -49,17 +49,16 @@
         
           <!-- 3. just registered successfully: -->
           <div tal:condition="view/registration_success" tal:omit-tag>
-            <h1>Done!</h1>
+            <h1>Registration Mail Sent</h1>
             <p>Your registration URL has been sent to
             <code tal:content="view/email">email@domain.com</code>.
             Once you have followed the link included in that email
             your Launchpad account will be activated.</p>
             
-            <p>Thanks for signing up and welcome to the Launchpad user
-            community. We are always interested to hear new ideas and bug
-            fixes, so please feel free to join <code>#launchpad</code> on
-            <code>irc.freenode.net</code> and share your ideas for
-            improvements to the Launchpad!</p>
+            <p>Thanks for signing up and welcome to the Launchpad community.
+            We are interested in your feedback, so feel free to join
+            <code>#launchpad</code> on <code>irc.freenode.net</code>
+            and share your ideas for improving Launchpad.</p>
           </div>
 
           <div tal:condition="not: view/registration_success" tal:omit-tag>

@@ -5,75 +5,91 @@
 
 <body>
 
-<div metal:fill-slot="main">
+    <div metal:fill-slot="body">
+      <table>
+        <tbody>
+          <tr>
+            <td style="width: 75%; padding-right: 1em;">
 
-  <!-- try to process a previous form submission -->
-  <tal:dummy condition="view/adminSource" omit-tag="" />
+  <tal:processform condition="view/adminSource" omit-tag="" />
 
-  <h1>Upstream Source Import</h1>
-
-  <p class="documentDescription">Please fill in the form below to register
-  the branch in upstream's revision control system that represents
-  development for this Product Series.</p>
-  
-  <p>We will attempt to import that code and publish it as a Bazaar branch,
-  which allows the Ubuntu distro team to share code with upstream very
-  efficiently, and also allows for distributed development of the upstream
-  code.</p>
+              <h1>Register an upstream branch for importing</h1>
+              
+              <p tal:condition="not:view/errormsgs">
+                Once you enter the details of the
+                <abbr title="revision control system">RCS</abbr>
+                you use for this product series,
+                Launchpad can attempt to import that code
+                and publish it as a Bazaar branch.
+                This lets distributors share code with you more efficiently,
+                and also allows distributed upstream development.
+              </p>
 
   <div tal:repeat="errmsg view/errormsgs" tal:omit-tag>
   <p class="portalMessage" tal:content="errmsg" />
   </div>
 
-  <form method="post">
+              <form method="post">
   
-  <fieldset>
+                <fieldset>
+                  <legend>CVS Repository</legend>
+                  <table>
+                    <tbody>
+                      <tr>
+                        <th><label>Root:</label></th>
+                        <td>
+                          <input type="text" name="cvsroot" size="30"
+                          tal:attributes="value view/cvsroot" />
+                          <span class="fieldRequired">(Required)</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th><label>Module:</label></th>
+                        <td>
+                          <input type="text" name="cvsmodule" size="30"
+                          tal:attributes="value view/cvsmodule" />
+                          <span class="fieldRequired">(Required)</span>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th><label>Branch Name:</label></th>
+                        <td>
+                          <input type="text" name="cvsbranch" size="30"
+                          tal:attributes="value view/cvsbranch" />
+                          <span class="fieldRequired">(Required)</span>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </fieldset>
 
-  <legend>Source Import Details</legend>
-
-  <fieldset>
-  
-  <legend>CVS Repository</legend>
-
-  <div class="field">
-    <label>CVS root</label>
-    <span class="fieldRequired" title="Required">(Required)</span>
-    <input type="text" name="cvsroot" size="30"
-       tal:attributes="value view/cvsroot" />
-  </div>
-  
-  <div class="field">
-    <label>CVS module</label>
-    <span class="fieldRequired" title="Required">(Required)</span>
-    <input type="text" name="cvsmodule" size="30"
-       tal:attributes="value view/cvsmodule" />
-  </div>
-
-  <div class="field">
-    <label>CVS branch name</label>
-    <span class="fieldRequired" title="Required">(Required)</span>
-    <input type="text" name="cvsbranch" size="30"
-       tal:attributes="value view/cvsbranch" />
-  </div>
-
-  </fieldset>
-
-  <fieldset>
+                <fieldset>
 
   <legend>SVN Repository</legend>
-  <div class="field">
-    <label>SVN repository</label>
-    <span class="fieldRequired" title="Required">(Required)</span>
-      <div class="formHelp">
-      Address for the SVN repository, either in svn:// or http(s):// form.
-      </div>
-    <input type="text" name="svnrepository" size="70"
-       tal:attributes="value view/svnrepository" />
-  </div>
+  
+                  <table>
+                    <tbody>
+                      <tr>
+                        <th><label>Repository:</label></th>
+                        <td>
+                          <div>
+                            <input type="text" name="svnrepository" size="35"
+                            tal:attributes="value view/svnrepository" />
+                            <span class="fieldRequired">(Required)</span>
+                          </div>
+                          <div class="formHelp">
+                            Address for the SVN repository, in either
+                            <code>svn://</code> or
+                            <code>http</code>(<code>s</code>)<code>://</code>
+                            form.
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </fieldset>
 
-  </fieldset>
-
-  <!--
+<tal:x condition="nothing">
   <fieldset>
   <legend>Arch source</legend>
   <p class="discreet">
@@ -83,137 +99,162 @@
   
   <div class="field">
     <label>GPG Key ID</label>
-    <span class="fieldRequired" title="Required">(Required)</span>
+    <span class="fieldRequired">(Required)</span>
     <input type="text" name="archsourcegpgkeyid" size="30"
        value="" />
   </div>
 
   <div class="field">
     <label>Arch Archive Name</label>
-    <span class="fieldRequired" title="Required">(Required)</span>
+    <span class="fieldRequired">(Required)</span>
     <input type="text" name="archsourcename" size="30"
        value="" />
   </div>
 
   <div class="field">
     <label>URL</label>
-    <span class="fieldRequired" title="Required">(Required)</span>
+    <span class="fieldRequired">(Required)</span>
     <input type="text" name="archsourceurl" size="30"
        value="" />
   </div>
 
   </fieldset>
-  -->
+</tal:x>
   
-  <fieldset>
-
-  <legend>Import and Sync Details</legend>
-
-  <div class="field">
-    <label>Import from...</label>
-    <span class="fieldRequired" title="Required">(Required)</span>
-    <br />
-    <span tal:replace="structure view/rcs_selector">RCS Selector</span>
-    <div class="formHelp">
-      Which revision control system details to use for the import.
-    </div>
-  </div>
-  
-  <div class="field">
-    <label>Arch archive</label>
-    <span class="fieldRequired" title="Required">(Required)</span>
-    <input type="text" name="targetarcharchive" size="30"
-       tal:attributes="value view/targetarcharchive" />
-    <div class="formHelp">
-      The recommended value would be <span
-      tal:replace="view/default_targetarcharchive" />
-    </div>
-  </div>
-
-  <div class="field">
-    <label>Arch category</label>
-    <span class="fieldRequired" title="Required">(Required)</span>
-    <input type="text" name="targetarchcategory" size="30"
-       tal:attributes="value view/targetarchcategory" />
-    <div class="formHelp">
-      The recommended value would be <span
-      tal:replace="view/default_targetarchcategory" />
-    </div>
-  </div>
-
-  <div class="field">
-    <label>Arch branch</label>
-    <span class="fieldRequired" title="Required">(Required)</span>
-    <input type="text" name="targetarchbranch" size="30"
-       tal:attributes="value view/targetarchbranch" />
-    <div class="formHelp">
-      The recommended value would be <span
-      tal:replace="view/default_targetarchbranch" />
-    </div>
-  </div>
-
-  <div class="field">
-    <label>Arch version</label>
-    <span class="fieldRequired" title="Required">(Required)</span>
-    <input type="text" name="targetarchversion" size="30"
-       tal:attributes="value view/targetarchversion" />
-    <div class="formHelp">
-      The recommended value would be <span
-      tal:replace="view/default_targetarchversion" />
-    </div>
-  </div>
-
-  </fieldset>
+                <fieldset>
+                  <legend>Import and Sync Details</legend>
+                  <table>
+                    <tbody>
+                      <tr>
+                        <th><label>Import From:</label></th>
+                        <td>
+                          <div>
+                            <span tal:replace="structure view/rcs_selector" />
+                            <span class="fieldRequired">(Required)</span>
+                          </div>
+                          <div class="formHelp">
+                            Which RCS details to use for the import.
+                          </div>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th><label>Arch Archive:</label></th>
+                        <td>
+                          <input type="text" name="targetarcharchive" size="30"
+                          tal:attributes="value view/targetarcharchive" />
+                          <span class="fieldRequired">(Required)</span>
+                        </td>
+                      </tr>
+                      <tr class="formHelp">
+                        <th>Recommended:</th>
+                        <td>
+                          <code tal:content="view/default_targetarcharchive" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th><label>Arch Category:</label></th>
+                        <td>
+                          <input type="text" name="targetarchcategory" size="30"
+                          tal:attributes="value view/targetarchcategory" />
+                          <span class="fieldRequired">(Required)</span>
+                        </td>
+                      </tr>
+                      <tr class="formHelp">
+                        <th>Recommended:</th>
+                        <td>
+                          <code tal:content="view/default_targetarchcategory" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th><label>Arch Branch:</label></th>
+                        <td>
+                          <input type="text" name="targetarchbranch" size="30"
+                          tal:attributes="value view/targetarchbranch" />
+                          <span class="fieldRequired">(Required)</span>
+                        </td>
+                      </tr>
+                      <tr class="formHelp">
+                        <th>Recommended:</th>
+                        <td>
+                          <code tal:content="view/default_targetarchbranch" />
+                        </td>
+                      </tr>
+                      <tr>
+                        <th><label>Arch Version:</label></th>
+                        <td>
+                          <input type="text" name="targetarchversion" size="30"
+                          tal:attributes="value view/targetarchversion" />
+                          <span class="fieldRequired">(Required)</span>
+                        </td>
+                      </tr>
+                      <tr class="formHelp">
+                        <th>Recommended:</th>
+                        <td tal:content="view/default_targetarchversion" />
+                      </tr>
+                    </tbody>
+                  </table>
+                </fieldset>
 
   <fieldset tal:condition="context/autoTestFailed">
     <legend>Failed Import Control</legend>
-    <div class="field">
-      <label>Retest</label>
-      <div class="formHelp">Retest this series in roomba?</div>
-      <input type="checkbox" name="resetToAutotest" />
+    <div>
+      <label>
+        <input type="checkbox" name="resetToAutotest" />
+        Retest this series in roomba
+      </label>
     </div>
   </fieldset>
 
-  <fieldset>
-    <legend>Release FTP Details</legend>
+                <fieldset>
+                  <legend>FTP Details</legend>
+                  <table>
+                    <tbody>
+                      <tr>
+                        <th><label>Root Directory URL:</label></th>
+                        <td>
+                          <input name="releaseroot" size=40
+                          tal:attributes="value context/releaseroot" />
+                        </td>
+                      </tr>
+                      <tr class="formHelp">
+                        <th>Example:</th>
+                        <td>
+                          <code>ftp://www.mozilla.org/pub/firefox/1.1/</code>
+                        </td>
+                      </tr>
+                      <tr class="formHelp">
+                        <th />
+                        <td>
+                          The directory containing releases that are
+                          part of this series.
+                          Launchpad automatically scans this directory
+                          regularly to import new releases.
+                        </td>
+                      </tr>
+                      <tr>
+                        <th><label>Filename Pattern:</label></th>
+                        <td>
+                          <input name="releasefileglob" size=40
+                          tal:attributes="value context/releasefileglob" />
+                        </td>
+                      </tr>
+                      <tr class="formHelp">
+                        <th>Example:</th>
+                        <td><code>firefox-1.1.*.src.tgz</code></td>
+                      </tr>
+                      <tr class="formHelp">
+                        <th />
+                        <td>
+                          Launchpad uses this pattern to find new releases of
+                          <span tal:replace="context/product/displayname" />
+                          when they are uploaded to the root directory.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </fieldset>
 
-    <div class="field">
-
-        <label>Release Root Directory URL</label>
-
-        <div class="formHelp">
-          The URL for the directory which contains releases that are
-          part of this series. We will automatically scan this directory
-          on a regular basis to try to import new releases.
-          For example: <i>ftp://www.mozilla.org/pub/firefox/1.1/</i>
-        </div>
-
-        <input name="releaseroot" size=40
-               tal:attributes="value context/releaseroot" />
-
-    </div>
-
-    <div class="field">
-
-        <label>Release Filename Pattern</label>
-
-        <div class="formHelp">
-          Releases in this series match the following filename
-          pattern. We will use this pattern, together with the
-          root directory given above, to find new releases of
-          <span tal:replace="context/product/displayname" /> when
-          they are uploaded to that directory.
-          For example: <i>firefox-1.1.*.src.tgz</i>
-        </div>
-
-        <input name="releasefileglob" size=40
-               tal:attributes="value context/releasefileglob" />
-
-    </div>
-
-  </fieldset>
-
-  <fieldset>
+                <fieldset>
 
     <legend>Product and Project Status</legend>
 
@@ -263,14 +304,13 @@
 
     </div>
 
-  </fieldset>
+  <div class="actions">
 
-  <div class="formControls">
-
-  <!--NB. DO NOT CHANGE THE VALUE OF THIS
-    it is used to verify that the correct form was posted.
-    -->
-  <input class="context" type="submit"
+  <tal:x condition="nothing">
+    DO NOT CHANGE THE VALUE OF THIS.
+    It is used to verify that the correct form was posted.
+  </tal:x>
+  <input type="submit"
      name="Update RCS Details"
      value="Update RCS Details" />
 
@@ -278,7 +318,15 @@
 
   </form>
 
-</div>
-
-</body>
+            </td>
+            <td
+              style="width: 25%;"
+              tal:content="structure CONTEXTS/@@+menubox"
+            />
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <metal:nomenu fill-slot="column_two"></metal:nomenu>
+  </body>
 </html>

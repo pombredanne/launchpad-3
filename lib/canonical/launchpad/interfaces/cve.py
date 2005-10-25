@@ -25,10 +25,7 @@ class ICve(IBugLinkTarget):
     id = Int(title=_('ID'), required=True, readonly=True)
     sequence = TextLine(
         title=_('CVE Sequence Number'),
-        description=_('The CVE sequence number '
-            'should take the form of XXXX-XXXX, all digits. '
-            'We will poll the CVE database to determine the status of '
-            'the CVE automatically.'),
+        description=_('Should take the form XXXX-XXXX, all digits.'),
         required=True, readonly=False, constraint=valid_cve)
     status = Choice(title=_('Current CVE State'), 
         default=CveStatus.CANDIDATE, description=_("Whether or not the "

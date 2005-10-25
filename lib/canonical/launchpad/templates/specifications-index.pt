@@ -27,11 +27,16 @@
     The 10 most recently registered specifications in Launchpad:
   </p>
 
-  <tal:block repeat="spec context/latest_specs">
-    <b><span tal:replace="spec/target/title">Spec Target Title</span>:</b>
-    <br />
-    <div tal:replace="structure spec/@@+listing-detailed" />
-  </tal:block>
+      <table class="listing">
+        <tbody>
+          <tr tal:repeat="spec context/latest_specs">
+            <td>
+            <span tal:replace="spec/target/title">Spec Target Title</span>:
+            <div tal:replace="structure spec/@@+listing-detailed" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
 
   <p>
     Features are tracked per distribution, and per product registered in the

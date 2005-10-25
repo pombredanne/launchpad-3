@@ -83,8 +83,9 @@
                 </td>
               </tr>
             </table>
-            <!-- Preserve extra query parameters as hidden fields. -->
-            <tal:replacement tal:replace="structure view/preserve_query" />
+            <tal:replacement replace="structure view/preserve_query">
+              This preserves extra query parameters as hidden fields.
+            </tal:replacement>
           </form>
         </tal:block>
       </tal:block>

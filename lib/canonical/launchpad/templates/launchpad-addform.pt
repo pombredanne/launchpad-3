@@ -57,14 +57,12 @@
         </div>
 
       </div>
-      <div class="row">
-        <div class="controls"><hr />
+      <div class="actions">
           <input type="submit"
                  tabindex="1000"
                  value="Add"
                  name="UPDATE_SUBMIT"
                  i18n:attributes="value add-button" />
-        </div>
       </div>
 
       <div class="row" 

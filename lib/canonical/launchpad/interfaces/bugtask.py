@@ -249,10 +249,8 @@ class IDistroBugTask(IBugTask):
     """A description of a bug needing fixing in a particular package."""
     sourcepackagename = Choice(
         title=_("Source Package Name"), required=False,
-        description=_("The specific source package in which the bug "
-        "occurs, and which needs to be fixed. This is generally optional, "
-        "leave it blank if you are unsure, and the distro QA team will "
-        "attempt to figure it out."),
+        description=_("The source package in which the bug occurs. "
+        "Leave blank if you are not sure."),
         vocabulary='SourcePackageName')
     binarypackagename = Choice(
         title=_('Binary PackageName'), required=False,

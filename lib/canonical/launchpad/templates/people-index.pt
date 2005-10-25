@@ -96,7 +96,7 @@
             Some accounts have been created automatically by Launchpad
             and may be duplicates.  If you find you have more than one
             account, perhaps for different email addresses, please
-            <a href="+requestmerge">merge the accounts</a>. Thank you!
+            <a href="+requestmerge">merge the duplicate accounts</a>.
           </p>
         </tal:block>
         <tal:block condition="bn">

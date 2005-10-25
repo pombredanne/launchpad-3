@@ -5,7 +5,7 @@ Go to the page to add a new project.
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...Register a project with Launchpad...
+  ...Register a Project With Launchpad...
 
 Add a new project.
 
@@ -52,7 +52,7 @@ Add a new project.
   Content-Type: text/html;charset=utf-8
   Location: http://localhost:9000/projects/apache
   <BLANKLINE>
-  ...Register a project with Launchpad</h1>...
+  ...Register a Project With Launchpad</h1>...
 
 Now see the new project.
 

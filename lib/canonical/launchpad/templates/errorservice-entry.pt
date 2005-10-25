@@ -3,13 +3,11 @@
 <div metal:fill-slot="main"
      tal:define="entry python:context.getLogEntryById(request.get('id'))">
 
-  <h1 i18n:translate="">Header</h1>
+  <h1 i18n:translate="">Exception Traceback</h1>
 
-  <h3 i18n:translate="">Exception traceback</h3>
-
-  <em tal:condition="not:entry">
+  <p tal:condition="not:entry">
     The specified log entry was not found.  It may have expired.
-  </em>
+  </p>
 
   <div tal:condition="entry">
 
@@ -61,7 +59,7 @@
 
     <div tal:condition="entry/req_html">
 
-      <h3 i18n:translate="">REQUEST</h3>
+      <h1 i18n:translate="">Request</h1>
 
       <div tal:replace="structure entry/req_html"></div>
 

@@ -14,11 +14,10 @@
 
   <div metal:use-macro="context/@@launchpad_editform/editform">
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Please edit the details of <span tal:replace="context/displayname">
-      product</span> using the form below. Your changes will become
-      visible immediately.  
-    </div>
+    <p metal:fill-slot="extra_info">
+      Your changes to the <span tal:replace="context/displayname">
+      product</span> details will be visible immediately.  
+    </p>
         
   </div>
     

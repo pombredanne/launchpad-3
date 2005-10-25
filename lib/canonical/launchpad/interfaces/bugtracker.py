@@ -23,12 +23,12 @@ class IBugTracker(Interface):
     id = Int(title=_('ID'))
     bugtrackertype = Choice(
         title=_('Bug Tracker Type'),
-        description=_('The bug tracking software used by this external bug tracker.'),
         vocabulary="BugTrackerType",
         default=dbschema.BugTrackerType.BUGZILLA)
     name = TextLine(
         title=_('Name'),
-        description=_('A URL-friendly name for this bug tracker, e.g. "mozilla-bugs".'))
+        description=_('An URL-friendly name for the bug tracker, '
+        'such as "mozilla-bugs".'))
     title = TextLine(
         title=_('Title'),
         description=_('A descriptive label for this tracker to show in listings.'))
@@ -37,13 +37,15 @@ class IBugTracker(Interface):
         description=_('A brief introduction or overview of this bug tracker instance.'))
     baseurl = TextLine(
         title=_('Base URL'),
-        description=_('The top-level URL for this bug tracker instance.'))
+        description=_('The top-level URL for the bug tracker. This '
+        'must be accurate so that Malone can link to external bug reports.'))
     owner = Int(title=_('Owner'))
     contactdetails = Text(
         title=_('Contact details'),
         description=_(
-            'The contact details for the external bug tracker (to, for '
-            'example, reach administrators in the event of a security breach.)'))
+            'The contact details for the external bug tracker (so that, for '
+            'example, its administrators can be contacted about a security '
+            'breach).'))
     watches = Attribute('The remote watches on this bug tracker.')
     projects = Attribute("The projects which use this bug tracker.")
 
