@@ -968,6 +968,31 @@ class PersonView:
                 <blockquote>%s</blockquote>
                 Try again later or cancel your request.""" % key)
 
+        # revoked and expired keys can not be imported.
+        if key.revoked:
+            return (
+                "The key %s cannot be validated because it has been "
+                "publicly revoked. You will need to generate a new key "
+                "(using <kbd>gpg --genkey</kbd>) and repeat the previous "
+                "process to find and import the new key." % key.keyid)
+
+        if key.expired:
+            return (
+                "The key %s cannot be validated because it has expired. "
+                "You will need to generate a new key "
+                "(using <kbd>gpg --genkey</kbd>) and repeat the previous "
+                "process to find and import the new key." % key.keyid)
+
+        # XXX: jamesh 20051012
+        # This code will change once we have support for validating
+        # sign-only keys.
+        if not key.can_encrypt:
+            return (
+                "Launchpad does not currently support validation of "
+                "sign-only GPG keys.  If you add an encryption subkey "
+                "(using <kbd>gpg --edit-key</kbd>) and upload your key "
+                "again, you should be able to import the key.")
+
         self._validateGPG(key)
 
         return ('A message has been sent to <code>%s</code>, encrypted with '
