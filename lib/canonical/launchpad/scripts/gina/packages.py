@@ -67,12 +67,10 @@ def stripseq(seq):
     return [s.strip() for s in seq]
 
 
-def get_dsc_path(name, version, component, root):
-    # Note that this is also used in handlers.py
-
+def get_dsc_path(name, version, component, archive_root):
+    pool_root = os.path.join(archive_root, "pool")
     version = re.sub("^\d+:", "", version)
     filename = "%s_%s.dsc" % (name, version)
-    pool_root = os.path.join(root, "pool")
     # We do a first attempt using the obvious directory name, composed
     # with the component. However, this may fail if a binary is being
     # published in another component.
@@ -94,11 +92,11 @@ def get_dsc_path(name, version, component, root):
     raise PoolFileNotFound("File %s not in archive" % filename)
 
 
-def read_dsc(package, version, component, package_root):
+def read_dsc(package, version, component, archive_root):
     urgency = None
 
     dsc_name, dsc_path = get_dsc_path(package, version,
-                                      component, package_root)
+                                      component, archive_root)
     call("dpkg-source -sn -x %s" % dsc_path)
 
     version = re.sub("^\d+:", "", version)
@@ -112,7 +110,7 @@ def read_dsc(package, version, component, package_root):
         while not line:
             line = clfile.readline().strip()
         if "urgency=" in line:
-            urgency = line.split("urgency=")[1].strip().lower()
+            urgency = line.split("urgency=", 1)[1].strip().lower()
         clfile.seek(0)
         # XXX: 3dchess actually /does/ have a changelog, but it doesn't
         # parse (for some reason). Need to investigate why.
@@ -212,11 +210,7 @@ class MissingRequiredArguments(Exception):
     """
 
 
-class PackageFileProcessError(Exception):
-    """An error occurred while processing a package file"""
-
-
-class PoolFileNotFound(PackageFileProcessError):
+class PoolFileNotFound(Exception):
     """The specified file was not found in the archive pool"""
 
 
@@ -244,7 +238,7 @@ class AbstractPackageData:
     # obtained through the archive. This information comes from either a
     # Sources or Packages file, and is complemented by data scrubbed
     # from the corresponding pool files (the dsc, deb and tar.gz)
-    package_root = None
+    archive_root = None
     package = None
     _required = None
     version = None
@@ -269,25 +263,20 @@ class AbstractPackageData:
             # XXX: untested
             raise MissingRequiredArguments(missing)
 
-    def process_package(self, kdb, package_root, keyrings):
+    def process_package(self, kdb, archive_root, keyrings):
         """Process the package using the files located in the archive.
 
         Raises PoolFileNotFound if a file is not found in the pool.
-        Raises PackageFileProcessError if processing the package itself
-        caused an exception.
         """
-        self.package_root = package_root
+        self.archive_root = archive_root
 
         tempdir = tempfile.mkdtemp()
         cwd = os.getcwd()
         os.chdir(tempdir)
         try:
-            try:
-                self.do_package(package_root)
-            finally:
-                os.chdir(cwd)
-        except PoolFileNotFound:
-            raise
+            self.do_package(archive_root)
+        finally:
+            os.chdir(cwd)
         # We only rmtree if everything worked as expected; otherwise,
         # leave it around for forensics.
         shutil.rmtree(tempdir)
@@ -301,7 +290,7 @@ class AbstractPackageData:
         self.is_processed = True
         return True
 
-    def do_package(self, package_root):
+    def do_package(self, archive_root):
         raise NotImplementedError
 
     def do_katie(self, kdb, keyrings):
@@ -375,14 +364,14 @@ class SourcePackageData(AbstractPackageData):
 
         AbstractPackageData.__init__(self)
 
-    def do_package(self, package_root):
+    def do_package(self, archive_root):
         """Get the Changelog and licence from the package on archive.
 
         If successful processing of the package occurs, this method
         sets the changelog, urgency and licence attributes.
         """
         ret = read_dsc(self.package, self.version, self.component,
-                       package_root)
+                       archive_root)
         # We don't use the licence here at all
         dsc, urgency, changelog, dummy = ret
 
@@ -547,9 +536,9 @@ class BinaryPackageData(AbstractPackageData):
 
         AbstractPackageData.__init__(self)
 
-    def do_package(self, package_root):
-        """Grab shared library info from package in archive if it exists."""
-        fullpath = os.path.join(package_root, self.filename)
+    def do_package(self, archive_root):
+        """Grab shared library and license from file in archive."""
+        fullpath = os.path.join(archive_root, self.filename)
         if not os.path.exists(fullpath):
             raise PoolFileNotFound('%s not found' % fullpath)
 
@@ -565,7 +554,7 @@ class BinaryPackageData(AbstractPackageData):
         # that unpacked the file and two consumers that read specific
         # data from it.
         ret = read_dsc(self.source, self.source_version,
-                       self.component, package_root)
+                       self.component, archive_root)
         dummy, dummy, dummy, licence = ret
         self.licence = encoding.guess(licence)
 

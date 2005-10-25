@@ -126,14 +126,14 @@ Check STDERR for the errors we expected:
      -> http://...version: None)
     WARNING Invalid urgency in python-pam, None, assumed 'low'
     ERROR   Error processing package files for util-linux
-     -> http://...dsc not in archive...))
+     -> http://...dsc not in archive)
     WARNING No changelog file found for 3dchess in 3dchess-0.8.1
     ERROR   Error processing package files for bsdutils
      -> http://...deb not found)
     WARNING Binary package ed lacks valid priority, assumed 'extra'
     ERROR   Error processing package files for mount
      -> http://...deb not found)
-    WARNING Binary package python-pam lacks a section... assumed 'misc'
+    WARNING Binary package python-pam lacks a section, assumed 'misc'
     ERROR   Error processing package files for python2.4-pam
      -> http://...deb not found)
     ERROR   Error processing package files for python2.4-sqlite
@@ -148,9 +148,9 @@ Check STDERR for the errors we expected:
     WARNING No license file found for mkvmlinuz in mkvmlinuz-14ubuntu1
     WARNING Invalid urgency in mkvmlinuz, None, assumed 'low'
     ERROR   Error processing package files for python-sqlite
-     -> http://...dsc not in archive...))
+     -> http://...dsc not in archive)
     ERROR   Error processing package files for util-linux
-     -> http://...dsc not in archive...))
+     -> http://...dsc not in archive)
     ERROR   Error processing package files for python-sqlite
      -> http://...deb not found)
     <BLANKLINE>
@@ -375,7 +375,7 @@ packages that failed to import the last time.
     ERROR   Unable to create SourcePackageData for mkvmlinuz
      -> http://...version: None)
     ERROR   Error processing package files for util-linux
-     -> http://...dsc not in archive...))
+     -> http://...dsc not in archive)
     ERROR   Error processing package files for bsdutils
      -> http://...deb not found)
     ERROR   Error processing package files for mount
@@ -391,9 +391,9 @@ packages that failed to import the last time.
     ERROR   Invalid Sources stanza in /tmp/tmp...
      -> http://...bogus\n')
     ERROR   Error processing package files for python-sqlite
-     -> http://...dsc not in archive...))
+     -> http://...dsc not in archive)
     ERROR   Error processing package files for util-linux
-     -> http://...dsc not in archive...))
+     -> http://...dsc not in archive)
     ERROR   Error processing package files for python-sqlite
      -> http://...deb not found)
     <BLANKLINE>
