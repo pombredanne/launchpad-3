@@ -55,12 +55,12 @@
     </browser:pages>
 
     <browser:page
-        for="canonical.launchpad.database.DistroArchRelease" 
-        permission="zope.Public"
-        name="+pkgsearch"
-        class="canonical.launchpad.browser.DistroArchReleaseBinariesView"
-        template="../templates/distroarchrelease-pkgsearch.pt"
-        />
+      for="canonical.launchpad.database.DistroArchRelease" 
+      permission="zope.Public"
+      name="+search"
+      class="canonical.launchpad.browser.DistroArchReleaseBinariesView"
+      template="../templates/distroarchrelease-search.pt"
+      />
 
     <browser:editform
       for="canonical.launchpad.interfaces.IDistroArchRelease"

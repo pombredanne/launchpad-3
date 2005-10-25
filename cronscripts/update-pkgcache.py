@@ -66,10 +66,15 @@ def main(argv):
         for distro in distroset:
             for distrorelease in distro.releases:
                 logger_object.info('%s starting' % distrorelease.name)
+                distrorelease.updatePackageCount()
+                ztm.commit()
                 distrorelease.removeOldCacheItems()
                 ztm.commit()
                 distrorelease.updateCompletePackageCache(ztm=ztm)
                 ztm.commit()
+                for arch in distrorelease.architectures:
+                    arch.updatePackageCount()
+                    ztm.commit()
             distro.removeOldCacheItems()
             ztm.commit()
             distro.updateCompleteSourcePackageCache(ztm=ztm)

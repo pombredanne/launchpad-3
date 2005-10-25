@@ -216,6 +216,11 @@
     />
 
   <vocabulary
+    name="SprintSpecificationStatus"
+    factory="canonical.launchpad.vocabularies.SprintSpecificationStatusVocabulary"
+    />
+
+  <vocabulary
     name="TeamSubscriptionPolicy"
     factory="canonical.launchpad.vocabularies.TeamSubscriptionPolicyVocabulary"
     />

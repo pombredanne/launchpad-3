@@ -42,6 +42,8 @@ from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IDistroPackageFinder, NotFoundError,
     IHasBuildRecords, ISourcePackageName)
 
+from sourcerer.deb.version import Version
+
 from canonical.launchpad.validators.name import valid_name
 
 
@@ -68,19 +70,22 @@ class Distribution(SQLBase):
     uploadsender = StringCol(notNull=False, default=None)
     uploadadmin = StringCol(notNull=False, default=None)
 
-    releases = MultipleJoin('DistroRelease', joinColumn='distribution',
-                            orderBy=['version', '-id'])
     bounties = RelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistroBounty')
     bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
     milestones = MultipleJoin('Milestone', joinColumn='distribution')
     specifications = MultipleJoin('Specification', joinColumn='distribution',
-        orderBy=['-datecreated', 'id'])
+        orderBy=['-priority', '-datecreated', 'id'])
     uploaders = MultipleJoin('DistroComponentUploader',
         joinColumn='distribution')
     source_package_caches = MultipleJoin('DistributionSourcePackageCache',
-        joinColumn='distribution')
+        joinColumn='distribution', orderBy='name')
+
+    @property
+    def releases(self):
+        ret = DistroRelease.selectBy(distributionID=self.id)
+        return sorted(ret, key=lambda a: Version(a.version), reverse=True)
 
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""

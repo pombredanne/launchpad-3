@@ -14,8 +14,16 @@
 
   <h1>Meeting Overview</h1>
 
-  <p class="highlight" tal:content="context/summary">
-    Sprint Summary Goes Here
+  <p class="highlighted">
+    <span tal:replace="context/summary">
+      Sprint Summary Goes Here
+    </span>
+    <tal:has_homepage condition="context/home_page">
+      <img src="/++resource++sprint" />
+      <a tal:attributes="href context/home_page">
+        View the Meeting Home Page
+      </a>
+    </tal:has_homepage>
   </p>
 
   <p class="portalMessage" tal:condition="not:context/specifications">
@@ -24,22 +32,44 @@
     at the moment.
   </p>
 
-  <tal:has_homepage condition="context/home_page">
-    <img src="/++resource++sprint" />
-    <a tal:attributes="href context/home_page">
-      View the Meeting Home Page
-    </a>
-  </tal:has_homepage>
+  <tal:spec_links repeat="spec_link view/spec_links">
+    <div
+        tal:condition="view/listing_detailed"
+        tal:replace="structure spec_link/specification/@@+listing-detailed"
+        />
+    <div
+        tal:condition="view/listing_compact"
+        tal:replace="structure spec_link/specification/@@+listing-compact"
+        />
+    <div class="lesser">
+      <b>Agenda status:</b>
+      <a tal:condition="spec_link/required:launchpad.Admin"
+         tal:content="spec_link/status/title"
+         tal:attributes="href string:${spec_link/fmt:url}/+admin"
+         >approved</a>
+      <span tal:condition="not: spec_link/required:launchpad.Admin"
+            tal:replace="spec_link/status/title">Approved</span>.
+      <a tal:condition="spec_link/required:launchpad.Edit"
+         tal:attributes="href spec_link/fmt:url">
+        <tal:needs_discussion condition="spec_link/needs_discussion">
+          Needs further discussion
+        </tal:needs_discussion>
+        <tal:needs_discussion condition="not: spec_link/needs_discussion">
+          No discussion required
+        </tal:needs_discussion>.
+      </a>
+      <tal:cannot_edit condition="not: spec_link/required:launchpad.Edit">
+        <tal:needs_discussion condition="spec_link/needs_discussion">
+          Needs further discussion
+        </tal:needs_discussion>
+        <tal:needs_discussion condition="not: spec_link/needs_discussion">
+          No discussion required
+        </tal:needs_discussion>.
+      </tal:cannot_edit>
+    </div>
+    <hr />
+  </tal:spec_links>
 
-  <tal:specifications condition="context/specifications">
-    <tal:block repeat="category view/categories">
-      <h2 tal:content="category/status/title">Approved</h2>
-      <div
-        tal:repeat="spec category/specs"
-        tal:replace="structure spec/@@+listing-detailed"
-      />
-    </tal:block>
-  </tal:specifications>
 </div>
 </body>
 </html>

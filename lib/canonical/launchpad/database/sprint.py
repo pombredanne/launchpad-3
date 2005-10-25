@@ -15,11 +15,14 @@ from sqlobject import (
 
 from canonical.launchpad.interfaces import ISprint, ISprintSet, NotFoundError
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.validators.name import valid_name
+
 from canonical.launchpad.database.sprintattendance import SprintAttendance
+from canonical.launchpad.database.sprintspecification import (
+    SprintSpecification)
 
 
 class Sprint(SQLBase):
@@ -42,8 +45,6 @@ class Sprint(SQLBase):
     time_ends = UtcDateTimeCol(notNull=True)
 
     # useful joins
-    attendances = MultipleJoin('SprintAttendance',
-        joinColumn='sprint', orderBy='id')
     attendees = RelatedJoin('Person',
         joinColumn='sprint', otherColumn='attendee',
         intermediateTable='SprintAttendance', orderBy='name')
@@ -52,12 +53,28 @@ class Sprint(SQLBase):
         intermediateTable='SprintSpecification',
         orderBy=['name', 'title', 'id'])
 
+    @property
+    def attendances(self):
+        ret = SprintAttendance.selectBy(sprintID=self.id)
+        return sorted(ret, key=lambda a: a.attendee.name)
+
+    def specificationLinks(self, status=None):
+        """See ISprint."""
+        query = 'sprint=%s' % sqlvalues(self.id)
+        if status is not None:
+            query += ' AND status=%s' % sqlvalues(status)
+        sprintspecs = SprintSpecification.select(query)
+        return sorted(sprintspecs, key=lambda a: a.specification.priority,
+            reverse=True)
+
     # attendance
     def attend(self, person, time_starts, time_ends):
         """See ISprint."""
         # first see if a relevant attendance exists, and if so, update it
         for attendance in self.attendances:
             if attendance.attendee.id == person.id:
+                attendance.time_starts = time_starts
+                attendance.time_ends = time_ends
                 return attendance
         # since no previous attendance existed, create a new one
         return SprintAttendance(sprint=self, attendee=person,

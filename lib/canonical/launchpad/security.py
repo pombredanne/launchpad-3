@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces import (
     IBugTracker, IBugAttachment, IPoll, IPollSubset, IPollOption,
     IProductRelease, IShippingRequest, IShippingRequestSet, IRequestedCDs,
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
-    IShippingRun, ISpecification)
+    IShippingRun, ISpecification, ISprintSpecification)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -64,6 +64,36 @@ class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
         admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.obj.target.owner) or 
                 user.inTeam(self.obj.owner) or 
+                user.inTeam(admins))
+
+
+class EditSprintSpecification(AuthorizationBase):
+    """Anyone connected with this specification can say whether it still
+    requires further discussion at this sprint.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = ISprintSpecification
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.specification.owner) or
+                user.inTeam(self.obj.specification.assignee) or
+                user.inTeam(self.obj.specification.drafter) or
+                user.inTeam(self.obj.specification.approver) or
+                user.inTeam(self.obj.sprint.owner) or
+                user.inTeam(admins))
+
+
+class AdministerSprintSpecification(AuthorizationBase):
+    """The owner of the sprint can say which specifications will be approved
+    for the sprint agenda, and which not.
+    """
+    permission = 'launchpad.Admin'
+    usedfor = ISprintSpecification
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.sprint.owner) or
                 user.inTeam(admins))
 
 

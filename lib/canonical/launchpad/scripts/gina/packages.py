@@ -94,6 +94,7 @@ def read_dsc(package, version, directory, package_root):
     filename = "%s-%s" % (package, version)
     fullpath = os.path.join(filename, "debian", "changelog")
 
+    changelog = None
     if os.path.exists(fullpath):
         clfile = open(fullpath)
         line = ""
@@ -102,9 +103,13 @@ def read_dsc(package, version, directory, package_root):
         if "urgency=" in line:
             urgency = line.split("urgency=")[1].strip().lower()
         clfile.seek(0)
+        # XXX: 3dchess actually /does/ have a changelog, but it doesn't
+        # parse (for some reason). Need to investigate why.
         changelog = parse_changelog(clfile)
         clfile.close()
-    else:
+
+    if not changelog:
+        # This also catches the result of parse_changelog above
         log.warn("No changelog file found for %s in %s" % (package, filename))
         changelog = None
 
@@ -228,8 +233,11 @@ class AbstractPackageData:
                                       (self.package, self.version))
 
 
-        missing = [attr for attr in self._required if not getattr(self, attr)]
+        absent = object()
+        missing = [attr for attr in self._required if
+                   getattr(self, attr, absent) is absent]
         if missing:
+            # XXX: untested
             raise MissingRequiredArguments(missing)
 
     def process_package(self, kdb, package_root, keyrings):
@@ -251,10 +259,6 @@ class AbstractPackageData:
                 os.chdir(cwd)
         except PoolFileNotFound:
             raise
-        except Exception, e:
-            raise PackageFileProcessError("Failed processing %s (perhaps "
-                                          "see %s): %s" %
-                                          (self.package, tempdir, e))
         # We only rmtree if everything worked as expected; otherwise,
         # leave it around for forensics.
         shutil.rmtree(tempdir)
@@ -291,6 +295,7 @@ class SourcePackageData(AbstractPackageData):
 
     # Defaults, overwritten by do_package and ensure_required
     section = None
+    format = None
 
     is_processed = False
     is_created = False
@@ -300,7 +305,7 @@ class SourcePackageData(AbstractPackageData):
     # MissingRequiredArguments exception is raised.
     _required = [
         'package', 'binaries', 'version', 'maintainer',
-        'architecture', 'directory', 'files', 'format']
+        'architecture', 'directory', 'files']
 
     def __init__(self, **args):
         for k, v in args.items():
@@ -348,10 +353,16 @@ class SourcePackageData(AbstractPackageData):
 
         self.dsc = encoding.guess(dsc)
         self.urgency = urgency
-        if changelog is None:
-            self.changelog = None
+
+        if changelog:
+            if changelog[0] and changelog[0].has_key("changes"):
+                self.changelog = encoding.guess(changelog[0]["changes"])
+            else:
+                log.warn("Changelog changes empty for source %s (%s)" %
+                         (self.package, self.version))
         else:
-            self.changelog = encoding.guess(changelog[0]["changes"])
+            # XXX: untested
+            self.changelog = None
 
     def do_katie(self, kdb, keyrings):
         # XXX: disabled for the moment, untested
@@ -388,6 +399,13 @@ class SourcePackageData(AbstractPackageData):
                 self.section = 'misc'
                 log.warn("Source package %s lacks section, assumed %r" %
                          (self.package, self.section))
+
+        if self.format is None:
+            log.warn("Invalid format in %s, assumed %r" % 
+                     (self.package, "1.0"))
+            self.format = "1.0"
+            # XXX: this is very funny. I care so much about it, but we
+            # don't do anything about this in handlers.py!
 
         if self.urgency not in urgencymap:
             log.warn("Invalid urgency in %s, %r, assumed %r" % 

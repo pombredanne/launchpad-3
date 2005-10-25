@@ -261,29 +261,42 @@ class ValidateEmailView(BaseLoginTokenView):
                 % (key, person_url))
             return        
 
+        # if key is globally revoked skip import and remove token
+        if key.revoked:
+            self.errormessage = (
+                'The key %s cannot be validated because it has been '
+                'publicly revoked. You will need to generate a new key '
+                '(using <kbd>gpg --genkey</kbd>) and repeat the previous '
+                'process to <a href="%s/+editgpgkeys">find and import</a> '
+                'the new key.' % (key.keyid, person_url))
+            logintokenset.deleteByFingerprintAndRequester(fingerprint,
+                                                          requester)
+            return
+
+        if key.expired:
+            self.errormessage = (
+                'The key %s cannot be validated because it has expired. '
+                'You will need to generate a new key '
+                '(using <kbd>gpg --genkey</kbd>) and repeat the previous '
+                'process to <a href="%s/+editgpgkeys">find and import</a> '
+                'the new key.' % (key.keyid, person_url))
+            logintokenset.deleteByFingerprintAndRequester(fingerprint,
+                                                          requester)
+            return
+
         # Is it a revalidation ?
         lpkey = gpgkeyset.getByFingerprint(fingerprint)
         
         if lpkey:            
-            # if key is globally revoked skip import and remove token
-            if key.revoked:
-                self.errormessage = (
-                    'The key %s cannot be revalidated because it has been '
-                    'publicly revoked. You will need to generate a new key '
-                    '(using <kbd>gpg --genkey</kbd>) and repeat the previous '
-                    'process to <a href="%s/+editgpgkeys">find and import</a> '
-                    'the new key.' % (lpkey.displayname, person_url))
-            else:
-                gpgkeyset.activateGPGKey(lpkey.id)
-                self.infomessage = (
-                    'The key %s was successfully revalidated. '
-                    '<a href="%s/+editgpgkeys">See more Information</a>'
-                    % (lpkey.displayname, person_url))
-                self.formProcessed = True
+            gpgkeyset.activateGPGKey(lpkey.id)
+            self.infomessage = (
+                'The key %s was successfully revalidated. '
+                '<a href="%s/+editgpgkeys">See more Information</a>'
+                % (lpkey.displayname, person_url))
+            self.formProcessed = True
 
             logintokenset.deleteByFingerprintAndRequester(fingerprint,
                                                           requester)
-            
             return
 
         # Otherwise prepare to add

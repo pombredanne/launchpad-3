@@ -947,10 +947,10 @@ class BuilddMaster:
         * sourcepackagerelease urgency
         """        
         score_componentname = {
-            'multiverse': 20,
-            'universe': 50,
-            'restricted': 80,
-            'main': 100,
+            'multiverse': 0,
+            'universe': 250,
+            'restricted': 750,
+            'main': 1000,
             }
 
         score_urgency = {
@@ -964,6 +964,8 @@ class BuilddMaster:
         # in the build queue.  The table is a sorted list of (upper time
         # limit in seconds, score) tuples.
         queue_time_scores = [
+            (14400, 100),
+            (7200, 50),
             (3600, 20),
             (1800, 15), 
             (900, 10), 

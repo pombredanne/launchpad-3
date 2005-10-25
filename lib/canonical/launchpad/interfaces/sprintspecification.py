@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Choice, Int
+from zope.schema import Bool, Choice, Int
 from zope.i18nmessageid import MessageIDFactory
 
 _ = MessageIDFactory('launchpad')
@@ -22,5 +22,10 @@ class ISprintSpecification(Interface):
         "be discussed or implemented."), vocabulary='Sprint')
     specification = Int(title=_('Specification'), required=True,
         readonly=True)
-
+    status = Choice(title=_('Agenda Status'), required=True,
+        vocabulary='SprintSpecificationStatus')
+    needs_discussion = Bool(title=_('Needs further discussion'),
+        required=True, description=_("Check this to indicate that the "
+        "specification needs further group discussion before drafting "
+        "can continue."))
 

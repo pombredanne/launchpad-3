@@ -62,9 +62,14 @@ class ISprint(IHasOwner):
 
     # joins
     attendees = Attribute('The set of attendees at this sprint.')
+    attendances = Attribute('The set of SprintAttendance records.')
     specifications = Attribute("Specifications to be discussed at this "
         "sprint.")
-
+    
+    def specificationLinks(status=None):
+        """Return the SprintSpecification records matching the status given,
+        or all of them if no status is passed.
+        """
 
     # subscription-related methods
     def attend(person, time_starts, time_ends):

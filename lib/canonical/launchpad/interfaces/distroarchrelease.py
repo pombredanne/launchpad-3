@@ -33,19 +33,26 @@ class IDistroArchRelease(IHasOwner):
         "support from the vendor of the distribution."), required=True)
     owner = Int(title=_('The person who registered this port.'),
         required=True)
+    package_count = Attribute('A cache of the number of packages published '
+        'in the RELEASE pocket of this port.')
 
     #joins
     packages = Attribute('List of binary packages in this port.')
 
     # for page layouts etc
     title = Attribute('Title')
+    displayname = Attribute('Display name')
 
     # useful attributes
-    binarycount = Attribute('Count of Binary Packages')
     isNominatedArchIndep = Attribute(
         'True if this distroarchrelease is the NominatedArchIndep one.')
 
     distribution = Attribute("The distribution of the package.")
+
+    def updatePackageCount():
+        """Update the cached binary package count for this distro arch
+        release.
+        """
 
     def getChroot(pocket=None, default=None):
         """Return the librarian file alias of the chroot for a given Pocket.
@@ -54,8 +61,9 @@ class IDistroArchRelease(IHasOwner):
         'default'.
         """
 
-    def findPackagesByName(pattern):
-        """Search BinaryPackages matching pattern"""
+    def searchBinaryPackages(text):
+        """Search BinaryPackageRelease published in this release for those
+        matching the given text."""
 
     def getReleasedPackages(name, pocket=None):
         """Get the publishing records for the given binary package name.
@@ -65,9 +73,6 @@ class IDistroArchRelease(IHasOwner):
 
         If pocket is not specified, we look in all pockets.
         """
-
-    def findPackagesByArchtagName(pattern, fti=False):
-        """Search BinaryPackages matching pattern and archtag"""
 
     def __getitem__(name):
         """Getter"""

@@ -413,6 +413,7 @@ class PymeKey:
         self.keyid = key.subkeys.fpr[-8:]
         self.algorithm = GPGKeyAlgorithm.items[key.subkeys.pubkey_algo].title
         self.revoked = bool(key.subkeys.revoked)
+        self.expired = bool(key.expired)
         self.keysize = key.subkeys.length
         self.owner_trust = key.owner_trust
         self.can_encrypt = bool(key.can_encrypt)

@@ -1,0 +1,49 @@
+<div class="portlet">
+
+  <h4>Filter Results:</h4>
+
+  <div class="portletBody portletContent">
+
+    <div class="lesser">
+      <form method="GET">
+        <input type="text" name="text">
+        <img src="/++resource++search" />
+      </form>
+    </div>
+
+  </div>
+
+  <h4>Priority:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul>
+      <li><span class="specpriorityEMERGENCY">Emergency</span>: <a href="#">exact</a></li>
+      <li><span class="specpriorityHIGH">High</span>: <a href="#">exact</a>, <a href="#">min</a></li>
+      <li><span class="specpriorityMEDIUM">Medium</span>: <a href="#">exact</a>, <a href="#">min</a></li>
+      <li><span class="specpriorityLOW">Low</span>: <a href="#">exact</a>, <a href="#">min</a></li>
+      <li><span class="specpriorityWISHLIST">Wishlist</span>: <a href="#">exact</a>, <a href="#">min</a></li>
+      <li><i>Unassigned</i></li>
+    </ul>
+
+  </div>
+
+  <h4>Status:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul>
+      <li><span class="specstatusIMPLEMENTED">Implemented</span>: <a href="#">exact</a></li>
+      <li><span class="specstatusINFORMATIONAL">Informational</span>: <a href="#">exact</a>, <a href="#">min</a></li>
+      <li><span class="specstatusAPPROVED">Approved</span>: <a href="#">exact</a>, <a href="#">min</a></li>
+      <li><span class="specstatusPENDING">Pending</span>: <a href="#">exact</a>, <a href="#">min</a></li>
+      <li><span class="specstatusDRAFT">Draft</span>: <a href="#">exact</a>, <a href="#">min</a></li>
+      <li><span class="specstatusBRAINDUMP">Brain dump</span>: <a href="#">exact</a>, <a href="#">min</a></li>
+      <li><span class="specstatusSUPERSEDED">Superseded</span>: <a href="#">exact</a>, <a href="#">min</a></li>
+      <li><span class="specstatusOBSOLETE">Obsolete</span>: <a href="#">exact</a>, <a href="#">min</a></li>
+      <li><i>Unassigned</i></li>
+    </ul>
+
+  </div>
+
+</div>
