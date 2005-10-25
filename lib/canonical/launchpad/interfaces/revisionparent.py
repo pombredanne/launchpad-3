@@ -19,6 +19,6 @@ _ = MessageIDFactory('launchpad')
 class IRevisionParent(Interface):
     """The association between a revision and its parent revisions."""
 
-    revision = Attribute("The revision with that index in the branch.")
-    parent = Attribute("The revision id of a parent for the given revision.")
+    revision = Attribute("The descendant revision.")
+    parent = Attribute("The parent revision.")
 

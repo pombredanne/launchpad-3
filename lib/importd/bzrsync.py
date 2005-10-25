@@ -1,14 +1,24 @@
+#!/usr/bin/python
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-__metaclass__ = type
-__all__ = ["BzrSync"]
+"""Module docstring goes here."""
 
-
-from bzrlib.branch import Branch as BzrBranch
+import sys
+import os
 from datetime import datetime
 from pytz import UTC
 
-from canonical.launchpad.database import (Person, Branch, Revision,
-                                          RevisionNumber, RevisionParent)
+from bzrlib.branch import Branch as BzrBranch
+
+from canonical.lp import initZopeless
+from canonical.launchpad.database import (
+    Person, Branch, Revision, RevisionNumber, RevisionParent)
+
+from importd.bzrsync import BzrSync
+
+
+__metaclass__ = type
+__all__ = ["BzrSync"]
 
 
 class BzrSync:
@@ -47,8 +57,7 @@ class BzrSync:
             db_revision = Revision(revision_id=revision_id,
                                    log_body=bzr_revision.message,
                                    revision_date=revision_date,
-                                   #owner=self._admins.id, gpgkey=None,
-                                   owner=57, # TODO That's *TEST* data.
+                                   owner=self._admins.id,
                                    diff_adds=None, diff_deletes=None)
             result = True
             if pending_parents is not None:
@@ -82,3 +91,16 @@ class BzrSync:
                                               parentID=db_parent.id):
                 RevisionParent(revision=db_revision.id, parent=db_parent.id)
 
+
+def main():
+    txnManager = initZopeless(dbuser="importd")
+    txnManager.begin()
+    branch_id = int(sys.argv[1])
+    BzrSync(branch_id).syncHistory()
+    txnManager.commit()
+    return 0
+
+
+if __name__ == '__main__':
+    status = main()
+    sys.exit(status)
