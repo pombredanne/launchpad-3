@@ -1,0 +1,50 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-attendees" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Meeting Workload</h1>
+
+  <p class="portalMessage" tal:condition="not:view/workload">
+    There are no specifications registered for discussion at
+    <span tal:replace="context/title">Ubuntu Below Zero</span>
+    at the moment.
+  </p>
+
+  <tal:workload repeat="group view/workload">
+
+    <h2 tal:content="group/person/browsername">Foo Bar</h2>
+
+    <ul class="lesser">
+      <li tal:condition="group/approver"><b>Approver:</b></li>
+      <li tal:repeat="spec group/approver">
+        <a tal:content="spec/title"
+           tal:attributes="href spec/fmt:url">Go to Beginning</a>
+      </li>
+
+      <li tal:condition="group/assignee"><b>Assignee:</b></li>
+      <li tal:repeat="spec group/assignee">
+        <a tal:content="spec/title"
+           tal:attributes="href spec/fmt:url">Go to Beginning</a>
+      </li>
+
+      <li tal:condition="group/drafter"><b>Drafter:</b></li>
+      <li tal:repeat="spec group/drafter">
+        <a tal:content="spec/title"
+           tal:attributes="href spec/fmt:url">Go to Beginning</a>
+      </li>
+    </ul>
+  </tal:workload>
+
+</div>
+</body>
+</html>

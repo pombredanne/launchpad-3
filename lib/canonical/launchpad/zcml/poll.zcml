@@ -55,7 +55,13 @@
         <browser:page
             name="+portlet-details"
             template="../templates/poll-portlet-details.pt"
-            lp:url="/people/$team.name/+poll/$poll.name/+portlet-details" />
+            lp:url="/people/$team.name/+poll/$poll.name/+portlet-details"
+            />
+        <browser:page
+            name="+portlet-options"
+            template="../templates/poll-portlet-options.pt"
+            lp:url="/people/$team.name/+poll/$poll.name/+portlet-options"
+            />
     </browser:pages>
 
     <browser:pages

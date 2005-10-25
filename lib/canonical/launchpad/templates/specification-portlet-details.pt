@@ -4,7 +4,7 @@
 
   <div class="portletBody portletContent">
 
-    <b>Spec:</b>
+    <b>Spec:</b><br />
     <a tal:content="context/name"
        tal:attributes="href context/fmt:url">fix-foo-bar</a><br />
     <b>For:</b>

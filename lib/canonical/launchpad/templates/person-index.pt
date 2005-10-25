@@ -44,6 +44,12 @@
        The home page content goes here.
     </tal:homepage>
     <br style="clear: both" />
+    <tal:block condition="context/teamdescription">
+      <b>Team Description:</b>
+      <span tal:replace="context/teamdescription">DESCRIPTION</span>
+      <br />
+    </tal:block>
+               
   </div>
 
 

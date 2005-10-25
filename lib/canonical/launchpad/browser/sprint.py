@@ -38,11 +38,17 @@ class SprintFacets(StandardLaunchpadFacets):
 class SprintContextMenu(ContextMenu):
 
     usedfor = ISprint
-    links = ['attendance', 'edit', 'approved', 'all', 'declined', 'submitted']
+    links = ['attendance', 'workload',
+             'approved', 'all', 'declined', 'submitted',
+             'edit']
 
     def attendance(self):
         text = 'Register Attendance'
         return Link('+attend', text, icon='add')
+
+    def workload(self):
+        text = 'Show Workload'
+        return Link('+workload', text, icon='info')
 
     def edit(self):
         text = 'Edit Details'
@@ -88,6 +94,7 @@ class SprintView:
         self.context = context
         self.request = request
         self._sprint_specs = None
+        self._workload = None
         self.show = request.form.get('show', None)
         self.listing_detailed = True
         self.listing_compact = False
@@ -125,6 +132,56 @@ class SprintView:
             self.listing_detailed = False
             self.listing_compact = True
         return self._sprint_specs
+
+    def workload(self):
+        """Return a structure that lists people, and for each person, the
+        specs at this conference that for which they are the approver, the
+        assignee or the drafter."""
+
+        if self._workload is not None:
+            return self._workload
+
+        class Group:
+            def __init__(self, person):
+                self.person = person
+                self.approver = []
+                self.drafter = []
+                self.assignee = []
+
+        class Report:
+            def __init__(self):
+                self.contents = {}
+
+            def _getGroup(self, person):
+                group = self.contents.get(person.name, None)
+                if group is not None:
+                    return group
+                group = Group(person)
+                self.contents[person.name] = group
+                return group
+
+            def process(self, spec):
+                """Make sure that this Report.contents has a Group for each
+                person related to the spec, and that Group has the spec in
+                the relevant list.
+                """
+                if spec.assignee is not None:
+                    self._getGroup(spec.assignee).assignee.append(spec)
+                if spec.drafter is not None:
+                    self._getGroup(spec.drafter).drafter.append(spec)
+                if spec.approver is not None:
+                    self._getGroup(spec.approver).approver.append(spec)
+
+            def results(self):
+                return [self.contents[key]
+                    for key in sorted(self.contents.keys())]
+
+        report = Report()
+        for spec_link in self.spec_links():
+            report.process(spec_link.specification)
+
+        self._workload = report.results()
+        return self._workload
 
 
 class SprintAddView(SQLObjectAddView):
