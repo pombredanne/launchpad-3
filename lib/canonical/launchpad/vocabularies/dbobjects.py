@@ -60,8 +60,7 @@ from canonical.launchpad.database import (
     SourcePackageName, BinaryPackageRelease, BugWatch, Sprint,
     BinaryPackageName, Language, Milestone, Product, Project, ProductRelease,
     ProductSeries, TranslationGroup, BugTracker, POTemplateName, Schema,
-    Bounty, Country, Specification, Bug, Processor, ProcessorFamily,
-    PersonSet)
+    Bounty, Country, Specification, Bug, Processor, ProcessorFamily)
 from canonical.launchpad.interfaces import (
     ILaunchBag, ITeam, ITeamMembershipSubset, IPersonSet, IEmailAddressSet)
 
@@ -391,8 +390,6 @@ class PersonAccountToMergeVocabulary(
         BasePersonVocabulary, SQLObjectVocabularyBase):
     """The set of all non-merged people with at least one email address.
 
-    The logged in user is never part of this vocabulary, because it doesn't
-    make sense to merge the user that is logged in into himself.
     This vocabulary is a very specialized one, meant to be used only to choose
     accounts to merge. You *don't* want to use it.
     """
@@ -408,9 +405,7 @@ class PersonAccountToMergeVocabulary(
         return obj in self._select()
 
     def _select(self, text=""):
-        logged_in_user = Person.select(
-            Person.q.id==getUtility(ILaunchBag).user.id)
-        return PersonSet().findPerson(text).except_(logged_in_user)
+        return getUtility(IPersonSet).findPerson(text)
 
     def search(self, text):
         """Return people whose fti or email address match :text."""
