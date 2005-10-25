@@ -80,8 +80,7 @@ packages successfully (at least partially):
    * mkvmlinuz, a source package that generates one binary package,
      but which is missing a version field in its Sources file.
      Its breezy package has a version but is missing copyright and changelog.
-   * 3dchess, a source package that generates a binary package, but for
-     some reason has an invalid changelog.
+   * 3dchess, a source package that generates a binary package.
 
 And one completely broken package:
 
@@ -119,7 +118,6 @@ And give her a spin:
 Check STDERR for the errors we expected:
 
     >>> print proc.stderr.read()
-    WARNING No changelog file found for 3dchess in 3dchess-0.8.1
     WARNING Invalid format in db1-compat, assumed '1.0'
     WARNING Source package ed lacks section, assumed 'misc'
     ERROR   Unable to create SourcePackageData for mkvmlinuz
@@ -127,7 +125,6 @@ Check STDERR for the errors we expected:
     WARNING Invalid urgency in python-pam, None, assumed 'low'
     ERROR   Error processing package files for util-linux
      -> http://...dsc not in archive)
-    WARNING No changelog file found for 3dchess in 3dchess-0.8.1
     ERROR   Error processing package files for bsdutils
      -> http://...deb not found)
     WARNING Binary package ed lacks valid priority, assumed 'extra'

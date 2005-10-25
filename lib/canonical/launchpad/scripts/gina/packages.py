@@ -105,6 +105,8 @@ def read_dsc(package, version, component, archive_root):
     fullpath = os.path.join(filename, "debian", "changelog")
     changelog = None
     if os.path.exists(fullpath):
+        # XXX: this should be moved into changelog.py and simplified,
+        # the code is all there.
         clfile = open(fullpath)
         line = ""
         while not line:
@@ -117,7 +119,7 @@ def read_dsc(package, version, component, archive_root):
         changelog = parse_changelog(clfile)
         clfile.close()
     if not changelog:
-        # This also catches the result of parse_changelog above
+        # This also catches a null result of parse_changelog above
         log.warn("No changelog file found for %s in %s" % (package, filename))
         changelog = None
 
