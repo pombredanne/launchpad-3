@@ -14,9 +14,6 @@ from canonical.lp import initZopeless
 from canonical.launchpad.database import (
     Person, Branch, Revision, RevisionNumber, RevisionParent)
 
-from importd.bzrsync import BzrSync
-
-
 __metaclass__ = type
 __all__ = ["BzrSync"]
 
