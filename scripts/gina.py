@@ -37,7 +37,7 @@ from canonical.launchpad.scripts.gina.handlers import (ImporterHandler,
     MultiplePackageReleaseError, NoSourcePackageError)
 from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
     BinaryPackageData, MissingRequiredArguments, DisplayNameDecodingError,
-    PackageFileProcessError, InvalidVersionError)
+    PoolFileNotFound, InvalidVersionError)
 
 
 
@@ -214,7 +214,7 @@ def import_sourcepackages(packages_map, kdb, package_root,
             log.exception("Unable to create SourcePackageData for %s" % 
                           package_name)
             continue
-        except PackageFileProcessError:
+        except PoolFileNotFound:
             # Problems with katie db stuff of opening files
             log.exception("Error processing package files for %s" %
                           package_name)
@@ -269,7 +269,7 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
                 log.exception("Unable to create BinaryPackageData for %s" % 
                               package_name)
                 continue
-            except PackageFileProcessError:
+            except PoolFileNotFound:
                 # Problems with katie db stuff of opening files
                 log.exception("Error processing package files for %s" %
                               package_name)

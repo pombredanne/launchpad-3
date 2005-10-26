@@ -80,8 +80,7 @@ packages successfully (at least partially):
    * mkvmlinuz, a source package that generates one binary package,
      but which is missing a version field in its Sources file.
      Its breezy package has a version but is missing copyright and changelog.
-   * 3dchess, a source package that generates a binary package, but for
-     some reason has an invalid changelog.
+   * 3dchess, a source package that generates a binary package.
 
 And one completely broken package:
 
@@ -119,21 +118,19 @@ And give her a spin:
 Check STDERR for the errors we expected:
 
     >>> print proc.stderr.read()
-    WARNING No changelog file found for 3dchess in 3dchess-0.8.1
     WARNING Invalid format in db1-compat, assumed '1.0'
     WARNING Source package ed lacks section, assumed 'misc'
     ERROR   Unable to create SourcePackageData for mkvmlinuz
      -> http://...version: None)
     WARNING Invalid urgency in python-pam, None, assumed 'low'
     ERROR   Error processing package files for util-linux
-     -> http://...dsc not in archive...))
-    WARNING No changelog file found for 3dchess in 3dchess-0.8.1
+     -> http://...dsc not in archive)
     ERROR   Error processing package files for bsdutils
      -> http://...deb not found)
     WARNING Binary package ed lacks valid priority, assumed 'extra'
     ERROR   Error processing package files for mount
      -> http://...deb not found)
-    WARNING Binary package python-pam lacks a section... assumed 'misc'
+    WARNING Binary package python-pam lacks a section, assumed 'misc'
     ERROR   Error processing package files for python2.4-pam
      -> http://...deb not found)
     ERROR   Error processing package files for python2.4-sqlite
@@ -148,9 +145,9 @@ Check STDERR for the errors we expected:
     WARNING No license file found for mkvmlinuz in mkvmlinuz-14ubuntu1
     WARNING Invalid urgency in mkvmlinuz, None, assumed 'low'
     ERROR   Error processing package files for python-sqlite
-     -> http://...dsc not in archive...))
+     -> http://...dsc not in archive)
     ERROR   Error processing package files for util-linux
-     -> http://...dsc not in archive...))
+     -> http://...dsc not in archive)
     ERROR   Error processing package files for python-sqlite
      -> http://...deb not found)
     <BLANKLINE>
@@ -375,7 +372,7 @@ packages that failed to import the last time.
     ERROR   Unable to create SourcePackageData for mkvmlinuz
      -> http://...version: None)
     ERROR   Error processing package files for util-linux
-     -> http://...dsc not in archive...))
+     -> http://...dsc not in archive)
     ERROR   Error processing package files for bsdutils
      -> http://...deb not found)
     ERROR   Error processing package files for mount
@@ -391,9 +388,9 @@ packages that failed to import the last time.
     ERROR   Invalid Sources stanza in /tmp/tmp...
      -> http://...bogus\n')
     ERROR   Error processing package files for python-sqlite
-     -> http://...dsc not in archive...))
+     -> http://...dsc not in archive)
     ERROR   Error processing package files for util-linux
-     -> http://...dsc not in archive...))
+     -> http://...dsc not in archive)
     ERROR   Error processing package files for python-sqlite
      -> http://...deb not found)
     <BLANKLINE>
