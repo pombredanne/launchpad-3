@@ -70,7 +70,7 @@ class Distribution(SQLBase):
 
     bounties = RelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
-        intermediateTable='DistroBounty')
+        intermediateTable='DistributionBounty')
     bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
     milestones = MultipleJoin('Milestone', joinColumn='distribution')
     specifications = MultipleJoin('Specification', joinColumn='distribution',
