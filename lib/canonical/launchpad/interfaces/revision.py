@@ -23,7 +23,7 @@ class IRevision(IHasOwner):
     date_created = Datetime(
         title=_("Date Created"), required=True, readonly=True)
     log_body = Attribute("The revision log message.")
-    revision_author = Attribute("The revision author string.")
+    revision_author = Attribute("The revision author identifier.")
     gpgkey = Attribute("The GPG key used to sign the revision.")
     revision_id = Attribute("The unique revision identifier.")
     revision_date = Datetime(

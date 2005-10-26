@@ -145,6 +145,7 @@ ALTER TABLE Revision ADD COLUMN diff_adds int;
 ALTER TABLE Revision ADD COLUMN diff_deletes int;
 ALTER TABLE Revision RENAME COLUMN logmessage TO log_body;
 ALTER TABLE Revision RENAME COLUMN archid TO revision_author;
+ALTER TABLE Revision ALTER COLUMN revision_author SET NOT NULL;
 ALTER TABLE Revision ALTER COLUMN owner SET NOT NULL;
 ALTER TABLE Revision ALTER COLUMN revision_id SET NOT NULL;
 
