@@ -1,8 +1,12 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Builder', 'BuilderSet', 'BuildQueue',
-           'BuildQueueSet']
+__all__ = [
+    'Builder',
+    'BuilderSet',
+    'BuildQueue',
+    'BuildQueueSet'
+    ]
 
 from datetime import datetime
 import xmlrpclib
@@ -84,6 +88,11 @@ class Builder(SQLBase):
                                          mode)
 
         return 'IDLE (%s)' % mode
+
+    def failbuilder(self, reason):
+        """See IBuilder"""
+        self.builderok = False
+        self.failnotes = reason
 
 
 class BuilderSet(object):
