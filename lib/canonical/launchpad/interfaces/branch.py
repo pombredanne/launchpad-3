@@ -129,6 +129,9 @@ class IBranch(IHasOwner):
     def latest_revisions(quantity=10):
         """A specific number of the latest revisions in that branch."""
 
+    def revisions_since(timestamp):
+        """Revisions in the history that are more recent than timestamp."""
+
     # subscription-related methods
     def subscribe(person):
         """Subscribe this person to the branch.

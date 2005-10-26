@@ -4,6 +4,9 @@
 
 __metaclass__ = type
 
+from datetime import datetime, timedelta
+from pytz import UTC
+
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import IBranch, IBranchSet, ILaunchBag
@@ -96,6 +99,11 @@ class BranchView:
             if subscription.person.id == self.user.id:
                 return subscription
         return None
+
+    def count_revisions(self, days=30):
+        """Number of revisions committed during the last N days."""
+        timestamp = datetime.now(UTC) - timedelta(days=days)
+        return self.context.revisions_since(timestamp).count()
 
 
 class BranchEditView(SQLObjectEditView):

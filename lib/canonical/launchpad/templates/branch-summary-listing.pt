@@ -16,10 +16,6 @@
 </span>
 <span tal:replace="context/revision_count">35</span> revisions,
 
-<span class="dummy">
-1477 lines.
-</span>
-
 Status: <span tal:replace="context/lifecycle_status/title">Ready</span><br />
 
 <span class="dummy">
@@ -27,8 +23,11 @@ Status: <span tal:replace="context/lifecycle_status/title">Ready</span><br />
   <img src="/++resource++favorite_icon.gif" />
   <img src="/++resource++favorite_icon.gif" />
   <img src="/++resource++favorite_icon.gif" />
-  31 changes in the past month - 3 comments<br />
 </span>
+
+<span tal:replace="view/count_revisions">31</span> changes in the past month. 
+
+<span>- 3 comments<br /></span>
 
 <a tal:attributes="href context/home_page"
    tal:content="context/home_page">http://wiki.launchpad.net</a>

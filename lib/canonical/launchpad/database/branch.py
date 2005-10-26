@@ -7,10 +7,11 @@ from zope.interface import implements
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin)
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import IBranch, IBranchSet
+from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.database.revisionnumber import RevisionNumber
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 
@@ -88,6 +89,14 @@ class Branch(SQLBase):
     def latest_revisions(self, quantity=10):
         return RevisionNumber.selectBy(
             branchID=self.id, orderBy='-rev_no').limit(quantity)
+
+    def revisions_since(self, timestamp):
+        return Revision.select('Revision.id=RevisionNumber.revision AND '
+                               'RevisionNumber.branch = %d AND '
+                               'Revision.revision_date > %s' %
+                               (self.id, quote(timestamp)),
+                               orderBy='-RevisionNumber.rev_no',
+                               clauseTables=['RevisionNumber'])
 
     def createRelationship(self, branch, relationship):
         BranchRelationship(subject=self, object=branch, label=relationship)

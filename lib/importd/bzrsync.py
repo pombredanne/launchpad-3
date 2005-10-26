@@ -24,6 +24,7 @@ class BzrSync:
     def __init__(self, trans_manager, branch_id):
         self.trans_manager = trans_manager
         self.db_branch = Branch.get(branch_id)
+        print "url = %r" % (self.db_branch.url,)
         self.bzr_branch = BzrBranch.open(self.db_branch.url)
         self.bzr_history = self.bzr_branch.revision_history()
         self._seen_ids = {}
