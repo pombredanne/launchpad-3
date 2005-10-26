@@ -413,6 +413,7 @@
       schema="canonical.launchpad.interfaces.IBranch"
       fields="product name owner author title url home_page lifecycle_status summary"
       class="canonical.launchpad.browser.BranchAddView"
+      facet="code"
       keyword_arguments="product name owner author title url home_page lifecycle_status summary"
       permission="launchpad.AnyPerson"
       template="../templates/person-branch-add.pt">
