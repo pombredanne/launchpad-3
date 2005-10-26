@@ -20,9 +20,8 @@
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
   <p metal:fill-slot="extra_info" class="documentDescription">
-    Use this form to request a review of a specification by a specific
-    person. You can send them a brief message to tell them what,
-    specifically, you need them to do.
+    You can request a review of a specification by a specific person,
+    including a brief message to explain what you need them to do.
   </p>
 
   </div>

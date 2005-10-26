@@ -19,10 +19,10 @@ from sqlobject import (
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.database.build import Build
 
 from canonical.launchpad.interfaces import (
-    IBuilder, IBuilderSet, IBuildQueue, IBuildQueueSet, NotFoundError)
+    IBuilder, IBuilderSet, IBuildQueue, IBuildQueueSet, NotFoundError
+    )
 
 from canonical.lp.dbschema import EnumCol, BuildStatus
 
@@ -85,11 +85,6 @@ class Builder(SQLBase):
 
         return 'IDLE (%s)' % mode
 
-    def lastBuilds(self, limit=10):
-        """See IBuilder"""
-        return Build.select("builder=%s" % sqlvalues(self.id), limit=limit,
-                            orderBy="-datebuilt")
-
 
 class BuilderSet(object):
     """See IBuilderSet"""
@@ -126,9 +121,12 @@ class BuilderSet(object):
         """See IBuilderSet."""
         return Builder.select()
 
-    def getBuild(self, id):
+    def getBuildersByArch(self, arch):
         """See IBuilderSet."""
-        return Build.get(id)
+        return Builder.select('builder.processor = processor.id '
+                              'AND processor.family = %d'
+                              % arch.processorfamily.id,
+                              clauseTables=("Processor",))
 
 
 class BuildQueue(SQLBase):
@@ -220,3 +218,18 @@ class BuildQueueSet(object):
         """See IBuildQueueSet."""
         return BuildQueue.select('buildstart is not null')
     
+    def calculateCandidates(self, archreleases, state):
+        """See IBuildQueueSet."""
+        alternatives = ["build.distroarchrelease=%d"
+                        % d.id for d in archreleases]
+
+        clause = " OR ".join(alternatives)
+
+        if clause == '':
+            clause = "1=1";
+
+        return BuildQueue.select("buildqueue.build = build.id AND "
+                                 "build.buildstate = %d AND "
+                                 "buildqueue.builder IS NULL AND (%s)"
+                                 % (state.value, clause),
+                                 clauseTables=['Build'])

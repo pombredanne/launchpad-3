@@ -27,7 +27,7 @@
       <span tal:replace="context/timezone">UTC</span>
       <i tal:condition="not: context/timezone">None given</i><br />
 
-      <b>Ubuntite!</b>
+      <b>Ubuntite:</b>
       <tal:block condition="context/ubuntite">Yes</tal:block>
       <tal:block condition="not: context/ubuntite">Not yet</tal:block>
       <br />

@@ -20,17 +20,15 @@
 
   <div metal:fill-slot="main">
 
-    <h1 i18n:translate="">Rosetta Translation Overview for
+    <h1 i18n:translate="">Translation overview for
       <span tal:replace="context/displayname" i18n:name="product_name">
         product displayname
       </span>
     </h1>
 
-    <!-- indicate if no templates are registered for this product that it is
-    possible to upload a po template -->
-    <tal:block condition="not: context/primary_translatable">
+    <tal:notemplatesregistered condition="not: context/primary_translatable">
 
-        <h2 i18n:translate="">Translation Setup Required</h2>
+        <h2 i18n:translate="">Translation setup required</h2>
 
         <p class="portalMessage" i18n:translate="">Administrator help
         needed. <span tal:replace="context/displayname"
@@ -49,9 +47,9 @@
           imported.
         </p>
 
-    </tal:block> <!-- not: context/primary_translatable -->
+    </tal:notemplatesregistered>
 
-    <tal:block condition="context/primary_translatable"
+    <tal:translatable condition="context/primary_translatable"
                define="target context/primary_translatable">
       
       <p>
@@ -64,7 +62,7 @@
 
       <div tal:replace="structure target/@@+potlist" />
 
-    </tal:block> <!-- context/primary_translatable -->
+    </tal:translatable>
 
   </div>
 

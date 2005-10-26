@@ -25,7 +25,7 @@
     link it to distribution packages.
   </p>
 
-  <tal:block repeat="series context/serieslist">
+  <tal:series repeat="series context/serieslist">
     
     <h2>Release Series: <span tal:replace="series/name">main</span></h2>
 
@@ -65,7 +65,7 @@
       register it now.</a>
     </p>
 
-  </tal:block> <!-- /series -->
+  </tal:series>
 
 </div> 
 </body>

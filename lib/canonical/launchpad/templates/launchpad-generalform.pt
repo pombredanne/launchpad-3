@@ -54,14 +54,12 @@
         </div>
 
       </div>
-      <div class="row">
-        <div class="controls"><hr />
+      <div class="actions">
           <input type="submit"
                  tabindex="1000"
                  value="Continue"
                  name="FORM_SUBMIT"
                  i18n:attributes="value continue-button" />
-        </div>
       </div>
 
       <div class="row" 

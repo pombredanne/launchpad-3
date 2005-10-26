@@ -171,11 +171,6 @@ def fti(con, table, columns, configuration=DEFAULT_CONFIG):
         con.rollback()
         execute(con, "ALTER TABLE %s ADD COLUMN fti tsvector" % table)
 
-    # Create the fti index
-    execute(con, "CREATE INDEX %s ON %s USING gist(fti)" % (
-        index, table
-        ))
-
     # Create the trigger
     columns_and_weights = []
     for column, weight in columns:
@@ -190,6 +185,11 @@ def fti(con, table, columns, configuration=DEFAULT_CONFIG):
     # Rebuild the fti column, as the information it contains may be out
     # of date with recent configuration updates.
     execute(con, r"""UPDATE %s SET fti=NULL""" % table)
+
+    # Create the fti index
+    execute(con, "CREATE INDEX %s ON %s USING gist(fti)" % (
+        index, table
+        ))
 
     con.commit()
 

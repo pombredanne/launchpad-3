@@ -14,10 +14,10 @@
 
         <div metal:define-macro="formbody">
 
-          <h3 tal:condition="view/label"
+          <h1 tal:condition="view/label"
               tal:content="view/label"
               metal:define-slot="heading"
-              >Edit something</h3>
+              >Edit something</h1>
 
           <p tal:define="status view/update"
              tal:condition="status"

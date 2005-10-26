@@ -22,6 +22,12 @@
 
 /* Launchpad classes */
 
+.discreet {
+  font-size: smaller;
+  background: none;
+  color: #666;
+}
+
 .highlighted {
   background-color: #f7f9fa;
   border: 1px dotted #8cacbb;
@@ -680,8 +686,9 @@ table.listing {
   border: none;
   width: 100%;
 }
-table.listing, table.listing tbody {
-  border-bottom: 1px solid #8cacbb;
+table.listing, table.listing>tbody {
+  border: solid #8cacbb;
+  border-width: 1px 0;
 }
 table.listing th, table.listing td {
   background: none;
@@ -706,7 +713,7 @@ table.listing>tr.note, table.listing>tbody>tr.note {
 table.listing>thead, table.listing>thead>tr>th {
   border: 1px solid #8cacbb;
 }
-table.listing>thead>tr>td {
+table.listing>thead>tr>td, table.listing table td {
   border: none;
 }
 
@@ -767,6 +774,9 @@ input[type="radio"] {
   margin-bottom: 1em;
   cursor: inherit;
 }
+.formHelp th {
+  font-weight: normal;
+}
 
 .portlet, #portal-top, #portal-footer {
   font-size: smaller;
@@ -774,9 +784,13 @@ input[type="radio"] {
 
 legend {
   background: none;
+  font-size: 100%;
 }
 li {
   margin-bottom: 0;
+}
+p {
+  line-height: 1.25em;
 }
 
 #portal-personaltools .portalUser {
@@ -997,6 +1011,10 @@ input[type="image"] {
 .actions {
   margin: 0.5em 0;
 }
+.unavailable {
+  color: #999;
+  background: none;
+}
 .list {
   text-align: left;
 }
@@ -1051,6 +1069,7 @@ table.data>tbody>tr>th, table.data>tbody>tr>td, table.data>tfoot>tr>th,table.dat
   padding: 0.25em 0.125em 0.25em;
 }
 th.icon, td.icon {
+  vertical-align: top;
   width: 1px;
 }
 th.icon.left, td.icon.left {

@@ -233,7 +233,8 @@ preferred email address.
 >>> empty.karma = 10000
 >>> flush_database_updates()
 >>> [(person.name, person.karma) for person in personset.topPeople()]
-[(u'name12', 101), (u'carlos', 0), (u'cprov', 0), (u'daf', 0), (u'ddaa', 0)]
+[(u'name12', 101), (u'jordi', 0), (u'marilize', 0), (u'no-priv', 0),
+(u'kreutzm', 0)]
 
 
 People can have karma in Launchpad

@@ -319,15 +319,16 @@ class BugTaskFormatterAPI(ObjectFormatterAPI):
         else:
             priority_title = None
 
-        if not priority_title or priority_title == 'wontfix':
+        if not priority_title:
+            return '<img alt="(no priority)" title="no priority" src="/@@/bug" />'
+        elif priority_title == 'wontfix':
             # Special-case Wontfix by returning the "generic" bug icon
             # because we actually hope to eliminate Wontfix
             # entirely. See
             # https://wiki.launchpad.canonical.com/SimplifyingMalone
-            return '<img alt="(wontfix priority)" src="/++resource++bug" />'
+            return '<img alt="(wontfix priority)" title="wontfix" src="/@@/bug" />'
         else:
-            return '<img alt="(%s priority)" src="/++resource++bug-%s" />' % (
-                priority_title, priority_title)
+            return '<img alt="(%s priority)" title="%s priority" src="/@@/bug-%s" />' % (priority_title, priority_title, priority_title)
 
 
 class MilestoneFormatterAPI(ObjectFormatterAPI):

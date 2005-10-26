@@ -18,26 +18,23 @@
 
   <h1>Binary Package Search</h1>
 
-  <p class="documentDescription">
-    Use this form to search through the
-    binary packages in <span tal:replace="context/displayname" />. This search
-    will include package summaries and descriptions.
-  </p>
+    <form name="search" method="GET">
 
-  <form name="search" method="GET">
-    
-    <input type="text" name="text" size="35"
-           tal:attributes="value request/text|nothing" />
-
-    <input type="submit" value="Search"/>
-
-    <p class="discreet">
-      Enter search words here. For best results, keep the number of search
-      terms short. Try with only the most important word or two
-      first.
-    </p>
-
-  </form>
+      <div>
+        <label for="name">Search binary packages in
+        <span tal:replace="context/title" />:
+      </div>
+      <div>    
+      <input type="text"
+        name="name"
+        size="35"
+        tal:attributes="value request/name|nothing"
+      />
+      <input type="submit" value="Search"/>
+      <div class="discreet">
+        Includes package names and descriptions.
+      </div>
+    </form>
 
   <tal:searching condition="view/searchrequested">
 
@@ -68,14 +65,13 @@
       <span tal:replace="context/displayname">hoary</span>.</i>
 
     </tal:no_matches>
-
   </tal:searching>
 
 
   <tal:block tal:replace="nothing"
              tal:define="bn view/binaryPackagesBatchNavigator;
                          prev_url bn/prevBatchURL;
-			 next_url bn/nextBatchURL;"
+                         next_url bn/nextBatchURL;"
              tal:condition="request/text|nothing">
     <!-- sabdfl 24/10/2005 this is the old searching, largely disabled in
          favour of the new FTQ based approach, but i've left this stuff here
@@ -104,24 +100,22 @@
     <td align="center">
     <fieldset tal:condition="python:prev_url or next_url">
     <div>
-    	  <table>
-	  <tr>
-	  <!-- <th condition="not: prev_url"><< prev</th> -->
+      <table>
+        <tr>
           <th tal:condition="prev_url">
-	       <a tal:attributes="href prev_url"><b><< Prev</b></a>
-	  </th>
-          <th tal:repeat="page_link bn/batchPageURLs">
-	     <a tal:attributes="href python:page_link.values()[0]"
-                tal:content="python:page_link.keys()[0]"></a>
-	  </th>
-          <th tal:condition="next_url" >
-	     <a tal:attributes="href next_url"><b>Next >></b></a>
+            <a tal:attributes="href prev_url"><b><< Prev</b></a>
           </th>
-          <!-- <th condition="not: next_url">next >></th> -->
-          </tr>
-	  </table>
-     </div>
-     </fieldset>
+          <th tal:repeat="page_link bn/batchPageURLs">
+            <a tal:attributes="href python:page_link.values()[0]"
+               tal:content="python:page_link.keys()[0]"></a>
+          </th>
+          <th tal:condition="next_url" >
+            <a tal:attributes="href next_url"><b>Next >></b></a>
+          </th>
+        </tr>
+      </table>
+    </div>
+    </fieldset>
     </td>
     </tr>
   </table>

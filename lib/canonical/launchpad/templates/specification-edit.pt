@@ -14,14 +14,9 @@
 
   <div metal:fill-slot="main">
 
-    <div metal:use-macro="context/@@launchpad_editform/editform">
-
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Edit the spec summary, title and URL using the form below.
-    </div>
+    <div metal:use-macro="context/@@launchpad_editform/editform" />
 
   </div>
     
-</div>
 </body>
 </html>

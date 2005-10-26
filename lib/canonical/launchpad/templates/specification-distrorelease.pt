@@ -19,11 +19,11 @@
 
     <div metal:use-macro="context/@@launchpad_editform/editform">
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Use this form to target this feature specification for implementation
-      in a specific release of
-      <span tal:replace="context/distribution/displayname">Ubuntu</span>.
-    </div>
+    <p metal:fill-slot="extra_info">
+      Select the release of
+      <span tal:replace="context/distribution/displayname">Ubuntu</span>
+      for which this specification should be implemented.
+    </p>
 
   </div>
     

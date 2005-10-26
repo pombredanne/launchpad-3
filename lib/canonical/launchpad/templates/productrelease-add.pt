@@ -20,16 +20,11 @@
             tal:content="view/label"
             metal:fill-slot="heading">Heading from ZCML label="xxx"</h1>
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Please give the details of the new release. If possible, a URL to the
-      release tarball will allow us to include this release in our Launchpad
-      archive.
-    </div>
+    <p metal:fill-slot="extra_info">
+      Including an <abbr>URL</abbr> to the release tarball
+      will let Launchpad include the release in its archive.
+    </p>
 
-  </div>
-
-  <div>
-    Thank you for registering this new release in the Launchpad!
   </div>
 
 </div>

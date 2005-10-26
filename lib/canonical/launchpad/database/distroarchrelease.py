@@ -1,10 +1,10 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = [
-    'DistroArchRelease',
-    'PocketChroot',
-    ]
+__all__ = ['DistroArchRelease',
+           'DistroArchReleaseSet',
+           'PocketChroot'
+           ]
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -18,14 +18,17 @@ from canonical.database.constants import DEFAULT
 
 from canonical.launchpad.interfaces import (
     IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot,
-    IHasBuildRecords, IBinaryPackageName)
+    IHasBuildRecords, IBinaryPackageName, IDistroArchReleaseSet
+    )
 
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.distroarchreleasebinarypackage import (
     DistroArchReleaseBinaryPackage)
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.publishing import BinaryPackagePublishing
+from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.build import Build
+from canonical.launchpad.database.processor import Processor
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
@@ -52,6 +55,17 @@ class DistroArchRelease(SQLBase):
 
     def __getitem__(self, name):
         return self.getBinaryPackage(name)
+
+    @property
+    def default_processor(self):
+        """See IDistroArchRelease"""
+        return self.processors[0]
+        
+    @property
+    def processors(self):
+        """See IDistroArchRelease"""
+        return Processor.selectBy(familyID=self.processorfamily.id,
+                                  orderBy='id')
 
     @property
     def title(self):
@@ -166,7 +180,28 @@ class DistroArchRelease(SQLBase):
                             name.id))+pocketclause,
             clauseTables = ['BinaryPackageRelease'])
         return shortlist(published)
+        
+    def findDepCandidateByName(self, name):
+        """See IPublishedSet."""
+        return PublishedPackage.selectOneBy(
+            binarypackagename=name, distroarchreleaseID=self.id
+            )
 
+
+class DistroArchReleaseSet:
+    """This class is to deal with DistroArchRelease related stuff"""
+
+    implements(IDistroArchReleaseSet)
+
+    def __iter__(self):
+        return iter(DistroArchRelease.select())
+        
+    def get(self, dar_id):
+        """See canonical.launchpad.interfaces.IDistributionSet."""
+        return DistroArchRelease.get(dar_id)
+
+    def count(self):
+        return DistroArchRelease.select().count()
 
 class PocketChroot(SQLBase):
     implements(IPocketChroot)

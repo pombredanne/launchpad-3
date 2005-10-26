@@ -172,6 +172,7 @@ class FileUploadClient:
         try:
             # Send command
             self._sendLine('STORE %d %s' % (size, name))
+            self._sendLine('Content-type: %s' % contentType)
 
             # Send blank line
             self._sendLine('')

@@ -7,13 +7,11 @@ __all__ = [
     'DistributionSetNavigation',
     'DistributionFacets',
     'DistributionView',
-    'DistributionBugsView',
     'DistributionFileBugView',
     'DistributionSetView',
     'DistributionSetAddView',
     ]
 
-from zope.interface import implements
 from zope.component import getUtility
 from zope.app.form.browser.add import AddView
 from zope.event import notify
@@ -21,15 +19,14 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSet, IPerson, IBugTaskSearchListingView,
-    IBugSet, IPublishedPackageSet, ISourcePackageNameSet, NotFoundError)
+    IDistribution, IDistributionSet, IPerson, IBugSet, IPublishedPackageSet,
+    ISourcePackageNameSet, NotFoundError)
 from canonical.launchpad.browser.addview import SQLObjectAddView
-from canonical.launchpad.browser import BugTaskSearchListingView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
+    StandardLaunchpadFacets, Link, canonical_url, ApplicationMenu,
     enabled_with_permission, GetitemNavigation, stepthrough, stepto)
 
 
@@ -235,29 +232,9 @@ class DistributionView(BuildRecordsView):
         return self._results
 
 
-class DistributionBugsView(BugTaskSearchListingView):
-
-    implements(IBugTaskSearchListingView)
-
-    def __init__(self, context, request):
-        BugTaskSearchListingView.__init__(self, context, request)
-        self.milestone_widget = None
-
-    def task_columns(self):
-        """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
-        return [
-            "select", "id", "title", "package", "status", "submittedby",
-            "assignedto"]
-
-
 class DistributionFileBugView(SQLObjectAddView):
 
     __used_for__ = IDistribution
-
-    def __init__(self, context, request):
-        self.request = request
-        self.context = context
-        AddView.__init__(self, context, request)
 
     def createAndAdd(self, data):
         # add the owner information for the bug

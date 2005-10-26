@@ -9,29 +9,37 @@ __metaclass__ = type
 
 import sys
 import logging
+from optparse import OptionParser
+
+from zope.component import getUtility
 
 from canonical.lp import initZopeless
-from canonical.launchpad.database import DistroArchRelease
+from canonical.launchpad.interfaces import IDistroArchReleaseSet
 
 from canonical.launchpad.scripts.builddmaster import BuilddMaster
-
 from canonical.launchpad.scripts.lockfile import LockFile
-
+from canonical.launchpad.scripts import (
+    execute_zcml_for_scripts, logger_options, logger
+    )
 
 _default_lockfile = '/var/lock/buildd-master.lock'
-_default_logfilename = '/var/tmp/queuebuilder.log'
 
 
-def rebuildQueue(logger, tm):
+def rebuildQueue(log):
     """Look for and initialise new build jobs."""
-
-    buildMaster = BuilddMaster(logger, tm)
+    # XXX cprov 20051019
+    # retrive the user infromation from the config file
+    
+    # setup a transaction manager
+    tm = initZopeless(dbuser='fiera')
+    
+    buildMaster = BuilddMaster(log, tm)
 
     # Simple container
     distroreleases = set()
         
     # For every distroarchrelease we can find; put it into the build master
-    for archrelease in DistroArchRelease.select():
+    for archrelease in getUtility(IDistroArchReleaseSet):
         distroreleases.add(archrelease.distrorelease)
         buildMaster.addDistroArchRelease(archrelease)
         
@@ -47,25 +55,22 @@ def rebuildQueue(logger, tm):
                 
     #Rescore the NEEDSBUILD properly
     buildMaster.sanitiseAndScoreCandidates()
-
-def make_logger(loglevel=logging.WARN):
-    """Return a logger object for logging with."""
-    logger = logging.getLogger("buildd-queue-builder")
-    handler = logging.StreamHandler(strm=sys.stderr)
-    handler.setFormatter(
-        logging.Formatter(fmt='%(asctime)s %(levelname)s %(message)s'))
-    logger.addHandler(handler)
-    logger.setLevel(loglevel)
-    return logger
-
-
+ 
 if __name__ == '__main__':
-    # setup a transaction manager
-    tm = initZopeless(dbuser='fiera')
+    parser = OptionParser()
+    logger_options(parser)
+    (options, arguments) = parser.parse_args()
 
-    logger = make_logger(loglevel=logging.DEBUG)
-    locker = LockFile(_default_lockfile)
-    
+    if arguments:
+        parser.error("Unhandled arguments %r" % arguments)
+
+    execute_zcml_for_scripts()
+
+    log = logger(options, 'queuebuilder')
+
+    log.info("Rebuilding Build Queue.")
+
+    locker = LockFile(_default_lockfile, logger=log)
     try:
         locker.acquire()
     except OSError:
@@ -73,8 +78,8 @@ if __name__ == '__main__':
         sys.exit(1)
 
     try:
-        rebuildQueue(logger, tm)
+        rebuildQueue(log)
     finally:
         locker.release()
     
-    logger.info("Buildd Queue Rebuilt.")
+    log.info("Buildd Queue Rebuilt.")

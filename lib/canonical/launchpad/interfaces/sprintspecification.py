@@ -18,7 +18,7 @@ class ISprintSpecification(Interface):
     """A link between a Sprint and a Specification."""
 
     sprint = Choice(title=_('Sprint'), required=True, readonly=True,
-        description=_("Please select the sprint at which this spec will "
+        description=_("The meeting or sprint at which this specification will "
         "be discussed or implemented."), vocabulary='Sprint')
     specification = Int(title=_('Specification'), required=True,
         readonly=True)

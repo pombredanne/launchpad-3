@@ -77,7 +77,7 @@ watch can be edited.
   ... """)
   HTTP/1.1 200 Ok
   ...
-            <h3>Change Bug Watch</h3>
+            <h1>Change Bug Watch</h1>
   ...
 
 

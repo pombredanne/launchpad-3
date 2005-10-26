@@ -117,7 +117,7 @@
     for="canonical.launchpad.interfaces.ISprintSet"
     schema="canonical.launchpad.interfaces.ISprint"
     class="canonical.launchpad.browser.SprintAddView"
-    label="Register A Meeting"
+    label="Register a Meeting"
     permission="launchpad.AnyPerson"
     fields="owner name title summary home_page time_zone time_starts
             time_ends"

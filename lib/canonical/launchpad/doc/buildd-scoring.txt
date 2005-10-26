@@ -57,7 +57,7 @@ Let's start the run-time tests:
 
   >>> LOCAL_NOW = datetime.datetime.now(pytz.timezone('UTC'))
 
- * 100 points for component 'main', 
+ * 1000 points for component 'main', 
  * 15 points for urgency HIGH.
  * nothing for queue_time
  * 1 point for ONE satisfied dependency
@@ -71,10 +71,10 @@ scoreBuildQueueEntry() method.
 
   >>> bm.scoreBuildQueueEntry(bq0)
   >>> bq0.name, bq0.lastscore
-  ('Null', 116)
+  ('Null', 1016)
 
 
- * 100 points for main components
+ * 1000 points for main components
  * 5 point for priority LOW
  * nothing for queue_time
  * -10 points for 1 unsatisfied dependency
@@ -86,10 +86,10 @@ scoreBuildQueueEntry() method.
   WARNING:root:MISSED DEP: [('mozilla-firefox', '1.0', '=')] in warty i386
 
   >>> bq1.name, bq1.lastscore
-  ('Eins', 95)
+  ('Eins', 995)
 
 
-* 50 points for universe component
+* 250 points for universe component universe
 * 15 points for priority HIGH
 * 5 points for queue_time ( > 300 seconds)
 * -10 points for 1 unsatisfied dependency
@@ -101,10 +101,10 @@ scoreBuildQueueEntry() method.
   WARNING:root:MISSED DEP: [('foo', '1.0', '=')] in warty i386
 
   >>> bq2.name, bq2.lastscore
-  ('Zwei', 60)
+  ('Zwei', 260)
 
 
-* 20 point for component multiverse
+* nothing for component multiverse
 * 10 points for MEDIUM priority
 * 10 points for queue_time ( > 900 seconds)
 * 1 point for ONE satisfied dependency 
@@ -114,10 +114,10 @@ scoreBuildQueueEntry() method.
   ...                      'multiverse', hoary386, time3, 'pmount (= 0.1-1)')
   >>> bm.scoreBuildQueueEntry(bq3)
   >>> bq3.name, bq3.lastscore
-  ('Drei', 41)
+  ('Drei', 21)
 
 
-* 100 points for main component
+* 1000 points for main component
 * 20 points for EMERGENCY priority
 * 15 points for queue_time ( > 1800 seconds)
 * 1 point for 1 satisfied dependency
@@ -131,10 +131,9 @@ scoreBuildQueueEntry() method.
   WARNING:root:MISSED DEP: [('mozilla-firefox', '0.9', '=')] in hoary i386
 
   >>> bq4.name, bq4.lastscore
-  ('Vier', 126)
+  ('Vier', 1026)
 
-
-* 80 point for restricted component
+* 750 point for restricted component
 * 5 point for LOW priority
 * 20 points for queue_time ( > 3600 seconds)
 * -20 points for TWO unsatisfied dependency
@@ -148,4 +147,4 @@ scoreBuildQueueEntry() method.
   WARNING:root:MISSED DEP: [('pmount', '0.2-1', '=')] in warty i386
 
   >>> bq5.name, bq5.lastscore
-  ('Funf', 85)
+  ('Funf', 755)

@@ -9,12 +9,11 @@
         <p>This is the latest changelog we have on file for this source
         package:</p>
   <BLANKLINE>
-        <pre>
-  <!-- No identation on pre structure -->
+  <pre>
   This is a placeholder changelog for pmount 0.1-2 
   <BLANKLINE>
   This is a placeholder changelog for pmount 0.1-1 
   <BLANKLINE>
   <BLANKLINE>
-        </pre>
+  </pre>
   ...

@@ -74,4 +74,17 @@
 
 </facet>
 
+    <!-- DistroArchReleaseSet -->
+    <content class="canonical.launchpad.database.DistroArchReleaseSet">
+        <allow interface="canonical.launchpad.interfaces.IDistroArchReleaseSet"/>
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.DistroArchReleaseSet"
+        provides="canonical.launchpad.interfaces.IDistroArchReleaseSet">
+        <allow interface="canonical.launchpad.interfaces.IDistroArchReleaseSet" />
+    </securedutility>
+
+
+
 </configure>

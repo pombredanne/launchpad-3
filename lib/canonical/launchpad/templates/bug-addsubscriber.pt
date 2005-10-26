@@ -7,12 +7,6 @@
 
 <body>
 
-<div tal:replace="nothing">
-  This page uses the launchpad-addform.pt METAL. Copy this page to your
-  object-add.pt and then tweak the various bits below to make it all look
-  nice.
-</div>
-
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
@@ -26,11 +20,10 @@
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Select someone to subscribe to the bug using the space below. That
-      person will receive copies of all bug email, so please be certain they
-      really will want to be subscribed.
-    </div>
+    <p metal:fill-slot="extra_info">
+      You should only subscribe someone who really will want to receive
+      e-mail notifications of changes to the bug report.
+    </p>
 
   </div>
 

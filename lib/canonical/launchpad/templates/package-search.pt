@@ -3,87 +3,82 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<body>
+  <body>
 
-<div metal:fill-slot="main" tal:define="distro_title view/launchbag/distribution/title">
+    <div metal:fill-slot="main" tal:define="distro_title view/launchbag/distribution/title">
 
-    <h1>Packages published in <span tal:replace="distro_title" /></h1>
+      <h1>Packages published in <span tal:replace="distro_title" /></h1>
 
-    <form method="POST" action="." name="main">
-    Package: <input type="text" name="text">
-    <input type="submit" value="Search">
-    <script>
-    <!--
-        document.forms['main'].text.focus();
-    //-->
-    </script>
-    </form>
+      <form method="POST" action="." name="main">
+      Package: <input type="text" name="text">
+      <input type="submit" value="Search">
+      <script>
+      <!--
+          document.forms['main'].text.focus();
+      //-->
+      </script>
+      </form>
 
-    <div tal:condition="view/searchrequested"
-         tal:omit-tag>
+      <tal:search condition="view/searchrequested">
 
-      <div tal:define="binpkgs view/searchresults">
-        <div tal:condition="view/request/form/text" tal:omit-tag>
-            <h2 tal:condition="not:binpkgs" tal:omit-tag>
-                No packages matching "<span
-                tal:replace="view/request/form/text" />" have been published
-                in <span tal:replace="distro_title" />.
-            </h2>
-        </div>
+        <div tal:define="binpkgs view/searchresults">
+          <div tal:condition="view/request/form/text" tal:omit-tag>
+              <h2 tal:condition="not:binpkgs" tal:omit-tag>
+                  No packages matching "<span
+                  tal:replace="view/request/form/text" />" have been published
+                  in <span tal:replace="distro_title" />.
+              </h2>
+          </div>
 
-        <span tal:repeat="package binpkgs" tal:omit-tag>
+          <tal:package repeat="package binpkgs">
             
-            <h2 tal:content="package/name" />
+              <h2 tal:content="package/name" />
 
-            <div style="margin-left: 100px;"> 
-            <p tal:content="package/summary"
-               class="documentDescription" />
+              <div style="margin-left: 100px;"> 
+              <p tal:content="package/summary"
+                 class="documentDescription" />
 
-            <p tal:content="package/description" />
-            <table>
-               <tr tal:repeat="release package/distroreleases">
-                   <td tal:content="release/distroreleasename" />
-                   <td>
-                   <table>
-                       <tr tal:repeat="version release/versions">
-                           <td tal:content="version/version" /> 
-                           <td>
-                               <span tal:repeat="build version/builds"
-                               tal:omit-tag>
-				   <!-- If searching from distribution context -->
-				   <a
-				   tal:condition="not:view/distrorelease"
-                                   tal:content="build/processorfamilyname"
-                                   tal:attributes="href
-				   string:../${release/distroreleasename}/${build/distroarchrelease/architecturetag}/${package/name}"
-                                   />,
-				   <!-- If searching from distrorelease context -->
-                                   <a
-				   tal:condition="view/distrorelease"
-                                   tal:content="build/processorfamilyname"
-                                   tal:attributes="href
-				   string:../${build/distroarchrelease/architecturetag}/${package/name}"
-                                   />,
-				   <!-- Daniel Debonzi 20050105-->
-				   <!-- Old link. Changed by me until we discuss if  -->
-				   <!-- its gonna be used like this. -->
-				   <!-- string:/soyuz/packages/${build/id}" -->
-                                </span>
-                           </td>
-                        </tr>
+              <p tal:content="package/description" />
+              <table>
+                <tr tal:repeat="release package/distroreleases">
+                  <td tal:content="release/distroreleasename" />
+                  <td>
+                    <table>
+                      <tr tal:repeat="version release/versions">
+                        <td tal:content="version/version" /> 
+                        <td>
+                          <tal:build repeat="build version/builds">
+                            <!-- If searching from distribution context -->
+                            <a
+                              tal:condition="not:view/distrorelease"
+                              tal:content="build/processorfamilyname"
+                              tal:attributes="href
+                              string:../${release/distroreleasename}/${build/distroarchrelease/architecturetag}/${package/name}"
+                            />,
+                            <!-- If searching from distrorelease context -->
+                            <a
+                              tal:condition="view/distrorelease"
+                              tal:content="build/processorfamilyname"
+                              tal:attributes="href
+                              string:../${build/distroarchrelease/architecturetag}/${package/name}"
+                            />,
+                				    <tal:XXX condition="nothing">
+                				      Daniel Debonzi 20050105:
+                				      Old link. Changed by me until we discuss if
+                              its going to be used like this.
+                				      string:/soyuz/packages/${build/id}"
+                				    </tal:XXX>
+                          </tal:build>
+                        </td>
+                      </tr>
                     </table>
-                    </td>
+                  </td>
                 </tr>
-            </table>
-
+              </table>
             </div>
-
-
-        </span>
-      </div>
-
+          </tal:package>
+        </div>
+      </tal:search>
     </div>
-
-</div>
-</body>
+  </body>
 </html>

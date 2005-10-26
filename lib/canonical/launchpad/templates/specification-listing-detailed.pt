@@ -1,6 +1,12 @@
-<img src="/++resource++spec" />
-<a tal:attributes="href context/fmt:url"
-   tal:content="context/title">Spec Title Here</a>
+<table style="width: 100%;">
+  <tbody>
+    <tr>
+      <td class="icon left">
+        <img alt="" src="/++resource++spec" />
+      </td>
+      <td>
+        <strong><a tal:attributes="href context/fmt:url"
+        tal:content="context/title">Spec Title Here</a></strong>
 <tal:block condition="context/milestone">
   <img src="/++resource++target" />&nbsp;<a
      tal:attributes="href context/milestone/fmt:url"
@@ -38,4 +44,7 @@
           tal:condition="view/review/queuemsg">Msg goes here</span>
     </b>
   </tal:block>
-</div>
+      </td>
+    </tr>
+  </tbody>
+</table>

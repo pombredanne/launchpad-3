@@ -111,6 +111,10 @@
             </td>
           </tr>
         </table>
+        <div class="actions">
+          <input type="submit" value="Change" name="editactive" />
+          <input type="submit" value="Deactivate" name="editactive" />
+        </div>
 
         </form>
       </div>
@@ -191,8 +195,12 @@
         <h1>Proposed Member</h1>
         <p>
           <metal:person use-macro="template/macros/person" />
-          has requested to join this team.
+          wants to join this team.
+          If this is okay, select a membership expiration date if necessary
+          before choosing <samp>Approve</samp>.
         </p>
+        <p class="portalMessage" tal:condition="view/errormessage"
+           tal:content="view/errormessage" />
 
         <form action="" method="POST" name="editproposed">
           <table>

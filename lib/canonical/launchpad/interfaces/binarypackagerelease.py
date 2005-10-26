@@ -68,6 +68,12 @@ class IBinaryPackageRelease(Interface):
         and attach the provided library file alias (file).
         """
 
+    def publish(priority, status, pocket, embargo, distroarchrelease=None):
+        """Publish this BinaryPackageRelease according the given parameters.
+
+        The optional distroarchrelease argument defaults to the one choosen
+        originally for the build record (helps on derivative procedures).
+        """
 
 class IBinaryPackageReleaseSet(Interface):
     """A set of binary packages"""

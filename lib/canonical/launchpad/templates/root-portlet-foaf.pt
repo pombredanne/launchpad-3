@@ -2,11 +2,12 @@
     <h4>Open Source People:</h4>
 
     <div class="portletBody portletContent">
+      <p>
       See what 
       <a href="/people/">people and teams</a> are registered in the
       Launchpad, which projects they are hacking or translating, and where
       they have been active in recent days.
-      <hr />
+      </p>
       <b>Top contributors:</b><br />
       <ul>
         <li tal:repeat="person view/topPeople" class="person">

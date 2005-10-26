@@ -41,8 +41,7 @@
 
       <tal:block condition="view/hasErrorMessages">
         <br />
-        <p class="portalErrorMessage">There were errors in your request:
-        please see the messages below.</p>
+        <p class="portalErrorMessage">There were errors in your request.</p>
       </tal:block>
 
     <tal:block condition="view/shouldShowOrderDetails">

@@ -13,7 +13,7 @@
 
   <h1>Support requests for <tal:thing replace="context/displayname" /></h1>
 
-  <p tal:replace="nothing">
+  <tal:x replace="nothing">
     <!-- ABOUT THIS PAGE
     This page uses a view class that organises the tasks into a set of
     categories (by status). it determines the sequence of the categories,
@@ -24,7 +24,7 @@
        category/tickets => the list of tickets
        ticket => an ITicket
     -->
-  </p>
+  </tal:x>
 
   <p tal:condition="not:context/tickets">
     There are no support requests currently registered for

@@ -14,15 +14,10 @@
   <h1>Reject support request</h1>
 
   <p class="documentDescription">
-    If you believe that this request is a hoax, or a test, or sample data,
-    and should not be listed in reports and forms, then use this form to
-    reject it.
-  </p>
-
-  <p>
-    We do not list rejected requests in most reports. It is better to reject
-    fake or bogus support requests than to mark them closed, because it
-    gives a cleaner set of statistics.
+    If this support request is a hoax, a test, or sample data, it should be
+    rejected.
+    It is better to reject fake or bogus requests than to mark them closed,
+    because rejected requests are not included in most reports.
   </p>
 
   <form action="." method="POST">

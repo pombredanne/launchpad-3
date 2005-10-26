@@ -13,11 +13,12 @@
 
   <h1>Source Package Search</h1>
 
-  <p class="documentDescription">Use this form to search through the
-  source packages in <span tal:replace="context/title" />.</p>
-
   <form name="search" method="GET">
-  
+    <div>
+      <label for="text">
+        Show <span tal:replace="context/title" />packages containing:
+      </label>
+    </div>
     <input type="text"
       name="text"
       size="35"
@@ -27,12 +28,6 @@
         tal:condition="not: view/searchrequested" />
     <input type="submit" value="Search Again"
         tal:condition="view/searchrequested" />
-
-    <p class="discreet">
-       Search for a software package in this distribution using the form
-       above. You will be shown a list of matching source packages, and can
-       explore the archive from there.
-    </p>
 
   </form>
 
