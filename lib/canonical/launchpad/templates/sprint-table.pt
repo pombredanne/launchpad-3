@@ -1,0 +1,47 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Table of Specs</h1>
+
+  <table class="listing">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Assignee</th>
+        <th>Drafter</th>
+        <th>Approver</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="spec view/specifications">
+        <td><a tal:content="spec/name/fmt:shorten/20"
+               tal:attributes="href spec/fmt:url">foo-bar-baz</a></td>
+        <td><a tal:condition="spec/assignee"
+               tal:content="spec/assignee/browsername"
+               tal:attributes="href spec/assignee/fmt:url">Assignee Bar</a></td>
+        <td><a tal:condition="spec/drafter"
+               tal:content="spec/drafter/browsername"
+               tal:attributes="href spec/drafter/fmt:url">Drafter Baz</a></td>
+        <td><a tal:condition="spec/approver"
+               tal:content="spec/approver/browsername"
+               tal:attributes="href spec/approver/fmt:url">Approver Foo</a></td>
+      </tr>
+    </tbody>
+  </table>
+
+</div>
+</body>
+</html>

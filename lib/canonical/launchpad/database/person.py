@@ -527,6 +527,11 @@ class Person(SQLBase):
         return _getAllMembers(self)
 
     @property
+    def all_member_count(self):
+        """See IPerson."""
+        return len(self.allmembers)
+
+    @property
     def deactivatedmembers(self):
         """See IPerson."""
         return self._getMembersByStatus(TeamMembershipStatus.DEACTIVATED)

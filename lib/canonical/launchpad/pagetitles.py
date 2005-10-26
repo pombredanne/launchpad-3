@@ -814,6 +814,8 @@ sprint_index = ContextTitle('%s (Sprint or Meeting)')
 
 sprint_new = 'Register a new Meeting or Sprint in Launchpad'
 
+sprint_table = ContextTitle('Table of Specs at %s')
+
 sprint_workload = ContextTitle('Workload at %s')
 
 sprints_index = 'Launchpad Meeting or Sprint Registry'

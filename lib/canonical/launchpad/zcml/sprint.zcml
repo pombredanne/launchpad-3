@@ -35,6 +35,9 @@
       name="+index"
       template="../templates/sprint-index.pt" />
     <browser:page
+      name="+table"
+      template="../templates/sprint-table.pt" />
+    <browser:page
       name="+workload"
       template="../templates/sprint-workload.pt" />
     <browser:page
