@@ -164,14 +164,18 @@ class DistributionSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'specifications'
-    links = ['roadmap', 'new']
+    links = ['roadmap', 'table', 'new']
 
     def roadmap(self):
         text = 'Roadmap'
         return Link('+specplan', text, icon='info')
 
+    def table(self):
+        text = 'Assignments Table'
+        return Link('+specstable', text, icon='info')
+
     def new(self):
-        text = 'Register New Specification'
+        text = 'New Specification'
         return Link('+addspec', text, icon='add')
 
 

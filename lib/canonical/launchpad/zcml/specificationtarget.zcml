@@ -15,6 +15,9 @@
       name="+specs"
       template="../templates/specificationtarget-specs.pt" />
     <browser:page
+      name="+specstable"
+      template="../templates/sprint-table.pt" />
+    <browser:page
       name="+specplan"
       template="../templates/specificationtarget-specplan.pt" />
     <browser:page
@@ -37,9 +40,9 @@
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationAddView"
     label="Register a feature specification"
-    fields="name title specurl summary priority status owner 
+    fields="name title specurl summary status owner 
             assignee drafter approver"
-    keyword_arguments="name title specurl summary priority status
+    keyword_arguments="name title specurl summary status
                        owner assignee drafter approver"
     permission="launchpad.AnyPerson"
     template="../templates/specification-add.pt"

@@ -27,7 +27,8 @@
         tal:content="context/priority/title"
         tal:attributes="class string:specpriority${context/priority/name}"
         >High</span>
-  <i tal:condition="not: context/priority">None assigned</i>.
+  <i tal:condition="not: context/priority">None set</i>.
+  <i tal:condition="context/is_blocked">Blocked</i>.
   <span tal:replace="context/summary">
     summary here
   </span>

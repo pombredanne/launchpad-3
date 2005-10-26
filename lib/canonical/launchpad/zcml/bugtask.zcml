@@ -435,19 +435,19 @@
     </browser:schemadisplay>
 
     <browser:page
-        name="+target"
-        for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
-        class="canonical.launchpad.browser.BugTaskReleaseTargetingView"
-        permission="launchpad.AnyPerson"
-        template="../templates/bugtask-release-targeting.pt"
-        />
+      name="+target"
+      for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
+      class="canonical.launchpad.browser.BugTaskReleaseTargetingView"
+      permission="launchpad.AnyPerson"
+      template="../templates/bugtask-release-targeting.pt"
+      />
 
     <browser:page
-        for="canonical.launchpad.interfaces.IBugTask"
-        name="+subscribe"
-        class="canonical.launchpad.browser.BugView"
-        permission="launchpad.AnyPerson"
-        template="../templates/bug-subscription.pt" />
+      for="canonical.launchpad.interfaces.IBugTask"
+      name="+subscribe"
+      class="canonical.launchpad.browser.BugView"
+      permission="launchpad.AnyPerson"
+      template="../templates/bug-subscription.pt" />
 
     <browser:page
       name="+linkcve"

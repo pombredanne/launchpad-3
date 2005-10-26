@@ -51,8 +51,8 @@ class SprintContextMenu(ContextMenu):
         return Link('+workload', text, icon='info')
 
     def table(self):
-        text = 'Work table'
-        return Link('+table', text, icon='info')
+        text = 'Assignments Table'
+        return Link('+specstable', text, icon='info')
 
     def edit(self):
         text = 'Edit Details'
@@ -137,7 +137,8 @@ class SprintView:
             self.listing_compact = True
         return self._sprint_spec_links
 
-    def specifications(self):
+    @property
+    def specs(self):
         return [sl.specification for sl in self.spec_links()]
 
     def workload(self):

@@ -38,6 +38,7 @@ class SpecificationContextMenu(ContextMenu):
     links = ['edit', 'people', 'status', 'priority', 'setseries',
              'setdistrorelease',
              'milestone', 'requestreview', 'doreview', 'subscription',
+             'subscribeanother',
              'linkbug', 'unlinkbug', 'adddependency', 'removedependency',
              'dependencytree', 'linksprint', 'administer']
 
@@ -84,10 +85,14 @@ class SpecificationContextMenu(ContextMenu):
     def subscription(self):
         user = self.user
         if user is not None and has_spec_subscription(user, self.context):
-            text = 'Unsubscribe from Spec'
+            text = 'Unsubscribe Yourself'
         else:
-            text = 'Subscribe to Spec'
+            text = 'Subscribe Yourself'
         return Link('+subscribe', text, icon='edit')
+
+    def subscribeanother(self):
+        text = 'Subscribe Someone'
+        return Link('+addsubscriber', text, icon='add')
 
     def linkbug(self):
         text = 'Link to Bug'
@@ -108,7 +113,7 @@ class SpecificationContextMenu(ContextMenu):
         return Link('+removedependency', text, icon='add', enabled=enabled)
 
     def dependencytree(self):
-        text = 'Show Dependency Tree'
+        text = 'Show Dependencies'
         enabled = (
             bool(self.context.dependencies) or bool(self.context.blocked_specs)
             )
@@ -203,7 +208,7 @@ class SpecificationAddView(SQLObjectAddView):
         self._nextURL = '.'
         SQLObjectAddView.__init__(self, context, request)
 
-    def create(self, name, title, specurl, summary, priority, status,
+    def create(self, name, title, specurl, summary, status,
         owner, assignee=None, drafter=None, approver=None):
         """Create a new Specification."""
         #Inject the relevant product or distribution into the kw args.
@@ -216,7 +221,7 @@ class SpecificationAddView(SQLObjectAddView):
         # clean up name
         name = name.strip().lower()
         spec = getUtility(ISpecificationSet).new(name, title, specurl,
-            summary, priority, status, owner, product=product,
+            summary, status, owner, product=product,
             distribution=distribution, assignee=assignee, drafter=drafter,
             approver=approver)
         self._nextURL = canonical_url(spec)

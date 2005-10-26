@@ -98,6 +98,13 @@ class ISpecification(IHasOwner):
     dependencies = Attribute('Specs on which this spec depends.')
     blocked_specs = Attribute('Specs for which this spec is a dependency.')
 
+    # emergent properties
+    is_incomplete = Attribute('Is True if this work still needs to '
+        'be done.')
+
+    is_blocked = Attribute('Is True if this spec depends on another spec '
+        'which is still incomplete.')
+
     def getSprintSpecification(sprintname):
         """Get the record that links this spec to the named sprint."""
 

@@ -16,7 +16,11 @@
 
   <h1>Table of Specs</h1>
 
-  <table class="listing">
+  <p class="portalMessage" tal:condition="not: view/specs">
+    No specifications to display.
+  </p>
+
+  <table class="listing" tal:condition="view/specs">
     <thead>
       <tr>
         <th>Name</th>
@@ -26,7 +30,7 @@
       </tr>
     </thead>
     <tbody>
-      <tr tal:repeat="spec view/specifications">
+      <tr tal:repeat="spec view/specs">
         <td><a tal:content="spec/name/fmt:shorten/20"
                tal:attributes="href spec/fmt:url">foo-bar-baz</a></td>
         <td><a tal:condition="spec/assignee"
