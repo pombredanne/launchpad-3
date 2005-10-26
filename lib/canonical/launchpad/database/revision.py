@@ -31,6 +31,8 @@ class Revision(SQLBase):
     diff_adds = IntCol()
     diff_deletes = IntCol()
 
+    # TODO: parents property -- DavidAllouche 2005-10-25
+
 
 class RevisionAuthor(SQLBase):
     implements(IRevisionAuthor)

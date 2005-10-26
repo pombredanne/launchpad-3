@@ -24,7 +24,7 @@ freedom with respect to the ancestry of revisions.
 A Branch is not tied to an URL, since a branch may change locations over time.
 It's not tied to a specific revision history because each new commit appends to
 the history, and it's not restricted to appending to the history because the
-Bazaar model does not forbid users from replacing the history of branch.
+Bazaar model does not forbid users from replacing the history of a branch.
 
 Actually, the conceptual model of Bazaar does not really have an identifiable
 concept of a branch. Branch describes a Launchpad concept.
@@ -115,3 +115,12 @@ only concened with using this data.
     Branch.latest_revisions from sampledata. Cannot populate the tables from
     here because only the importd user is allowed to do that, and importd works
     in a zopeless environment. -- DavidAllouche 2005-10-21
+
+    TODO: There should be tests for registered_branches, authored_branches and
+    related_branches properties of Person. -- DavidAllouche 2005-10-25
+
+    TODO: There should be tests for Revision, RevisionNumber and RevisionParent
+    as well. -- DavidAllouche 2005-10-25
+
+    TODO: Test Revision.parents and demonstrate usage.
+    -- DavidAllouche 2005-10-25
