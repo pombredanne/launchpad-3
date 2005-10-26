@@ -16,6 +16,8 @@ from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import (
     IHasOwner, IBugTarget, ISpecificationTarget)
 
+from canonical.lp.dbschema import DistroReleaseQueueStatus
+
 from canonical.launchpad import _
 
 class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
@@ -223,13 +225,19 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         DistroReleaseBinaryPackage objects that match the given text.
         """
 
-    def createQueueEntry(pocket):
+    def createQueueEntry(pocket, status=DistroReleaseQueueStatus.ACCEPTED):
         """Create a queue item attached to this distrorelease and the given
-        pocket.
+        pocket. If status is not supplied, then default to an ACCEPTED item.
         """
     
     def newArch(architecturetag, processorfamily, official, owner):
         """Create a new port or DistroArchRelease for this DistroRelease."""
+
+    def getQueueItems(status=DistroReleaseQueueStatus):
+        """Get the queue items for this distrorelease that are in the given
+        queue state. If status is not supplied, default to the ACCEPTED items
+        in the queue.
+        """
 
 
 class IDistroReleaseSet(Interface):

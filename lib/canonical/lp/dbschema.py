@@ -1595,6 +1595,9 @@ class DistroReleaseQueueStatus(DBSchema):
         is present to allow logging tools to record the rejection and then
         clean up any subsequently unnecessary records.  """)
 
+# If you change this (add items, change the meaning, whatever) search for
+# the token ##CUSTOMFORMAT## e.g. database/queue.py or nascentupload.py and
+# update the stuff marked with it.
 class DistroReleaseQueueCustomFormat(DBSchema):
     """Custom formats valid for the upload queue
 

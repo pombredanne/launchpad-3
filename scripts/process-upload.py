@@ -121,13 +121,17 @@ def process_upload(upload):
             ztm.abort()
             send_mails(mails)
         else:
-            mails = upload.do_accept()
+            successful, mails = upload.do_accept()
+            if not successful:
+                log.info("Rejection during accept. Aborting partial accept.")
+                ztm.abort()
             send_mails(mails)
         if options.dryrun:
             log.info("Dry run, aborting the transaction for this upload.")
             ztm.abort()
         else:
-            log.info("Committing the transaction for this upload.")
+            log.info("Committing the transaction and any mails associated"
+                     "with this upload.")
             ztm.commit()
     finally:
         ztm.abort()
