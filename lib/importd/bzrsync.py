@@ -12,9 +12,7 @@ from bzrlib.branch import Branch as BzrBranch
 
 from canonical.lp import initZopeless
 from canonical.launchpad.database import (
-    Person, Branch, Revision, RevisionNumber, RevisionParent)
-
-from importd.bzrsync import BzrSync
+    Person, Branch, Revision, RevisionNumber, RevisionParent, RevisionAuthor)
 
 
 __metaclass__ = type
@@ -57,15 +55,19 @@ class BzrSync:
             revision_date = datetime.fromtimestamp(bzr_revision.timestamp +
                                                    bzr_revision.timezone,
                                                    tz=UTC)
+            db_author = RevisionAuthor.selectOneBy(name=bzr_revision.committer)
+            if not db_author:
+                db_author = RevisionAuthor(name=bzr_revision.committer)
             db_revision = Revision(revision_id=revision_id,
                                    log_body=bzr_revision.message,
                                    revision_date=revision_date,
+                                   revision_author=db_author.id,
                                    owner=self._admins.id,
                                    diff_adds=None, diff_deletes=None)
-            didsomething = True
             if pending_parents is not None:
                 for parent_id in bzr_revision.parent_ids:
                     pending_parents.append((revision_id, parent_id))
+            didsomething = True
         if revision_id in self.bzr_history:
             bzr_revno = self.bzr_history.index(revision_id) + 1
             db_revno = RevisionNumber.selectOneBy(revisionID=db_revision.id,
