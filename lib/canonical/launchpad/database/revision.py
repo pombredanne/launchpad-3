@@ -39,9 +39,5 @@ class RevisionAuthor(SQLBase):
 
     _table = 'RevisionAuthor'
 
-    # FIXME: The sole purpose of this table is apparently to improve the
-    # database normalisation. Therefore the name column should be UNIQUE.
-    # -- David Allouche 2005-09-06
-
     name = StringCol(notNull=True)
 
