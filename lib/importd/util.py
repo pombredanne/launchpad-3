@@ -195,21 +195,6 @@ def jobsInterlocks(jobs):
             interlocks.append(inter)
     return interlocks
 
-def processDir(builders, log, basedir, tree, slavename, slave_home,
-               archive_mirror_dir):
-    log.msg("checking dir " + basedir)
-    builder = JobBuilder()
-    for name in tree.iter_inventory(source=True, files=True):
-        jobs = builder.jobFromFile(os.path.join(basedir,name))
-        for (job, jobname) in jobs:
-            job.jobname = jobname
-            job.name = jobname
-            job.slave_home=slave_home
-            job.archive_mirror_dir = archive_mirror_dir
-            f1 = ImportDBuildFactory(job, jobname)
-            builders.append((jobname, slavename, "buildbot-jobs", f1,
-                             {'periodicBuildTime':job.frequency}))
-
 
 from twisted.python.failure import Failure
 
@@ -366,9 +351,7 @@ class ImportDBuildFactory(ConfigurableBuildFactory):
         self.addSteps()
 
     def addSteps(self):
-        if self.job.RCS == 'package':
-            self.addImportDStep('runJob')
-        elif self.job.TYPE == "import":
+        if self.job.TYPE == "import":
             self.addImportDStep('nukeTargets')
             self.addImportDStep('runJob')
         elif self.job.TYPE == 'sync':
@@ -580,27 +563,3 @@ class RunJobStep(JobBuildStep):
         # might raise UnknownCommand if it isn't implemented
         d.addErrback(self.stepFailed)
 
-
-class JobBuilder:
-    known_keys=["TYPE","RCS", "repository", "module", "category",
-                "archivename", "branchfrom", "branchto", "frequency"]
-    import re
-    _re_key = re.compile(r'^[ \t]*([a-zA-z]*)[ \t]*=[ \t]*([^ \t].*)[ \t]*$')
-    _re_job = re.compile(r'^.*\.info$')
-
-    def __init__(self):
-        """setup needed tools"""
-        import logging
-        from importd import LoggingLogAdaptor
-        self.logger=logging.Logger("JobBuilder")
-        self.logger.addHandler(LoggingLogAdaptor(log))
-
-    def jobFromFile(self, filename):
-        """I parse .job files and return Job objects"""
-        if not self._re_job.match(filename): return []
-        import info2job
-        reload (info2job)
-        log.msg("Building from " + filename)
-        info = info2job.read_info(filename, self.logger)
-        return [ (x, info2job.jobfile_name(info, x))
-                 for x in info2job.iter_jobs(info, self.logger)]
