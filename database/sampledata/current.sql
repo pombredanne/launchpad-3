@@ -7854,25 +7854,25 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'polloption'::pg_catalog.regclass;
 
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (1, 1, 'A', 'A', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (2, 1, 'B', 'B', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (3, 1, 'C', 'C', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (4, 1, 'D', 'D', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (5, 2, 'William Big-Middle-Name Graham', 'Will Graham', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (6, 2, 'Jack Crawford', 'Jack Crawford', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (7, 2, 'Francis Dolarhyde', 'Francis Dolarhyde', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (8, 3, 'A', 'A', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (9, 3, 'B', 'B', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (10, 3, 'C', 'C', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (11, 3, 'D', 'D', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (12, 4, 'Option 1', 'Option 1', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (13, 4, 'Option 2', 'Option 2', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (14, 4, 'Option 3', 'Option 3', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (15, 4, 'Option 4', 'Option 4', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (16, 5, 'Option 1', 'Option 1', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (17, 5, 'Option 2', 'Option 2', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (18, 5, 'Option 3', 'Option 3', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (19, 5, 'Option 4', 'Option 4', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (1, 1, 'A', 'A', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (2, 1, 'B', 'B', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (3, 1, 'C', 'C', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (4, 1, 'D', 'D', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (5, 2, 'William Big-Middle-Name Graham', 'Will Graham', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (6, 2, 'Jack Crawford', 'Jack Crawford', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (7, 2, 'Francis Dolarhyde', 'Francis Dolarhyde', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (8, 3, 'A', 'A', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (9, 3, 'B', 'B', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (10, 3, 'C', 'C', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (11, 3, 'D', 'D', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (12, 4, 'Option 1', 'Option 1', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (13, 4, 'Option 2', 'Option 2', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (14, 4, 'Option 3', 'Option 3', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (15, 4, 'Option 4', 'Option 4', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (16, 5, 'Option 1', 'Option 1', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (17, 5, 'Option 2', 'Option 2', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (18, 5, 'Option 3', 'Option 3', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (19, 5, 'Option 4', 'Option 4', true);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'polloption'::pg_catalog.regclass;

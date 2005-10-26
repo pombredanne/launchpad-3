@@ -556,7 +556,7 @@ def poll_new(context, view):
     return 'Create a new Poll in team %s' % context.team.displayname
 
 def polloption_edit(context, view):
-    return 'Edit option: %s' % context.shortname
+    return 'Edit option: %s' % context.title
 
 poll_options = ContextTitle('Options of Poll: %s')
 

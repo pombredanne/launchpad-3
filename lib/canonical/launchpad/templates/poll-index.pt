@@ -24,23 +24,20 @@
     </tal:proposition>
   </div>
 
-  <h2>Options</h2>
-
-  <tal:block condition="context/getActiveOptions">
-    <ul>
-      <li tal:repeat="option context/getActiveOptions">
-        <span tal:replace="option/name" />
-      </li>
-    </ul>
-  </tal:block>
-
-  <tal:block condition="not: context/getActiveOptions">
-    <p>This poll does not yet have any voting options. Please <a
+  <p tal:condition="not: context/getActiveOptions">
+    This poll does not yet have any voting options. Please <a
     href="+newoption">add an option</a>. Note, you need more than one option
-    for a real poll, of course :-)</p>
-  </tal:block>
+    for a real poll, of course :-)
+  </p>
+
+  <tal:is_open condition="context/isOpen">
+    <p tal:condition="not: request/lp:person">
+      You need to <a href="+login">login to vote</a>.
+    </p>
+  </tal:is_open>
 
   <tal:block condition="context/isClosed">
+
     <h2>Voting has closed</h2>
 
     <p>The voting is closed since 
@@ -84,8 +81,7 @@
           </tal:block>
 
           <tal:block condition="not: view/currentVotes">
-            <p>You haven't manifested preference for any of the existing
-            options.</p> 
+            <p>You haven't voted for any of the existing options.</p> 
           </tal:block>
         </tal:block>
 
@@ -98,7 +94,7 @@
       <tal:block define="winners context/getWinners">
         <p tal:condition="winners">The winner(s) of this poll is(are) 
           <tal:block repeat="winner winners">
-            <b tal:content="winner/shortname"
+            <b tal:content="winner/title"
               /><span tal:condition="not: repeat/winner/end">,</span>
           </tal:block>
         </p>
@@ -118,7 +114,7 @@
         <tr tal:repeat="option context/getAllOptions">
           <tal:block define="votes python: view.getVotesByOption(option)">
           <td>
-            <span tal:replace="option/shortname" />
+            <span tal:replace="option/title" />
             <tal:block tal:condition="not: option/active">
               (Inactive)
             </tal:block>
@@ -161,8 +157,8 @@
   <tal:block condition="context/isNotYetOpened">
     <h2>Voting hasn't opened yet</h2>
 
-    <p>The voting will be opened on 
-      <span tal:replace="context/dateopens/fmt:date" />.
+    <p>The vote will commence at
+      <span tal:replace="context/dateopens/fmt:datetime" />.
     </p>
   </tal:block>
 

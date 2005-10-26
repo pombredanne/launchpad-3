@@ -1099,7 +1099,7 @@ COMMENT ON COLUMN Poll.secrecy IS 'If people votes are SECRET (no one can see), 
 COMMENT ON TABLE PollOption IS 'The options belonging to polls.';
 COMMENT ON COLUMN PollOption.poll IS 'The poll this options belongs to.';
 COMMENT ON COLUMN PollOption.name IS 'The name of this option.';
-COMMENT ON COLUMN PollOption.shortname IS 'A short name for this option.';
+COMMENT ON COLUMN PollOption.title IS 'A short title for this option.';
 COMMENT ON COLUMN PollOption.active IS 'If TRUE, people will be able to vote on this option. Otherwise they don\'t.';
 
 -- Vote

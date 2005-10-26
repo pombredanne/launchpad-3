@@ -10,43 +10,37 @@
 
   <div metal:fill-slot="main">
 
-    <h1>Options of Poll 
-      &#8220;<span tal:replace="context/title" />&#8221;
-    </h1>
+    <h1>Poll Options</h1>
 
     <tal:block condition="context/getAllOptions">
       <table class="listing data">
         <thead>
           <tr>
-            <th>Shortname</th>
             <th>Name</th>
-            <th>Is Active?</th>
+            <th>Title</th>
+            <th>Active?</th>
+            <th></th>
           </tr>
         </thead>
         <tr tal:repeat="polloption context/getAllOptions">
+          <td tal:content="polloption/name">mjg59</td>
+          <td tal:content="polloption/title">This guy rocks!</td>
           <td>
-            <a tal:attributes="href polloption/fmt:url">
-              <span tal:replace="polloption/shortname" />
-            </a>
+            <tal:is_active condition="polloption/active">Yes</tal:is_active>
+            <tal:inactive condition="not: polloption/active">No</tal:inactive>
           </td>
           <td>
-            <span tal:replace="polloption/name" />
-          </td>
-          <td>
-            <span tal:condition="polloption/active">Yes</span>
-            <span tal:condition="not: polloption/active">No</span>
+            [<a tal:attributes="href polloption/fmt:url">Edit</a>]
           </td>
         </tr>
       </table>
     </tal:block>
 
-    <tal:block condition="not: context/getAllOptions">
-      <p>This poll doesn't have any options for people to vote on.</p>
-    </tal:block>
-
-    <ul class="add">
-      <li><a href="+newoption">Create a new Option for this Poll</a></li>
-    </ul>
+    <p class="portalMessage" tal:condition="not: context/getAllOptions">
+      This poll doesn't have any options for people to vote on. Please add
+      some poll options before the poll opens, so that people have a choice
+      of options when they vote!
+    </p>
 
   </div>
 
