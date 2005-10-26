@@ -3,7 +3,7 @@
 """Revision interfaces."""
 
 __metaclass__ = type
-__all__ = ['IRevision', 'IRevisionAuthor']
+__all__ = ['IRevision', 'IRevisionAuthor', 'IRevisionParent', 'IRevisionNumber']
 
 from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
@@ -29,10 +29,6 @@ class IRevision(IHasOwner):
     revision_date = Datetime(
         title=_("The date the revision was committed."),
         required=True, readonly=True)
-    committed_against = Attribute(
-        "Parent this revision was committed against.")
-    diff_adds = Attribute("Number of lines added by the revision.")
-    diff_deletes = Attribute("Number of lines removed by the revision.")
 
 
 class IRevisionAuthor(Interface):
@@ -40,3 +36,21 @@ class IRevisionAuthor(Interface):
 
     # id = Int(title=_("RevisionAuthor ID"), required=True, readonly=True)
     name = TextLine(title=_("Revision Author Name"), required=True)
+
+
+class IRevisionParent(Interface):
+    """The association between a revision and its parent revisions."""
+
+    revision = Attribute("The descendant revision.")
+    sequence = Attribute("The order of the parent of that revision.")
+    parent = Attribute("The revision_id of the parent revision.")
+
+
+class IRevisionNumber(Interface):
+    """The association between a revision and a branch."""
+
+    sequence = Int(
+        title=_("Revision Number"), required=True,
+        description=_("The index of a revision within a branch's history."))
+    branch = Attribute("The branch this revision number belongs to.")
+    revision = Attribute("The revision with that index in this branch.")

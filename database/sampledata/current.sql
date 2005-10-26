@@ -764,9 +764,9 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'revision'::pg_catalog.regclass;
 
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, committed_against, revision_date, diff_adds, diff_deletes) VALUES (1, '2005-03-09 15:45:00', 'Import of Mozilla Firefox 0.9.2', 1, NULL, 1, 'mozilla@arch.ubuntu.com/mozilla--release--0.9.2--base-0', NULL, NULL, NULL, NULL);
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, committed_against, revision_date, diff_adds, diff_deletes) VALUES (2, '2005-03-09 15:50:00', 'Import of Mozilla Firefox 0.9.1', 1, NULL, 1, 'mozilla@arch.ubuntu.com/mozilla--release--0.9.1--base-0', NULL, NULL, NULL, NULL);
-INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, committed_against, revision_date, diff_adds, diff_deletes) VALUES (3, '2005-03-09 15:55:00', 'Import of Mozilla Firefox 0.9', 1, NULL, 1, 'mozilla@arch.ubuntu.com/mozilla--release--0.9--base-0', NULL, NULL, NULL, NULL);
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (1, '2005-03-09 15:45:00', 'Import of Mozilla Firefox 0.9.2', 1, NULL, 1, 'mozilla@arch.ubuntu.com/mozilla--release--0.9.2--base-0', '2005-03-09 15:40:00');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (2, '2005-03-09 15:50:00', 'Import of Mozilla Firefox 0.9.1', 1, NULL, 1, 'mozilla@arch.ubuntu.com/mozilla--release--0.9.1--base-0', '2005-03-09 15:45:00');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (3, '2005-03-09 15:55:00', 'Import of Mozilla Firefox 0.9', 1, NULL, 1, 'mozilla@arch.ubuntu.com/mozilla--release--0.9--base-0', '2005-03-09 15:50:00');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'revision'::pg_catalog.regclass;
@@ -8032,9 +8032,9 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'revisionnumber'::pg_catalog.regclass;
 
-INSERT INTO revisionnumber (id, rev_no, branch, revision) VALUES (1, 1, 10, 1);
-INSERT INTO revisionnumber (id, rev_no, branch, revision) VALUES (2, 1, 11, 2);
-INSERT INTO revisionnumber (id, rev_no, branch, revision) VALUES (3, 1, 12, 3);
+INSERT INTO revisionnumber (id, sequence, branch, revision) VALUES (1, 1, 10, 1);
+INSERT INTO revisionnumber (id, sequence, branch, revision) VALUES (2, 1, 11, 2);
+INSERT INTO revisionnumber (id, sequence, branch, revision) VALUES (3, 1, 12, 3);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'revisionnumber'::pg_catalog.regclass;

@@ -1,12 +1,13 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Revision', 'RevisionAuthor']
+__all__ = ['Revision', 'RevisionAuthor', 'RevisionParent', 'RevisionNumber']
 
 from zope.interface import implements
 from sqlobject import ForeignKey, IntCol, StringCol
 
-from canonical.launchpad.interfaces import IRevision, IRevisionAuthor
+from canonical.launchpad.interfaces import (
+    IRevision, IRevisionAuthor, IRevisionParent, IRevisionNumber)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
@@ -26,12 +27,11 @@ class Revision(SQLBase):
     gpgkey = ForeignKey(dbName='gpgkey', foreignKey='GPGKey', default=None)
     revision_id = StringCol(notNull=True)
     revision_date = UtcDateTimeCol(notNull=False)
-    committed_against = ForeignKey(
-        dbName='committed_against', foreignKey='Revision', default=None)
-    diff_adds = IntCol()
-    diff_deletes = IntCol()
 
-    # TODO: parents property -- DavidAllouche 2005-10-25
+    @property
+    def parent_ids(self):
+        parents = RevisionParent.selectBy(revisionID=self, orderBy='sequence')
+        return [parent.parent_id for parent in parents]
 
 
 class RevisionAuthor(SQLBase):
@@ -41,3 +41,29 @@ class RevisionAuthor(SQLBase):
 
     name = StringCol(notNull=True)
 
+
+class RevisionParent(SQLBase):
+    """The association between a revision and its parent."""
+
+    implements(IRevisionParent)
+
+    _table = 'RevisionParent'
+
+    revision = ForeignKey(
+        dbName='revision', foreignKey='Revision', notNull=True)
+    sequence = IntCol(notNull=True)
+    parent_id = StringCol(notNull=True)
+
+
+class RevisionNumber(SQLBase):
+    """The association between a revision and a branch."""
+
+    implements(IRevisionNumber)
+
+    _table = 'RevisionNumber'
+    
+    sequence = IntCol(notNull=True)
+    branch = ForeignKey(
+        dbName='branch', foreignKey='Branch', notNull=True)
+    revision = ForeignKey(
+        dbName='revision', foreignKey='Revision', notNull=True)

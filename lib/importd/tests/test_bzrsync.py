@@ -34,10 +34,10 @@ class TestBzrSync(helpers.WebserverTestCase):
 
     def setUpBzrBranch(self):
         self.bzr_branch_relpath = "bzr_branch"
-    	self.bzr_branch_abspath = self.path(self.bzr_branch_relpath)
+        self.bzr_branch_abspath = self.path(self.bzr_branch_relpath)
         self.bzr_branch_url = self.url(self.bzr_branch_relpath)
         os.mkdir(self.bzr_branch_abspath)
-    	self.bzr_branch = BzrBranch.initialize(self.bzr_branch_abspath)
+        self.bzr_branch = BzrBranch.initialize(self.bzr_branch_abspath)
 
     def setUpDBBranch(self):
         self.trans_manager.begin()
@@ -94,16 +94,18 @@ class TestBzrSync(helpers.WebserverTestCase):
                          "Wrong RevisionAuthor count (should be %d, not %d)"
                          % revisionauthor_pair)
 
-    def commitRevision(self, *args, **kwargs):
+    def commitRevision(self, message=None, committer=None):
         file = open(os.path.join(self.bzr_branch_abspath, "file"), "w")
         file.write(str(time.time()+random.random()))
         file.close()
-        self.bzr_branch.add("file")
-        if not args and "message" not in kwargs:
-            args = (self.LOG,)
-        if "committer" not in kwargs:
-            kwargs["committer"] = self.AUTHOR
-        self.bzr_branch.commit(*args, **kwargs)
+        inventory = self.bzr_branch.read_working_inventory()
+        if not inventory.has_filename("file"):
+            self.bzr_branch.add("file")
+        if message is None:
+            message = self.LOG
+        if committer is None:
+            committer = self.AUTHOR
+        self.bzr_branch.commit(message, committer=committer)
 
     def test_empty_branch(self):
         """Importing an empty branch does nothing."""
@@ -113,7 +115,6 @@ class TestBzrSync(helpers.WebserverTestCase):
 
     def test_import_revision(self):
         """Importing a revision in history adds one revision and number."""
-        open(os.path.join(self.bzr_branch_abspath, "file"), "w").write("")
         self.commitRevision()
         counts = self.getCounts()
         BzrSync(self.trans_manager, self.db_branch.id).syncHistory()
@@ -131,5 +132,14 @@ class TestBzrSync(helpers.WebserverTestCase):
         self.assertTrue(db_author)
         self.assertEquals(db_author.name, author)
 
+    def test_new_parent(self):
+        """Importing two revisions should import a new parent."""
+        self.commitRevision()
+        self.commitRevision()
+        counts = self.getCounts()
+        BzrSync(self.trans_manager, self.db_branch.id).syncHistory()
+        self.assertCounts(counts, new_revisions=2, new_numbers=2,
+                          new_parents=1)
 
 TestUtil.register(__name__)
+

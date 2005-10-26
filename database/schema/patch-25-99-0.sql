@@ -135,14 +135,10 @@ ALTER TABLE Revision ADD COLUMN owner int CONSTRAINT revision_owner_fk
 ALTER TABLE Revision ADD COLUMN revision_id text
     CONSTRAINT revision_revision_id_unique UNIQUE;
 ALTER TABLE Revision RENAME COLUMN datecreated TO date_created;
-ALTER TABLE Revision ADD COLUMN committed_against int
-    CONSTRAINT revision_committed_against_fk REFERENCES Revision;
 
 -- NULLable? If not, what do we default it too?
 ALTER TABLE Revision ADD COLUMN revision_date timestamp WITHOUT TIME ZONE;
 
-ALTER TABLE Revision ADD COLUMN diff_adds int;
-ALTER TABLE Revision ADD COLUMN diff_deletes int;
 ALTER TABLE Revision RENAME COLUMN logmessage TO log_body;
 ALTER TABLE Revision RENAME COLUMN archid TO revision_author;
 ALTER TABLE Revision ALTER COLUMN revision_author SET NOT NULL;
@@ -164,15 +160,18 @@ ALTER TABLE RevisionAuthor RENAME COLUMN archuserid TO name;
 
 CREATE TABLE RevisionParent (
     id serial PRIMARY KEY,
+    sequence int NOT NULL,
     revision int NOT NULL CONSTRAINT revisionparent_revision_fk
         REFERENCES Revision,
-    parent int NOT NULL CONSTRAINT revisionparent_parent_fk
-        REFERENCES Revision
+    parent_id text NOT NULL
     );
+
+ALTER TABLE RevisionParent ADD CONSTRAINT revisionparent_unique
+    UNIQUE (revision, parent_id);
 
 CREATE TABLE RevisionNumber (
     id serial PRIMARY KEY,
-    rev_no int NOT NULL,
+    sequence int NOT NULL,
     branch int NOT NULL CONSTRAINT revisionnumber_branch_fk
         REFERENCES Branch,
     revision int NOT NULL CONSTRAINT revisionnumber_revision_fk
@@ -180,7 +179,7 @@ CREATE TABLE RevisionNumber (
     );
 
 ALTER TABLE RevisionNumber ADD CONSTRAINT revisionnumber_unique
-    UNIQUE (rev_no, branch, revision);
+    UNIQUE (sequence, branch, revision);
 
 ALTER TABLE Branch ADD CONSTRAINT branch_started_at_fk
     FOREIGN KEY (started_at) REFERENCES RevisionNumber;

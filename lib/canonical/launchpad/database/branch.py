@@ -11,8 +11,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues, quote
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import IBranch, IBranchSet
-from canonical.launchpad.database.revision import Revision
-from canonical.launchpad.database.revisionnumber import RevisionNumber
+from canonical.launchpad.database.revision import Revision, RevisionNumber
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 
 from canonical.lp.dbschema import (
@@ -88,14 +87,14 @@ class Branch(SQLBase):
 
     def latest_revisions(self, quantity=10):
         return RevisionNumber.selectBy(
-            branchID=self.id, orderBy='-rev_no').limit(quantity)
+            branchID=self.id, orderBy='-sequence').limit(quantity)
 
     def revisions_since(self, timestamp):
         return Revision.select('Revision.id=RevisionNumber.revision AND '
                                'RevisionNumber.branch = %d AND '
                                'Revision.revision_date > %s' %
                                (self.id, quote(timestamp)),
-                               orderBy='-RevisionNumber.rev_no',
+                               orderBy='-RevisionNumber.sequence',
                                clauseTables=['RevisionNumber'])
 
     def createRelationship(self, branch, relationship):

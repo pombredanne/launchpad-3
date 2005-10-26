@@ -9,6 +9,7 @@ from datetime import datetime
 from pytz import UTC
 
 from bzrlib.branch import Branch as BzrBranch
+from bzrlib.errors import NoSuchRevision
 
 from canonical.lp import initZopeless
 from canonical.launchpad.database import (
@@ -51,7 +52,10 @@ class BzrSync:
         db_revision = Revision.selectOneBy(revision_id=revision_id)
         if not db_revision:
             # Do we want a fixed offset timezone instead?
-            bzr_revision = self.bzr_branch.get_revision(revision_id)
+            try:
+                bzr_revision = self.bzr_branch.get_revision(revision_id)
+            except NoSuchRevision:
+                return didsomehting
             revision_date = datetime.fromtimestamp(bzr_revision.timestamp +
                                                    bzr_revision.timezone,
                                                    tz=UTC)
@@ -62,20 +66,19 @@ class BzrSync:
                                    log_body=bzr_revision.message,
                                    revision_date=revision_date,
                                    revision_author=db_author.id,
-                                   owner=self._admins.id,
-                                   diff_adds=None, diff_deletes=None)
+                                   owner=self._admins.id)
             if pending_parents is not None:
-                for parent_id in bzr_revision.parent_ids:
-                    pending_parents.append((revision_id, parent_id))
+                for sequence, parent_id in enumerate(bzr_revision.parent_ids):
+                    pending_parents.append((revision_id, sequence, parent_id))
             didsomething = True
         if revision_id in self.bzr_history:
             bzr_revno = self.bzr_history.index(revision_id) + 1
             db_revno = RevisionNumber.selectOneBy(revisionID=db_revision.id,
                                                   branchID=self.db_branch.id)
-            if not db_revno or db_revno.rev_no != bzr_revno:
+            if not db_revno or db_revno.sequence != bzr_revno:
                 if db_revno:
                     db_revno.destroySelf()
-                db_revno = RevisionNumber(rev_no=bzr_revno,
+                db_revno = RevisionNumber(sequence=bzr_revno,
                                           revision=db_revision.id,
                                           branch=self.db_branch.id)
                 didsomething = True
@@ -93,14 +96,19 @@ class BzrSync:
         else:
             sync_pending_parents = None
         while pending_parents:
-            revision_id, parent_id = pending_parents.pop(0)
+            revision_id, sequence, parent_id = pending_parents.pop(0)
             didsomething |= self.syncRevision(parent_id, sync_pending_parents)
             db_revision = Revision.selectOneBy(revision_id=revision_id)
-            db_parent = Revision.selectOneBy(revision_id=parent_id)
-            if not RevisionParent.selectOneBy(revisionID=db_revision.id,
-                                              parentID=db_parent.id):
+            db_parent = RevisionParent.selectOneBy(revisionID=db_revision.id,
+                                                   parent_id=parent_id)
+            if db_parent:
+                assert db_parent.sequence == sequence, \
+                    "This revision was previously imported with this parent" \
+                    " in a different position. Something is VERY wrong!"
+            else:
                 self.trans_manager.begin()
-                RevisionParent(revision=db_revision.id, parent=db_parent.id)
+                RevisionParent(revision=db_revision.id, parent_id=parent_id,
+                               sequence=sequence)
                 self.trans_manager.commit()
                 didsomething = True
         return didsomething

@@ -37,29 +37,26 @@ arbitrary string.
 The revision_date is the commit date recorded by the revision control system,
 while the date_created is the time when the database record was created.
 
->>> from time import strptime
->>> date = strptime("2005-04-01 07:32:02 GMT", '%Y-%m-%d %H:%M:%S %Z')
-
-The diff_adds and diff_deletes attributes should be changed to default to NULL.
-And anyway, they should probably be moved to a separate table to model Bazaar2
-properly.
-
+>>> from datetime import datetime
+>>> from pytz import UTC
+>>> date = datetime(2005, 3, 8, 12, 0, tzinfo=UTC)
 >>> from canonical.launchpad.database import Revision
 >>> revision_1 = Revision(owner=admins, log_body=log_body_1,
-...     revision_author=author, revision_id=revision_id_1, revision_date=date,
-...     diff_adds=None, diff_deletes=None)
+...     revision_author=author, revision_id=revision_id_1, revision_date=date)
 
 Bazaar revisions can have multiple ancestors, the "leftmost" ancestor is the
 revision that was used as a base when committing, other ancestors are used to
-record merges.
+record merges. All revisions except initial imports have at least one ancestor.
 
-All revisions except initial imports have a non-None committed_against
-attribute that identify the leftmost ancestor.
+Ancestors are accessed through their revision_id without using a foreign key so
+we can represent revision whose at least one ancestor is a ghost revision.
 
 >>> revision_2 = Revision(owner=admins, log_body=log_body_2,
-...     revision_author=author, revision_id=revision_id_2, revision_date=date,
-...     diff_adds=None, diff_deletes=None,
-...     committed_against=revision_1)
+...     revision_author=author, revision_id=revision_id_2, revision_date=date)
+
+>>> from canonical.launchpad.database import RevisionParent
+>>> rev2_parent = RevisionParent(sequence=0, revision=revision_2,
+...                              parent_id=revision_1.revision_id)
 
 Revisions are associated to branches through the RevisionNumber table. A given
 revision may appear in different positions in different branches thanks to
@@ -78,7 +75,7 @@ records are only created automatically by scanning revision control data.
 
 >>> from canonical.launchpad.database import RevisionNumber
 >>> junkcode_sql = Branch.selectOneBy(name='junkcode')
->>> rev_no_1 = RevisionNumber(rev_no=1, branch=branch, revision=revision_1)
->>> rev_no_2 = RevisionNumber(rev_no=2, branch=branch, revision=revision_2)
+>>> rev_no_1 = RevisionNumber(sequence=1, branch=branch, revision=revision_1)
+>>> rev_no_2 = RevisionNumber(sequence=2, branch=branch, revision=revision_2)
 >>> rev_no_1.branch == rev_no_2.branch == branch
 True

@@ -5,7 +5,7 @@
 __metaclass__ = type
 
 from datetime import datetime, timedelta
-from pytz import UTC
+import pytz
 
 from zope.component import getUtility
 
@@ -102,7 +102,7 @@ class BranchView:
 
     def count_revisions(self, days=30):
         """Number of revisions committed during the last N days."""
-        timestamp = datetime.now(UTC) - timedelta(days=days)
+        timestamp = datetime.now(pytz.UTC) - timedelta(days=days)
         return self.context.revisions_since(timestamp).count()
 
 
