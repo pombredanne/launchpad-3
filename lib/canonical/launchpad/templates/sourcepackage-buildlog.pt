@@ -22,7 +22,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Build Log</h1>
+  <h1><span tal:replace="context/title"/> Build Log</h1>
 
   <p class="documentDescription">This page shows the build logs list for 
   all source package release uploaded in 
@@ -33,8 +33,13 @@
   <p tal:content="release/title">TITLE</p>
     <ul>
       <li tal:repeat="build release/builds">
+        <tal:block condition="build/buildlog"> 
         <a tal:attributes="href build/buildlog/url"
            tal:content="build/buildlog/filename">BUILDLOG</a>
+        </tal:block>
+        <tal:block condition="not: build/buildlog">
+        <p> No buildlog for <span tal:replace="build/title">BUILD</span></p>
+        </tal:block>
       </li>
     </ul>
   </li>

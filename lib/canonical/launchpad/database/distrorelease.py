@@ -112,6 +112,15 @@ class DistroRelease(SQLBase):
         'Section', joinColumn='distrorelease', otherColumn='section',
         intermediateTable='SectionSelection')
 
+    # XXX: dsilvers: 20051013: At some point, get rid of components/sections
+    # from above and rename these and fix up the uploader and queue stuff.
+    real_components = RelatedJoin(
+        'Component', joinColumn='distrorelease', otherColumn='component',
+        intermediateTable='ComponentSelection')
+    real_sections = RelatedJoin(
+        'Section', joinColumn='distrorelease', otherColumn='section',
+        intermediateTable='SectionSelection')
+
     @property
     def packagings(self):
         packagings = list(Packaging.selectBy(distroreleaseID=self.id))
