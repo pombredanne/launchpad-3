@@ -20,10 +20,11 @@
             >Add Something</h1>
 
         <p>
-          To merge two Launchpad accounts, you must be logged in and must have
-          access to the e-mail address registered in the duplicated account.
-          When you have finished, the e-mail address &#8212; and everything
-          else owned by the duplicated account &#8212; will be assigned to you.
+          To merge two Launchpad accounts, you must be logged in
+          with access to the e-mail address registered in the
+          duplicated account. Once you&rsquo;ve finished,
+          the e-mail address of the duplicated account will be assigned to you,
+          along with everything else owned by the duplicated account.
         </p>
 
         <p tal:define="status view/update"

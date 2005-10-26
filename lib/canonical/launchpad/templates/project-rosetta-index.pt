@@ -35,7 +35,7 @@
 
         <h2>Products</h2>
 
-        <table class="listing rowNavigation">
+        <table class="listing">
             <thead>
                 <th>Product</th>
                 <th>Translated</th>

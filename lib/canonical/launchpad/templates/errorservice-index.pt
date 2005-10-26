@@ -46,10 +46,8 @@
 
   <form action="index.html" method="get">
     <div class="row">
-      <div class="controls">
         <input type="submit" name="submit" value="Refresh" 
             i18n:attributes="value refresh-button" />
-      </div>
     </div>
   </form>
 

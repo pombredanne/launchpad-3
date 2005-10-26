@@ -40,7 +40,6 @@
                         <input type="text"
                                tal:attributes="value searchstring" /> 
                         <input type="submit" 
-                               class="context" 
                                value="Search" />
                     </div>
 
@@ -58,7 +57,6 @@
         <dl>
             <dt>
                 <input type="submit" 
-                       class="context" 
                        value="Change selection" 
                        style="float: right;" />
                 <span tal:replace="selection/title">Mozilla Firefox</span> 
@@ -89,7 +87,7 @@
         <dl>
             <dt>
                 <span tal:replace="result/title">Mozilla Firefox</span> 
-                <input type="submit" class="context" value="Select" />
+                <input type="submit" value="Select" />
             </dt>
             <dd tal:content="result/summary">
             Mozilla Firefox is a streamlined edition of the Mozilla browser,

@@ -4,7 +4,7 @@
     i386</span>:</h4>
 
     <div class="portletBody">
-        <div class="portletContent even">
+        <div class="portletContent">
 
             <b>Architecture Tag:</b>
             <a tal:attributes="href context/fmt:url"

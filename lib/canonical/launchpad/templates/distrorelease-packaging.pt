@@ -55,13 +55,12 @@
     </tr>
   </table>
 
-  <h2>Known Upstream Links</h2>
+  <h2>
+    Known Upstream Links for All Source Packages in
+    <span tal:replace="context/title">Ubuntu Hoary</span>
+  </h2>
 
   <table class="listing" tal:condition="context/packagings">
-    <caption>Packaging data for all source packages in
-      <span tal:replace="context/title">Ubuntu Hoary</span>
-    </caption>
-
     <thead>
       <tr>
         <th>Source Package</th>

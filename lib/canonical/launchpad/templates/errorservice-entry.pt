@@ -12,32 +12,32 @@
   <div tal:condition="entry">
 
     <div class="row">
-      <div class="label" i18n:translate="">Time</div>
+      <label i18n:translate="">Time:</label>
       <div class="field" tal:content="entry/time">Time</div>
     </div>
 
     <div class="row">
-      <div class="label" i18n:translate="">User</div>
+      <label i18n:translate="">User:</label>
       <div class="field" tal:content="entry/username">joe</div>
     </div>
 
     <div class="row">
-      <div class="label" i18n:translate="">Request URL</div>
+      <label i18n:translate="">Request URL:</label>
       <div class="field" tal:content="entry/url">http://zeomega.com</div>
     </div>
 
     <div class="row">
-      <div class="label" i18n:translate="">Exception Type</div>
+      <label i18n:translate="">Exception Type:</label>
       <div class="field" tal:content="entry/type">AttributeError</div>
     </div>
 
     <div class="row">
-      <div class="label" i18n:translate="">Exception Value</div>
+      <label i18n:translate="">Exception Value:</label>
       <div class="field" tal:content="entry/value">zzope</div>
     </div>
 
     <div class="row">
-      <div class="label" i18n:translate="">Traceback</div>
+      <label i18n:translate="">Traceback:</label>
       <div class="field">&nbsp;</div>
     </div>
     <br/>
@@ -69,10 +69,8 @@
 
   <form action="index.html" method="get">
     <div class="row">
-      <div class="controls">
         <input type="submit" name="submit" value="Return to log" 
                 i18n:attributes="value return-to-log-button" />
-        </div>
     </div>
   </form>
 

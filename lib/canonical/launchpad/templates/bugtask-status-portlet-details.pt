@@ -4,7 +4,7 @@
 
   <div class="portletBody"
        tal:define="bug context/bug">
-    <div class="portletContent odd">
+    <div class="portletContent">
 
       <b>Reported by:</b><br />
       <img src="/++resource++user.gif" />

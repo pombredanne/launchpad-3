@@ -117,7 +117,7 @@
               submitted.
             </tal:comment>
 
-            <input class="context" type="submit"
+            <input type="submit"
                    name="Update"
                    value="Update Series" />
 

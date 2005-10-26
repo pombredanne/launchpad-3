@@ -40,8 +40,8 @@
         <div class="row" 
              metal:define-slot="extra_top" 
              tal:replace="nothing">
-            <div class="label">Extra top</div>
-            <div class="label"><input type="text" style="width:100%" /></div>
+            <div>Extra top</div>
+            <div><input type="text" style="width:100%" /></div>
         </div>
 
         <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
@@ -49,7 +49,7 @@
         <div class="row"
              metal:define-slot="extra_bottom" 
              tal:replace="nothing">
-          <div class="label">Extra bottom</div>
+          <div>Extra bottom</div>
           <div class="field"><input type="text" style="width:100%" /></div>
         </div>
 

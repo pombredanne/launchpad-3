@@ -18,10 +18,10 @@
         </p>
 
         <div class="row" metal:fill-slot="extra_top">
-            <div class="label">Distribution</div>
+            <div><label>Distribution</label></div>
             <div class="field"
                  tal:content="context/distribution/displayname" />
-            <div class="label">Source Package Name</div>
+            <div><label>Source Package Name</label></div>
             <div class="field" tal:content="context/name" />
         </div>
 
