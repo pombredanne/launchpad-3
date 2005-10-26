@@ -14,18 +14,29 @@
 
 <div metal:fill-slot="main">
 
-  <h1 tal:condition="not: view/subscription">Subscribe to Branch</h1>
-  <h1 tal:condition="view/subscription">Unsubscribe From Branch</h1>
-
+<div tal:condition="not: view/subscription">
+  <h1>Subscribe to Branch</h1>
   <p class="documentDescription">
     If you subscribe to a branch it will show up on your
     personal pages.
   </p>
-
   <p>
     Choose "Subscribe" to become a subscriber to this branch, or "Cancel" to
     return to the branch page.
   </p>
+</div>
+
+<div tal:condition="view/subscription">
+  <h1>Unsubscribe From Branch</h1>
+  <p class="documentDescription">
+    If you unsubscribe from a branch it will no longer show up on your
+    personal pages.
+  </p>
+  <p>
+    Choose "Unsubscribe" to remove your current subscription to this branch,
+    or "Cancel" to return to the branch page.
+  </p>
+</div>
 
   <form action="." method="POST">
 
@@ -48,3 +59,4 @@
 
 </body>
 </html>
+
