@@ -137,8 +137,11 @@ class PgTestSetup(object):
 
     def __init__(self, template=None, dbname=None, dbuser=None,
             host=None, port=None):
-        '''Note that dbuser is not used for setting up or tearing down
-        the database - it is only used by the connect() method'''
+        '''Construct the PgTestSetup
+        
+        Note that dbuser is not used for setting up or tearing down
+        the database - it is only used by the connect() method
+        '''
         if template is not None:
             self.template = template
         if dbname is not None:
