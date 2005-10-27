@@ -5,6 +5,8 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+ <facet facet="calendar">
+
   <content class="canonical.launchpad.database.Calendar">
     <allow interface="canonical.launchpad.interfaces.ILaunchpadCalendar" />
     <require
@@ -63,7 +65,7 @@
       for="canonical.launchpad.interfaces.ICalendarOwner"
       name="+calendar-create"
       permission="launchpad.Edit"
-      class="canonical.launchpad.browser.ViewCreateCalendar"
+      class="canonical.launchpad.browser.CalendarCreateView"
       attribute="__call__"
       lp:url="/$CalendarOwner/+calendar-create" />
 
@@ -89,9 +91,10 @@
 
   <browser:pages
       for="schoolbell.interfaces.ICalendar"
-      permission="zope.Public">
+      permission="zope.Public"
+      class="canonical.launchpad.browser.CalendarView">
     <browser:page
-        template="../templates/calendar.pt"
+        template="../templates/calendar-index.pt"
         name="+index" />
   </browser:pages>
 
@@ -102,30 +105,31 @@
       attribute="__call__"
       lp:url="$obj/calendar/+icalendar" />
 
-  <browser:traverse
-      for="schoolbell.interfaces.ICalendar"
-      function="canonical.launchpad.browser.traverseCalendar" />
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="CalendarNavigation CalendarEventSetNavigation"
+      />
 
   <browser:page
       name="+subscribe"
       for="canonical.launchpad.interfaces.ILaunchpadCalendar"
       permission="launchpad.AnyPerson"
-      class="canonical.launchpad.browser.ViewCalendarSubscribe"
+      class="canonical.launchpad.browser.CalendarSubscribeView"
       template="../templates/calendar-subscribe.pt"
       lp:url="$obj/calendar/+subscribe" />
 
-  <browser:traverse
-      for="canonical.launchpad.interfaces.ICalendarEventSet"
-      getter="__getitem__" />
+  <browser:url
+      for="canonical.launchpad.interfaces.ICalendarRange"
+      path_expression="name"
+      attribute_to_parent="calendar" />
+
+  <browser:menus
+      module="canonical.launchpad.browser.cal"
+      classes="CalendarAppMenu CalendarRangeAppMenu CalendarContextMenu" />
 
   <content class="canonical.launchpad.browser.CalendarDay">
     <allow interface="canonical.launchpad.interfaces.ICalendarDay" />
   </content>
-
-  <browser:url
-      for="canonical.launchpad.interfaces.ICalendarDay"
-      path_expression="name"
-      attribute_to_parent="calendar" />
 
   <browser:defaultView
       for="canonical.launchpad.interfaces.ICalendarDay"
@@ -144,11 +148,6 @@
     <allow interface="canonical.launchpad.interfaces.ICalendarWeek" />
   </content>
 
-  <browser:url
-      for="canonical.launchpad.interfaces.ICalendarWeek"
-      path_expression="name"
-      attribute_to_parent="calendar" />
-
   <browser:defaultView
       for="canonical.launchpad.interfaces.ICalendarWeek"
       name="+index" />
@@ -166,11 +165,6 @@
     <allow interface="canonical.launchpad.interfaces.ICalendarMonth" />
   </content>
 
-  <browser:url
-      for="canonical.launchpad.interfaces.ICalendarMonth"
-      path_expression="name"
-      attribute_to_parent="calendar" />
-
   <browser:defaultView
       for="canonical.launchpad.interfaces.ICalendarMonth"
       name="+index" />
@@ -187,11 +181,6 @@
   <content class="canonical.launchpad.browser.CalendarYear">
     <allow interface="canonical.launchpad.interfaces.ICalendarYear" />
   </content>
-
-  <browser:url
-      for="canonical.launchpad.interfaces.ICalendarYear"
-      path_expression="name"
-      attribute_to_parent="calendar" />
 
   <browser:defaultView
       for="canonical.launchpad.interfaces.ICalendarYear"
@@ -302,25 +291,24 @@
 
   <!-- MergedCalendar -->
 
-  <browser:suburl
-      for="canonical.publication.RootObject"
-      class="canonical.launchpad.components.cal.MergedCalendar"
-      name="calendar"
-      permission="launchpad.AnyPerson"
-      lp:url="/calendar/" />
-
   <browser:url
       for="canonical.launchpad.components.cal.MergedCalendar"
       path_expression="string:calendar"
       parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot" />
 
-  <browser:page
-      name="+subscriptions"
-      for="canonical.launchpad.interfaces.ILaunchpadMergedCalendar"
+  <browser:pages
+      for="canonical.launchpad.interfaces.ILaunchpadCalendar"
       permission="launchpad.AnyPerson"
-      class="canonical.launchpad.browser.ViewCalendarSubscriptions"
-      template="../templates/calendar-subscriptions.pt"
-      lp:url="/calendar/+subscriptions" />
+      class="canonical.launchpad.browser.CalendarSubscriptionsView">
+    <browser:page
+        name="+subscriptions"
+        template="../templates/calendar-subscriptions.pt"
+        lp:url="/calendar/+subscriptions" />
+    <browser:page
+        name="+portlet-subscriptions"
+        template="../templates/calendar-portlet-subscriptions.pt"
+        lp:url="/calendar/+portlet-subscriptions" />
+  </browser:pages>
 
 
   <!-- XXX: register IDisplayViews so that the schemadisplay doesn't
@@ -335,5 +323,5 @@
       factory="canonical.launchpad.browser.LocalDateTimeDisplayWidget"
       permission="zope.Public"
       />
-
+ </facet>
 </configure>

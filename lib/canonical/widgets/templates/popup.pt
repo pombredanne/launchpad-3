@@ -1,9 +1,16 @@
 
 <input type="text"
-    tal:attributes="value view/formToken; id view/name; name view/name; size view/displayWidth; maxlength view/displayMaxWidth; cssClass view/cssClass" />
+    tal:attributes="value view/formToken;
+                    id view/name;
+                    name view/name;
+                    size view/displayWidth;
+                    maxlength view/displayMaxWidth;
+                    onKeyPress view/onKeyPress;
+                    style view/style;
+                    class view/cssClass" />
 
 <select
-    tal:define="matches view/matches" 
+    tal:define="matches view/matches"
     tal:condition="python:len(matches) > 0"
     tal:attributes="disabled python:len(matches) == 1">
     <option
@@ -11,7 +18,7 @@
         tal:attributes="value match/token;
             selected python:path('match/token') == path('view/formToken');
             onclick string:this.form['${view/name}'].value = this.value"
-        tal:content="match/title" 
+        tal:content="match/title"
         />
 </select>
 

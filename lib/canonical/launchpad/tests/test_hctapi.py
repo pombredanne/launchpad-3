@@ -265,14 +265,14 @@ class GetObject(DatabaseScaffold):
         from canonical.launchpad.database import Distribution
         from canonical.launchpad.hctapi import get_object
         obj = get_object("lp:///netapplet")
-        self.assertEquals(obj.distro, Distribution.byName("ubuntu"))
+        self.assertEquals(obj.distribution, Distribution.byName("ubuntu"))
 
     def testSourcePackageTrumpsProduct(self):
         """get_object returns a SourcePackage not a Product."""
-        from canonical.launchpad.database import SourcePackage
+        from canonical.launchpad.database import DistributionSourcePackage
         from canonical.launchpad.hctapi import get_object
         obj = get_object("lp:///netapplet")
-        self.failUnless(isinstance(obj, SourcePackage))
+        self.failUnless(isinstance(obj, DistributionSourcePackage))
 
     def testDistroSourcePackage(self):
         """get_object returns a source package in a distro."""
@@ -446,17 +446,6 @@ class ResolveObject(DatabaseScaffold):
         self.assertEquals(resolve_object(package),
                           release.sourcepackagerelease)
 
-    def testSourcePackageNotPublished(self):
-        """resolve_object raises LaunchpadError if sp isn't published."""
-        from canonical.launchpad.database import SourcePackageName
-        from canonical.launchpad.database import Distribution
-        name = SourcePackageName.byName("mozilla-firefox")
-        distro = Distribution.byName("ubuntu")
-        package = distro.getSourcePackage(name)
-
-        from canonical.launchpad.hctapi import resolve_object, LaunchpadError
-        self.assertRaises(LaunchpadError, resolve_object, package)
-
     def testDistroRelease(self):
         """resolve_object raises LaunchpadError if given DistroRelease."""
         from canonical.launchpad.database import DistroRelease
@@ -552,13 +541,13 @@ class GetManifestFrom(DatabaseScaffold):
         self.failUnless(isinstance(get_manifest_from(db_Manifest.byUuid(uuid)),
                                    Manifest))
 
-    def testManifestHasSameUuid(self):
-        """get_manifest_from returns manifest with same uuid as record."""
+    def testManifestHasUuidAsAncestor(self):
+        """get_manifest_from returns manifest with record uuid as ancestor."""
         from canonical.launchpad.database import Manifest as db_Manifest
         from canonical.launchpad.hctapi import get_manifest_from
         uuid = "24fce331-655a-4e17-be55-c718c7faebd0"
         manifest = get_manifest_from(db_Manifest.byUuid(uuid))
-        self.assertEquals(manifest.id, uuid)
+        self.assertEquals(manifest.ancestor, uuid)
 
     def testSingleManifestEntry(self):
         """get_manifest_from returns a manifest with a single entry."""
@@ -629,6 +618,23 @@ class GetManifestFrom(DatabaseScaffold):
         manifest = get_manifest_from(db_Manifest.byUuid(uuid))
         self.assertEquals(manifest[0].path, "firefox-0.9.2.tar.gz")
 
+    def testManifestEntryHint(self):
+        """get_manifest_from returns a manifest entry with correct hint."""
+        from canonical.launchpad.database import Manifest as db_Manifest
+        from canonical.launchpad.hctapi import get_manifest_from
+        from hct.manifest import ManifestEntryHint
+        uuid = "24fce331-655a-4e17-be55-c718c7faebd0"
+        manifest = get_manifest_from(db_Manifest.byUuid(uuid))
+        self.assertEquals(manifest[0].hint, ManifestEntryHint.ORIGINAL_SOURCE)
+
+    def testManifestEntryNoHint(self):
+        """get_manifest_from returns a manifest entry with no hint."""
+        from canonical.launchpad.database import Manifest as db_Manifest
+        from canonical.launchpad.hctapi import get_manifest_from
+        uuid = "97b4ece8-b3c5-4e07-b529-6c76b59a5455"
+        manifest = get_manifest_from(db_Manifest.byUuid(uuid))
+        self.assertEquals(manifest[0].hint, None)
+
     def testManifestEntryDirname(self):
         """get_manifest_from returns a manifest entry with correct dirname."""
         from canonical.launchpad.database import Manifest as db_Manifest
@@ -645,13 +651,13 @@ class GetManifestFrom(DatabaseScaffold):
         manifest = get_manifest_from(db_Manifest.byUuid(uuid))
         self.assertEquals(manifest[0].dirname, None)
 
-    def testManifestEntryPatchOn(self):
-        """get_manifest_from correctly maps patch_on to sequence."""
+    def testManifestEntryParent(self):
+        """get_manifest_from correctly maps parent to sequence."""
         from canonical.launchpad.database import Manifest as db_Manifest
         from canonical.launchpad.hctapi import get_manifest_from
         uuid = "2a18a3f1-eec5-4b72-b23c-fb46c8c12a88"
         manifest = get_manifest_from(db_Manifest.byUuid(uuid))
-        self.assertEquals(manifest[1].patch_on, manifest[0])
+        self.assertEquals(manifest[1].parent, manifest[0])
 
     def testManifestEntryBranch(self):
         """get_manifest_from returns a manifest entry with a branch."""
@@ -718,14 +724,14 @@ class GetManifest(DatabaseScaffold):
         """get_manifest returns the right Manifest."""
         from canonical.launchpad.hctapi import get_manifest
         url = "lp:///products/firefox/0.9.2"
-        self.assertEquals(get_manifest(url).id,
+        self.assertEquals(get_manifest(url).ancestor,
                           "24fce331-655a-4e17-be55-c718c7faebd0")
 
     def testResolvesUrl(self):
         """get_manifest resolves an incomplete url."""
         from canonical.launchpad.hctapi import get_manifest
         url = "firefox"
-        self.assertEquals(get_manifest(url).id,
+        self.assertEquals(get_manifest(url).ancestor,
                           "97b4ece8-b3c5-4e07-b529-6c76b59a5455")
 
     def testNoManifest(self):
@@ -997,7 +1003,7 @@ class IdentifyFile(DatabaseScaffold):
         from hct.manifest import Manifest
         size = 9922560
         sha1 = "a57faa6287aee2c58e115673a119c6083d31d1b9"
-        self.assertEquals(identify_file("lp:", size, sha1)[0][1].id,
+        self.assertEquals(identify_file("lp:", size, sha1)[0][1].ancestor,
                           "24fce331-655a-4e17-be55-c718c7faebd0")
 
     def testSourcePackage(self):
@@ -1049,12 +1055,11 @@ class PutManifest(DatabaseScaffold):
         from hct.manifest import Manifest
         manifest = Manifest()
 
-        from canonical.launchpad.hctapi import put_manifest
+        from canonical.launchpad.hctapi import put_manifest, get_object
         put_manifest("lp:///products/netapplet/1.0", manifest)
 
-        from canonical.launchpad.database import Manifest as db_Manifest
-        obj = db_Manifest.byUuid(manifest.id)
-        self.assertEquals(obj.uuid, manifest.id)
+        obj = get_object("lp:///products/netapplet/1.0").manifest
+        self.assertNotEqual(obj, None)
 
     def testAssignsObject(self):
         """put_manifest assigns the manifest to the parent object."""
@@ -1067,7 +1072,61 @@ class PutManifest(DatabaseScaffold):
         from canonical.launchpad.database import Product, ProductRelease
         product = Product.byName("netapplet")
         release = product.getRelease("1.0")
-        self.assertEquals(release.manifest.uuid, manifest.id)
+        self.assertNotEquals(release.manifest, None)
+
+    def testGeneratesUuid(self):
+        """put_manifest generates a uuid for the new manifest."""
+        from hct.manifest import Manifest
+        manifest = Manifest()
+
+        from canonical.launchpad.hctapi import put_manifest, get_object
+        put_manifest("lp:///products/netapplet/1.0", manifest)
+
+        obj = get_object("lp:///products/netapplet/1.0").manifest
+        self.assertNotEqual(obj.uuid, None)
+
+    def testUuidIsNotAncestor(self):
+        """put_manifest generates a new uuid, and doesn't use ancestor."""
+        from hct.manifest import Manifest
+        manifest = Manifest("97b4ece8-b3c5-4e07-b529-6c76b59a5455")
+
+        from canonical.launchpad.hctapi import put_manifest, get_object
+        put_manifest("lp:///products/netapplet/1.0", manifest)
+
+        obj = get_object("lp:///products/netapplet/1.0").manifest
+        self.assertNotEqual(obj.uuid, manifest.ancestor)
+
+    def testAncestorCreatesAncestry(self):
+        """put_manifest generates an ancestry record for the ancestor."""
+        from hct.manifest import Manifest
+        manifest = Manifest("97b4ece8-b3c5-4e07-b529-6c76b59a5455")
+
+        from canonical.launchpad.hctapi import put_manifest, get_object
+        put_manifest("lp:///products/netapplet/1.0", manifest)
+
+        from canonical.launchpad.database import Manifest as db_Manifest
+        obj = get_object("lp:///products/netapplet/1.0").manifest
+        db_m = db_Manifest.byUuid("97b4ece8-b3c5-4e07-b529-6c76b59a5455")
+
+        self.assertEquals(obj.ancestors, [ db_m ])
+
+    def testMergesCreateAncestry(self):
+        """put_manifest generates ancestry records for merges."""
+        from hct.manifest import Manifest
+        manifest = Manifest("97b4ece8-b3c5-4e07-b529-6c76b59a5455")
+        manifest.merges.append("2a18a3f1-eec5-4b72-b23c-fb46c8c12a88")
+        manifest.merges.append("bf819b15-10b3-4d1e-9963-b787753e8fb2")
+
+        from canonical.launchpad.hctapi import put_manifest, get_object
+        put_manifest("lp:///products/netapplet/1.0", manifest)
+
+        from canonical.launchpad.database import Manifest as db_Manifest
+        obj = get_object("lp:///products/netapplet/1.0").manifest
+        db_m = db_Manifest.byUuid("97b4ece8-b3c5-4e07-b529-6c76b59a5455")
+        db_m1 = db_Manifest.byUuid("2a18a3f1-eec5-4b72-b23c-fb46c8c12a88")
+        db_m2 = db_Manifest.byUuid("bf819b15-10b3-4d1e-9963-b787753e8fb2")
+
+        self.assertEquals(obj.ancestors, [ db_m1, db_m2, db_m ])
 
     def testCreatesEntries(self):
         """put_manifest creates the right number of entry objects."""
@@ -1076,11 +1135,11 @@ class PutManifest(DatabaseScaffold):
         manifest.append(ManifestTarEntry("foo.tar.gz"))
         manifest.append(ManifestTarEntry("bar.tar.gz"))
 
-        from canonical.launchpad.hctapi import put_manifest
+        from canonical.launchpad.hctapi import put_manifest, get_object
         put_manifest("lp:///products/netapplet/1.0", manifest)
 
         from canonical.launchpad.database import Manifest as db_Manifest
-        obj = db_Manifest.byUuid(manifest.id)
+        obj = get_object("lp:///products/netapplet/1.0").manifest
         self.assertEquals(len(obj.entries), 2)
 
     def testEntryPath(self):
@@ -1089,12 +1148,40 @@ class PutManifest(DatabaseScaffold):
         manifest = Manifest()
         manifest.append(ManifestTarEntry("foo.tar.gz"))
 
-        from canonical.launchpad.hctapi import put_manifest
+        from canonical.launchpad.hctapi import put_manifest, get_object
         put_manifest("lp:///products/netapplet/1.0", manifest)
 
         from canonical.launchpad.database import Manifest as db_Manifest
-        obj = db_Manifest.byUuid(manifest.id)
+        obj = get_object("lp:///products/netapplet/1.0").manifest
         self.assertEquals(obj.entries[0].path, manifest[-1].path)
+
+    def testEntryHint(self):
+        """put_manifest creates entries with correct hint."""
+        from hct.manifest import Manifest, ManifestTarEntry, ManifestEntryHint
+        manifest = Manifest()
+        manifest.append(ManifestTarEntry("foo.tar.gz"))
+        manifest[-1].hint = ManifestEntryHint.PATCH_BASE
+
+        from canonical.launchpad.hctapi import put_manifest, get_object
+        put_manifest("lp:///products/netapplet/1.0", manifest)
+
+        from canonical.launchpad.database import Manifest as db_Manifest
+        from canonical.lp.dbschema import ManifestEntryHint as db_Hint
+        obj = get_object("lp:///products/netapplet/1.0").manifest
+        self.assertEquals(obj.entries[0].hint, db_Hint.PATCH_BASE)
+
+    def testEntryWithoutHint(self):
+        """put_manifest creates entries without a hint."""
+        from hct.manifest import Manifest, ManifestTarEntry
+        manifest = Manifest()
+        manifest.append(ManifestTarEntry("foo.tar.gz"))
+
+        from canonical.launchpad.hctapi import put_manifest, get_object
+        put_manifest("lp:///products/netapplet/1.0", manifest)
+
+        from canonical.launchpad.database import Manifest as db_Manifest
+        obj = get_object("lp:///products/netapplet/1.0").manifest
+        self.assertEquals(obj.entries[0].hint, None)
 
     def testEntryDirname(self):
         """put_manifest creates entries with correct dirname."""
@@ -1103,11 +1190,11 @@ class PutManifest(DatabaseScaffold):
         manifest.append(ManifestTarEntry("foo.tar.gz"))
         manifest[-1].dirname = "foo/"
 
-        from canonical.launchpad.hctapi import put_manifest
+        from canonical.launchpad.hctapi import put_manifest, get_object
         put_manifest("lp:///products/netapplet/1.0", manifest)
 
         from canonical.launchpad.database import Manifest as db_Manifest
-        obj = db_Manifest.byUuid(manifest.id)
+        obj = get_object("lp:///products/netapplet/1.0").manifest
         self.assertEquals(obj.entries[0].dirname, manifest[-1].dirname)
 
     def testEntryWithoutDirname(self):
@@ -1116,40 +1203,40 @@ class PutManifest(DatabaseScaffold):
         manifest = Manifest()
         manifest.append(ManifestTarEntry("foo.tar.gz"))
 
-        from canonical.launchpad.hctapi import put_manifest
+        from canonical.launchpad.hctapi import put_manifest, get_object
         put_manifest("lp:///products/netapplet/1.0", manifest)
 
         from canonical.launchpad.database import Manifest as db_Manifest
-        obj = db_Manifest.byUuid(manifest.id)
+        obj = get_object("lp:///products/netapplet/1.0").manifest
         self.assertEquals(obj.entries[0].dirname, None)
 
-    def testEntryWithPatchOn(self):
-        """put_manifest creates entries with a patchon."""
+    def testEntryWithParent(self):
+        """put_manifest creates entries with a parent."""
         from hct.manifest import Manifest, ManifestTarEntry, ManifestPatchEntry
         manifest = Manifest()
         manifest.append(ManifestTarEntry("foo.tar.gz"))
         manifest.append(ManifestPatchEntry("foo.patch.gz"))
-        manifest[-1].patch_on = manifest[0]
+        manifest[-1].parent = manifest[0]
 
-        from canonical.launchpad.hctapi import put_manifest
+        from canonical.launchpad.hctapi import put_manifest, get_object
         put_manifest("lp:///products/netapplet/1.0", manifest)
 
         from canonical.launchpad.database import Manifest as db_Manifest
-        obj = db_Manifest.byUuid(manifest.id)
-        self.assertEquals(obj.entries[-1].patchon, 1)
+        obj = get_object("lp:///products/netapplet/1.0").manifest
+        self.assertEquals(obj.entries[-1].parent, 1)
 
-    def testEntryWithoutPatchOn(self):
-        """put_manifest creates entries without a patchon."""
+    def testEntryWithoutParent(self):
+        """put_manifest creates entries without a parent."""
         from hct.manifest import Manifest, ManifestTarEntry
         manifest = Manifest()
         manifest.append(ManifestTarEntry("foo.tar.gz"))
 
-        from canonical.launchpad.hctapi import put_manifest
+        from canonical.launchpad.hctapi import put_manifest, get_object
         put_manifest("lp:///products/netapplet/1.0", manifest)
 
         from canonical.launchpad.database import Manifest as db_Manifest
-        obj = db_Manifest.byUuid(manifest.id)
-        self.assertEquals(obj.entries[0].patchon, None)
+        obj = get_object("lp:///products/netapplet/1.0").manifest
+        self.assertEquals(obj.entries[0].parent, None)
 
     def testCreatesDirEntry(self):
         """put_manifest creates a dir entry."""
@@ -1157,14 +1244,13 @@ class PutManifest(DatabaseScaffold):
         manifest = Manifest()
         manifest.append(ManifestDirEntry("foo/"))
 
-        from canonical.launchpad.hctapi import put_manifest
+        from canonical.launchpad.hctapi import put_manifest, get_object
         put_manifest("lp:///products/netapplet/1.0", manifest)
 
         from canonical.launchpad.database import Manifest as db_Manifest
         from canonical.lp.dbschema import ManifestEntryType
-        obj = db_Manifest.byUuid(manifest.id)
-        self.assertEquals(obj.entries[0].entrytype,
-                          ManifestEntryType.DIR.value)
+        obj = get_object("lp:///products/netapplet/1.0").manifest
+        self.assertEquals(obj.entries[0].entrytype, ManifestEntryType.DIR)
 
     def testCreatesCopyEntry(self):
         """put_manifest creates a copy entry."""
@@ -1172,14 +1258,13 @@ class PutManifest(DatabaseScaffold):
         manifest = Manifest()
         manifest.append(ManifestCopyEntry("foo/"))
 
-        from canonical.launchpad.hctapi import put_manifest
+        from canonical.launchpad.hctapi import put_manifest, get_object
         put_manifest("lp:///products/netapplet/1.0", manifest)
 
         from canonical.launchpad.database import Manifest as db_Manifest
         from canonical.lp.dbschema import ManifestEntryType
-        obj = db_Manifest.byUuid(manifest.id)
-        self.assertEquals(obj.entries[0].entrytype,
-                          ManifestEntryType.COPY.value)
+        obj = get_object("lp:///products/netapplet/1.0").manifest
+        self.assertEquals(obj.entries[0].entrytype, ManifestEntryType.COPY)
 
     def testCreatesFileEntry(self):
         """put_manifest creates a file entry."""
@@ -1187,14 +1272,13 @@ class PutManifest(DatabaseScaffold):
         manifest = Manifest()
         manifest.append(ManifestFileEntry("foo.txt"))
 
-        from canonical.launchpad.hctapi import put_manifest
+        from canonical.launchpad.hctapi import put_manifest, get_object
         put_manifest("lp:///products/netapplet/1.0", manifest)
 
         from canonical.launchpad.database import Manifest as db_Manifest
         from canonical.lp.dbschema import ManifestEntryType
-        obj = db_Manifest.byUuid(manifest.id)
-        self.assertEquals(obj.entries[0].entrytype,
-                          ManifestEntryType.FILE.value)
+        obj = get_object("lp:///products/netapplet/1.0").manifest
+        self.assertEquals(obj.entries[0].entrytype, ManifestEntryType.FILE)
 
     def testCreatesTarEntry(self):
         """put_manifest creates a tar entry."""
@@ -1202,14 +1286,13 @@ class PutManifest(DatabaseScaffold):
         manifest = Manifest()
         manifest.append(ManifestTarEntry("foo.tar.gz"))
 
-        from canonical.launchpad.hctapi import put_manifest
+        from canonical.launchpad.hctapi import put_manifest, get_object
         put_manifest("lp:///products/netapplet/1.0", manifest)
 
         from canonical.launchpad.database import Manifest as db_Manifest
         from canonical.lp.dbschema import ManifestEntryType
-        obj = db_Manifest.byUuid(manifest.id)
-        self.assertEquals(obj.entries[0].entrytype,
-                          ManifestEntryType.TAR.value)
+        obj = get_object("lp:///products/netapplet/1.0").manifest
+        self.assertEquals(obj.entries[0].entrytype, ManifestEntryType.TAR)
 
     def testCreatesZipEntry(self):
         """put_manifest creates a zip entry."""
@@ -1217,14 +1300,13 @@ class PutManifest(DatabaseScaffold):
         manifest = Manifest()
         manifest.append(ManifestZipEntry("foo.zip.gz"))
 
-        from canonical.launchpad.hctapi import put_manifest
+        from canonical.launchpad.hctapi import put_manifest, get_object
         put_manifest("lp:///products/netapplet/1.0", manifest)
 
         from canonical.launchpad.database import Manifest as db_Manifest
         from canonical.lp.dbschema import ManifestEntryType
-        obj = db_Manifest.byUuid(manifest.id)
-        self.assertEquals(obj.entries[0].entrytype,
-                          ManifestEntryType.ZIP.value)
+        obj = get_object("lp:///products/netapplet/1.0").manifest
+        self.assertEquals(obj.entries[0].entrytype, ManifestEntryType.ZIP)
 
     def testCreatesPatchEntry(self):
         """put_manifest creates a patch entry."""
@@ -1232,14 +1314,13 @@ class PutManifest(DatabaseScaffold):
         manifest = Manifest()
         manifest.append(ManifestPatchEntry("foo.patch"))
 
-        from canonical.launchpad.hctapi import put_manifest
+        from canonical.launchpad.hctapi import put_manifest, get_object
         put_manifest("lp:///products/netapplet/1.0", manifest)
 
         from canonical.launchpad.database import Manifest as db_Manifest
         from canonical.lp.dbschema import ManifestEntryType
-        obj = db_Manifest.byUuid(manifest.id)
-        self.assertEquals(obj.entries[0].entrytype,
-                          ManifestEntryType.PATCH.value)
+        obj = get_object("lp:///products/netapplet/1.0").manifest
+        self.assertEquals(obj.entries[0].entrytype, ManifestEntryType.PATCH)
 
     def testEntryOnBranch(self):
         """put_manifest creates and assigns branch objects."""
@@ -1249,12 +1330,12 @@ class PutManifest(DatabaseScaffold):
         manifest.append(ManifestTarEntry("foo.tar.gz"))
         manifest[-1].branch = Branch("%s/foo--bar--0" % self.archive)
 
-        from canonical.launchpad.hctapi import put_manifest
+        from canonical.launchpad.hctapi import put_manifest, get_object
         put_manifest("lp:///products/netapplet/1.0", manifest)
 
         from canonical.launchpad.database import Manifest as db_Manifest
         from canonical.launchpad.hctapi import get_branch_from
-        obj = db_Manifest.byUuid(manifest.id)
+        obj = get_object("lp:///products/netapplet/1.0").manifest
         self.assertEquals(get_branch_from(obj.entries[0].branch),
                           "%s/foo--bar--0" % self.archive)
 
@@ -1266,12 +1347,12 @@ class PutManifest(DatabaseScaffold):
         manifest.append(ManifestTarEntry("foo.tar.gz"))
         manifest[-1].branch = Branch("gnome@arch.ubuntu.com/evolution--MAIN--0")
 
-        from canonical.launchpad.hctapi import put_manifest
+        from canonical.launchpad.hctapi import put_manifest, get_object
         put_manifest("lp:///products/netapplet/1.0", manifest)
 
         from canonical.launchpad.database import Manifest as db_Manifest
         from canonical.launchpad.hctapi import get_branch_from
-        obj = db_Manifest.byUuid(manifest.id)
+        obj = get_object("lp:///products/netapplet/1.0").manifest
         self.assertEquals(get_branch_from(obj.entries[0].branch),
                           "gnome@arch.ubuntu.com/evolution--MAIN--0")
 
@@ -1284,12 +1365,12 @@ class PutManifest(DatabaseScaffold):
         manifest[-1].branch = Branch("%s/foo--bar--0" % self.archive)
         manifest[-1].changeset = Changeset("%s--base-0" % manifest[-1].branch)
 
-        from canonical.launchpad.hctapi import put_manifest
+        from canonical.launchpad.hctapi import put_manifest, get_object
         put_manifest("lp:///products/netapplet/1.0", manifest)
 
         from canonical.launchpad.database import Manifest as db_Manifest
         from canonical.launchpad.hctapi import get_changeset_from
-        obj = db_Manifest.byUuid(manifest.id)
+        obj = get_object("lp:///products/netapplet/1.0").manifest
         self.assertEquals(get_changeset_from(obj.entries[0].changeset),
                           "%s/foo--bar--0--base-0" % self.archive)
 
@@ -1302,12 +1383,12 @@ class PutManifest(DatabaseScaffold):
         manifest[-1].branch = Branch("mozilla@arch.ubuntu.com/mozilla--release--0.9.2")
         manifest[-1].changeset = Changeset("%s--base-0" % manifest[-1].branch)
 
-        from canonical.launchpad.hctapi import put_manifest
+        from canonical.launchpad.hctapi import put_manifest, get_object
         put_manifest("lp:///products/netapplet/1.0", manifest)
 
         from canonical.launchpad.database import Manifest as db_Manifest
         from canonical.launchpad.hctapi import get_changeset_from
-        obj = db_Manifest.byUuid(manifest.id)
+        obj = get_object("lp:///products/netapplet/1.0").manifest
         self.assertEquals(get_changeset_from(obj.entries[0].changeset),
                           "mozilla@arch.ubuntu.com/mozilla--release--0.9.2--base-0")
 

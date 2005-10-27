@@ -1,0 +1,6 @@
+= KeyRingTrustAnalyser =
+
+The Keyring trust analyser is not documented on the wiki at this point.
+
+Please see lib/canonical/launchpad/utilities/tests/keyring_trust_analyser.py
+for unit tests.

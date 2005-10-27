@@ -14,12 +14,31 @@ __all__ = [
 from canonical.launchpad.fields import Title, Summary
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.interfaces.launchpad import IHasOwner
+from canonical.launchpad.interfaces.person import NameAlreadyTaken
 
+from zope.component import getUtility
 from zope.schema import Bool, Choice, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
 _ = MessageIDFactory('launchpad')
+
+
+class ProjectNameField(TextLine):
+
+    def _validate(self, value):
+        TextLine._validate(self, value)
+        if (IProject.providedBy(self.context) and 
+            value == getattr(self.context, self.__name__)):
+            # The name wasn't changed.
+            return
+
+        try:
+            project = getUtility(IProjectSet)[value]
+        except KeyError:
+            pass
+        else:
+            raise NameAlreadyTaken(value)
 
 
 class IProject(IHasOwner):
@@ -34,41 +53,36 @@ class IProject(IHasOwner):
         description=_("""Project owner, it can either a valid
             Person or Team inside Launchpad context."""))
 
-    name = TextLine(
+    name = ProjectNameField(
         title=_('Name'),
         required=True,
-        description=_("""The short
-            name of this project, which must be unique among all the products.
-            It should be at least one lowercase letters or number followed by
-            one or more chars, numbers, plusses, dots or hyphens and will be
-            part of the url to this project in the Launchpad."""),
+        description=_("""A unique name, used in URLs, identifying the project.
+            All lowercase, no special characters.
+            Examples: apache, mozilla, gimp."""),
         constraint=valid_name)
 
     displayname = TextLine(
         title=_('Display Name'),
-        description=_("""The display name of the project is a short name,
-            appropriately capitalised, for this product. For example,
-            if you were referring to this project in a paragraph of text,
-            you would use this name. Examples: the Apache Project, the
-            Mozilla Project, the GIMP Project."""))
+        description=_("""Appropriately capitalised,
+            and typically ending in "Project".
+            Examples: the Apache Project, the Mozilla Project,
+            the Gimp Project."""))
 
     title = Title(
         title=_('Title'),
-        description=_("""This is the full title of the project, can contain
-            spaces, special characters etc.  This is what you would imagine
-            seeing at the top of a page about the project. For example,
-            The Apache Project, The Mozilla Project."""))
+        description=_("""The full name of the project,
+            which can contain spaces, special characters etc."""))
 
     summary = Summary(
         title=_('Project Summary'),
-        description=_("""A summary of the project, in a single
-            short paragraph."""))
+        description=_("""A brief (one-paragraph) summary of the project."""))
 
     description = Text(
         title=_('Description'),
-        description=_("""A couple of paragraphs describing the project
-            in more detail, from the history of the project to current
-            organisational structure, goals and release strategy."""))
+        description=_("""A detailed description of the project,
+            including details like when it was founded, 
+            how many contributors there are,
+            and how it is organised and coordinated."""))
 
     datecreated = TextLine(
         title=_('Date Created'),
@@ -167,14 +181,23 @@ class IProjectSet(Interface):
     def __getitem__(name):
         """Get a project by its name."""
 
-    # XXX needs displayname, summary, NO url
-    def new(name, title, url, description, owner):
+    def get(productid):
+        """Get a project by its id.
+
+        If the product can't be found a zope.exceptions.NotFoundError will be
+        raised.
+        """
+
+    def new(name, title, displayname, summary, description, owner, url):
         """Creates a new project with the given name.
 
         Returns that project.
 
         Raises an KeyError if a project with that name already exists.
         """
+
+    def count_all():
+        """Return the total number of projects registered in Launchpad."""
 
     def search(text=None, soyuz=None,
                      rosetta=None, malone=None,

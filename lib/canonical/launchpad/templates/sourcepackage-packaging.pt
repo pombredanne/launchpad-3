@@ -6,23 +6,9 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div class="portlet">
-    <h4>About this page:</h4>
-    <div class="portletBody portletContent">
-      
-      <img src="/++resource++info_icon.gif" />
-      This page allows you to modify the link between <span
-      tal:replace="context/title">apache in ubuntu hoary</span> and an
-      upstream branch. Once we have accurate information about that link, we
-      can share bugs, translations, and patches very easily between the
-      distro maintainers and the upstream product maintainers.
-
-    </div>
-  </div>
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-actions" />
   <div tal:replace="structure context/@@+portlet-hctstatus" />
 </metal:rightportlets>
 
@@ -31,23 +17,22 @@
 
   <h1>Package Upstream Link</h1>
 
-  <p class="documentDescription">Use this page to link 
-  <span tal:replace="context/displayname">evolution in ubuntu hoary</span>
-  to its "upstream".</p>
-  
-  <p class="portalMessage" tal:condition="not: context/productseries">
-    Unable to determine the upstream product series for this package. Please
-    add packaging information below!
+  <p>
+    Launchpad needs accurate information about the link between <span
+    tal:replace="context/title">apache in ubuntu hoary</span> and
+    its &#8220;upstream&#8221;, so that bugs, translations, and patches can be
+    shared easily between distribution and product maintainers.
   </p>
 
   <p class="portalMessage" tal:condition="view/status_message"
      tal:content="view/status_message">
      Status Message Here
   </p>
-  
-  <p>Once the link has been made, it is possible to share
-  translations, patches and bugs much more efficiently between the
-  distribution maintainers, and upstream maintainers.</p>
+
+  <p class="portalMessage" tal:condition="not: context/productseries">
+    Launchpad does not know the upstream product series for this package.
+    If you know the correct details, please enter them carefully.
+  </p>
 
   <form tal:attributes="action request/getURL" method="POST">
 
@@ -60,7 +45,7 @@
         class="fieldRequired"
         title="Required">(Required)</span>
 
-            
+
       <div tal:content="structure view/productseries_widget">
         <input type="text" style="width:100%"/>
       </div>
@@ -69,15 +54,20 @@
          tal:condition="view/productseries_widget/hint"
          tal:content="view/productseries_widget/hint">Some Help Text
       </p>
-            
+
       <div class="portalMessage"
            tal:define="error view/productseries_widget/error"
            tal:condition="error"
            tal:content="structure error">An Error Message</div>
-           
+
     </div>
 
-    <div class="form actions">
+    <p>
+      Ensure these packaging details are correct, so that Launchpad
+      sends bug notifications and translations to the correct people.
+    </p>
+
+    <div class="actions">
       <input
         type="submit"
         name="packaging"
@@ -88,6 +78,6 @@
 
   </form>
 
-</div> 
+</div>
 </body>
 </html>

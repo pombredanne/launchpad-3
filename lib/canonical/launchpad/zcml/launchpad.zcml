@@ -3,10 +3,58 @@
   xmlns:browser="http://namespaces.zope.org/browser"
   i18n_domain="canonical.launchpad">
 
+<!-- Error pages -->
+  <!-- System Errors -->
+  <browser:page
+      for="zope.interface.common.interfaces.IException"
+      name="index.html"
+      template="../templates/launchpad-oops.pt"
+      permission="zope.Public"
+      class="canonical.launchpad.webapp.error.SystemErrorView"
+      />
+
+  <!-- Unauthorized -->
+  <browser:page
+      for="zope.exceptions.IUnauthorized"
+      name="index.html"
+      permission="zope.Public"
+      class="canonical.launchpad.webapp.login.UnauthorizedView"
+      attribute="__call__"
+      />
+
+  <!-- NotFound -->
+  <browser:page
+      for="zope.publisher.interfaces.NotFound"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-notfound.pt"
+      class="canonical.launchpad.webapp.error.NotFoundView"
+      />
+
+  <!-- RequestExpired -->
+  <browser:page
+      for="canonical.database.interfaces.IRequestExpired"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-requestexpired.pt"
+      class="canonical.launchpad.webapp.error.SystemErrorView"
+      />
+
+
+<facet facet="overview">
+
   <utility
       factory="canonical.launchpad.utilities.LaunchpadCelebrities"
       provides="canonical.launchpad.interfaces.ILaunchpadCelebrities">
   </utility>
+
+  <browser:page
+      for="*"
+      name="+maintenancemessage"
+      template="../templates/launchpad-maintenance.pt"
+      class="canonical.launchpad.browser.MaintenanceMessage"
+      permission="zope.Public"
+      />
 
   <!-- Login and logout pages, and login status. -->
   <browser:page
@@ -43,8 +91,8 @@
       />
 
   <browser:page
-      for="canonical.launchpad.interfaces.ILaunchpadApplication"
-      template="../templates/launchpad-logout.pt"
+      for="*"
+      attribute="logout"
       class="canonical.launchpad.webapp.login.CookieLogoutPage"
       permission="zope.Public"
       name="+logout"
@@ -59,28 +107,43 @@
       />
 
   <!-- Declare robots.txt file for the root -->
-
   <browser:page
-      for="canonical.publication.RootObject"
+      for="canonical.launchpad.interfaces.ILaunchpadRoot"
       name="robots.txt"
       template="../templates/robotstxt.pt"
       permission="zope.Public"
       />
 
   <!-- Common menus -->
-
   <browser:menus
       module="canonical.launchpad.browser.launchpad"
-      classes="LaunchpadRootFacets RosettaAppMenus"
+      classes="LaunchpadRootFacets RosettaContextMenu MaloneContextMenu"
+      />
+
+  <!-- This is a view on TALES CONTEXTS rather than all dicts. -->
+  <browser:page
+      for="dict"
+      name="+menubox"
+      class="canonical.launchpad.browser.launchpad.MenuBox"
+      template="../templates/launchpad-menubox.pt"
+      permission="zope.Public"
+      />
+
+  <!-- breadcrumbs -->
+  <browser:page
+      for="zope.interface.Interface"
+      name="+breadcrumbs"
+      class="canonical.launchpad.browser.launchpad.Breadcrumbs"
+      attribute="__call__"
+      permission="zope.Public"
       />
 
   <!-- Menus debug page. -->
-
   <browser:page
       for="zope.interface.Interface"
       name="+debug-menus"
       template="../templates/launchpad-menus-debug.pt"
       permission="zope.Public"
       />
-
+</facet>
 </configure>

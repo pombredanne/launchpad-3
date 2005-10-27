@@ -10,26 +10,36 @@ __metaclass__ = type
 import sys
 import logging
 import os
+from optparse import OptionParser
+
+from zope.component import getUtility
 
 from canonical.lp import initZopeless
-from canonical.launchpad.database import DistroArchRelease
+from canonical.launchpad.interfaces import IDistroArchReleaseSet
 
 from canonical.launchpad.scripts.builddmaster import BuilddMaster
 from canonical.launchpad.scripts.lockfile import LockFile
+from canonical.launchpad.scripts import (
+        execute_zcml_for_scripts, logger_options, logger
+        )
 
+_default_lockfile = '/var/lock/buildd-master.lock'
 
-_default_lockfile = '/var/lock/buildd-slave-scanner.lock'
-_default_logfilename = '/var/tmp/buildd-slave-scanner.log'
-
-
-def doSlaveScan(logger, tm):
+def doSlaveScan(logger):
     """Proceed the Slave Scanning Process."""    
+    # XXX cprov 20051019
+    # retrive the user infromation from the config file
+    
+    # setup a transaction manager
+    tm = initZopeless(dbuser='fiera')
+
     buildMaster = BuilddMaster(logger, tm)
 
     logger.info("Setting Builders.")
+    
     # For every distroarchrelease we can find;
     # put it into the build master
-    for archrelease in DistroArchRelease.select():
+    for archrelease in getUtility(IDistroArchReleaseSet):
         buildMaster.addDistroArchRelease(archrelease)
         try:
             buildMaster.setupBuilders(archrelease)
@@ -58,23 +68,20 @@ def doSlaveScan(logger, tm):
             buildCandidatesSortedByProcessor.iteritems():
         buildMaster.dispatchByProcessor(processor, buildCandidates)
 
-def make_logger(loglevel=logging.WARN):
-    """Return a logger object for logging with."""
-    logger = logging.getLogger("buildd-slave-scanner")
-    handler = logging.StreamHandler(strm=sys.stderr)
-    handler.setFormatter(
-        logging.Formatter(fmt='%(asctime)s %(levelname)s %(message)s'))
-    logger.addHandler(handler)
-    logger.setLevel(loglevel)
-    return logger
-
-
 if __name__ == '__main__':
-    # setup a transaction manager
-    tm = initZopeless(dbuser='fiera')
-    logger = make_logger(loglevel=logging.DEBUG)
-    locker = LockFile(_default_lockfile)
+    parser = OptionParser()
+    logger_options(parser)
+    (options, arguments) = parser.parse_args()
 
+    if arguments:
+        parser.error("Unhandled arguments %s" % repr(arguments))
+    execute_zcml_for_scripts()
+
+    log = logger(options, 'slavescanner')
+
+    log.info("Slave Scan Process Initiated.")
+
+    locker = LockFile(_default_lockfile, logger=log)
     try:
         locker.acquire()
     except OSError:
@@ -82,9 +89,9 @@ if __name__ == '__main__':
         sys.exit(1)
 
     try:
-        doSlaveScan(logger, tm)
+        doSlaveScan(log)
     finally:
         # release process lock file if the procedure finished properly
         locker.release()
 
-    logger.info("Slave Scan Process Finished.")
+    log.info("Slave Scan Process Finished.")

@@ -43,11 +43,10 @@ def check_one_watch(watch):
     try:
         remotesystem = externalsystem.ExternalSystem(bugtracker, version)
     except externalsystem.UnknownBugTrackerTypeError, val:
-        if val == 'debbugs':
-            pass # Yes, we know. Just stop spamming us
-        else:
-            log.error("BugTrackerType '%s' is not known",
-                      val.bugtrackertypename)
+        log.info(
+                "BugTrackerType '%s' is not known. Skipping.",
+                val.bugtrackertypename
+                )
     except externalsystem.BugTrackerConnectError:
         log.exception("Got error trying to contact %s", bugtracker.name)
     else:

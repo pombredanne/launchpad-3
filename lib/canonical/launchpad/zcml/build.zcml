@@ -5,45 +5,60 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-<content class="canonical.launchpad.database.Build">
-   <allow interface="canonical.launchpad.interfaces.IBuild"/>
-</content>
+    <!-- Build -->
+    <content class="canonical.launchpad.database.Build">
+       <allow interface="canonical.launchpad.interfaces.IBuild"/>
+    </content>
 
-<content class="canonical.launchpad.database.Builder">
-   <allow interface="canonical.launchpad.interfaces.IBuilder"/>
-</content>
+    <browser:defaultView 
+        for="canonical.launchpad.interfaces.IBuild"
+        name="+index"/>
 
+    <browser:url
+        for="canonical.launchpad.interfaces.IBuild"
+        path_expression="string:+build/${id}"
+        parent_utility="canonical.launchpad.interfaces.IBuilderSet"
+        />
 
-<browser:defaultView 
-    for="canonical.launchpad.interfaces.IBuild"
-    name="+index"/>
+    <browser:menus
+        module="canonical.launchpad.browser.build"
+        classes="BuildFacets" />
 
-<browser:pages 
-    for="canonical.launchpad.interfaces.IBuild"
-    permission="zope.Public">
+    <browser:navigation
+        module="canonical.launchpad.browser.build"
+        classes="BuildNavigation"
+        />
 
-    <browser:page 
+    <browser:pages 
+      for="canonical.launchpad.interfaces.IBuild"
+      permission="zope.Public">
+      <browser:page 
         name="+index"
-        template="../templates/sourcepackagebuild-index.pt"
-         lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/$arch/+index"/>
-
-    <browser:page 
+        template="../templates/build-index.pt"
+        />
+      <browser:page 
         name="+changes"
-        template="../templates/sourcepackagebuild-changes.pt"
-        lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/$arch/+changes"/>
-
-    <browser:page 
+        template="../templates/build-changes.pt"
+        />
+      <browser:page 
         name="+buildlog"
-        template="../templates/sourcepackagebuild-buildlog.pt"
-        lp:url="Soyuz/distros/$Distribution.name/src/$Release.name/$package.name/$Release.version/$arch/+buildlog"/>
+        template="../templates/build-buildlog.pt"
+        />
+      <browser:page
+        name="+portlet-binaries"
+        template="../templates/build-portlet-binaries.pt"
+        />
+      <browser:page
+        name="+portlet-details"
+        template="../templates/build-portlet-details.pt"
+        />
+    </browser:pages>
 
-</browser:pages>
-
-
-<securedutility
-    class="canonical.launchpad.database.BuildSet"
-    provides="canonical.launchpad.interfaces.IBuildSet">
-    <allow interface="canonical.launchpad.interfaces.IBuildSet" />
-</securedutility>
+    <!-- BuildSet -->
+    <securedutility
+        class="canonical.launchpad.database.BuildSet"
+        provides="canonical.launchpad.interfaces.IBuildSet">
+        <allow interface="canonical.launchpad.interfaces.IBuildSet" />
+    </securedutility>
 
 </configure>

@@ -5,14 +5,13 @@
   <body>
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:replace="structure context/bug/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-status-details" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-actions" />
+    <div tal:replace="structure context/@@+portlet-search" />
     <div tal:replace="structure context/@@+portlet-alsoreportedin" />
-    <div tal:condition="context/product"
-         tal:replace="structure context/product/@@+portlet-latest-bugs" />
+    <div tal:replace="structure context/target/@@+portlet-latestbugs" />
   </metal:rightportlets>
 
     <div metal:fill-slot="main">
@@ -27,21 +26,8 @@
       <p tal:condition="not: context/required:launchpad.Edit"
          class="portalMessage">
         <span tal:condition="not: request/lp:person">
-          To <a href="+edit">change this status page</a>,
-          you must be logged in as
-          <span tal:condition="context/assignee">
-            <a href="#"
-                       tal:attributes="href context/assignee/fmt:url"
-                       tal:content="context/assignee/displayname">
-          Scott James Remnant The Third</a> or
-          </span>
-          a maintainer of <span
-                              tal:replace="context/targetname">product</span>.
-        </span>
-        <span tal:condition="request/lp:person">
-        You cannot change this status page: you are not the assignee or
-        a maintainer of <span
-        tal:replace="context/targetname">product</span>.
+          To <a href="+editstatus">change this information</a>,
+          you must be logged in.
         </span>
       </p>
 
@@ -57,8 +43,9 @@
                i18n:translate="">
               There are <strong
               tal:content="view/errors/count:len"
-              i18n:name="num_errors">6</strong> input errors in the form
-              below. Please correct them and resubmit the form.
+              i18n:name="num_errors">6</strong>
+              problems with the information you entered.
+              Please correct them and try again.
             </p>
           </div>
 
@@ -117,10 +104,14 @@
                 </span>
               </td>
               <td>
-                <span tal:content="context/priority/title"
+                <span tal:condition="context/priority"
+                      tal:content="context/priority/title"
                       tal:attributes="class
                       string:priority${context/priority/title}">
                   Wontfix
+                </span>
+                <span tal:condition="not:context/priority">
+                  &mdash;
                 </span>
               </td>
               <td tal:condition="context/milestone"

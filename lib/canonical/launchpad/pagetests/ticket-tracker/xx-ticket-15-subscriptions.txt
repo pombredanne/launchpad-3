@@ -1,0 +1,65 @@
+
+Ticket Subscriptions
+====================
+
+The ticket page should show a "Subscribe" link.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+ticket/2/ HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Subscribe...
+
+The ticket should have a +subscribe page, which should have a heading
+inviting you to subscribe and a form submit button to do so.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+ticket/2/+subscribe HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Subscribe to request...
+  <input type="submit" name="subscribe"...value="Subscribe" />...
+
+POSTing that form back to the ticket page should show a portal message
+saying you have subscribed, and also list Foo Bar in the subscribers
+portlet, and finally change the link to "Unsubscribe".
+
+  >>> print http(r"""
+  ... POST /products/firefox/+ticket/2/ HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 19
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... subscribe=Subscribe""")
+  HTTP/1.1 200 Ok
+  ...You have subscribed to this request...
+  ...+subscribe">Unsubscribe</a>...
+  ...Subscribers to request #2:...
+  ...Foo Bar...
+
+The +subscribe page should now talk about "Unsubscribing".
+
+  >>> print http(r"""
+  ... GET /products/firefox/+ticket/2/+subscribe HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Unsubscribe from request...
+  <input type="submit" name="subscribe"...value="Unsubscribe" />...
+
+And POSTing it to the ticket page should unsubscribe the user from this
+ticket.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+ticket/2/ HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 21
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... subscribe=Unsubscribe""")
+  HTTP/1.1 200 Ok
+  ...You have unsubscribed from this request...
+  ...+subscribe">Subscribe</a>...
+

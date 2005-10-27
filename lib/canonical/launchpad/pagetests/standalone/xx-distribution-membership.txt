@@ -22,8 +22,7 @@ Check if it gets an Unauthorized status.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:.../distros/ubuntu/+selectmemberteam/+login
-  
+  Location: http://localhost:.../distros/ubuntu/+selectmemberteam/+login...
   ...
 
 

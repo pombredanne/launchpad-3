@@ -6,6 +6,9 @@ __metaclass__ = type
 # XXX: Write doctests for this network protocol in the style of page tests.
 #       - Andrew Bennetts, 2005-03-24.
 
+from datetime import datetime
+from pytz import utc
+
 from twisted.internet import protocol
 from twisted.internet.threads import deferToThread
 from twisted.protocols import basic
@@ -40,6 +43,8 @@ class FileUploadProtocol(basic.LineReceiver):
         specified, the server will generate one.
       :File-Alias-ID: if specified, the integer file alias id for this file.  If
         not specified, the server will generate one.
+      :File-Expires: if specified, the expiry time of this alias in ISO 8601
+        format. As per LibrarianGarbageCollection.
 
     The File-Content-ID and File-Alias-ID headers are also described in
     https://wiki.launchpad.canonical.com/LibrarianTransactions.
@@ -56,7 +61,7 @@ class FileUploadProtocol(basic.LineReceiver):
     
     delimiter = '\r\n'  # same as HTTP
     state = 'command'
-    
+
     def lineReceived(self, line):
         try:
             getattr(self, 'line_' + self.state, self.badLine)(line)
@@ -96,14 +101,18 @@ class FileUploadProtocol(basic.LineReceiver):
             aliasID = self.newFile.aliasID
             if ((contentID is not None and aliasID is None) or
                 (aliasID is not None and contentID is None)):
-                    raise ProtocolViolation(
-                        "File-Content-ID and File-Alias-ID must both be "
-                        "specified"
+                raise ProtocolViolation(
+                    "File-Content-ID and File-Alias-ID must both be specified"
                     )
             
             # If that's ok, we're ready to receive the file.
             self.state = 'file'
             self.setRawMode()
+
+            # Make sure rawDataReceived is *always* called, so that zero-byte
+            # uploads don't hang.  It's harmless the rest of the time.
+            self.rawDataReceived('')
+
             return
 
         # Simple RFC 822-ish header parsing
@@ -122,7 +131,7 @@ class FileUploadProtocol(basic.LineReceiver):
 
     def command_STORE(self, args):
         try:
-            size, name = args.split(None, 2)
+            size, name = args.split(None, 1)
             try:
                 name = name.decode('utf-8')
             except:
@@ -155,6 +164,16 @@ class FileUploadProtocol(basic.LineReceiver):
         except ValueError:
             raise ProtocolViolation("Invalid File-Alias-ID: " + value)
 
+    def header_file_expires(self, value):
+        try:
+            epoch = int(value)
+        except ValueError:
+            raise ProtocolViolation("Invalid File-Expires: " + value)
+
+        self.newFile.expires = datetime.fromtimestamp(
+                epoch).replace(tzinfo=utc)
+        
+
     def rawDataReceived(self, data):
         realdata, rest = data[:self.bytesLeft], data[self.bytesLeft:]
         self.bytesLeft -= len(realdata)
@@ -162,7 +181,7 @@ class FileUploadProtocol(basic.LineReceiver):
 
         if self.bytesLeft == 0:
             # Store file
-            deferred = deferToThread(self.newFile.store)
+            deferred = self._storeFile()
             def _sendID((fileID, aliasID)):
                 # Send ID to client
                 if self.newFile.contentID is None:
@@ -177,6 +196,9 @@ class FileUploadProtocol(basic.LineReceiver):
             self.state = 'command'
             self.setLineMode(rest)
 
+    def _storeFile(self):
+        return deferToThread(self.newFile.store)
+
 
 class FileUploadFactory(protocol.Factory):
     protocol = FileUploadProtocol
@@ -187,7 +209,6 @@ class FileUploadFactory(protocol.Factory):
 if __name__ == '__main__':
     import os, sys
     from twisted.internet import reactor
-    from twisted.python import log
     log.startLogging(sys.stdout)
     from canonical.librarian import db, storage
     from canonical.lp import initZopeless

@@ -5,10 +5,12 @@
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
+<facet facet="translations">
+
     <content class="canonical.launchpad.database.POFile">
         <require
             permission="zope.Public"
-            interface="canonical.launchpad.interfaces.IEditPOFile"
+            interface="canonical.launchpad.interfaces.IPOFile"
             set_attributes="header pluralforms"
             />
         <require
@@ -48,9 +50,6 @@
         <browser:page
             name="+portlet-about"
             template="../templates/pofile-portlet-about.pt" />
-        <browser:page
-            name="+portlet-actions"
-            template="../templates/pofile-portlet-actions.pt" />
         <browser:page
             name="+portlet-contributors"
             template="../templates/pofile-portlet-contributors.pt" />
@@ -135,5 +134,5 @@
         provides="canonical.launchpad.interfaces.IPOFileSet">
         <allow interface="canonical.launchpad.interfaces.IPOFileSet" />
     </securedutility>
-
+</facet>
 </configure>

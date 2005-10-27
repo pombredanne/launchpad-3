@@ -55,24 +55,31 @@ Examples:
 
 __metaclass__  = type
 
+import commands
 import urlparse
 
 from psycopg import IntegrityError
 from sqlobject.main import SQLObjectNotFound
 
+from zope.exceptions import NotFoundError
+
 import canonical.lp
 
 from pybaz import NameParser
-from canonical.lp.dbschema import ManifestEntryType, RevisionControlSystems
+from canonical.lp.dbschema import (
+    ManifestEntryType, ManifestEntryHint, RevisionControlSystems
+    )
 from canonical.librarian.db import Library
 from canonical.database.sqlbase import ZopelessTransactionManager
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database import (
      Product, ProductSeries, ProductRelease,
      Distribution, DistroRelease, DistroReleaseSet,
-     SourcePackageName, SourcePackage, SourcePackageRelease,
-     Manifest, ManifestEntry, Archive, ArchNamespace, Branch, Changeset,
-     VersionMapper
+     DistributionSourcePackage, DistributionSourcePackageRelease,
+     DistroReleaseSourcePackageRelease, SourcePackageName, SourcePackage,
+     SourcePackageRelease,
+     Manifest, ManifestEntry, ManifestAncestry, Archive, ArchNamespace,
+     Branch, Changeset, VersionMapper
      )
 from hct.url import register_backend, UrlError
 
@@ -87,42 +94,26 @@ default_distro = "ubuntu"
 
 # Mapping from ManifestEntryType to typeName
 MANIFEST_ENTRY_TYPE_MAP = (
-    ( ManifestEntryType.DIR.value,    "dir"   ),
-    ( ManifestEntryType.COPY.value,   "copy"  ),
-    ( ManifestEntryType.FILE.value,   "file"  ),
-    ( ManifestEntryType.TAR.value,    "tar"   ),
-    ( ManifestEntryType.ZIP.value,    "zip"   ),
-    ( ManifestEntryType.PATCH.value,  "patch" ),
+    (ManifestEntryType.DIR,    "dir"),
+    (ManifestEntryType.COPY,   "copy"),
+    (ManifestEntryType.FILE,   "file"),
+    (ManifestEntryType.TAR,    "tar"),
+    (ManifestEntryType.ZIP,    "zip"),
+    (ManifestEntryType.PATCH,  "patch"),
+    )
+
+# Mapping from dbschema.ManifestEntryHint to hct equivalents
+from hct.manifest import ManifestEntryHint as HctHint
+MANIFEST_ENTRY_HINT_MAP = (
+    (ManifestEntryHint.ORIGINAL_SOURCE,  HctHint.ORIGINAL_SOURCE),
+    (ManifestEntryHint.PATCH_BASE,       HctHint.PATCH_BASE),
+    (ManifestEntryHint.PACKAGING,        HctHint.PACKAGING),
     )
 
 
 class LaunchpadError(UrlError):
     """URL error caused by the Launchpad backend."""
     pass
-
-class SourcePackageReleaseInDistroRelease:
-    """SourcePackageRelease and DistroRelease.
-
-    We use this class instead of a SourcePackageRelease directly as we
-    always need to remember which DistroRelease it came from.
-    """
-
-    def __init__(self, sourcepackagerelease, distrorelease):
-        self.sourcepackagerelease = sourcepackagerelease
-        self.distrorelease = distrorelease
-
-    def __repr__(self):
-        """Return a debugging representation of the class."""
-        text = "<%s %r %r>" % (type(self).__name__,
-                               str(self.sourcepackagerelease.name),
-                               str(self.distrorelease.name))
-        return text
-
-    @property
-    def sourcepackage(self):
-        """SourcePackage object."""
-        return SourcePackage(self.sourcepackagerelease.sourcepackagename,
-                             self.distrorelease)
 
 
 def split_path(url_path):
@@ -192,7 +183,7 @@ def get_object(url, resolve=False):
             # point in the schema (products or distros) or the name of
             # anything else.  Check for the former first, then go through
             # the tables in precedence order looking for the records.
-            if part == "products" or part == "upstream":
+            if part in ["products", "upstream"]:
                 try:
                     product = parts.pop(0)
                     obj = Product.byName(product)
@@ -209,8 +200,11 @@ def get_object(url, resolve=False):
                     raise LaunchpadError("Distribution missing in URL: '%s'"
                                          % url)
                 except SQLObjectNotFound:
-                    raise LaunchpadError("Distribution '%s' not found in URL: '%s'"
-                                         % (distro, url))
+                    raise LaunchpadError(
+                            "Distribution '%s' not found in URL: '%s'" % (
+                                distro, url
+                                )
+                            )
             else:
                 try:
                     obj = Distribution.byName(part)
@@ -254,28 +248,29 @@ def get_object(url, resolve=False):
             # version or a series name, check series first as that's less
             # specific and you can always specify /2.0/2.0 to get to the
             # release.
-            try:
-                obj = obj.getSeries(part)
-            except KeyError:
-                try:
-                    obj = obj.getRelease(part)
-                except IndexError:
-                    raise LaunchpadError("Product series or release '%s' not found in URL: '%s'"
-                                         % (part, url))
+            series = obj.getSeries(part)
+            release = obj.getRelease(part)
+            if release is not None:
+                obj = release
+            if series is not None:
+                obj = series
+            if release is None and series is None:
+                raise LaunchpadError("Product series or release '%s' "
+                    "not found in URL: '%s'" % (part, url))
 
         elif isinstance(obj, ProductSeries):
             # The part of a URL after a product series is always a release
             # version.
-            try:
-                obj = obj.getRelease(part)
-            except KeyError:
+            obj = obj.getRelease(part)
+            if obj is None:
                 raise LaunchpadError("Release '%s' not found in URL: '%s'"
                                      % (part, url))
 
         elif isinstance(obj, ProductRelease):
             # Nothing is permitted after a release version.
-            raise LaunchpadError("Malformed URL, nothing expected after release: '%s'" \
-                                 % url)
+            raise LaunchpadError(
+                    "Malformed URL, nothing expected after release: '%s'" % url
+                    )
 
         elif isinstance(obj, Distribution):
             # The part of a URL after a distribution can be either a release
@@ -296,8 +291,10 @@ def get_object(url, resolve=False):
             except IndexError:
                 pass
 
-            raise LaunchpadError("Distribution release or source package '%s' not found in URL: '%s'"
-                                 % (part, url))
+            raise LaunchpadError(
+                    "Distribution release or source package '%s' not "
+                    "found in URL: '%s'" % (part, url)
+                    )
 
         elif isinstance(obj, DistroRelease):
             # The part of a URL after a distribution release is always a
@@ -313,38 +310,46 @@ def get_object(url, resolve=False):
             try:
                 name = SourcePackageName.byName(part)
             except SQLObjectNotFound:
-                raise LaunchpadError("Source package '%s' not found in URL: '%s'"
-                                     % (part, url))
+                raise LaunchpadError(
+                        "Source package '%s' not found in URL: '%s'" % (
+                            part, url
+                            )
+                        )
 
             objs = obj.getPublishedReleases(name)
             if len(objs) < 1:
-                raise LaunchpadError("Source package '%s' not released in URL: '%s'"
-                                     % (part, url))
+                raise LaunchpadError(
+                        "Source package '%s' not released in URL: '%s'" % (
+                            part, url
+                            )
+                        )
 
             spr = objs[-1].sourcepackagerelease
-            obj = SourcePackageReleaseInDistroRelease(spr, obj)
+            obj = DistroReleaseSourcePackageRelease(obj, spr)
 
-        elif isinstance(obj, SourcePackage):
+        elif isinstance(obj, DistributionSourcePackage):
             # The part of the URL after a source package is always a
             # source package release.  FIXME this should use
             # SourcePackageHistory or similar
             rels = [ _r for _r in obj.releases if _r.version == part ]
             if not len(rels):
-                raise LaunchpadError("Source package release '%s' not found in URL: '%s'"
-                                     % (part, url))
+                raise LaunchpadError(
+                        "Source package release '%s' not found "
+                        "in URL: '%s'" % (part, url)
+                        )
 
-            obj = SourcePackageReleaseInDistroRelease(rels[-1],
-                                                      obj.distrorelease)
+            obj = rels[-1]
 
         else:
-            raise LaunchpadError("Malformed URL, '%s' unexpected in URL: '%s'"
-                                 % (part, url))
+            raise LaunchpadError(
+                    "Malformed URL, '%s' unexpected in URL: '%s'" % (part, url)
+                    )
 
     if resolve:
-        try:
+        #try:
             return resolve_object(obj)
-        except UrlError:
-            raise LaunchpadError("URL not found: '%s'" % url)
+        #except UrlError:
+        #    raise LaunchpadError("URL was not found: '%s'" % url)
     else:
         return obj
 
@@ -379,17 +384,25 @@ def where_am_i(obj):
         obj = None
 
 
-    if isinstance(obj, SourcePackageReleaseInDistroRelease):
-        parts.append(obj.sourcepackagerelease.version)
-        obj = obj.sourcepackage
-
     if isinstance(obj, SourcePackageRelease):
+        obj = DistroReleaseSourcePackageRelease(obj.uploaddistrorelease, obj)
+
+    if isinstance(obj, DistroReleaseSourcePackageRelease):
+        obj = DistributionSourcePackageRelease(
+            obj.distribution, obj.sourcepackagerelease)
+
+    if isinstance(obj, DistributionSourcePackageRelease):
         parts.append(obj.version)
-        obj = SourcePackage(obj.sourcepackagename, obj.uploaddistrorelease)
+        obj = DistributionSourcePackage(
+            obj.distribution, obj.sourcepackagerelease.sourcepackagename)
+
+    if isinstance(obj, DistributionSourcePackage):
+        parts.append(obj.name)
+        obj = obj.distribution
 
     if isinstance(obj, SourcePackage):
         parts.append(obj.name)
-        obj = obj.distro
+        obj = obj.distribution
 
 
     if isinstance(obj, DistroRelease):
@@ -433,22 +446,27 @@ def resolve_object(obj):
     if isinstance(obj, ProductRelease):
         return obj
 
-
-    if isinstance(obj, SourcePackage):
+    if isinstance(obj, DistributionSourcePackage):
         if obj.currentrelease is None:
-            raise LaunchpadError("No current development release of package: '%s'" % obj.name)
+            raise LaunchpadError(
+                    "No current development release of package: '%s'" % (
+                        obj.name,)
+                    )
 
-        obj = SourcePackageReleaseInDistroRelease(obj.currentrelease,
-                                                  obj.distrorelease)
+        obj = obj.currentrelease
 
-    if isinstance(obj, SourcePackageReleaseInDistroRelease):
+    if isinstance(obj, DistributionSourcePackageRelease):
+        return obj.sourcepackagerelease
+
+    if isinstance(obj, DistroReleaseSourcePackageRelease):
         return obj.sourcepackagerelease
 
     if isinstance(obj, SourcePackageRelease):
         return obj
 
+    raise LaunchpadError("Unable to resolve object to manifest "
+        "holder: %r" % obj)
 
-    raise LaunchpadError("Unable to resolve object to manifest holder: %r" % obj)
 
 def get_branch_from(obj):
     """Get hct Branch from database object.
@@ -486,43 +504,62 @@ def get_manifest_from(obj):
     The object should be a database Manifest record object, it is
     converted to an HCT object with the same entries.
 
+    One difference is that we take the uuid from the database Manifest
+    record and set the ancestor of the HCT object using that; in other
+    words, the manifest object we hand to HCT is already considered an
+    ancestor of what was in the database.
+
+    This saves much mucking around trying to decide whether we changed
+    it or not, and getting things wrong.
+
     Returns hct.manifest.Manifest class.
     """
     if obj is None:
         return None
 
     from hct.manifest import Manifest, new_manifest_entry
-    manifest = Manifest(new_id=str(obj.uuid))
+    manifest = Manifest(ancestor=str(obj.uuid))
 
     sequence_map = {}
-    patch_on_map = []
+    parent_map = []
 
     for obj_entry in obj.entries:
         type_map = dict(MANIFEST_ENTRY_TYPE_MAP)
         if obj_entry.entrytype not in type_map:
-            raise LaunchpadError("Unknown manifest entry type from database: %d"
-                                 % obj_entry.entrytype)
+            raise LaunchpadError(
+                    "Unknown manifest entry type from database: %d" % (
+                        obj_entry.entrytype,)
+                    )
+
+        hint_map = dict(MANIFEST_ENTRY_HINT_MAP)
+        if obj_entry.hint is not None and obj_entry.hint not in hint_map:
+            raise LaunchpadError(
+                "Unknown manifest entry hint from database: %d"
+                % obj_entry.hint
+                )
 
         # Create ManifestEntry and set up properties
         entry = new_manifest_entry(type_map[obj_entry.entrytype],
                                    obj_entry.path)
+        if obj_entry.hint is not None:
+            entry.hint = hint_map[obj_entry.hint]
         entry.dirname = obj_entry.dirname
         entry.branch = get_branch_from(obj_entry.branch)
         entry.changeset = get_changeset_from(obj_entry.changeset)
         manifest.append(entry)
 
-        # Keep track of sequence numbers and patch_on settings
+        # Keep track of sequence numbers and parent settings
         sequence_map[obj_entry.sequence] = entry
-        if obj_entry.patchon is not None:
-            patch_on_map.append((obj_entry.patchon, entry))
+        if obj_entry.parent is not None:
+            parent_map.append((obj_entry.parent, entry))
 
-    # Map patch_on to sequence numbers
-    for patch_on, entry in patch_on_map:
-        if patch_on not in sequence_map:
+    # Map parent to sequence numbers
+    for parent, entry in parent_map:
+        if parent not in sequence_map:
             raise LaunchpadError("Manifest entry parent not in sequence: '%s'"
                                  % entry.path)
 
-        entry.patch_on = sequence_map[patch_on]
+        entry.parent = sequence_map[parent]
 
     return manifest
 
@@ -549,27 +586,25 @@ def get_release(url, release):
     try:
         obj = get_object(url)
         if isinstance(obj, Product):
-            try:
-                rel = obj.getRelease(release)
-            except IndexError:
+            rel = obj.getRelease(release)
+            if rel is None:
                 return None
         elif isinstance(obj, ProductSeries):
-            try:
-                rel = obj.getRelease(release)
-            except KeyError:
+            rel = obj.getRelease(release)
+            if rel is None:
                 return None
-        elif isinstance(obj, SourcePackage):
-            # FIXME more intelligence for version parsing (using sourcerer.deb)
-            # and this should use SourcePackageHistory
+        elif isinstance(obj, DistributionSourcePackage):
             rels = [ _r for _r in obj.releases
                      if (_r.version == release
                          or _r.version.startswith("%s-" % release)) ]
             if not len(rels):
                 return None
 
-            rel = SourcePackageReleaseInDistroRelease(rels[-1], obj.distrorelease)
+            rel = rels[-1]
         else:
-            raise LaunchpadError("Unable to determine release for object: %r" % obj)
+            raise LaunchpadError(
+                    "Unable to determine release for object: %r" % obj
+                    )
 
         return where_am_i(rel)
     finally:
@@ -599,9 +634,14 @@ def get_package(url, distro_url=None):
         if isinstance(obj, ProductSeries):
             productseries = obj
 
-        if isinstance(obj, SourcePackageReleaseInDistroRelease):
-            version = obj.sourcepackagerelease.version
-            obj = obj.sourcepackage
+        if isinstance(obj, DistributionSourcePackage):
+            obj = SourcePackage(obj.sourcepackagename,
+                                obj.distribution.currentrelease)
+
+        if isinstance(obj, DistroReleaseSourcePackageRelease):
+            version = obj.version
+            obj = SourcePackage(obj.sourcepackagerelease.sourcepackagename,
+                                obj.distrorelease)
 
         if isinstance(obj, SourcePackageRelease):
             version = obj.version
@@ -611,7 +651,9 @@ def get_package(url, distro_url=None):
             productseries = obj.productseries
 
         if productseries is None:
-            raise LaunchpadError("Unable to resolve URL to product series: '%s'" % url)
+            raise LaunchpadError(
+                    "Unable to resolve URL to product series: '%s'" % url
+                    )
 
 
         # Return the productseries if no distro was passed
@@ -625,10 +667,13 @@ def get_package(url, distro_url=None):
         if isinstance(distro, DistroRelease):
             package = productseries.getPackage(distro)
             if not package.currentrelease:
-                raise LaunchpadError("Source package '%s' not published in '%s'"
-                                     % (url, distro_url))
-            return where_am_i(SourcePackageReleaseInDistroRelease(
-                package.currentrelease, distro))
+                raise LaunchpadError(
+                        "Source package '%s' not published in '%s'" % (
+                            url, distro_url
+                            )
+                        )
+            return where_am_i(DistroReleaseSourcePackageRelease(
+                distro, package.currentrelease))
 
         # Or in the distribution
         elif isinstance(distro, Distribution):
@@ -699,37 +744,78 @@ def identify_file(ref_url, size, digest, upstream=False):
 
 
 def put_manifest(url, manifest):
-    """Add new manifest under the URL given."""
+    """Add new manifest under the URL given.
+
+    The opposite number to get_manifest_from(), takes an HCT Manifest object
+    and converts it into a database Manifest record object which gets stored
+    under the object at the URL given.
+
+    HCT Manifest objects don't have a uuid, instead they have the ancestor
+    manifest they were based from.  We always create a new uuid for the
+    incoming manifest, and add an ancestry record for it to link to the
+    old one.
+    """
     success = False
     begin_transaction()
     try:
         obj = get_object(url)
-        if isinstance(obj, SourcePackageReleaseInDistroRelease):
+        if isinstance(obj, DistroReleaseSourcePackageRelease):
+            obj = obj.sourcepackagerelease
+        if isinstance(obj, DistributionSourcePackageRelease):
             obj = obj.sourcepackagerelease
         if not (isinstance(obj, ProductRelease)
                 or isinstance(obj, SourcePackageRelease)):
-            raise LaunchpadError("Unable to associate a manifest with: '%s'" % url)
+            raise LaunchpadError(
+                    "Unable to associate a manifest with: '%s'" % url
+                    )
 
         sequence = 0
         sequence_map = {}
-        patch_on_map = []
+        parent_map = []
 
-        obj.manifest = Manifest(uuid=manifest.id)
+        obj.manifest = Manifest(uuid=commands.getoutput('uuidgen'))
+        try:
+            for merge in manifest.merges:
+                parent = Manifest.byUuid(merge)
+                ManifestAncestry(parentID=parent.id,
+                                 childID=obj.manifest.id)
+
+            if manifest.ancestor is not None:
+                parent = Manifest.byUuid(manifest.ancestor)
+                ManifestAncestry(parentID=parent.id,
+                                 childID=obj.manifest.id)
+        except SQLObjectNotFound:
+            raise LaunchpadError(
+                "Unknown manifest referenced in ancestor or merges"
+                )
+
         for entry in manifest:
             type_map = dict([ (_t, _v) for _v, _t in MANIFEST_ENTRY_TYPE_MAP ])
             if entry.typeName() not in type_map:
-                raise LaunchpadError("Unknown manifest entry type from import: %s"
-                                     % entry.typeName())
+                raise LaunchpadError(
+                        "Unknown manifest entry type from import: %s" % (
+                            entry.typeName(),)
+                        )
+
+            hint_map = dict([(_t, _v) for _v, _t in MANIFEST_ENTRY_HINT_MAP])
+            if entry.hint is not None and entry.hint not in hint_map:
+                raise LaunchpadError(
+                    "Unknown manifest entry hint from import: %s"
+                    % entry.hint
+                    )
 
             sequence += 1
             obj_entry = ManifestEntry(manifestID=obj.manifest.id,
                                       sequence=sequence,
                                       entrytype=type_map[entry.typeName()],
+                                      hint=None,
                                       path=entry.path,
                                       branchID=None,
                                       changesetID=None,
-                                      patchon=None,
+                                      parent=None,
                                       dirname=entry.dirname)
+            if entry.hint is not None:
+                obj_entry.hint = hint_map[entry.hint]
 
             # FIXME this is the "hard" way
             # a lot of the heavy lifting here belongs in Launchpad interfaces
@@ -777,18 +863,21 @@ def put_manifest(url, manifest):
 
                 obj_entry.changeset = changeset
 
-            # Keep track of sequence numbers and patchon settings
+            # Keep track of sequence numbers and parent settings
             sequence_map[entry] = sequence
-            if hasattr(entry, "patch_on") and entry.patch_on is not None:
-                patch_on_map.append((entry.patch_on, obj_entry))
+            if entry.parent is not None:
+                parent_map.append((entry.parent, obj_entry))
 
-        # Map patch_on to sequence numbers
-        for patch_on, obj_entry in patch_on_map:
-            if patch_on not in sequence_map:
-                raise LaunchpadError("Manifest entry parent not in sequence: '%s'"
-                                     % obj_entry.path)
+        # Map parent to sequence numbers
+        for parent, obj_entry in parent_map:
+            if parent not in sequence_map:
+                raise LaunchpadError(
+                        "Manifest entry parent not in sequence: '%s'" % (
+                            obj_entry.path,
+                            )
+                        )
 
-            obj_entry.patchon = sequence_map[patch_on]
+            obj_entry.parent = sequence_map[parent]
 
         success = True
     finally:

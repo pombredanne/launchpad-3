@@ -3,17 +3,24 @@
 
 __metaclass__ = type
 
-__all__ = ['RosettaApplicationView', 'RosettaPreferencesView']
+__all__ = [
+    'RosettaApplicationView',
+    'RosettaStatsView',
+    'RosettaPreferencesView',
+    'RosettaApplicationNavigation'
+    ]
 
 from sets import Set
 
 from zope.component import getUtility
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
     ILanguageSet, ILaunchBag, IRequestPreferredLanguages, ICountry,
-    ILaunchpadCelebrities)
+    ILaunchpadCelebrities, IRosettaApplication, ITranslationGroupSet,
+    IProjectSet, IProductSet)
 from canonical.launchpad import helpers
+import canonical.launchpad.layers
+from canonical.launchpad.webapp import Navigation, stepto
 
 
 class RosettaApplicationView:
@@ -23,9 +30,14 @@ class RosettaApplicationView:
         self.request = request
         self.languages = helpers.request_languages(self.request)
 
+    @property
+    def ubuntu_translationrelease(self):
+        release = getUtility(ILaunchpadCelebrities).ubuntu.currentrelease
+        return release
+
     def ubuntu_languages(self):
         langs = []
-        release = getUtility(ILaunchpadCelebrities).ubuntu.currentrelease
+        release = self.ubuntu_translationrelease
         for language in self.languages:
             langs.append(release.getDistroReleaseLanguageOrDummy(language))
         return langs
@@ -35,6 +47,18 @@ class RosettaApplicationView:
 
     def browserLanguages(self):
         return IRequestPreferredLanguages(self.request).getPreferredLanguages()
+
+
+class RosettaStatsView:
+    """A view class for objects that support IRosettaStats. This is mainly
+    used for the sortable untranslated percentage."""
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def sortable_untranslated(self):
+        return '%06.2f' % self.context.untranslatedPercentage()
 
 
 class RosettaPreferencesView:
@@ -108,3 +132,23 @@ class RosettaPreferencesView:
         for language in Set(old_languages) - Set(new_languages):
             self.person.removeLanguage(language)
 
+
+class RosettaApplicationNavigation(Navigation):
+
+    usedfor = IRosettaApplication
+
+    newlayer = canonical.launchpad.layers.RosettaLayer
+
+    @stepto('groups')
+    def groups(self):
+        return getUtility(ITranslationGroupSet)
+
+    @stepto('projects')
+    def projects(self):
+        # DEPRECATED
+        return getUtility(IProjectSet)
+
+    @stepto('products')
+    def products(self):
+        # DEPRECATED
+        return getUtility(IProductSet)

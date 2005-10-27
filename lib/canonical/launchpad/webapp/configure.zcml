@@ -3,19 +3,58 @@
     xmlns:browser="http://namespaces.zope.org/browser"
     i18n_domain="canonical.launchpad">
 
+    <include file="servers.zcml" />
+    <include file="errorlog.zcml" />
+
+    <content class="canonical.launchpad.webapp.LaunchpadBrowserRequest">
+      <allow
+        interface="
+          canonical.launchpad.interfaces.ILaunchpadBrowserApplicationRequest"
+        attributes="response locale __str__"
+        />
+      <allow
+        interface="zope.component.interfaces.IPresentationRequest" />
+    </content>
+
+    <content class="canonical.launchpad.webapp.publisher.RedirectionView">
+      <allow attributes="browserDefault __call__" />
+    </content>
+
     <!-- links -->
-    <content class="canonical.launchpad.webapp.menu.Link">
-      <allow interface="canonical.launchpad.interfaces.ILink" />
+    <content class="canonical.launchpad.webapp.menu.LinkData">
+        <allow interface="canonical.launchpad.interfaces.ILinkData" />
     </content>
 
-    <content class="canonical.launchpad.webapp.menu.DefaultLink">
-      <allow interface="canonical.launchpad.interfaces.IDefaultLink" />
+    <adapter
+        for="canonical.launchpad.interfaces.ILinkData"
+        provides="canonical.launchpad.interfaces.ILink"
+        factory="canonical.launchpad.webapp.menu.MenuLink"
+        />
+
+    <content class="canonical.launchpad.webapp.menu.MenuLink">
+        <require
+            permission="zope.Public"
+            interface="canonical.launchpad.interfaces.ILink"
+            />
     </content>
 
-    <!-- urls -->
+    <adapter
+        for="canonical.launchpad.interfaces.ILinkData"
+        provides="canonical.launchpad.interfaces.IFacetLink"
+        factory="canonical.launchpad.webapp.menu.FacetLink"
+        />
+
+    <content class="canonical.launchpad.webapp.menu.FacetLink">
+        <require
+            permission="zope.Public"
+            interface="canonical.launchpad.interfaces.IFacetLink"
+            />
+    </content>
+
+    <!-- Launchpad root object -->
     <utility
         provides="canonical.launchpad.interfaces.ILaunchpadRoot"
-        component="canonical.publication.rootObject"
+        component="canonical.launchpad.webapp.publisher.rootObject"
         />
 
     <adapter
@@ -52,11 +91,20 @@
 
     <!-- TALES namespaces. -->
 
+    <!-- TALES lp: namespace (should be deprecated) -->
     <adapter
         for="zope.publisher.interfaces.IApplicationRequest"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.RequestAPI"
         name="lp"
+        />
+
+    <!-- TALES enum-value: namespace -->
+    <adapter
+        for="canonical.lp.dbschema.Item"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.EnumValueAPI"
+        name="enumvalue"
         />
 
     <!-- TALES menu: namespace -->
@@ -84,12 +132,6 @@
         />
 
     <!-- TALES fmt: namespace -->
-    <adapter
-        for="zope.publisher.interfaces.browser.IBrowserApplicationRequest"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.RequestFormatterAPI"
-        name="fmt"
-        />
 
     <!-- The next directive is registered for all dicts, but we really only
          want it to apply to the page template's CONTEXTS dict.
@@ -149,6 +191,20 @@
         />
 
     <adapter
+        for="canonical.launchpad.interfaces.IBugTask"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.BugTaskFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
+        for="canonical.launchpad.interfaces.IMilestone"
+        provides="zope.app.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.MilestoneFormatterAPI"
+        name="fmt"
+        />
+
+    <adapter
         for="*"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.PermissionRequiredQuery"
@@ -163,7 +219,7 @@
         />
 
     <subscriber
-        for="canonical.publication.IAfterTraverseEvent"
+        for="canonical.launchpad.interfaces.IAfterTraverseEvent"
         factory="canonical.launchpad.webapp.authentication.handle"
         />
 
@@ -219,7 +275,7 @@
 
     <browser:page
         layer="canonical.launchpad.layers.DebugLayer"
-        for="canonical.publication.RootObject"
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="changelog.html"
         template="../templates/debug-root-changelog.pt"
         class="canonical.launchpad.webapp.changelog.ChangeLog"
@@ -228,7 +284,7 @@
 
 
     <!-- Default favicon -->
-    <browser:favicon for="*" file="../images/defaultFavicon.gif" />
+    <browser:favicon for="*" file="../images/launchpad_favicon.png" />
 
     <!-- LaunchBag Utility -->
     <utility
@@ -256,7 +312,7 @@
         /@@/favicon.png to access resource and resourceDirectory -->
     <browser:page
         name=""
-        for="canonical.publication.RootObject"
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
         class="zope.app.publisher.browser.resources.Resources"
         permission="zope.Public"
         allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
@@ -271,4 +327,53 @@
         template="../templates/rdf-macros.pt"
         />
 
+    <!-- LaunchpadBrowserResponse needs to be able to find the session -->
+    <adapter
+        for="canonical.launchpad.webapp.LaunchpadBrowserResponse"
+        provides="zope.app.session.interfaces.ISession"
+        factory="canonical.launchpad.webapp.servers.adaptResponseToSession"
+        />
+
+    <!-- LaunchpadBrowserRequest needs to be able to find the response.
+    We don't just use the response attribute, as this makes our tests harder
+    to write -->
+    <adapter
+        for="canonical.launchpad.webapp.LaunchpadBrowserRequest"
+        provides="canonical.launchpad.webapp.interfaces.INotificationResponse"
+        factory="canonical.launchpad.webapp.servers.adaptRequestToResponse"
+        />
+
+    <!--These pages are used for testing BrowserNotificationMessages
+        They are protected with admin privileges rather than being installed
+        on the debug port because we use them in page tests and as an easy way
+        to view and adjust the visual rendering of the notifications.
+    -->
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        name="+notificationtest1"
+        template="../templates/root-index.pt"
+        permission="launchpad.Admin"
+        class="canonical.launchpad.webapp.notification.NotificationTestView1"
+        />
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        name="+notificationtest2"
+        template="../templates/root-index.pt"
+        permission="launchpad.Admin"
+        class="canonical.launchpad.webapp.notification.NotificationTestView2"
+        />
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        name="+notificationtest3"
+        template="../templates/root-index.pt"
+        permission="launchpad.Admin"
+        class="canonical.launchpad.webapp.notification.NotificationTestView3"
+        />
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        name="+notificationtest4"
+        template="../templates/root-index.pt"
+        permission="launchpad.Admin"
+        class="canonical.launchpad.webapp.notification.NotificationTestView4"
+        />
 </configure>

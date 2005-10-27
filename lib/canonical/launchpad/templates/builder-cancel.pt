@@ -1,0 +1,61 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+  <div metal:fill-slot="main">
+    <h1><span tal:replace="context/title"/> Cancel</h1>
+ 
+    <tal:block define="job context/currentjob">
+
+    <div tal:condition="job">
+
+    <div class="portalMessage" tal:define="message view/cancelBuildJob"
+         tal:condition="message" tal:content="structure message"/>
+
+    <p><dfn tal:content="context/title">BUILDER</dfn> is processing:</p>
+
+    <table class="listing rowNavigation" width="100%">
+      <thead>
+        <tr>
+            <th>Title</th>
+            <th>Architecture</th>
+            <th>Created</th>
+            <th>Started</th>
+            <th>Partial Duration</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+            <td tal:content="job/build/title">NAME</td>
+            <td tal:content="job/build/processor/name">ARCH</td>
+            <td tal:content="job/build/datecreated/fmt:datetime">CREATED</td>
+            <td tal:content="job/buildstart/fmt:datetime">STARTED</td>
+            <td></td>
+        </tr>
+      </tbody>
+     </table>
+
+     <p>Are you sure ?</p> 
+
+     <form name="CANCEL" action="" method="POST">
+       <input name="BUILDERID" type="hidden" 
+              tal:attributes="value context/id"/>
+       <input type="submit" value="Cancel Current Job"/>
+     </form>
+       
+    </div>
+
+    <div tal:condition="not:job">
+    <h3><dfn tal:content="context/title">BUILDER</dfn> is IDLE, no need
+        to cancel.</h3>
+    </div>
+
+    </tal:block>
+
+
+  </div>
+</body>
+</html>

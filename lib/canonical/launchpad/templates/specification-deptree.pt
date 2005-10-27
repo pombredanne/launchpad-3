@@ -1,0 +1,46 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-blocked" />
+  <div tal:replace="structure context/@@+portlet-dependencies" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Specification Dependency Tree</h1>
+
+  <p class="documentDescription">
+    This page shows the dependency tree - giving you some idea of the
+    sequence in which specifications related to this one must be
+    implemented.
+  </p>
+
+  <h2>Specifications that must be implemented first</h2>
+
+    <div tal:repeat="spec context/all_deps"
+         tal:replace="structure spec/@@+listing-detailed" />
+    <p tal:condition="not: context/dependencies">
+      <i>None - this specification does not depend on any others.</i>
+    </p>
+
+  <h2>This specification</h2>
+
+    <div tal:replace="structure context/@@+listing-detailed" />
+
+  <h2>Specifications that can then be implemented</h2>
+
+    <div tal:repeat="spec context/all_blocked"
+         tal:replace="structure spec/@@+listing-detailed" />
+    <p tal:condition="not: context/blocked_specs">
+      No specifications depend on this one.
+    </p>
+  
+</div>
+</body>
+</html>

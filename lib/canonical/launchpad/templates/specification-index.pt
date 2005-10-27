@@ -1,0 +1,89 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-blocked" />
+  <div tal:replace="structure context/@@+portlet-dependencies" />
+  <div tal:replace="structure context/@@+portlet-subscribers" />
+  <div tal:replace="structure context/target/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-reviewqueue" />
+  <div tal:replace="structure context/@@+portlet-bugs" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1 tal:content="context/title">Feature Specification</h1>
+
+  <p tal:repeat="notice view/notices" tal:content="notice"
+     class="portalMessage" style="margin-bottom: 10px">
+    notice goes here
+  </p>
+
+  <p tal:condition="not:context/specurl" class="portalMessage"
+     style="margin-bottom: 10px">
+    This specification is currently not linked to a URL. Visit the
+    <a href="+edit">edit page</a> if you wish to link it to a URL that others
+    can visit to read a more detailed description of the specification.
+  </p>
+
+    <table>
+      <tbody>
+        <tr>
+          <th>Status:</th>
+          <td tal:content="context/status/title">Approved</td>
+        </tr>
+        <tr tal:condition="context/priority">
+          <th>Priority:</th>
+          <td tal:content="context/priority/title">High</td>
+        </tr>
+        <tr tal:condition="context/productseries">
+          <th>Must Deliver For:</th>
+          <td><a tal:attributes="href context/productseries/fmt:url"
+                 tal:content="context/productseries/title">Firefox 1.2
+              </a>
+          </td>
+        </tr>
+        <tr tal:condition="context/distrorelease">
+          <th>Must Deliver For:</th>
+          <td><a tal:attributes="href context/distrorelease/fmt:url"
+                 tal:content="context/distrorelease/title">Firefox 1.2
+              </a>
+          </td>
+        </tr>
+        <tr tal:condition="context/milestone">
+          <th>Milestone:</th>
+          <td><a tal:attributes="href context/milestone/fmt:url">
+                <span tal:replace="context/target/displayname">Firefox</span>
+                <span tal:replace="context/milestone/displayname">1.0</span>
+              </a>
+          </td>
+        </tr>
+        <tr tal:condition="context/whiteboard">
+          <th>Whiteboard:</th>
+          <td tal:content="context/whiteboard">whiteboard</td>
+        </tr>
+        <tr tal:condition="context/specurl">
+          <th>Spec Page:</th>
+          <td>
+            <img src="/++resource++link" />
+            <a tal:attributes="href context/specurl">
+              Read the Full Specification
+            </a>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+      <p class="highlighted" tal:content="context/summary">
+        The feature summary will be given here.
+      </p>
+    </div>
+  </body>
+</html>

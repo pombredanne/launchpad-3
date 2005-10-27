@@ -5,41 +5,29 @@
 
   <body>
 
-    <div metal:fill-slot="main">
-      <div id="content" class="documentEditable">
-        <ul class="contentViews">
-          <li id="contentview-day">
-            <a tal:attributes="href view/dayViewURL">Day</a>
-          </li>
-          <li id="contentview-week" class="selected">
-            <a tal:attributes="href view/weekViewURL">Week</a>
-          </li>
-          <li id="contentview-month">
-            <a tal:attributes="href view/monthViewURL">Month</a>
-          </li>
-          <li id="contentview-year">
-            <a tal:attributes="href view/yearViewURL">Year</a>
-          </li>
-        </ul>
-        <div class="documentContent">
-          <h1>
-            <span tal:replace="context/calendar/title">Calendar Title</span> -
-            <span tal:replace="view/datestring">Time</span>
-          </h1>
+    <metal:leftportlets fill-slot="portlets_one">
+      <div tal:replace="structure context/calendar/@@+portlet-subscriptions|nothing" />
+    </metal:leftportlets>
 
-          <table class="cal-navigation">
-            <tr>
-              <td width="30%" align="left">
-                <a tal:attributes="href view/prevURL">&#8592; Previous</a>
-              </td>
-              <td width="30%" align="center">
-                <a href="../this-week">Today</a>
-              </td>
-              <td width="30%" align="right">
-                <a tal:attributes="href view/nextURL">Next &#8594;</a>
-              </td>
-            </tr>
-          </table>
+    <div metal:fill-slot="titleheader"
+         tal:replace="context/calendar/title">Calendar Title</div>
+
+    <div metal:fill-slot="main">
+      <h1 tal:content="view/datestring">Time</h1>
+
+      <table class="cal-navigation">
+        <tr>
+          <td width="30%" align="left">
+            <a tal:attributes="href context/prevRange/fmt:url">&#8592; Previous Week</a>
+          </td>
+          <td width="30%" align="center">
+            <a href="../this-week">This Week</a>
+          </td>
+          <td width="30%" align="right">
+            <a tal:attributes="href context/nextRange/fmt:url">Next Week &#8594;</a>
+          </td>
+        </tr>
+      </table>
 
       <table class="cal-table">
         <tr tal:repeat="row view/layout" valign="top">
@@ -52,13 +40,13 @@
               <a tal:attributes="href day/dayURL"
                      tal:content="day/dayname">Monday</a>
             </div>
-            <div tal:condition="context/calendar/required:launchpad.Edit" class="cal-addlink">
+            <div class="cal-addlink">
               <a tal:attributes="href day/addURL">(add)</a>
             </div>
             <ul class="cal-event-list">
               <li tal:repeat="event day/events" 
                   tal:attributes="style python:'background: %s' % view.eventColour(event)">
-                <a tal:attributes="href string:../events/${event/id}/">
+                <a tal:attributes="href event/fmt:url">
                 <span tal:replace="python:view.eventStart(event)">12:00</span>
                 -
                 <span tal:replace="event/title">Title</span>
@@ -70,8 +58,6 @@
           </tal:block>
         </tr>
       </table>
-        </div>
-      </div>
     </div>
 
   </body>

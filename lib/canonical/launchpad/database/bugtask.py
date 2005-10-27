@@ -1,9 +1,16 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['BugTask', 'BugTaskSet', 'BugTaskFactory', 'BugTasksReport',
-           'bugtask_sort_key']
+__all__ = [
+    'BugTask',
+    'BugTaskSet',
+    'BugTaskFactory',
+    'BugTasksReport',
+    'bugtask_sort_key']
 
+import urllib
+import cgi
+import datetime
 from sets import Set
 
 from sqlobject import ForeignKey, StringCol
@@ -11,24 +18,26 @@ from sqlobject import SQLObjectNotFound
 
 from sqlos.interfaces import ISQLObject
 
-from zope.exceptions import NotFoundError
-from zope.component import getUtility, getAdapter
-from zope.interface import implements, directlyProvides, directlyProvidedBy
+import pytz
+
+from zope.component import getUtility
+from zope.interface import implements
 from zope.security.proxy import isinstance as zope_isinstance
 
 from canonical.lp.dbschema import (
-    EnumCol, BugTaskPriority, BugTaskStatus, BugTaskSeverity, BugSubscription)
+    EnumCol, BugTaskPriority, BugTaskStatus, BugTaskSeverity)
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.database.constants import nowUTC
+from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.database.maintainership import Maintainership
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
+from canonical.launchpad.interfaces import (
+    BugTaskSearchParams, IBugTask, IBugTasksReport, IBugTaskSet,
+    IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, ILaunchBag,
+    NotFoundError, ILaunchpadCelebrities)
 
-from canonical.launchpad.interfaces import (BugTaskSearchParams,
-    IBugTask, IBugTasksReport, IBugTaskSet, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, IAuthorization)
 
 debbugsstatusmap = {'open': BugTaskStatus.NEW,
                     'forwarded': BugTaskStatus.ACCEPTED,
@@ -74,7 +83,7 @@ def bugtask_sort_key(bugtask):
             sourcepackagename)
 
 
-class BugTask(SQLBase):
+class BugTask(SQLBase, BugTaskMixin):
     implements(IBugTask)
     _table = "BugTask"
     _defaultOrder = ['distribution', 'product', 'distrorelease',
@@ -102,9 +111,7 @@ class BugTask(SQLBase):
         default=BugTaskStatus.NEW)
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
     priority = EnumCol(
-        dbName='priority', notNull=True,
-        schema=BugTaskPriority,
-        default=BugTaskPriority.MEDIUM)
+        dbName='priority', notNull=False, schema=BugTaskPriority, default=None)
     severity = EnumCol(
         dbName='severity', notNull=True,
         schema=BugTaskSeverity,
@@ -117,104 +124,18 @@ class BugTask(SQLBase):
         notNull=False, default=None)
     bugwatch = ForeignKey(dbName='bugwatch', foreignKey='BugWatch',
         notNull=False, default=None)
-    dateassigned = UtcDateTimeCol(notNull=False, default=nowUTC)
-    datecreated  = UtcDateTimeCol(notNull=False, default=nowUTC)
+    dateassigned = UtcDateTimeCol(notNull=False, default=UTC_NOW)
+    datecreated  = UtcDateTimeCol(notNull=False, default=UTC_NOW)
     owner = ForeignKey(
         foreignKey='Person', dbName='owner', notNull=False, default=None)
 
     @property
-    def maintainer(self):
-        if self.product:
-            return self.product.owner
-        if self.distribution and self.sourcepackagename:
-            maintainership = Maintainership.selectOneBy(
-                distributionID=self.distribution.id,
-                sourcepackagenameID=self.sourcepackagename.id)
-            if maintainership is not None:
-                return maintainership.maintainer
-        return None
+    def age(self):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        UTC = pytz.timezone('UTC')
+        now = datetime.datetime.now(UTC)
 
-    @property
-    def maintainer_displayname(self):
-        if self.maintainer:
-            return self.maintainer.displayname
-        else:
-            return None
-
-    @property
-    def target(self):
-        distro = self.distribution
-        distrorelease = self.distrorelease
-        if distro or distrorelease:
-            parent = distrorelease or distro
-            # XXX 2005-06-25 kiko: This needs API and fixages in Soyuz,
-            # but I don't want to leave us with broken links meanwhile.
-            # Filed bugs 1146 and 1147.
-            return parent
-            # if self.sourcepackagename:
-            #     return parent.getSourcePackage(self.sourcepackagename)
-            # elif self.binarypackagename:
-            #     return parent.getBinaryPackageByName(self.binarypackagename)
-            # else:
-            #     return parent
-        elif self.product:
-            return self.product
-        else:
-            raise AssertionError
-
-    # XXX 2005-06-25 kiko: if target actually works, we can probably
-    # nuke this or simplify it significantly.
-    @property
-    def targetname(self):
-        """See canonical.launchpad.interfaces.IBugTask.
-
-        Depending on whether the task has a distribution,
-        distrorelease, sourcepackagename, binarypackagename, and/or
-        product, the targetname will have one of these forms:
-        * distribution.displayname
-        * distribution.displayname sourcepackagename.name
-        * distribution.displayname sourcepackagename.name binarypackagename.name
-        * distribution.displayname distrorelease.displayname
-        * distribution.displayname distrorelease.displayname
-          sourcepackagename.name
-        * distribution.displayname distrorelease.displayname
-          sourcepackagename.name binarypackagename.name
-        * upstream product.name
-        """
-        if self.distribution or self.distrorelease:
-            if self.sourcepackagename is None:
-                sourcepackagename_name = None
-            else:
-                sourcepackagename_name = self.sourcepackagename.name
-            if self.binarypackagename is None:
-                binarypackagename_name = None
-            else:
-                binarypackagename_name = self.binarypackagename.name
-            L = []
-            if self.distribution:
-                L.append(self.distribution.displayname)
-            elif self.distrorelease:
-                L.append(self.distrorelease.distribution.displayname)
-                L.append(self.distrorelease.displayname)
-            if self.sourcepackagename:
-                L.append(self.sourcepackagename.name)
-            if (binarypackagename_name and
-                binarypackagename_name != sourcepackagename_name):
-                L.append(binarypackagename_name)
-            return ' '.join(L)
-        elif self.product:
-            return 'upstream ' + self.product.name
-        else:
-            raise AssertionError
-
-    @property
-    def title(self):
-        """Generate the title for this bugtask based on the id of the bug
-        and the bugtask's targetname.  See IBugTask.
-        """
-        title = 'Bug #%s in %s: "%s"' % (
-            self.bug.id, self.targetname, self.bug.title)
-        return title
+        return now - self.datecreated
 
     def _init(self, *args, **kw):
         """Marks the task when it's created or fetched from the database."""
@@ -223,7 +144,6 @@ class BugTask(SQLBase):
         if self.product is not None:
             # This is an upstream task.
             mark_task(self, IUpstreamBugTask)
-            checker = getAdapter(self, IAuthorization, 'launchpad.Edit')
         elif self.distrorelease is not None:
             # This is a distro release task.
             mark_task(self, IDistroReleaseBugTask)
@@ -232,6 +152,7 @@ class BugTask(SQLBase):
             mark_task(self, IDistroBugTask)
 
     def setStatusFromDebbugs(self, status):
+        """See canonical.launchpad.interfaces.IBugTask."""
         try:
             self.status = debbugsstatusmap[status]
         except KeyError:
@@ -239,27 +160,58 @@ class BugTask(SQLBase):
         return self.status
 
     def setSeverityFromDebbugs(self, severity):
+        """See canonical.launchpad.interfaces.IBugTask."""
         try:
             self.severity = debbugsseveritymap[severity]
         except KeyError:
             raise ValueError('Unknown debbugs severity "%s"' % severity)
         return self.severity
 
+    @property
+    def statusdisplayhtml(self):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        assignee = self.assignee
+        status = self.status
+
+        if assignee:
+            assignee_name = urllib.quote_plus(assignee.name)
+            assignee_browsername = cgi.escape(assignee.browsername)
+
+            if status in (BugTaskStatus.ACCEPTED, BugTaskStatus.REJECTED,
+                          BugTaskStatus.FIXED):
+                return (
+                    '%s by <img src="/++resource++user.gif" /> '
+                    '<a href="/malone/assigned?name=%s">%s</a>' % (
+                        status.title.lower(), assignee_name,
+                        assignee_browsername))
+
+            return (
+                'assigned to <img src="/++resource++user.gif" /> '
+                '<a href="/malone/assigned?name=%s">%s</a>' % (
+                    assignee_name, assignee_browsername))
+        else:
+            if status in (BugTaskStatus.REJECTED, BugTaskStatus.FIXED):
+                return status.title.lower()
+
+            return 'not assigned'
+
+
 class BugTaskSet:
 
     implements(IBugTaskSet)
 
     _ORDERBY_COLUMN = {
-        "id" : "Bug.id",
-        "severity" : "BugTask.severity",
-        "priority" : "BugTask.priority",
+        "id": "Bug.id",
+        "severity": "BugTask.severity",
+        "priority": "BugTask.priority",
         "assignee": "BugTask.assignee",
-        "sourcepackagename" : "BugTask.sourcepackagename",
-        "status" : "BugTask.status",
-        "title" : "Bug.title",
-        "milestone" : "BugTask.milestone",
-        "dateassigned" : "BugTask.dateassigned",
-        "datecreated" : "BugTask.datecreated"}
+        "sourcepackagename": "BugTask.sourcepackagename",
+        "product": "BugTask.product",
+        "status": "BugTask.status",
+        "title": "Bug.title",
+        "milestone": "BugTask.milestone",
+        "dateassigned": "BugTask.dateassigned",
+        "datecreated": "BugTask.datecreated"}
 
     def __init__(self):
         self.title = 'A Set of Bug Tasks'
@@ -269,7 +221,7 @@ class BugTaskSet:
         try:
             task = BugTask.get(task_id)
         except SQLObjectNotFound:
-            raise KeyError, task_id
+            raise NotFoundError(task_id)
         return task
 
     def __iter__(self):
@@ -290,7 +242,7 @@ class BugTaskSet:
         """See canonical.launchpad.interfaces.IBugTaskSet."""
         assert isinstance(params, BugTaskSearchParams)
 
-        extra_clauses = []
+        extra_clauses = ['Bug.id = BugTask.bug']
         clauseTables = ['BugTask', 'Bug']
 
         # These arguments can be processed in a loop without any other
@@ -342,10 +294,6 @@ class BugTaskSet:
                     clause = "BugTask.%s = %d" % (arg_name, int(arg_value.value))
             extra_clauses.append(clause)
 
-        #
-        # Handle special cases
-        #
-
         if params.omit_dupes:
             extra_clauses.append("Bug.duplicateof is NULL")
 
@@ -369,9 +317,7 @@ class BugTaskSet:
             extra_clauses.append("BugTask.fti @@ ftq(%s)" %
                                  sqlvalues(params.statusexplanation))
 
-        #
-        # Handle privacy
-        #
+        # Filter the search results for privacy-awareness.
         if params.user:
             # A subselect is used here because joining through
             # TeamParticipation is only relevant to the "user-aware"
@@ -379,22 +325,17 @@ class BugTaskSet:
             # other half of this condition (see code above) does not
             # use TeamParticipation at all.
             clause = ("""
-                      ((BugTask.bug = Bug.id AND Bug.private = FALSE) OR
-                       (BugTask.bug = Bug.id AND Bug.private = TRUE AND
-                        Bug.id in (
+                     (Bug.private = FALSE OR Bug.id in (
                           SELECT Bug.id
                           FROM Bug, BugSubscription, TeamParticipation
                           WHERE Bug.id = BugSubscription.bug AND
                                 TeamParticipation.person = %(personid)s AND
                                 BugSubscription.person =
-                                  TeamParticipation.team AND
-                                BugSubscription.subscription IN
-                                    (%(cc)s, %(watch)s))))""" %
-                      sqlvalues(personid=params.user.id,
-                                cc=BugSubscription.CC,
-                                watch=BugSubscription.WATCH))
+                                  TeamParticipation.team))
+                                  """ %
+                      sqlvalues(personid=params.user.id))
         else:
-            clause = "BugTask.bug = Bug.id AND Bug.private = FALSE"
+            clause = "Bug.private = FALSE"
         extra_clauses.append(clause)
 
         orderby = params.orderby
@@ -445,40 +386,49 @@ class BugTaskSet:
             milestone=milestone)
 
     def maintainedBugTasks(self, person, minseverity=None, minpriority=None,
-                         showclosed=False, orderBy=None, user=None):
+                           showclosed=False, orderBy=None, user=None):
         if showclosed:
             showclosed = ""
         else:
             showclosed = (
                 ' AND BugTask.status < %s' % sqlvalues(BugTaskStatus.FIXED))
 
-        prioAndSevFilter = ""
+        priority_severity_filter = ""
         if minpriority is not None:
-            prioAndSevFilter = (
+            priority_severity_filter = (
                 ' AND BugTask.priority >= %s' % sqlvalues(minpriority))
         if minseverity is not None:
-            prioAndSevFilter += (
+            priority_severity_filter += (
                 ' AND BugTask.severity >= %s' % sqlvalues(minseverity))
 
-        privatenessFilter = ' AND '
-        if user is not None:
-            privatenessFilter += ('''
-                ((BugTask.bug = Bug.id AND Bug.private = FALSE)
-                OR ((BugTask.bug = Bug.id AND Bug.private = TRUE) AND
-                    (Bug.id in (
-                        SELECT Bug.id FROM Bug, BugSubscription WHERE
-                           (Bug.id = BugSubscription.bug) AND
-                           (BugSubscription.person = TeamParticipation.team) AND
-                           (TeamParticipation.person = %(personid)s) AND
-                           (BugSubscription.subscription IN
-                               (%(cc)s, %(watch)s))))))'''
-                % sqlvalues(personid=user.id,
-                            cc=BugSubscription.CC,
-                            watch=BugSubscription.WATCH))
+        admin_team = getUtility(ILaunchpadCelebrities).admin
+        privacy_filter = None
+        if user:
+            if user.inTeam(admin_team):
+                # No privacy filtering for admin needed, so just insert the SQL
+                # needed to do a proper join.
+                privacy_filter = " AND BugTask.bug = Bug.id"
+            else:
+                # Include privacy filtering.
+                privacy_filter = " AND "
+                privacy_filter += ("""
+                    (BugTask.bug = Bug.id AND
+                    (Bug.private = FALSE OR
+                     Bug.id in (
+                       SELECT Bug.id FROM Bug, BugSubscription
+                       WHERE (Bug.id = BugSubscription.bug) AND
+                             (BugSubscription.person = TeamParticipation.team) AND
+                             (TeamParticipation.person = %d))))""" % user.id)
         else:
-            privatenessFilter += 'BugTask.bug = Bug.id AND Bug.private = FALSE'
+            # Anonymous user, therefore filter to only return public bugs.
+            privacy_filter = " AND BugTask.bug = Bug.id AND Bug.private = FALSE"
 
-        filters = prioAndSevFilter + showclosed + privatenessFilter
+        filters = priority_severity_filter + showclosed
+        if privacy_filter is not None:
+            filters += privacy_filter
+
+        # Don't show duplicate bug reports.
+        filters += ' AND Bug.duplicateof IS NULL'
 
         maintainedPackageBugTasksQuery = ('''
             BugTask.sourcepackagename = Maintainership.sourcepackagename AND
@@ -509,9 +459,6 @@ class BugTaskSet:
         person2Tasks = self.maintainedBugTasks(person2, user=user)
         return person1Tasks.intersect(person2Tasks, orderBy=orderBy)
 
-
-def mark_task(obj, iface):
-    directlyProvides(obj, iface + directlyProvidedBy(obj))
 
 def BugTaskFactory(context, **kw):
     # XXX kiko: WTF, context is ignored?! LaunchBag? ARGH!
@@ -599,10 +546,7 @@ class BugTasksReport:
             user, minseverity, minpriority, showclosed):
             bugs.add(bugtask.bug)
 
-        # XXX kiko: use a key instead of this DSU
-        buglistwithdates = [(bug.datecreated, bug) for bug in bugs]
-        buglistwithdates.sort()
-        buglistwithdates.reverse()
-        bugs = [bug for datecreated, bug in buglistwithdates]
-
+        bugs = list(bugs)
+        bugs.sort(key=lambda bug: bug.datecreated, reverse=True)
         return bugs
+

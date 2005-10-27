@@ -1,0 +1,19 @@
+<div class="portlet">
+
+  <h4>Latest specifications:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul>
+      <li class="spec" tal:repeat="spec view/getLatestSpecifications">
+        <a tal:content="spec/title"
+           tal:attributes="href spec/fmt:url">spec title</a>
+      </li>
+      <li class="info" tal:condition="not: view/getLatestSpecifications">
+        No specifications registered.
+      </li>
+    </ul>
+	
+  </div>
+
+</div>

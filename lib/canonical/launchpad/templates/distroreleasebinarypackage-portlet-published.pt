@@ -1,0 +1,24 @@
+<div class="portlet">
+
+  <h4>Published As:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul>
+      <li class="packages" tal:repeat="pub context/current_publishings">
+        <a tal:attributes="href
+            pub/distroarchreleasebinarypackagerelease/fmt:url">
+          <span tal:replace="pub/distroarchrelease/architecturetag">
+            i386
+          </span>
+          <span tal:replace="pub/pocket/title">Release</span>
+        </a>
+      </li>
+      <li class="alert" tal:condition="not: context/current_publishings">
+        <i>Not published at present.</i>
+      </li>
+    </ul>
+
+  </div>
+
+</div>

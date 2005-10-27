@@ -1,15 +1,13 @@
-  'foo' is a dupe account for 'name16'. Let's merge them, and keep only
-  'name16'.
+  'foo' is a dupe account for 'no-priv'. Let's merge them, and keep only
+  'no-priv'.
 
   First we have to go to the +requestmerge page.
 
   >>> print http(r"""
   ... GET /people/+requestmerge HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
   ...
   ...<h1>Request Merge of User Accounts</h1>...
   ...
@@ -19,8 +17,7 @@
 
   >>> print http(r"""
   ... POST /people/+requestmerge HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: ...
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------153178557535218118471519623
   ... 
   ... -----------------------------153178557535218118471519623
@@ -43,8 +40,7 @@
 
   >>> print http(r"""
   ... POST /people/+requestmerge HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: ...
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------153178557535218118471519623
   ... 
   ... -----------------------------153178557535218118471519623
@@ -67,8 +63,7 @@
 
   >>> print http(r"""
   ... POST /people/+requestmerge HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: ...
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------153178557535218118471519623
   ... 
   ... -----------------------------153178557535218118471519623
@@ -82,10 +77,8 @@
   ... -----------------------------153178557535218118471519623--
   ... """)
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
   ...
-  ...<h1>Request Merge of User Accounts</h1>...
+  Location: +requestmerge-multiple?dupe=...
   ...
 
 
@@ -100,11 +93,9 @@
 
   >>> print http(r"""
   ... GET /people/+requestmerge-multiple?dupe=%d HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """ % dupe.id)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
   ...
   ...have more than one registered email...
   ...
@@ -119,17 +110,15 @@
 
   >>> print http(r"""
   ... POST /people/+requestmerge-multiple?dupe=%d HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: ...
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 
   ... dupe=%d&selected=%d&selected=%d""" % (dupe.id, dupe.id, email1.id,
   ...                                       email2.id))
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
   ...
-  ...An email message was sent to each email address you selected...
+  ...Individual email messages were sent to...
+  ...foo@baz.com...bar.foo@canonical.com...
   ...
 
 
@@ -146,13 +135,11 @@
 
   >>> print http(r"""
   ... GET %s HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """ % base_path)
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
   ...
-  ...<h1>You're being redirected</h1>...
+  Location: http://localhost:9000/token/.../+accountmerge
   ...
 
 
@@ -162,11 +149,9 @@
   >>> path = "%s/+accountmerge" % base_path
   >>> print http(r"""
   ... GET %s HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """ % path)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
   ...
   ...You're trying to merge the user account...
   ...
@@ -178,14 +163,11 @@
 
   >>> print http(r"""
   ... POST %s HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: ...
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 
   ... password=test""" % path)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
   ...
   ...more registered email addresses...
   ...
@@ -201,13 +183,11 @@
 
   >>> print http(r"""
   ... GET %s HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """ % base_path)
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
   ...
-  ...<h1>You're being redirected</h1>...
+  Location: http://localhost:9000/token/.../+accountmerge
   ...
 
 
@@ -217,11 +197,9 @@
   >>> path = "%s/+accountmerge" % base_path
   >>> print http(r"""
   ... GET %s HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """ % path)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
   ...
   ...You're trying to merge the user account...
   ...
@@ -231,24 +209,21 @@
 
   >>> print http(r"""
   ... POST %s HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: ...
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 
   ... password=test""" % path)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
   ...
   ...The merge you requested was concluded with success...
   ...
 
 
   Now we make sure that the team we just created and was owned by 'foo' is now
-  owned by 'name16'.
+  owned by 'no-priv'.
 
   >>> from canonical.launchpad.database import PersonSet
   >>> team = PersonSet().getByName('myemail')
   >>> team.teamowner.name
-  u'name16'
+  u'no-priv'
 

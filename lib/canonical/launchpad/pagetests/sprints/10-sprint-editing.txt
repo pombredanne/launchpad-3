@@ -1,0 +1,70 @@
+
+We should be able to edit the details on a sprint. We will log in as Sample
+Person.
+
+  >>> print http(r"""
+  ... GET /sprints/ubz/+edit HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+
+And when we POST to that form, we expect to be redirected to the sprint home
+page.
+
+
+  >>> print http(r"""
+  ... POST /sprints/ubz/+edit HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1616
+  ... Content-Type: multipart/form-data; boundary=---------------------------1049576830677042648151610755
+  ... 
+  ... -----------------------------1049576830677042648151610755
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... ubz
+  ... -----------------------------1049576830677042648151610755
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Ubuntu Below Zero
+  ... -----------------------------1049576830677042648151610755
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... This is the next Ubuntu developer Summit. Join us in Montreal for discussions around Ubuntu and Launchpad. The focus will be the road to Dapper, our April 2006 release, focused on the enterprise.
+  ... -----------------------------1049576830677042648151610755
+  ... Content-Disposition: form-data; name="field.home_page"
+  ... 
+  ... http://wiki.ubuntu.com/UbuntuBelowZero
+  ... -----------------------------1049576830677042648151610755
+  ... Content-Disposition: form-data; name="field.time_zone"
+  ... 
+  ... US/Eastern
+  ... -----------------------------1049576830677042648151610755
+  ... Content-Disposition: form-data; name="field.time_zone-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------1049576830677042648151610755
+  ... Content-Disposition: form-data; name="field.time_starts"
+  ... 
+  ... 2005-10-07 23:30:00+00:00
+  ... -----------------------------1049576830677042648151610755
+  ... Content-Disposition: form-data; name="field.time_ends"
+  ... 
+  ... 2005-11-17 00:11:00+00:00
+  ... -----------------------------1049576830677042648151610755
+  ... Content-Disposition: form-data; name="field.address"
+  ... 
+  ... Holiday Inn Select, Downtown Montreal, Canada
+  ... -----------------------------1049576830677042648151610755
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------1049576830677042648151610755--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../sprints/ubz
+  ...Updated on ...
+
+

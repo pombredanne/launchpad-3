@@ -2,7 +2,7 @@
     <h4 tal:content="context/title">product title</h4>
 
     <div class="portletBody">
-        <div class="portletContent even">
+        <div class="portletContent">
 
         <div tal:condition="context/homepageurl" tal:omit-tag>
             <b>External links:</b><br />
@@ -11,7 +11,7 @@
                class="link">Home page</a><br />
         </div>
 
-        <b>Lead Maintainer:</b><br />
+        <b>Registrant:</b><br />
         <img src="/++resource++user.gif">
         <a tal:attributes="href string:/people/${context/owner/name}"
            tal:content="context/owner/browsername"
@@ -30,9 +30,16 @@
         <tal:block condition="not: context/translationgroup">
         <i>Not assigned</i><br />
         </tal:block>
-        <b>Translation Perms:</b><br />
-        <span tal:replace="context/translationpermission/title">Open</span>
-        <br />
+        <b>Translation permissions:</b><br />
+        <span tal:replace="context/translationpermission/title">Open</span><br />
+
+        <div tal:condition="not: context/official_rosetta">
+          <i>Doesn&rsquo;t use Rosetta</i>
+        </div>
+
+        <div tal:condition="not: context/official_malone">
+          <i>Doesn&rsquo;t use Malone</i>
+        </div>
 
         <b>Product Status:</b><br />
         <span tal:condition="context/reviewed"

@@ -1,0 +1,39 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xml:lang="en" lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+  <body>
+
+    <metal:leftportlets fill-slot="portlets_one">
+      <div tal:replace="structure context/@@+portlet-subscriptions|nothing" />
+    </metal:leftportlets>
+
+    <div metal:fill-slot="main">
+      <h1>Coming events</h1>
+
+      <table class="listing" tal:condition="view/events">
+        <thead>
+          <tr>
+            <th>Start Date</th>
+            <th>Title</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="event view/events">
+            <td tal:content="event/dtstart/fmt:datetime">
+              2005-04-01 08:00:00
+            </td>
+            <td tal:content="event/title">
+              April Fool's day
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p tal:condition="not: view/events">
+      No events in the next two weeks
+      </p>
+    </div>
+
+  </body>
+</html>

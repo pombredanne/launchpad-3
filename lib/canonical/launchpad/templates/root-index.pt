@@ -11,19 +11,23 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/@@+portlet-malone" />
+  <div tal:replace="structure context/@@+portlet-bounties" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
-  <h1 i18n:translate="">Welcome to The Launchpad!</h1>
+  <h1 i18n:translate="">Welcome to The Launchpad</h1>
 
-  <p i18n:translate="">The Launchpad is a collection of services for
+  <p i18n:translate="">
+    Launchpad is a collection of services for
     projects in the open source universe. You can register your
-    project, and collaborate with the open source community on translations,
-    bug squashing and the code you write.
+    project, and then collaborate with the open source community on
+    translations, bug tracking and code.
   </p>
 
   <form action="/products/" method="get">
+
+    <label for="text">Search for products:</label>
     <table>
       <tr>
         <td>
@@ -32,48 +36,73 @@
         </td>
       </tr>
     </table>
-    <p class="formHelp">
-      Use this form to find an open source application. Enter any part of
-      the application name, title or description, and click "Search".
-    </p>
 
   </form>
 
   <h2>Most Active Projects</h2>
 
-  <div style="font-size: 80%;">
-    <img src="/++resource++product_icon.gif" />
-    <b>The Ubuntu Distribution</b>
-    [<a href="/distros/ubuntu">View</a>]<br />
-    <div style="margin-left: 30px;">
+  <table>
+    <tbody>
+      <tr>
+        <td class="icon left">
+          <img alt="" src="/++resource++product_icon.gif" />
+        </td>
+        <td>
+          <b><a href="/distros/ubuntu">The Ubuntu Distribution</a></b>
+          <p class="lesser">
       Ubuntu is a Linux distribution that emphasises ease of use and free
       global distribution.
       The project uses the Launchpad for all translation and bug tracking.
-    </div>
-
-    <hr />
-
-    <img src="/++resource++product_icon.gif" />
-    <b>GnomeBaker - CD Burning Application</b>
-    [<a href="/products/gnomebaker">View</a>]<br />
-    <div style="margin-left: 30px;">
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td class="icon left">
+          <img alt="" src="/++resource++product_icon.gif" />
+        </td>
+        <td>
+          <b><a href="/products/gnomebaker">GnomeBaker</a>
+          - CD burning application</b>
+          <p class="lesser">
       GnomeBaker is a popular CD burning GUI application for the Gnome desktop
       environment. It uses the Launchpad primarily for translation services
       through Rosetta.
-    </div>
-
-    <hr />
-
-    <img src="/++resource++product_icon.gif" />
-    <b>Bazaar - Distributed Revision Control</b>
-    [<a href="/products/bazaar">View</a>]<br />
-    <div style="margin-left: 30px;">
+          </p>
+        </td>
+      </tr>
+      <tr>
+        <td class="icon left">
+          <img alt="" src="/++resource++product_icon.gif" />
+        </td>
+        <td>
+          <b><a href="/products/bazaar">Bazaar</a>
+          - distributed revision control</b>
+          <p class="lesser">
       Bazaar is a distributed revision control system that is based on Arch. It
       uses the Launchpad for bug tracking.
-    </div>
-  </div>
+          </p>      
+        </td>
+      </tr>
+    </tbody>
+  </table>
 
-  <hr />
+  <h2>Other Services</h2>
+
+  <table>
+    <tr style="valign: top;">
+      <td>
+        <b>Support Ticket Tracker:</b><br />
+        Launchpad allows your project to track technical support requests
+        from your users. <a href="/support">Learn More...</a>
+      </td>
+      <td>
+        <b>Meeting Tracker:</b><br />
+        You can plan sprints and meetings, and keep track of the
+        specifications and bugs to be addressed at the meeting.
+        <a href="/sprints/">Learn More...</a>
+      </td>
+    </tr>
+  </table>
 
 </div>
 

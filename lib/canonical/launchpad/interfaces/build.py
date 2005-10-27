@@ -6,22 +6,22 @@ __metaclass__ = type
 
 __all__ = [
     'IBuild',
-    'IBuilder',
     'IBuildSet',
-    'IBuildQueue',
+    'IHasBuildRecords'
     ]
 
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
+from zope.schema import Choice, TextLine, Bool
 
 _ = MessageIDFactory('launchpad')
 
-
 class IBuild(Interface):
     """A Build interface"""
+    id = Attribute("The build ID.")
     datecreated = Attribute("Date of BinPackage Creation")
     processor = Attribute("BinaryPackage Processor")
-    distroarchrelease = Attribute("The Ditro Arch Release")
+    distroarchrelease = Attribute("The Distro Arch Release")
     buildstate = Attribute("BinaryBuild State")
     datebuilt = Attribute("Binary Date of Built")
     buildduration = Attribute("Build Duration Interval")
@@ -32,32 +32,81 @@ class IBuild(Interface):
     component = Attribute("The BinaryPackage Component")
     section = Attribute("The BinaryPackage Section")
     sourcepackagerelease = Attribute("SourcePackageRelease reference")
+    distrorelease = Attribute("Direct parent needed by CanonicalURL")
+    buildqueue_record = Attribute("Corespondent BuildQueue record")
 
-class IBuilder(Interface):
-    processor = Attribute("The Builder Processor")
-    url = Attribute("The URL to the builder")
-    name = Attribute("The Builder Name")
-    title = Attribute("The Builder Title")
-    description = Attribute("The Builder Description")
-    owner = Attribute("The Builder Owner")
-    builderok = Attribute("Whether or not the builder is ok")
-    failnotes = Attribute("The reason for a builder not being ok")
-    trusted = Attribute("Whether not the builder is trusted to build packages "
-                        "under security embargo.")
-    slave = Attribute("XMLRPC Server instance for builder slave")
+    title = Attribute("Build Title")
+
+    # useful properties
+    distribution = Attribute("Shortcut for its distribution.")
+    distributionsourcepackagerelease = Attribute("The page showing the "
+        "details for this sourcepackagerelease in this distribution.")
+    binarypackages = Attribute("A list of binary packages that resulted "
+        "from this build.")
+
+    def __getitem__(name):
+        """Mapped to getBinaryPackageRelease."""
+
+    def getBinaryPackageRelease(name):
+        """Return the binary package from this build with the given name, or
+        raise IndexError if no such package exists.
+        """
+
+
+
+    def createBinaryPackageRelease(binarypackagename, version,
+                                   summary, description,
+                                   binpackageformat, component,
+                                   section, priority, shlibdeps,
+                                   depends, recommends, suggests,
+                                   conflicts, replaces, provides,
+                                   essential, installedsize,
+                                   copyright, licence,
+                                   architecturespecific):
+        """Create a binary package release with the provided args, attached
+        to this specific build.
+        """
+
+    def createBuildQueueEntry():
+        """Create a BuildQueue entry for this build record.""" 
 
 class IBuildSet(Interface):
     """Interface for BuildSet"""
+
     def getBuildBySRAndArchtag(sourcepackagereleaseID, archtag):
-        """return a build for a SourcePackageRelease and an ArchTag"""
+        """Return a build for a SourcePackageRelease and an ArchTag"""
 
-class IBuildQueue(Interface):
-    """A build queue entry"""
-    build = Attribute("The build in question")
-    builder = Attribute("The builder building the build")
-    created = Attribute("The datetime that the queue entry waw created")
-    buildstart = Attribute("The datetime of the last build attempt")
-    logtail = Attribute("The current tail of the log of the build")
+    def getByBuildID(id):
+        """Return the exact build specified.
 
-    def destroySelf():
-        """Delete this entry from the database."""
+        id is the numeric ID of the build record in the database.
+        I.E. getUtility(IBuildSet).getByBuildID(foo).id == foo
+        """
+
+    def getPendingBuildsForArchSet(archrelease):
+        """Return all pending build records within a group of ArchReleases 
+
+        Pending means that buildstatus is NEEDSBUILDING.
+        """
+
+    def getBuildsForBuilder(builder, limit=10):
+        """Return the build records touched by builder
+
+        Returns an SelectResult, ordered by datebuild (descending)
+        Return up to 'limit' results.
+        """
+
+
+class IHasBuildRecords(Interface):
+    """An Object that has build records"""
+
+    def getBuildRecords(status=None, limit=10):
+        """Return build records owned by the object.
+
+        The optional 'status' argument selects build records in a specific
+        state. If the 'status' argument is omitted, it returns the 'worked'
+        entries. A 'worked' entry is one that has been touched by a builder.
+        That is, where 'builder is not NULL'.
+
+        At most 'limit' results are returned.
+        """

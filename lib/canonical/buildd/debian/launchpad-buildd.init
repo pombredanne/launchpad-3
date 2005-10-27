@@ -38,7 +38,7 @@ d_stop() {
     test -r $PIDFILE && kill -TERM $(cat $PIDFILE)
 }
 
-CONFS=$(cd $CONFROOT; ls|grep -v "^-")
+CONFS=$(cd $CONFROOT; ls|grep -v "^-"|grep -v "~$")
 
 case "$1" in
   start)

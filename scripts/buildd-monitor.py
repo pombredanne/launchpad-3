@@ -6,6 +6,7 @@
 Buildd-Slave monitor, support multiple slaves and requires LPDB access.
 """
 from string import join
+from sqlobject import SQLObjectNotFound
 
 from canonical.lp import initZopeless
 from canonical.launchpad.database import Builder
@@ -19,9 +20,9 @@ class BuilddSlaveMonitorApp:
     """Simple application class to expose some special methods and
     wrap to the RPC server.
     """
-    def __init__(self, write):
+    def __init__(self, tm, write):
+        self.tm = tm
         self.write = write
-        self.slave = None
 
     def requestReceived(self, line):
         """Process requests typed in."""
@@ -38,21 +39,32 @@ class BuilddSlaveMonitorApp:
             args = join(request[1:])
             meth = getattr(self, cmd)
             d = defer.maybeDeferred(meth, args)
-        else:
-            if not self.slave:
-                self.write('No Buildd Slave selected\n')
-                self.prompt()
+            d.addCallbacks(self._printResult).addErrback(self._printError)
+            return
+        
+        elif len(request) > 1:
+            try:
+                builder_id = request.pop(1)
+                bid = int(builder_id)
+                builder = Builder.get(bid)
+            except ValueError:
+                self.write('Wrong builder ID: %s' % builder_id)
+            except SQLObjectNotFound:
+                self.write('Builder Not Found: %s' % bid)
+            else:
+                slave = Proxy(builder.url.encode('ascii'))
+                d = slave.callRemote(*request)
+                d.addCallbacks(self._printResult).addErrback(self._printError)
                 return
-            d = self.slave.callRemote(*request)
+        else:
+            self.write('Syntax Error: %s' % request)
 
-        d.addCallbacks(self._printResult).addErrback(self._printError)
+        self.prompt()
+        return
     
     def prompt(self):
         """Simple display a prompt according with current state."""
-        if self.slave:
-            self.write('\n%s >>> ' % self.builder.name.encode('ascii'))
-        else:
-            self.write('\n>>> ')
+        self.write('\nbuildd-monitor>>> ')
             
     def cmd_quit(self, data=None):
         """Ohh my ! stops the reactor, i.e., QUIT, if requested.""" 
@@ -60,30 +72,45 @@ class BuilddSlaveMonitorApp:
 
     def cmd_builders(self, data=None):
         """Read access through initZopeless."""
-        builders = Builder.select()
+        builders = Builder.select(orderBy='id')
+        blist = 'List of Builders\nID - STATUS - NAME - URL\n'
         for builder in builders:
             name = builder.name.encode('ascii')
             url = builder.url.encode('ascii')
-            return ('%s - %s - %s\n' % (builder.id, name, url))
+            blist += '%s - %s - %s - %s\n' % (builder.id, builder.builderok,
+                                              name, url)
+        return blist
+
+    def cmd_reset(self, data=None):
+        try:
+            builder = Builder.get(int(data[0]))
+        except ValueError, IndexError:
+            msg =  'Argument must be the builder ID'
+        except SQLObjectNotFound:
+            msg = 'Builder not found: %d' % int(data[0])
+        else:
+            builder.builderok = True
+            self.tm.commit()
+            msg = '%s was reset sucessfully' % builder.name
+        return msg
+
+    def cmd_clear(self, data=None):
+        """Simply returns the VT100 reset string."""
+        return '\033c'
         
-    def cmd_connect(self, data=None):
-        """Select an slave to be monitored."""
-        if data:
-            self.builder = Builder.get(int(data))
-            self.url = self.builder.url.encode('ascii')
-
-        self.slave = Proxy(self.url)
-        return 'Connected to %s\n' % self.builder.name.encode('ascii')
-
-    def cmd_disconnect(self, data=None):
-        """Release the slave."""
-        self.slave = None
+    def cmd_help(self, data=None):
+        return ('Command Help\n'
+                'clear - clear screen'
+                'builders - list available builders\n'
+                'reset <BUILDERID> - reset builder\n'
+                'quit - exit the program\n'
+                'Usage: <CMD> <BUILDERID> <ARGS>\n')
             
     def _printResult(self, result):
         """Callback for connections."""
         if result is None:
             return
-        self.write('Got: ' + repr(result))
+        self.write('Got: %s' % str(result).strip())
         self.prompt()
             
     def _printError(self, error):
@@ -95,25 +122,31 @@ class BuilddSlaveMonitorProtocol(basic.LineReceiver):
     """Terminal Style Protocol"""
     # set local line delimiter
     from os import linesep as delimiter
+    # store the trasaction manager locally
+    tm = None
 
     def connectionMade(self):
         """Setup the backend application and send welcome message."""
-        self.app = BuilddSlaveMonitorApp(self.transport.write)
+        self.app = BuilddSlaveMonitorApp(self.tm, self.transport.write)
         self.transport.write('Welcome Buildd Slave Monitor\n>>> ')
 
     def lineReceived(self, line):
         """Use the Backend App to process each request."""
         self.app.requestReceived(line)
 
-def main():
+def main(tm):
     """Setup the interactive interface with the respective protocol,
     and start the reactor.
     """
-    stdio.StandardIO(BuilddSlaveMonitorProtocol())
+    # ensure we store the transaction manager instance before
+    # initialise the reactor.
+    proto = BuilddSlaveMonitorProtocol()
+    proto.tm = tm
+    stdio.StandardIO(proto)
     reactor.run()
     
 if __name__ == '__main__':
     # for main, the only think to setup is the initZopeless
     # environment and the application wrapper. 
-    initZopeless()
-    main()
+    tm = initZopeless()
+    main(tm)

@@ -6,10 +6,10 @@ __metaclass__ = type
 
 __all__ = [
     'IBugTask',
+    'INullBugTask',
     'IBugTaskSearch',
     'IUpstreamBugTaskSearch',
     'IDistroBugTaskSearch',
-    'IBugTaskSearchListingView',
     'IBugTaskDelta',
     'IUpstreamBugTask',
     'IDistroBugTask',
@@ -20,7 +20,6 @@ __all__ = [
     'BugTaskSearchParams',
     'UNRESOLVED_BUGTASK_STATUSES']
 
-from zope.component.interfaces import IView
 from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import (
@@ -29,8 +28,9 @@ from zope.schema import (
 from sqlos.interfaces import ISelectResults
 
 from canonical.lp import dbschema
-from canonical.launchpad.interfaces.launchpad import IHasDateCreated
 from canonical.launchpad.interfaces.bugattachment import IBugAttachment
+from canonical.launchpad.interfaces.launchpad import IHasDateCreated
+from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 
 _ = MessageIDFactory('launchpad')
 
@@ -52,15 +52,14 @@ class IBugTask(IHasDateCreated):
         title=_("Distribution Release"), required=False,
         vocabulary='DistroRelease')
     milestone = Choice(
-        title=_('Target'), required=False, vocabulary='Milestone')
+        title=_('Milestone'), required=False, vocabulary='Milestone')
     status = Choice(
         title=_('Status'), vocabulary='BugTaskStatus',
         default=dbschema.BugTaskStatus.NEW)
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
     priority = Choice(
-        title=_('Priority'), vocabulary='BugTaskPriority',
-        default=dbschema.BugTaskPriority.MEDIUM)
+        title=_('Priority'), vocabulary='BugTaskPriority', required=False)
     severity = Choice(
         title=_('Severity'), vocabulary='BugTaskSeverity',
         default=dbschema.BugTaskSeverity.NORMAL)
@@ -76,17 +75,33 @@ class IBugTask(IHasDateCreated):
         "(None). Linking the remote bug watch with the task in "
         "this way means that a change in the remote bug status will change "
         "the status of this bug task in Malone."))
-    dateassigned = Datetime()
-    datecreated  = Datetime()
+    dateassigned = Datetime(
+        title=_("Date Assigned"),
+        description=_("The date on which this task was assigned to someone."))
+    datecreated = Datetime(
+        title=_("Date Created"),
+        description=_("The date on which this task was created."))
+    age = Datetime(
+        title=_("Age"),
+        description=_(
+            "The age of this task, expressed as the length of time between "
+            "datecreated and now."))
     owner = Int()
     maintainer = TextLine(
         title=_("Maintainer"), required=True, readonly=True)
     maintainer_displayname = TextLine(
         title=_("Maintainer"), required=True, readonly=True)
-
     target = Attribute("The software in which this bug should be fixed")
     targetname = Attribute("The short, descriptive name of the target")
-    title = Attribute("The title used for a task's Web page.")
+    title = Attribute("The title of the bug related to this bugtask")
+    related_tasks = Attribute("IBugTasks related to this one, namely other "
+                              "IBugTasks on the same IBug.")
+    statusdisplayhtml = Attribute(
+        "A HTML representation of the status. This field produces "
+        "its value from the status, assignee and milestone values.")
+    statuselsewhere = Attribute(
+        "A human-readable representation of the status of this IBugTask's bug "
+        "in the other contexts in which it's reported.")
 
     def setStatusFromDebbugs(status):
         """Set the Malone BugTask status on the basis of a debbugs status.
@@ -104,6 +119,17 @@ class IBugTask(IHasDateCreated):
         """
 
 
+class INullBugTask(IBugTask):
+    """A marker interface for an IBugTask that doesn't exist in a context.
+
+    An INullBugTask is useful when wanting to view a bug in a context
+    where that bug hasn't yet been reported. This might happen, for
+    example, when searching to see if a bug you want to report has
+    already been filed and finding matching reports that don't yet
+    have tasks reported in your context.
+    """
+
+
 class IBugTaskSearch(Interface):
     """The schema used by a bug task search form.
 
@@ -113,24 +139,24 @@ class IBugTaskSearch(Interface):
     for status to be a List field on a search form, where more than
     one value can be selected.)
     """
-    searchtext = TextLine(title=_("Bug ID or Keywords"), required=False)
+    searchtext = TextLine(title=_("Bug ID or text:"), required=False)
     status = List(
-        title=_('Bug Status'),
+        title=_('Status:'),
         value_type=IBugTask['status'],
         default=[dbschema.BugTaskStatus.NEW, dbschema.BugTaskStatus.ACCEPTED],
         required=False)
     severity = List(
-        title=_('Severity'),
+        title=_('Severity:'),
         value_type=IBugTask['severity'],
         required=False)
     assignee = Choice(
-        title=_('Assignee'), vocabulary='ValidAssignee', required=False)
-    unassigned = Bool(title=_('show only unassigned bugs'), required=False)
-    include_dupes = Bool(title=_('include duplicate bugs'), required=False)
+        title=_('Assignee:'), vocabulary='ValidAssignee', required=False)
+    unassigned = Bool(title=_('Unassigned bugs only'), required=False)
+    include_dupes = Bool(title=_('Include duplicate bugs'), required=False)
     statusexplanation = TextLine(
-        title=_("Status notes"), required=False)
+        title=_("Status notes:"), required=False)
     attachmenttype = List(
-        title=_('Attachment'),
+        title=_('Attachment:'),
         value_type=IBugAttachment['type'],
         required=False)
 
@@ -140,57 +166,12 @@ class IUpstreamBugTaskSearch(IBugTaskSearch):
     milestone_assignment = Choice(
         title=_('Target'), vocabulary="Milestone", required=False)
     milestone = List(
-        title=_('Target'), value_type=IBugTask['milestone'], required=False)
+        title=_('Target:'), value_type=IBugTask['milestone'], required=False)
 
 
 class IDistroBugTaskSearch(IBugTaskSearch):
     """The schema used by the bug task search form of a distribution or
     distribution release."""
-
-
-class IBugTaskSearchListingView(IView):
-    """A view that can be used with a bugtask search listing."""
-
-    search_form_schema = Attribute("""The schema used for the search form.""")
-
-    searchtext_widget = Attribute("""The widget for entering a free-form text
-                                     query on bug task details.""")
-
-    status_widget = Attribute("""The widget for selecting task statuses to
-                                 filter on. None if the widget is not to be
-                                 shown.""")
-
-    severity_widget = Attribute("""The widget for selecting task severities to
-                                   filter on. None is the widget is not to be
-                                   shown.""")
-
-    assignee_widget = Attribute("""The widget for selecting task assignees
-                                   to filter on. None if the widget is not to be
-                                   shown.""")
-
-    milestone_widget = Attribute("""The widget for selecting task targets to
-                                    filter on. None if the widget is not to be
-                                    shown.""")
-
-    statusexplanation_widget = Attribute("""The widget for searching in status
-                                     notes. None if the widget is not to
-                                     be shown.""")
-
-    attachmenttype_widget = Attribute("""The widget for searching
-                                         selecting attachment types to filter
-                                         on. None if the widget is not to be
-                                         shown.""")
-
-    def task_columns():
-        """Returns a sequence of column names to be shown in the listing.
-
-        This list may be calculated on the fly, e.g. in the case of a
-        listing that allows the user to choose which columns to show
-        in the listing.
-        """
-
-    def search():
-        """Return an IBatchNavigator for the POSTed search criteria."""
 
 
 class IBugTaskDelta(Interface):
@@ -267,7 +248,9 @@ class IUpstreamBugTask(IBugTask):
 class IDistroBugTask(IBugTask):
     """A description of a bug needing fixing in a particular package."""
     sourcepackagename = Choice(
-        title=_("Source Package Name"), required=True,
+        title=_("Source Package Name"), required=False,
+        description=_("The source package in which the bug occurs. "
+        "Leave blank if you are not sure."),
         vocabulary='SourcePackageName')
     binarypackagename = Choice(
         title=_('Binary PackageName'), required=False,
@@ -385,7 +368,12 @@ class BugTaskSearchParams:
     def setSourcePackage(self, sourcepackage):
         """Set the sourcepackage context on which to filter the search."""
         assert not self._has_context
-        self.distrorelease = sourcepackage.distrorelease
+        if ISourcePackage.providedBy(sourcepackage):
+            # This is a sourcepackage in a distro release.
+            self.distrorelease = sourcepackage.distrorelease
+        else:
+            # This is a sourcepackage in a distribution.
+            self.distribution = sourcepackage.distribution
         self.sourcepackagename = sourcepackage.sourcepackagename
         self._has_context = True
 

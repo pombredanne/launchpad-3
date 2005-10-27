@@ -4,7 +4,7 @@
 
   <div class="portletBody">
 
-    <div class="portletContent even">
+    <div class="portletContent">
 
       <ul tal:condition="view/languages">
           <li class="languages"

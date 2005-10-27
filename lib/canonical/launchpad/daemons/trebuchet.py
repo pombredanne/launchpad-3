@@ -7,6 +7,7 @@ of (for example) needing directaccess to the database.
 
 import sys
 import logging
+import xmlrpclib
 
 from StringIO import StringIO
 from twisted.web.xmlrpc import XMLRPC
@@ -30,6 +31,53 @@ class TrebuchetServer(XMLRPC):
         self.log.info("Trebuchet XML-RPC Server started")
         self.log.info("Serving backend %s", self.backend.__name__)
 
+    def errorHandler(self, error):
+        """Handle exceptions that occur during deferred processing."""
+        if issubclass(error.type, canonical.launchpad.hctapi.LaunchpadError):
+            raise xmlrpclib.Fault(8003, str(error.value))
+        else:
+            raise error.value
+
+    def pickleBranch(self, branch):
+        """Return a pickled branch."""
+        if branch is None:
+            return "None"
+        else:
+            mf = ManifestFile(fileobj=StringIO())
+            mf.branches.append(branch)
+            mf.save()
+            return mf.file.getvalue()
+
+    def pickleManifest(self, manifest):
+        """Return a pickled manifest."""
+        if manifest is None:
+            return "None"
+        else:
+            mf = ManifestFile(fileobj=StringIO(), manifests=(manifest,))
+            return mf.file.getvalue()
+
+    def pickleString(self, string):
+        """Return a pickled string."""
+        if value is None:
+            return "None"
+        elif value.startswith("None"):
+            return "\\" + value
+        elif value.startswith("\\"):
+            return "\\" + value
+        else:
+            return value
+
+    def picklePair(self, pair):
+        """Return a pickled pair."""
+        if pair is None:
+            return "None"
+        else:
+            return (pickle_string(pair[0]), pickle_manifest(pair[1]))
+
+    def picklePairs(self, pairs):
+        """Return pickled list of pairs."""
+        return [self.picklePair(pair) for pair in pairs]
+
     def xmlrpc_echo(self, *args):
         """Return all arguments unchanged."""
         return args
@@ -37,14 +85,9 @@ class TrebuchetServer(XMLRPC):
     def xmlrpc_get_manifest(self, url):
         """Retrieve the manifest with the URL given."""
         self.log.debug("Asked to get manifest %s", url)
-
-        def bottom_half(manifest):
-            self.log.debug("Found manifest %s", manifest.id)
-
-            return pickle_manifest(manifest)
-
         deferred = deferToThread(self.backend.get_manifest, url)
-        deferred.addCallback(bottom_half)
+        deferred.addCallback(self.pickleManifest)
+        deferred.addErrback(self.errorHandler)
         return deferred
 
     def xmlrpc_get_release(self, url, version):
@@ -53,14 +96,9 @@ class TrebuchetServer(XMLRPC):
         If the release does not exist, this function returns None.
         """
         self.log.debug("Asked to get release %s of %s", version, url)
-
-        def bottom_half(new_url):
-            self.log.debug("Found release %s", new_url)
-
-            return pickle_none(new_url)
-
         deferred = deferToThread(self.backend.get_release, url, version)
-        deferred.addCallback(bottom_half)
+        deferred.addCallback(self.pickleString)
+        deferred.addErrback(self.errorHandler)
         return deferred
 
     def xmlrpc_get_package(self, url, distro_url=None):
@@ -74,8 +112,10 @@ class TrebuchetServer(XMLRPC):
         Returns URL of equivalent package.
         """
         self.log.debug("Asked to get package of %s in %s", url, distro_url)
-
-        return deferToThread(self.backend.get_package, url, distro_url)
+        deferred = deferToThread(self.backend.get_package, url, distro_url)
+        deferred.addCallback(self.pickleString)
+        deferred.addErrback(self.errorHandler)
+        return deferred
 
     def xmlrpc_get_branch(self, url):
         """Return branch associated with URL given.
@@ -83,14 +123,9 @@ class TrebuchetServer(XMLRPC):
         Returns a Branch object or None if no branch associated.
         """
         self.log.debug("Asked to get branch related to %s", url)
-
-        def bottom_half(branch):
-            self.log.debug("Found branch %s", branch)
-
-            return pickle_branch(branch)
-
         deferred = deferToThread(self.backend.get_branch, url)
-        deferred.addCallback(bottom_half)
+        deferred.addCallback(self.pickleBranch)
+        deferred.addErrback(self.errorHandler)
         return deferred
 
     def xmlrpc_identify_file(self, ref_url, size, digest, upstream=False):
@@ -102,45 +137,8 @@ class TrebuchetServer(XMLRPC):
         """
         self.log.debug("Asked to identify file of size %d and digest %s",
                        size, digest)
-
-        def bottom_half(objs):
-            self.log.debug("Found %d objects", len(objs))
-
-            result = []
-            for url, manifest in objs:
-                result.append((url, pickle_manifest(manifest)))
-
-            return result
-
         deferred = deferToThread(self.backend.identify_file, size, digest,
                                  upstream=upstream)
-        deferred.addCallback(bottom_half)
+        deferred.addCallback(self.picklePairs)
+        deferred.addErrback(self.errorHandler)
         return deferred
-
-
-def pickle_none(value):
-    """Pickle a string that could also be None."""
-    if value is None:
-        return "\0"
-    elif value.startswith("\0"):
-        return "\0" + value
-    else:
-        return value
-
-def pickle_manifest(manifest):
-    """Pickle a manifest."""
-    if manifest is None:
-        return pickle_none(manifest)
-    else:
-        mf = ManifestFile(fileobj=StringIO(), manifests=( manifest, ))
-        return pickle_none(mf.file.getvalue())
-
-def pickle_branch(branch):
-    """Pickle a branch."""
-    if branch is None:
-        return pickle_none(branch)
-    else:
-        mf = ManifestFile(fileobj=StringIO())
-        mf.branches.append(branch)
-        mf.save()
-        return pickle_none(mf.file.getvalue())

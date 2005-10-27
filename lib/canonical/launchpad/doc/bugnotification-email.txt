@@ -32,7 +32,8 @@ examples that follow:
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     IBugDelta, IBugSet, IPersonSet, IBugMessageSet, IBugTaskSet)
+    ...     IBugDelta, IBugSet, IPersonSet, IBugMessageSet, IBugTaskSet,
+    ...     ICve)
     >>> from canonical.launchpad.components.bug import BugDelta
 
 Filing a bug
@@ -55,7 +56,7 @@ Let's take a look at what the notification email looks like:
     Public bug reported:
     http://.../malone/bugs/4
     <BLANKLINE>
-    Affects: upstream firefox
+    Affects: firefox (upstream)
            Severity: Normal
            Priority: Medium
              Status: New
@@ -119,9 +120,10 @@ returns the subject and body of the email, as a tuple.
     Title changed to:
         the new title
     Description changed to:
-        a new description that is quite long. but the nice thing is that the edit
-        notification email generator knows how to indent and wrap descriptions, so
-        this will appear quite nice in the actual email that gets sent.
+        a new description that is quite long. but the nice thing is that the
+        edit notification email generator knows how to indent and wrap
+        descriptions, so this will appear quite nice in the actual email
+        that gets sent.
     <BLANKLINE>
         it's also smart enough to preserve whitespace, finally!
     <BLANKLINE>
@@ -143,8 +145,8 @@ Another edit, this time the summary:
     http://www.example.com/bugs/2
     <BLANKLINE>
     Summary changed to:
-        this summary isn't particularly short is it? after all, what kind of summary
-        is so long that it needs to be wrapped?
+        this summary isn't particularly short is it? after all, what kind of
+        summary is so long that it needs to be wrapped?
     <BLANKLINE>
 
 Let's set the bug private (for demo purposes, we need to switch logins
@@ -191,7 +193,7 @@ pretend we had just added task five:
    Private bug report changed:
    http://.../bugs/2
    <BLANKLINE>
-   Also affects: mozilla-firefox (Debian)
+   Also affects: mozilla-firefox (debian)
           Severity: Minor
           Priority: High
           Assignee: name12 <test@canonical.com>
@@ -231,8 +233,8 @@ bugmail when a bug task is edited.
     Changed in: Ubuntu (upstream)
            Assignee: (unassigned) => Sample Person
              Status: New => Accepted
-        Explanation: i'm just babbling here to ensure line wrapping works in the
-                     explanation.
+        Explanation: i'm just babbling here to ensure line wrapping works in
+                     the explanation.
     <BLANKLINE>
 
 Adding and editing web links
@@ -362,33 +364,34 @@ Let's demonstrate with an example:
         - Bug 123 [The Mozilla.org Bug Tracker]
     <BLANKLINE>
 
-Adding and editing CVE refs
----------------------------
+Adding and editing CVE relationships
+------------------------------------
 
-Adding a CVE ref will generate a notification that looks as follows:
+Adding a CVE will generate a notification that looks as follows:
 
-    >>> from canonical.launchpad.interfaces import ICVERef
-    >>> from canonical.lp.dbschema import CVEState
+    >>> from canonical.launchpad.interfaces import IBugCve
+    >>> from canonical.lp.dbschema import CveStatus
 
-    >>> class MockCVERef:
-    ...     implements(ICVERef)
-    ...     def __init__(self, bug, cveref, cvestate, title):
-    ...         self.bug = bug
-    ...         self.cveref = cveref
-    ...         self.cvestate = cvestate
-    ...         self.displayname = 'CVE-' + cveref
-    ...         self.title = title
-    >>> mock_cve_ref = MockCVERef(
-    ...     bug = edited_bug,
-    ...     cveref = "2004-0718",
-    ...     cvestate = CVEState.CANDIDATE,
-    ...     title = "a test cve ref")
+    >>> class MockCVE:
+    ...     implements(ICve)
+    ...     def __init__(self, sequence, status, description):
+    ...         self.sequence = sequence
+    ...         self.status = status
+    ...         self.displayname = 'CVE-' + sequence
+    ...         self.description = description
+    ...     @property
+    ...     def title(self):
+    ...         return '%s (%s)' % (self.displayname, self.status.title)
+    >>> mock_cve = MockCVE(
+    ...     sequence = "2004-0718",
+    ...     status = CveStatus.CANDIDATE,
+    ...     description = "a test cve ref")
 
     >>> bug_delta = BugDelta(
     ...     bug = edited_bug,
     ...     bugurl = "http://www.example.com/bugs/2",
     ...     user = sample_person,
-    ...     cveref = {'new' : mock_cve_ref})
+    ...     cve = {'new' : mock_cve})
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
     u'[Bug 2] the new title'
@@ -396,25 +399,21 @@ Adding a CVE ref will generate a notification that looks as follows:
     Private bug report changed:
     http://www.example.com/bugs/2
     <BLANKLINE>
-    CVE references changed:
-        + CVE-2004-0718 [a test cve ref]
+    Added CVE-2004-0718 (Candidate)
     <BLANKLINE>
 
-Editing a CVE ref generates an email that refers to the previous CVE
-ref as "removed" and the newly modified CVE ref as "added". An example
-follows:
+Similarly, removing a CVE ref will result in an email:
 
-    >>> mock_cve_ref_edited = MockCVERef(
-    ...     bug = edited_bug,
-    ...     cveref = "2004-0719",
-    ...     cvestate = CVEState.CANDIDATE,
-    ...     title = "a test cve ref")
+    >>> mock_cve_ref_removed = MockCVE(
+    ...     sequence = "2004-0719",
+    ...     status = CveStatus.CANDIDATE,
+    ...     description = "a test cve ref")
 
     >>> bug_delta = BugDelta(
     ...     bug = edited_bug,
     ...     bugurl = "http://www.example.com/bugs/2",
     ...     user = sample_person,
-    ...     cveref = {'old' : mock_cve_ref, 'new' : mock_cve_ref_edited})
+    ...     cve = {'old' : mock_cve_ref_removed})
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
     u'[Bug 2] the new title'
@@ -422,9 +421,7 @@ follows:
     Private bug report changed:
     http://www.example.com/bugs/2
     <BLANKLINE>
-    CVE references changed:
-        + CVE-2004-0719 [a test cve ref]
-        - CVE-2004-0718 [a test cve ref]
+    Removed CVE-2004-0719 (Candidate)
     <BLANKLINE>
 
 Adding an infestation

@@ -22,7 +22,7 @@ _ = MessageIDFactory('launchpad')
 class IBugProductInfestation(Interface):
     """Represents a report that a bug does or does not affect the source
     package to which this infestation points. The extent of the
-    "infestation" is given by the infestationstatus field, which takes on
+    'infestation' is given by the infestationstatus field, which takes on
     values documented in dbschema.BugInfestationStatus."""
 
     id = Int(title=_("Bug Product Infestation ID"), required=True,
@@ -46,7 +46,7 @@ class IBugProductInfestation(Interface):
 class IBugPackageInfestation(Interface):
     """Represents a report that a bug does or does not affect the source
     package to which this infestation points. The extent of the
-    "infestation" is given by the infestationstatus field, which takes on
+    'infestation' is given by the infestationstatus field, which takes on
     values documented in dbschema.BugInfestationStatus."""
 
     id = Int(title=_("Bug Package Infestation ID"), required=True, readonly=True)

@@ -7,10 +7,11 @@
 
   <content class="canonical.launchpad.database.DistroRelease">
     <allow interface="canonical.launchpad.interfaces.IDistroRelease"/>
+    <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     <require
         permission="launchpad.Edit"
         set_attributes="displayname title summary description version
-                owner datelastlangpack"
+                        releasestatus owner datelastlangpack"
         />
   </content>
 
@@ -20,114 +21,157 @@
     <allow interface="canonical.launchpad.interfaces.IDistroReleaseSet" />
   </securedutility>
 
-  <browser:traverse
-    for="canonical.launchpad.interfaces.IDistroRelease"
-    function="canonical.launchpad.browser.traversers.traverse_distrorelease" />
+  <browser:navigation
+    module="canonical.launchpad.browser"
+    classes="DistroReleaseNavigation"
+    />
+
+  <browser:menus
+    module="canonical.launchpad.browser.distrorelease"
+    classes="DistroReleaseFacets DistroReleaseOverviewMenu
+             DistroReleaseBugsMenu DistroReleaseSpecificationsMenu"
+    />
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistroRelease"
     name="+index" />
 
-    <browser:defaultView
-      for="canonical.launchpad.interfaces.IDistroRelease"
-      layer="canonical.launchpad.layers.MaloneLayer"
-      name="+bugs" />
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    layer="canonical.launchpad.layers.MaloneLayer"
+    name="+bugs" />
 
-    <browser:editform
-      for="canonical.launchpad.interfaces.IDistroRelease"
-      permission="launchpad.Edit"
-      name="+edit"
-      schema="canonical.launchpad.interfaces.IDistroRelease"
-      fields="displayname title summary description version"
-      template="../templates/launchpad-editform.pt"
-      lp:url="/distros/$Distribution.name/$DistroRelease.name/+edit"/>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IDistroRelease"
-        class="canonical.launchpad.browser.BugTaskSearchListingView"
-        permission="zope.Public">
-        <browser:page
-            name="+bugs-only"
-            lp:url="/distros/$DistroRelease.name/+bugs-only"
-            template="../templates/bugs-for-context.pt" />
-        <browser:page
-            name="+portlet-bugtasklist-actions"
-            template="../templates/bugtasklist-portlet-actions.pt"
-            lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-actions" />
-        <browser:page
-            name="+portlet-bugtasklist-releasebugs"
-            template="../templates/bugtask-portlet-releasebugs.pt"
-            lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-releasebugs" />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IDistroRelease"
-        class="canonical.launchpad.browser.DistroReleaseView"
-        permission="zope.Public">
-
-        <browser:page
-            name="+filebug"
-            lp:url="/distros/$DistroRelease.name/+filebug"
-            attribute="redirectToDistroFileBug"
-             />
-
-        <browser:page
-            name="+index"
-            template="../templates/distrorelease-index.pt"
-            lp:url="/distros/$Distribution.name/$Release.name/+index"
-            />
-        <browser:page
-            name="+translations"
-            template="../templates/distrorelease-translations.pt"
-            lp:url="/distros/ubuntu/hoary/+translations"
-            />
-        <browser:page
-            name="+packaging"
-            template="../templates/distrorelease-packaging.pt"
-            lp:url="/distros/ubuntu/hoary/+packaging"
-            />
-        <browser:page
-            name="+potlist"
-            template="../templates/object-pots.pt"
-            lp:url="/distros/ubuntu/hoary/+potlist"
-            />
-        <browser:page
-            name="+portlet-details"
-            template="../templates/distrorelease-portlet-details.pt"
-            />
-        <browser:page
-            name="+portlet-actions"
-            template="../templates/distrorelease-portlet-actions.pt"
-            />
-        <browser:page
-            name="+portlet-translations"
-            template="../templates/distrorelease-portlet-translations.pt"
-            lp:url="/distros/ubuntu/hoary/+portlet-translations"
-            />
-        <browser:page
-            name="+portlet-langstats"
-            template="../templates/distrorelease-portlet-langstats.pt"
-            />
-        <browser:page
-            name="+portlet-aboutlangs"
-            template="../templates/distrorelease-portlet-aboutlangs.pt"
-            lp:url="/distros/ubuntu/hoary/+portlet-aboutlangs"
-            />
-    </browser:pages>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IDistroRelease"
-        permission="launchpad.Edit"
-        class="canonical.launchpad.browser.ObjectReassignmentView">
+  <browser:pages
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    class="canonical.launchpad.browser.BugTaskSearchListingView"
+    facet="bugs"
+    permission="zope.Public">
     <browser:page
-        name="+reassign"
-        template="../templates/object-reassignment.pt"
-        lp:url="/distros/$distro.id/$release.id/+reassign" />
-    </browser:pages>
+      name="+portlet-bugtasklist-releasebugs"
+      template="../templates/bugtask-portlet-releasebugs.pt"
+      lp:url="/distros/$DistroRelease.name/+portlet-bugtasklist-releasebugs"
+      />
+    <browser:page
+      name="+portlet-aboutcve"
+      template="../templates/distribution-portlet-aboutcve.pt"
+      lp:url="/distros/$DistroRelease.name/+portlet-aboutcve"
+      />
+  </browser:pages>
 
-   <browser:menus
-        module="canonical.launchpad.browser.distrorelease"
-        classes="DistroReleaseFacets"
-        />
+  <browser:pages
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    class="canonical.launchpad.browser.DistroReleaseView"
+    permission="zope.Public">
+    <browser:page
+      name="+filebug"
+      facet="bugs"
+      attribute="redirectToDistroFileBug" />
+    <browser:page
+      name="+cve"
+      template="../templates/distrorelease-cvereport.pt" />
+    <browser:page
+      name="+index"
+      facet="overview"
+      template="../templates/distrorelease-index.pt" />
+    <browser:page
+      name="+translations"
+      facet="translations"
+      template="../templates/distrorelease-translations.pt" />
+    <browser:page
+      name="+langchart"
+      template="../templates/distrorelease-langchart.pt" />
+    <browser:page
+      name="+packaging"
+      facet="overview"
+      template="../templates/distrorelease-packaging.pt" />
+    <browser:page
+      name="+potlist"
+      facet="translations"
+      template="../templates/object-pots.pt" />
+    <browser:page
+      name="+builds"
+      template="../templates/distrorelease-builds.pt"
+      lp:url="/distros/$distribution/$distrorelease/+builds"
+      />
+    <browser:page
+      name="+search"
+      facet="overview"
+      template="../templates/distrorelease-search.pt"
+      />
+    <browser:page
+      name="+builds-list"
+      template="../templates/builds-list.pt"
+      lp:url="/distros/$distribution/$distrorelease/+builds-list"
+      />
+    <browser:page
+      name="+portlet-details"
+      facet="overview"
+      template="../templates/distrorelease-portlet-details.pt"
+      />
+    <browser:page
+      name="+portlet-translations"
+      facet="translations"
+      template="../templates/distrorelease-portlet-translations.pt"
+      />
+    <browser:page
+      name="+portlet-langstats"
+      facet="translations"
+      template="../templates/distrorelease-portlet-langstats.pt"
+      />
+    <browser:page
+      name="+portlet-aboutlangs"
+      facet="translations"
+      template="../templates/distrorelease-portlet-aboutlangs.pt" />
+  </browser:pages>
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    permission="launchpad.Edit"
+    facet="overview"
+    class="canonical.launchpad.browser.ObjectReassignmentView">
+    <browser:page
+      name="+reassign"
+      template="../templates/object-reassignment.pt"
+      lp:url="/distros/$distro.id/$release.id/+reassign" />
+  </browser:pages>
+
+  <browser:editform
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    permission="launchpad.Edit"
+    name="+edit"
+    schema="canonical.launchpad.interfaces.IDistroRelease"
+    facet="overview"
+    fields="displayname title summary description"
+    template="../templates/launchpad-editform.pt"
+    lp:url="/distros/$Distribution.name/$DistroRelease.name/+edit"
+    />
+
+  <browser:editform
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    permission="launchpad.Admin"
+    name="+admin"
+    schema="canonical.launchpad.interfaces.IDistroRelease"
+    facet="overview"
+    fields="name releasestatus version"
+    template="../templates/launchpad-editform.pt"
+    lp:url="/distros/$Distribution.name/$DistroRelease.name/+admin"
+    />
+
+  <browser:addform
+    name="+addport"
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    schema="canonical.launchpad.interfaces.IDistroArchRelease"
+    label="Create New Port"
+    fields="architecturetag processorfamily official owner"
+    arguments="architecturetag processorfamily official owner"
+    class="canonical.launchpad.browser.DistroArchReleaseAddView"
+    facet="overview"
+    permission="launchpad.Admin"
+    template="../templates/distrorelease-addport.pt"
+    >
+    <browser:widget
+      field="owner"
+      class="canonical.widgets.HiddenUserWidget" />
+  </browser:addform>
 
 </configure>

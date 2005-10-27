@@ -2,7 +2,7 @@ A bug is a problem in software.
 
   >>> print http(r"""
   ... GET /malone/bugs/+package HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -18,10 +18,9 @@ redirected to the bug page.
 
   >>> print http(r"""
   ... POST /malone/bugs/+package HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 729
   ... Content-Type: multipart/form-data; boundary=---------------------------124775592710556272331137042681
-  ... Referer: http://localhost:9000/malone/bugs/+package
   ... 
   ... -----------------------------124775592710556272331137042681
   ... Content-Disposition: form-data; name="field.distribution"
@@ -47,5 +46,41 @@ redirected to the bug page.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/malone/bugs/7
+  Location: http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+bug/8
+  ...
+  
+
+Filing of a bug in a package leaving the distro field blank
+
+  >>> print http(r"""
+  ... POST /malone/bugs/+package HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 729
+  ... Content-Type: multipart/form-data; boundary=---------------------------124775592710556272331137042681
+  ... 
+  ... -----------------------------124775592710556272331137042681
+  ... Content-Disposition: form-data; name="field.distribution"
+  ... 
+  ... 
+  ... -----------------------------124775592710556272331137042681
+  ... Content-Disposition: form-data; name="field.sourcepackagename"
+  ... 
+  ... mozilla-firefox
+  ... -----------------------------124775592710556272331137042681
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... A brief bug title
+  ... -----------------------------124775592710556272331137042681
+  ... Content-Disposition: form-data; name="field.comment"
+  ... 
+  ... A really brief bug description.
+  ... -----------------------------124775592710556272331137042681
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------124775592710556272331137042681--
+  ... """)
+  HTTP/1.1 200 Ok 
+  ...
+  ...Required input is missing...
   ...

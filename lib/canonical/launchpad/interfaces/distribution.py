@@ -15,12 +15,17 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.fields import Title, Summary, Description
-from canonical.launchpad.interfaces import IHasOwner, IBugTarget
+from canonical.launchpad.interfaces import (
+    IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget)
 
 _ = MessageIDFactory('launchpad')
 
-class IDistribution(IHasOwner, IBugTarget):
+
+class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
+    ITicketTarget):
+
     """An operating system distribution."""
+
     id = Attribute("The distro's unique number.")
     name = TextLine(
         title=_("Name"),
@@ -35,7 +40,7 @@ class IDistribution(IHasOwner, IBugTarget):
     summary = Summary(
         title=_("Summary"),
         description=_(
-            "The distribution summary. A short paragraph"
+            "The distribution summary. A short paragraph "
             "describing the goals and highlights of the distro."),
         required=True)
     description = Description(
@@ -78,21 +83,26 @@ class IDistribution(IHasOwner, IBugTarget):
 
     releases = Attribute("DistroReleases inside this Distributions")
     bounties = Attribute(_("The bounties that are related to this distro."))
-    bugtasks = Attribute("The bug tasks filed in this distro.")
     bugCounter = Attribute("The distro bug counter")
     milestones = Attribute(_(
         "The release milestones associated with this distribution. "
         "Release milestones are primarily used by the QA team to assign "
         "specific bugs for fixing by specific milestones."))
+    source_package_caches = Attribute("The set of all source package "
+        "info caches for this distribution.")
 
+    uploadsender = Attribute(_("The default upload processor sender name."))
+    uploadadmin = Attribute(_("The distribution's upload admin."))
 
+    uploaders = Attribute(_(
+        "DistroComponentUploader records associated with this distribution."))
+    
     # properties
     currentrelease = Attribute(
         "The current development release of this distribution. Note that "
         "all maintainerships refer to the current release. When people ask "
         "about the state of packages in the distribution, we should "
-        "interpret that query in the context of the currentrelease."
-        )
+        "interpret that query in the context of the currentrelease.")
 
     open_cve_bugtasks = Attribute(
         "Any bugtasks on this distribution that are for bugs with "
@@ -126,12 +136,65 @@ class IDistribution(IHasOwner, IBugTarget):
 
     def getMilestone(name):
         """Return a milestone with the given name for this distribution, or
-        raise NotFoundError.
+        None.
+        """
+
+    def getSourcePackage(name):
+        """Return a DistributionSourcePackage with the given name for this
+        distribution, or None.
         """
 
     def ensureRelatedBounty(bounty):
         """Ensure that the bounty is linked to this distribution. Return
         None.
+        """
+
+    def getDistroReleaseAndPocket(distroreleasename):
+        """Return a (distrorelease,pocket) tuple which is the given textual
+        distroreleasename in this distribution."""
+
+    def removeOldCacheItems():
+        """Delete any cache records that are no longer needed for this
+        distribution, perhaps because all of the binary packages have been
+        removed from the archives.
+        """
+
+    def updateCompleteSourcePackageCache():
+        """Update the source package cache, for all source packages in the
+        distribution.
+        """
+
+    def updateSourcePackageCache(name):
+        """Update the cached source package details that are stored in
+        DistributionSourcePackageDetailsCache, for the source package with
+        name given as 'name'.
+        """
+
+    def searchSourcePackages(text):
+        """Search for source packages that correspond to the given text.
+        Returns a list of DistributionSourcePackage objects, in order of
+        matching.
+        """
+
+    def getFileByName(filename, source=True, binary=True):
+        """Find and return a LibraryFileAlias for the filename supplied.
+
+        The file returned will be one of those published in the distribution.
+
+        If searching both source and binary, and the file is found in the
+        source packages it'll return that over a file for a binary package.
+
+        At least one of source and binary must be true.
+
+        Raises NotFoundError if it fails to find the named file.
+        """
+        
+    def getPackageNames(pkgname):
+        """Find the actual source and binary package names to use when all
+        we have is a name, that could be either a source or a binary package
+        name. Returns a tuple of (sourcepackagename, binarypackagename)
+        based on the current publishing status of these binary / source
+        packages.
         """
 
 

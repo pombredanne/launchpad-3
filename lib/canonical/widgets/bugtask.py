@@ -34,10 +34,9 @@ class BugTaskAssigneeWidget(Widget):
         # See zope.app.form.interfaces.IInputWidget.
         self.required = False
 
-        # Set the attribute that allows for choosing an assignee other
-        # than the currently logged-in user.
         self.assignee_chooser_widget = SinglePopupWidget(
             context, context.vocabulary, request)
+        self.assignee_chooser_widget.onKeyPress = "selectAssignTo(this, event)"
 
         # Set some values that will be used as values for the input
         # widgets.
@@ -95,8 +94,15 @@ class BugTaskAssigneeWidget(Widget):
         elif assignee_option == self.assign_to_me:
             # The user has choosen to 'take' this bug.
             return getUtility(ILaunchBag).user
+        elif assignee_option == self.assigned_to:
+            # This is effectively a no-op
+            field = self.context
+            bugtask = field.context
+            return bugtask.assignee
         elif assignee_option == self.assign_to_nobody:
             return None
+
+        raise WidgetInputError("Unknown assignee option chosen")
 
     def applyChanges(self, content):
         """See zope.app.form.interfaces.IInputWidget."""
@@ -182,3 +188,4 @@ class BugTaskAssigneeWidget(Widget):
                 return self.assign_to_me
             else:
                 return self.assigned_to
+

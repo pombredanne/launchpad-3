@@ -69,14 +69,6 @@
   ... 
   ... Who's going to be the next president?
   ... -----------------------------644242015206973209368907792
-  ... Content-Disposition: form-data; name="field.type"
-  ... 
-  ... Condorcet Voting
-  ... -----------------------------644242015206973209368907792
-  ... Content-Disposition: form-data; name="field.type-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------644242015206973209368907792
   ... Content-Disposition: form-data; name="field.secrecy"
   ... 
   ... Secret Votes (It's impossible to track a person's vote)
@@ -140,14 +132,6 @@
   ... 
   ... The next debian project leader.
   ... -----------------------------323203348670962331774819759
-  ... Content-Disposition: form-data; name="field.type"
-  ... 
-  ... Condorcet Voting
-  ... -----------------------------323203348670962331774819759
-  ... Content-Disposition: form-data; name="field.type-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------323203348670962331774819759
   ... Content-Disposition: form-data; name="field.secrecy"
   ... 
   ... Semi-secret Votes (Only team administrators can see a person's vote)
@@ -188,5 +172,7 @@
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
+  ...
+  ...This poll does not yet have any voting options...
   ...
 

@@ -101,7 +101,7 @@ class ILoginTokenSet(Interface):
         """
 
     def new(requester, requesteremail, email, tokentype, fingerprint=None):
-        """ Create a new LoginToken object. Parameters must be:
+        """Create a new LoginToken object. Parameters must be:
         requester: a Person object or None (in case of a new account)
 
         requesteremail: the email address used to login on the system. Can

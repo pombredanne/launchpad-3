@@ -2,17 +2,19 @@
 
 __metaclass__ = type
 
-__all__ = ['traverseProductSeries', 'ProductSeriesView',
-           'ProductSeriesRdfView', 'ProductSeriesSourceSetView']
+__all__ = ['ProductSeriesNavigation',
+           'ProductSeriesSetNavigation',
+           'ProductSeriesContextMenu',
+           'ProductSeriesView',
+           'ProductSeriesRdfView',
+           'ProductSeriesSourceSetView']
 
 import re
 import urllib
-from urllib import quote as urlquote
 
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.publisher.interfaces import NotFound
 
 from CVS.protocol import CVSRoot
 import pybaz
@@ -22,19 +24,82 @@ from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 
 from canonical.launchpad.helpers import request_languages, browserLanguages
-from canonical.launchpad.interfaces import (IPerson, ICountry, IPOTemplateSet,
-    ILaunchpadCelebrities, ILaunchBag, ISourcePackageNameSet)
+from canonical.launchpad.interfaces import (
+    IPerson, ICountry, IPOTemplateSet, ILaunchpadCelebrities, ILaunchBag,
+    ISourcePackageNameSet, validate_url, IProductSeries, IProductSeriesSet)
 from canonical.launchpad.browser.potemplate import POTemplateView
+from canonical.launchpad.webapp import (
+    ContextMenu, Link, enabled_with_permission, Navigation, GetitemNavigation,
+    stepto)
 
 
-def traverseProductSeries(series, request, name):
-    if name == '+pots':
+class ProductSeriesNavigation(Navigation):
+
+    usedfor = IProductSeries
+
+    @stepto('+pots')
+    def pots(self):
         potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(productseries=series)
-    try:
-        return series.getRelease(name)
-    except NotFoundError:
-        raise NotFound(series, name, request)
+        return potemplateset.getSubset(productseries=self.context)
+
+    def traverse(self, name):
+        return self.context.getRelease(name)
+
+
+class ProductSeriesSetNavigation(GetitemNavigation):
+
+    usedfor = IProductSeriesSet
+
+
+class ProductSeriesContextMenu(ContextMenu):
+
+    usedfor = IProductSeries
+    links = ['overview', 'specs', 'edit', 'editsource', 'ubuntupkg',
+             'addpackage', 'addrelease', 'download', 'addpotemplate',
+             'review']
+
+    def overview(self):
+        text = 'Series Overview'
+        return Link('', text, icon='info')
+
+    def specs(self):
+        text = 'Show Specifications'
+        return Link('+specs', text, icon='info')
+
+    def edit(self):
+        text = 'Edit Series Details'
+        return Link('+edit', text, icon='edit')
+
+    def editsource(self):
+        text = 'Edit Source'
+        return Link('+source', text, icon='edit')
+
+    def ubuntupkg(self):
+        text = 'Link to Ubuntu Package'
+        return Link('+ubuntupkg', text, icon='edit')
+
+    def addpackage(self):
+        text = 'Link to Any Package'
+        return Link('+addpackage', text, icon='edit')
+
+    def addrelease(self):
+        text = 'Register New Release'
+        return Link('+addrelease', text, icon='edit')
+
+    def download(self):
+        text = 'Download RDF Metadata'
+        return Link('+rdf', text, icon='download')
+
+    @enabled_with_permission('launchpad.Admin')
+    def addpotemplate(self):
+        text = 'Add Translation Template'
+        return Link('+addpotemplate', text, icon='add')
+
+    @enabled_with_permission('launchpad.Admin')
+    def review(self):
+        text = 'Review Series Details'
+        return Link('+review', text, icon='edit')
+
 
 def validate_cvs_root(cvsroot, cvsmodule):
     try:
@@ -59,51 +124,14 @@ def validate_cvs_branch(branch):
         return True
     return False
 
-def _validate_url(url, valid_schemes):
-    """Returns a boolean stating whether 'url' is a valid URL.
-
-       A URL is valid if:
-           - its URL scheme is in the provided 'valid_schemes' list, and
-           - it has a non-empty host name.
-
-       None and an empty string are not valid URLs::
-
-           >>> _validate_url(None, [])
-           False
-           >>> _validate_url('', [])
-           False
-
-       The valid_schemes list is checked::
-
-           >>> _validate_url('http://example.com', ['http'])
-           True
-           >>> _validate_url('http://example.com', ['https', 'ftp'])
-           False
-
-       A URL without a host name is not valid:
-
-           >>> _validate_url('http://', ['http'])
-           False
-           
-      """
-    if not url:
-        return False
-    scheme, host = urllib.splittype(url)
-    if not scheme in valid_schemes:
-        return False
-    host, path = urllib.splithost(host)
-    if not host:
-        return False
-    return True
-
 def validate_release_root(repo):
-    return _validate_url(repo, ["http", "https", "ftp"])
+    return validate_url(repo, ["http", "https", "ftp"])
 
 def validate_svn_repo(repo):
-    return _validate_url(repo, ["http", "https", "svn", "svn+ssh"])
+    return validate_url(repo, ["http", "https", "svn", "svn+ssh"])
 
 
-#
+
 # A View Class for ProductSeries
 #
 # XXX: We should be using autogenerated add forms and edit forms so that
@@ -228,7 +256,8 @@ class ProductSeriesView(object):
         self.context.releaseroot = self.releaseroot
         self.context.releasefileglob = self.releasefileglob
         # now redirect to view the productseries
-        self.request.response.redirect('../%s' % urlquote(self.context.name))
+        self.request.response.redirect(
+            '../%s' % urllib.quote(self.context.name))
 
     def editSource(self, fromAdmin=False):
         """This method processes the results of an attempt to edit the

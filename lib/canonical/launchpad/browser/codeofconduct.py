@@ -5,6 +5,12 @@
 __metaclass__ = type
 
 __all__ = [
+    'SignedCodeOfConductSetNavigation',
+    'CodeOfConductSetNavigation',
+    'CodeOfConductContextMenu',
+    'CodeOfConductSetContextMenu',
+    'SignedCodeOfConductSetContextMenu',
+    'SignedCodeOfConductContextMenu',
     'CodeOfConductView',
     'CodeOfConductDownloadView',
     'CodeOfConductSetView',
@@ -23,11 +29,74 @@ from zope.exceptions import NotFoundError
 import zope.security.interfaces
 
 from canonical.database.constants import UTC_NOW
-
-# interface import
+from canonical.launchpad.webapp import (
+    ContextMenu, Link, enabled_with_permission, GetitemNavigation)
 from canonical.launchpad.interfaces import (
     IPerson, ILaunchBag, ICodeOfConduct, ISignedCodeOfConduct,
-    ISignedCodeOfConductSet)
+    ISignedCodeOfConductSet, ICodeOfConductSet)
+
+
+class SignedCodeOfConductSetNavigation(GetitemNavigation):
+
+    usedfor = ISignedCodeOfConductSet
+
+
+class CodeOfConductSetNavigation(GetitemNavigation):
+
+    usedfor = ICodeOfConductSet
+
+
+class CodeOfConductContextMenu(ContextMenu):
+
+    usedfor = ICodeOfConduct
+    links = ['sign', 'download']
+
+    def sign(self):
+        text = 'Sign This Version'
+        return Link('+sign', text, icon='edit')
+
+    def download(self):
+        text = 'Download This Version'
+        return Link('+download', text, icon='download')
+
+
+class CodeOfConductSetContextMenu(ContextMenu):
+
+    usedfor = ICodeOfConductSet
+    links = ['admin']
+
+    @enabled_with_permission('launchpad.Admin')
+    def admin(self):
+        text = 'Administrator Console'
+        return Link('console', text, icon='edit')
+
+
+class SignedCodeOfConductSetContextMenu(ContextMenu):
+
+    usedfor = ISignedCodeOfConductSet
+    links = ['register']
+
+    def register(self):
+        text = "Register someone's signature"
+        return Link('+new', text, icon='add')
+
+
+class SignedCodeOfConductContextMenu(ContextMenu):
+
+    usedfor = ISignedCodeOfConduct
+    links = ['activation', 'adminconsole']
+
+    def activation(self):
+        if self.context.active:
+            text = 'Deactivate Signature'
+            return Link('+deactivate', text, icon='edit')
+        else:
+            text = 'Activate Signature'
+            return Link('+activate', text, icon='edit')
+
+    def adminconsole(self):
+        text = 'Administrator Console'
+        return Link('../', text, icon='info')
 
 
 class CodeOfConductView(object):
@@ -171,18 +240,16 @@ class SignedCodeOfConductAdminView(object):
         name = self.request.form.get('name')
         searchfor = self.request.form.get('searchfor')
 
-        if name:
-            # use utility to query on SignedCoCs
-            sCoC_util = getUtility(ISignedCodeOfConductSet)
-            self.results = sCoC_util.searchByDisplayname(name,
-                                                         searchfor=searchfor)
-            # XXX: cprov 20050226
-            # force None when no row was found
-            # is it an SQLObject bug ?
-            if self.results.count() == 0:
-                self.results = None
+        if (self.request.method != "POST" or
+            self.request.form.get("search") != "Search"):
+            return
 
-            return True
+        # use utility to query on SignedCoCs
+        sCoC_util = getUtility(ISignedCodeOfConductSet)
+        self.results = sCoC_util.searchByDisplayname(name,
+                                                     searchfor=searchfor)
+            
+        return True
 
 
 class SignedCodeOfConductActiveView(EditView):

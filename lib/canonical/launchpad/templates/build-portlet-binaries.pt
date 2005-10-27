@@ -1,0 +1,18 @@
+<div class="portlet">
+
+  <h4>Resulting Binaries:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul>
+      <li tal:repeat="binpkg context/binarypackages">
+        <a tal:attributes="href binpkg/name">
+           <span tal:replace="binpkg/name">foopkg</span>
+           <span tal:replace="binpkg/version">1.2-3</span>
+        </a>
+      </li>
+    </ul>
+
+  </div>
+
+</div>

@@ -2,24 +2,26 @@
 
 __metaclass__ = type
 __all__ = ['Poll', 'PollSet', 'PollOption', 'PollOptionSet',
-           'VoteCast', 'Vote']
+           'VoteCast', 'Vote', 'VoteSet', 'VoteCastSet']
 
 import pytz
+import random
 from datetime import datetime
 
 from zope.interface import implements
+from zope.component import getUtility
 
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol, AND)
 
 from canonical.lp.dbschema import PollSecrecy, PollAlgorithm, EnumCol
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import (
     IPoll, IPollSet, IPollOption, IPollOptionSet, IVote, IVoteCast,
-    PollStatus, IPollOptionSubset)
+    PollStatus, IVoteCastSet, IVoteSet, OptionIsNotFromSimplePoll)
 
 
 class Poll(SQLBase):
@@ -27,7 +29,8 @@ class Poll(SQLBase):
 
     implements(IPoll)
     _table = 'Poll'
-    _defaultOrder = 'title'
+    sortingColumns = ['title', 'id']
+    _defaultOrder = sortingColumns
 
     team = ForeignKey(dbName='team', foreignKey='Person', notNull=True)
 
@@ -42,12 +45,16 @@ class Poll(SQLBase):
     proposition = StringCol(dbName='proposition',  notNull=True)
 
     type = EnumCol(dbName='type', schema=PollAlgorithm,
-                   default=PollAlgorithm.CONDORCET)
+                   default=PollAlgorithm.SIMPLE)
 
     allowspoilt = BoolCol(dbName='allowspoilt', default=True, notNull=True)
 
     secrecy = EnumCol(dbName='secrecy', schema=PollSecrecy,
                       default=PollSecrecy.SECRET)
+
+    def newOption(self, name, title, active=True):
+        """See IPoll."""
+        return getUtility(IPollOptionSet).new(self, name, title, active)
 
     def isOpen(self, when=None):
         """See IPoll."""
@@ -55,20 +62,175 @@ class Poll(SQLBase):
             when = datetime.now(pytz.timezone('UTC'))
         return (self.datecloses >= when and self.dateopens <= when)
 
+    @property
+    def closesIn(self):
+        """See IPoll."""
+        return self.datecloses - datetime.now(pytz.timezone('UTC'))
+
+    @property
+    def opensIn(self):
+        """See IPoll."""
+        return self.dateopens - datetime.now(pytz.timezone('UTC'))
+
     def isClosed(self, when=None):
         """See IPoll."""
         if when is None:
             when = datetime.now(pytz.timezone('UTC'))
         return self.datecloses <= when
 
+    def isNotYetOpened(self, when=None):
+        """See IPoll."""
+        if when is None:
+            when = datetime.now(pytz.timezone('UTC'))
+        return self.dateopens > when
+
+    def getOptionByName(self, name, default=None):
+        """See IPoll."""
+        optionset = getUtility(IPollOptionSet)
+        return optionset.getByPollAndName(self, name, default)
+
     def getAllOptions(self):
         """See IPoll."""
-        return IPollOptionSubset(self).getAll()
+        return getUtility(IPollOptionSet).selectByPoll(self)
+
+    def getActiveOptions(self):
+        """See IPoll."""
+        return getUtility(IPollOptionSet).selectByPoll(self, only_active=True)
+
+    def getVotesByPerson(self, person):
+        """See IPoll."""
+        return Vote.selectBy(personID=person.id, pollID=self.id)
 
     def personVoted(self, person):
         """See IPoll."""
         results = VoteCast.selectBy(personID=person.id, pollID=self.id)
         return bool(results.count())
+
+    def removeOption(self, option, when=None):
+        """See IPoll."""
+        assert self.isNotYetOpened(when=when)
+        if option.poll != self:
+            raise ValueError(
+                "Can't remove an option that doesn't belong to this poll")
+        option.destroySelf()
+
+    def _assertEverythingOkAndGetVoter(self, person, when=None):
+        """Use assertions to Make sure all pre-conditions for a person to vote
+        are met.
+        
+        Return the person if this is not a secret poll or None if it's a
+        secret one.
+        """
+        assert self.isOpen(when=when), "This poll is not open"
+        assert not self.personVoted(person), "Can't vote twice in the same poll"
+        assert person.inTeam(self.team), (
+            "Person %r is not a member of this poll's team." % person)
+
+        # We only associate the option with the person if the poll is not a
+        # SECRET one.
+        if self.secrecy == PollSecrecy.SECRET:
+            voter = None
+        else:
+            voter = person
+        return voter
+
+    def storeCondorcetVote(self, person, options, when=None):
+        """See IPoll."""
+        voter = self._assertEverythingOkAndGetVoter(person, when=when)
+        assert self.type == PollAlgorithm.CONDORCET
+        voteset = getUtility(IVoteSet)
+
+        token = voteset.newToken()
+        votes = []
+        activeoptions = self.getActiveOptions()
+        for option, preference in options.items():
+            assert option.poll == self, (
+                "The option %r doesn't belong to this poll" % option)
+            assert option.active, "Option %r is not active" % option
+            votes.append(voteset.new(self, option, preference, token, voter))
+
+        # Store a vote with preference = None for each active option of this
+        # poll that wasn't in the options argument.
+        for option in activeoptions:
+            if option not in options:
+                votes.append(voteset.new(self, option, None, token, voter))
+
+        getUtility(IVoteCastSet).new(self, person)
+        return votes
+
+    def storeSimpleVote(self, person, option, when=None):
+        """See IPoll."""
+        voter = self._assertEverythingOkAndGetVoter(person, when=when)
+        assert self.type == PollAlgorithm.SIMPLE
+        voteset = getUtility(IVoteSet)
+
+        if option is None and not self.allowspoilt:
+            raise ValueError("This poll doesn't allow spoilt votes.")
+        elif option is not None:
+            assert option.poll == self, (
+                "The option %r doesn't belong to this poll" % option)
+            assert option.active, "Option %r is not active" % option
+        token = voteset.newToken()
+        # This is a simple-style poll, so you can vote only on a single option
+        # and this option's preference must be 1
+        preference = 1
+        vote = voteset.new(self, option, preference, token, voter)
+        getUtility(IVoteCastSet).new(self, person)
+        return vote
+
+    def getTotalVotes(self):
+        """See IPoll."""
+        assert self.isClosed()
+        return Vote.selectBy(pollID=self.id).count()
+
+    def getWinners(self):
+        """See IPoll."""
+        assert self.isClosed()
+        # XXX: For now, this method works only for SIMPLE-style polls. This is
+        # not a problem as CONDORCET-style polls are disabled.
+        # GuilhermeSalgado 24/08/05
+        assert self.type == PollAlgorithm.SIMPLE
+        query = ("SELECT option FROM Vote WHERE poll = %d GROUP BY option "
+                 "HAVING COUNT(*) = (SELECT COUNT(*) FROM Vote WHERE poll = %d "
+                 "GROUP BY option ORDER BY COUNT(*) DESC LIMIT 1)" 
+                 % (self.id, self.id))
+        results = self._connection.queryAll(query)
+        if not results:
+            return None
+        return [PollOption.get(id) for (id,) in results]
+
+    def getPairwiseMatrix(self):
+        """See IPoll."""
+        assert self.type == PollAlgorithm.CONDORCET
+        options = list(self.getAllOptions())
+        pairwise_matrix = []
+        for option1 in options:
+            pairwise_row = []
+            for option2 in options:
+                points_query = """
+                    SELECT COUNT(*) FROM Vote as v1, Vote as v2 WHERE 
+                        v1.token = v2.token AND
+                        v1.option = %s AND v2.option = %s AND
+                        (
+                         (
+                          v1.preference IS NOT NULL AND 
+                          v2.preference IS NOT NULL AND
+                          v1.preference < v2.preference
+                         )
+                          OR
+                         (
+                          v1.preference IS NOT NULL AND
+                          v2.preference IS NULL
+                         )
+                        )
+                    """ % sqlvalues(option1.id, option2.id)
+                if option1 == option2:
+                    pairwise_row.append(None)
+                else:
+                    points = self._connection.queryOne(points_query)[0]
+                    pairwise_row.append(points)
+            pairwise_matrix.append(pairwise_row)
+        return pairwise_matrix
 
 
 class PollSet:
@@ -76,15 +238,13 @@ class PollSet:
 
     implements(IPollSet)
 
-    _defaultOrder = Poll._defaultOrder
-
     def new(self, team, name, title, proposition, dateopens, datecloses,
-            poll_type, secrecy, allowspoilt):
+            secrecy, allowspoilt, poll_type=PollAlgorithm.SIMPLE):
         """See IPollSet."""
         return Poll(teamID=team.id, name=name, title=title,
                 proposition=proposition, dateopens=dateopens,
-                datecloses=datecloses, type=poll_type, secrecy=secrecy,
-                allowspoilt=allowspoilt)
+                datecloses=datecloses, secrecy=secrecy,
+                allowspoilt=allowspoilt, type=poll_type)
 
     def selectByTeam(self, team, status=PollStatus.ALL, orderBy=None, when=None):
         """See IPollSet."""
@@ -92,7 +252,7 @@ class PollSet:
             when = datetime.now(pytz.timezone('UTC'))
 
         if orderBy is None:
-            orderBy = self._defaultOrder
+            orderBy = Poll.sortingColumns
 
         teamfilter = Poll.q.teamID == team.id
         results = Poll.select(teamfilter)
@@ -128,20 +288,15 @@ class PollOption(SQLBase):
 
     implements(IPollOption)
     _table = 'PollOption'
-    _defaultOrder = 'shortname'
+    _defaultOrder = ['title', 'id']
 
     poll = ForeignKey(dbName='poll', foreignKey='Poll', notNull=True)
 
-    name = StringCol(dbName='name', notNull=True)
+    name = StringCol(notNull=True)
 
-    shortname = StringCol(dbName='shortname', notNull=True)
+    title = StringCol(notNull=True)
 
-    active = BoolCol(dbName='active', notNull=True, default=False)
-
-    @property
-    def title(self):
-        """See IPollOption."""
-        return self.shortname
+    active = BoolCol(notNull=True, default=False)
 
 
 class PollOptionSet:
@@ -149,10 +304,10 @@ class PollOptionSet:
 
     implements(IPollOptionSet)
 
-    def new(self, poll, name, shortname, active=True):
+    def new(self, poll, name, title, active=True):
         """See IPollOptionSet."""
         return PollOption(
-            pollID=poll.id, name=name, shortname=shortname, active=active)
+            pollID=poll.id, name=name, title=title, active=active)
 
     def selectByPoll(self, poll, only_active=False):
         """See IPollOptionSet."""
@@ -176,10 +331,21 @@ class VoteCast(SQLBase):
 
     implements(IVoteCast)
     _table = 'VoteCast'
+    _defaultOrder = 'id'
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 
     poll = ForeignKey(dbName='poll', foreignKey='Poll', notNull=True)
+
+
+class VoteCastSet:
+    """See IVoteCastSet."""
+
+    implements(IVoteCastSet)
+
+    def new(self, poll, person):
+        """See IVoteCastSet."""
+        return VoteCast(poll=poll, person=person)
 
 
 class Vote(SQLBase):
@@ -187,15 +353,46 @@ class Vote(SQLBase):
 
     implements(IVote)
     _table = 'Vote'
+    _defaultOrder = ['preference', 'id']
 
     person = ForeignKey(dbName='person', foreignKey='Person')
 
     poll = ForeignKey(dbName='poll', foreignKey='Poll', notNull=True)
 
-    option = ForeignKey(dbName='polloption', foreignKey='PollOption',
-                        notNull=True)
+    option = ForeignKey(dbName='option', foreignKey='PollOption')
 
     preference = IntCol(dbName='preference', notNull=True)
 
     token = StringCol(dbName='token', notNull=True, unique=True)
+
+
+class VoteSet:
+    """See IVoteSet."""
+
+    implements(IVoteSet)
+
+    def newToken(self):
+        """See IVoteSet."""
+        chars = '23456789bcdfghjkmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ'
+        length = 10
+        token = ''.join([random.choice(chars) for c in range(length)])
+        while self.getByToken(token):
+            token = ''.join([random.choice(chars) for c in range(length)])
+        return token
+
+    def new(self, poll, option, preference, token, person):
+        """See IVoteSet."""
+        return Vote(poll=poll, option=option, preference=preference,
+                    token=token, person=person)
+
+    def getByToken(self, token):
+        """See IVoteSet."""
+        return Vote.selectBy(token=token)
+
+    def getVotesByOption(self, option):
+        """See IVoteSet."""
+        if option.poll.type != PollAlgorithm.SIMPLE:
+            raise OptionIsNotFromSimplePoll(
+                '%r is not an option of a simple-style poll.' % option)
+        return Vote.selectBy(optionID=option.id).count()
 

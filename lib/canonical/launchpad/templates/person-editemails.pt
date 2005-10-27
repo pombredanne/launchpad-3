@@ -1,0 +1,84 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-editdetails" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Your Email Addresses</h1>
+
+  <tal:dummy tal:define="submitted view/emailFormSubmitted">
+  <div tal:condition="submitted">
+    <p class="portalMessage" tal:content="structure view/message"></p>
+  </div>
+  </tal:dummy>
+  
+  <form name="email" action="" method="POST">
+
+  <tal:block tal:condition="context/preferredemail">
+    <p>Your preferred contact address for all Launchpad e-mail is:</p>
+    <ul>
+      <li class="mail"><b tal:content="context/preferredemail/email" /></li>
+    </ul>
+  </tal:block>
+
+  <tal:block tal:condition="not: context/preferredemail">
+  <p>Currently you don't have a contact address in Launchpad. Please choose
+  one from the list of confirmed addresses.</p>
+  </tal:block>
+
+  <tal:block tal:condition="context/validatedemails">
+  <p>These other addresses are confirmed as being yours:</p>
+
+  <div style="padding: 0.7em 0em">
+    <div tal:repeat="email context/validatedemails" >
+      <label tal:attributes="for email/email">
+        <input type="radio" tal:attributes="value email/email; id email/email"
+               name="VALIDATED_SELECTED" /> 
+        <b tal:content="email/email" />
+      </label>
+    </div>
+  </div>
+  <input type="submit" value="Remove" name="REMOVE_VALIDATED" />
+  <input type="submit" value="Set as Contact Address" name="SET_PREFERRED" />
+  <br /><br /><br />
+  </tal:block>
+
+  <tal:block tal:condition="view/unvalidatedAndGuessedEmails">
+  <p>These addresses may also be yours:</p>
+
+  <div style="padding: 0.7em 0em">
+    <div tal:repeat="email view/unvalidatedAndGuessedEmails">
+      <label tal:attributes="for string:${email}_unvalidated">
+        <input type="radio" name="UNVALIDATED_SELECTED"
+               tal:attributes="value email; id string:${email}_unvalidated" />
+        <b tal:content="email" />
+      </label>
+    </div>
+  </div>
+  <input type="submit" value="Remove" name="REMOVE_UNVALIDATED" />
+  <input type="submit" value="Confirm" name="VALIDATE" />
+  <br /><br /><br />
+  </tal:block>
+
+  </form>
+
+  <form name="newemail" action="" method="POST">
+
+  <div>
+    Add a new address:
+    <input type="text" tal:attributes="value view/notWellFormedEmail|nothing"
+           name="newemail" size="23"/>
+    <input type="submit" value="Add" name="ADD_EMAIL" />
+  </div>
+
+  </form>
+</div>
+</body>
+</html>

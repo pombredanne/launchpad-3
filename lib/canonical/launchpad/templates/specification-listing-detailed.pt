@@ -1,0 +1,51 @@
+<table style="width: 100%;">
+  <tbody>
+    <tr>
+      <td class="icon left">
+        <img alt="" src="/++resource++spec" />
+      </td>
+      <td>
+        <strong><a tal:attributes="href context/fmt:url"
+        tal:content="context/title">Spec Title Here</a></strong>
+<tal:block condition="context/milestone">
+  <img src="/++resource++target" />&nbsp;<a
+     tal:attributes="href context/milestone/fmt:url"
+     tal:content="context/milestone/name">colony3</a>
+</tal:block>
+<tal:block condition="context/assignee">
+  (<img src="/++resource++user.gif" />&nbsp;<a
+      tal:attributes="href context/assignee/fmt:url"
+      tal:content="context/assignee/browsername">Foo Bar</a>)
+</tal:block>
+<div class="lesser" style="margin-left: 25px;">
+  Status:
+  <span tal:content="context/status/title"
+        tal:attributes="class string:specstatus${context/status/name}"
+        >Approved</span>
+  Priority
+  <span tal:condition="context/priority"
+        tal:content="context/priority/title"
+        tal:attributes="class string:specpriority${context/priority/name}"
+        >High</span>
+  <i tal:condition="not: context/priority">None set</i>.
+  <i tal:condition="context/is_blocked">Blocked</i>.
+  <span tal:replace="context/summary">
+    summary here
+  </span>
+  <tal:block condition="context/specurl">
+    <img src="/++resource++link" />
+    <a tal:attributes="href context/specurl">Web Page</a>.
+  </tal:block>
+  <i tal:condition="context/whiteboard"
+     tal:content="context/whiteboard">white board goes here</i>
+  <tal:block condition="view/review">
+    <b>Review Requested by
+    <span tal:replace="view/review/requestor/browsername">Foo Bar</span>.
+    <span tal:replace="view/review/queuemsg"
+          tal:condition="view/review/queuemsg">Msg goes here</span>
+    </b>
+  </tal:block>
+      </td>
+    </tr>
+  </tbody>
+</table>

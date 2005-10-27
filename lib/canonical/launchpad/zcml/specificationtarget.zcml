@@ -1,0 +1,61 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:lp="http://launchpad.canonical.com"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  i18n_domain="launchpad">
+
+<facet facet="specifications">
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IHasSpecifications"
+    class="canonical.launchpad.browser.SpecificationTargetView"
+    permission="zope.Public">
+    <browser:page
+      name="+specs"
+      template="../templates/specificationtarget-specs.pt" />
+    <browser:page
+      name="+specstable"
+      template="../templates/sprint-table.pt" />
+    <browser:page
+      name="+specplan"
+      template="../templates/specificationtarget-specplan.pt" />
+    <browser:page
+      name="+portlet-latestspecs"
+      template="../templates/specificationtarget-portlet-latestspecs.pt" />
+    <browser:page
+      name="+portlet-filterspecs"
+      template="../templates/specificationtarget-portlet-filter.pt" />
+    <browser:page
+      name="+portlet-groupspecs"
+      template="../templates/specificationtarget-portlet-group.pt" />
+    <browser:page
+      name="+portlet-specviews"
+      template="../templates/specificationtarget-portlet-views.pt" />
+  </browser:pages>
+
+  <browser:addform
+    name="+addspec"
+    for="canonical.launchpad.interfaces.ISpecificationTarget"
+    schema="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationAddView"
+    label="Register a feature specification"
+    fields="name title specurl summary status owner 
+            assignee drafter approver"
+    keyword_arguments="name title specurl summary status
+                       owner assignee drafter approver"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-add.pt"
+    >
+    <browser:widget
+      field="owner"
+      class="canonical.widgets.HiddenUserWidget" />
+    <browser:widget
+      field="specurl"
+      class="zope.app.form.browser.TextWidget"
+      displayWidth="60" />
+  </browser:addform>
+
+</facet>
+
+</configure>

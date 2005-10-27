@@ -5,15 +5,165 @@ XXX: Much stuff from canonical.publication needs to move here.
 """
 
 __metaclass__ = type
-__all__ = ['canonical_url', 'nearest', 'get_current_browser_request',
-           'canonical_url_iterator']
+__all__ = ['UserAttributeCache', 'LaunchpadView', 'canonical_url', 'nearest',
+           'get_current_browser_request', 'canonical_url_iterator',
+           'rootObject', 'Navigation', 'stepthrough', 'redirection', 'stepto']
 
 from zope.interface import implements
+from zope.exceptions import NotFoundError
+from zope.component import getUtility, queryView, getDefaultViewName
+from zope.interface.advice import addClassAdvisor
 import zope.security.management
+from zope.security.checker import ProxyFactory, NamesChecker
+from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.publisher.interfaces.http import IHTTPApplicationRequest
-from canonical.launchpad.interfaces import ICanonicalUrlData, NoCanonicalUrl
+from zope.publisher.interfaces import NotFound
+from canonical.launchpad.layers import setFirstLayer
+from canonical.launchpad.interfaces import (
+    ICanonicalUrlData, NoCanonicalUrl, ILaunchpadRoot, ILaunchpadApplication,
+    ILaunchBag, IOpenLaunchBag, IBreadcrumb)
+
 # Import the launchpad.conf configuration object.
 from canonical.config import config
+
+
+class DecoratorAdvisor:
+    """Base class for a function decorator that adds class advice.
+
+    The advice stores information in a magic attribute in the class's dict.
+    The magic attribute's value is a dict, which contains names and functions
+    that were set in the function decorators.
+    """
+
+    magic_class_attribute = None
+
+    def __init__(self, name):
+        self.name = name
+
+    def __call__(self, fn):
+        self.fn = fn
+        addClassAdvisor(self.advise)
+        return fn
+
+    def getValueToStore(self):
+        return self.fn
+
+    def advise(self, cls):
+        assert self.magic_class_attribute is not None, (
+            'You must provide the magic_class_attribute to use')
+        D = cls.__dict__.get(self.magic_class_attribute)
+        if D is None:
+            D = {}
+            setattr(cls, self.magic_class_attribute, D)
+        D[self.name] = self.getValueToStore()
+        return cls
+
+
+class stepthrough(DecoratorAdvisor):
+
+    magic_class_attribute = '__stepthrough_traversals__'
+
+    def __init__(self, name, breadcrumb=None):
+        """Register a stepthrough traversal with the name stepped through.
+
+        You can optionally provide a breadcrumb function that is called
+        with the argument 'self'.  So, a method will do.
+        """
+        DecoratorAdvisor.__init__(self, name)
+        self.breadcrumb = breadcrumb
+
+    def getValueToStore(self):
+        return (self.fn, self.breadcrumb)
+
+
+class stepto(DecoratorAdvisor):
+
+    magic_class_attribute = '__stepto_traversals__'
+
+
+class redirection:
+    """A redirection is used for two related purposes.
+
+    It is a class advisor in its two argument form.  It says what name
+    is mapped to where.
+
+    It is an object returned from a traversal method in its one argument
+    form.  It says that the result of such traversal is a redirect.
+
+    You can use the keyword argument 'status' to change the status code
+    from the default of 303 (assuming http/1.1).
+    """
+
+    def __init__(self, arg1, arg2=None, status=None):
+        if arg2 is None:
+            self.toname = arg1
+        else:
+            self.fromname = arg1
+            self.toname = arg2
+            addClassAdvisor(self.advise)
+        self.status = status
+
+    def advise(self, cls):
+        redirections = cls.__dict__.get('__redirections__')
+        if redirections is None:
+            redirections = {}
+            setattr(cls, '__redirections__', redirections)
+        redirections[self.fromname] = (self.toname, self.status)
+        return cls
+
+
+class UserAttributeCache:
+    """Mix in to provide self.user, cached."""
+
+    _no_user = object()
+    _user = _no_user
+
+    @property
+    def user(self):
+        """The logged-in Person, or None if there is no one logged in."""
+        if self._user is self._no_user:
+            self._user = getUtility(ILaunchBag).user
+        return self._user
+
+
+class LaunchpadView(UserAttributeCache):
+    """Base class for views in Launchpad.
+
+    Available attributes and methods are:
+
+    - context
+    - request
+    - initialize() <-- subclass this for specific initialization
+    - template     <-- the template set from zcml, otherwise not present
+    - user         <-- currently logged-in user
+    - render()     <-- used to render the page.  override this if you have many
+                       templates not set via zcml, or you want to do rendering
+                       from Python.
+    """
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+
+    def initialize(self):
+        """Override this in subclasses.
+       
+        Default implementation does nothing.
+        """
+        pass
+
+    @property
+    def template(self):
+        """The page's template, if configured in zcml."""
+        return self.index
+
+    def render(self):
+        return self.template()
+
+    def __call__(self):
+        self.initialize()
+        return self.render()
+
 
 class LaunchpadRootUrlData:
     """ICanonicalUrlData for the ILaunchpadRoot object."""
@@ -25,6 +175,7 @@ class LaunchpadRootUrlData:
 
     def __init__(self, context):
         self.context = context
+
 
 def canonical_urldata_iterator(obj):
     """Iterate over the urldata for the object and each of its canonical url
@@ -43,6 +194,7 @@ def canonical_urldata_iterator(obj):
         yield urldata
         current_object = urldata.inside
 
+
 def canonical_url_iterator(obj):
     """Iterate over the object and each of its canonical url parents.
 
@@ -52,6 +204,7 @@ def canonical_url_iterator(obj):
     for urldata in canonical_urldata_iterator(obj):
         if urldata.inside is not None:
             yield urldata.inside
+
 
 def canonical_url(obj, request=None):
     """Return the canonical URL string for the object.
@@ -84,6 +237,7 @@ def canonical_url(obj, request=None):
         root_url = request.getApplicationURL() + '/'
     return root_url + '/'.join(reversed(urlparts))
 
+
 def get_current_browser_request():
     """Return the current browser request, looked up from the interaction.
 
@@ -104,6 +258,7 @@ def get_current_browser_request():
         " Got %s." % len(requests))
     return requests[0]
 
+
 def nearest(obj, *interfaces):
     """Return the nearest object up the canonical url chain that provides
     one of the interfaces given.
@@ -118,4 +273,197 @@ def nearest(obj, *interfaces):
             if interface.providedBy(current_obj):
                 return current_obj
     return None
+
+
+class RootObject:
+    implements(ILaunchpadApplication, ILaunchpadRoot)
+
+
+rootObject = ProxyFactory(RootObject(), NamesChecker(["__class__"]))
+
+
+class Breadcrumb:
+    implements(IBreadcrumb)
+
+    def __init__(self, url, text):
+        self.url = url
+        self.text = text
+
+
+class Navigation:
+    """Base class for writing browser navigation components.
+
+    Note that the canonical_url part of Navigation is used outside of
+    the browser context.
+    """
+    implements(IBrowserPublisher)
+
+    def __init__(self, context, request=None):
+        """Initialize with context and maybe with a request."""
+        self.context = context
+        self.request = request
+
+    # Set this if you want to set a new layer before doing any traversal.
+    newlayer = None
+
+    def breadcrumb(self):
+        """Return the text of the context object's breadcrumb, or None for
+        no breadcrumb.
+        """
+        return None
+
+    def traverse(self, name):
+        """Override this method to handle traversal.
+
+        Raise NotFoundError if the name cannot be traversed.
+        """
+        raise NotFoundError(name)
+
+    # The next methods are for use by the Zope machinery.
+
+    def publishTraverse(self, request, name):
+        """Shim, to set objects in the launchbag when traversing them.
+
+        This needs moving into the publication component, once it has been
+        refactored.
+        """
+        nextobj = self._publishTraverse(request, name)
+        getUtility(IOpenLaunchBag).add(nextobj)
+        return nextobj
+
+    def _combined_class_info(self, attrname):
+        """Walk the class's __mro__ looking for attributes with the given
+        name in class dicts.  Combine the values of these attributes into
+        a single dict.  Return it.
+        """
+        combined_info = {}
+        # Note that we want to give info from more specific classes priority
+        # over info from less specific classes.  We can do this by walking
+        # the __mro__ backwards, and using dict.update(...)
+        for cls in reversed(type(self).__mro__):
+            value = cls.__dict__.get(attrname)
+            if value is not None:
+                combined_info.update(value)
+        return combined_info
+
+    def _append_breadcrumb(self, text):
+        """Add a breadcrumb to the request, at the current URL with the given
+        text.
+
+        request.getURL(1) represents the path traversed so far, but without
+        the step we're currently working out how to traverse.
+        """
+        self.request.breadcrumbs.append(
+            Breadcrumb(self.request.getURL(1), text))
+
+    def _handle_next_object(self, nextobj, request, name):
+        """Do the right thing with the outcome of traversal.
+
+        If we have a redirection object, then redirect accordingly.
+
+        If we have None, issue a NotFound error.
+
+        Otherwise, return the object.
+        """
+        if nextobj is None:
+            raise NotFound(self.context, name)
+        elif isinstance(nextobj, redirection):
+            return RedirectionView(
+                nextobj.toname, request, status=nextobj.status)
+        else:
+            return nextobj
+
+    def _publishTraverse(self, request, name):
+        """Traverse, like zope wants."""
+
+        # First, set a new layer if there is one.  This is important to do
+        # first so that if there's an error, we get the error page for
+        # this request.
+        if self.newlayer is not None:
+            setFirstLayer(request, self.newlayer)
+
+        # Next, if there is a breadcrumb for the context, add it to the
+        # request's list of breadcrumbs.
+        breadcrumb_text = self.breadcrumb()
+        if breadcrumb_text is not None:
+            self._append_breadcrumb(breadcrumb_text)
+
+        # Next, see if we're being asked to stepto somewhere.
+        stepto_traversals = self._combined_class_info('__stepto_traversals__')
+        if stepto_traversals is not None:
+            if name in stepto_traversals:
+                handler = stepto_traversals[name]
+                try:
+                    nextobj = handler(self)
+                except NotFoundError:
+                    nextobj = None
+                return self._handle_next_object(nextobj, request, name)
+
+        # Next, see if we have at least two path steps in total to traverse;
+        # that is, the current name and one on the request's traversal stack.
+        # If so, see if the name is in the namespace_traversals, and if so,
+        # dispatch to the appropriate function.  We can optimise by changing
+        # the order of these checks around a bit.
+        namespace_traversals = self._combined_class_info(
+            '__stepthrough_traversals__')
+        if namespace_traversals is not None:
+            if name in namespace_traversals:
+                stepstogo = request.stepstogo
+                if stepstogo:
+                    nextstep = stepstogo.consume()
+                    handler, breadcrumb_fn = namespace_traversals[name]
+                    if breadcrumb_fn is not None:
+                        breadcrumb_text = breadcrumb_fn(self)
+                        if breadcrumb_text is not None:
+                            self._append_breadcrumb(breadcrumb_text)
+                    try:
+                        nextobj = handler(self, nextstep)
+                    except NotFoundError:
+                        nextobj = None
+                    return self._handle_next_object(nextobj, request, nextstep)
+
+
+        # Next, look up views on the context object.  If a view exists,
+        # use it.
+        view = queryView(self.context, name, request)
+        if view is not None:
+            return view
+
+        # Next, look up redirections.  Note that registered views take
+        # priority over redirections, because you can always make your
+        # view redirect, but you can't make your redirection 'view'.
+        redirections = self._combined_class_info('__redirections__')
+        if redirections is not None:
+            if name in redirections:
+                urlto, status = redirections[name]
+                return RedirectionView(urlto, request, status=status)
+
+        # Finally, use the self.traverse() method.  This can return
+        # an object to be traversed, or raise NotFoundError.  It must not
+        # return None.
+        try:
+            nextobj = self.traverse(name)
+        except NotFoundError:
+            nextobj = None
+        return self._handle_next_object(nextobj, request, name)
+
+    def browserDefault(self, request):
+        view_name = getDefaultViewName(self.context, request)
+        return self.context, (view_name, )
+
+
+class RedirectionView:
+    implements(IBrowserPublisher)
+
+    def __init__(self, target, request, status=None):
+        self.target = target
+        self.request = request
+        self.status = status
+
+    def __call__(self):
+        self.request.response.redirect(self.target, status=self.status)
+        return ''
+
+    def browserDefault(self, request):
+        return self, ()
 

@@ -1,0 +1,25 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+    <!-- This is the HTTP server, set up to do ZODB-free publication.  -->
+    <utility
+        name="HTTP"
+        component="canonical.launchpad.webapp.servers.http"
+        provides="zope.app.server.servertype.IServerType"
+        />
+
+    <!-- This is the HTTP server, with post-mortem debugging support,
+        set up to do ZODB-free publication.  -->
+    <utility
+        name="PostmortemDebuggingHTTP"
+        component="canonical.launchpad.webapp.servers.pmhttp"
+        provides="zope.app.server.servertype.IServerType"
+        />
+
+    <!-- This is the HTTP server, but making each request have the
+        DebugLayer as the first layer searched.  Effectively, this turns
+        on the debug error pages. -->
+    <utility
+        name="DebugLayerHTTP"
+        component="canonical.launchpad.webapp.servers.debughttp"
+        provides="zope.app.server.servertype.IServerType"
+        />
+</configure>

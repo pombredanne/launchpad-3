@@ -29,9 +29,15 @@
             />
     </content>
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IProductSeries"
-        function="canonical.launchpad.browser.traverseProductSeries" />
+    <browser:menus
+        module="canonical.launchpad.browser"
+        classes="ProductSeriesContextMenu"
+        />
+
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="ProductSeriesNavigation ProductSeriesSetNavigation"
+        />
 
     <browser:url
         for="canonical.launchpad.interfaces.IProductSeries"
@@ -45,6 +51,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeries"
+        facet="overview"
         permission="zope.Public">
         <browser:page
             name="+portlet-source"
@@ -66,35 +73,40 @@
         permission="zope.Public">
         <browser:page
             name="+index"
-            template="../templates/series.pt"
+            facet="overview"
+            template="../templates/productseries.pt"
             lp:url="/products/$Product.name/+series/$ProductSeries.name/" />
         <browser:page
             name="+translations"
+            facet="translations"
             template="../templates/productseries-translations.pt"
             lp:url="/products/evolution/+series/main/+translations" />
         <browser:page
             name="+potlist"
+            facet="translations"
             template="../templates/object-pots.pt" />
         <browser:page
             name="+ubuntupkg"
+            facet="overview"
             template="../templates/productseries-ubuntupkg.pt"
             lp:url="/products/$Product.name/+series/$ProductSeries.name/+ubuntupkg" />
         <browser:page
             name="+hctstatus-core"
+            facet="overview"
             template="../templates/productseries-hctstatus-core.pt"
             lp:url="/products/$Product.name/+series/$ProductSeries.name/+hctstatus-core" />
         <browser:page
-            name="+portlet-actions"
-            template="../templates/productseries-portlet-actions.pt" />
-        <browser:page
             name="+portlet-details"
+            facet="overview"
             template="../templates/productseries-portlet-details.pt" />
         <browser:page
             name="+portlet-summary"
+            facet="overview"
             template="../templates/object-portlet-summary.pt"
             />
         <browser:page
             name="+portlet-potemplates"
+            facet="overview"
             template="../templates/object-portlet-potemplates.pt"
             />
     </browser:pages>
@@ -102,6 +114,7 @@
     <browser:page
         for="canonical.launchpad.interfaces.IProductSeries"
         class="canonical.launchpad.browser.ProductSeriesRdfView"
+        facet="overview"
         permission="zope.Public"
         name="+rdf"
         lp:url="/products/$Product.name/+series/$ProductSeries.name/+rdf"
@@ -111,10 +124,11 @@
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeries"
         class="canonical.launchpad.browser.ProductSeriesView"
+        facet="overview"
         permission="launchpad.AnyPerson">
         <browser:page
             name="+edit"
-            template="../templates/series-edit.pt"
+            template="../templates/productseries-edit.pt"
             lp:url="/products/$Product.name/+series/$ProductSeries.name/+edit" />
     </browser:pages>
 
@@ -126,6 +140,7 @@
         fields="productseries version title summary description owner
                 changelog"
         class="canonical.launchpad.browser.ProductReleaseAddView"
+        facet="overview"
         permission="launchpad.AnyPerson"
         template="../templates/productrelease-add.pt"
         lp:url="/product/$Product.name/+series/$ProductSeries.name/+addrelease">
@@ -138,12 +153,13 @@
             height="5" />
         <browser:widget
             field="owner"
-            class="canonical.widgets.OwnerWidget" />
+            class="canonical.widgets.HiddenUserWidget" />
     </browser:addform>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeriesSource"
         class="canonical.launchpad.browser.ProductSeriesView"
+        facet="overview"
         permission="launchpad.Edit">
         <browser:page
             name="+source"
@@ -151,10 +167,11 @@
             lp:url="/products/$Product.name/+series/$ProductSeries.name/+source"
             />
     </browser:pages>
-    
+
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeriesSourceAdmin"
         class="canonical.launchpad.browser.ProductSeriesView"
+        facet="overview"
         permission="launchpad.Admin">
         <browser:page
             name="+sourceadmin"
@@ -162,12 +179,13 @@
             lp:url="/products/$Product.name/+series/$ProductSeries.name/+sourceadmin"
             />
     </browser:pages>
-    
+
     <browser:editform
         name="+review"
         for="canonical.launchpad.interfaces.IProductSeries"
         schema="canonical.launchpad.interfaces.IProductSeries"
-        label="Review Product Series Details:"
+        facet="overview"
+        label="Review Product Series Details"
         fields="product name"
         permission="launchpad.Admin"
         template="../templates/launchpad-editform.pt"
@@ -186,6 +204,7 @@
         fields="productseries distrorelease sourcepackagename packaging
                 owner"
         class="canonical.launchpad.browser.PackagingAddView"
+        facet="overview"
         permission="launchpad.Edit"
         template="../templates/launchpad-addform.pt"
         lp:url="/product/$Product.name/+series/$ProductSeries.name/+package">
@@ -194,7 +213,7 @@
             class="canonical.widgets.ContextWidget" />
         <browser:widget
             field="owner"
-            class="canonical.widgets.OwnerWidget" />
+            class="canonical.widgets.HiddenUserWidget" />
     </browser:addform>
 
     <browser:addform
@@ -202,7 +221,8 @@
         for="canonical.launchpad.interfaces.IProductSeries"
         schema="canonical.launchpad.interfaces.IPOTemplateWithContent"
         class="canonical.launchpad.browser.POTemplateAddView"
-        label="Add a new Translation Template"
+        facet="translations"
+        label="Add a New Translation Template"
         fields="potemplatename description iscurrent owner path filename
                 content"
         arguments=""
@@ -233,10 +253,6 @@
         <allow interface="canonical.launchpad.interfaces.IProductSeriesSet" />
     </securedutility>
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IProductSeriesSet"
-        getter="__getitem__" />
-
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProductSeriesSet"
         name="+index" />
@@ -248,6 +264,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeriesSet"
+        facet="overview"
         permission="zope.Public">
         <browser:page
             name="+index"
@@ -256,10 +273,31 @@
             />
     </browser:pages>
 
+    <!-- ProductSeriesSourceSet. Note this is only used by -->
+    <content class="canonical.launchpad.database.ProductSeriesSourceSet">
+        <allow interface="canonical.launchpad.interfaces.IProductSeriesSourceSet" />
+        <require
+            permission="zope.Public"
+            set_schema="canonical.launchpad.interfaces.IProductSeriesSourceSet"
+        />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.ProductSeriesSourceSet"
+        provides="canonical.launchpad.interfaces.IProductSeriesSourceSet">
+        <allow interface="canonical.launchpad.interfaces.IProductSeriesSourceSet" />
+    </securedutility>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProductSeriesSourceSet"
+        layer="canonical.launchpad.layers.BazaarLayer"
+        name="+bazaar-index" />
+
     <!-- XXX need better permissions -->
     <browser:pages
-        for="canonical.launchpad.interfaces.IProductSeriesSet"
+        for="canonical.launchpad.interfaces.IProductSeriesSourceSet"
         permission="launchpad.AnyPerson"
+        facet="overview"
         class="canonical.launchpad.browser.ProductSeriesSourceSetView">
         <browser:page
             name="+bazaar-index"
@@ -267,5 +305,6 @@
             lp:url="/bazaar/series/"
             />
     </browser:pages>
+
 
 </configure>

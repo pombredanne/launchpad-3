@@ -5,83 +5,151 @@
 
 <body>
 
-<div metal:fill-slot="main">
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+  </metal:leftportlets>
 
-      <h1>
-        <span tal:replace="context/binarypackagerelease/name">
-          Title
-        </span>
-        (<span tal:replace="context/version">3.0.4</span>)
-      </h1>
-      <h2>Binary package information</h2>
-      <table>
-        <tbody>
-          <tr>
-            <th>Name:</th>
+  <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-latestversions" />
+  </metal:rightportlets>
+
+  <div metal:fill-slot="main">
+
+    <h2 tal:content="context/summary">Package Summary Here</h2>
+
+    <p class="highlighted" tal:content="context/description" />
+
+    <b>Source package:</b>
+    <a tal:define="spackage context/distributionsourcepackagerelease"
+       tal:content="spackage/name"
+       tal:attributes="href spackage/fmt:url">
+       SOURCEPACKAGE</a><br />
+
+    <b>Download:</b>
+    <ul tal:condition="context/files">
+      <li class="file" tal:repeat="file context/files">
+        <a tal:content="file/url/filename"
+           tal:attributes="href file/url/fileurl" />
+      </li>
+      <li class="alert" tal:condition="not: context/files">
+        <i>No files for this binary package.</i>
+      </li>
+    </ul>
+
+    <h2>Relationship to other packages</h2>
+          
+
+    <table>
+      <tbody>
+        <tr tal:condition="view/provides">
+          <th><label>Provides:</label></th>
+          <td>
+            <ul >
+              <li tal:repeat="binprovides view/provides">
+
+     <span tal:content="binprovides/name" />
+		<tal:dummy condition="binprovides/signal">
+                  (<span tal:replace="binprovides/signal" />
+                  <span tal:replace="binprovides/version" />)
+		</tal:dummy>
+                </li>
+              </ul>
+            </td>
+          </tr>
+
+          <tr  tal:condition="view/depends">
+            <th><label>Depends on:</label></th>
             <td>
+              <ul>
+                <li tal:repeat="bindepends view/depends">
+                  
+	        <a tal:content="bindepends/name"
+		tal:attributes="href string:../../../${bindepends/name}"/> 
+		<tal:dummy condition="bindepends/signal">
+		              (<span tal:replace="bindepends/signal" /> 
+		              <span tal:replace="bindepends/version" />)
+		</tal:dummy> 
 
-    <a tal:content="context/binarypackagerelease/name" 
-    tal:attributes="href string:../../${context/binarypackagerelease/name}"/>
-
+	              </li>
+	            </ul>
             </td>
           </tr>
-          <tr>
-            <th>Release:</th>
+
+          <tr tal:condition="view/recommends">
+            <th><label>Recommends:</label></th>
             <td>
+              <ul>
+                <li tal:repeat="binrecommends view/recommends">
 
-    <a tal:define="sourcerelease context/binarypackagerelease/build/sourcepackagerelease"
-       tal:content="string:${sourcerelease/sourcepackage/name} (${sourcerelease/version})"
-       tal:attributes="href string:../../../../src/${context/distrorelease/name}/${sourcerelease/sourcepackage/name}/${sourcerelease/version}"/> 
+	        <a tal:content="binrecommends/name"
+		tal:attributes="href string:../../../${binrecommends/name}"/> 
+		<tal:dummy condition="binrecommends/signal">
+                  (<span tal:replace="binrecommends/signal" /> 
+                  <span tal:replace="binrecommends/version" />)
+		</tal:dummy>
 
+        	      </li>
+        	    </ul>
             </td>
           </tr>
-          <tr>
-            <th>Component:</th>
-            <td tal:content="context/binarypackagerelease/component/name">
-              foo
-            </td>
-          </tr>
-          <tr>
-            <th>Section:</th>
-            <td tal:content="context/binarypackagerelease/section/name">
-              bar
-            </td>
-          </tr>
-          <tr>
-            <th>Priority:</th>
-            <td tal:content="context/binarypackagerelease/priority/title">
-              YAGNI
-            </td>
-          </tr>
-          <tr>
-            <th></th>
+
+          <tr  tal:condition="view/suggests">
+            <th><label>Suggests:</label></th>
             <td>
-              <a href="+license">License</a>
+              <ul>
+                <li tal:repeat="binsuggests view/suggests">
+
+	        <a tal:content="binsuggests/name"
+		tal:attributes="href string:../../../${binsuggests/name}"/>  
+		<tal:dummy condition="binsuggests/signal">
+                  (<span tal:replace="binsuggests/signal" />
+                  <span tal:replace="binsuggests/version" />)
+		</tal:dummy>
+
+                </li>
+              </ul>
+            </td>
+          </tr>
+
+          <tr tal:condition="view/conflicts">
+            <th><label>Conflicts with:</label></th>
+            <td>
+              <ul>
+                <li tal:repeat="binconflicts view/conflicts">
+
+	        <a tal:content="binconflicts/name"
+		tal:attributes="href string:../../../${binconflicts/name}"/> 
+		<tal:dummy condition="binconflicts/signal">
+                  (<span tal:replace="binconflicts/signal" /> 
+                  <span tal:replace="binconflicts/version" />)
+		</tal:dummy> 
+
+                </li>
+              </ul>
+
+            </td>
+          </tr>
+
+          <tr tal:condition="view/replaces">
+            <th><label>Replaces:</label></th>
+            <td>
+              <ul>
+                <li tal:repeat="binreplaces view/replaces">
+
+	        <a tal:content="binreplaces/name"
+		tal:attributes="href string:../../../${binreplaces/name}"/>  
+		<tal:dummy condition="binreplaces/signal">
+                  (<span tal:replace="binreplaces/signal" /> 
+                  <span tal:replace="binreplaces/version" />)
+		</tal:dummy> 
+
+                </li>
+              </ul>
             </td>
           </tr>
         </tbody>
       </table>
 
-<tal:block condition="nothing">
-<!-- XXX: Daniel Debonzi 2004-10-28 -->
-<!-- Is the Bugs for a BinaryPackage"Release"? -->
-<!--  <p><h4>Package Bugs:</h4> -->
-<!--  <div class="dummy"> -->
-<!--    <span>#1, #2, #3</span> -->
-<!--  </div> -->
-</tal:block>
-
-      <h2>Builds</h2>
-      <p tal:condition="not:context/archs">
-        There are no builds available.
-      </p>
-      <ul tal:condition="context/archs">
-        <li tal:repeat="arch context/archs">
-          <a tal:content="arch" tal:attributes="href arch">
-            Tudor
-          </a>
-        </li>
-      </ul>
     </div>
   </body>
 </html>

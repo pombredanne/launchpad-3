@@ -1,0 +1,22 @@
+<div class="portlet">
+
+  <h4>Published in:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul>
+      <li class="package-source"
+          tal:repeat="drspr context/current_publishings">
+        <a tal:attributes="href drspr/fmt:url">
+          <span tal:replace="drspr/distribution/name">ubuntu</span>
+          <span tal:replace="drspr/distrorelease/name">hoary</span>
+        </a>
+      </li>
+      <li class="alert" tal:condition="not: context/current_publishings">
+        <i>Not published anywhere yet.</i>
+      </li>
+    </ul>
+
+  </div>
+
+</div>

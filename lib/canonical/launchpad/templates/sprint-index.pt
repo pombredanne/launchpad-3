@@ -1,0 +1,75 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-attendees" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Meeting Overview</h1>
+
+  <p class="highlighted">
+    <span tal:replace="context/summary">
+      Sprint Summary Goes Here
+    </span>
+    <tal:has_homepage condition="context/home_page">
+      <img src="/++resource++sprint" />
+      <a tal:attributes="href context/home_page">
+        View the Meeting Home Page
+      </a>
+    </tal:has_homepage>
+  </p>
+
+  <p class="portalMessage" tal:condition="not:context/specifications">
+    There are no specifications registered for discussion at
+    <span tal:replace="context/title">Ubuntu Below Zero</span>
+    at the moment.
+  </p>
+
+  <tal:spec_links repeat="spec_link view/spec_links">
+    <div
+        tal:condition="view/listing_detailed"
+        tal:replace="structure spec_link/specification/@@+listing-detailed"
+        />
+    <div
+        tal:condition="view/listing_compact"
+        tal:replace="structure spec_link/specification/@@+listing-compact"
+        />
+    <div class="lesser">
+      <b>Agenda status:</b>
+      <a tal:condition="spec_link/required:launchpad.Admin"
+         tal:content="spec_link/status/title"
+         tal:attributes="href string:${spec_link/fmt:url}/+admin"
+         >approved</a>
+      <span tal:condition="not: spec_link/required:launchpad.Admin"
+            tal:replace="spec_link/status/title">Approved</span>.
+      <a tal:condition="spec_link/required:launchpad.Edit"
+         tal:attributes="href spec_link/fmt:url">
+        <tal:needs_discussion condition="spec_link/needs_discussion">
+          Needs further discussion
+        </tal:needs_discussion>
+        <tal:needs_discussion condition="not: spec_link/needs_discussion">
+          No discussion required
+        </tal:needs_discussion>.
+      </a>
+      <tal:cannot_edit condition="not: spec_link/required:launchpad.Edit">
+        <tal:needs_discussion condition="spec_link/needs_discussion">
+          Needs further discussion
+        </tal:needs_discussion>
+        <tal:needs_discussion condition="not: spec_link/needs_discussion">
+          No discussion required
+        </tal:needs_discussion>.
+      </tal:cannot_edit>
+    </div>
+    <hr />
+  </tal:spec_links>
+
+</div>
+</body>
+</html>

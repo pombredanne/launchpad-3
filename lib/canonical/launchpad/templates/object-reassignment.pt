@@ -10,10 +10,6 @@
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div class="sidebar" tal:replace="structure context/@@+portlet-actions" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
   <h1>Change the <span tal:replace="view/ownerOrMaintainerAttr" /> of 
@@ -55,8 +51,9 @@
           </label>
           <br />
 
-          You can change details and members<br />
-          of the team once it's created.
+          The new team's name must begin with a lower-case letter or number,
+          and contain only letters, numbers, dots, hyphens, or plus signs.
+          <br />
         </td>
       </tr>
 

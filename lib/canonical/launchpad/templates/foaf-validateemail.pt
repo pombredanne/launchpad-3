@@ -10,39 +10,45 @@
 <div metal:fill-slot="main">
 
     <div tal:condition="not: view/successfullyProcessed">
-      <h1>Validate email: <span tal:replace="context/email"></span></h1>
+      <h1>Confirm e-mail address <code tal:content="context/email"></code></h1>
 
       <div tal:condition="view/errormessage" class="portalMessage"
            tal:content="structure view/errormessage">
       </div>
 
-      <p>To validate your new email address, just enter your password on the
-      field below.</p>
+      <p>To confirm this address, enter your password.</p>
 
       <form autocomplete="off" name="validate" action="" method="POST">
-        <div class="field">
-
-          <label>Password</label>
-          <br>
-          <div class="formHelp"> Type your Launchpad password </div>
-          <input type="password" size="30" name="password" />
-          <br>
-
-          <label>
-            <input type="checkbox" checked="checked" name="logmein" />
-            Log me in after resetting my password
-          </label><br />
-
-          <div class="formControls">
-            <input type="submit" name="SUBMIT_CHANGES" value="Submit" />
-          </div>
-
-        </div>
+        <table>
+          <tbody>
+            <tr>
+              <th><label for="password">Launchpad Password:</label></th>
+              <td>
+                <input type="password" size="30" name="password" />
+              </td>
+            </tr>
+            <tr tal:condition="not: request/lp:person">
+              <th></th>
+              <td>
+                <label>
+                  <input type="checkbox" checked="checked" name="logmein" />
+                  Log me in after validating my email address
+                </label>
+              </td>
+            </tr>
+            <tr>
+              <th></th>
+              <td class="actions">
+                <input type="submit" name="SUBMIT_CHANGES" value="Confirm" />
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </form>
     </div>
 
     <div tal:condition="view/successfullyProcessed">
-      <h1>Email validated successfully.</h1>
+      <h1>E-mail address successfully confirmed</h1>
     </div>
 
 </div>

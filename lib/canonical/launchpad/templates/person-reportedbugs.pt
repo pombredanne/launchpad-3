@@ -9,57 +9,24 @@
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
-
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-actions" />
-</metal:rightportlets>
-
-
   <div metal:fill-slot="main" 
-       tal:define="reportedTasks view/reportedBugTasks;
-                   reportedTasksCount reportedTasks/count">
+       tal:define="tasks view/reportedBugTasks;
+                   listing_columns python:['id', 'product-or-package',
+                                           'title', 'status',
+                                           'severity',
+                                           'submittedon'
+                                           ];">
 
-    <h1>Reported Bugs</h1>
+    <h1>Recently Reported Bugs</h1>
 
-    <p tal:condition="not: reportedTasksCount">No bugs have been 
+    <p tal:condition="not: tasks">No bugs have been 
       reported by <span tal:replace="context/browsername" />.
     </p>
 
-    <div tal:condition="reportedTasksCount">
-      <p>These are the most recent bugs reported by 
-        <span tal:replace="context/browsername" />.
-      </p>
+      <tal:assignedbugs
+           condition="tasks"
+           metal:use-macro="context/@@+bugtask-macros-tableview/table" />
 
-      <table class="listing lpListing rowNavigation" width="90%">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>title</th>
-            <th>upstream / package</th>
-            <th>status</th>
-            <th>priority</th>
-            <th>severity</th>
-          </tr>
-        </thead>
-
-        <tr tal:repeat="bugtask reportedTasks" class="rowLinkified">
-          <tal:block tal:define="url string:/malone/bugs/${bugtask/bug/id}">
-          <td><a tal:attributes="href url"><span tal:replace="bugtask/bug/id" /></a></td>
-          <td tal:attributes="title bugtask/bug/summary">
-            <a tal:attributes="href url"><span tal:replace="bugtask/bug/title" /></a></td>
-          <td><a tal:attributes="href url" 
-                 tal:content="bugtask/product/displayname|default">-</a></td>
-          <td><a tal:attributes="href url" 
-                 tal:content="bugtask/status/title">status</a></td>
-          <td><a tal:attributes="href url"
-                 tal:content="bugtask/priority/title|default">-</a></td>
-          <td><a tal:attributes="href url"
-                 tal:content="bugtask/severity/title|default">-</a></td>
-          </tal:block>
-        </tr>
-      </table>
-
-    </div>
   </div>
 
 </body>

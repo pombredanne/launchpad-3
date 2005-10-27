@@ -3,7 +3,7 @@
 
 
   >>> print http(r"""
-  ... GET /people/salgado/+emails HTTP/1.1
+  ... GET /people/salgado/+editemails HTTP/1.1
   ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
   ... """)
   HTTP/1.1 200 Ok
@@ -15,7 +15,7 @@
 
 
   >>> print http(r"""
-  ... POST /people/salgado/+emails HTTP/1.1
+  ... POST /people/salgado/+editemails HTTP/1.1
   ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded
@@ -67,7 +67,7 @@
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
-  ...<h1>Validate email: guilherme.salgado@canonical.com</h1>...
+  ...Confirm e-mail address...guilherme.salgado@canonical.com...
   ...
 
 
@@ -82,15 +82,16 @@
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
-  ...<h1>Email validated successfully.</h1>...
+  ...<h1>E-mail address successfully confirmed</h1>...
   ...
 
 
   This is the first email 'salgado' is validating, it must be set as the
   preferred one.
 
-  >>> from canonical.launchpad.database import EmailAddress
-  >>> e = EmailAddress.byEmail(to_addrs)
+  >>> from canonical.launchpad.database import EmailAddressSet
+  >>> [to_addr] = to_addrs
+  >>> e = EmailAddressSet().getByEmail(to_addr)
   >>> e.statusname
   'Preferred Email Address'
 

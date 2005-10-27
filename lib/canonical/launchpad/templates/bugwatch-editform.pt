@@ -12,18 +12,18 @@
     <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
-<metal:leftportlets fill-slot="portlets_two">
+<metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-bugtasks" />
-</metal:leftportlets>
+</metal:rightportlets>
 
     <div metal:fill-slot="main">
 
       <div metal:use-macro="context/@@launchpad_editform/editform">
 
-        <h3 tal:condition="view/label"
+        <h1 tal:condition="view/label"
             tal:content="view/label"
             metal:fill-slot="heading"
-           >Form Label will come from ZCML label="xxx"</h3>
+           >Form Label will come from ZCML label="xxx"</h1>
 
         <div metal:fill-slot="extra_info" class="documentDescription">
           This watch links <a tal:attributes="href
@@ -32,7 +32,7 @@
         </div>
 
       </div>
-    
+
     </div>
 
   </body>

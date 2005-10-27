@@ -9,18 +9,11 @@
   <div metal:fill-slot="main">
 
     <div metal:use-macro="context/@@launchpad_editform/editform">
-
       <div metal:fill-slot="extra_info"
            class="documentDescription">
         Your changes will affect all templates associated with this template
         name.
       </div>
-
-      <legend metal:fill-slot="editform_legend">
-        Template name details
-      </legend>
-
-
     </div>
 
   </div>

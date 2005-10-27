@@ -5,7 +5,6 @@ __metaclass__ = type
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.database import LibraryFileContent, LibraryFileAlias
 
-from sqlobject import IntCol, StringCol, DateTimeCol, ForeignKey
 from sqlobject import SQLObjectNotFound
 
 
@@ -17,13 +16,12 @@ class Library:
         return [fc.id for fc in 
                 LibraryFileContent.selectBy(sha1=digest)]
 
-    def getAlias(self, fileid, filename):
+    def getAlias(self, aliasid):
         """Returns a LibraryFileAlias, or raises LookupError."""
-        alias = LibraryFileAlias.selectOneBy(
-            contentID=fileid, filename=filename)
-        if alias is None:
-            raise LookupError('Alias %s: %r' % (fileid, filename))
-        return alias
+        try:
+            return LibraryFileAlias.get(aliasid)
+        except SQLObjectNotFound:
+            raise LookupError(aliasid)
 
     def getAliases(self, fileid):
         results = LibraryFileAlias.selectBy(contentID=fileid)
@@ -47,18 +45,11 @@ class Library:
         lfc = LibraryFileContent(filesize=size, sha1=digest)
         return lfc.id
 
-    def addAlias(self, fileid, filename, mimetype):
+    def addAlias(self, fileid, filename, mimetype, expires=None):
         """Add an alias, and return its ID.
 
         If a matching alias already exists, it will return that ID instead.
         """
-        try:
-            existing = self.getAlias(fileid, filename)
-            if existing.mimetype == mimetype:
-                return existing.id
-        except LookupError:
-            pass
-
         return LibraryFileAlias(contentID=fileid, filename=filename,
-                                mimetype=mimetype).id
+                                mimetype=mimetype, expires=expires).id
 

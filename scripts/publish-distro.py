@@ -10,10 +10,11 @@ from canonical.lp import initZopeless
 from canonical.archivepublisher import \
      DiskPool, Poolifier, POOL_DEBIAN, Config, Publisher, Dominator
 import sys, os
-from canonical.launchpad.database import \
-     Distribution, DistroRelease, SourcePackagePublishingView, \
-     BinaryPackagePublishingView, SourcePackageFilePublishing, \
-     BinaryPackageFilePublishing
+
+from canonical.launchpad.database import (
+    Distribution, DistroRelease, SourcePackagePublishingView,
+    BinaryPackagePublishingView, SourcePackageFilePublishing,
+    BinaryPackageFilePublishing)
 
 from sqlobject import AND
 
@@ -21,6 +22,20 @@ from canonical.lp.dbschema import \
      PackagePublishingStatus, PackagePublishingPocket
 
 from canonical.database.constants import UTC_NOW
+from canonical.database.sqlbase import sqlvalues, SQLBase
+
+# We do this for more accurate exceptions. It doesn't slow us down very
+# much so it's not worth making it an option.
+SQLBase._lazyUpdate = False
+
+careful = False
+if sys.argv[1] == "--careful":
+    careful = True
+    # XXX: dsilvers: 20050921: Replace all this with an option parser
+    # but for now, and just for SteveA:
+    # "lookee here, altering sys.argv"
+    sys.argv.remove("--careful")
+    
 
 distroname = sys.argv[1]
 
@@ -43,18 +58,18 @@ drs = DistroRelease.selectBy(distributionID=distro.id)
 
 debug("Finding configuration...")
 
-c = Config(distro, drs)
+pubconf = Config(distro, drs)
 
 debug("Making directories as needed...")
 
 dirs = [
-    c.distroroot,
-    c.poolroot,
-    c.distsroot,
-    c.archiveroot,
-    c.cacheroot,
-    c.overrideroot,
-    c.miscroot
+    pubconf.distroroot,
+    pubconf.poolroot,
+    pubconf.distsroot,
+    pubconf.archiveroot,
+    pubconf.cacheroot,
+    pubconf.overrideroot,
+    pubconf.miscroot
     ]
 
 for d in dirs:
@@ -65,23 +80,26 @@ for d in dirs:
 debug("Preparing on-disk pool representation...")
 
 dp = DiskPool(Poolifier(POOL_DEBIAN),
-              c.poolroot, logging.getLogger("DiskPool"))
-
+              pubconf.poolroot, logging.getLogger("DiskPool"))
+# Set the diskpool's log level to INFO to suppress debug output
+dp.logger.setLevel(20)
 dp.scan()
 
 debug("Preparing publisher...")
 
-pub = Publisher(logging.getLogger("Publisher"), c, dp)
+pub = Publisher(logging.getLogger("Publisher"), pubconf, dp, distro)
 
 try:
     # main publishing section
     debug("Attempting to publish pending sources...")
-    spps = SourcePackageFilePublishing.selectBy(
-        distribution = distro.id )
+    clause = "distribution = %s" % sqlvalues(distro.id)
+    if not careful:
+        clause = clause + (" AND publishingstatus = %s" %
+                           sqlvalues(PackagePublishingStatus.PENDING))
+    spps = SourcePackageFilePublishing.select(clause)
     pub.publish(spps, isSource=True)
     debug("Attempting to publish pending binaries...")
-    pps = BinaryPackageFilePublishing.selectBy(
-        distribution = distro.id )
+    pps = BinaryPackageFilePublishing.select(clause)
     pub.publish(pps, isSource=False)
         
 except:
@@ -95,7 +113,7 @@ try:
     debug("Attempting to perform domination...")
     for distrorelease in drs:
         for pocket in PackagePublishingPocket.items:
-            judgejudy.judgeAndDominate(distrorelease,pocket)            
+            judgejudy.judgeAndDominate(distrorelease, pocket, pubconf)
 except:
     logging.getLogger().exception("Bad muju while dominating")
     txn.abort()
@@ -106,10 +124,12 @@ try:
     debug("Generating overrides for the distro...")
     spps = SourcePackagePublishingView.select(
         AND(SourcePackagePublishingView.q.distribution == distro.id,
-        SourcePackagePublishingView.q.publishingstatus != PackagePublishingStatus.PENDINGREMOVAL ))
+            SourcePackagePublishingView.q.publishingstatus == 
+                PackagePublishingStatus.PUBLISHED ))
     pps = BinaryPackagePublishingView.select(
         AND(BinaryPackagePublishingView.q.distribution == distro.id,
-        BinaryPackagePublishingView.q.publishingstatus != PackagePublishingStatus.PENDINGREMOVAL ))
+            BinaryPackagePublishingView.q.publishingstatus == 
+                PackagePublishingStatus.PUBLISHED ))
 
     pub.publishOverrides(spps, pps)
 except:
@@ -122,23 +142,32 @@ try:
     debug("Generating file lists...")
     spps = SourcePackageFilePublishing.select(
         AND(SourcePackageFilePublishing.q.distribution == distro.id,
-        SourcePackageFilePublishing.q.publishingstatus != PackagePublishingStatus.PENDINGREMOVAL ))
+            SourcePackageFilePublishing.q.publishingstatus ==
+            PackagePublishingStatus.PUBLISHED ))
     pps = BinaryPackageFilePublishing.select(
         AND(BinaryPackageFilePublishing.q.distribution == distro.id,
-        BinaryPackageFilePublishing.q.publishingstatus != PackagePublishingStatus.PENDINGREMOVAL ))
+            BinaryPackageFilePublishing.q.publishingstatus ==
+                PackagePublishingStatus.PUBLISHED ))
 
-    pub.publishFileLists(spps,pps)
+    pub.publishFileLists(spps, pps)
 except:
     logging.getLogger().exception("Bad muju while generating file lists")
     txn.abort()
     sys.exit(1)
+
+# In order to allow the build system, upload system etc all
+# to continue without being deadlocked on this transaction, we commit now.
+# This isn't the best thing to do because apt-ftparchive *could* fail
+# but if it does, we're screwwed anyway. We thusly commit so that
+# we unblock other transactions.
+txn.commit()
 
 try:
     # Generate apt-ftparchive config and run...
     debug("Doing apt-ftparchive work...")
     fn = os.tmpnam()
     f = file(fn,"w")
-    f.write(pub.generateAptFTPConfig())
+    f.write(pub.generateAptFTPConfig(fullpublish=careful))
     f.close()
     print fn
 
@@ -151,19 +180,41 @@ except:
     sys.exit(1)
 
 try:
+    # Generate the Release files...
+    debug("Generating Release files...")
+    pub.writeReleaseFiles()
+    
+except:
+    logging.getLogger().exception("Bad muju while doing release files")
+    txn.abort()
+    sys.exit(1)
+
+try:
     # Unpublish death row
     debug("Unpublishing death row...")
-    consrc = SourcePackagePublishing.select(
-        AND(SourcePackagePublishing.q.status == PackagePublishingStatus.PENDINGREMOVAL,
-            SourcePackagePublishing.q.scheduleddeletiondate <= UTC_NOW))
-    conbin = PackagePublishing.select(
-        AND(PackagePublishing.q.status == PackagePublishingStatus.PENDINGREMOVAL,
-            PackagePublishing.q.scheduleddeletiondate <= UTC_NOW))
-    
-    livesrc = SourcePackagePublishing.select(
-        SourcePackagePublishing.q.status != PackagePublishingStatus.PENDINGREMOVAL)
-    livebin = PackagePublishing.select(
-        PackagePublishing.q.status != PackagePublishingStatus.PENDINGREMOVAL)
+
+    consrc = SourcePackageFilePublishing.select("""
+        publishingstatus = %s AND
+        sourcepackagepublishing.id =
+                      sourcepackagefilepublishing.sourcepackagepublishing AND
+        sourcepackagepublishing.scheduleddeletiondate <= %s
+        """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL, UTC_NOW),
+                            clauseTables=['sourcepackagepublishing'])
+
+    conbin = BinaryPackageFilePublishing.select("""
+        publishingstatus = %s AND
+        binarypackagepublishing.id =
+                      binarypackagefilepublishing.binarypackagepublishing AND
+        binarypackagepublishing.scheduleddeletiondate <= %s
+        """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL, UTC_NOW),
+                            clauseTables=['binarypackagepublishing'])
+
+    livesrc = SourcePackageFilePublishing.select(
+        SourcePackageFilePublishing.q.publishingstatus != 
+            PackagePublishingStatus.PENDINGREMOVAL)
+    livebin = BinaryPackageFilePublishing.select(
+        BinaryPackageFilePublishing.q.publishingstatus != 
+            PackagePublishingStatus.PENDINGREMOVAL)
     
     pub.unpublishDeathRow(consrc, conbin, livesrc, livebin)
 

@@ -1,0 +1,125 @@
+<tal:do-this-first replace="view/processForm" />
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/team/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-options" />
+</metal:rightportlets>
+
+  <div metal:fill-slot="main">
+
+    <h1>Condorcet Poll</h1>
+
+    <tal:can-vote condition="view/userCanVote">
+    <p class="portalMessage" tal:condition="view/feedback"
+       tal:content="view/feedback" />
+
+    <div class="highlighted" style="font-size: 80%;">
+      <tal:proposition replace="structure context/proposition/fmt:text-to-html">
+         The proposition goes here.
+      </tal:proposition>
+    </div>
+
+    <form action="" method="POST">
+
+    <tal:block condition="view/userVoted">
+      <tal:block condition="view/isSecret">
+        <h2>You must enter your vote key</h2>
+
+        <p>This is a secret poll &mdash;
+        your vote is identified only by the key you
+        were given when you voted. To view or change your vote you must enter
+        your key:</p>
+
+        <input type="text" name="token" 
+               tal:attributes="value view/token|nothing" />
+        <br />
+        <br />
+      </tal:block>
+    </tal:block>
+
+    <table cols="2">
+      <tr>
+        <td>
+          <h2>Your Current Vote</h2>
+          <tal:block condition="not: view/userVoted">
+            <p>You have not yet voted in this poll.</p>
+          </tal:block>
+
+          <tal:block condition="view/userVoted">
+            <tal:block condition="view/gotTokenAndVotes">
+              <tal:block condition="view/currentVotes">
+                <p>Your current vote is as follows:</p>
+                <p tal:repeat="vote view/currentVotes">
+                  <tal:block tal:condition="vote/preference">
+                    <b tal:content="vote/preference" />. 
+                    <span tal:replace="vote/option/name" />
+                  </tal:block>
+                </p>
+              </tal:block>
+
+              <tal:block condition="not: view/currentVotes">
+                <p>You haven't manifested preference for any of the existing
+                options.</p> 
+              </tal:block>
+            </tal:block>
+
+            <tal:block condition="not: view/gotTokenAndVotes">
+              <p>You have voted in this poll. Launchpad can display your vote
+              once you have entered your vote key.</p>
+
+              <input type="submit" value="Show My Vote" name="showvote" />
+            </tal:block>
+          </tal:block>
+        </td>
+        <td>
+          <tal:block condition="not: view/userVoted">
+            <h2>Rank Options in Order of Preference</h2>
+          </tal:block>
+
+          <tal:block condition="view/userVoted">
+            <h2>Change Your Vote</h2>
+          </tal:block>
+
+          <p>Enter 1 next to your most preferred option, 2 next to your second
+          preference, and so on. You may mark two or more options equally, or
+          leave some options unmarked, if desired.</p>
+
+          <tal:block repeat="option context/getActiveOptions">
+            <input type="text" size="2" 
+                   tal:attributes="name string:option_${option/id}" />
+            <span tal:replace="option/name" />
+            <br />
+          </tal:block>
+          <br />
+
+          <tal:block condition="view/userVoted">
+            <input type="submit" value="Change Vote" name="changevote" />
+          </tal:block>
+
+          <tal:block condition="not: view/userVoted">
+            <input type="submit" value="Vote" name="vote" />
+          </tal:block>
+        </td>
+      </tr>
+    </table>
+    </form>
+    </tal:can-vote>
+
+    <tal:cannot-vote condition="not: view/userCanVote">
+      <p class="portalMessage">You cannot vote in this poll because you're not
+      a member of <span tal:replace="context/team/browsername" />.</p>
+    </tal:cannot-vote>
+
+  </div>
+
+</body>
+</html>

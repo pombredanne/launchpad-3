@@ -1,0 +1,56 @@
+<div class="portlet">
+
+  <h4>specification details:</h4>
+
+  <div class="portletBody portletContent">
+
+    <b>Spec:</b><br />
+    <a tal:content="context/name"
+       tal:attributes="href context/fmt:url">fix-foo-bar</a><br />
+    <b>For:</b>
+    <a tal:content="context/target/displayname"
+       tal:attributes="href context/target/fmt:url">ubuntu</a><br />
+    <b>Priority:</b>
+    <span tal:condition="context/priority"
+          tal:replace="context/priority/title">High</span>
+    <i tal:condition="not: context/priority">Unassigned</i>
+    <br />
+    <b>Status:</b>
+    <span tal:replace="context/status/title">Approved</span>
+    <br />
+    <b>Registrant:</b><br />
+    <img src="/++resource++user.gif" />
+    <a tal:content="context/owner/browsername"
+       tal:attributes="href context/owner/fmt:url">Foo Bar</a><br />
+    <b>Assignee:</b><br />
+    <img src="/++resource++user.gif" />
+    <a tal:condition="context/assignee"
+       tal:content="context/assignee/browsername"
+       tal:attributes="href context/assignee/fmt:url">Foo Bar</a>
+    <i tal:condition="not: context/assignee">No assignee</i><br />
+    <b>Drafter:</b><br />
+    <img src="/++resource++user.gif" />
+    <a tal:condition="context/drafter"
+       tal:content="context/drafter/browsername"
+       tal:attributes="href context/drafter/fmt:url">Foo Bar</a>
+    <i tal:condition="not: context/drafter">No drafter</i><br />
+    <b>Approver:</b><br />
+    <img src="/++resource++user.gif" />
+    <a tal:condition="context/approver"
+       tal:content="context/approver/browsername"
+       tal:attributes="href context/approver/fmt:url">Foo Bar</a>
+    <i tal:condition="not: context/approver">No approver</i><br />
+    <b>Registered:</b>
+    <span tal:replace="context/datecreated/fmt:date">2005-06-07</span><br />
+    <tal:has_sprints define="sprint_links context/sprint_links"
+                     condition="sprint_links">
+      <b>Sprints:</b><br />
+      <tal:sprint repeat="sprint_link sprint_links">
+        <a tal:attributes="href sprint_link/sprint/fmt:url"
+           tal:content="sprint_link/sprint/name" /> 
+        (<span tal:replace="sprint_link/status/title">Approved</span>)<br />
+      </tal:sprint>
+	</tal:has_sprints>
+  </div>
+
+</div>

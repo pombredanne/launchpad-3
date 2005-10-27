@@ -1,0 +1,77 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <div tal:condition="nothing">
+    This is a general form. You should not edit this file, but rather copy
+    template-form.pt to your own form page, and edit that.
+  </div>
+
+  <div metal:define-macro="generalform">
+
+    <form action="." 
+          tal:attributes="action request/URL" 
+          method="post"
+          enctype="multipart/form-data">
+
+      <div metal:define-macro="formbody">
+
+        <h1 tal:condition="view/label"
+            tal:content="view/label"
+            metal:define-slot="heading"
+            >Add Something</h1>
+
+        <p metal:define-slot="extra_info" tal:replace="nothing">
+          This is the description of the add form.
+          This text will be in bold, beneath the title of the add form,
+          and should explain a little bit about the form.
+        </p>
+
+        <p class="portalMessage"
+           tal:define="status view/process_form"
+           tal:condition="status"
+           tal:content="status" />
+
+        <div class="row" 
+             metal:define-slot="extra_top" 
+             tal:replace="nothing">
+            <div>Extra top</div>
+            <div><input type="text" style="width:100%" /></div>
+        </div>
+
+        <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
+
+        <div class="row"
+             metal:define-slot="extra_bottom" 
+             tal:replace="nothing">
+          <div>Extra bottom</div>
+          <div class="field"><input type="text" style="width:100%" /></div>
+        </div>
+
+      </div>
+      <div class="actions">
+          <input type="submit"
+                 tabindex="1000"
+                 value="Continue"
+                 name="FORM_SUBMIT"
+                 i18n:attributes="value continue-button" />
+      </div>
+
+      <div class="row" 
+           metal:define-slot="extra_buttons" 
+           tal:replace="nothing">
+      </div>
+
+    </form>
+  </div>
+
+  </div>
+  </body>
+
+</html>
+

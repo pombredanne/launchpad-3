@@ -1,0 +1,38 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+      <h1>Tech support</h1>
+      <p>
+        Launchpad&#8217;s tech support system
+        lets people request help with applications or distributions,
+        and lets anyone help resolve those requests.
+      </p>
+      <h2>Latest support requests</h2>
+      <table>
+        <tal:ticket
+          repeat="ticket context/latest_tickets"
+          content="structure ticket/@@+listing-detailed"
+        />
+      </table>
+      <p>
+        These requests are from across the whole of Launchpad.
+        To see the requests for a <a href="/products">product</a> or
+        <a href="/distros/">distribution</a>,
+        visit the page for that product or distribution.
+      </p>
+    </div>
+  </body>
+</html>

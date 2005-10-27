@@ -9,30 +9,23 @@
     <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
-
-<metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-actions" />
-</metal:rightportlets>
-
-
 <div metal:fill-slot="main">
 
-  <h1>Distribution Members</h1>
-
-  <p class="documentDescription">
-    Each distribution in Launchpad can maintain a set of Members, this page
-    shows the members of <span
-    tal:replace="context/displayname">Ubuntu</span>.
-  </p>
+  <h1>Members of <span tal:replace="context/displayname">Ubuntu</span></h1>
 
   <div tal:replace="structure context/members/@@+teamlist" />
 
   <p tal:condition="context/members/isTeam">
-    These members are all part of the team called
+    These members are all part of the
     "<span tal:content="context/members/browsername">Members
-    Team</span>". You can find out more information about the team
-    <a tal:attributes="href context/members/fmt:url">here</a>.
+    Team</span>" team.
   </p>
+  <ul>
+    <li>
+      <a tal:attributes="href context/members/fmt:url">More information about
+      this team</a>
+    </li>
+  </ul>
 
 </div>
 

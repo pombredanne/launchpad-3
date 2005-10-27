@@ -2,20 +2,6 @@
 
   <directive
       namespace="http://namespaces.zope.org/browser"
-      name="suburl"
-      schema="canonical.launchpad.webapp.metazcml.ISubURLDirective"
-      handler="canonical.launchpad.webapp.metazcml.suburl"
-      />
-
-  <directive
-      namespace="http://namespaces.zope.org/browser"
-      name="traverse"
-      schema="canonical.launchpad.webapp.metazcml.ITraverseDirective"
-      handler="canonical.launchpad.webapp.metazcml.traverse"
-      />
-
-  <directive
-      namespace="http://namespaces.zope.org/browser"
       name="url"
       schema="canonical.launchpad.webapp.metazcml.IURLDirective"
       handler="canonical.launchpad.webapp.metazcml.url"
@@ -26,6 +12,13 @@
       name="menus"
       schema="canonical.launchpad.webapp.metazcml.IMenusDirective"
       handler="canonical.launchpad.webapp.metazcml.menus"
+      />
+
+  <directive
+      namespace="http://namespaces.zope.org/browser"
+      name="navigation"
+      schema="canonical.launchpad.webapp.metazcml.INavigationDirective"
+      handler="canonical.launchpad.webapp.metazcml.navigation"
       />
 
   <directive
@@ -57,4 +50,12 @@
       schema="canonical.launchpad.webapp.metazcml.IAuthorizationsDirective"
       handler="canonical.launchpad.webapp.metazcml.authorizations"
       />
+
+  <groupingDirective
+     namespace="http://namespaces.zope.org/zope"
+     name="facet"
+     schema="canonical.launchpad.webapp.metazcml.IGroupingFacet"
+     handler="canonical.launchpad.webapp.metazcml.GroupingFacet"
+     />
+
 </configure>

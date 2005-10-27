@@ -1,0 +1,172 @@
+<tal:do-this-first condition="view/processForm" />
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+<body>
+
+  <div metal:fill-slot="body" style="padding-left: 1em">
+
+  <h1>ShipIt Requests</h1>
+
+  <table>
+  <tbody>
+  <tr>
+  <td width="80%">
+
+  <form name="search" action="" method="GET">
+  <table>
+    <tbody>
+    <tr>
+      <td align="right">
+        <label>Show:</label>
+      </td>
+      <td>
+        <select name="statusfilter">
+          <option value="pending" 
+                  tal:attributes="selected python: view.selectedStatus == 'pending'">
+            Pending</option>
+          <option value="approved"
+                  tal:attributes="selected python: view.selectedStatus == 'approved'">
+            Approved</option>
+          <option value="denied"
+                  tal:attributes="selected python: view.selectedStatus == 'denied'">
+            Denied</option>
+          <option value="all"
+                  tal:attributes="selected python: view.selectedStatus == 'all'">
+            All</option>
+        </select>
+        requests
+      </td>
+    </tr>
+    <tr>
+      <td align="right">
+        <label>for:</label>
+      </td>
+      <td>
+        <select name="typefilter">
+          <option value="custom" 
+                  tal:attributes="selected python: view.selectedType == 'custom'">
+            Custom quantities</option>
+          <option value="any" 
+                  tal:attributes="selected python: view.selectedType == 'any'">
+            Any quantities</option>
+          <option value="standard"
+                  tal:attributes="selected python: view.selectedType == 'standard'">
+            All standard quantities</option>
+          <option tal:repeat="request view/standardShipItRequests"
+                  tal:attributes="value request/id;
+                                  selected python: view.selectedType == request.id">
+            <span tal:replace="request/description" /></option>
+        </select>
+      </td>
+    </tr>
+    <tr>
+      <td align="right"><label>from:</label></td>
+      <td>
+        <input type="text" size="30" name="recipient_text"
+               tal:attributes="value view/recipient_text" />
+        <span class="formHelp">(optional)</span>
+      </td>
+    </tr>
+    <tr>
+      <td></td>
+      <td>
+        <input type="submit" value="Show" name="show" />
+      </td>
+    </tr>
+  </table>
+  </form>
+
+  <br />
+  <tal:block condition="view/submitted"
+             define="bn view/batchNavigator;
+                     prev_url bn/prevBatchURL;
+                     next_url bn/nextBatchURL;
+                     currentBatch bn/currentBatch">
+
+    <p tal:condition="not: bn/currentBatch">
+      No requests were found
+    </p>
+
+    <tal:block condition="bn/currentBatch">
+      <table width="80%" class="listing" id="results" style="border-left: none">
+        <thead>
+          <tr>
+            <th>id</th>
+            <th>Recipient</th>
+            <th>Date</th>
+            <th>Country</th>
+            <th style="text-align: right">requested</th>
+            <th style="text-align: right">approved</th>
+            <th>status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tal:block repeat="shipitrequest currentBatch">
+            <tr tal:attributes="
+              style string:background-color: ${shipitrequest/highlightColour}">
+              <td><a tal:attributes="href shipitrequest/fmt:url"
+                     tal:content="shipitrequest/id">id</a></td>
+              <td>
+                <span tal:replace="shipitrequest/recipientdisplayname" /><br />
+                (<span
+                  tal:replace="shipitrequest/recipient/preferredemail/email"
+                  />)
+              </td>
+              <td tal:content="shipitrequest/daterequested/fmt:date" />
+              <td tal:content="shipitrequest/country/name" />
+              <td style="text-align: right" 
+                  tal:content="shipitrequest/totalCDs" />
+              <td style="text-align: right" 
+                  tal:content="shipitrequest/totalapprovedCDs" />
+              <td>
+                <tal:block condition="not: shipitrequest/cancelled">
+                  <tal:block condition="shipitrequest/isApproved">
+                    approved<br />
+                    <span tal:condition="not: shipitrequest/shipment"
+                      >(unshipped)</span>
+                    <span tal:condition="shipitrequest/shipment"
+                      >(sent for shipping in 
+                      <span tal:replace="
+                        shipitrequest/shipment/shippingrun/datecreated/fmt:date"
+                        />)
+                    </span>
+                  </tal:block>
+                  <span tal:condition="shipitrequest/isDenied">denied</span>
+                  <span tal:condition="shipitrequest/isAwaitingApproval">
+                    pending
+                  </span>
+                </tal:block>
+                <span tal:condition="shipitrequest/cancelled">cancelled</span>
+              </td>
+            </tr>
+          </tal:block>
+        </tbody>
+      </table>
+      <table width="80%" class="listing">
+        <tbody>
+          <tr class="results" style="background: #f7ebd6">
+            <td> 
+              <tal:navigation replace="structure bn/@@+navigation-links" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </tal:block>
+
+  </tal:block>
+
+  </td>
+  <td
+    width="20%"
+    style="vertical-align: top;"
+    tal:content="structure context/@@+portlet-navigation"
+  />
+  </tr>
+  </table>  
+  
+</div>
+
+</body>
+</html>

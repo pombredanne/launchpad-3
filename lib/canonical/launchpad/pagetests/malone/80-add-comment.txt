@@ -14,11 +14,10 @@ email.
   0
 
   >>> print http(r"""
-  ... POST /malone/bugs/2/+messages/+new HTTP/1.1
+  ... POST /distros/debian/+source/mozilla-firefox/+bug/2/+addmessage HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 78
   ... Content-Type: application/x-www-form-urlencoded
-  ... Referer: http://localhost:9000/malone/bugs/2
   ...
   ... field.subject=test+comment+subject&field.content=test+comment&UPDATE_SUBMIT=Post+Comment""")
   HTTP/1.1 303 See Other
@@ -28,15 +27,10 @@ email.
 
 
   >>> print http(r"""
-  ... GET /malone/bugs/2/ HTTP/1.1
-  ... Referer: http://localhost:9000/malone/bugs/2
+  ... GET /distros/debian/+source/mozilla-firefox/+bug/2 HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...
-  <BLANKLINE>
-  ...
-            <h2>Blackhole Trash folder</h2>
-  ...
+  ...Blackhole Trash folder...
 
 After the comment has been submitted, the notification email is sent:
 

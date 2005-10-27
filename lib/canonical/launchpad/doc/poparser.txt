@@ -18,7 +18,9 @@ Test that the function does not fails if the date field has unicode chars:
 ... Content-Type: text/plain; charset=UTF-8
 ... Content-Transfer-Encoding: 8bit
 ... """)
->>> header.finish()
+>>> header.updateDict()
 >>> header.getPORevisionDate()
 (u'\xe1 2004-03-06 20:06+0100', None)
+>>> header.getPluralFormExpression() == None
+True
 

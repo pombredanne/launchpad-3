@@ -6,7 +6,7 @@ Sample Person and for Foo Bar. The passwords for the secret keys are
 'test'.
 
 Before they are used in tests they need to be imported, so that
-GpgHandlder knows about them.  import_public_test_keys() imports all
+GpgHandler knows about them.  import_public_test_keys() imports all
 public keys available, while import_public_key(email_addr) only imports
 the key associated with that specific email address.
 
@@ -29,10 +29,16 @@ def import_public_key(email_addr):
     gpghandler = getUtility(IGPGHandler)
     personset = getUtility(IPersonSet)
 
-    pubkey = open(os.path.join(gpgkeysdir, email_addr + '.pub')).read()
+    pubkey = test_pubkey_from_email(email_addr)
     key = gpghandler.importKey(pubkey)               
 
     person = personset.getByEmail(email_addr)
+
+    # Some of the sample keys do not have corresponding Launchpad
+    # users, so ignore them.
+    if not person:
+        return
+
     for gpgkey in person.gpgkeys:
         if gpgkey.fingerprint == key.fingerprint:
             # If the key's already added to the database, do nothing.
@@ -47,11 +53,16 @@ def import_public_key(email_addr):
         algorithm=GPGKeyAlgorithm.items[key.algorithm],
         active=(not key.revoked))
 
-def import_public_test_keys():
-    """Imports all the public keys located in gpgkeysdir into the db."""
+def iter_test_key_emails():
+    """Iterates over the email addresses for the keys in the gpgkeysdir."""
     for name in os.listdir(gpgkeysdir):
         if name.endswith('.pub'):
-            import_public_key(name[:-4])
+            yield name[:-4]
+
+def import_public_test_keys():
+    """Imports all the public keys located in gpgkeysdir into the db."""
+    for email in iter_test_key_emails():
+        import_public_key(email)
 
 def import_secret_test_key():
     """Imports the secret key located in gpgkeysdir into local keyring."""
@@ -59,7 +70,19 @@ def import_secret_test_key():
 
     seckey = open(os.path.join(gpgkeysdir, 'test@canonical.com.sec')).read()
     gpghandler.importKey(seckey)               
-            
 
+def test_pubkey_file_from_email(email_addr):
+    """Get the file name for a test pubkey by email address."""
+    return os.path.join(gpgkeysdir, email_addr + '.pub')
+
+def test_pubkey_from_email(email_addr):
+    """Get the on disk content for a test pubkey by email address."""
+    return open(test_pubkey_file_from_email(email_addr)).read()
+
+def test_keyrings():
+    """Iterate over the filenames for test keyrings."""
+    for name in os.listdir(gpgkeysdir):
+        if name.endswith('.gpg'):
+            yield os.path.join(gpgkeysdir, name)
 
 

@@ -14,9 +14,10 @@
             set_schema="canonical.launchpad.interfaces.ITranslationGroup" />
     </content>
 
-    <browser:traverse
-      for="canonical.launchpad.interfaces.ITranslationGroup"
-      getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="TranslationGroupNavigation TranslationGroupSetNavigation"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ITranslationGroup"
@@ -30,6 +31,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.ITranslationGroup"
+        facet="translations"
         class="canonical.launchpad.browser.TranslationGroupView"
         permission="zope.Public">
         <browser:page
@@ -46,6 +48,7 @@
     <browser:page
         name="+rm"
         for="canonical.launchpad.interfaces.ITranslationGroup"
+        facet="translations"
         permission="launchpad.Edit"
         class="canonical.launchpad.browser.TranslationGroupView"
         attribute="removals"
@@ -54,6 +57,7 @@
     <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.ITranslationGroup"
+        facet="translations"
         label="Modify Translation Group Details:"
         fields="name title summary"
         permission="launchpad.Edit"
@@ -63,6 +67,7 @@
     <browser:addform
         name="+appoint"
         for="canonical.launchpad.interfaces.ITranslationGroup"
+        facet="translations"
         schema="canonical.launchpad.interfaces.ITranslator"
         fields="translationgroup language translator"
         keyword_arguments="translationgroup language translator"
@@ -76,28 +81,24 @@
             class="canonical.widgets.ContextWidget" />
     </browser:addform>
 
-    <!-- TranslationGroupSet -->
 
+    <!-- TranslationGroupSet -->
     <securedutility
       class="canonical.launchpad.database.TranslationGroupSet"
       provides="canonical.launchpad.interfaces.ITranslationGroupSet" >
       <allow interface="canonical.launchpad.interfaces.ITranslationGroupSet" />
     </securedutility>
 
-    <browser:suburl
-        for="canonical.launchpad.interfaces.IRosettaApplication"
-        utility="canonical.launchpad.interfaces.ITranslationGroupSet"
-        name="groups" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="RosettaApplicationNavigation"
+        />
 
     <browser:url
         for="canonical.launchpad.interfaces.ITranslationGroupSet"
         path_expression="string:groups"
         parent_utility="canonical.launchpad.interfaces.IRosettaApplication"
         />
-
-    <browser:traverse
-      for="canonical.launchpad.interfaces.ITranslationGroupSet"
-      getter="__getitem__" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ITranslationGroupSet"
@@ -118,6 +119,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.ITranslationGroupSet"
+        facet="translations"
         permission="zope.Public">
         <browser:page
             template="../templates/translationgroups.pt"

@@ -7,17 +7,10 @@
 
 <metal:rightportlets fill-slot="portlets_two">
 
-<div class="portlet">
-
-    <h4>Actions:</h4>
-
-    <div class="portletBody">
-      <div class="portletContent even">
+<div class="portlet portletBody portletContent">
         <ul>
           <li class="edit"><a href="+edit">Edit template name</a></li>
         </ul>
-      </div>
-    </div>
 </div>
 
 </metal:rightportlets>
@@ -26,7 +19,7 @@
 
   <h1>Template name details</h1>
 
-    <table class="data">
+    <table class="listing">
       <tbody>
         <tr>
           <td>
@@ -50,7 +43,7 @@
 
     <h2>PO Templates using this PO Template Name</h2>
 
-    <table class="data">
+    <table class="listing">
       <tbody>
         <tr tal:repeat="potemplate view/potemplates">
           <td>

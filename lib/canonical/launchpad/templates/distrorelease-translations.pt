@@ -20,43 +20,19 @@
 
   <h1 i18n:translate="">Translation Status</h1>
 
-  <p class="documentDescription">The translation status of
+  <p class="documentDescription">This is the translation status of
     <span tal:replace="context/distribution/displayname">Ubuntu</span>
-    <span tal:replace="context/displayname">Hoary</span> is shown below, by
-    language.
+    <span tal:replace="context/displayname">Hoary</span> by language.
   </p>
 
-  <table class="sortable listing" width="100%" id="languagestats">
-    <thead>
-      <tr>
-        <th>Language</th>
-        <th>Status</th>
-        <th>Contributors</th>
-        <th>Todo</th>
-      </tr>
-    </thead>
+  <div tal:replace="structure context/@@+langchart" />
+  <div tal:replace="structure context/@@+rosetta-status-legend" />
 
-    <tbody>
-      <tr tal:repeat="drlang view/distroreleaselanguages">
-        <td>
-          <a tal:attributes="href string:${drlang/fmt:url}"
-             tal:content="drlang/language/englishname">
-             Language Name
-          </a>
-        </td>
-        <td>
-          <div tal:replace="structure drlang/@@+barchart" />
-        </td>
-        <td tal:content="drlang/contributor_count">16</td>
-        <td tal:content="drlang/untranslatedCount">42344</td>
-      </tr>
-    </tbody>
-  </table>
-
-  <p>
-    Select languages that you specifically want to be shown
-    <a href="/rosetta/prefs/">here</a>.
-  </p>
+  <ul>
+    <li class="search">
+      <a href="/rosetta/prefs">Customize displayed languages</a>
+    </li>
+  </ul>
 </div>
 </body>
 </html>

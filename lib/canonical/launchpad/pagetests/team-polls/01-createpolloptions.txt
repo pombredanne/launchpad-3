@@ -1,7 +1,7 @@
 
 
   >>> print http(r"""
-  ... GET /people/name17/+poll/dpl-2080/+options/+new HTTP/1.1
+  ... GET /people/name17/+poll/dpl-2080/+newoption HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 403 Forbidden
@@ -13,10 +13,7 @@
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...
-            Create a new option for poll
-            &#8220;Debian Project Leader Election 2080&#8221;
-  ...
+  ...Add a Poll Option...
 
 
   >>> print http(r"""
@@ -29,7 +26,7 @@
   ... 
   ... Bill amazingly-huge-middle-name-almost-impossible-to-read Graham
   ... -----------------------------787692318512460570977813785
-  ... Content-Disposition: form-data; name="field.shortname"
+  ... Content-Disposition: form-data; name="field.title"
   ... 
   ... Bill Graham
   ... -----------------------------787692318512460570977813785
@@ -45,8 +42,12 @@
 
 
   >>> print http(r"""
-  ... GET /people/name17/+poll/dpl-2080 HTTP/1.1
+  ... GET /people/name17/+poll/dpl-2080/+options HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...
+  ...Options...
+  ...Bill amazingly-huge-middle-name-almost-impossible-to-read Graham...
+  ...
+

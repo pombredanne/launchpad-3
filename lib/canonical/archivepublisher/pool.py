@@ -189,7 +189,7 @@ class DiskPool:
             # Remove it from the component
             self.components[component].pop(leafname)
             # Remove it from the file list
-            self.files.remove(leafname)
+            self.files.pop(leafname)
             return
         # It is not a symlink and it's not the only entry for it
         # We have to shuffle the symlinks around

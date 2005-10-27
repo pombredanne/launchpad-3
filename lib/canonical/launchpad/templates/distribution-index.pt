@@ -1,0 +1,87 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:condition="context/currentrelease"
+         tal:replace="structure context/currentrelease/@@+portlet-langstats"
+         />
+    <div tal:replace="structure context/@@+portlet-bounties" />
+    <div tal:replace="structure context/@@+portlet-milestones" />
+    <div tal:replace="structure context/@@+portlet-latestspecs" />
+</metal:leftportlets>
+
+
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-latestbugs" />
+    <div tal:replace="structure context/@@+portlet-latesttickets" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1><span tal:replace="context/title">TITLE</span>:
+    Distribution Overview</h1>
+
+  <p class="documentDescription" tal:content="context/summary">
+      Distribution Summary
+  </p>
+
+  <table width="100%" class="listing">
+    <thead>
+      <tr>
+        <th>Release</th>
+        <th>Title</th>
+        <th>Version</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="release context/releases">
+        <td tal:content="release/displayname">displayname</td>
+        <td><a tal:content="release/title"
+               tal:attributes="href string:${release/name}">
+               distribution name</a>
+        </td>
+        <td tal:content="release/version">VERSION</td>
+        <td tal:content="release/releasestatus/title">RELEASESTATE</td>
+      </tr>
+    </tbody>
+  </table>
+
+    <i tal:condition="not: context/releases">
+      No releases yet.
+    </i>
+
+  <div class="highlighted" style="font-size: 80%;">
+    <p tal:replace="structure context/description/fmt:text-to-html">
+        Distribution description
+    </p>
+  </div>
+
+  <h2>Search Source Packages</h2>
+
+  <form name="search" action="+search" method="GET">
+  
+    <input type="text"
+      name="text"
+      size="35"
+      tal:attributes="value request/name|nothing" />
+
+    <input type="submit" value="Search"/>
+
+  </form>
+
+  <p class="discreet">
+    Search for a software package in this distribution using the form above.
+    You will be shown a list of matching source packages, and can explore
+    the archive from there.
+  </p>
+
+</div>
+
+</body>
+</html>

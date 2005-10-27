@@ -98,6 +98,35 @@ Although you technically *could* iterate over these, in launchpad it
 would be stupid to do so due to their expected size on the production
 database.
 
+o ProjectVocabulary - the list of selectable projects. The results are
+  ordered by displayname.
+
+    >>> project_vocabulary = vocabulary_registry.get(None, "Project")
+    >>> [p.title for p in project_vocabulary.search('mozilla')]
+    [u'The Mozilla Project']
+    >>> mozilla = project_vocabulary.getTermByToken('mozilla')
+    >>> mozilla.title
+    u'The Mozilla Project'
+
+  The ProjectVocabulary does not list inactive projects.
+
+    >>> from canonical.launchpad.interfaces import IProjectSet
+    >>> moz_project = getUtility(IProjectSet)['mozilla']
+    >>> moz_project in project_vocabulary
+    True
+
+    >>> [p.title for p in project_vocabulary.search('mozilla')]
+    [u'The Mozilla Project']
+    >>> moz_project.active = False
+    >>> flush_database_updates()
+    >>> moz_project in project_vocabulary
+    False
+
+    >>> [p.title for p in project_vocabulary.search('mozilla')]
+    []
+    >>> moz_project.active = True
+    >>> flush_database_updates()
+
 o ProductVocabulary - the list of selectable products. Results are
   ordered by displayname.
 
@@ -108,13 +137,32 @@ o ProductVocabulary - the list of selectable products. Results are
     >>> l = [product_term.title for product_term in gnome_products]
     >>> l[:2]
     [u'The Evolution Groupware Application', u'The GNOME Terminal Emulator']
-    >>> l[2:4]
-    [u'The Gnome Panel Applets', u'Ubuntu']
-    >>> l[4:]
-    [u'python gnome2 dev']
+    >>> l[2:]
+    [u'The Gnome Panel Applets', u'Ubuntu', u'Gnome Baker']
     >>> arch = product_vocabulary.getTermByToken("arch-mirrors")
     >>> arch.title 
     u'Arch archive mirrors'
+
+  The ProductVocabulary does not list inactive products.
+
+    >>> arch.value in product_vocabulary
+    True
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> arch_product = getUtility(IProductSet)['arch-mirrors']
+    >>> arch_product in product_vocabulary
+    True
+
+    >>> [t.title for t in product_vocabulary.search('arch and archive')]
+    [u'Arch archive mirrors']
+    >>> arch_product.active = False
+    >>> flush_database_updates()
+    >>> arch_product in product_vocabulary
+    False
+    >>> [t.title for t in product_vocabulary.search('arch and archive')]
+    []
+    >>> arch_product.active = True
+    >>> flush_database_updates()
 
 o ProductReleaseVocabulary - the list of selectable products releases.
 
@@ -297,6 +345,13 @@ o ValidTeamOwner - With the exception of the team itself and all teams owned
     True
     >>> [t.token for t in vocab.search('foo.bar')]
     ['foo.bar@canonical.com']
+
+o Processor - all processors type available in Launchpad.
+
+    >>> vocab = vocabulary_registry.get(None, "Processor")
+    >>> stuff = vocab.search('386')
+    >>> [t.token for t in stuff]
+    ['386']
 
 o SchemaVocabulary - launchpad Schema Vocabulary..
 

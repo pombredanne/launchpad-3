@@ -9,14 +9,15 @@
     <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-translations" />
     <div tal:replace="structure context/@@+portlet-milestones" />
+    <div tal:replace="structure context/@@+portlet-latestspecs" />
+    <div tal:replace="structure context/@@+portlet-bounties" />
     <div tal:condition="context/project"
          tal:replace="structure context/project/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-actions" />
-    <div tal:replace="structure context/@@+portlet-latest-bugs" />
-    <div tal:replace="structure context/@@+portlet-bounties" />
+    <div tal:replace="structure context/@@+portlet-latestbugs" />
+    <div tal:replace="structure context/@@+portlet-latesttickets" />
     <div tal:replace="structure context/@@+portlet-packages" />
     <div tal:replace="structure context/@@+portlet-calendar" />
 </metal:rightportlets>

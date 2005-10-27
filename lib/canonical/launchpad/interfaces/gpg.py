@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'IGPGKey',
     'IGPGKeySet',
+    'KEYSERVER_QUERY_URL',
     ]
 
 from zope.schema import Bool, Int, TextLine, Choice
@@ -14,6 +15,10 @@ from zope.interface import Interface, Attribute
 from canonical.launchpad import _
 
 from canonical.launchpad.validators.gpg import valid_fingerprint, valid_keyid
+
+KEYSERVER_QUERY_URL = (
+    'http://keyserver.ubuntu.com:11371/pks/lookup?op=get&search=0x')
+
 
 class IGPGKey(Interface):
     """GPG support"""
@@ -29,6 +34,8 @@ class IGPGKey(Interface):
     active = Bool(title=_("Active"), required=True)
     displayname = Attribute("Key Display Name")
     revoked = Attribute("Workarrounded Revoked flag, temporary.")
+    keyserverURL = Attribute("The URL to retrieve this key from the keyserver.")
+
 
 class IGPGKeySet(Interface):
     """The set of GPGKeys."""
@@ -59,9 +66,10 @@ class IGPGKeySet(Interface):
 
         Returns the modified key or None if the key wasn't found.
         """
-        
+
     def getGPGKeys(ownerid=None, active=True):
-        """Return GPG keys, optionally for a given owner and or a given
-        status.
-        """ 
+        """Return GPG keys ordered by id.
+
+        Optionally for a given owner and or a given status.
+        """
 

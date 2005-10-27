@@ -1,0 +1,20 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div class="shipitPortlet"
+       tal:content="structure context/@@+portlet-navigation" />
+</metal:rightportlets>
+
+<body>
+
+  <div metal:fill-slot="main">
+
+    <div metal:use-macro="context/@@launchpad_editform/editform" />
+    
+  </div>
+
+  </body>
+</html>

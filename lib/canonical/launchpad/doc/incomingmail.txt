@@ -76,6 +76,10 @@ mail will get filed in there:
     >>> LibrarianTestSetup().setUp()
 
     >>> handleMail()
+    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
+    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
+    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
+    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
 
 Now we can see that each handler handled that mails sent to its domain:
 
@@ -96,6 +100,7 @@ errors_address.
     >>> len(error_handler.handledMails)
     0
     >>> handleMail()
+    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
     >>> len(error_handler.handledMails)
     1
 
@@ -142,6 +147,7 @@ address the email was sent to:
     ...     msg['From'], ['123@bar.com'], msg.as_string())
     >>> transaction.commit()
     >>> handleMail()
+    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
     >>> msgid in bar_handler.handledMails
     True
 
@@ -151,6 +157,41 @@ the To and CC headers will be ignored:
     >>> msgid in foo_handler.handledMails
     False
 
+Handling bounces
+----------------
+
+Some broken mailers might not respect the Errors-To and Return-Path
+headers, send error messages back to the address, from which the email
+was sent. To prevent mail loops, we try to detect such errors, and
+simply drop the emails.
+
+Emails with an empty Return-Path header should be dropped:
+
+    >>> stub.test_emails = []
+    >>> msg = read_test_message('signed_detached.txt')
+    >>> msg.replace_header('To', '123@foo.com')
+    >>> msg['Return-Path'] = '<>'
+    >>> msgid = '<%s>' % sendmail(msg)
+    >>> transaction.commit()
+    >>> handleMail()
+    >>> msgid in foo_handler.handledMails
+    False
+
+Since this shouldn't occur that often, an email is sent about it to the
+errors-list. This is to make it easier to detect any errors, and fine
+tune it. Later we might simply drop the email without noticing anyone
+about it.
+
+    >>> from_addr, to_addr, raw_mail = stub.test_emails[-1]
+    >>> error_mail = email.message_from_string(raw_mail)
+    >>> error_mail['To'] == config.launchpad.errors_address
+    True
+    >>> print error_mail['Subject']
+    Unhandled Email:...
+    >>> print error_mail.get_payload()
+    The following email was unhandled:
+    ...
+    Message had an empty Return-Path.
+
     >>> LibrarianTestSetup().tearDown()
     >>> config.malone.bugmail_error_from_address = old_error_from_address
-

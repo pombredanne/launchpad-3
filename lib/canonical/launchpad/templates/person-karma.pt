@@ -9,7 +9,7 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-actions" />
+  <div tal:replace="structure context/@@+portlet-calendar" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -27,7 +27,7 @@
         <li>
           <span tal:replace="actionCategory/title" />
 
-          <table class="listing data">
+          <table class="listing">
             <thead>
               <tr>
                 <th>Action</th>

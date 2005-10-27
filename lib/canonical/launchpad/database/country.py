@@ -7,7 +7,7 @@ from zope.interface import implements
 
 from sqlobject import StringCol, RelatedJoin
 
-from canonical.launchpad.interfaces import ICountry, ICountrySet
+from canonical.launchpad.interfaces import ICountry, ICountrySet, NotFoundError
 from canonical.database.sqlbase import SQLBase
 
 
@@ -42,7 +42,7 @@ class CountrySet:
     def __getitem__(self, iso3166code2):
         country = Country.selectOneBy(iso3166code2=iso3166code2)
         if country is None:
-            raise KeyError(iso3166code2)
+            raise NotFoundError(iso3166code2)
         return country
 
     def __iter__(self):

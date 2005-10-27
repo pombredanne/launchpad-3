@@ -1,0 +1,27 @@
+<div class="portlet">
+  <h4><span tal:replace="context/name" />:</h4>
+  
+  <div class="portletBody portletContent">
+	
+    <b>Title:</b>
+    <span tal:replace="context/title" /><br />
+
+    <b>Voting Team:</b>
+    <a tal:attributes="href context/team/fmt:url"
+       tal:content="context/team/browsername" /><br />
+
+    <b>Opens:</b>
+    <span tal:replace="context/dateopens/fmt:date" /><br />
+
+    <b>Closes:</b>
+    <span tal:replace="context/datecloses/fmt:date" /><br />
+
+    <b>Type:</b>
+    <span tal:replace="context/type/title" /><br />
+
+    <b>Secrecy:</b>
+    <span tal:replace="context/secrecy/title" /><br />
+
+  </div>
+
+</div>

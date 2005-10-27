@@ -2,12 +2,13 @@
 
 __metaclass__ = type
 
-__all__ = ['KarmaActionSetView']
+__all__ = ['KarmaActionSetView', 'KarmaActionSetNavigation']
 
 from zope.component import getUtility
 
 from canonical.lp.dbschema import KarmaActionCategory
 from canonical.launchpad.interfaces import IKarmaActionSet
+from canonical.launchpad.webapp import Navigation
 
 
 class KarmaActionSetView:
@@ -22,3 +23,10 @@ class KarmaActionSetView:
     def actions(self, actionCategory):
         return getUtility(IKarmaActionSet).selectByCategory(actionCategory)
 
+
+class KarmaActionSetNavigation(Navigation):
+
+    usedfor = IKarmaActionSet
+
+    def traverse(self, name):
+        return self.context.getByName(name)

@@ -18,7 +18,7 @@ set -e
 
 exec 2>&1
 
-set -x
+echo "Unmounting chroot for build $BUILDID..."
 
 #$SUDO umount "$HOME/build-$BUILDID/chroot-autobuild/proc"
 #$SUDO umount "$HOME/build-$BUILDID/chroot-autobuild/dev/pts"

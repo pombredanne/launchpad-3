@@ -13,6 +13,12 @@ If you are wondering why we use `PgTestSetup().setUp()` and
 `pgtestsetup.tearDown()`, it is because I'm mirroring the design used in
 Zope3's `FunctionalTestSetup`.
 
+canonical.functional.FunctionalTestCase
+---------------------------------------
+
+This is a customised zope3 FunctionalTestCase and should be used when you
+simply need the zope3 utilities etc available.
+
 PgTestSetup
 -----------
 
@@ -172,7 +178,7 @@ the Librarian as a Utility.
 >>> librarian_client = zapi.getUtility(ILibrarianClient)
 >>> file_alias_id = librarian_client.addFile(
 ...     'hi.txt', size, some_content, 'text/plain')
->>> isinstance(file_alias_id, int)
+>>> isinstance(file_alias_id, (int, long))
 True
 
 Note that you currently can't retrieve a file from the Librarian in

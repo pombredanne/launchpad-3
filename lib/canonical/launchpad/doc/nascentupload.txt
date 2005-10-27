@@ -1,0 +1,273 @@
+== The nascent uploads ==
+
+(First some setup. We need a librarian for this test.)
+
+  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+  >>> LibrarianTestSetup().setUp()  
+
+We also need to set up the GPG key used to sign things so that we can
+identify the upload signer later on.
+
+  >>> from canonical.launchpad.interfaces import IGPGKeySet
+  >>> from canonical.lp.dbschema import GPGKeyAlgorithm
+  >>> discarded_key = getUtility(IGPGKeySet).new(26, '20687895',
+  ...     '961F4EB829D7D304A77477822BC8401620687895', 1024, GPGKeyAlgorithm.D)
+
+Next we import the test keys so we have them ready for verification
+
+  >>> from canonical.launchpad.ftests import import_public_test_keys
+  >>> import_public_test_keys()
+
+A nascent upload is a collection of files in a directory. They
+represent what may turn out to be an acceptible upload to a launchpad
+managed archive.
+
+  >>> from canonical.archivepublisher.nascentupload import NascentUpload
+  >>> from canonical.archivepublisher.uploadpolicy import findPolicyByName
+  >>> from canonical.archivepublisher.tests import datadir
+
+  >>> class MockLogger:
+  ...     def debug(self, s):
+  ...         print "DEBUG:", s
+
+The policy we feed to to the nascent upload needs to have its command
+line options passed in.
+
+  >>> class MockOptions:
+  ...     distro = "ubuntu"
+  ...     distrorelease = "hoary"
+
+  >>> class BuilddOptions(MockOptions):
+  ...     buildid = 1
+
+  >>> buildd_policy = findPolicyByName('buildd')
+  >>> buildd_policy.setOptions(BuilddOptions())
+
+When initially constructing a NascentUpload instance, it verifies that
+the changes file specified exists, raising FileNotFound if it does not.
+
+  >>> NascentUpload(buildd_policy, datadir(""), "DOES-NOT-EXIST",
+  ...     MockLogger())
+  Traceback (most recent call last):
+  ...
+  FileNotFound: DOES-NOT-EXIST
+  >>> ed_upload = NascentUpload(findPolicyByName('insecure'), 
+  ...     datadir(''), "ed_0.2-20_i386.changes", MockLogger())
+  >>> ed_upload.changes_filename == datadir("ed_0.2-20_i386.changes")
+  True
+  >>> ed_upload.policy.setOptions(MockOptions())
+
+The nascent upload contains files (assuming it's sane) and as such we
+have a NascentUploadedFile type to represent them.
+
+  >>> from canonical.archivepublisher.nascentupload import NascentUploadedFile
+
+To construct a nascentuploadedfile we need an fsroot and a line from a
+Files section of a changes file.
+
+  >>> nuf = NascentUploadedFile(
+  ...     datadir(''),
+  ...     ' 0c466ce6a160c62fa558fbbb46a4ea45 44718 editors important '
+  ...     'ed_0.2-20_i386.deb')
+  >>> nuf.filename
+  'ed_0.2-20_i386.deb'
+  >>> nuf._size
+  44718
+  >>> nuf._digest
+  '0c466ce6a160c62fa558fbbb46a4ea45'
+  >>> nuf.section
+  'editors'
+  >>> nuf.priority
+  'important'
+
+When we ask the object for its size or digest through the properties,
+it will check them. If they're correct, no exception will be raised.
+
+  >>> nuf.size
+  44718
+  >>> nuf.digest
+  '0c466ce6a160c62fa558fbbb46a4ea45'
+  >>> nuf.sha_digest
+  'e5c467ca14ab67f73f8cbb9bb9016f670b14c8b7'
+  >>> nuf._values_checked
+  True
+
+Going back to the upload itself, at a very basic level a NascentUpload
+allows us to probe the contents of the changes file to see things like
+the maintainer.
+
+  >>> ed_upload.changes['maintainer']
+  'James Troup <james@nocrew.org>'
+
+We can also extract the list of files from the upload. If this raises
+an exception then the file list is utterly broken.
+
+  >>> for uploaded_file in ed_upload.files:
+  ...     print uploaded_file.filename
+  ed_0.2-20.dsc
+  ed_0.2-20.diff.gz
+  ed_0.2-20_i386.deb
+
+The nascent upload can tell us if it is sourceful or not, (ditto binaryful)
+
+  >>> ed_upload.sourceful
+  True
+  >>> ed_upload.binaryful
+  True
+  >>> ed_upload.archindep
+  False
+  >>> ed_upload.archdep
+  True
+
+  >>> ed_source_upload = NascentUpload(buildd_policy,
+  ...     datadir(''), "ed_0.2-20_i386.source-only-unsigned-changes", 
+  ...     MockLogger)
+  >>> ed_source_upload.sourceful
+  True
+  >>> ed_source_upload.binaryful
+  False
+
+  >>> ed_binary_upload = NascentUpload(buildd_policy,
+  ...     datadir(''), "ed_0.2-20_i386.binary-only-unsigned-changes",
+  ...     MockLogger)
+  >>> ed_binary_upload.sourceful
+  False
+  >>> ed_binary_upload.binaryful
+  True
+  >>> ed_binary_upload.archdep
+  True
+  >>> ed_binary_upload.archindep
+  False
+
+
+If the Architecture line does not match then we get an exception.
+
+  >>> ed_mismatched_upload = NascentUpload(buildd_policy,
+  ...     datadir(''), "ed_0.2-20_i386.mismatched-arch-unsigned-changes",
+  ...     MockLogger())
+  >>> ed_mismatched_upload.sourceful
+  True
+  >>> ed_mismatched_upload.rejection_message
+  'Mismatch in binaryfulness. (arch) False != (files) True'
+
+We can distinguish between the arch-indep and arch-dep binary uploads.
+
+  >>> quodlibet = NascentUpload(buildd_policy,
+  ...     datadir(''), "quodlibet_0.13.1-1_i386.changes", MockLogger())
+  >>> quodlibet.sourceful
+  False
+  >>> quodlibet.binaryful
+  True
+  >>> quodlibet.archdep
+  True
+  >>> quodlibet.archindep
+  True
+
+We can ask sourceful uploads if they are native or not. If they are
+not native we can find out if they have an orig.tar.gz or not.
+
+  >>> ed_upload.native
+  False
+  >>> ed_upload.hasorig
+  False
+
+If we ask a non-sourceful upload about its native or hasorig status it
+should throw an exception because non-sourceful uploads have no
+concept of nativeness.
+
+  >>> ed_binary_upload.native
+  Traceback (most recent call last):
+  ...
+  UploadError: Attempted to ask a non-sourceful upload if it is native or not.
+
+
+We can parse addresses and look them up in launchpad.
+
+  >>> addr = ed_upload.parse_address("Foo Bar <foo.bar@canonical.com>")
+  >>> addr['person'].displayname
+  u'Foo Bar'
+
+If the address is unparsable, we get an error.
+
+  >>> ed_upload.parse_address("Cannot Parse Me <FOOO>")
+  Traceback (most recent call last):
+  ...
+  UploadError: Cannot Parse Me <FOOO>: no @ found in email address part.
+
+
+
+The upload can extract distributions and distroreleases if it tries
+  >>> ed_upload.distro.name
+  u'ubuntu'
+  >>> ed_upload.distrorelease.name
+  u'hoary'
+
+The policy we've used so far won't allow us to upload binary or
+mixed-mode sets. We'll override this for our test set...
+
+  >>> ed_upload.policy.can_upload_binaries = True
+  >>> ed_upload.policy.can_upload_mixed = True
+
+Finally we can ask the upload to process itself.
+  >>> from canonical.launchpad.database import (
+  ...     SourcePackageName, BinaryPackageName, DistroRelease)
+  >>> hoary = DistroRelease.get(3)
+  >>> saved_list = hoary.changeslist
+  >>> hoary.changeslist = "dapper-announce@lists.ubuntu.com"
+  >>> hoary.sync()
+  >>> ed_upload.distrorelease.changeslist
+  u'dapper-announce@lists.ubuntu.com'
+  >>> ed_upload.process()
+  DEBUG: Beginning processing.
+  DEBUG: Checking signature on changes file.
+  DEBUG: Verifying signature on ed_0.2-20_i386.changes
+  DEBUG: Daniel Silverstone (26) is in main's uploaders.
+  DEBUG: Verifying the changes file.
+  DEBUG: Verifying files in upload.
+  DEBUG: Verifying source file ed_0.2-20.dsc
+  DEBUG: Verifying signature on .../data/ed_0.2-20.dsc
+  DEBUG: Verifying source file ed_0.2-20.diff.gz
+  DEBUG: Verifying binary ed_0.2-20_i386.deb
+  DEBUG: Performing overall file verification checks.
+  DEBUG: Performing DSC verification.
+  DEBUG: Verifying uploaded source package by unpacking it.
+  DEBUG: Cleaning up source tree.
+  DEBUG: Done
+  DEBUG: Verifying timestamps in ed_0.2-20_i386.deb
+  DEBUG: Finding and applying overrides.
+  DEBUG: ed: (source) NEW
+  DEBUG: ed: (binary) NEW
+  DEBUG: Finished checking upload.
+  >>> print ed_upload.rejection_message+"\nEND"
+  END
+  >>> ed_upload.rejected
+  False
+  >>> success, msgs = ed_upload.do_accept()
+  DEBUG: Attempting to decide if James Troup is in the keyring.
+  DEBUG: Decision: False
+  >>> print success
+  True
+  >>> for msg in msgs:
+  ...     print msg, "END"
+  From: Root <root@localhost>
+  To: Root <root@localhost>, Daniel Silverstone <daniel.silverstone@canonical.com>
+  Precedence: bulk
+  Subject: ed_0.2-20_i386.changes is NEW
+  <BLANKLINE>
+  NEW: ed_0.2-20.dsc
+   OK: ed_0.2-20.diff.gz
+  NEW: ed_0.2-20_i386.deb
+  <BLANKLINE>
+  Your package contains new components which requires manual editing of
+  the override file.  It is ok otherwise, so please be patient.  New
+  packages are usually added to the overrides about once a week.
+  <BLANKLINE>
+  You may have gotten the distrorelease wrong.  You'll may get warnings
+  above if files already exist in other distrorelease.
+  END
+
+(and some tear down)
+
+  >>> import transaction
+  >>> transaction.abort()
+  >>> LibrarianTestSetup().tearDown()

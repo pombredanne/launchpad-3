@@ -58,8 +58,13 @@
 
       <div tal:condition="not: members">
         <br />
-        <p>This Teaam do not have any proposed member. Please go to this
-        team's <a href=".">members</a> page to see all its members.</p>
+        <p>
+          This team does not have any proposed members. Please visit
+          this team's <a href="#"
+                  tal:attributes="href
+                  string:${context/team/fmt:url}/+members">membership</a>
+          page to see all its members.
+        </p>
       </div>
 
     </tal:block>

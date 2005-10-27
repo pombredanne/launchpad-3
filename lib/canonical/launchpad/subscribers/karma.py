@@ -8,7 +8,7 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import IPersonSet
 from canonical.launchpad.mailnotification import get_bug_delta, get_task_delta
 from canonical.lp.dbschema import (BugTaskStatus, KarmaActionName,
-     RosettaImportStatus)
+     RosettaImportStatus, RosettaTranslationOrigin)
 
 
 def bug_created(bug, event):
@@ -35,12 +35,26 @@ def bug_modified(bug, event):
     attrs_actionnames = {'title': KarmaActionName.BUGTITLECHANGED,
                          'summary': KarmaActionName.BUGSUMMARYCHANGED,
                          'description': KarmaActionName.BUGDESCRIPTIONCHANGED,
-                         'external_reference': KarmaActionName.BUGEXTREFCHANGED,
-                         'cveref': KarmaActionName.BUGCVEREFCHANGED}
+                         'duplicateof': KarmaActionName.BUGMARKEDASDUPLICATE}
 
     for attr, actionname in attrs_actionnames.items():
         if getattr(bug_delta, attr) is not None:
             user.assignKarma(actionname)
+
+
+def bugwatch_added(bugwatch, event):
+    """Assign karma to the user which added :bugwatch:."""
+    event.user.assignKarma(KarmaActionName.BUGWATCHADDED)
+
+
+def cve_added(cve, event):
+    """Assign karma to the user which added :cve:."""
+    event.user.assignKarma(KarmaActionName.BUGCVEREFADDED)
+
+
+def extref_added(extref, event):
+    """Assign karma to the user which added :extref:."""
+    event.user.assignKarma(KarmaActionName.BUGEXTREFADDED)
 
 
 def bugtask_modified(bugtask, event):
@@ -50,8 +64,20 @@ def bugtask_modified(bugtask, event):
 
     assert task_delta is not None
 
-    if task_delta.status and task_delta.status['new'] == BugTaskStatus.FIXED:
-        user.assignKarma(KarmaActionName.BUGFIXED)
+    if task_delta.status:
+        new_status = task_delta.status['new']
+        if new_status == BugTaskStatus.FIXED:
+            user.assignKarma(KarmaActionName.BUGFIXED)
+        elif new_status == BugTaskStatus.REJECTED:
+            user.assignKarma(KarmaActionName.BUGREJECTED)
+        elif new_status == BugTaskStatus.ACCEPTED:
+            user.assignKarma(KarmaActionName.BUGACCEPTED)
+
+    if task_delta.severity is not None:
+        event.user.assignKarma(KarmaActionName.BUGTASKSEVERITYCHANGED)
+
+    if task_delta.priority is not None:
+        event.user.assignKarma(KarmaActionName.BUGTASKPRIORITYCHANGED)
 
 def potemplate_modified(template, event):
     """Check changes made to <template> and assign karma to user if needed."""
@@ -85,8 +111,11 @@ def pofile_modified(pofile, event):
             KarmaActionName.TRANSLATIONIMPORTUPSTREAM)
 
 def posubmission_created(submission, event):
-    """Assign karma to the user which created <submission>."""
-    if submission.person is not None:
+    """Assign karma to the user which created <submission> if it comes from
+    the web.
+    """
+    if (submission.person is not None and
+        submission.origin == RosettaTranslationOrigin.ROSETTAWEB):
         submission.person.assignKarma(
             KarmaActionName.TRANSLATIONSUGGESTIONADDED)
 
@@ -95,6 +124,12 @@ def poselection_created(selection, event):
     """Assign karma to the submission author and the reviewer."""
     reviewer = event.user
     active = selection.activesubmission
+    published = selection.publishedsubmission
+
+    if (active is not None and published is not None and
+        active.id == published.id):
+        # The translation came from a published file so we don't add karma.
+        return
 
     if (active is not None and
         active.person is not None and

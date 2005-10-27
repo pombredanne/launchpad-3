@@ -11,11 +11,6 @@
         <allow interface="canonical.launchpad.interfaces.IBazaarApplication" />
     </securedutility>
 
-    <browser:suburl
-        for="canonical.publication.RootObject"
-        utility="canonical.launchpad.interfaces.IBazaarApplication"
-        newlayer="canonical.launchpad.layers.BazaarLayer"
-        name="bazaar" />
     <browser:url
         for="canonical.launchpad.interfaces.IBazaarApplication"
         path_expression="string:bazaar"
@@ -26,23 +21,17 @@
         for="canonical.launchpad.interfaces.IBazaarApplication"
         name="+index" />
 
-    <!-- deprecated productset under bazaar -->
-    <browser:suburl
-        for="canonical.launchpad.interfaces.IBazaarApplication"
-        utility="canonical.launchpad.interfaces.IProductSet"
-        name="products" />
-
-    <!-- deprecated productseriesset under bazaar -->
-    <browser:suburl
-        for="canonical.launchpad.interfaces.IBazaarApplication"
-        utility="canonical.launchpad.interfaces.IProductSeriesSet"
-        name="series" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BazaarApplicationNavigation"
+        />
 
     <!-- pages for the bazaar application -->
     <browser:pages
         for="canonical.launchpad.interfaces.IBazaarApplication"
         permission="zope.Public"
         class="canonical.launchpad.browser.BazaarApplicationView"
+        facet="overview"
         lp:url="bazaar">
         <browser:page
             name="+index"

@@ -1,0 +1,53 @@
+Make sure we can view the AddTicket Web Page
+
+  >>> print http(r"""
+  ... GET /products/firefox/+addticket HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...Make a support request...
+  ...
+
+
+Now we can post a ticket.
+
+
+  >>> print http(r"""
+  ... POST /products/firefox/+addticket HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------61384852414771898941330942548
+  ... Content-Length: 464
+  ...
+  ... -----------------------------61384852414771898941330942548
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... add request test
+  ... -----------------------------61384852414771898941330942548
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... This is an add request test
+  ... -----------------------------61384852414771898941330942548
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------61384852414771898941330942548--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/products/firefox/+ticket/8
+  ...
+
+
+After posting the ticket, it should redirect to the posted ticket page.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+ticket/8 HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ... 
+  ...This is an add request test...
+  ...
+
+

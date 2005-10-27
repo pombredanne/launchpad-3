@@ -40,8 +40,10 @@ class ISignedCodeOfConduct(Interface):
 
     owner = Choice(
         title=_('Owner'), required=True, vocabulary='ValidOwner',
-        description=_('The owner of the signature. '
-                      'This must be a valid Person.'))
+        description=_(
+            """The person who signed the code of conduct by mail or fax."""
+        )
+        )
 
     signedcode = Text(title=_("Signed Code"),
                       description=_("""GPG Signed Code of Conduct.
@@ -71,7 +73,7 @@ class ISignedCodeOfConduct(Interface):
         )
 
     active = Bool(title=_("Active"),
-                  description=_("Whether or not this Signed CoC"
+                  description=_("Whether or not this Signed CoC "
                                 "is considered active.")
                   )
 
@@ -79,7 +81,7 @@ class ISignedCodeOfConduct(Interface):
     displayname = Attribute("Fancy Title for CoC.")
 
     def sendAdvertisementEmail(subject, content):
-        """ Send Advertisement email to signature owner preferred address
+        """Send Advertisement email to signature owner preferred address
         containing arbitrary content and subject.
         """
 
@@ -90,7 +92,13 @@ class ICodeOfConductSet(Interface):
     title = Attribute('Page Title propose')
 
     def __getitem__(version):
-        """Get a original CoC Release by its version."""
+        """Get a original CoC Release by its version
+
+        The version 'console' is a special bind for 'Adminitrative Console
+        Interface via ISignedCodeOfConductSet.
+        If the requested version was not found in the filesystem, it returns
+        None, generating a NotFoundError.
+        """
 
     def __iter__():
         """Iterate through the original CoC releases in this set."""

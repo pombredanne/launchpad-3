@@ -1,0 +1,38 @@
+<metal:header define-macro="table-listing">
+  <tal:comment replace="nothing">
+  This macro expects the following variables defined:
+      :bugtasks: A list of IBugTasks's to be listed
+  </tal:comment>
+    <table class="listing" tal:condition="bugtasks">
+      <thead>
+        <tr>
+          <th>CVE</th>
+          <th>Bug Title</th>
+          <th>Source Package</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="bugtask bugtasks">
+          <td>
+            <tal:block repeat="cve bugtask/bug/cves">
+              <img src="/++resource++link_icon.gif" />
+              <a tal:content="cve/displayname"
+                 tal:attributes="href cve/fmt:url">CVE-1999-1234</a><br />
+            </tal:block>
+          </td>
+          <td>
+            <a tal:content="bugtask/bug/title"
+               tal:attributes="href bugtask/bug/fmt:url"
+               >Foo Bar does not work</a>
+          </td>
+          <td tal:content="bugtask/sourcepackagename/name">apache2</td>
+          <td>
+            <span tal:content="bugtask/status/title"
+                  tal:attributes="class string:status${bugtask/status/title}"
+                  >Accepted</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+</metal:header>

@@ -5,6 +5,8 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+<facet facet="bounties">
+
   <!-- Bounty -->
   <content class="canonical.launchpad.database.Bounty">
     <allow interface="canonical.launchpad.interfaces.IBounty" />
@@ -55,21 +57,11 @@
             lp:url="/bounties/$Bounty.name/+subscribe" />
     </browser:pages>
 
-    <browser:pages
-        for="canonical.launchpad.interfaces.IBounty"
-        class="canonical.launchpad.browser.BountyView"
-        permission="zope.Public">
-        <browser:page
-            name="+portlet-actions"
-            template="../templates/bounty-portlet-actions.pt"
-            />
-    </browser:pages>
-
     <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.IBounty"
         class="canonical.launchpad.browser.BountyEditView"
-        label="Modify Bounty Details"
+        label="Change Bounty Details"
         fields="title bountystatus summary difficulty description"
         permission="launchpad.Edit"
         template="../templates/bounty-edit.pt"
@@ -84,6 +76,21 @@
         template="../templates/bounty-edit.pt"
         />
 
+  <browser:addform
+    name="+addmessage"
+    for="canonical.launchpad.interfaces.IBounty"
+    schema="canonical.launchpad.interfaces.IMessage"
+    class="canonical.launchpad.browser.MessageAddView"
+    label="Add Message or Comment"
+    fields="subject content owner"
+    keyword_arguments="subject content owner"
+    permission="launchpad.AnyPerson"
+    template="../templates/message-add.pt">
+    <browser:widget
+      field="owner"
+      class="canonical.widgets.HiddenUserWidget" />
+  </browser:addform>
+
 
     <!-- BountySet -->
     <content class="canonical.launchpad.database.BountySet">
@@ -96,20 +103,16 @@
         <allow interface="canonical.launchpad.interfaces.IBountySet" />
     </securedutility>
 
-    <browser:suburl
-        for="canonical.publication.RootObject"
-        utility="canonical.launchpad.interfaces.IBountySet"
-        name="bounties" />
-
     <browser:url
         for="canonical.launchpad.interfaces.IBountySet"
         path_expression="string:bounties"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IBountySet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BountySetNavigation"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBountySet"
@@ -119,7 +122,7 @@
         name="+new"
         for="canonical.launchpad.interfaces.IBountySet"
         schema="canonical.launchpad.interfaces.IBounty"
-        label="Register A New Bounty"
+        label="Register a New Bounty"
         fields="name title summary usdvalue difficulty description"
         class="canonical.launchpad.browser.BountyAddView"
         permission="launchpad.AnyPerson"
@@ -131,18 +134,21 @@
       for="canonical.launchpad.interfaces.IBountySet"
       permission="zope.Public">
       <browser:page
-        template="../templates/bounties.pt"
+        template="../templates/bounties-index.pt"
         name="+index"
         lp:url="/bounties/+index" />
       <browser:page
         template="../templates/bounties-portlet-about.pt"
         name="+portlet-about" />
       <browser:page
-        template="../templates/bounties-portlet-actions.pt"
-        name="+portlet-actions" />
-      <browser:page
-        template="../templates/bounties-portlet-rules.pt"
-        name="+portlet-rules" />
+        template="../templates/bounties-portlet-details.pt"
+        name="+portlet-details" />
     </browser:pages>
 
+    <browser:menus
+        module="canonical.launchpad.browser.bounty"
+        classes="BountiesAppMenu BountyContextMenu"
+        />
+
+</facet>
 </configure>

@@ -70,7 +70,7 @@
 
         <div class="formControls">
 
-            <input class="context" type="submit"
+            <input type="submit"
                    tabindex="5"
                    name="form.button.Register"
                    value="Register" />

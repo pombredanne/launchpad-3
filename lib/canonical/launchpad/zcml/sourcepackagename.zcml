@@ -28,6 +28,7 @@
 
     <browser:pages
          for="canonical.launchpad.interfaces.ISourcePackageNameSet"
+         facet="overview"
          permission="zope.Public"
          class="canonical.launchpad.browser.SourcePackageNameSetView">
         <browser:page
@@ -40,6 +41,7 @@
     <browser:addform
         name="+new"
         for="canonical.launchpad.interfaces.ISourcePackageNameSet"
+        facet="overview"
         schema="canonical.launchpad.interfaces.ISourcePackageName"
         label="Create a new Source Package Name"
         fields="name"

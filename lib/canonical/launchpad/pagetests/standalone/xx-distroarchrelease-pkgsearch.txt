@@ -2,9 +2,7 @@ Check if the DistroArchRelease package search page is not broken.
 This page is used to search binarypackages in a distroarchrelease context
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/warty/i386/+pkgsearch HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.5
-  ... Cookie: tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"; CP=null*; gallery_sessionadd_photos_mode=url
+  ... GET /distros/ubuntu/warty/i386/+search HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -12,10 +10,7 @@ This page is used to search binarypackages in a distroarchrelease context
 Make a search and check if the result page is not broken.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/warty/i386/+pkgsearch?name=firefox HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.5
-  ... Cookie: tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"; CP=null*; gallery_sessionadd_photos_mode=url
-  ... Referer: http://localhost:9000/distros/ubuntu/warty/i386/+pkgsearch
+  ... GET /distros/ubuntu/warty/i386/+search?name=firefox HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...

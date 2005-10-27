@@ -6,6 +6,43 @@
 
 <body>
 
+<metal:macros fill-slot="bogus">
+  <metal:macro define-macro="person">
+      <a tal:attributes="href string:/people/${context/person/name}"
+        tal:content="string: ${context/person/browsername}
+                             (${context/person/name})"></a>
+  </metal:macro>
+  <metal:macro define-macro="error">
+    <tr><td colspan="2">
+      &nbsp;
+      <p class="portalError" tal:condition="view/errormessage"
+         tal:content="view/errormessage" />
+    </td></tr>
+  </metal:macro>
+  <metal:macro define-macro="comment">
+    <tr>
+      <th>Comment:</th>
+      <td><textarea cols="40" name="comment" 
+                    tal:content="request/comment|context/reviewercomment|nothing">
+          </textarea></td>
+    </tr>
+  </metal:macro>
+  <metal:macro define-macro="expiry-radios">
+    <label for="never">
+      <input tal:attributes="checked python: view.neverExpiresIsSelected()
+                                             and 'checked' or ''"
+             type="radio" id="never" value="never" name="expires" />
+        Never<br />
+    </label>
+    <label for="date">
+      <input tal:attributes="checked python: view.expiresIsSelected()
+                                             and 'checked' or ''"
+      type="radio" id="date" value="date" name="expires" />
+      On
+    </label>
+  </metal:macro>
+</metal:macros>
+
 <div metal:fill-slot="main">
 
       <div tal:condition="view/isActive"> 
@@ -13,76 +50,48 @@
         <h1>Active Member</h1>
 
         <p>
-          <a tal:attributes="href string:/people/${context/person/name}"
-            tal:content="string: ${context/person/browsername}
-                                 (${context/person/name})"></a>
+          <metal:person use-macro="template/macros/person" />
           is an <em>Active Member</em> of 
           <span tal:replace="context/team/browsername" />.
-          In this page you can change the expiration date for this subscription,
-          promote/demote the member to/from the Administrator status, and you
-          can also Deactivate this subscription. You can also leave a comment
-          explaining why you're taking a given action for this subscription.</p>
-
-        <p class="portalMessage" tal:condition="view/errormessage"
-           tal:content="view/errormessage" />
+        </p>
 
         <form action="" method="POST" name="editactive">
           <table>
           <tr>
-            <td style="text-align: right">Member since:</td>
+            <th>Member since:</th>
             <td tal:content="context/datejoined/fmt:date" />
           </tr>
 
           <tr>
-            <td style="text-align: right">Administrator:</td>
+            <th>Administrator:</th>
             <td>
-              <tal:block tal:condition="view/isAdmin">
+              <tal:can-change condition="view/allowChangeAdmin">
                 <label for="admin">
-                  <input type="radio" value="yes" checked name="admin" id="admin" />
+                  <input tal:attributes="checked python:view.adminIsSelected()
+                                                 and 'checked' or ''"
+                         type="radio" value="yes" name="admin" id="admin" />
                   Yes
                 </label>
                 <label for="notadmin">
-                  <input type="radio" value="no" name="admin" id="notadmin" />
+                  <input tal:attributes="checked python:not view.adminIsSelected()
+                                                 and 'checked' or ''"
+                         type="radio" value="no" name="admin" id="notadmin" />
                   No
                 </label>
-              </tal:block>
-              <tal:block tal:condition="not: view/isAdmin">
-                <tal:block tal:condition="view/userIsTeamOwnerOrLPAdmin">
-                  <label for="promote">
-                    <input type="radio" value="yes" name="admin" id="promote" />
-                    Yes
-                  </label>
-                  <label for="demote">
-                    <input type="radio" value="no" checked name="admin" id="demote" />
-                    No
-                  </label>
-                </tal:block>
-                <tal:block tal:condition="not: view/userIsTeamOwnerOrLPAdmin">
-                  <span tal:condition="view/isAdmin">Yes</span>
-                  <span tal:condition="not: view/isAdmin">No</span>
-                </tal:block>
-              </tal:block>
+              </tal:can-change>
+              <tal:cant-change condition="not: view/allowChangeAdmin">
+                <span tal:condition="view/isAdmin">Yes</span>
+                <span tal:condition="not: view/isAdmin">No</span>
+              </tal:cant-change>
             </td>
           </tr>
 
-          <tr><td colspan="2">&nbsp;</td></tr>
+          <metal:error use-macro="template/macros/error" />
+
           <tr>
-            <td style="text-align: right">Subscription expires:</td>
+            <th>Subscription expires:</th>
             <td tal:condition="view/canChangeExpirationDate">
-              <label for="never">
-                <input tal:condition="not: view/membershipExpires" checked 
-                       type="radio" id="never" value="never" name="expires" />
-                <input tal:condition="view/membershipExpires" type="radio"
-                       id="never" value="never" name="expires" />
-                  Never<br />
-              </label>
-              <label for="date">
-                <input tal:condition="view/membershipExpires" checked 
-                type="radio" id="date" value="date" name="expires" />
-                <input tal:condition="not: view/membershipExpires"
-                       type="radio" id="date" value="date" name="expires" />
-                On
-              </label>
+              <metal:radios use-macro="template/macros/expiry-radios" />
               <span tal:replace="structure view/dateChooserWithCurrentExpirationSelected" />
             </td>
             <td tal:condition="not: view/canChangeExpirationDate">
@@ -92,21 +101,20 @@
             </td>
           </tr>
 
-          <tr>
-            <td style="text-align: right">Comment:</td>
-            <td><textarea cols="40" name="comment" tal:content="request/comment|nothing">
-                </textarea></td>
-          </tr>
+          <metal:comment use-macro="template/macros/comment" />
 
           <tr>
-            <td align="left">
-              <input type="submit" value="Deactivate" name="editactive" />
-            </td>
-            <td align="right">
+            <th />
+            <td>
               <input type="submit" value="Change" name="editactive" />
+              <input type="submit" value="Deactivate" name="editactive" />
             </td>
           </tr>
         </table>
+        <div class="actions">
+          <input type="submit" value="Change" name="editactive" />
+          <input type="submit" value="Deactivate" name="editactive" />
+        </div>
 
         </form>
       </div>
@@ -114,97 +122,60 @@
       <div tal:condition="view/isInactive"> 
 
         <h1>Inactive Member</h1>
-
         <p tal:condition="view/isExpired">
-          <a tal:attributes="href string:/people/${context/person/name}"
-            tal:content="string: ${context/person/browsername}
-                                 (${context/person/name})"></a>
-          is an <em>Expired Member</em> of 
-          <span tal:replace="context/team/browsername" />. In this page you
-          can renew its subscription, turning this user into an active
-          member of this team. To do this, just select a new expiration date
-          and click on Renew.
+          <metal:person use-macro="template/macros/person" />
+          is an <em>Expired Member</em> of
+          <span tal:replace="context/team/browsername" />.
         </p>
 
         <p tal:condition="view/isDeactivated">
-          <a tal:attributes="href string:/people/${context/person/name}"
-            tal:content="string: ${context/person/browsername}
-                                 (${context/person/name})"></a>
-          is a <em>Deactivated Member</em> of 
-          <span tal:replace="context/team/browsername" />. In this page you
-          can reactivate its subscription, turning this user into an active
-          member of this team. To do this, just select a expiration date
-          and click on Reactivate.
+          <metal:person use-macro="template/macros/person" />
+          is a <em>Deactivated Member</em> of
+          <span tal:replace="context/team/browsername" />.
         </p>
-
-        <p class="portalMessage" tal:condition="view/errormessage"
-           tal:content="view/errormessage" />
 
         <form action="" method="POST" name="editinactive">
           <table>
           <tr>
-            <td style="text-align: right">Became member in:</td>
+            <th>Became member in:</th>
             <td tal:content="context/datejoined/fmt:date" />
           </tr>
 
-          <tal:block tal:condition="view/isExpired">
-          <tr>
-            <td style="text-align: right">Subscription expired in:</td>
-            <td tal:content="context/dateexpires/fmt:date"></td>
-          </tr>
+          <tal:expired condition="view/isExpired">
+            <tr>
+              <th>Subscription expired in:</th>
+              <td tal:content="context/dateexpires/fmt:date"></td>
+            </tr>
 
-          <tr><td colspan="2">&nbsp;</td></tr>
-          <tr>
-            <td style="text-align: right">New expiration date:</td>
-            <td>
-              <label for="never">
-                <input tal:condition="not: view/membershipExpires" checked 
-                       type="radio" id="never" value="never" name="expires" />
-                <input tal:condition="view/membershipExpires" type="radio"
-                       id="never" value="never" name="expires" />
-                  Never<br />
-              </label>
-              <label for="date">
-                <input tal:condition="view/membershipExpires" checked 
-                type="radio" id="date" value="date" name="expires" />
-                <input tal:condition="not: view/membershipExpires"
-                       type="radio" id="date" value="date" name="expires" />
-                On
-              </label>
-              <span tal:replace="structure view/dateChooserForExpiredMembers" />
-            </td>
-          </tr>
-          </tal:block>
+            <metal:error use-macro="template/macros/error" />
 
-          <tal:block tal:condition="not: view/isExpired">
-          <tr><td colspan="2">&nbsp;</td></tr>
-          <tr>
-            <td style="text-align: right">Subscription expires:</td>
-            <td>
-              <label for="never">
-                <input tal:condition="not: view/membershipExpires" checked 
-                       type="radio" id="never" value="never" name="expires" />
-                <input tal:condition="view/membershipExpires" type="radio"
-                       id="never" value="never" name="expires" />
-                  Never<br />
-              </label>
-              <label for="date">
-                <input tal:condition="view/membershipExpires" checked 
-                type="radio" id="date" value="date" name="expires" />
-                <input tal:condition="not: view/membershipExpires"
-                       type="radio" id="date" value="date" name="expires" />
-                On
-              </label>
-              <span tal:replace="structure view/dateChooserWithCurrentExpirationSelected" />
-            </td>
-          </tr>
-          </tal:block>
+            <tr>
+              <th>Expiration:</th>
+              <td>
+                <label for="leave">
+                  <input checked="checked"
+                         type="radio" id="leave" value="leave" name="expires" />
+                    Don't change<br />
+                </label>
+                <metal:radios use-macro="template/macros/expiry-radios" />
+                <span tal:replace="structure view/dateChooserForExpiredMembers" />
+              </td>
+            </tr>
+          </tal:expired>
 
-          <tr>
-            <td style="text-align: right">Comment:</td>
-            <td><textarea cols="40" name="comment" tal:content="request/comment|nothing">
-                </textarea></td>
-          </tr>
+          <tal:not-expired condition="not: view/isExpired">
+            <metal:error use-macro="template/macros/error" />
+            <tr><td colspan="2">&nbsp;</td></tr>
+            <tr>
+              <th>Subscription expires:</th>
+              <td>
+                <metal:radios use-macro="template/macros/expiry-radios" />
+                <span tal:replace="structure view/dateChooserWithCurrentExpirationSelected" />
+              </td>
+            </tr>
+          </tal:not-expired>
+
+          <metal:comment use-macro="template/macros/comment" />
 
           <tr>
             <td colspan="2" align="right">
@@ -222,66 +193,54 @@
       <div tal:condition="view/isProposed"> 
 
         <h1>Proposed Member</h1>
-
         <p>
-          <a tal:attributes="href string:/people/${context/person/name}"
-            tal:content="string: ${context/person/browsername}
-                                 (${context/person/name})"></a>
-        wants to join this team but its subscription must be
-        approved first. Just select the date you want this subscription to
-        expire and click on Approve if you want this user as a member of 
-        this team. Otherwise, if you think this user should not be made 
-        a member of this team, just click on Decline.</p>
-
+          <metal:person use-macro="template/macros/person" />
+          wants to join this team.
+          If this is okay, select a membership expiration date if necessary
+          before choosing <samp>Approve</samp>.
+        </p>
         <p class="portalMessage" tal:condition="view/errormessage"
            tal:content="view/errormessage" />
 
         <form action="" method="POST" name="editproposed">
           <table>
-          <tr>
-            <td style="text-align: right">Join requested in:</td>
-            <td tal:content="context/datejoined/fmt:date" />
-          </tr>
+            <tr>
+              <th>Membership applied for:</th>
+              <td tal:content="context/datejoined/fmt:date" />
+            </tr>
 
-          <tr><td colspan="2">&nbsp;</td></tr>
-          <tr>
-            <td style="text-align: right">Subscription expires:</td>
-            <td>
-              <label for="never">
-                <input tal:condition="not: view/membershipExpires" checked 
-                       type="radio" id="never" value="never" name="expires" />
-                <input tal:condition="view/membershipExpires" type="radio"
-                       id="never" value="never" name="expires" />
-                  Never<br />
-              </label>
-              <label for="date">
-                <input tal:condition="view/membershipExpires" checked 
-                type="radio" id="date" value="date" name="expires" />
-                <input tal:condition="not: view/membershipExpires"
-                       type="radio" id="date" value="date" name="expires" />
-                On
-              </label>
-              <span tal:replace="structure view/dateChooserForProposedMembers" />
-            </td>
-          </tr>
+            <metal:error use-macro="template/macros/error" />
 
-          <tr>
-            <td style="text-align: right">Comment:</td>
-            <td><textarea cols="40" name="comment" tal:content="request/comment|nothing">
-                </textarea></td>
-          </tr>
+            <tr>
+              <th>Subscription expires:</th>
+              <td>
+                <metal:radios use-macro="template/macros/expiry-radios" />
+                <span tal:replace="structure view/dateChooserForProposedMembers" />
+              </td>
+            </tr>
 
-          <tr>
-            <td align="left">
-              <input type="submit" value="Decline" name="editproposed" />
-            </td>
-            <td align="right">
-              <input type="submit" value="Approve" name="editproposed" />
-            </td>
-          </tr>
-        </table>
+            <metal:comment use-macro="template/macros/comment" />
+
+            <tr>
+              <th />
+              <td>
+                <input type="submit" value="Approve" name="editproposed" />
+                <input type="submit" value="Decline" name="editproposed" />
+              </td>
+            </tr>
+          </table>
 
         </form>
+
+      </div>
+
+      <div tal:condition="view/isDeclined"> 
+
+        <h1>Declined Member</h1>
+        <p>
+          <metal:person use-macro="template/macros/person" />
+          asked to join this team, but the request was declined.
+        </p>
 
       </div>
 

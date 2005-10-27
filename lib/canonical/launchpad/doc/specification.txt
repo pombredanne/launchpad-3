@@ -1,0 +1,65 @@
+Specifications
+==============
+
+A feature specification is a document that describes an idea for an
+enhancement to a product. Launchpad allows you to register your
+specification and then walk it through the approval process. You can have
+specifications for products, and also for distributions.
+
+All Milestone creation and retrieval is done through IMilestoneSet.
+IMilestoneSet can be accessed as a utility.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import ISpecificationSet
+    >>> specset = getUtility(ISpecificationSet)
+
+To create a new Specification, use ISpecificationSet.new:
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> productset = getUtility(IProductSet)
+    >>> upstream_firefox = productset.get(4)
+    >>> from canonical.launchpad.database import Person
+    >>> from canonical.lp.dbschema import SpecificationPriority
+    >>> from canonical.lp.dbschema import SpecificationStatus
+    >>> sabdfl = Person.byName('sabdfl')
+    >>> newspec = specset.new('mng', 'Support MNG Format', 'http://www.silly.me/SpecName', 'we really need this', SpecificationStatus.APPROVED, sabdfl, product=upstream_firefox)
+    >>> print newspec.name
+    mng
+
+A specification could be attached to a distribution, or a product. We call
+this the specification target.
+
+    >>> print newspec.target.name
+    firefox
+
+We attach now a spec to a distribution.
+
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> sabdfl = Person.byName('sabdfl')
+    >>> ubuspec = specset.new('fix-spec-permissions',
+    ...                       'Fix Specification Permissions',
+    ...                       'http://www.ubuntu.com/FixBrokenSpecPerms',
+    ...                       'we really need this',
+    ...                       SpecificationStatus.APPROVED,
+    ...                       sabdfl,
+    ...                       distribution=ubuntu)
+    >>> print ubuspec.name
+    fix-spec-permissions
+
+The Ubuntu distro is owned by the Ubuntu team, name17. jdub is a member,
+and therefore should be able to edit any spec attached to it (but not
+specs attached to mozilla-firefox).
+
+    >>> from canonical.launchpad.helpers import check_permission
+    >>> print ubuntu.owner.name
+    name17
+    >>> jdub = Person.byName('jdub')
+    >>> jdub.inTeam(ubuntu.owner)
+    True
+    >>> login(jdub.preferredemail.email)
+    >>> check_permission('launchpad.Edit', ubuspec)
+    True
+    >>> check_permission('launchpad.Edit', newspec)
+    False
+

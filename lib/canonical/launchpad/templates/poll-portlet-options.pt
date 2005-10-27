@@ -1,0 +1,22 @@
+<div class="portlet">
+
+  <h4>Voting options:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul tal:define="options context/getAllOptions">
+      <li tal:repeat="option options">
+        <b tal:content="option/name">name</b>:
+        <span tal:replace="option/title">The Title of the option</span>
+        (<span tal:condition="option/active"
+           >active</span><span
+           tal:condition="not: option/active">inactive</span>)
+      </li>
+      <li class="alert" tal:condition="not: options">
+        <i>No options on which to vote yet specified.</i>
+      </li>
+    </ul>
+
+  </div>
+
+</div>

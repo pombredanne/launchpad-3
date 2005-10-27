@@ -10,10 +10,6 @@
   <div tal:replace="structure context/distrorelease/@@+portlet-details" /> <br />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/distrorelease/@@+portlet-actions" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
   <h1>Source Package Search</h1>
@@ -55,7 +51,6 @@
     <div>
     	  <table>
 	  <tr>
-	  <!-- <th condition="not: prev_url"><< prev</th> -->
           <th tal:condition="prev_url">
 	       <a tal:attributes="href prev_url"><b><< Prev</b></a>
 	  </th>
@@ -66,7 +61,6 @@
           <th tal:condition="next_url" >
 	     <a tal:attributes="href next_url"><b>Next >></b></a>
           </th>
-          <!-- <th condition="not: next_url">next >></th> -->
           </tr>
 	  </table>
      </div>

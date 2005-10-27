@@ -55,6 +55,13 @@ made (eg. just indexes being added).
 Production Database Upgrades
 ============================
 
+First get a copy of the Launchpad source built and ready on emperor, readable
+by the postgres user.
+
+Then, before you do anything else, inform #canonical, #launchpad and
+#ubuntu-devel that Launchpad and the Wiki authentication systems will be
+offline for 30 minutes (or longer if there is data migration to do).
+
 Stop PostgreSQL:
 
     % pg_ctl -m fast stop
@@ -63,123 +70,50 @@ Start PostgreSQL without external connections
 
     % pg_ctl start -o '--tcpip-socket=false' -l /var/log/postgresql/postgres.log
 
-Duplicate the launchpad_prod database
+As user postgres, run the upgrade.py, fti.py and security.py scripts.
+fti.py can be skipped if you are sure no changes need to be made to the
+full text indexes (ie. fti.py has not been modified and no patches affect
+the tables being indexed). This process should work without issues, as any
+issues (such as DB patches not working on production data) will have been
+picked up from the daily updates to the staging environment. Do not run
+update.py using the --partial option to ensure that changes will be rolled
+back on failure.
 
-    % createdb -E UNICODE --template=launchpad_prod launchpad_prod_20051225
+    % cd dists/launchpad/database/schema
+    % env LPCONFIG=production \
+        python upgrade.py -d launchpad_prod -U postgres -H ''
+    % env LPCONFIG=production \
+        python fti.py -d launchpad_prod -U postgres -H ''
+    % env LPCONFIG=production \
+        python security.py -d launchpad_prod -U postgres -H ''
 
 Restart PostgreSQL with external connections
 
     % pg_ctl -m fast stop
     % pg_ctl start -l /var/log/postgresql/postgres.log
 
-At this point, services can be restarted that don't automatically reconnect,
-allowing a test upgrade to be done at leisure.
-
-Do a test upgrade
------------------
-
-Make a test database from the snapshot we just made. We don't use the
-snapshot in case we need a few attempts to get the upgrade running
-cleanly.
-
-    % createdb -E UNICODE --template=launchpad_prod_20051225 launchpad_tst
-
-We need a copy of the code about to be rolled out to production.
-You need to 'make build' in the root of this checkout or later steps will
-fail with weird ImportError exceptions. 
-
-    % make build
-
-This checkout contains the patches we need to run:
-
-First, determine the current patch level of the database
-
-    % psql -d launchpad_tst -c 'select * from launchpaddatabaserevision'
-    major | minor | patch
-    -------+-------+-------
-        6 |    25 |     0
-
-Then, see what patches need to be run:
-    % ls launchpad/database/schema/patch*.sql
-    database/schema/patch-6-00-0.sql  database/schema/patch-6-17-0.sql
-    database/schema/patch-6-01-0.sql  database/schema/patch-6-18-0.sql
-    database/schema/patch-6-02-0.sql  database/schema/patch-6-19-0.sql
-    database/schema/patch-6-03-0.sql  database/schema/patch-6-20-0.sql
-    database/schema/patch-6-04-0.sql  database/schema/patch-6-21-0.sql
-    database/schema/patch-6-05-0.sql  database/schema/patch-6-22-0.sql
-    database/schema/patch-6-06-0.sql  database/schema/patch-6-23-0.sql
-    database/schema/patch-6-07-0.sql  database/schema/patch-6-24-0.sql
-    database/schema/patch-6-08-0.sql  database/schema/patch-6-25-0.sql
-    database/schema/patch-6-09-0.sql  database/schema/patch-6-26-0.sql
-    database/schema/patch-6-10-0.sql  database/schema/patch-6-27-0.sql
-    database/schema/patch-6-11-0.sql  database/schema/patch-6-28-0.sql
-    database/schema/patch-6-12-0.sql  database/schema/patch-6-29-0.sql
-    database/schema/patch-6-13-0.sql  database/schema/patch-6-30-0.sql
-    database/schema/patch-6-14-0.sql  database/schema/patch-6-31-0.sql
-    database/schema/patch-6-15-0.sql  database/schema/patch-6-32-0.sql
-    database/schema/patch-6-16-0.sql
-
-First thing we need to do is recreate our stored procedures, as the patches
-might rely on new ones:
-
-    psql -d launchpad_tst -U postgres -f trusted.sql
-
-We need to run each patch with a higher revision in sequence. Also, a visual
-inspection of the patches doesn't hurt since it will be a pta to roll back
-these changes after they have been applied to production.
-
-
-    % psql -d launchpad_tst -U postgres
-    launchpad_tst=# \i patch-6-26-0.sql
-    SET
-    ALTER TABLE
-    UPDATE 1
-
-If you get errors, then there are issues with installing that patch with the
-production data. Fix the patch, and start again from a fresh copy of the
-database.
-
-You can rebuild the full text indexes - this step can be skipped if fti.py
-has not been modified since last rollout.
-
-    %  env PYTHONPATH=$HOME/dists/launchpad/lib LP_DBNAME=launchpad_tst \
-        LP_DBUSER=postgres python fti.py
-
-You should now rebuild the permissions. This step should not be skipped
-because it is quick.
-
-    % env PYTHONPATH=$HOME/dists/launchpad/lib LP_DBNAME=launchpad_tst \
-        LP_DBUSER=postgres python security.py
-
-For Real
---------
-
-If all that worked correctly, do a few sanity checks on the database
-relating to the tables the patches modified. And if the visual inspection
-passes, you are ready to repeat the entire procedure again on the production
-database. Shut down postgres as before, restart it without external
-connections as before, and run all the patches as before (using
-launchpad_prod instead of launchpad_tst).
+At this point, services should  be restarted that don't automatically
+reconnect, such as the Launchpad web application servers and the Librarian.
 
 Create a new development baseline
 ---------------------------------
 
-After a production update, you should copy the live schema back into
-the development tree. This ensures that any differences that have
+After a production update, you should occasionally copy the live schema
+back into the development tree. This ensures that any differences that have
 crept in between the development database and reality are fixed.
 The new baseline dump (launchpad-XX-0-0.sql in this directory) can
 be generated on production using the following::
 
-        pg_dump -Fc --schema-only --no-owner --no-acl --schema=public \
-            launchpad_prod > launchpad.dump
-        pg_restore -l launchpad.dump | \
-            grep -v PROCEDURAL | grep -v COMMENT | \
-            grep -v FUNCTION | grep -v VIEW > launchpad.list
-        pg_restore -l launchpad.dump | grep VIEW >> launchpad.list
-        echo "-- Generated `date`" > launchpad.sql
-        echo 'SET client_min_messages=ERROR;' >> launchpad.sql
-        pg_restore --no-owner --no-acl -L launchpad.list launchpad.dump | \
-            grep -v '^--' >> launchpad.sql
+    pg_dump -Fc --schema-only --no-owner --no-acl --schema=public \
+        launchpad_prod > launchpad.dump
+    pg_restore -l launchpad.dump | \
+        grep -v PROCEDURAL | grep -v COMMENT | \
+        grep -v FUNCTION | grep -v VIEW > launchpad.list
+    pg_restore -l launchpad.dump | grep VIEW >> launchpad.list
+    echo "-- Generated `date`" > launchpad.sql
+    echo 'SET client_min_messages=ERROR;' >> launchpad.sql
+    pg_restore --no-owner --no-acl -L launchpad.list launchpad.dump | \
+        grep -v '^--' >> launchpad.sql
 
 Move all the existing patches and the old baseline to the archive directory.
 Add the new baseline using the next revision number (should be in sync

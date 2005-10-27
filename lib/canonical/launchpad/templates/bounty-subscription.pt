@@ -12,10 +12,6 @@
   <div tal:replace="structure context/@@+portlet-subscribers" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-actions" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
   <h1 tal:condition="not: view/subscription">Subscribe to Bounty</h1>
@@ -34,8 +30,6 @@
 
   <form action="." method="POST">
 
-    <div>
-    </div>
     <div class="actions">
       <input type="submit"
              name="cancel"

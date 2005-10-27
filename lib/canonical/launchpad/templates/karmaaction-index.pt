@@ -6,7 +6,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Actions that give karma to users</h1>
+  <h1>Actions that give people karma</h1>
 
   <ul>
     <tal:block tal:repeat="actionCategory view/actionCategories">
@@ -14,12 +14,15 @@
                  tal:condition="actions">
         <li>
           <span tal:replace="actionCategory/title" />
-          <table class="listing data">
+          <table class="listing">
+            <thead>
             <tr>
               <th>Name</th>
               <th>Description</th>
               <th>Points</th>
             </tr>
+            </thead>
+            <tbody>
             <tr tal:repeat="action actions">
               <td>
                 <a tal:attributes="href string:${action/name/value}">
@@ -31,12 +34,13 @@
                   <span tal:replace="action/name/description" />
                 </a>
               </td>
-              <td>
+              <td class="amount">
                 <a tal:attributes="href string:${action/name/value}">
                   <span tal:replace="action/points" />
                 </a>
               </td>
             </tr>
+            </tbody>
           </table>
         </li>
         <br />

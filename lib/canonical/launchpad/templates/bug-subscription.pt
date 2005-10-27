@@ -1,0 +1,62 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<body>
+
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-subscribers" />
+    <div tal:replace="structure context/@@+portlet-maintainers" />
+  </metal:leftportlets>
+
+  <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-search" />
+  </metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1 tal:condition="not: view/subscription">Subscribe to Bug</h1>
+  <h1 tal:condition="view/subscription">Unsubscribe From Bug</h1>
+
+  <p tal:condition="not: view/subscription" class="documentDescription">
+    If you subscribe to a bug it will show up on your
+    personal pages, and you will receive copies of all comments by email as
+    well as notification of any changes to the status of the bug upstream
+    and in different distributions.
+  </p>
+
+  <p tal:condition="not: view/subscription">
+    Choose "Subscribe" to become a subscriber to this bug, or "Cancel" to
+    return to the bug page.
+  </p>
+
+  <p tal:condition="view/subscription">
+    Choose "Unsubscribe" to unsubscribe from this bug, or "Cancel" to
+    return to the bug page.
+  </p>
+
+  <form action="." method="POST">
+
+    <div class="actions">
+      <input type="submit"
+             name="cancel"
+             value="Cancel" />
+      <input tal:condition="not: view/subscription"
+             type="submit"
+             name="subscribe"
+             value="Subscribe" />
+      <input tal:condition="view/subscription"
+             type="submit"
+             name="subscribe"
+             value="Unsubscribe" />
+    </div>
+  </form>
+
+</div>
+
+</body>
+</html>

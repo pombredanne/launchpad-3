@@ -1,31 +1,28 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['ProductSeries', 'ProductSeriesSet']
+__all__ = ['ProductSeries', 'ProductSeriesSet', 'ProductSeriesSourceSet']
 
 import datetime
 import sets
 from warnings import warn
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 
 from sqlobject import ForeignKey, StringCol, MultipleJoin, DateTimeCol
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 # canonical imports
-from canonical.launchpad.interfaces import \
-    IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin, \
-    IProductSeriesSet
+from canonical.launchpad.interfaces import (
+    IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin,
+    IProductSeriesSet, IProductSeriesSourceSet, NotFoundError)
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
-from canonical.database.sqlbase import (SQLBase, quote,
-    flush_database_updates, sqlvalues)
-from canonical.database.constants import UTC_NOW
+from canonical.database.sqlbase import (
+    SQLBase, quote, sqlvalues)
 from canonical.lp.dbschema import (
     EnumCol, ImportStatus, PackagingType, RevisionControlSystems)
-
 
 
 class ProductSeries(SQLBase):
@@ -48,13 +45,15 @@ class ProductSeries(SQLBase):
                       notNull=False, default=None)
     cvsroot = StringCol(default=None)
     cvsmodule = StringCol(default=None)
-    cvstarfileurl = StringCol(default=None)
     cvsbranch = StringCol(default=None)
-    svnrepository = StringCol(default=None)
     # where are the tarballs released from this branch placed?
+    cvstarfileurl = StringCol(default=None)
+    svnrepository = StringCol(default=None)
+    # XXX bkrepository is in the data model but not here
+    #   -- matsubara, 2005-10-06
     releaseroot = StringCol(default=None)
-    releaseverstyle = StringCol(default=None)
     releasefileglob = StringCol(default=None)
+    releaseverstyle = StringCol(default=None)
     # these fields tell us where to publish upstream as bazaar branch
     targetarcharchive = StringCol(default=None)
     targetarchcategory = StringCol(default=None)
@@ -71,6 +70,9 @@ class ProductSeries(SQLBase):
                              orderBy=['version'])
     packagings = MultipleJoin('Packaging', joinColumn='productseries',
                               orderBy=['-id'])
+    specifications = MultipleJoin('Specification',
+        joinColumn='productseries', orderBy='-datecreated')
+
 
     @property
     def potemplates(self):
@@ -116,11 +118,15 @@ class ProductSeries(SQLBase):
         ret.sort(key=lambda a: a.distribution.name + a.sourcepackagename.name)
         return ret
 
+    def getSpecification(self, name):
+        """See ISpecificationTarget."""
+        return self.product.getSpecification(name)
+
     def getRelease(self, version):
         for release in self.releases:
-            if release.version==version:
+            if release.version == version:
                 return release
-        raise NotFoundError(version)
+        return None
 
     def getPackage(self, distrorelease):
         """See IProductSeries."""
@@ -186,8 +192,9 @@ class ProductSeries(SQLBase):
         """Has the series source failed automatic testing by roomba?"""
         return self.importstatus == ImportStatus.TESTFAILED
 
-class ProductSeriesSet:
 
+class ProductSeriesSet:
+    # XXX: this is in fact a subset of product series
     implements(IProductSeriesSet)
 
     def __init__(self, product=None):
@@ -200,17 +207,41 @@ class ProductSeriesSet:
 
     def __getitem__(self, name):
         if not self.product:
-            raise KeyError('ProductSeriesSet not initialised with product.')
+            raise AssertionError(
+                'ProductSeriesSet not initialised with product.')
         series = ProductSeries.selectOneBy(productID=self.product.id,
                                            name=name)
         if series is None:
-            raise KeyError(name)
+            raise NotFoundError(name)
         return series
+
+
+class ProductSeriesSourceSet:
+    """See IProductSeriesSourceSet"""
+    implements(IProductSeriesSourceSet)
+    def search(self, ready=None, text=None, forimport=None, importstatus=None,
+               start=None, length=None):
+        query, clauseTables = self._querystr(
+            ready, text, forimport, importstatus)
+        return ProductSeries.select(query, distinct=True,
+                   clauseTables=clauseTables)[start:length]
+
+    def importcount(self, status=None):
+        return self.search(forimport=True, importstatus=status).count()
 
     def _querystr(self, ready=None, text=None,
                   forimport=None, importstatus=None):
         """Return a querystring and clauseTables for use in a search or a
-        get or a query.
+        get or a query. Arguments:
+          ready - boolean indicator of whether or not to limit the search
+                  to products and projects that have been reviewed and are
+                  active.
+          text - text to search for in the product and project titles and
+                 descriptions
+          forimport - whether or not to limit the search to series which
+                      have RCS data on file
+          importstatus - limit the list to series which have the given
+                         import status.
         """
         query = '1=1'
         clauseTables = sets.Set()
@@ -247,14 +278,4 @@ class ProductSeriesSet:
                 query += ' AND '
             query += 'ProductSeries.importstatus = %d' % importstatus
         return query, clauseTables
-
-    def search(self, ready=None, text=None, forimport=None, importstatus=None,
-               start=None, length=None):
-        query, clauseTables = self._querystr(
-            ready, text, forimport, importstatus)
-        return ProductSeries.select(query, distinct=True,
-                   clauseTables=clauseTables)[start:length]
-
-    def importcount(self, status=None):
-        return self.search(forimport=True, importstatus=status).count()
 

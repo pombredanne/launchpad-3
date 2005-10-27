@@ -8,8 +8,6 @@
      tal:attributes="href
      string:/products/${context/productseries/product/name}/+series/${context/productseries/name}/"
      >apache head</a>
-  <i tal:condition="not: context/productseries">None linked!</i>
-  <br />
-	
+     <i tal:condition="not: context/productseries">None linked.</i>
   </div>
 </div>

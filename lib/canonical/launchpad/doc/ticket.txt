@@ -1,0 +1,28 @@
+
+Ticket Tracking System
+======================
+
+Launchpad includes a tech support ticket tracker.
+
+We should be able to get a ticket for a distribution, or a source package,
+or a product, by ticket number. If there is no such ticket, we should get a
+None
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ... IDistributionSet, IProductSet, ISourcePackageNameSet)
+    >>> from canonical.launchpad.database import SourcePackage
+    >>> distroset = getUtility(IDistributionSet)
+    >>> spnset = getUtility(ISourcePackageNameSet)
+    >>> productset = getUtility(IProductSet)
+    >>> p = productset.get(1)
+    >>> print p.getTicket(34243)
+    None
+    >>> d = distroset.get(1)
+    >>> print d.getTicket(3242343)
+    None
+    >>> s = spnset.get(1)
+    >>> sp = d.getSourcePackage(s)
+    >>> print sp.getTicket(3234353453)
+    None
+

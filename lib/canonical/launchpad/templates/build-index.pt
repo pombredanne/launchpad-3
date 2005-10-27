@@ -1,0 +1,83 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-binaries" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Build Summary</h1>
+
+          <ul>
+            <li><b>Date Created:</b> 
+              <span tal:content="context/datecreated" />
+            </li>
+
+            <li><span tal:condition="not:context/changes">
+                <i>"Changes" file not available</i>
+              </span>
+              <a tal:condition="context/changes" href="+changes">
+                View "Changes" File
+              </a>
+            </li>
+
+            <li><b>Processor:</b>
+              <span tal:content="context/processor/title" />
+            </li>
+
+            <li><b>Status:</b>
+              <span tal:content="context/buildstate/title" />
+            </li>
+
+            <li><b>Date Built:</b> 
+              <span tal:condition="not:context/datebuilt">
+                <i>Information not Available</i>
+              </span>
+              <span tal:content="context/datebuilt" />
+            </li>
+
+            <li><b>Build Duration:</b>
+              <span tal:condition="not:context/buildduration">
+                <i> Information not Available </i>
+              </span>
+              <span tal:content="context/buildduration" />
+            </li>
+
+            <li><b>Build Log:</b>
+              <span tal:condition="not:context/buildlog">
+                <i>Information not Available</i>
+              </span>
+              <a tal:condition="context/buildlog" href="+buildlog"> 
+                <i>Build log</i> 
+              </a>
+            </li>
+
+            <li><b>Builder:</b>
+              <span tal:condition="not:context/builder">
+                <i> Information not Available </i>
+              </span>
+              <span tal:condition="context/builder" 
+                    tal:content="context/builder/title" />
+            </li>
+
+            <li><b>GPG Signing Key Fingerprint: </b>
+               <span tal:condition="not:context/gpgsigningkey">
+                 <i> Information not Available </i>
+               </span>
+               <span tal:condition="context/gpgsigningkey"
+                     tal:content="context/gpgsigningkey/fingerprint" />
+            </li>
+          </ul>
+   </div>
+</body>
+</html>
+ 

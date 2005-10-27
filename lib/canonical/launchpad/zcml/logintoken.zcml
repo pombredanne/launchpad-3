@@ -5,6 +5,8 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+<facet facet="overview">
+
     <!-- LoginToken -->
     <content class="canonical.launchpad.database.LoginToken">
         <require 
@@ -90,8 +92,11 @@
         <allow interface="canonical.launchpad.interfaces.ILoginTokenSet" />
     </securedutility>
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.ILoginTokenSet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="LoginTokenSetNavigation"
+        />
+
+</facet>
 
 </configure>

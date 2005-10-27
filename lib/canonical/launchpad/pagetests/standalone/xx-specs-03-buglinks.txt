@@ -1,0 +1,102 @@
+
+Linking Specs and Bugs
+======================
+
+Let's take a tour of the sample data that we should have. we want to see
+some of the specs on Mozilla Firefox.  First, let's see the spec about SVG
+support in Mozilla.
+
+It should be linked to bug #1. We should see the "Remove Bug Link" menu
+item, and the bug link itself.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+spec/svg-support HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Remove Bug Link...
+  ...Related bugs:...
+  ...#1:...Firefox does not support SVG...
+
+
+All right. Now let's link it to another bug, say Bug #4. First we want to
+make sure we can load the page to link to a bug.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+spec/svg-support/+linkbug HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+Now, lets POST to the form. We will be redirected back to the spec home
+page.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+spec/svg-support/+linkbug HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 298
+  ... Content-Type: multipart/form-data; boundary=---------------------------16237967561476010744592030799
+  ... Cookie: launchpad=WGtY6QC9i8F-Myr0BWSOqf4Q8kgaYG0jKi2QwfbN.pXnnEzGpsFIH8
+  ... Referer: http://localhost:9000/products/firefox/+spec/svg-support/+linkbug
+  ... 
+  ... -----------------------------16237967561476010744592030799
+  ... Content-Disposition: form-data; name="field.bug"
+  ... 
+  ... 4
+  ... -----------------------------16237967561476010744592030799
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------16237967561476010744592030799--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../products/firefox/+spec/svg-support
+  ...
+
+
+So lets make sure we can see the bug link on the spec home page.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+spec/svg-support HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Related bugs:...
+  ...#1:...
+  ...#4:...
+
+
+Oops, that was actually the wrong bug. So lets remove the link. We first
+make sure we can see the page to remove a bug link from a specification.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+spec/svg-support/+unlinkbug HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+Now lets POST to it saying we want to remove Bug #4.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+spec/svg-support/+unlinkbug HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 301
+  ... Content-Type: multipart/form-data; boundary=---------------------------148383055419827608741461868515
+  ... 
+  ... -----------------------------148383055419827608741461868515
+  ... Content-Disposition: form-data; name="field.bug"
+  ... 
+  ... 4
+  ... -----------------------------148383055419827608741461868515
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------148383055419827608741461868515--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../products/firefox/+spec/svg-support
+  ...
+
+

@@ -3,16 +3,21 @@
 __metaclass__ = type
 __all__ = ['LibraryFileContent', 'LibraryFileAlias', 'LibraryFileAliasSet']
 
+import datetime
+from pytz import utc
+
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import \
+from canonical.launchpad.interfaces import (
     ILibraryFileAlias, ILibraryFileAliasSet
+    )
+
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from sqlobject import StringCol, ForeignKey, IntCol, RelatedJoin
+from sqlobject import StringCol, ForeignKey, IntCol, RelatedJoin, BoolCol
 
 
 class LibraryFileContent(SQLBase):
@@ -24,6 +29,7 @@ class LibraryFileContent(SQLBase):
     datemirrored = UtcDateTimeCol(default=None)
     filesize = IntCol(notNull=True)
     sha1 = StringCol(notNull=True)
+    deleted = BoolCol(notNull=True, default=False)
 
 
 class LibraryFileAlias(SQLBase):
@@ -36,11 +42,13 @@ class LibraryFileAlias(SQLBase):
             )
     filename = StringCol(notNull=True)
     mimetype = StringCol(notNull=True)
+    expires = UtcDateTimeCol(notNull=False, default=None)
+    last_accessed = UtcDateTimeCol(notNull=False, default=None)
 
+    @property
     def url(self):
         """See ILibraryFileAlias.url"""
         return getUtility(ILibrarianClient).getURLForAlias(self.id)
-    url = property(url)
 
     _datafile = None
 
@@ -85,10 +93,10 @@ class LibraryFileAliasSet(object):
 
     implements(ILibraryFileAliasSet)
 
-    def create(self, name, size, file, contentType):
+    def create(self, name, size, file, contentType, expires=None):
         """See ILibraryFileAliasSet.create"""
         client = getUtility(ILibrarianClient)
-        fid = client.addFile(name, size, file, contentType)
+        fid = client.addFile(name, size, file, contentType, expires)
         return LibraryFileAlias.get(fid)
 
     def __getitem__(self, key):

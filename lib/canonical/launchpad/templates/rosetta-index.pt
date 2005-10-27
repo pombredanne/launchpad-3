@@ -16,12 +16,11 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Welcome to Rosetta!</h1>
+    <h1>Welcome to Rosetta</h1>
 
-    <p class="documentDescription">
-        Rosetta is a tool for translating open source applications into
-        your language. You can read more <a href="+about" title="About Rosetta">
-        about Rosetta</a> or follow the links below to start translating.
+    <p>
+      Rosetta is a Web-based system for translating open source software into
+      any language. <a href="+about">More about Rosetta.</a>
     </p>
 
     <h2>Translations in Ubuntu</h2>
@@ -29,7 +28,7 @@
     <p>Rosetta is the primary translation system for the Ubuntu Project. You
     can help to translate any application in Ubuntu, or any of the Ubuntu
     derivative distributions, using this web interface. Select a release
-    from the list below:</p>
+    to start translating.</p>
     
     <div style="margin-left: 50px;">
 
@@ -48,15 +47,13 @@
 
     <h2>Translatable Applications</h2>
 
-    <p>Rosetta is being used to translate the following open source
-    applications. Select an application to translate it into your
-    own language, using only your web browser. If your favourite open
-    source application is not listed here, you can see
-    if it is <a href="/products/">registered with the Launchpad</a> and then
-    ask the Rosetta Admins on <a
-    href="mailto:rosetta-users@lists.ubuntu.com">Rosetta's mailing list</a>
-    to import its translation templates so you can begin to translate
-    immediately!</p>
+    <p>
+      Select an application to begin translating it into your own language.
+      If your favourite open-source application is not listed here,
+      check that it&#8217;s <a href="/products">registered with Launchpad</a>,
+      then <a href="mailto:rosetta-users@lists.ubuntu.com">ask the Rosetta
+      Admins</a> to import its translation templates.
+    </p>
 
     <table class="listing">
       <thead>

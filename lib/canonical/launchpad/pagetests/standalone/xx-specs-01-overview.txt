@@ -1,0 +1,45 @@
+
+Let's take a tour of the Launchpad specification management system.
+
+First, we should be able to see a list of latest specs on any product or
+distribution in Launchpad. This should take the form of a portlet on the
+product or distribution home page, showing latest specs.
+
+  >>> print http(r"""
+  ... GET /products/firefox HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Latest specifications:...
+  ...Support E4X in EcmaScript...
+
+If there are no specifications, then we should see an indication that no
+specs have been registered for this product or distribution.
+
+  >>> print http(r"""
+  ... GET /distros/debian/ HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Latest specifications:...
+  ...No specifications registered...
+
+
+On both product and distribution we should be able to see a list of
+specifications, at +specs.
+
+First, let's check on product.
+
+  >>> print http(r"""
+  ... GET /products/evolution/+specs HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+Now, on distribution.
+
+  >>> print http(r"""
+  ... GET /distros/debian/+specs HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+

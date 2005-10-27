@@ -145,6 +145,7 @@ def new_release(ztm, product_name, series_name, url):
             ztm.commit()
         except:
             ztm.abort()
+            raise
     finally:
         open_file.close()
 

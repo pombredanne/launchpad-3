@@ -1,0 +1,32 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Meetings and Sprints</h1>
+
+  <p class="documentDescription">
+    You can register a sprint or a meeting in Launchpad, and then keep track
+    of the specifications that will be discussed at that meeting.
+  </p>
+
+      <table class="listing">
+        <tbody>
+          <tal:sprint
+            repeat="sprint context"
+            replace="structure sprint/@@+listing-detailed"
+          />
+        </tbody>
+      </table>
+
+</div>
+</body>
+</html>

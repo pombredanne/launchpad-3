@@ -4,8 +4,16 @@
 
 __metaclass__ = type
 
-__all__ = ['ProjectView', 'ProjectEditView', 'ProjectAddProductView',
-           'ProjectSetView', 'ProjectRdfView']
+__all__ = [
+    'ProjectNavigation',
+    'ProjectSetNavigation',
+    'ProjectView',
+    'ProjectEditView',
+    'ProjectAddProductView',
+    'ProjectSetView',
+    'ProjectAddView',
+    'ProjectRdfView',
+    ]
 
 from urllib import quote as urlquote
 
@@ -18,14 +26,28 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
-    IPerson, IProject, IProjectSet, IProductSet, IProjectBugTrackerSet,
-    ICalendarOwner)
+    IPerson, IProject, IProjectSet, IProductSet, ICalendarOwner)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, DefaultLink)
+    StandardLaunchpadFacets, Link, canonical_url, ApplicationMenu,
+    structured, GetitemNavigation, Navigation)
 
 _ = MessageIDFactory('launchpad')
+
+
+class ProjectNavigation(Navigation, CalendarTraversalMixin):
+
+    usedfor = IProject
+
+    def traverse(self, name):
+        return self.context.getProduct(name)
+
+
+class ProjectSetNavigation(GetitemNavigation):
+
+    usedfor = IProjectSet
 
 
 class ProjectFacets(StandardLaunchpadFacets):
@@ -33,33 +55,72 @@ class ProjectFacets(StandardLaunchpadFacets):
 
     usedfor = IProject
 
+    enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
+                   'translations', 'calendar']
+
     def overview(self):
         target = ''
         text = 'Overview'
-        return DefaultLink(target, text)
+        return Link(target, text)
 
     def bugs(self):
         target = '+bugs'
         text = 'Bugs'
-        return Link(target, text, linked=False)
+        return Link(target, text, enabled=False)
 
     def translations(self):
         target = '+translations'
         text = 'Translations'
-        return Link(target, text, linked=False)
+        return Link(target, text, enabled=False)
 
     def calendar(self):
         target = '+calendar'
         text = 'Calendar'
         # only link to the calendar if it has been created
-        linked = ICalendarOwner(self.context).calendar is not None
-        return Link(target, text, linked=linked)
+        enabled = ICalendarOwner(self.context).calendar is not None
+        return Link(target, text, enabled=enabled)
 
 
-#
-# This is a View on a Project object, which is used in the Hatchery
-# system.
-#
+class ProjectOverviewMenu(ApplicationMenu):
+
+    usedfor = IProject
+    facet = 'overview'
+    links = ['edit', 'reassign', 'rdf', 'changetranslators']
+
+    def edit(self):
+        text = 'Edit Project Details'
+        return Link('+edit', text, icon='edit')
+
+    def reassign(self):
+        text = 'Change Admin'
+        return Link('+reassign', text, icon='edit')
+
+    def rdf(self):
+        text = structured(
+            'Download <abbr title="Resource Description Framework">'
+            'RDF</abbr> Metadata')
+        return Link('+rdf', text, icon='download')
+
+    def changetranslators(self):
+        text = 'Change Translators'
+        return Link('+changetranslators', text, icon='edit')
+
+
+class ProjectBountiesMenu(ApplicationMenu):
+
+    usedfor = IProject
+    facet = 'bounties'
+    links = ['new', 'link']
+
+    def new(self):
+        text = 'Register a New Bounty'
+        return Link('+addbounty', text, icon='add')
+
+    def link(self):
+        text = 'Link Existing Bounty'
+        return Link('+linkbounty', text, icon='edit')
+
+
 class ProjectView(object):
 
     def __init__(self, context, request):
@@ -81,15 +142,15 @@ class ProjectView(object):
             return
         if not self.request.method == "POST":
             return
-        # Extract details from the form and update the Product
+        # Extract details from the form and update the project
         self.context.displayname = self.form['displayname']
         self.context.title = self.form['title']
         self.context.summary = self.form['summary']
         self.context.description = self.form['description']
         self.context.homepageurl = self.form['homepageurl']
-        # now redirect to view the product
+        # now redirect to view the project
         self.request.response.redirect(self.request.URL[-1])
-        
+
     def hasProducts(self):
         return len(list(self.context.products())) > 0
 
@@ -162,9 +223,12 @@ class ProjectEditView(ProjectView, SQLObjectEditView):
         SQLObjectEditView.__init__(self, context, request)
 
     def changed(self):
-        # If the name changed then the URL changed, so redirect:
-        self.request.response.redirect(
-            '../%s/+edit' % urlquote(self.context.name))
+        # If the name changed the URL will have changed
+        if self.context.active:
+            self.request.response.redirect(canonical_url(self.context))
+        else:
+            projectset = getUtility(IProjectSet)
+            self.request.response.redirect(canonical_url(projectset))
 
 
 class ProjectAddProductView(AddView):
@@ -174,7 +238,6 @@ class ProjectAddProductView(AddView):
     def __init__(self, context, request):
         self.request = request
         self.context = context
-        self._nextURL = '.'
         AddView.__init__(self, context, request)
 
     def createAndAdd(self, data):
@@ -204,7 +267,8 @@ class ProjectAddProductView(AddView):
         return product
 
     def nextURL(self):
-        return self._nextURL
+        # Always redirect to the project's page
+        return '.'
  
 
 
@@ -234,50 +298,43 @@ class ProjectSetView(object):
         time the method is called, otherwise return previous results.
         """
         if self.results is None:
-            self.results = self.context.search(text=self.text,
-                                               bazaar=self.bazaar,
-                                               malone=self.malone,
-                                               rosetta=self.rosetta,
-                                               soyuz=self.soyuz)
+            self.results = self.context.search(
+                text=self.text,
+                bazaar=self.bazaar,
+                malone=self.malone,
+                rosetta=self.rosetta,
+                soyuz=self.soyuz)
         self.matches = self.results.count()
         return self.results
 
-    def newproject(self):
+
+class ProjectAddView(AddView):
+
+    _nextURL = '.'
+
+    def createAndAdd(self, data):
         """
         Create the new Project instance if a form with details
         was submitted.
         """
-        # Check that a field called "Register" was set to "Register
-        # Project". This method should continue only if the form was
-        # submitted. We do this because it is ALWAYS called, by the
-        # tal:dummy item in the page template.
-        #
-        if not self.form.get("Register", None)=="Register Project":
-            return
-        if not self.request.method == "POST":
-            return
-        # Enforce lowercase project name
-        self.form['name'] = self.form['name'].lower()
-        # Extract the details from the form
-        name = self.form['name']
-        displayname = self.form['displayname']
-        title = self.form['title']
-        summary = self.form['summary']
-        description = self.form['description']
-        homepageurl = self.form['homepageurl']
-        # get the launchpad person who is creating this product
         owner = IPerson(self.request.principal)
+        self.name = data['name'].lower()
+
         # Now create a new project in the db
         project = getUtility(IProjectSet).new(
-                          name=name,
-                          title=title,
-                          displayname=displayname,
-                          summary=summary,
-                          description=description,
-                          owner=owner,
-                          homepageurl=homepageurl)
-        # now redirect to the page to view it
-        self.request.response.redirect(name)
+            name=self.name,
+            title=data['title'],
+            displayname=data['displayname'],
+            summary=data['summary'],
+            description=data['description'],
+            owner=owner,
+            homepageurl=data['homepageurl'])
+        notify(ObjectCreatedEvent(project))
+        self._nextURL = canonical_url(project)
+        return project
+
+    def nextURL(self):
+        return self._nextURL
 
 
 class ProjectRdfView(object):
@@ -299,9 +356,9 @@ class ProjectRdfView(object):
         As a side-effect, HTTP headers are set for the mime type
         and filename for download."""
         self.request.response.setHeader('Content-Type', 'application/rdf+xml')
-        self.request.response.setHeader('Content-Disposition',
-                                        'attachment; filename=%s-project.rdf' %
-                                            self.context.name)
+        self.request.response.setHeader(
+            'Content-Disposition',
+            'attachment; filename=%s-project.rdf' % self.context.name)
         unicodedata = self.template()
         encodeddata = unicodedata.encode('utf-8')
         return encodeddata

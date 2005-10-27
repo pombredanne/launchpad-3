@@ -1,0 +1,23 @@
+<div class="portlet">
+
+  <h4>Attendees:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul>
+      <li class="person" tal:repeat="attendance context/attendances">
+        <a tal:attributes="href attendance/attendee/fmt:url"
+           tal:content="attendance/attendee/browsername">Foo Bar</a>
+           <span tal:replace="attendance/time_starts/fmt:date">
+             2005-08-05</span> till
+           <span tal:replace="attendance/time_ends/fmt:date">
+             2005-08-15</span>
+      </li>
+      <li class="alert" tal:condition="not: context/attendees">
+        <i>No attendees yet</i>
+      </li>
+    </ul>
+
+  </div>
+
+</div>

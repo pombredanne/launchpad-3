@@ -1,0 +1,33 @@
+<tal:tag condition="view/update"/>
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_editform/editform">
+
+    <div metal:fill-slot="extra_info" class="documentDescription">
+      Please be EXTREMELY CAREFUL when using this form. Changing the
+      architecturetag will fundamentally change the archive in ways that
+      will use large amounts of disk space and break large numbers of users
+      if done accidentally.
+    </div>
+
+  </div>
+
+</div>
+</body>
+</html>

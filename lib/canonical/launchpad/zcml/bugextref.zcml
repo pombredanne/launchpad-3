@@ -5,6 +5,8 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+<facet facet="bugs">
+
     <!-- BugExternalRef -->
     <content class="canonical.launchpad.database.BugExternalRef">
         <allow interface="canonical.launchpad.interfaces.IBugExternalRef" />
@@ -30,32 +32,13 @@
             lp:url="malone/bugs/$Bug.id/reference/$Reference.id" />
     </browser:pages>
 
-    <browser:addform
-        name="+new"
-        schema="canonical.launchpad.interfaces.IBugExternalRef"
-        for="canonical.launchpad.interfaces.IBugExternalRefSet"
-        class="canonical.launchpad.browser.addview.SQLObjectAddView"
-        label="Add External Reference"
-        fields="url title"
-        content_factory="canonical.launchpad.database.BugExternalRefFactory"
-        arguments=""
-        keyword_arguments="url title"
-        permission="launchpad.AnyPerson"
-        template="../templates/launchpad-addform.pt"
-        lp:url="malone/bugs/$Bugs.id/references/+new">
-        <browser:widget
-            field="url"
-            class="zope.app.form.browser.TextWidget"
-            displayWidth="60" />
-    </browser:addform>
-
     <browser:editform
         name="+edit"
         schema="canonical.launchpad.interfaces.IBugExternalRef"
-        class="canonical.launchpad.browser.editview.SQLObjectEditView"
-        label="Modify Web Reference"
+        class="canonical.launchpad.browser.BugRelatedObjectEditView"
+        label="Change Web Link"
         permission="launchpad.AnyPerson"
-        template="../templates/default-editform.pt"
+        template="../templates/bug-extref-edit.pt"
         fields="url title"
         lp:url="malone/bugs/$Bug.id/references/$Reference.id/+edit" />
 
@@ -76,9 +59,10 @@
         <allow interface="canonical.launchpad.interfaces.IBugExternalRefSet" />
     </securedutility>
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IBugExternalRefSet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BugExternalRefSetNavigation"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBugExternalRefSet"
@@ -87,5 +71,5 @@
             template="../templates/references-index.pt"
             lp:url="malone/bugs/$Bug.id/references" />
     </browser:pages>
-
+</facet>
 </configure>

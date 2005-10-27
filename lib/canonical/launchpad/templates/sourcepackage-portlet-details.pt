@@ -1,0 +1,27 @@
+<div class="portlet">
+  <h4><span tal:replace="context/name" /> Details:</h4>
+
+  <div class="portletBody portletContent">
+    <tal:currentrelease tal:condition="context/currentrelease"
+                        tal:define="current context/currentrelease">
+      <b>Current Version:</b>
+      <span tal:replace="current/version" /><br />
+
+      <b>Upload Date:</b>
+      <span tal:replace="current/dateuploaded/fmt:date" /><br />
+      
+      <b>Urgency:</b>
+      <span tal:content="current/urgency/title" /><br />
+
+      <b>Component:</b>
+      <span tal:content="current/component/name"/><br />
+
+    </tal:currentrelease>
+    <tal:norelease>
+      <i>No published releases of this package have been uploaded in
+      <tal:block content="context/distrorelease/fullreleasename" />
+      </i>
+    </tal:norelease>
+  </div>
+
+</div>

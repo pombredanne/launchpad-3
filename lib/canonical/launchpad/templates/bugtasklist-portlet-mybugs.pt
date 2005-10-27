@@ -1,0 +1,24 @@
+<div class="portlet portletBody portletContent">
+
+<ul class="bugs">
+
+  <li tal:repeat="buglisting view/buglistings">
+    <a tal:attributes="href buglisting/url"
+       tal:content="buglisting/displayname">
+      All open bugs
+    </a>
+    <tal:count tal:condition="not:buglisting/require_login"
+               tal:replace="string:(${buglisting/count})">
+      (10)
+    </tal:count>
+    <tal:nocount tal:condition="buglisting/require_login">
+      <br />
+      (requires <a tal:attributes="href string:${request/URL}/+login">
+                  login
+                </a>)
+    </tal:nocount>
+  </li>
+
+</ul>
+
+</div>

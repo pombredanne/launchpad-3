@@ -1,0 +1,8 @@
+
+ <b>
+   <span tal:replace="context/distroarchrelease/architecturetag">i386</span>
+   <span tal:replace="context/pocket/title">Release</span>
+  </b>:
+  <span tal:replace="context/status/title">Published</span>
+  <span tal:replace="context/binarypackagerelease/version">6.2.1-1</span>
+

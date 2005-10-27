@@ -1,50 +1,25 @@
-
-
   >>> print http(r"""
   ... GET /codeofconduct HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-      <h2>Launchpad Codes of Conduct</h2>
-  ...
-          <div class="portlet">
-      <h4>Codes of Conduct Actions:</h4>
-  <BLANKLINE>
-      <div class="portletBody">
-          <div class="portletContent even">
-  	<ul>
-  <BLANKLINE>
-  	</ul>	
-          </div>
-      </div>
-  </div>
-  ...
-
-  >>> print http(r"""
-  ... GET /codeofconduct/+index HTTP/1.1
   ... Authorization: Basic Z3VpbGhlcm1lLnNhbGdhZG9AY2Fub25pY2FsLmNvbTp6ZWNh
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
-      <h2>Launchpad Codes of Conduct</h2>
+  ...Launchpad Codes of Conduct...
+  ...Administrator Console...
+
+  >>> print http(r"""
+  ... GET /codeofconduct/1.0 HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
   ...
-          <div class="portlet">
-      <h4>Codes of Conduct Actions:</h4>
-  <BLANKLINE>
-      <div class="portletBody">
-          <div class="portletContent even">
-  	<ul>
-  	   <li class="edit">
-                 <a href="console">Administrator Console</a>
-             </li>
-  	</ul>	
-          </div>
-      </div>
-  </div>
+  ...Ubuntu Code of Conduct - 1.0...
+  ...
+  ...Sign This Version...
+  ...Download This Version...
   ...
 
   >>> print http(r"""
@@ -55,18 +30,7 @@
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
-      <h2>Code of Conduct Administrator Page</h2>
+  ...Administer code of conduct signatures...
   ...
-          <div class="portlet">
-      <h4>Actions:</h4>
-  <BLANKLINE>
-      <div class="portletBody">
-          <div class="portletContent even">
-  <BLANKLINE>
-          <img src="/++resource++info_icon.gif">
-          <a href="+acknowledge">Acknowledge CoC</a>
-  <BLANKLINE>
-          </div>
-      </div>
-  </div>
+  ...Register someone's signature...
   ...

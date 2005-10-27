@@ -7,6 +7,8 @@ privileges to do what we're going to demonstrate.
 
 >>> from zope.component import getUtility
 >>> from zope.interface.verify import verifyObject
+>>> from canonical.lp.dbschema import KarmaActionName
+>>> from canonical.database.sqlbase import sqlvalues, flush_database_updates
 >>> from canonical.launchpad.interfaces import (
 ...     IPersonSet, IPerson, IEmailAddressSet)
 >>> from canonical.launchpad.ftests import login
@@ -69,9 +71,6 @@ set([u'david.allouche@canonical.com', u'robertc@robertcollins.net', u'foo.bar@ca
 
 We don't support changing a Person into a Team or a Team into a Person.
 
->>> lifeless.teamowner = ddaa
->>> ITeam.providedBy(lifeless)
-False
 >>> buttsource.teamowner = None
 >>> ITeam.providedBy(buttsource)
 True
@@ -83,7 +82,8 @@ Renaming
 All persons have a unique name in launchpad, so to allow them to change their
 names, we must make sure that name is not already in use by someone else.
 
->>> from canonical.launchpad.interfaces.person import PersonNameField
+>>> from canonical.launchpad.interfaces.person import (
+...     PersonNameField, StrippingTextLine)
 >>> field = PersonNameField(__name__='name', title=u'Unique name',
 ...                         description=u'', readonly=False, required=True)
 >>> field = field.bind(lifeless)
@@ -100,7 +100,22 @@ But you can't use Mark's name, of course. ;)
 >>> field.validate(u'sabdfl')
 Traceback (most recent call last):
 ...
-NameAlreadyTaken: sabdfl
+NameAlreadyTaken: The name sabdfl is already in use.
+
+In the case of your displayname, the only constraint is that it can't contain
+only spaces. To ensure that, we use a StrippingTextLine in the displayname,
+which is a class that always strips the unicode string before applying any
+validation or constraints.
+>>> field = StrippingTextLine(__name__='displayname', title=u'Displayname',
+...                           description=u'', readonly=False, required=True,
+...                           missing_value=u'')
+>>> field.fromUnicode(u' foo ')
+u'foo'
+
+>>> field.fromUnicode(u'  ')
+Traceback (most recent call last):
+...
+RequiredMissing
 
 
 Merging
@@ -128,6 +143,8 @@ TypeError: ...
 Nor can we merge an account that still has email addresses attached to it
 
 >>> nonempty, email = personset.createPersonAndEmail('empty@somehost.com')
+>>> rosetta_admins = personset.getByName('rosetta-admins')
+>>> rosetta_admins.addMember(nonempty)
 >>> personset.merge(nonempty, sample)
 Traceback (most recent call last):
 ...
@@ -141,26 +158,83 @@ Now we remove the only email address nonempty had.
 Must login as 'sabdfl' cause he's the owner of the Ubuntu Team.
 >>> login('mark@hbd.com')
 >>> ubuntu_team = personset.getByName('name17')
+>>> ubuntu_translators = personset.getByName('ubuntu-translators')
+>>> ubuntu_translators.addMember(empty)
 >>> ubuntu_team.teamowner = empty
+>>> empty.assignKarma(KarmaActionName.BUGFIXED)
+>>> empty.updateKarmaCache()
+>>> sample.updateKarmaCache()
+>>> flush_database_updates()
+
+'Sample Person' is a deactivated member of the 'Ubuntu Translators' team,
+while empty is an active member. After the merge, 'Sample Person' will be an
+active member of that team.
+>>> sample in ubuntu_translators.inactivemembers
+True
+>>> empty in ubuntu_translators.activemembers
+True
+>>> empty.karma
+10
+>>> sample.karma
+91
+
 >>> personset.merge(empty, sample)
+
+>>> sample in ubuntu_translators.activemembers
+True
+>>> sample.inTeam(ubuntu_translators)
+True
+>>> empty.karma
+0
+>>> sample.karma
+101
 
 >>> from canonical.launchpad.database import Person
 >>> cur = Person._connection._connection.cursor()
+
+A merged account gets a -merged suffix on its name.
+>>> empty.id
+59L
+>>> cur.execute("SELECT id FROM Person WHERE name='empty-merged'")
+>>> cur.fetchone()[0]
+59
+
+
+>>> cur.execute("select person, team, status from teammembership where "
+...             "person = %s and team = %s"
+...             % sqlvalues(sample.id, rosetta_admins.id))
+>>> cur.fetchone()
+[12, 30, 2]
+
+>>> sample.inTeam(rosetta_admins)
+True
+
 >>> cur.execute("select p1.name from person as p1, person as p2 where "
 ...             "p1.id = p2.teamowner and p2.name = 'name17'")
 >>> cur.fetchone()[0]
-u'sabdfl'
+u'name12'
 
 The account that has been merged is flagged. We can use this to eliminate
 merged accounts from lists etc.
 
->>> cur.execute("SELECT merged FROM Person WHERE name='empty'")
+>>> cur.execute("SELECT merged FROM Person WHERE name='empty-merged'")
 >>> cur.fetchone()[0]
 12
 
 >>> cur.execute("SELECT merged FROM Person WHERE name='name12'")
 >>> cur.fetchone()[0] is None
 True
+
+After the merging we could test the topPeople() method of the PersonSet
+class. This methods returns a sliced list of 5 valid person accounts,
+ordered by karma. A valid person account is any non-merged person with a
+preferred email address.
+
+>>> empty.karma = 10000
+>>> flush_database_updates()
+>>> [(person.name, person.karma) for person in personset.topPeople()]
+[(u'name12', 101), (u'jordi', 0), (u'marilize', 0), (u'no-priv', 0),
+(u'kreutzm', 0)]
 
 
 People can have karma in Launchpad
@@ -172,7 +246,6 @@ Launchpad.
 
 Salgado wrote the karma framework. Let's give him some karma points.
 
->>> from canonical.lp.dbschema import KarmaActionName
 >>> salgado = personset.getByName('salgado')
 >>> salgado.assignKarma(KarmaActionName.BUGFIXED)
 >>> salgado.karma
@@ -180,10 +253,11 @@ Salgado wrote the karma framework. Let's give him some karma points.
 
 The value that you get through IPerson.karma is a cached value that's
 calculated daily. That's why it still 0. To calculate the karma of a given
-person at runtime we have to use IKarmaSet:
+person at runtime we can use the updateKarmaCache method of IPerson.
 
 >>> from canonical.launchpad.interfaces import IKarmaSet
->>> getUtility(IKarmaSet).getSumByPerson(salgado)
+>>> salgado.updateKarmaCache()
+>>> salgado.karma
 10
 
 

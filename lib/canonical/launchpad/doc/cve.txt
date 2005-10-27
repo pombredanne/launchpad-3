@@ -1,0 +1,72 @@
+Common Vulnerabilities and Exposures (CVE)
+==========================================
+
+Malone supports attaching CVE references to bugs. From
+http://www.cve.mitre.org/about/ CVE is:
+
+    A list of standardized names for vulnerabilities and other
+    information security exposures - CVE aims to standardize the names
+    for all publicly known vulnerabilities and security exposures.
+
+For more information, consult the CVE website:
+
+    http://www.cve.mitre.org/
+
+Creating CVE entries
+--------------------
+
+CVE references can be created with the ICveSet utility.
+
+    >>> from canonical.launchpad.ftests import login
+    >>> login("test@canonical.com")
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import ICveSet
+    >>> from canonical.lp.dbschema import CveStatus
+    >>> cveset = getUtility(ICveSet)
+
+To create a CVE, call ICveSet.new(sequence, description,
+    status=CveStatus.CANDIDATE)
+
+    >>> cve = cveset.new(sequence="2004-0276",
+    ...     description="A new CVE", status=CveStatus.ENTRY,
+    ...     )
+    >>> cve.displayname
+    u'CVE-2004-0276'
+
+Linking CVE's to Bugs
+=====================
+
+You can link a CVE to a bug. You can also see which CVE's are currently
+linked to a bug:
+
+    >>> from canonical.launchpad.database import Bug
+    >>> b = Bug.get(1)
+    >>> for c in b.cves:
+    ...     print c.displayname
+    CVE-1999-8979
+
+Let's add the new CVE:
+
+    >>> len(b.cves)
+    1
+    >>> b.linkCVE(cve)
+    <BugCve at ...>
+    >>> len(b.cves)
+    2
+
+Ah, but that was a bad idea. Let's unlink it.
+
+    >>> b.unlinkCVE(cve)
+    >>> len(b.cves)
+    1
+
+Alternatively, we can link CVEs to bugs by looking for CVEs in a
+string of text:
+
+    >>> b.findCvesInText('''
+    ...     This bug is related to CVE-2004-0276
+    ... ''')
+    >>> cve in b.cves
+    True
+    >>> b.unlinkCVE(cve)

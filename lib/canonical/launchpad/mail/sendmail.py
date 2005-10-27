@@ -23,7 +23,7 @@ from smtplib import SMTP
 
 from zope.app import zapi
 from zope.app.mail.interfaces import IMailDelivery
-from zope.security.proxy import isinstance as pisinstance
+from zope.security.proxy import isinstance as zisinstance
 
 from canonical.config import config
 from canonical.lp import isZopeless
@@ -66,17 +66,17 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
     # can't send.
     # XXX: These checks need to be migrated upstream if this bug
     # still exists in modern Z3 -- StuartBishop 20050319
-    if pisinstance(to_addrs, basestring):
+    if zisinstance(to_addrs, basestring):
         to_addrs = [to_addrs]
-    assert (pisinstance(to_addrs, (list, tuple, sets.Set, set))
+    assert (zisinstance(to_addrs, (list, tuple, sets.Set, set))
             and len(to_addrs) > 0), 'Invalid To: %r' % (to_addrs,)
-    assert pisinstance(from_addr, basestring), \
+    assert zisinstance(from_addr, basestring), \
             'Invalid From: %r' % (from_addr,)
-    assert pisinstance(subject, basestring), \
+    assert zisinstance(subject, basestring), \
             'Invalid Subject: %r' % (from_addr,)
-    assert pisinstance(body, basestring), 'Invalid body: %r' % (from_addr,)
+    assert zisinstance(body, basestring), 'Invalid body: %r' % (from_addr,)
     for addr in to_addrs:
-        assert pisinstance(addr, basestring) and bool(addr), \
+        assert zisinstance(addr, basestring) and bool(addr), \
                 'Invalid recipient: %r in %r' % (addr, to_addrs)
 
     msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
@@ -88,6 +88,7 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
     msg['Subject'] = subject
     return sendmail(msg)
 
+
 def sendmail(message):
     """Send an email.Message.Message
 
@@ -96,15 +97,14 @@ def sendmail(message):
     will need to use this method.
 
     From:, To: and Subject: headers should already be set.
-    Message-Id:, Date:, and Reply-To: headers will be set if they are 
-    not already. Errors-To: headers will always be set. The more we look
-    valid, the less we look like spam.
-    
+    Message-Id:, Date:, and Reply-To: headers will be set if they are
+    not already. Errors-To: and Return-Path: headers will always be set.
+    The more we look valid, the less we look like spam.
+
     Uses zope.app.mail.interfaces.IMailer, so you can subscribe to
     IMailSentEvent or IMailErrorEvent to record status.
 
     Returns the Message-Id
- 
     """
     assert isinstance(message, Message), 'Not an email.Message.Message'
     assert 'to' in message and bool(message['to']), 'No To: header'
@@ -133,6 +133,12 @@ def sendmail(message):
     del message['Errors-To']
     message['Errors-To'] = config.bounce_address
 
+    # Add a Return-Path: header for bounce handling as well. Normally
+    # this is added by the SMTP mailer using the From: header. But we
+    # want it to be bounce_address instead.
+    if 'return-path' not in message:
+        message['Return-Path'] = config.bounce_address
+
     # Add an X-Generated-By header for easy whitelisting
     del message['X-Generated-By']
     message['X-Generated-By'] = 'Launchpad (canonical.com)'
@@ -147,15 +153,21 @@ def sendmail(message):
             # as it emulates the Z3 API which doesn't report this either
             # (because actual delivery is done later).
             smtp = SMTP(config.zopeless.smtp_host, config.zopeless.smtp_port)
-            smtp.sendmail(from_addr, to_addrs, raw_message)
+
+            # The "MAIL FROM" is set to the bounce address, to behave in a way
+            # similar to mailing list software.
+            smtp.sendmail(config.bounce_address, to_addrs, raw_message)
             smtp.quit()
         return message['message-id']
     else:
-        return raw_sendmail(from_addr, to_addrs, raw_message)
+        # The "MAIL FROM" is set to the bounce address, to behave in a way
+        # similar to mailing list software.
+        return raw_sendmail(config.bounce_address, to_addrs, raw_message)
+
 
 def raw_sendmail(from_addr, to_addrs, raw_message):
-    """Send a raw RFC8222 email message. 
-    
+    """Send a raw RFC8222 email message.
+
     All headers and encoding should already be done, as the message is
     spooled out verbatim to the delivery agent.
 
@@ -170,6 +182,7 @@ def raw_sendmail(from_addr, to_addrs, raw_message):
     assert raw_message.decode('ascii'), 'Not ASCII - badly encoded message'
     mailer = zapi.getUtility(IMailDelivery, 'Mail')
     return mailer.send(from_addr, to_addrs, raw_message)
+
 
 if __name__ == '__main__':
     from canonical.lp import initZopeless

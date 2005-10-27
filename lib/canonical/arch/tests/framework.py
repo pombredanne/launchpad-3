@@ -173,13 +173,11 @@ class DatabaseAndArchiveTestCase(DatabaseTestCase):
 
 
 def main(**kwargs):
-    from pybaz.tests.framework import OrderedTestLoader
-    unittest.main(testLoader=OrderedTestLoader(), **kwargs)
+    unittest.main(**kwargs)
 
 def register(name):
-    from pybaz.tests.framework import OrderedTestLoader
     def test_suite():
-        return OrderedTestLoader().loadTestsFromModule(sys.modules[name])
+        return unittest.findTestCases(sys.modules[name])
     module = sys.modules[name]
     module.test_suite = test_suite
     if name == "__main__":

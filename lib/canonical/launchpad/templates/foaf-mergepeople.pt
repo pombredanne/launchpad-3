@@ -17,24 +17,26 @@
       </div>
 
       <p>You're trying to merge the user account named
-      <em><span tal:replace="view/dupe/name" /></em> into the
-      account named <em><span tal:replace="context/requester/name" /></em>. 
-      To complete this proccess, just fill in your Launchpad password on the
-      form bellow and click on <em>Submit</em>.</p>
+      <em><strong tal:content="view/dupe/name" /></em> into the
+      account named <em><strong tal:content="context/requester/name" /></em>. 
+      To complete the merge, simply enter the Launchpad password of the
+      <strong tal:content="context/requester/name" /> account on the
+      form bellow and submit it.</p>
 
       <form autocomplete="off" name="merge" method="POST">
         <div class="field">
 
           <label>Password</label>
           <br>
-          <div class="formHelp"> Type your Launchpad password </div>
           <input type="password" size="30" name="password" />
           <br>
 
-          <label>
-            <input type="checkbox" checked="checked" name="logmein" />
-            Log me in after resetting my password
-          </label><br />
+          <tal:block condition="not: request/lp:person">
+            <label>
+              <input type="checkbox" checked="checked" name="logmein" />
+              Log me in after merging the accounts
+            </label><br />
+          </tal:block>
 
           <div class="formControls">
             <input type="submit" name="SUBMIT_CHANGES" value="Submit" />
