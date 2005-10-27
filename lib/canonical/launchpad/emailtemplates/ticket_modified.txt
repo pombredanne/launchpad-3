@@ -1,0 +1,7 @@
+Support request modified by %(editor)s:
+%(ticket_url)s
+
+%(modifications)s
+
+------------------------------- Comment -------------------------------
+%(comment)s

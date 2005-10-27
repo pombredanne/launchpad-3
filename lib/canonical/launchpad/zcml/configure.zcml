@@ -101,6 +101,7 @@
     <include file="specificationtarget.zcml" />
     <include file="sprint.zcml" />
     <include file="ticket.zcml" />
+    <include file="ticket-events.zcml" />
     <include file="ticketreopening.zcml" />
     <include file="ticketsubscription.zcml" />
     <include file="tickettarget.zcml" />
