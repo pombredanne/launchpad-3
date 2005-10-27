@@ -324,6 +324,8 @@ class Person(SQLBase):
 
     def inTeam(self, team):
         """See IPerson."""
+        if team is None:
+            return False
         tp = TeamParticipation.selectOneBy(teamID=team.id, personID=self.id)
         if tp is not None or self.id == team.teamownerID:
             return True
@@ -523,6 +525,11 @@ class Person(SQLBase):
     def allmembers(self):
         """See IPerson."""
         return _getAllMembers(self)
+
+    @property
+    def all_member_count(self):
+        """See IPerson."""
+        return len(self.allmembers)
 
     @property
     def deactivatedmembers(self):
@@ -782,7 +789,11 @@ class PersonSet:
 
     def topPeople(self):
         """See IPersonSet."""
-        return self.getAllValidPersons(orderBy=['-karma', 'name'])[:5]
+        # The odd ordering here is to ensure we hit the PostgreSQL
+        # indexes. Ideally we want to order by karma DESC, name but
+        # that will not use the indexes (at least under PostgreSQL 7.4)
+        # and be really slow.
+        return self.getAllValidPersons(orderBy=['-karma', '-id'])[:5]
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,

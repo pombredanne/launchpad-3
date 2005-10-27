@@ -15,7 +15,7 @@
 
   <browser:menus
       module="canonical.launchpad.browser"
-      classes="SprintContextMenu SprintSetContextMenu"
+      classes="SprintFacets SprintContextMenu SprintSetContextMenu"
       />
 
   <browser:defaultView
@@ -34,6 +34,12 @@
     <browser:page
       name="+index"
       template="../templates/sprint-index.pt" />
+    <browser:page
+      name="+specstable"
+      template="../templates/sprint-table.pt" />
+    <browser:page
+      name="+workload"
+      template="../templates/sprint-workload.pt" />
     <browser:page
       name="+listing-detailed"
       template="../templates/sprint-listing-detailed.pt" />
@@ -58,8 +64,19 @@
       field="summary"
       class="zope.app.form.browser.TextAreaWidget"
       height="5" />
+    <browser:widget
+      field="address"
+      class="zope.app.form.browser.TextAreaWidget"
+      height="3" />
   </browser:editform>
 
+  <browser:page
+    name="+attend"
+    for="canonical.launchpad.interfaces.ISprint"
+    class="canonical.launchpad.browser.SprintAttendanceAddView"
+    permission="launchpad.Edit"
+    template="../templates/sprint-attend.pt"
+    />
 
   <!-- SprintSet -->
   <content class="canonical.launchpad.database.SprintSet">
@@ -103,7 +120,7 @@
     for="canonical.launchpad.interfaces.ISprintSet"
     schema="canonical.launchpad.interfaces.ISprint"
     class="canonical.launchpad.browser.SprintAddView"
-    label="Register A Meeting"
+    label="Register a Meeting"
     permission="launchpad.AnyPerson"
     fields="owner name title summary home_page time_zone time_starts
             time_ends"

@@ -178,7 +178,7 @@ the Librarian as a Utility.
 >>> librarian_client = zapi.getUtility(ILibrarianClient)
 >>> file_alias_id = librarian_client.addFile(
 ...     'hi.txt', size, some_content, 'text/plain')
->>> isinstance(file_alias_id, int)
+>>> isinstance(file_alias_id, (int, long))
 True
 
 Note that you currently can't retrieve a file from the Librarian in

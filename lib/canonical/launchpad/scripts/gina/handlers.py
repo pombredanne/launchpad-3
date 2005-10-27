@@ -49,7 +49,7 @@ from canonical.launchpad.helpers import getFileType, getBinaryPackageFormat
 poolify = Poolifier().poolify
 
 
-def check_not_in_librarian(files, package_root, directory):
+def check_not_in_librarian(files, archive_root, directory):
     to_upload = []
     if not isinstance(files, list):
         # A little bit of ugliness. The source package's files attribute
@@ -59,11 +59,14 @@ def check_not_in_librarian(files, package_root, directory):
         files = [(None, files)]
     for i in files:
         fname = i[-1]
-        path = os.path.join(package_root, directory)
+        path = os.path.join(archive_root, directory)
         if not os.path.exists(os.path.join(path, fname)):
             # XXX: untested
-            raise PoolFileNotFound('Package %s not found on archive '
+            raise PoolFileNotFound('Package %s not found in archive '
                                    '%s' % (fname, path))
+        # XXX: <stub> Until I or someone else completes
+        # LibrarianGarbageCollection (the first half of which is
+        # awaiting review)
         #if checkLibraryForFile(path, fname):
         #    # XXX: untested
         #    raise LibrarianHasFileError('File %s already exists in the '
@@ -103,7 +106,7 @@ class ImporterHandler:
     This class is used to handle the import process.
     """
     def __init__(self, ztm, distro_name, distrorelease_name, dry_run,
-                 ktdb, poolroot, keyrings, pocket):
+                 ktdb, archive_root, keyrings, pocket):
         self.dry_run = dry_run
 
         self.ztm = ztm
@@ -115,9 +118,9 @@ class ImporterHandler:
         self.imported_sources = []
         self.imported_bins = {}
 
-        self.sphandler = SourcePackageReleaseHandler(ktdb, poolroot,
+        self.sphandler = SourcePackageReleaseHandler(ktdb, archive_root,
                                                      keyrings, pocket)
-        self.bphandler = BinaryPackageHandler(self.sphandler, poolroot)
+        self.bphandler = BinaryPackageHandler(self.sphandler, archive_root)
 
     def commit(self):
         """Commit to the database."""
@@ -339,11 +342,11 @@ class SourcePackageReleaseHandler:
     This class has methods to make the sourcepackagerelease access
     on the launchpad db a little easier.
     """
-    def __init__(self, KTDB, archiveroot, keyrings, pocket):
+    def __init__(self, KTDB, archive_root, keyrings, pocket):
         self.person_handler = PersonHandler()
         self.distro_handler = DistroHandler()
         self.ktdb = KTDB
-        self.archiveroot = archiveroot
+        self.archive_root = archive_root
         self.keyrings = keyrings
         self.pocket = pocket
 
@@ -382,13 +385,11 @@ class SourcePackageReleaseHandler:
         log.debug("Looking for source package %r (%r) in %r" %
                   (sp_name, sp_version, sp_component))
 
-        sp_data = self._getSourcePackageDataFromDSC(sp_name, 
+        sp_data = self._getSourcePackageDataFromDSC(sp_name,
             sp_version, sp_component, sp_section)
 
         # Process the package
-        sp_data.process_package(self.ktdb,
-                                os.path.join(self.archiveroot, "pool"),
-                                self.keyrings)
+        sp_data.process_package(self.ktdb, self.archive_root, self.keyrings)
         sp_data.ensure_complete(self.ktdb)
 
         spr = self.createSourcePackageRelease(sp_data, distrorelease)
@@ -408,11 +409,9 @@ class SourcePackageReleaseHandler:
 
     def _getSourcePackageDataFromDSC(self, sp_name, sp_version,
                                      sp_component, sp_section):
-        # XXX: duplicates poolify call
-        directory = os.path.join(self.archiveroot, "pool",
-                                 poolify(sp_name, sp_component))
         try:
-            dsc_name, dsc_path = get_dsc_path(sp_name, sp_version, directory)
+            dsc_name, dsc_path = get_dsc_path(sp_name, sp_version,
+                                              sp_component, self.archive_root)
         except PoolFileNotFound:
             # Aah well, no source package in archive either.
             return None
@@ -421,7 +420,8 @@ class SourcePackageReleaseHandler:
 
         # Since the dsc doesn't know, we add in the directory, package
         # component and section
-        dsc_contents['directory'] = poolify(sp_name, sp_component)
+        dsc_contents['directory'] = os.path.join("pool",
+                                                 poolify(sp_name, sp_component))
         dsc_contents['package'] = sp_name
         dsc_contents['component'] = sp_component
         dsc_contents['section'] = sp_section
@@ -518,7 +518,7 @@ class SourcePackageReleaseHandler:
         #         else:
         key = None
 
-        to_upload = check_not_in_librarian(src.files, src.package_root,
+        to_upload = check_not_in_librarian(src.files, src.archive_root,
                                            src.directory)
 
         #
@@ -605,6 +605,8 @@ class SourcePublisher:
 
     def _checkPublishing(self, sourcepackagerelease, distrorelease):
         """Query for the publishing entry"""
+        # XXX: we really shouldn't use selectOneBy here, because it will
+        # blow up if we have database duplication issues.
         return SecureSourcePackagePublishingHistory.selectOneBy(
             sourcepackagereleaseID=sourcepackagerelease.id,
             distroreleaseID=distrorelease.id)
@@ -612,12 +614,12 @@ class SourcePublisher:
 
 class BinaryPackageHandler:
     """Handler to deal with binarypackages."""
-    def __init__(self, sphandler, poolroot):
+    def __init__(self, sphandler, archive_root):
         # Create other needed object handlers.
         self.person_handler = PersonHandler()
         self.distro_handler = DistroHandler()
         self.source_handler = sphandler
-        self.archiveroot = poolroot
+        self.archive_root = archive_root
 
     def checkBin(self, binarypackagedata, archinfo):
         try:
@@ -654,6 +656,8 @@ class BinaryPackageHandler:
             query += (" AND DistroArchRelease.architecturetag = %s" %
                       quote(architecture))
 
+        # XXX: we really shouldn't use selectOne here, because it will
+        # blow up if we have database duplication issues.
         bpr = BinaryPackageRelease.selectOne(query, clauseTables=clauseTables)
         if bpr is None:
             log.debug('BPR not found: %r %r %r, query=%s' % (
@@ -663,7 +667,7 @@ class BinaryPackageHandler:
     def createBinaryPackage(self, bin, srcpkg, distroarchinfo, archtag):
         """Create a new binarypackage."""
         fdir, fname = os.path.split(bin.filename)
-        to_upload = check_not_in_librarian(fname, bin.package_root, fdir)
+        to_upload = check_not_in_librarian(fname, bin.archive_root, fdir)
         fname, path = to_upload[0]
 
         componentID = self.distro_handler.getComponentByName(bin.component).id
@@ -725,6 +729,8 @@ class BinaryPackageHandler:
             query += ("AND DistroArchRelease.architecturetag = %s" 
                       % quote(archtag))
 
+        # XXX: we really shouldn't use selectOne here, because it will
+        # blow up if we have database duplication issues.
         build = Build.selectOne(query, clauseTables)
         if build:
             for bpr in build.binarypackages:

@@ -76,6 +76,7 @@ __all__ = (
 'SourcePackageUrgency',
 'SpecificationPriority',
 'SpecificationStatus',
+'SprintSpecificationStatus',
 'SSHKeyType',
 'TextDirection',
 'TicketPriority',
@@ -1206,6 +1207,14 @@ class SpecificationStatus(DBSchema):
         codebase to which it was targeted.
         """)
 
+    INFORMATIONAL = Item(55, """
+        Informational
+
+        This specification does not need to be implemented. It is an
+        overview, or documentation spec, that describes high level behaviour
+        and links to actual specifications for implementation.
+        """)
+
     SUPERCEDED = Item(60, """
         Superceded
 
@@ -1221,6 +1230,35 @@ class SpecificationStatus(DBSchema):
         This specification has been obsoleted. Probably, we decided not to
         implement it for some reason. It should not be displayed, and people
         should not put any effort into implementing it.
+        """)
+
+
+class SprintSpecificationStatus(DBSchema):
+    """The current approval status of the spec on this sprints agenda.
+    
+    This enum allows us to know whether or not the meeting admin team has
+    agreed to discuss an item.
+    """
+
+    APPROVED = Item(10, """
+        approved
+
+        This spec has been approved for the meeting agenda.
+        """)
+
+    DECLINED = Item(20, """
+        declined
+
+        This spec was submitted for consideration for the meeting agenda but
+        has been declined.
+        """)
+
+    SUBMITTED = Item(30, """
+        submitted
+
+        This spec has been submitted for consideration by the meeting
+        organisers. It has not yet been approved or declined for the meeting
+        agenda.
         """)
 
 
@@ -1557,6 +1595,9 @@ class DistroReleaseQueueStatus(DBSchema):
         is present to allow logging tools to record the rejection and then
         clean up any subsequently unnecessary records.  """)
 
+# If you change this (add items, change the meaning, whatever) search for
+# the token ##CUSTOMFORMAT## e.g. database/queue.py or nascentupload.py and
+# update the stuff marked with it.
 class DistroReleaseQueueCustomFormat(DBSchema):
     """Custom formats valid for the upload queue
 

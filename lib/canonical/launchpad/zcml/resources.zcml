@@ -1,6 +1,5 @@
 <configure xmlns="http://namespaces.zope.org/browser">
     <!-- Style sheets -->
-    <resource name="plone.css" file="../templates/plone.css" />
     <resource name="launchpad.css" file="../templates/launchpad.css" />
 
     <!-- Javascript -->
@@ -77,6 +76,7 @@
     <resource name="red-bar.png" file="../images/red-bar.png" />
     <resource name="required.gif" file="../images/required.gif" />
     <resource name="retry" file="../images/retry.png" />
+    <resource name="search" file="../images/search_icon.gif" />
     <resource name="search_icon.gif" file="../images/search_icon.gif" />
     <resource name="sendto.gif" file="../images/sendto.gif" />
     <resource name="spec" file="../images/topic_icon.gif" />

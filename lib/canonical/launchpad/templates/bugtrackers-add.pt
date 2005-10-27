@@ -14,20 +14,7 @@
 
   <div metal:fill-slot="main">
 
-    <div metal:use-macro="context/@@launchpad_addform/addform">
-
-      <div metal:fill-slot="extra_info" class="documentDescription">
-        Please describe the bug tracker below. In particular, please
-        give an accurate Base URL, as that will be used to identify
-        references to this bug tracker in email comments on bugs.
-      </div>
-
-    </div>
-
-    <div>
-      Thank you for adding this information and registering the bugtracker in
-      Launchpad.
-    </div>
+    <div metal:use-macro="context/@@launchpad_addform/addform" />
 
   </div>
     

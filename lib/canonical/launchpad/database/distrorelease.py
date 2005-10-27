@@ -20,12 +20,14 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
     PackagePublishingStatus, BugTaskStatus, EnumCol, DistributionReleaseStatus,
-    DistroReleaseQueueStatus)
+    DistroReleaseQueueStatus, PackagePublishingPocket)
 
 from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
     IPublishedPackageSet, IHasBuildRecords, NotFoundError,
     IBinaryPackageName)
+
+from canonical.database.constants import DEFAULT
 
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
@@ -84,20 +86,31 @@ class DistroRelease(SQLBase):
         dbName='owner', foreignKey='Person', notNull=True)
     lucilleconfig = StringCol(notNull=False, default=None)
     changeslist = StringCol(notNull=False, default=None)
-    architectures = MultipleJoin(
-        'DistroArchRelease', joinColumn='distrorelease',
-        orderBy='architecturetag')
     nominatedarchindep = ForeignKey(
         dbName='nominatedarchindep',foreignKey='DistroArchRelease',
         notNull=False, default=None)
     datelastlangpack = UtcDateTimeCol(dbName='datelastlangpack', notNull=False,
         default=None)
     messagecount = IntCol(notNull=True, default=0)
+    binarycount = IntCol(notNull=True, default=DEFAULT)
+    sourcecount = IntCol(notNull=True, default=DEFAULT)
 
+    architectures = MultipleJoin(
+        'DistroArchRelease', joinColumn='distrorelease',
+        orderBy='architecturetag')
     specifications = MultipleJoin('Specification',
         joinColumn='distrorelease', orderBy='-datecreated')
-    package_caches = MultipleJoin('DistroReleasePackageCache',
-        joinColumn='distrorelease', orderBy='id')
+    binary_package_caches = MultipleJoin('DistroReleasePackageCache',
+        joinColumn='distrorelease', orderBy='name')
+
+    # XXX: dsilvers: 20051013: At some point, get rid of components/sections
+    # from above and rename these and fix up the uploader and queue stuff.
+    real_components = RelatedJoin(
+        'Component', joinColumn='distrorelease', otherColumn='component',
+        intermediateTable='ComponentSelection')
+    real_sections = RelatedJoin(
+        'Section', joinColumn='distrorelease', otherColumn='section',
+        intermediateTable='SectionSelection')
 
     # XXX: dsilvers: 20051013: At some point, get rid of components/sections
     # from above and rename these and fix up the uploader and queue stuff.
@@ -155,24 +168,47 @@ class DistroRelease(SQLBase):
     def status(self):
         return self.releasestatus.title
 
-    @property
-    def sourcecount(self):
-        query = ('SourcePackagePublishing.status = %s '
-                 'AND SourcePackagePublishing.distrorelease = %s'
-                 % sqlvalues(PackagePublishingStatus.PUBLISHED, self.id))
-        return SourcePackagePublishing.select(query).count()
-
-    @property
-    def binarycount(self):
+    def updatePackageCount(self):
         """See IDistroRelease."""
-        clauseTables = ['DistroArchRelease']
-        query = ('BinaryPackagePublishing.status = %s '
-                 'AND BinaryPackagePublishing.distroarchrelease = '
-                 'DistroArchRelease.id '
-                 'AND DistroArchRelease.distrorelease = %s'
-                 % sqlvalues(PackagePublishingStatus.PUBLISHED, self.id))
-        return BinaryPackagePublishing.select(
-            query, clauseTables=clauseTables).count()
+
+        # first update the source package count
+        query = """
+            SourcePackagePublishing.distrorelease = %s AND
+            SourcePackagePublishing.status = %s AND
+            SourcePackagePublishing.pocket = %s AND
+            SourcePackagePublishing.sourcepackagerelease = 
+                SourcePackageRelease.id AND
+            SourcePackageRelease.sourcepackagename =
+                SourcePackageName.id
+            """ % sqlvalues(
+                self.id,
+                PackagePublishingStatus.PUBLISHED,
+                PackagePublishingPocket.RELEASE)
+        self.sourcecount = SourcePackageName.select(query,
+            distinct=True,
+            clauseTables=['SourcePackageRelease',
+                'SourcePackagePublishing']).count()
+
+        # next update the binary count
+        clauseTables = ['DistroArchRelease', 'BinaryPackagePublishing',
+                        'BinaryPackageRelease']
+        query = """
+            BinaryPackagePublishing.binarypackagerelease = 
+                BinaryPackageRelease.id AND
+            BinaryPackageRelease.binarypackagename =
+                BinaryPackageName.id AND
+            BinaryPackagePublishing.status = %s AND
+            BinaryPackagePublishing.pocket = %s AND
+            BinaryPackagePublishing.distroarchrelease = 
+                DistroArchRelease.id AND
+            DistroArchRelease.distrorelease = %s
+            """ % sqlvalues(
+                PackagePublishingStatus.PUBLISHED,
+                PackagePublishingPocket.RELEASE,
+                self.id)
+        ret = BinaryPackageName.select(
+            query, distinct=True, clauseTables=clauseTables).count()
+        self.binarycount = ret
 
     @property
     def architecturecount(self):
@@ -334,6 +370,11 @@ class DistroRelease(SQLBase):
             clauseTables = ['SourcePackageRelease'])
         return shortlist(published)
 
+    def getAllReleasesByStatus(self, status):
+        """See IDistroRelease."""
+        return SourcePackagePublishing.selectBy(distroreleaseID=self.id,
+                                                status=status)
+
     def publishedBinaryPackages(self, component=None):
         """See IDistroRelease."""
         # XXX sabdfl 04/07/05 this can become a utility when that works
@@ -424,7 +465,7 @@ class DistroRelease(SQLBase):
                 'BinaryPackageRelease']))
 
         # remove the cache entries for binary packages we no longer want
-        for cache in self.package_caches:
+        for cache in self.binary_package_caches:
             if cache.binarypackagename not in bpns:
                 cache.destroySelf()
  
@@ -523,12 +564,19 @@ class DistroRelease(SQLBase):
             distrorelease=self, owner=owner)
         return dar
         
-    def createQueueEntry(self, pocket):
+    def createQueueEntry(self, pocket,
+                         status=DistroReleaseQueueStatus.ACCEPTED):
         """See IDistroRelease."""
 
         return DistroReleaseQueue(distrorelease=self.id,
                                   pocket=pocket,
-                                  status=DistroReleaseQueueStatus.ACCEPTED)
+                                  status=status)
+
+    def getQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED):
+        """See IDistroRelease."""
+
+        return DistroReleaseQueue.selectBy(distroreleaseID=self.id,
+                                           status=status)
 
 
 class DistroReleaseSet:

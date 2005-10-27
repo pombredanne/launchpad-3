@@ -82,7 +82,7 @@ class Product(SQLBase):
                           default=None, forceDBName=True)
 
     specifications = MultipleJoin('Specification', joinColumn='product',
-        orderBy=['-datecreated', 'id'])
+        orderBy=['-priority', '-datecreated', 'id'])
 
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""

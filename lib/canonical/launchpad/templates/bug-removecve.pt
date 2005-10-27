@@ -17,9 +17,9 @@
   <div metal:use-macro="context/@@launchpad_generalform/generalform">
 
     <div metal:fill-slot="extra_info" class="documentDescription">
-      Use this form to remove the link between <span
-      tal:replace="context/displayname">Bug #123</span> and a
-      CVE database entry.
+      Are you sure you want to remove the link between
+      <span tal:replace="context/displayname">Bug #123</span> and the
+      CVE entry?
     </div>
 
   </div>

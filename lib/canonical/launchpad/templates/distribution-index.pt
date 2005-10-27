@@ -40,9 +40,7 @@
       </tr>
     </thead>
     <tbody>
-      <tr tal:repeat="release context/releases"
-          tal:attributes="onclick
-              string:window.location='${release/name}'">
+      <tr tal:repeat="release context/releases">
         <td tal:content="release/displayname">displayname</td>
         <td><a tal:content="release/title"
                tal:attributes="href string:${release/name}">
@@ -53,11 +51,10 @@
       </tr>
     </tbody>
   </table>
-    
-  <!--It is not inside the table because this table rows behave like links-->
-  <i tal:condition="not: context/releases">
-    &nbsp&nbsp&nbsp No Releases Yet.
-  </i>
+
+    <i tal:condition="not: context/releases">
+      No releases yet.
+    </i>
 
   <div class="highlighted" style="font-size: 80%;">
     <p tal:replace="structure context/description/fmt:text-to-html">

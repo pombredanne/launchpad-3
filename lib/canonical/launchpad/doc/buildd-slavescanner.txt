@@ -47,6 +47,9 @@ Mock Builder, a class to emulate the Builder behaviour:
   ...         self.url = 'http://fake:0000'
   ...         slave.urlbase = self.url
   ...         self.name = name
+  ...     def failbuilder(self, reason):
+  ...         self.builderok = False
+  ...         self.failnotes = reason
 
 Let's play with a BuilderGroup method designed to rescue build slaves
 that are processing unknown jobs. In real conditions, this situation
@@ -328,6 +331,9 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
   >>> bqItem6 = MockBuildQueue(1, builder6, MockBuild())
   >>> buildergroup.updateBuild(bqItem6, librarian)
   WARNING:root:***** I am out of order has failed *****
+  >>> builder6.failnotes
+  'Builder returned BUILDERFAIL when asked for its status'
+
   >>> assert bqItem6.builder is None
   >>> bqItem6.build.buildstate.title
   'Needs building'

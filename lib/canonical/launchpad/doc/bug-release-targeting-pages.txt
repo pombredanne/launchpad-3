@@ -43,11 +43,14 @@ that the data is as we expect it to be.
   >>> spnameset = getUtility(ISourcePackageNameSet)
   >>> personset = getUtility(IPersonSet)
 
-  >>> print len(release_target_details)
-  3
+  >>> for item in release_target_details:
+  ...     print item.release.name
+  grumpy
+  hoary
+  warty
 
-  >>> release_target_details[0].release == distroreleaseset.get(1)
-  True
+  >>> release_target_details[0].release.name
+  u'grumpy'
   >>> release_target_details[0].istargeted == False
   True
   >>> release_target_details[0].sourcepackage.sourcepackagename == spnameset.get(1)
@@ -57,8 +60,8 @@ that the data is as we expect it to be.
   >>> release_target_details[0].status is None
   True
 
-  >>> release_target_details[1].release == distroreleaseset.get(3)
-  True
+  >>> release_target_details[1].release.name
+  u'hoary'
   >>> release_target_details[1].istargeted == False
   True
   >>> release_target_details[1].sourcepackage.sourcepackagename == spnameset.get(1)
@@ -68,8 +71,8 @@ that the data is as we expect it to be.
   >>> release_target_details[1].status is None
   True
 
-  >>> release_target_details[2].release == distroreleaseset.get(5)
-  True
+  >>> release_target_details[2].release.name
+  u'warty'
   >>> release_target_details[2].istargeted == False
   True
   >>> release_target_details[2].sourcepackage.sourcepackagename == spnameset.get(1)

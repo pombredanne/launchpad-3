@@ -1,29 +1,37 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = [
-    'DistroArchRelease',
-    'PocketChroot',
-    ]
+__all__ = ['DistroArchRelease',
+           'DistroArchReleaseSet',
+           'PocketChroot'
+           ]
 
 from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    BoolCol, StringCol, ForeignKey, RelatedJoin, SQLObjectNotFound)
+    BoolCol, IntCol, StringCol, ForeignKey, RelatedJoin, SQLObjectNotFound)
 
 from canonical.lp import dbschema
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.constants import DEFAULT
 
 from canonical.launchpad.interfaces import (
     IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot,
-    IHasBuildRecords, IBinaryPackageName)
+    IHasBuildRecords, IBinaryPackageName, IDistroArchReleaseSet
+    )
 
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.distroarchreleasebinarypackage import (
     DistroArchReleaseBinaryPackage)
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.publishing import BinaryPackagePublishing
+from canonical.launchpad.database.publishedpackage import PublishedPackage
+from canonical.launchpad.database.build import Build
+from canonical.launchpad.database.processor import Processor
+from canonical.launchpad.database.binarypackagename import BinaryPackageName
+from canonical.launchpad.database.binarypackagerelease import (
+    BinaryPackageRelease)
 from canonical.launchpad.helpers import shortlist
 
 
@@ -38,6 +46,7 @@ class DistroArchRelease(SQLBase):
     architecturetag = StringCol(notNull=True)
     official = BoolCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    package_count = IntCol(notNull=True, default=DEFAULT)
 
     packages = RelatedJoin('BinaryPackageRelease',
         joinColumn='distroarchrelease',
@@ -48,6 +57,17 @@ class DistroArchRelease(SQLBase):
         return self.getBinaryPackage(name)
 
     @property
+    def default_processor(self):
+        """See IDistroArchRelease"""
+        return self.processors[0]
+        
+    @property
+    def processors(self):
+        """See IDistroArchRelease"""
+        return Processor.selectBy(familyID=self.processorfamily.id,
+                                  orderBy='id')
+
+    @property
     def title(self):
         """See IDistroArchRelease """
         return '%s for %s (%s)' % (
@@ -56,15 +76,22 @@ class DistroArchRelease(SQLBase):
             )
 
     @property
-    def binarycount(self):
+    def displayname(self):
+        """See IDistroArchRelease."""
+        return '%s %s' % (self.distrorelease.name, self.architecturetag)
+   
+    def updatePackageCount(self):
         """See IDistroArchRelease """
-        # XXX: Needs system doc test. SteveAlexander 2005-04-24.
-        query = ('BinaryPackagePublishing.distroarchrelease = %s AND '
-                 'BinaryPackagePublishing.status = %s'
-                 % sqlvalues(
-                    self.id, dbschema.PackagePublishingStatus.PUBLISHED
-                 ))
-        return BinaryPackagePublishing.select(query).count()
+        query = """
+            BinaryPackagePublishing.distroarchrelease = %s AND 
+            BinaryPackagePublishing.status = %s AND
+            BinaryPackagePublishing.pocket = %s
+            """ % sqlvalues(
+                    self.id,
+                    dbschema.PackagePublishingStatus.PUBLISHED,
+                    dbschema.PackagePublishingPocket.RELEASE
+                 )
+        self.package_count = BinaryPackagePublishing.select(query).count()
 
     @property
     def isNominatedArchIndep(self):
@@ -90,6 +117,27 @@ class DistroArchRelease(SQLBase):
         binset = getUtility(IBinaryPackageReleaseSet)
         return binset.findByNameInDistroRelease(
             self.distrorelease.id, pattern, self.architecturetag, fti)
+
+    def searchBinaryPackages(self, text):
+        """See IDistroArchRelease."""
+        bprs = BinaryPackageRelease.select("""
+            BinaryPackagePublishing.distroarchrelease = %s AND
+            BinaryPackagePublishing.binarypackagerelease = 
+                BinaryPackageRelease.id AND
+            BinaryPackageRelease.fti @@ ftq(%s)
+            """ % sqlvalues(self.id, text),
+            selectAlso="""
+                rank(BinaryPackageRelease.fti, ftq(%s))
+                AS rank""" % sqlvalues(text),
+            clauseTables=['BinaryPackagePublishing'],
+            orderBy=['-rank'],
+            distinct=True)
+        # import here to avoid circular import problems
+        from canonical.launchpad.database import (
+            DistroArchReleaseBinaryPackageRelease)
+        return [DistroArchReleaseBinaryPackageRelease(
+                    distroarchrelease=self,
+                    binarypackagerelease=bpr) for bpr in bprs]
 
     def getBinaryPackage(self, name):
         """See IDistroArchRelease."""
@@ -132,7 +180,28 @@ class DistroArchRelease(SQLBase):
                             name.id))+pocketclause,
             clauseTables = ['BinaryPackageRelease'])
         return shortlist(published)
+        
+    def findDepCandidateByName(self, name):
+        """See IPublishedSet."""
+        return PublishedPackage.selectOneBy(
+            binarypackagename=name, distroarchreleaseID=self.id
+            )
 
+
+class DistroArchReleaseSet:
+    """This class is to deal with DistroArchRelease related stuff"""
+
+    implements(IDistroArchReleaseSet)
+
+    def __iter__(self):
+        return iter(DistroArchRelease.select())
+        
+    def get(self, dar_id):
+        """See canonical.launchpad.interfaces.IDistributionSet."""
+        return DistroArchRelease.get(dar_id)
+
+    def count(self):
+        return DistroArchRelease.select().count()
 
 class PocketChroot(SQLBase):
     implements(IPocketChroot)

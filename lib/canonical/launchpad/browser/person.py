@@ -69,6 +69,7 @@ from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.helpers import (
         obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
 from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 from canonical.launchpad.webapp import (
@@ -112,6 +113,10 @@ class PersonSetNavigation(Navigation):
 
     def breadcrumb(self):
         return 'People'
+
+    @stepto('+me')
+    def me(self):
+        return getUtility(ILaunchBag).user
 
     def traverse(self, name):
         return self.context.getByName(name)
@@ -242,11 +247,16 @@ class PersonSpecsMenu(ApplicationMenu):
 
     facet = 'specifications'
 
-    links = ['created', 'assigned', 'drafted', 'review', 'subscribed']
+    links = ['created', 'assigned', 'drafted', 'review', 'approver',
+             'subscribed']
 
     def created(self):
         text = 'Specifications Created'
         return Link('+createdspecs', text, icon='spec')
+
+    def approver(self):
+        text = 'Specifications to Approve'
+        return Link('+approverspecs', text, icon='spec')
 
     def assigned(self):
         text = 'Specifications Assigned'
@@ -959,6 +969,31 @@ class PersonView:
                 <blockquote>%s</blockquote>
                 Try again later or cancel your request.""" % key)
 
+        # revoked and expired keys can not be imported.
+        if key.revoked:
+            return (
+                "The key %s cannot be validated because it has been "
+                "publicly revoked. You will need to generate a new key "
+                "(using <kbd>gpg --genkey</kbd>) and repeat the previous "
+                "process to find and import the new key." % key.keyid)
+
+        if key.expired:
+            return (
+                "The key %s cannot be validated because it has expired. "
+                "You will need to generate a new key "
+                "(using <kbd>gpg --genkey</kbd>) and repeat the previous "
+                "process to find and import the new key." % key.keyid)
+
+        # XXX: jamesh 20051012
+        # This code will change once we have support for validating
+        # sign-only keys.
+        if not key.can_encrypt:
+            return (
+                "Launchpad does not currently support validation of "
+                "sign-only GPG keys.  If you add an encryption subkey "
+                "(using <kbd>gpg --edit-key</kbd>) and upload your key "
+                "again, you should be able to import the key.")
+
         self._validateGPG(key)
 
         return ('A message has been sent to <code>%s</code>, encrypted with '
@@ -1616,6 +1651,13 @@ class ObjectReassignmentView:
                     "Launchpad. Please choose a different name or select "
                     "the option to make that person/team the new owner, "
                     "if that's what you want." % owner_name)
+                return None
+
+            if not valid_name(owner_name):
+                self.errormessage = (
+                    "'%s' is not a valid name for a team. Please make sure "
+                    "it contains only the allowed characters and no spaces."
+                    % owner_name)
                 return None
 
             owner = personset.newTeam(

@@ -37,7 +37,7 @@
     bounty has been completed.
   </p>
 
-  <tal:block repeat="message context/messages">
+  <tal:message repeat="message context/messages">
     <div class="boardComment"
          tal:condition="python:context.description != message.contents">
 
@@ -60,7 +60,7 @@
       </div>
 
     </div>
-  </tal:block> <!-- repeating over message -->
+  </tal:message>
 
   <tal:logged-in condition="request/lp:person">
     <fieldset class="collapsible collapsed">

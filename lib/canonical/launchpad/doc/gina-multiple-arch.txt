@@ -100,5 +100,41 @@ And rock this baby:
     >>> proc.wait()
     0
 
-XXX: TBD
+Check that the source package was correctly imported:
+
+    >>> from canonical.launchpad.database import (SourcePackageName,
+    ...      BinaryPackageName)
+    >>> n = SourcePackageName.selectOneBy(name="ekg")
+    >>> ekg = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
+    ...                                        version="1:1.5-4ubuntu1.2")
+    >>> print ekg.section.name
+    net
+    >>> print ekg.component.name
+    main
+
+And that one of the packages in main is here too:
+
+    >>> n = BinaryPackageName.selectOneBy(name="libgadu-dev")
+    >>> ekg = BinaryPackageRelease.selectOneBy(binarypackagenameID=n.id,
+    ...                                        version="1:1.5-4ubuntu1.2")
+    >>> print ekg.section.name
+    libdevel
+    >>> print ekg.component.name
+    main
+
+And finally, that the package it generates in universe was successfully
+processed. In particular, its section should be stripped of the
+component name.
+
+    >>> from canonical.lp.dbschema import PackagePublishingPriority
+    >>> n = BinaryPackageName.selectOneBy(name="ekg")
+    >>> ekg = BinaryPackageRelease.selectOneBy(binarypackagenameID=n.id,
+    ...                                        version="1:1.5-4ubuntu1.2")
+    >>> print ekg.section.name
+    net
+    >>> print ekg.component.name
+    universe
+    >>> print ekg.priority == PackagePublishingPriority.OPTIONAL
+    True
+
 

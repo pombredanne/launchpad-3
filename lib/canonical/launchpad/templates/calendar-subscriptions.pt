@@ -65,14 +65,11 @@
             </tr>
           </tbody>
         </table>
-        <div class="row">
-          <div class="controls"><hr />
-            <input type='submit' value='Submit'
-              name='UPDATE_SUBMIT' style="float: right;"
-              i18n:attributes='value submit-button' />
-          </div>
+        <div class="actions">
+          <input type='submit' value='Submit'
+            name='UPDATE_SUBMIT'
+            i18n:attributes='value submit-button' />
         </div>
-             
       </form>
     </div>
   </body>

@@ -363,7 +363,7 @@
       <browser:page
           name="+leave"
           template="../templates/team-leave.pt"
-          lp:url="foaf/person/$person.id/+leave" />
+          lp:url="/people/$team.id/+leave" />
   </browser:pages>
 
   <browser:pages
@@ -373,7 +373,7 @@
       <browser:page
           name="+polls"
           template="../templates/team-polls.pt"
-          lp:url="/people/$team.name/+polls" />
+          lp:url="/people/$team.id/+polls" />
   </browser:pages>
 
   <browser:addform
@@ -433,7 +433,7 @@
       <browser:page
           name="+peoplelist"
           template="../templates/people-list.pt"
-          lp:url="foaf/people/+peoplelist" />
+          lp:url="/people/+peoplelist" />
   </browser:pages>
 
   <browser:pages
@@ -443,7 +443,7 @@
       <browser:page
           name="+teamlist"
           template="../templates/people-list.pt"
-          lp:url="foaf/people/+teamlist" />
+          lp:url="/people/+teamlist" />
   </browser:pages>
 
   <browser:pages
@@ -453,7 +453,7 @@
       <browser:page
           name="+ubuntitelist"
           template="../templates/people-list.pt"
-          lp:url="foaf/people/+ubuntitelist" />
+          lp:url="/people/+ubuntitelist" />
   </browser:pages>
 
   <browser:pages
@@ -463,7 +463,7 @@
       <browser:page
           name="+index"
           template="../templates/people-index.pt"
-          lp:url="foaf/people/+index" />
+          lp:url="/people" />
       <browser:page
         name="+portlet-stats"
         template="../templates/people-portlet-stats.pt" />
@@ -478,7 +478,7 @@
       class="canonical.launchpad.browser.RequestPeopleMergeView"
       permission="launchpad.AnyPerson"
       template="../templates/foaf-requestmerge.pt"
-      lp:url="foaf/people/+requestmerge">
+      lp:url="/people/+requestmerge">
   </browser:addform>
 
   <browser:pages
@@ -488,7 +488,7 @@
       <browser:page
           name="+requestmerge-multiple"
           template="../templates/foaf-requestmerge-multiple.pt"
-          lp:url="foaf/people/+requestmerge-multiple" />
+          lp:url="/people/+requestmerge-multiple" />
   </browser:pages>
 
   <browser:pages
@@ -498,7 +498,7 @@
       <browser:page
           name="+mergerequest-sent"
           template="../templates/foaf-mergerequest-sent.pt"
-          lp:url="foaf/people/+mergerequest-sent" />
+          lp:url="/people/+mergerequest-sent" />
   </browser:pages>
 
   <browser:pages

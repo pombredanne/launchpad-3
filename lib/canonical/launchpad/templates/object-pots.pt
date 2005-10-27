@@ -1,6 +1,8 @@
-  <!-- indicate if no templates are registered for this object and
-     redirect to the mailing lists in case that is incorrect
-  -->
+<tal:comment condition="nothing">
+  Indicates if no templates are registered for this object, and
+  redirects to the mailing lists in case that is incorrect.
+</tal:comment>
+
   <tal:block condition="not: context/currentpotemplates">
 
     <h2 i18n:translate="">No Translatable Templates Available</h2>
@@ -15,16 +17,14 @@
     </p>
   </tal:block>
 
-  <tal:block condition="view/templateviews">
+  <tal:templateviews condition="view/templateviews">
 
-    <!-- Listing of MANY templates -->
     <tal:block tal:condition="python:len(context.currentpotemplates) > 5">
+      <!-- Listing of MANY templates -->
 
-      <p>The templates below can all be translated through the Rosetta web
-      interface. Click on your chosen template, then you will have the
-      option to choose the language into which you would like to
-      translate. Note that you can set your preferred languages when you are
-      logged in at <a href="/rosetta/prefs/">this page</a>.</p>
+      <p>
+        These templates can be translated using Rosetta.
+      </p>
 
       <table class="listing">
         <thead>
@@ -46,8 +46,8 @@
 
     </tal:block>
 
-    <!-- Listing of FEW templates. -->
-    <tal:block tal:condition="python:len(context.currentpotemplates) <= 5">
+    <tal:listing tal:condition="python:len(context.currentpotemplates) <= 5">
+      <!-- Listing of FEW templates -->
 
       <div tal:condition="not: view/languages">
         <ul>
@@ -79,11 +79,12 @@
 
       <div tal:replace="structure context/@@+rosetta-status-legend" />
 
-      <p tal:condition="view/languages" i18n:translate="">Note: you can
-      ensure that languages important to you are included in the list above.
-      <a href="/rosetta/prefs/">Click here</a> to select languages now.</p>
+      <ul tal:condition="view/languages">
+        <li class="search" i18n:translate="">
+          <a href="/rosetta/prefs">Customize displayed languages</a>
+        </li>
+      </ul>
 
-    </tal:block> <!-- the detailed template+language listing -->
+    </tal:listing>
 
-  </tal:block> <!-- condition="view/templateviews -->
-
+  </tal:templateviews>

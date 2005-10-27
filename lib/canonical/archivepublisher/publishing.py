@@ -4,9 +4,9 @@
 
 import os
 
-from canonical.lp.dbschema import PackagePublishingStatus, \
-                                  PackagePublishingPriority, \
-                                  PackagePublishingPocket
+from canonical.lp.dbschema import ( PackagePublishingStatus,
+    PackagePublishingPriority, PackagePublishingPocket,
+    DistributionReleaseStatus)
 
 from StringIO import StringIO
 
@@ -27,6 +27,15 @@ pocketsuffix = {
     PackagePublishingPocket.PROPOSED: "-proposed"
     }
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
+
+def package_name(filename):
+    """Extract a package name from a debian package filename."""
+    return (os.path.basename(filename).split("_"))[0]
+
+
+def filechunks(file, chunk_size=256*1024):
+    """Return an iterator which reads chunks of the given file."""
+    return iter(lambda: file.read(chunk_size), '')
 
 
 class Publisher(object):
@@ -86,12 +95,8 @@ class Publisher(object):
             self.debug("Adding %s %s/%s from library" %
                        (component, source, filename))
             inf = self._library.getFileByAlias(alias)
-            while True:
-                s = inf.read(4096)
-                if s:
-                    outf.write(s)
-                else:
-                    break
+            for chunk in filechunks(inf):
+                outf.write(chunk)
             outf.close()
             inf.close()
 
@@ -165,6 +170,7 @@ class Publisher(object):
             this_override = overrides[distrorelease]
             this_override.setdefault(component, {})
             this_override[component].setdefault('src', [])
+            this_override[component].setdefault('bin', [])
             this_override[component]['src'].append((sourcepackagename,
                                                     section))
 
@@ -183,6 +189,7 @@ class Publisher(object):
             overrides.setdefault(distrorelease, {})
             this_override = overrides[distrorelease]
             this_override.setdefault(component, {})
+            this_override[component].setdefault('src', [])
             this_override[component].setdefault('bin', [])
             this_override[component]['bin'].append((binarypackagename,
                                                     priority,
@@ -190,8 +197,9 @@ class Publisher(object):
 
         # Now generate the files on disk...
         for distrorelease in overrides:
-            self.debug("Generating overrides for %s..." % distrorelease)
             for component in overrides[distrorelease]:
+                self.debug("Generating overrides for %s/%s..." % (
+                    distrorelease, component))
                 di_overrides = []
                 # XXX: use os.path.join
                 #   -- kiko, 2005-09-23
@@ -302,7 +310,7 @@ class Publisher(object):
                             di_files.append(name)
                         else:
                             files.append(name)
-                    files.sort(key=os.path.basename)
+                    files.sort(key=package_name)
                     f.write("\n".join(files))
                     f.write("\n")
                     f.close()
@@ -320,7 +328,7 @@ class Publisher(object):
                         f = open("%s/%s_%s_debian-installer_%s" % (
                             self._config.overrideroot, distrorelease,
                             component, architecture), "w")
-                        di_files.sort(key=os.path.basename)
+                        di_files.sort(key=package_name)
                         f.write("\n".join(di_files))
                         f.write("\n")
                         f.close()
@@ -340,8 +348,8 @@ Dir
   
 Default
 {
-  Packages::Compress ". gzip";
-  Sources::Compress ". gzip";
+  Packages::Compress ". gzip bzip2";
+  Sources::Compress ". gzip bzip2";
   Contents::Compress "gzip";
   DeLinkLimit 0;
   MaxContentsChange 12000;
@@ -633,6 +641,7 @@ Description: %s
             for pocket, suffix in pocketsuffix.items():
                 full_distrorelease_name = distrorelease.name + suffix
                 if full_distrorelease_name in self._release_files_needed:
-                    self._writeDistroRelease(distribution, distrorelease,
+                    self._writeDistroRelease(self.distro,
+                                             distrorelease,
                                              full_distrorelease_name)
                 

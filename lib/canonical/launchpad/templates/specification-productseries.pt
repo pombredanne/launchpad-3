@@ -16,11 +16,11 @@
 
     <div metal:use-macro="context/@@launchpad_editform/editform">
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Use this form to target this specification for implementation in a
-      specific release series of
-      <span tal:replace="context/product/displayname">Firefox</span>.
-    </div>
+    <p metal:fill-slot="extra_info">
+      Select the release series of
+      <span tal:replace="context/product/displayname">Firefox</span>
+      for which this feature should be implemented.
+    </p>
 
   </div>
     

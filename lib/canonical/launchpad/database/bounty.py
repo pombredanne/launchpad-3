@@ -58,7 +58,7 @@ class Bounty(SQLBase):
         intermediateTable='ProjectBounty', otherColumn='project',
         orderBy='name')
     distributions = RelatedJoin('Distribution', joinColumn='bounty',
-        intermediateTable='DistroBounty', otherColumn='distribution',
+        intermediateTable='DistributionBounty', otherColumn='distribution',
         orderBy='name')
 
     # subscriptions

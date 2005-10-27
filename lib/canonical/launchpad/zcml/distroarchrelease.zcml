@@ -55,12 +55,12 @@
     </browser:pages>
 
     <browser:page
-        for="canonical.launchpad.database.DistroArchRelease" 
-        permission="zope.Public"
-        name="+pkgsearch"
-        class="canonical.launchpad.browser.DistroArchReleaseBinariesView"
-        template="../templates/distroarchrelease-pkgsearch.pt"
-        />
+      for="canonical.launchpad.database.DistroArchRelease" 
+      permission="zope.Public"
+      name="+search"
+      class="canonical.launchpad.browser.DistroArchReleaseBinariesView"
+      template="../templates/distroarchrelease-search.pt"
+      />
 
     <browser:editform
       for="canonical.launchpad.interfaces.IDistroArchRelease"
@@ -73,5 +73,18 @@
       />
 
 </facet>
+
+    <!-- DistroArchReleaseSet -->
+    <content class="canonical.launchpad.database.DistroArchReleaseSet">
+        <allow interface="canonical.launchpad.interfaces.IDistroArchReleaseSet"/>
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.DistroArchReleaseSet"
+        provides="canonical.launchpad.interfaces.IDistroArchReleaseSet">
+        <allow interface="canonical.launchpad.interfaces.IDistroArchReleaseSet" />
+    </securedutility>
+
+
 
 </configure>

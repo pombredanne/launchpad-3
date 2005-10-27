@@ -196,7 +196,7 @@
         for="canonical.launchpad.interfaces.IBugTask"
         schema="canonical.launchpad.interfaces.IBug"
         class="canonical.launchpad.browser.bug.BugEditView"
-        label="Mark as Duplicate Bug Report"
+        label="Mark Bug Report as a Duplicate"
         permission="launchpad.AnyPerson"
         template="../templates/bug-mark-as-duplicate.pt"
         fields="duplicateof"
@@ -258,7 +258,7 @@
         schema="canonical.launchpad.interfaces.IBugExternalRef"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugExtRefAddView"
-        label="Add External Reference"
+        label="Add Web Link"
         fields="url title"
         arguments=""
         keyword_arguments="url title"
@@ -284,12 +284,6 @@
         template="../templates/bug-watch-add.pt"
         lp:url="malone/bugs/$Bugs.id/watches/+new" />
 
-    <!-- XXX: Brad Bollenbach, 2005-01-18: We need to sort out the +upstreamtask
-    link, because right now it brings the user to a non-context-aware page to
-    file a bug on a package. See the bug filed here:
-
-        https://launchpad.ubuntu.com/malone/bugs/66
-    -->
     <browser:defaultView
         for="canonical.launchpad.interfaces.IUpstreamBugTask"
         name="+index" />
@@ -299,7 +293,7 @@
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.bug.BugAlsoReportInView"
-        label="Request Fix in Upstream App"
+        label="Request Fix in a Product"
         fields="product owner"
         content_factory="canonical.launchpad.database.BugTaskFactory"
         arguments=""
@@ -316,9 +310,8 @@
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
         fields="maintainer_displayname milestone status priority
-                severity assignee bugwatch statusexplanation
-                product"
-        label="Edit Product Bug Task"
+                severity assignee bugwatch statusexplanation product"
+        label="Edit Fix Request"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
@@ -337,7 +330,7 @@
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
         fields="maintainer_displayname milestone status priority severity
                 assignee bugwatch statusexplanation"
-        label="Product Bug Task"
+        label="Product Fix Request"
         permission="launchpad.View"
         template="../templates/bugtask-view.pt"
         lp:url="malone/tasks/$BugTask.id/+index">
@@ -352,7 +345,7 @@
         schema="canonical.launchpad.interfaces.IDistroBugTask"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.bug.BugAlsoReportInView"
-        label="Request Fix in Additional Distribution"
+        label="Request Fix in a Distribution"
         fields="distribution sourcepackagename owner"
         content_factory="canonical.launchpad.database.BugTaskFactory"
         keyword_arguments="distribution sourcepackagename owner"
@@ -372,7 +365,7 @@
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename binarypackagename milestone
                 status priority severity assignee bugwatch statusexplanation"
-        label="Edit SourcePackage Bug Task"
+        label="Edit Fix Request"
         permission="launchpad.AnyPerson"
         template="../templates/bugtask-edit.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
@@ -391,7 +384,7 @@
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename binarypackagename
                 status priority severity assignee bugwatch statusexplanation"
-        label="Source Package Bug Task"
+        label="Source Package Fix Request"
         permission="zope.Public"
         template="../templates/bugtask-view.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
@@ -416,7 +409,7 @@
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename binarypackagename milestone
                 status priority severity assignee bugwatch statusexplanation"
-        label="Edit SourcePackage Bug Task"
+        label="Edit Fix Request"
         permission="launchpad.AnyPerson"
         template="../templates/bugtask-edit.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
@@ -435,26 +428,26 @@
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename binarypackagename status priority severity
                 assignee bugwatch statusexplanation"
-        label="Source Package Bug Task"
+        label="Source Package Fix Request"
         permission="zope.Public"
         template="../templates/bugtask-view.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
     </browser:schemadisplay>
 
     <browser:page
-        name="+target"
-        for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
-        class="canonical.launchpad.browser.BugTaskReleaseTargetingView"
-        permission="launchpad.AnyPerson"
-        template="../templates/bugtask-release-targeting.pt"
-        />
+      name="+target"
+      for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
+      class="canonical.launchpad.browser.BugTaskReleaseTargetingView"
+      permission="launchpad.AnyPerson"
+      template="../templates/bugtask-release-targeting.pt"
+      />
 
     <browser:page
-        for="canonical.launchpad.interfaces.IBugTask"
-        name="+subscribe"
-        class="canonical.launchpad.browser.BugView"
-        permission="launchpad.AnyPerson"
-        template="../templates/bug-subscription.pt" />
+      for="canonical.launchpad.interfaces.IBugTask"
+      name="+subscribe"
+      class="canonical.launchpad.browser.BugView"
+      permission="launchpad.AnyPerson"
+      template="../templates/bug-subscription.pt" />
 
     <browser:page
       name="+linkcve"
@@ -477,7 +470,7 @@
       for="canonical.launchpad.interfaces.IBugTask"
       schema="canonical.launchpad.interfaces.IBugSubscription"
       class="canonical.launchpad.browser.BugSubscriptionAddView"
-      label="Subscribe Someone to Bug"
+      label="Subscribe Someone Else to the Bug Report"
       fields="person"
       keyword_arguments="person"
       permission="launchpad.AnyPerson"

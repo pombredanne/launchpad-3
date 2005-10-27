@@ -3,7 +3,7 @@
   <h4>Duplicates of this bug:</h4>
 
   <div class="portletBody">
-    <div class="portletContent odd">
+    <div class="portletContent">
 
       <ul tal:define="current_task view/currentBugTask">
         <li tal:repeat="dup context/duplicates">

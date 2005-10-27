@@ -2,7 +2,7 @@
   <h4>Revision Control Details:</h4>
 
   <div class="portletBody">
-    <div class="portletContent odd">
+    <div class="portletContent">
       <b>Revision Control System:</b><br />
       <span tal:condition="context/rcstype"
       tal:replace="context/rcstype/title">CVS</span>

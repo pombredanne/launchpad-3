@@ -185,7 +185,7 @@
         for="canonical.launchpad.interfaces.IProductSeries"
         schema="canonical.launchpad.interfaces.IProductSeries"
         facet="overview"
-        label="Review Product Series Details:"
+        label="Review Product Series Details"
         fields="product name"
         permission="launchpad.Admin"
         template="../templates/launchpad-editform.pt"
@@ -222,7 +222,7 @@
         schema="canonical.launchpad.interfaces.IPOTemplateWithContent"
         class="canonical.launchpad.browser.POTemplateAddView"
         facet="translations"
-        label="Add a new Translation Template"
+        label="Add a New Translation Template"
         fields="potemplatename description iscurrent owner path filename
                 content"
         arguments=""

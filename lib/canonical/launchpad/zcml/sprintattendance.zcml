@@ -1,0 +1,26 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  xmlns:lp="http://launchpad.canonical.com"
+  i18n_domain="launchpad">
+
+  <!-- SprintAttendance -->
+  <content class="canonical.launchpad.database.SprintAttendance">
+    <allow interface="canonical.launchpad.interfaces.ISprintAttendance" />
+    <require
+      permission="launchpad.Edit"
+      set_attributes="time_starts time_ends"
+      />
+  </content>
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.ISprintAttendance"
+    name="+edit" />
+
+  <browser:url
+    for="canonical.launchpad.interfaces.ISprintAttendance"
+    path_expression="string:${attendee/name}"
+    attribute_to_parent="sprint" />
+
+</configure>
