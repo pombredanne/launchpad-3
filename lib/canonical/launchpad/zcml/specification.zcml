@@ -82,6 +82,14 @@
       template="../templates/specification-doreview.pt" />
   </browser:pages>
 
+  <browser:page
+    name="+addsubscriber"
+    for="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationSubscriptionAddView"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-addsubscriber.pt"
+    />
+
   <browser:editform
     name="+edit"
     schema="canonical.launchpad.interfaces.ISpecification"

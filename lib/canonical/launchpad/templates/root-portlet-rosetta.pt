@@ -15,7 +15,7 @@
       <tal:block repeat="drl view/ubuntu_languages">
         <span tal:replace="drl/language/englishname">Latin</span>:<br />
         <a tal:attributes="href drl/fmt:url"
-          ><div tal:replace="structure drl/@@+barchart" /></a>
+          ><div tal:replace="structure drl/@@+barchart" /></a><br />
       </tal:block>
     </div>
   </div>

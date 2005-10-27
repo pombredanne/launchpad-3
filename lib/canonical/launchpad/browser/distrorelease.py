@@ -131,11 +131,15 @@ class DistroReleaseSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistroRelease
     facet = 'specifications'
-    links = ['new', 'roadmap']
+    links = ['roadmap', 'table', 'new']
 
     def new(self):
-        text = 'Register a New Specification'
+        text = 'New Specification'
         return Link('+addspec', text, icon='add')
+
+    def table(self):
+        text = 'Assignments Table'
+        return Link('+specstable', text, icon='info')
 
     def roadmap(self):
         text = 'Roadmap'

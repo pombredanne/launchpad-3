@@ -683,7 +683,7 @@ COMMENT ON COLUMN BountySubscription.person IS 'The person being subscribed to t
 
 COMMENT ON TABLE ProductBounty IS 'This table records a simple link between a bounty and a product. This bounty will be listed on the product web page, and the product will be mentioned on the bounty web page.';
 
-COMMENT ON TABLE DistroBounty IS 'This table records a simple link between a bounty and a distribution. This bounty will be listed on the distribution web page, and the distribution will be mentioned on the bounty web page.';
+COMMENT ON TABLE DistributionBounty IS 'This table records a simple link between a bounty and a distribution. This bounty will be listed on the distribution web page, and the distribution will be mentioned on the bounty web page.';
 
 COMMENT ON TABLE ProjectBounty IS 'This table records a simple link between a bounty and a project. This bounty will be listed on the project web page, and the project will be mentioned on the bounty web page.';
 
@@ -1099,7 +1099,7 @@ COMMENT ON COLUMN Poll.secrecy IS 'If people votes are SECRET (no one can see), 
 COMMENT ON TABLE PollOption IS 'The options belonging to polls.';
 COMMENT ON COLUMN PollOption.poll IS 'The poll this options belongs to.';
 COMMENT ON COLUMN PollOption.name IS 'The name of this option.';
-COMMENT ON COLUMN PollOption.shortname IS 'A short name for this option.';
+COMMENT ON COLUMN PollOption.title IS 'A short title for this option.';
 COMMENT ON COLUMN PollOption.active IS 'If TRUE, people will be able to vote on this option. Otherwise they don\'t.';
 
 -- Vote

@@ -52,13 +52,9 @@ class Poll(SQLBase):
     secrecy = EnumCol(dbName='secrecy', schema=PollSecrecy,
                       default=PollSecrecy.SECRET)
 
-    def newOption(self, name, shortname=None, active=True):
+    def newOption(self, name, title, active=True):
         """See IPoll."""
-        # We don't want shortname to be an empty string. That's why we're
-        # using "if not shortname" instead of "if shortname is not None".
-        if not shortname:
-            shortname = name
-        return getUtility(IPollOptionSet).new(self, name, shortname, active)
+        return getUtility(IPollOptionSet).new(self, name, title, active)
 
     def isOpen(self, when=None):
         """See IPoll."""
@@ -292,20 +288,15 @@ class PollOption(SQLBase):
 
     implements(IPollOption)
     _table = 'PollOption'
-    _defaultOrder = ['shortname', 'id']
+    _defaultOrder = ['title', 'id']
 
     poll = ForeignKey(dbName='poll', foreignKey='Poll', notNull=True)
 
-    name = StringCol(dbName='name', notNull=True)
+    name = StringCol(notNull=True)
 
-    shortname = StringCol(dbName='shortname', notNull=True)
+    title = StringCol(notNull=True)
 
-    active = BoolCol(dbName='active', notNull=True, default=False)
-
-    @property
-    def title(self):
-        """See IPollOption."""
-        return self.shortname
+    active = BoolCol(notNull=True, default=False)
 
 
 class PollOptionSet:
@@ -313,10 +304,10 @@ class PollOptionSet:
 
     implements(IPollOptionSet)
 
-    def new(self, poll, name, shortname, active=True):
+    def new(self, poll, name, title, active=True):
         """See IPollOptionSet."""
         return PollOption(
-            pollID=poll.id, name=name, shortname=shortname, active=active)
+            pollID=poll.id, name=name, title=title, active=active)
 
     def selectByPoll(self, poll, only_active=False):
         """See IPollOptionSet."""

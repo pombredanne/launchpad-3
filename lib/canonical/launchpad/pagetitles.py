@@ -556,7 +556,7 @@ def poll_new(context, view):
     return 'Create a new Poll in team %s' % context.team.displayname
 
 def polloption_edit(context, view):
-    return 'Edit option: %s' % context.shortname
+    return 'Edit option: %s' % context.title
 
 poll_options = ContextTitle('Options of Poll: %s')
 
@@ -759,6 +759,8 @@ sourcesource_index = 'Upstream Source Import'
 
 specification_add = 'Register a feature specification in Launchpad'
 
+specification_addsubscriber = 'Subscribe someone else to this spec'
+
 specification_bug = ContextTitle(
   'Link specification \N{left double quotation mark}%s'
   '\N{right double quotation mark} to a bug report')
@@ -811,6 +813,10 @@ sprint_edit = ContextTitle('Edit Meeting Details: %s')
 sprint_index = ContextTitle('%s (Sprint or Meeting)')
 
 sprint_new = 'Register a new Meeting or Sprint in Launchpad'
+
+sprint_table = ContextTitle('Table of Specs for %s')
+
+sprint_workload = ContextTitle('Workload at %s')
 
 sprints_index = 'Launchpad Meeting or Sprint Registry'
 

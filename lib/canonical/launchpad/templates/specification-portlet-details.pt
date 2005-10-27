@@ -4,7 +4,7 @@
 
   <div class="portletBody portletContent">
 
-    <b>Spec:</b>
+    <b>Spec:</b><br />
     <a tal:content="context/name"
        tal:attributes="href context/fmt:url">fix-foo-bar</a><br />
     <b>For:</b>
@@ -18,18 +18,16 @@
     <b>Status:</b>
     <span tal:replace="context/status/title">Approved</span>
     <br />
-    <b>Creator:</b><br />
+    <b>Registrant:</b><br />
     <img src="/++resource++user.gif" />
     <a tal:content="context/owner/browsername"
        tal:attributes="href context/owner/fmt:url">Foo Bar</a><br />
-    <b>Created:</b>
-    <span tal:replace="context/datecreated/fmt:date">2005-06-07</span><br />
     <b>Assignee:</b><br />
     <img src="/++resource++user.gif" />
     <a tal:condition="context/assignee"
        tal:content="context/assignee/browsername"
        tal:attributes="href context/assignee/fmt:url">Foo Bar</a>
-    <i tal:condition="not: context/assignee">No assignee yet</i><br />
+    <i tal:condition="not: context/assignee">No assignee</i><br />
     <b>Drafter:</b><br />
     <img src="/++resource++user.gif" />
     <a tal:condition="context/drafter"
@@ -42,6 +40,8 @@
        tal:content="context/approver/browsername"
        tal:attributes="href context/approver/fmt:url">Foo Bar</a>
     <i tal:condition="not: context/approver">No approver</i><br />
+    <b>Registered:</b>
+    <span tal:replace="context/datecreated/fmt:date">2005-06-07</span><br />
     <tal:has_sprints define="sprint_links context/sprint_links"
                      condition="sprint_links">
       <b>Sprints:</b><br />

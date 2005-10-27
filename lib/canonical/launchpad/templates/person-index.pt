@@ -44,6 +44,12 @@
        The home page content goes here.
     </tal:homepage>
     <br style="clear: both" />
+    <tal:block condition="context/teamdescription">
+      <b>Team Description:</b>
+      <span tal:replace="context/teamdescription">DESCRIPTION</span>
+      <br />
+    </tal:block>
+               
   </div>
 
 
@@ -104,12 +110,18 @@
   </table>
 
   <tal:members condition="context/isTeam">
+
     <h2>Team members</h2>
+
     <p>
       There are <span tal:replace="context/active_member_count">15</span>
       direct members of the 
-      "<span tal:replace="context/browsername">Ubuntu Members</span>" team.
+      "<span tal:replace="context/browsername">Ubuntu Members</span>" team,
+      and <span tal:replace="context/all_member_count">23</span> people are
+      members in total, directly and indirectly through other team
+      memberships.
     </p>
+
     <ul>
       <tal:block repeat="membership context/activememberships">
         <li tal:condition="not: membership/person/isTeam">

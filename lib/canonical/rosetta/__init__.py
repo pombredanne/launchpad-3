@@ -25,6 +25,7 @@ class RosettaApplication:
 
     def __init__(self):
         self.title = 'Rosetta: Translations in the Launchpad'
+        self.name = 'Rosetta'
 
     @property
     def statsdate(self):
@@ -88,6 +89,4 @@ class RosettaApplication:
         """See IRosettaApplication."""
         stats = getUtility(ILaunchpadStatisticSet)
         return stats.value('language_count')
-
-    name = 'Rosetta'
 
