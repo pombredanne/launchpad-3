@@ -154,7 +154,7 @@ Package: 3dchess
 Binary: 3dchess
 Version: 0.8.1-11
 Priority: optional
-Section: universe/games
+Section: games
 Maintainer: Stephen Stafford <bagpuss@debian.org>
 Build-Depends: debhelper, xaw3dg-dev, xlibs-dev
 Architecture: any
@@ -165,4 +165,20 @@ Files:
  ee24555acce059e14a8756cd5635593a 580 3dchess_0.8.1-11.dsc
  5390c60953446e541d9455d9c4e38ca1 46371 3dchess_0.8.1.orig.tar.gz
  9eac46d2c1664dd09b1e0c9d5e7a72ae 4747 3dchess_0.8.1-11.diff.gz
+
+Package: 9wm
+Binary: 9wm
+Version: 1.2-6
+Priority: optional
+Section: x11
+Maintainer: Decklin Foster <decklin@red-bean.com>
+Build-Depends: debhelper (>= 4.0), xutils, xlibs-dev
+Architecture: any
+Standards-Version: 3.6.1
+Format: 1.0
+Directory: pool/main/9/9wm
+Files:
+ 937b8ab18df6f4f262e1f8eea7e04099 559 9wm_1.2-6.dsc
+ b7e9502f430550ac5fff7507fc9ae8b6 20766 9wm_1.2.orig.tar.gz
+ 3bccc7fd96b584891d336a7afd1dbd04 2533 9wm_1.2-6.diff.gz
 

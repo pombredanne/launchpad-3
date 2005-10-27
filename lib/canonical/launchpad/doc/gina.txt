@@ -81,6 +81,8 @@ packages successfully (at least partially):
      but which is missing a version field in its Sources file.
      Its breezy package has a version but is missing copyright and changelog.
    * 3dchess, a source package that generates a binary package.
+   * 9wm, a source package that generates a binary package, and whose
+     changelog file name starts with the binary package name.
 
 And one completely broken package:
 
@@ -128,8 +130,8 @@ Check STDERR for the errors we expected:
     ERROR   Error processing package files for bsdutils
      -> http://...deb not found)
     WARNING Binary package ed lacks valid priority, assumed 'extra'
-    ERROR   Error processing package files for mount
-     -> http://...deb not found)
+    ERROR   Unable to create BinaryPackageData for mount
+     -> http://...invalid version...)
     WARNING Binary package python-pam lacks a section, assumed 'misc'
     ERROR   Error processing package files for python2.4-pam
      -> http://...deb not found)
@@ -142,7 +144,6 @@ Check STDERR for the errors we expected:
     ERROR   Invalid Sources stanza in /tmp/tmp...
      -> http://...bogus\n')
     WARNING No changelog file found for mkvmlinuz in mkvmlinuz-14ubuntu1
-    WARNING No license file found for mkvmlinuz in mkvmlinuz-14ubuntu1
     WARNING Invalid urgency in mkvmlinuz, None, assumed 'low'
     ERROR   Error processing package files for python-sqlite
      -> http://...dsc not in archive)
@@ -163,14 +164,14 @@ We should have more source packages in the database:
 
     >>> transaction.commit()
     >>> existing = 9
-    >>> hoary = 11 - 2   # 2 packages fail
+    >>> hoary = 12 - 2   # 2 packages fail
     >>> breezy = 9 - 3 - 2 + 1  # 3 packages are the same as in hoary, 2 fail,
     ... #one that is imported forcefully (ubuntu-meta)
     >>> hoary + breezy
-    14
+    15
     >>> count = SourcePackageRelease.select().count()
     >>> count - orig_spr_count
-    14
+    15
 
 Check that x11proto-damage has its Build-Depends-Indep value correctly set:
 
@@ -274,13 +275,13 @@ successfully processed.
       util-linux (again, poor thing)
 
     >>> print SSPPH.select().count() - orig_sspph_count
-    17
+    18
 
 Ensure all we published to was main, in the main pocket:
 
     >>> print SSPPH.selectBy(componentID=1,
     ...                     pocket=0).count() - orig_sspph_count
-    17
+    18
 
 === Testing Binary Package Results ===
 
@@ -292,11 +293,11 @@ We have 23 binary packages in breezy. db1-compat, ed, the 3 libcap packages and
 python-pam is unchanged.  python-sqlite fails. The 5 ubuntu-meta packages work.
 
     >>> BinaryPackageRelease.select().count() - orig_bpr_count
-    37
+    38
     >>> Build.select().count() - orig_build_count
-    10
+    11
     >>> SBPPH.select().count() - orig_sbpph_count
-    43
+    44
 
 Test all the data got to the ed BPR intact:
 
@@ -352,13 +353,13 @@ that we imported exactly 9 people (13 packages with 3 being uploaded by Kamion,
     >>> print p.name
     cjwatson
     >>> print Person.select().count() - orig_person_count
-    10
+    11
     >>> print TeamParticipation.select().count() - orig_tp_count 
-    10
+    11
     >>> print EmailAddress.select().count() - orig_email_count
-    10
+    11
     >>> print WikiName.select().count() - orig_wiki_count
-    10
+    11
 
 === Re-run Gina ===
 
@@ -375,8 +376,8 @@ packages that failed to import the last time.
      -> http://...dsc not in archive)
     ERROR   Error processing package files for bsdutils
      -> http://...deb not found)
-    ERROR   Error processing package files for mount
-     -> http://...deb not found)
+    ERROR   Unable to create BinaryPackageData for mount
+     -> http://...invalid version...)
     ERROR   Error processing package files for python2.4-pam
      -> http://...deb not found)
     ERROR   Error processing package files for python2.4-sqlite
@@ -400,24 +401,24 @@ packages that failed to import the last time.
 Nothing should happen to our data -- no counts should have changed, etc.
 
     >>> SourcePackageRelease.select().count() - orig_spr_count
-    14
+    15
     >>> print SecureSourcePackagePublishingHistory.select().count() \
     ...     - orig_sspph_count
-    17
+    18
     >>> print Person.select().count() - orig_person_count
-    10
+    11
     >>> print TeamParticipation.select().count() - orig_tp_count 
-    10
+    11
     >>> print EmailAddress.select().count() - orig_email_count
-    10
+    11
     >>> print WikiName.select().count() - orig_wiki_count
-    10
+    11
     >>> BinaryPackageRelease.select().count() - orig_bpr_count
-    37
+    38
     >>> Build.select().count() - orig_build_count
-    10
+    11
     >>> SBPPH.select().count() - orig_sbpph_count
-    43
+    44
 
 === Other tests ===
 

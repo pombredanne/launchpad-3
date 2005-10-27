@@ -92,51 +92,60 @@ def get_dsc_path(name, version, component, archive_root):
     raise PoolFileNotFound("File %s not in archive" % filename)
 
 
-def read_dsc(package, version, component, archive_root):
-    urgency = None
-
+def unpack_dsc(package, version, component, archive_root):
     dsc_name, dsc_path = get_dsc_path(package, version,
                                       component, archive_root)
     call("dpkg-source -sn -x %s" % dsc_path)
 
     version = re.sub("^\d+:", "", version)
     version = re.sub("-[^-]+$", "", version)
-    filename = "%s-%s" % (package, version)
-    fullpath = os.path.join(filename, "debian", "changelog")
+    source_dir = "%s-%s" % (package, version)
+    return source_dir, dsc_path
+
+
+def read_dsc(package, version, component, archive_root):
+    source_dir, dsc_path = unpack_dsc(package, version, component,
+                                      archive_root)
+
+    fullpath = os.path.join(source_dir, "debian", "changelog")
     changelog = None
     if os.path.exists(fullpath):
-        # XXX: this should be moved into changelog.py and simplified,
-        # the code is all there.
         clfile = open(fullpath)
-        line = ""
-        while not line:
-            line = clfile.readline().strip()
-        if "urgency=" in line:
-            urgency = line.split("urgency=", 1)[1].strip().lower()
-        clfile.seek(0)
-        # XXX: 3dchess actually /does/ have a changelog, but it doesn't
-        # parse (for some reason). Need to investigate why.
         changelog = parse_changelog(clfile)
         clfile.close()
-    if not changelog:
-        # This also catches a null result of parse_changelog above
-        log.warn("No changelog file found for %s in %s" % (package, filename))
+    else:
+        log.warn("No changelog file found for %s in %s" % (package,
+        source_dir))
         changelog = None
+
+    dsc = open(dsc_path).read().strip()
+
+    return dsc, changelog
+
+
+def read_licence(package, version, component, archive_root,
+                 binary_package):
+    source_dir, dsc_path = unpack_dsc(package, version, component,
+                                      archive_root)
 
     # Look for the license. License is an interesting case: we obtain it
     # when opening the DSC file, but we only really do this when
     # creating a BinaryPackageRelease, because that's where it needs to
     # be stored.
-    fullpath = os.path.join(filename, "debian", "copyright")
+    fullpath = os.path.join(source_dir, "debian", "%s.copyright" % 
+                            binary_package)
     if os.path.exists(fullpath):
         licence = open(fullpath).read().strip()
     else:
-        log.warn("No license file found for %s in %s" % (package, filename))
-        licence = None
+        fullpath = os.path.join(source_dir, "debian", "copyright")
+        if os.path.exists(fullpath):
+            licence = open(fullpath).read().strip()
+        else:
+            log.warn("No license file found for %s in %s" % 
+                     (package, source_dir))
+            licence = None
 
-    dsc = open(dsc_path).read().strip()
-
-    return dsc, urgency, changelog, licence
+    return licence
 
 
 def parse_person(val):
@@ -220,7 +229,7 @@ class InvalidVersionError(Exception):
     """An invalid package version was found"""
 
 
-class InvalidSourceVersionError(Exception):
+class InvalidSourceVersionError(InvalidVersionError):
     """
     An invalid source package version was found when processing a binary
     package.
@@ -253,16 +262,13 @@ class AbstractPackageData:
 
     def __init__(self):
         if self.version is None or not valid_debian_version(self.version):
-            # XXX: untested
             raise InvalidVersionError("%s has an invalid version: %s" %
                                       (self.package, self.version))
-
 
         absent = object()
         missing = [attr for attr in self._required if
                    getattr(self, attr, absent) is absent]
         if missing:
-            # XXX: untested
             raise MissingRequiredArguments(missing)
 
     def process_package(self, kdb, archive_root, keyrings):
@@ -372,23 +378,26 @@ class SourcePackageData(AbstractPackageData):
         If successful processing of the package occurs, this method
         sets the changelog, urgency and licence attributes.
         """
-        ret = read_dsc(self.package, self.version, self.component,
-                       archive_root)
-        # We don't use the licence here at all
-        dsc, urgency, changelog, dummy = ret
-
+        dsc, changelog = read_dsc(self.package, self.version, self.component,
+                                  archive_root)
         self.dsc = encoding.guess(dsc)
-        self.urgency = urgency
 
-        if changelog:
-            if changelog[0] and changelog[0].has_key("changes"):
-                self.changelog = encoding.guess(changelog[0]["changes"])
+        self.urgency = None
+        self.changelog = None
+        if changelog and changelog[0]:
+            cldata = changelog[0]
+            if cldata.has_key("changes"):
+                if cldata["package"] != self.package:
+                    log.warn("Changelog package %s differs from %s" %
+                             (cldata["package"], self.package))
+                if cldata["version"] != self.version:
+                    log.warn("Changelog version %s differs from %s" %
+                             (cldata["version"], self.version))
+                self.changelog = encoding.guess(cldata["changes"])
+                self.urgency = cldata["urgency"]
             else:
-                log.warn("Changelog changes empty for source %s (%s)" %
+                log.warn("Changelog empty for source %s (%s)" %
                          (self.package, self.version))
-        else:
-            # XXX: untested
-            self.changelog = None
 
     def do_katie(self, kdb, keyrings):
         # XXX: disabled for the moment, untested
@@ -430,8 +439,8 @@ class SourcePackageData(AbstractPackageData):
             log.warn("Invalid format in %s, assumed %r" % 
                      (self.package, "1.0"))
             self.format = "1.0"
-            # XXX: this is very funny. I care so much about it, but we
-            # don't do anything about this in handlers.py!
+            # XXX: this is very funny. We care so much about it here,
+            # but we don't do anything about this in handlers.py!
 
         if self.urgency not in urgencymap:
             log.warn("Invalid urgency in %s, %r, assumed %r" % 
@@ -531,6 +540,7 @@ class BinaryPackageData(AbstractPackageData):
             self.source_version = self.version
 
         if (self.source_version is None or
+            self.source_version != self.version and
             not valid_debian_version(self.source_version)):
             raise InvalidSourceVersionError("Binary package %s (%s) "
                 "refers to source package %s with invalid version: %s" %
@@ -552,12 +562,8 @@ class BinaryPackageData(AbstractPackageData):
                       os.path.basename(fullpath))
             self.shlibs = open(shlibfile).read().strip()
 
-        # XXX: we could probably refactor read_dsc into three parts, one
-        # that unpacked the file and two consumers that read specific
-        # data from it.
-        ret = read_dsc(self.source, self.source_version,
-                       self.component, archive_root)
-        dummy, dummy, dummy, licence = ret
+        licence = read_licence(self.source, self.source_version,
+                               self.component, archive_root, self.package)
         self.licence = encoding.guess(licence)
 
     def do_katie(self, kdb, keyrings):

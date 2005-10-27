@@ -18,7 +18,7 @@ __all__ = [
 
 import os
 
-from sqlobject import SQLObjectNotFound
+from sqlobject import SQLObjectNotFound, SQLObjectMoreThanOneResultError
 
 from zope.component import getUtility
 
@@ -27,7 +27,8 @@ from canonical.database.constants import nowUTC
 
 from canonical.archivepublisher import Poolifier, parse_tagfile
 
-from canonical.lp.dbschema import PackagePublishingStatus, BuildStatus
+from canonical.lp.dbschema import (PackagePublishingStatus, BuildStatus,
+    SourcePackageFormat)
 
 from canonical.launchpad.scripts import log
 from canonical.launchpad.scripts.gina.library import (getLibraryAlias,
@@ -85,10 +86,18 @@ class MultiplePackageReleaseError(Exception):
     found for a single distribution, indicating database corruption.
     """
 
+
 class LibrarianHasFileError(MultiplePackageReleaseError):
     """
     Raised when the librarian already contains a file we are trying
     to import. This indicates database corruption.
+    """
+
+
+class MultiplePublishingEntryError(MultiplePackageReleaseError):
+    """
+    Raised when there are more than one publishing entries for this
+    package.
     """
 
 
@@ -376,9 +385,6 @@ class SourcePackageReleaseHandler:
 
         sp_name = binarypackagedata.source
         sp_version = binarypackagedata.source_version
-        # XXX: this assumption is incorrect, because the components may
-        # not be the same. As I said in packages.py, what we need is a
-        # locate_source_package_in_pool() function.
         sp_component = binarypackagedata.component
         sp_section = binarypackagedata.section
 
@@ -495,9 +501,10 @@ class SourcePackageReleaseHandler:
         if not releases:
             return None
         if len(releases) != 1:
+            # XXX: untested
             raise MultiplePackageReleaseError("Found more than one "
-                    "version of %s published into %s" %
-                    (sourcepackagename.name,
+                    "entry for %s (%s) published into %s" %
+                    (sourcepackagename.name, sourcepackagename.version,
                      distrorelease.distribution.name))
         return spr
 
@@ -529,22 +536,24 @@ class SourcePackageReleaseHandler:
         componentID = self.distro_handler.getComponentByName(src.component).id
         sectionID = self.distro_handler.ensureSection(src.section).id
         name = self.ensureSourcePackageName(src.package)
-        spr = SourcePackageRelease(sourcepackagename=name.id,
+        spr = SourcePackageRelease(
+                                   creator=maintainer.id,
                                    version=src.version,
-                                   maintainer=maintainer.id,
                                    dateuploaded=src.date_uploaded,
+                                   urgency=urgencymap[src.urgency],
+                                   dscsigningkey=key,
+                                   component=componentID,
+                                   changelog=src.changelog,
                                    builddepends=src.build_depends,
                                    builddependsindep=src.build_depends_indep,
                                    architecturehintlist=src.architecture,
-                                   component=componentID,
-                                   creator=maintainer.id,
-                                   urgency=urgencymap[src.urgency],
-                                   changelog=src.changelog,
                                    dsc=src.dsc,
-                                   dscsigningkey=key,
                                    section=sectionID,
                                    manifest=None,
-                                   uploaddistrorelease=distrorelease.id)
+                                   maintainer=maintainer.id,
+                                   sourcepackagename=name.id,
+                                   uploaddistrorelease=distrorelease.id,
+                                   format=SourcePackageFormat.DPKG)
         log.info('Source Package Release %s (%s) created' % 
                  (name.name, src.version))
 
@@ -582,10 +591,11 @@ class SourcePublisher:
             return
 
         # XXX: Component may be incorrect: this code does not cope with
-        # source packages not listed in Sources.gz that have moved
-        # around in the pool. We should be using
-        # locate_source_package_in_pool() here instead of the strict
-        # component name. Section may suffer from the same problem.
+        # source packages not listed in Sources.gz (added by
+        # findAndImportUnlistedSourcePackage) that have moved around in
+        # the pool. We should be using locate_source_package_in_pool()
+        # here instead of the strict component name. Section may suffer
+        # from the same problem.
         #
         # Create the Publishing entry with status PENDING so that we can
         # republish this later into a Soyuz archive.
@@ -605,11 +615,16 @@ class SourcePublisher:
 
     def _checkPublishing(self, sourcepackagerelease, distrorelease):
         """Query for the publishing entry"""
-        # XXX: we really shouldn't use selectOneBy here, because it will
-        # blow up if we have database duplication issues.
-        return SecureSourcePackagePublishingHistory.selectOneBy(
-            sourcepackagereleaseID=sourcepackagerelease.id,
-            distroreleaseID=distrorelease.id)
+        try:
+            return SecureSourcePackagePublishingHistory.selectOneBy(
+                sourcepackagereleaseID=sourcepackagerelease.id,
+                distroreleaseID=distrorelease.id)
+        except SQLObjectMoreThanOneResultError:
+            # XXX: untested
+            name = sourcepackagerelease.sourcepackagename.name
+            raise MultiplePublishingEntryError("Source package %s (%s) has "
+                "more than one publishing record for %s" %
+                (name, sourcepackagerelease.version, distrorelease.name))
 
 
 class BinaryPackageHandler:
@@ -649,16 +664,22 @@ class BinaryPackageHandler:
                  "Build.distroarchrelease = DistroArchRelease.id AND "
                  "DistroArchRelease.distrorelease = DistroRelease.id AND "
                  "DistroRelease.distribution = %d" %
-                 (binaryname.id, quote(version), 
+                 (binaryname.id, quote(version),
                   distrorelease.distribution.id))
 
         if architecture != "all":
             query += ("AND DistroArchRelease.architecturetag = %s" %
                       quote(architecture))
 
-        # XXX: we really shouldn't use selectOne here, because it will
-        # blow up if we have database duplication issues.
-        bpr = BinaryPackageRelease.selectOne(query, clauseTables=clauseTables)
+        try:
+            bpr = BinaryPackageRelease.selectOne(query,
+                                                 clauseTables=clauseTables)
+        except SQLObjectMoreThanOneResultError:
+            # XXX: untested
+            raise MultiplePackageReleaseError("Found more than one "
+                    "entry for %s (%s) for %s in %s" %
+                    (binaryname.name, version, architecture,
+                     distrorelease.distribution.name))
         if bpr is None:
             log.debug('BPR not found: %r %r %r, query=%s' % (
                 binaryname, version, architecture, query))
@@ -729,12 +750,17 @@ class BinaryPackageHandler:
             query += ("AND DistroArchRelease.architecturetag = %s" 
                       % quote(archtag))
 
-        # XXX: we really shouldn't use selectOne here, because it will
-        # blow up if we have database duplication issues.
-        build = Build.selectOne(query, clauseTables)
+        try:
+            build = Build.selectOne(query, clauseTables)
+        except SQLObjectMoreThanOneResultError:
+            # XXX: untested
+            raise MultipleBuildError("More than one build was found "
+                "for package %s (%s)" % (binary.package, binary.version))
+
         if build:
             for bpr in build.binarypackages:
                 if bpr.binarypackagename.name == binary.package:
+                    # XXX: untested
                     raise MultipleBuildError("Build %d was already found "
                         "for package %s (%s)" %
                         (build.id, binary.package, binary.version))
@@ -803,9 +829,17 @@ class BinaryPackagePublisher:
 
     def _checkPublishing(self, binarypackage, distroarchrelease):
         """Query for the publishing entry"""
-        return SecureBinaryPackagePublishingHistory.selectOneBy(
-            binarypackagereleaseID=binarypackage.id,
-            distroarchreleaseID=distroarchrelease.id)
+        try:
+            return SecureBinaryPackagePublishingHistory.selectOneBy(
+                binarypackagereleaseID=binarypackage.id,
+                distroarchreleaseID=distroarchrelease.id)
+        except SQLObjectMoreThanOneResultError:
+            # XXX: untested
+            name = binarypackage.binarypackagename.name
+            raise MultiplePublishingEntryError("Binary package %s (%s) has "
+                "more than one publishing record for %s" %
+                (name, binarypackage.version, 
+                 distroarchrelease.distrorelease.name))
 
 
 class PersonHandler:

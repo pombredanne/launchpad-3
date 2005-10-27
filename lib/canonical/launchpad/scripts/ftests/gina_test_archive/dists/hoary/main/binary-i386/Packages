@@ -265,7 +265,7 @@ Installed-Size: 316
 Maintainer: LaMont Jones <lamont@debian.org>
 Architecture: i386
 Source: util-linux
-Version: 2.12p-2ubuntu2
+Version: -ewePP2.12p-2ubuntu2
 Pre-Depends: libblkid1 (>= 1.35-8ubuntu2), libc6 (>= 2.3.2.ds1-4), libuuid1
 Filename: pool/main/u/util-linux/mount_2.12p-2ubuntu2_i386.deb
 Size: 140492
@@ -560,7 +560,7 @@ Origin: Ubuntu
 
 Package: 3dchess
 Priority: optional
-Section: universe/games
+Section: games
 Installed-Size: 148
 Maintainer: Stephen Stafford <bagpuss@debian.org>
 Architecture: i386
@@ -575,6 +575,27 @@ Description: 3D chess for X11
  just a couple of additions; 26 possible directions in which to move.  The
  AI isn't wonderful, but provides a challenging enough game to all but the
  most highly skilled players.
+Bugs: mailto:ubuntu-users@lists.ubuntu.com
+Origin: Ubuntu
+
+Package: 9wm
+Priority: optional
+Section: x11
+Installed-Size: 108
+Maintainer: Decklin Foster <decklin@red-bean.com>
+Architecture: i386
+Version: 1.2-6
+Provides: x-window-manager
+Depends: libc6 (>= 2.3.2.ds1-4), libx11-6 | xlibs (>> 4.1.0), libxext6 | xlibs (>> 4.1.0)
+Filename: pool/main/9/9wm/9wm_1.2-6_i386.deb
+Size: 24462
+MD5sum: 4a7f8eed705ffde901d6d84a668bea47
+Description: emulation of the Plan 9 window manager 8-1/2
+ 9wm is an X window manager which attempts to emulate the Plan 9 window
+ manager 8-1/2 as far as possible within the constraints imposed by X.
+ .
+ It provides a simple yet comfortable user interface, without garish
+ decorations or title-bars. Or icons. And it's click-to-type.
 Bugs: mailto:ubuntu-users@lists.ubuntu.com
 Origin: Ubuntu
 
