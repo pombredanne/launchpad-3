@@ -25,7 +25,7 @@ permitted_database_imports = text_lines_to_set("""
     """)
 
 warned_database_imports = text_lines_to_set("""
-    canonical.launchpad.browser.traversers
+    canonical.launchpad.browser.distrorelease
     canonical.launchpad.scripts.builddmaster
     canonical.launchpad.scripts.rosetta
     canonical.launchpad.systemhomes
@@ -115,6 +115,20 @@ class NotInModuleAllPolicyViolation(JackbootError):
                 ' because it is not in its __all__.' %
                 (self.attrname, self.import_into, self.name))
 
+class NotFoundPolicyViolation(JackbootError):
+    """import of zope.exceptions.NotFoundError into
+    canonical.launchpad.database.
+    """
+
+    def __init__(self, import_into):
+        JackbootError.__init__(self, import_into, '')
+
+    def format_message(self):
+        return ('%s\nDo not import zope.exceptions.NotFoundError.\n'
+                'Use canonical.launchpad.interfaces.NotFoundError instead.'
+                % self.import_into)
+
+
 def import_fascist(name, globals={}, locals={}, fromlist=[]):
     module = original_import(name, globals, locals, fromlist)
     # Python's re module imports some odd stuff every time certain regexes
@@ -131,6 +145,10 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
         # We could find out by jumping up the stack a frame.
         # Let's not for now.
         import_into = '__import__ hook'
+    if (import_into.startswith('canonical.launchpad.database') and
+        name == 'zope.exceptions'):
+        if fromlist and 'NotFoundError' in fromlist:
+            raise NotFoundPolicyViolation(import_into)
     if (name.startswith(database_root) and
         not database_import_allowed_into(import_into)):
         error = DatabaseImportPolicyViolation(import_into, name)

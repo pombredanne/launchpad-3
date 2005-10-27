@@ -10,6 +10,7 @@
     <!-- DistroArchRelease -->
     <content class="canonical.launchpad.database.DistroArchRelease">
         <allow interface="canonical.launchpad.interfaces.IDistroArchRelease"/>
+        <allow interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
     </content>
 
     <browser:defaultView
@@ -26,37 +27,64 @@
         path_expression="architecturetag"
         attribute_to_parent="distrorelease" />
 
-    <browser:traverse
-        for="canonical.launchpad.database.DistroArchRelease" 
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="DistroArchReleaseNavigation"
+        />
 
     <browser:pages
         for="canonical.launchpad.database.DistroArchRelease" 
         permission="zope.Public"
         class="canonical.launchpad.browser.DistroArchReleaseView">
-
       <browser:page
-            name="+index"
-            template="../templates/distroarchrelease-index.pt"
-            lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+index"/>
-
+          name="+index"
+          template="../templates/distroarchrelease-index.pt"
+          lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+index"/>
       <browser:page
-            name="+portlet-details"
-            template="../templates/distroarchrelease-portlet-details.pt" />
-
+          name="+portlet-details"
+          template="../templates/distroarchrelease-portlet-details.pt"
+          lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+portlets-details"/>
       <browser:page
-            name="+builds"
-            template="../templates/distroarchrelease-builds.pt" />
-
+          name="+builds"
+          template="../templates/distroarchrelease-builds.pt"
+          lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+builds"/>
+      <browser:page
+          name="+builds-list"
+          template="../templates/builds-list.pt"
+          lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+builds-list"/>
     </browser:pages>
 
     <browser:page
-        for="canonical.launchpad.database.DistroArchRelease" 
-        permission="zope.Public"
-        name="+pkgsearch"
-        class="canonical.launchpad.browser.DistroArchReleaseBinariesView"
-        template="../templates/distroarchrelease-pkgsearch.pt"
-        lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+pkgsearch"/>
+      for="canonical.launchpad.database.DistroArchRelease" 
+      permission="zope.Public"
+      name="+search"
+      class="canonical.launchpad.browser.DistroArchReleaseBinariesView"
+      template="../templates/distroarchrelease-search.pt"
+      />
+
+    <browser:editform
+      for="canonical.launchpad.interfaces.IDistroArchRelease"
+      permission="launchpad.Admin"
+      name="+admin"
+      schema="canonical.launchpad.interfaces.IDistroArchRelease"
+      facet="overview"
+      fields="architecturetag official"
+      template="../templates/distroarchrelease-admin.pt"
+      />
 
 </facet>
+
+    <!-- DistroArchReleaseSet -->
+    <content class="canonical.launchpad.database.DistroArchReleaseSet">
+        <allow interface="canonical.launchpad.interfaces.IDistroArchReleaseSet"/>
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.DistroArchReleaseSet"
+        provides="canonical.launchpad.interfaces.IDistroArchReleaseSet">
+        <allow interface="canonical.launchpad.interfaces.IDistroArchReleaseSet" />
+    </securedutility>
+
+
+
 </configure>

@@ -1,0 +1,25 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Build Log</h1>
+
+  <div class="dummy">
+    XXX: Daniel Debonzi 2004-10-05
+    To finish this page we need to know information about the
+    filesystem, because the table entry for it points to a file
+    that should contain de buildlog.
+  </div>
+
+</div>
+</body>
+</html>

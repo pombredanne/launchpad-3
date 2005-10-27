@@ -42,7 +42,7 @@ Now send some identical log messages to the loggers.
 >>> for log in (normal_log, librarian_log):
 ...     log.info('Some crap')
 ...     log.error('Oops!', exc_info=exception)
-...     log.error('Error %d occured', 42)
+...     log.error('Error %d occurred', 42)
 >>> normal_out.getvalue() == librarian_out.getvalue()
 True
 

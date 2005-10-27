@@ -1,0 +1,36 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/distroarchrelease/distrorelease/@@+portlet-details" />
+    <div tal:replace="structure context/distroarchrelease/@@+portlet-details" />
+  </metal:leftportlets>
+
+  <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-releases" />
+  </metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1 tal:content="context/summary">Summary Goes Here</h1>
+
+  <div class="highlighted" style="font-size: 80%;">
+    <p tal:replace="structure context/description/fmt:text-to-html">
+      Package Description
+    </p>
+  </div>
+
+  <h2>Publishing History</h2>
+
+  <div tal:repeat="publishing context/publishing_history"
+       tal:replace="structure publishing/@@+listing-detailed" />
+
+</div>
+</body>
+</html>
+ 

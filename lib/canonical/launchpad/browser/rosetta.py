@@ -7,17 +7,20 @@ __all__ = [
     'RosettaApplicationView',
     'RosettaStatsView',
     'RosettaPreferencesView',
+    'RosettaApplicationNavigation'
     ]
 
 from sets import Set
 
 from zope.component import getUtility
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
     ILanguageSet, ILaunchBag, IRequestPreferredLanguages, ICountry,
-    ILaunchpadCelebrities)
+    ILaunchpadCelebrities, IRosettaApplication, ITranslationGroupSet,
+    IProjectSet, IProductSet)
 from canonical.launchpad import helpers
+import canonical.launchpad.layers
+from canonical.launchpad.webapp import Navigation, stepto
 
 
 class RosettaApplicationView:
@@ -129,3 +132,23 @@ class RosettaPreferencesView:
         for language in Set(old_languages) - Set(new_languages):
             self.person.removeLanguage(language)
 
+
+class RosettaApplicationNavigation(Navigation):
+
+    usedfor = IRosettaApplication
+
+    newlayer = canonical.launchpad.layers.RosettaLayer
+
+    @stepto('groups')
+    def groups(self):
+        return getUtility(ITranslationGroupSet)
+
+    @stepto('projects')
+    def projects(self):
+        # DEPRECATED
+        return getUtility(IProjectSet)
+
+    @stepto('products')
+    def products(self):
+        # DEPRECATED
+        return getUtility(IProductSet)

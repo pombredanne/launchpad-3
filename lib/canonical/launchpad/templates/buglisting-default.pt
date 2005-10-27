@@ -1,0 +1,34 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:content="structure context/@@+portlet-details" />
+  <div tal:content="structure context/distribution/@@+portlet-details|nothing" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+    <tal:block content="structure context/@@+portlet-bugtasklist-mybugs" />
+    <tal:releasebugs
+        tal:condition="context/@@+portlet-bugtasklist-releasebugs|nothing"
+        tal:content="structure context/@@+portlet-bugtasklist-releasebugs" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+<metal:page
+    use-macro="context/@@+bugtask-macros-buglisting/page"
+    tal:define="listing_columns view/task_columns;
+                task_batch_navigator view/search">
+
+</metal:page>
+
+</div>
+
+
+</body>
+
+</html>

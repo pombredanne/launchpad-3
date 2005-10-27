@@ -10,6 +10,31 @@
       <allow interface="canonical.launchpad.interfaces.ISourcePackageRelease"/>
     </content>
 
+    <browser:pages
+      for="canonical.launchpad.interfaces.ISourcePackageRelease"
+      permission="zope.Public">
+      <browser:page
+        name="+body-summary"
+        template="../templates/sourcepackagerelease-body-summary.pt"
+        />
+      <browser:page
+        name="+portlet-builds"
+        template="../templates/sourcepackagerelease-portlet-builds.pt"
+        />
+      <browser:page
+        name="+portlet-details"
+        template="../templates/sourcepackagerelease-portlet-details.pt"
+        />
+      <browser:page
+        name="+portlet-distroreleases"
+        template="../templates/sourcepackagerelease-portlet-distroreleases.pt"
+        />
+      <browser:page
+        name="+portlet-details-content"
+        template="../templates/sourcepackagerelease-portlet-details-content.pt"
+        />
+    </browser:pages>
+
     <!-- SourcePackageReleaseSet -->
     <content class="canonical.launchpad.database.SourcePackageReleaseSet">
       <allow

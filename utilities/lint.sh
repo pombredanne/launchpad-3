@@ -8,6 +8,8 @@
 # 2005-07-21 nicer handling of verbose mode, tweaking of warnings
 # 2005-09-23 tweak more warnings on a dir-specific basis
 
+PYLINT=pylint.python2.4
+
 # Note that you can disable certain tests by placing in a comment, at
 # the top of the file, a disable-msg command:
 #   # pylint: disable-msg=W0401, E0202
@@ -107,27 +109,33 @@ for file in $pyfiles; do
     if echo $file | grep -qs "launchpad/browser/traversers.py"; then
         OPTS=$PYLINTOPTS_TRAVERSERS
     fi
+    if echo $file | grep -qs "/__init__.py"; then
+        # Disable "Wildcard Import" warnings for __init__ files; doing
+        # this for pyflakes is unfortunately not as simple
+        OPTS=$PYLINTOPTS,W0401
+    fi
     if echo $file | grep -qs "launchpad/browser/"; then
-        output=`pylint.python2.4 $file $OPTS 2>/dev/null \
+        output=`$PYLINT $file $OPTS 2>/dev/null \
                 | grep -v "Access to undefined member 'request'" \
                 | grep -v "Access to undefined member 'context'" \
                 | grep -v "Access to undefined member '.*_widget'" \
                 | grep -v '^*'`
     elif echo $file | grep -qs "launchpad/pagetitles.py"; then
-        output=`pylint.python2.4 $file $OPTS 2>/dev/null \
+        output=`$PYLINT $file $OPTS 2>/dev/null \
                 | grep -v "Unused argument 'view'" \
                 | grep -v "Unused argument 'context'" \
                 | grep -v '^*'`
-    elif echo $file | grep -qs "launchpad/pagetitles.py"; then
-        output=`pylint.python2.4 $file $OPTS 2>/dev/null \
-                | grep -v "Unused argument 'furtherPath'" \
-                | grep -v '^*'`
+# XXX: wtf is this?
+#     elif echo $file | grep -qs "launchpad/pagetitles.py"; then
+#         output=`$PYLINT $file $OPTS 2>/dev/null \
+#                 | grep -v "Unused argument 'furtherPath'" \
+#                 | grep -v '^*'`
     elif echo $file | grep -qs "launchpad/database/"; then
-        output=`pylint.python2.4 $file $OPTS 2>/dev/null \
+        output=`$PYLINT $file $OPTS 2>/dev/null \
                 | grep -v "Access to undefined member 'getByName'" \
                 | grep -v '^*'`
     else
-        output=`pylint.python2.4 $file $OPTS 2>/dev/null | grep -v '^*'`
+        output=`$PYLINT $file $OPTS 2>/dev/null | grep -v '^*'`
     fi
     if [ ! -z "$output" ]; then
         echo "============================================================="

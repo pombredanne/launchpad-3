@@ -36,6 +36,8 @@
                 PostgreSQL's default setting is used.
             </description>
         </key>
+        <key name="browser_notification_level" required="no"
+            datatype="canonical.config.loglevel" default="info" />
     </sectiontype>
 
     <sectiontype name="gina_target">
@@ -84,10 +86,10 @@
                 main,universe,restricted
             </example>
         </key>
-        <!-- datatype changed from existing-directory to allow config
-        to load without ubuntu-keyrings installed (such as on emperor) -->
-        <key name="keyrings" datatype="string"
-            default="/usr/share/keyrings">
+        <!-- datatype really should be existing-directory, but keyrings
+        are not installed on all production servers and they shouldn't need
+        it installed if they are not running Gina. -->
+        <key name="keyrings" datatype="string" default="/usr/share/keyrings">
             <description>
                 A full path to where the keyrings files are
                 available. These keyrings are used to look up who signed
@@ -321,6 +323,14 @@
         </key>
     </sectiontype>
 
+    <sectiontype name="shipitexporter">
+        <key name="dbuser" datatype="string" default="shipit">
+            <description>
+                The database user wich will be used to generate shipit exports.
+            </description>
+        </key>
+    </sectiontype>
+
     <sectiontype name="karmacacheupdater">
         <key name="dbuser" datatype="string" default="karma">
             <description>
@@ -331,10 +341,19 @@
     </sectiontype>
 
     <sectiontype name="cveupdater">
-        <key name="dbuser" datatype="string" default="karma">
+        <key name="dbuser" datatype="string" default="cve">
             <description>
                 The database user wich will be used to update the CVE
                 database.
+            </description>
+        </key>
+    </sectiontype>
+
+    <sectiontype name="tickettracker">
+        <key name="dbuser" datatype="string" default="tickettracker">
+            <description>
+                The database user wich will be used to send reminders
+                regarding answered tickets.
             </description>
         </key>
     </sectiontype>
@@ -417,6 +436,19 @@
             attribute="jobs" required="no" />
     </sectiontype>
 
+    <sectiontype name="uploader">
+        <key name="dbuser" datatype="string" required="yes" />
+        <key name="default_recipient_name" datatype="string" required="yes" />
+        <key name="default_sender_name" datatype="string" required="yes" />
+        <key name="default_recipient_address" datatype="string" 
+             required="yes" />
+        <key name="default_sender_address" datatype="string" required="yes" />
+    </sectiontype>
+
+    <sectiontype name="uploadqueue">
+        <key name="dbuser" datatype="string" required="yes" />
+    </sectiontype>
+
     <sectiontype name="canonical">
         <key name="dbhost" datatype="ipaddr-or-hostname" required="no" />
         <key name="dbname" datatype="string" required="yes" />
@@ -441,10 +473,14 @@
         <section name="*" type="dyson" attribute="dyson" />
         <section name="*" type="gina" attribute="gina" />
         <section name="*" type="trebuchet" attribute="trebuchet" />
+        <section name="*" type="shipitexporter" attribute="shipitexporter" />
         <section name="*" type="karmacacheupdater"
             attribute="karmacacheupdater" />
         <section name="*" type="cveupdater" attribute="cveupdater" />
+        <section name="*" type="tickettracker" attribute="tickettracker" />
         <section name="*" type="buildsequencer" attribute="buildsequencer" />
+        <section name="*" type="uploader" attribute="uploader" />
+        <section name="*" type="uploadqueue" attribute="uploadqueue" />
     </sectiontype>
 
     <!-- Now specify where the section types may be rooted in the config file

@@ -57,6 +57,7 @@ class LibraryFileUpload(object):
     mimetype = 'unknown/unknown'
     contentID = None
     aliasID = None
+    expires = None
 
     def __init__(self, storage, filename, size):
         self.storage = storage
@@ -91,7 +92,7 @@ class LibraryFileUpload(object):
             if self.contentID is None:
                 contentID = self.storage.library.add(dstDigest, self.size)
                 aliasID = self.storage.library.addAlias(
-                        contentID, self.filename, self.mimetype
+                        contentID, self.filename, self.mimetype, self.expires
                         )
             else:
                 contentID = self.contentID
@@ -147,5 +148,5 @@ def _sameFile(path1, path2):
 
 def _relFileLocation(fileid):
     h = "%08x" % int(fileid)
-    return '%s/%s/%s/%s' % (h[:2],h[2:4],h[4:6],h[6:])
+    return '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])
     

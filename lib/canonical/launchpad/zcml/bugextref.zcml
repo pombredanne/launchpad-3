@@ -36,7 +36,7 @@
         name="+edit"
         schema="canonical.launchpad.interfaces.IBugExternalRef"
         class="canonical.launchpad.browser.BugRelatedObjectEditView"
-        label="Modify Web Reference"
+        label="Change Web Link"
         permission="launchpad.AnyPerson"
         template="../templates/bug-extref-edit.pt"
         fields="url title"
@@ -59,9 +59,10 @@
         <allow interface="canonical.launchpad.interfaces.IBugExternalRefSet" />
     </securedutility>
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IBugExternalRefSet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BugExternalRefSetNavigation"
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBugExternalRefSet"

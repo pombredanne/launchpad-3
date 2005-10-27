@@ -8,7 +8,7 @@
 <facet facet="support">
 
   <browser:pages
-    for="canonical.launchpad.interfaces.ITicketTarget"
+    for="canonical.launchpad.interfaces.IHasTickets"
     class="canonical.launchpad.browser.TicketTargetView"
     permission="zope.Public">
     <browser:page
@@ -17,7 +17,7 @@
   </browser:pages>
 
   <browser:page
-    for="canonical.launchpad.interfaces.ITicketTarget"
+    for="canonical.launchpad.interfaces.IHasTickets"
     class="canonical.launchpad.browser.TicketTargetView"
     name="+portlet-latesttickets"
     permission="zope.Public"

@@ -11,26 +11,27 @@ import os.path
 # Zope interfaces
 from zope.interface import implements, providedBy
 from zope.component import getUtility
-from zope.exceptions import NotFoundError
 from zope.event import notify
 
-from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
-    SQLObjectNotFound)
+from sqlobject import (
+    ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound)
 
-from canonical.database.sqlbase import (SQLBase, flush_database_updates,
-    sqlvalues)
+from canonical.database.sqlbase import (
+    SQLBase, flush_database_updates, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
 
-from canonical.lp.dbschema import (EnumCol, RosettaImportStatus,
-    TranslationPermission, TranslationValidationStatus)
+from canonical.lp.dbschema import (
+    EnumCol, RosettaImportStatus, TranslationPermission,
+    TranslationValidationStatus)
 
 import canonical.launchpad
 from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
-from canonical.launchpad.interfaces import (IPOFileSet, IPOFile,
-    IRawFileData, IPOTemplateExporter, ZeroLengthPOExportError,
-    ILibraryFileAliasSet, ILaunchpadCelebrities)
+from canonical.launchpad.interfaces import (
+    IPOFileSet, IPOFile, IRawFileData, IPOTemplateExporter,
+    ZeroLengthPOExportError, ILibraryFileAliasSet, ILaunchpadCelebrities,
+    NotFoundError)
 
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
@@ -38,9 +39,64 @@ from canonical.launchpad.database.pomsgset import POMsgSet
 
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import import_po, OldPOImported
-from canonical.launchpad.components.poparser import (POSyntaxError,
-    POHeader, POInvalidInputError)
+from canonical.launchpad.components.poexport import FilePOFileOutput
+from canonical.launchpad.components.poparser import (
+    POSyntaxError, POHeader, POInvalidInputError)
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
+
+
+def _check_translation_perms(permission, translators, person):
+    """This is a utility function that will return True or False depending
+    on whether the person is part of the right group of translators, and the
+    permission on the relevant project or product.
+    """
+
+    if person is None:
+        return False
+
+    rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+
+    if person.inTeam(rosetta_experts):
+        # Rosetta experts can edit translations always.
+        return True
+
+    # now, let's determine if the person is part of a designated
+    # translation team
+    is_designated_translator = False
+    # XXX sabdfl 25/05/05 this code could be improved when we have
+    # implemented CrowdControl
+    for translator in translators:
+        if person.inTeam(translator):
+            is_designated_translator = True
+            break
+
+    # have a look at the applicable permission policy
+    if permission == TranslationPermission.OPEN:
+        # if the translation policy is "open", then yes, anybody is an
+        # editor of any translation
+        return True
+    elif permission == TranslationPermission.STRUCTURED:
+        # in the case of a STRUCTURED permission, designated translators
+        # can edit, unless there are no translators, in which case
+        # anybody can translate
+        if len(translators) > 0:
+            # when there are designated translators, only they can edit
+            if is_designated_translator is True:
+                return True
+        else:
+            # since there are no translators, anyone can edit
+            return True
+    elif permission == TranslationPermission.CLOSED:
+        # if the translation policy is "closed", then check if the person is
+        # in the set of translators
+        if is_designated_translator:
+            return True
+    else:
+        raise NotImplementedError('Unknown permission %s' % permission.name)
+
+    # ok, thats all we can check, and so we must assume the answer is no
+    return False
+
 
 class POFile(SQLBase, RosettaStats):
     implements(IPOFile, IRawFileData)
@@ -148,28 +204,14 @@ class POFile(SQLBase, RosettaStats):
         if person is None:
             return False
 
-        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
-
-        if person.inTeam(rosetta_experts):
-            # Rosetta experts can edit translations always.
+        # check based on permissions
+        translators = [t.translator for t in self.translators]
+        perm_result = _check_translation_perms(
+            self.translationpermission,
+            translators,
+            person)
+        if perm_result is True:
             return True
-
-        # have a look at the aplicable permission policy
-        tperm = self.translationpermission
-        if tperm == TranslationPermission.OPEN:
-            # if the translation policy is "open", then yes
-            return True
-        elif tperm == TranslationPermission.CLOSED:
-            # if the translation policy is "closed", then check if the person is
-            # in the set of translators
-            # XXX sabdfl 25/05/05 this code could be improved when we have
-            # implemented CrowdControl
-            translators = [t.translator for t in self.translators]
-            for translator in translators:
-                if person.inTeam(translator):
-                    return True
-        else:
-            raise NotImplementedError('Unknown permission %s' % tperm.name)
 
         # Finally, check for the owner of the PO file
         return person.inTeam(self.owner)
@@ -204,7 +246,7 @@ class POFile(SQLBase, RosettaStats):
         """See IPOFile."""
         return iter(self.currentMessageSets())
 
-    def messageSet(self, key, onlyCurrent=False):
+    def getPOMsgSet(self, key, onlyCurrent=False):
         """See IPOFile."""
         query = 'potemplate = %d' % self.potemplate.id
         if onlyCurrent:
@@ -222,14 +264,14 @@ class POFile(SQLBase, RosettaStats):
 
         # Find a message ID with the given text.
         try:
-            messageID = POMsgID.byMsgid(key)
+            pomsgid = POMsgID.byMsgid(key)
         except SQLObjectNotFound:
             raise NotFoundError(key)
 
         # Find a message set with the given message ID.
 
         result = POTMsgSet.selectOne(query +
-            (' AND primemsgid = %d' % messageID.id))
+            (' AND primemsgid = %d' % pomsgid.id))
 
         if result is None:
             raise NotFoundError(key)
@@ -241,9 +283,9 @@ class POFile(SQLBase, RosettaStats):
 
     def __getitem__(self, msgid_text):
         """See IPOFile."""
-        return self.messageSet(msgid_text)
+        return self.getPOMsgSet(msgid_text)
 
-    def messageSetsNotInTemplate(self):
+    def getPOMsgSetsNotInTemplate(self):
         """See IPOFile."""
         return iter(POMsgSet.select('''
             POMsgSet.pofile = %d AND
@@ -463,7 +505,7 @@ class POFile(SQLBase, RosettaStats):
 
     def createMessageSetFromMessageSet(self, potmsgset):
         """See IPOFile."""
-        messageSet = POMsgSet(
+        pomsgset = POMsgSet(
             sequence=0,
             pofile=self,
             iscomplete=False,
@@ -472,7 +514,7 @@ class POFile(SQLBase, RosettaStats):
             isfuzzy=False,
             publishedfuzzy=False,
             potmsgset=potmsgset)
-        return messageSet
+        return pomsgset
 
     def createMessageSetFromText(self, text):
         """See IPOFile."""
@@ -492,7 +534,7 @@ class POFile(SQLBase, RosettaStats):
             # Parse the old header.
             old_header = POHeader(msgstr=self.header)
             # The POHeader needs to know is ready to be used.
-            old_header.finish()
+            old_header.updateDict()
             old_plural_form = old_header.get('Plural-Forms', None)
             if old_plural_form is not None:
                 # First attempt: use the plural-forms header that is already
@@ -519,7 +561,7 @@ class POFile(SQLBase, RosettaStats):
     def isPORevisionDateOlder(self, header):
         """See IPOFile."""
         old_header = POHeader(msgstr=self.header)
-        old_header.finish()
+        old_header.updateDict()
 
         # Get the old and new PO-Revision-Date entries as datetime objects.
         # That's the second element from the tuple that getPORevisionDate
@@ -537,7 +579,6 @@ class POFile(SQLBase, RosettaStats):
             return True
 
     # ICanAttachRawFileData implementation
-
     def attachRawFileData(self, contents, published, importer=None):
         """See ICanAttachRawFileData."""
         if self.variant:
@@ -731,14 +772,17 @@ class POFile(SQLBase, RosettaStats):
             alias_set = getUtility(ILibraryFileAliasSet)
             return alias_set[self.exportfile.id].read()
 
-    def uncachedExport(self):
-        """Export this PO file without looking in the cache."""
-        exporter = IPOTemplateExporter(self.potemplate)
-        return exporter.export_pofile(self.language, self.variant)
-
-    def export(self):
+    def uncachedExport(self, included_obsolete=True):
         """See IPOFile."""
-        if self.validExportCache():
+        exporter = IPOTemplateExporter(self.potemplate)
+        return exporter.export_pofile(self.language, self.variant,
+            included_obsolete)
+
+    def export(self, included_obsolete=True):
+        """See IPOFile."""
+        if self.validExportCache() and included_obsolete:
+            # Only use the cache if the request includes obsolete messages,
+            # without them, we always do a full export.
             return self.fetchExportCache()
         else:
             contents = self.uncachedExport()
@@ -746,8 +790,16 @@ class POFile(SQLBase, RosettaStats):
             if len(contents) == 0:
                 raise ZeroLengthPOExportError
 
-            self.updateExportCache(contents)
+            if included_obsolete:
+                # Update the cache if the request includes obsolete messages.
+                self.updateExportCache(contents)
             return contents
+
+    def exportToFileHandle(self, filehandle, included_obsolete=True):
+        """See IPOFile."""
+        exporter = IPOTemplateExporter(self.potemplate)
+        exporter.export_pofile_to_file(filehandle, self.language,
+            self.variant, included_obsolete)
 
     def invalidateCache(self):
         """See IPOFile."""
@@ -760,7 +812,8 @@ class DummyPOFile(RosettaStats):
     """
     implements(IPOFile)
 
-    def __init__(self, potemplate, language, owner=None, header=''):
+    def __init__(self, potemplate, language, owner=None,
+        header='Content-Type: text/plain; charset=us-ascii'):
         self.potemplate = potemplate
         self.language = language
         self.owner = owner
@@ -792,25 +845,11 @@ class DummyPOFile(RosettaStats):
         return ret
 
     def canEditTranslations(self, person):
-        tperm = self.potemplate.translationpermission
-        if tperm == TranslationPermission.OPEN:
-            # if the translation policy is "open", then yes
-            return True
-        elif tperm == TranslationPermission.CLOSED:
-            if person is not None:
-                # if the translation policy is "closed", then check if the
-                # person is in the set of translators XXX sabdfl 25/05/05 this
-                # code could be improved when we have implemented CrowdControl
-                translators = [t.translator for t in self.translators]
-                for translator in translators:
-                    if person.inTeam(translator):
-                        return True
-        else:
-            raise NotImplementedError('Unknown permission %s' % tperm.name)
-
-        # At this point you either got an OPEN (true) or you are not in the
-        # designated translation group, so you can't edit them
-        return False
+        translators = [t.translator for t in self.translators]
+        return _check_translation_perms(
+            self.translationpermission,
+            translators,
+            person)
 
     def currentCount(self):
         return 0

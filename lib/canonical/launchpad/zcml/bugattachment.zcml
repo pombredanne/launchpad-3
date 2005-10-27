@@ -57,8 +57,9 @@
         <allow interface="canonical.launchpad.interfaces.IBugAttachmentSet" />
     </securedutility>
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IBugAttachmentSet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BugAttachmentSetNavigation"
+        />
 
 </configure>

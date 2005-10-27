@@ -16,6 +16,8 @@ from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import (
     IHasOwner, IBugTarget, ISpecificationTarget)
 
+from canonical.lp.dbschema import DistroReleaseQueueStatus
+
 from canonical.launchpad import _
 
 class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
@@ -55,26 +57,36 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         title=_("Section"),
         description=_("The release sections."), required=True,
         vocabulary='Schema')
-    releasestatus = Attribute(
-        "The release's status, such as FROZEN or DEVELOPMENT, as "
-        "specified in the DistributionReleaseStatus enum.")
+    # XXX: dsilvers: 20051013: These should be renamed and the above removed
+    # in the future when we have time. Uploader and Queue systems will need
+    # fixing to cope.
+    # Bug 3256
+    real_components = Attribute("The release's components.")
+    real_sections = Attribute("The release's sections.")
+    releasestatus = Choice(
+        title=_("Release Status"), required=True,
+        vocabulary='DistributionReleaseStatus')
     datereleased = Attribute("The datereleased.")
     parentrelease = Choice(
         title=_("Parent Release"),
-        description=_("The Parente Distribution Release."), required=True,
+        description=_("The Parent Distribution Release."), required=True,
         vocabulary='DistroRelease')
     owner = Attribute("Owner")
     state = Attribute("DistroRelease Status")
     parent = Attribute("DistroRelease Parent")
     lucilleconfig = Attribute("Lucille Configuration Field")
+    changeslist = Attribute("The changes list address for the distrorelease.")
     sourcecount = Attribute("Source Packages Counter")
     binarycount = Attribute("Binary Packages Counter")
     potemplates = Attribute("The set of potemplates in the release")
-    currentpotemplates = Attribute("The set of potemplates in the release"
-        " with the iscurrent flag set")
+    currentpotemplates = Attribute("The set of potemplates in the release "
+        "with the iscurrent flag set")
     architecturecount = Attribute("The number of architectures in this "
         "release.")
     architectures = Attribute("The Architecture-specific Releases")
+    nominatedarchindep = Attribute(
+        "Distroarchrelease designed to build architeture independent "
+        "packages whithin this distrorelease context.")
     messagecount = Attribute("The total number of translatable items in "
         "this distribution release.")
     distroreleaselanguages = Attribute("The set of dr-languages in this "
@@ -91,6 +103,9 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
     specifications = Attribute("The specifications targeted to this "
         "product series.")
 
+    binary_package_caches = Attribute("All of the cached binary package "
+        "records for this distrorelease.")
+
     # other properties
     previous_releases = Attribute("Previous distroreleases from the same "
         "distribution.")
@@ -103,38 +118,54 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         "Any bugtasks on this distrorelease that are for bugs with "
         "CVE references, and are resolved.")
 
-    def getBugSourcePackages():
-        """Get SourcePackages in a DistroRelease with BugTask"""
-
     def traverse(name):
         """Traverse across a distrorelease in Launchpad. This looks for
         special URL items, like +sources or +packages, then goes on to
         traverse using __getitem__."""
 
-    def __getitem__(arch):
-        """Return a Set of Binary Packages in this distroarchrelease."""
+    def __getitem__(archtag):
+        """Return the distroarchrelease for this distrorelease with the
+        given architecturetag.
+        """
 
     def updateStatistics(self):
         """Update all the Rosetta stats for this distro release."""
+
+    def updatePackageCount(self):
+        """Update the binary and source package counts for this distro
+        release."""
 
     def findSourcesByName(name):
         """Return an iterator over source packages with a name that matches
         this one."""
 
-    def getSourcePackageByName(name):
+    def getSourcePackage(name):
         """Return a source package in this distro release by name.
 
         The name given may be a string or an ISourcePackageName-providing
         object.
         """
 
+    def getBinaryPackage(name):
+        """Return a DistroReleaseBinaryPackage for this name.
+
+        The name given may be an IBinaryPackageName or a string.
+        """
+
     def findBinariesByName(name):
         """Return an iterator over binary packages with a name that matches
         this one."""
 
-    def getPublishedReleases(sourcepackage_or_name):
+    def getPublishedReleases(sourcepackage_or_name, pocket=None):
         """Given a SourcePackageName, return a list of the currently
         published SourcePackageReleases as SourcePackagePublishing records.
+
+        If pocket is not specified, we look in all pockets.
+        """
+
+    def getAllReleasesByStatus(status):
+        """Return all sourcepackages in a given published_status for this
+        DistroRelease.
         """
 
     def publishedBinaryPackages(component=None):
@@ -152,6 +183,60 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
     def getDistroReleaseLanguageOrDummy(language):
         """Return the DistroReleaseLanguage for this distrorelease and the
         given language, or a DummyDistroReleaseLanguage.
+        """
+
+    def createUploadedSourcePackageRelease(sourcepackagename, version,
+            maintainer, dateuploaded, builddepends, builddependsindep,
+            architecturehintlist, component, creator, urgency,
+            changelog, dsc, dscsigningkey, section, manifest):
+        """Create a sourcepackagerelease with this distrorelease set to
+        be the uploadeddistrorelease.
+        """
+
+    def getComponentByName(name):
+        """Get the named component.
+
+        Raise NotFoundError if the component is not in the permitted component
+        list for this distrorelease.
+        """
+
+    def getSectionByName(name):
+        """Get the named section.
+
+        Raise NotFoundError if the section is not in the permitted section
+        list for this distrorelease.
+        """
+
+    def removeOldCacheItems():
+        """Delete any records that are no longer applicable."""
+
+    def updateCompletePackageCache():
+        """Update the package cache for all binary package names published
+        in this distro release.
+        """
+
+    def updatePackageCache(name):
+        """Update the package cache for the binary packages with the given
+        name.
+        """
+
+    def searchPackages(text):
+        """Search through the packge cache for this distrorelease and return
+        DistroReleaseBinaryPackage objects that match the given text.
+        """
+
+    def createQueueEntry(pocket, status=DistroReleaseQueueStatus.ACCEPTED):
+        """Create a queue item attached to this distrorelease and the given
+        pocket. If status is not supplied, then default to an ACCEPTED item.
+        """
+    
+    def newArch(architecturetag, processorfamily, official, owner):
+        """Create a new port or DistroArchRelease for this DistroRelease."""
+
+    def getQueueItems(status=DistroReleaseQueueStatus):
+        """Get the queue items for this distrorelease that are in the given
+        queue state. If status is not supplied, default to the ACCEPTED items
+        in the queue.
         """
 
 

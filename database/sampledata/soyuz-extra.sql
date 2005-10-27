@@ -23,3 +23,9 @@ VALUES (2,
 	'Dummy sampledata entry, not processing', 
 	'2005-06-15 09:14:12.820778', 
 	1);
+
+
+-- Add Nominated Architecures (trust ids)
+
+UPDATE DistroRelease set nominatedarchindep=1 where id=1;
+UPDATE DistroRelease set nominatedarchindep=6 where id=3;

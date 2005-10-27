@@ -1,0 +1,52 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:lp="http://launchpad.canonical.com"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  i18n_domain="launchpad">
+
+  <!-- DistributionSourcePackageRelease -->
+  <content class="canonical.launchpad.database.DistributionSourcePackageRelease">
+    <allow interface="canonical.launchpad.interfaces.IDistributionSourcePackageRelease" />
+  </content>
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IDistributionSourcePackageRelease"
+    name="+index" />
+
+  <browser:url
+    for="canonical.launchpad.interfaces.IDistributionSourcePackageRelease"
+    path_expression="string:+source/${name}/${version}"
+    attribute_to_parent="distribution"
+    />
+
+  <browser:navigation
+    module="canonical.launchpad.browser"
+    classes="DistributionSourcePackageReleaseNavigation"
+    />
+
+  <browser:menus
+    module="canonical.launchpad.browser.distributionsourcepackagerelease"
+    classes="DistributionSourcePackageReleaseFacets"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IDistributionSourcePackageRelease"
+    class="canonical.launchpad.browser.DistributionSourcePackageReleaseView"
+    permission="zope.Public"
+    >
+    <browser:page
+      name="+index"
+      facet="overview"
+      template="../templates/distributionsourcepackagerelease-index.pt"
+      />
+
+    <!-- DistributionSourcePackageRelease Portlets -->
+    <browser:page
+      name="+portlet-details"
+      facet="overview"
+      template="../templates/distributionsourcepackagerelease-portlet-details.pt"
+      />
+  </browser:pages>
+
+</configure>

@@ -167,7 +167,7 @@ contains '.' or ',', (1) and (2) are switched to 'email (name)' format."""
         rfc2047_maint = "%s <%s>" % (rfc2047_name, email)
 
     if email.find("@") == -1 and email.find("buildd_") != 0:
-        raise ParseMaintError, "%s: do @ found in email address part." % maintainer
+        raise ParseMaintError, "%s: no @ found in email address part." % maintainer
 
     return (rfc822_maint, rfc2047_maint, name, email)
 

@@ -73,20 +73,12 @@
         <allow interface="canonical.launchpad.interfaces.ICodeOfConductSet" />
     </securedutility>
 
-    <!-- This view registers 'codeofconduct' as a suburl of ILaunchpadRoot. -->
-    <browser:suburl
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        utility="canonical.launchpad.interfaces.ICodeOfConductSet"
-        name="codeofconduct" />
     <browser:url
         for="canonical.launchpad.interfaces.ICodeOfConductSet"
         path_expression="string:codeofconduct"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.ICodeOfConductSet"
-        getter="__getitem__" />
     <browser:url
         for="canonical.launchpad.interfaces.ICodeOfConduct"
         parent_utility="canonical.launchpad.interfaces.ICodeOfConductSet"
@@ -178,9 +170,10 @@
         parent_utility="canonical.launchpad.interfaces.ISignedCodeOfConductSet"
         />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.ISignedCodeOfConductSet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="SignedCodeOfConductSetNavigation CodeOfConductSetNavigation"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ISignedCodeOfConductSet"

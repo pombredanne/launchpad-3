@@ -4,10 +4,6 @@
       i18n:domain="rosetta">
 <body>
 
-<metal:rightportlets fill-slot="portlets_two">
-        <div tal:replace="structure context/@@+portlet-actions" />
-</metal:rightportlets>
-
 
 <div metal:fill-slot="main">
 

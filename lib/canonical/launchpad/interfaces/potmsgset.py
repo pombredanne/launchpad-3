@@ -70,7 +70,7 @@ class IPOTMsgSet(Interface):
         """Return a new message ID sighting that points back to us.
 
         If one already exists, behaviour depends on 'update'; if update
-        is allowed, the existing one is "touched" and returned.  If it
+        is allowed, the existing one is 'touched' and returned.  If it
         is not, then a KeyError is raised.
         """
 

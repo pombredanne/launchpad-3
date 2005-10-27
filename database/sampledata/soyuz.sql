@@ -441,6 +441,22 @@ INSERT INTO Distroarchrelease(distrorelease, processorfamily, architecturetag,
 	(SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth')
 	);
 
+INSERT INTO Distroarchrelease(distrorelease, processorfamily, architecturetag, 
+	owner) VALUES 
+	((SELECT id FROM Distrorelease where name = 'hoary'), 
+	(SELECT id from Processorfamily where name = 'x86'), 
+	'i386', 
+	(SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth')
+	);
+
+INSERT INTO Distroarchrelease(distrorelease, processorfamily, architecturetag, 
+	owner) VALUES 
+	((SELECT id FROM Distrorelease where name = 'woody'), 
+	(SELECT id from Processorfamily where name = 'x86'), 
+	'i386', 
+	(SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth')
+	);
+
 -- Build
 
 INSERT INTO Build (datecreated, processor, distroarchrelease, buildstate)

@@ -29,10 +29,10 @@
 
     <!-- VOCABULARIES -->
 
-    <!--TRAVERSALS-->
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IBugPackageInfestationSet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BugPackageInfestationSetNavigation"
+        />
 
     <!--BROWSER DEFAULTVIEWS-->
     <browser:defaultView

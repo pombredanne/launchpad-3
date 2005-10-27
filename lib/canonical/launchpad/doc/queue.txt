@@ -1,0 +1,91 @@
+== Upload processing queue ==
+
+The upload processing queue (DistroReleaseQueue and friends) is where
+uploads go after they have been checked by process-upload.py and
+before they get published by publish-distro.py.
+
+First up, we need to actually process an upload to get it into the
+queue. To do this we set up a librarian, prepare a gpg key and then
+run the upload handler.
+
+  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+  >>> LibrarianTestSetup().setUp()  
+  >>> from canonical.launchpad.interfaces import IGPGKeySet
+  >>> from canonical.lp.dbschema import GPGKeyAlgorithm
+  >>> discarded_key = getUtility(IGPGKeySet).new(26, '20687895',
+  ...     '961F4EB829D7D304A77477822BC8401620687895', 1024, GPGKeyAlgorithm.D)
+  >>> from canonical.launchpad.ftests import import_public_test_keys
+  >>> import_public_test_keys()
+
+We need some setup for the upload handler.
+
+  >>> class MockLogger:
+  ...     def __init__(self, swallow=True):
+  ...         self.swallow = swallow
+  ...     def debug(self, s):
+  ...         if not self.swallow:
+  ...             print("DEBUG: "+s)
+  >>> class MockOptions:
+  ...     distro = "ubuntu"
+  ...     distrorelease = "hoary"
+
+  >>> from canonical.archivepublisher.nascentupload import NascentUpload
+  >>> from canonical.archivepublisher.uploadpolicy import findPolicyByName
+  >>> from canonical.archivepublisher.tests import datadir
+
+Construct an upload.
+
+  >>> ed_upload = NascentUpload(findPolicyByName('anything'), 
+  ...     datadir(''), "ed_0.2-20_i386.changes", MockLogger())
+  >>> ed_upload.changes_filename == datadir("ed_0.2-20_i386.changes")
+  True
+  >>> ed_upload.policy.setOptions(MockOptions())
+  >>> ed_upload.policy.can_upload_binaries = True
+  >>> ed_upload.policy.can_upload_mixed = True
+  >>> ed_upload.process()
+  >>> success, msgs = ed_upload.do_accept()
+  >>> success
+  True
+
+Now the upload is in the queue, it'll likely be there as NEW because that's
+what we expect the ed upload to produce. Let's find the queue item and
+convert it to an ACCEPTED item.
+
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+  >>> hoary = ubuntu['hoary']
+  >>> new_queue = hoary.getQueueItems(DistroReleaseQueueStatus.NEW)
+
+XXX: dsilvers: 20051021: Ugh, security proxy removal shouldn't be
+needed. Bug 3456
+
+  >>> from zope.security.proxy import removeSecurityProxy
+  >>> for item in new_queue:
+  ...     removeSecurityProxy(item).status = DistroReleaseQueueStatus.ACCEPTED
+  ...     removeSecurityProxy(item).sync()
+  >>> accepted_queue = hoary.getQueueItems(DistroReleaseQueueStatus.ACCEPTED)
+  >>> for item in accepted_queue:
+  ...     for source in removeSecurityProxy(item).sources:
+  ...         print source.sourcepackagerelease.sourcepackagename.name
+  ...     removeSecurityProxy(item).realiseUpload(MockLogger(False))
+  ed
+  DEBUG: Publishing source ed/0.2-20 to ubuntu/hoary
+  DEBUG: Publishing build to ubuntu/hoary/i386
+  DEBUG: ... ed/0.2-20 (Arch Specific)
+
+Confirm we can now find ed published in hoary.
+
+  >>> from canonical.launchpad.database import SourcePackagePublishing
+  >>> for release in SourcePackagePublishing.selectBy(
+  ...     distroreleaseID=hoary.id):
+  ...     if release.sourcepackagerelease.sourcepackagename.name == "ed":
+  ...         print release.sourcepackagerelease.version
+  0.2-20
+
+Finally, abort the whole damned mess
+
+  >>> import transaction
+  >>> transaction.abort()
+

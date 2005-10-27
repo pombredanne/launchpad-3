@@ -12,10 +12,9 @@
     <div tal:replace="structure context/@@+portlet-hctstatus" />
   </metal:leftportlets>
 
-
   <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-latesttickets" />
     <div tal:replace="structure context/@@+portlet-upstream-details" />
+    <div tal:replace="structure context/@@+portlet-latesttickets" />
     <div tal:replace="structure context/@@+portlet-releases" />
   </metal:rightportlets>
 
@@ -32,22 +31,23 @@
   </p>
 
   <p class="portalMessage" tal:condition="not:context/currentrelease">
-    This source package is not
-    published in <span tal:replace="context/distrorelease/title" />.
+    There is no current release of this source package 
+    in <span tal:replace="context/distrorelease/title" />.
   </p>
 
   <tal:block repeat="pocket view/published_by_pocket">
     <tal:block condition="pocket/packages">
-      <h2 tal:content="pocket/pocketdetails/title">Plain</h2>
+      <p><b tal:content="pocket/pocketdetails/title">Plain</b>:</p>
 
-      <p tal:content="pocket/pocketdetails/description">
+      <p style="margin-left: 20px;" 
+         tal:content="pocket/pocketdetails/description">
         The description of the pocket.
       </p>
 
       <ul>
         <li tal:repeat="spr pocket/packages">
-          <span tal:replace="spr/sourcepackagename/name">apache2</span>
-          <span tal:replace="spr/version">4.3.5-9</span>
+          <a tal:content="spr/displayname"
+             tal:attributes="href spr/fmt:url">apache2</a>
         </li>
       </ul>
     </tal:block>
@@ -56,59 +56,71 @@
   <tal:block tal:condition="context/currentrelease"
              tal:define="current context/currentrelease">
 
-        <h2>Binary Packages
-               <span tal:condition="not:current/changelog" tal:omit-tag>
-                   (No Changelog for this Source Release)
-               </span></h2>
+    <h2>Download Files from Current Release (<span
+    tal:replace="current/version">2.1.3-4</span>)</h2>
+
+      <div tal:define="files current/files">
+        <ul tal:condition="files">
+          <li class="file" tal:repeat="file files">
+            <a tal:content="file/url/filename"
+               tal:attributes="href file/url/fileurl" />
+          </li>
+          <li class="alert" tal:condition="not:files">
+            <i>No files available for download.</i>
+          </li>
+        </ul>
+      </div>
+
+    <h2>Binary Packages</h2>
         
-        <ul tal:define="binaries view/binaries">
-           <li tal:condition="not:binaries">
-              <i>No binaries generated for this
-              SourcePackageRelease</i>
-           </li>
-           <li tal:repeat="bin_name binaries" >
-               <span tal:replace="bin_name" /> 
-                 <span tal:repeat="archtag python:binaries[bin_name]">
-                 (<a tal:content="archtag" tal:attributes="href 
-                          string:../../${archtag}/${bin_name}" />) 
-                 </span>
+    <ul tal:define="binaries view/binaries">
+      <li class="alert" tal:condition="not:binaries">
+        <i>No binaries generated for this SourcePackageRelease</i>
+      </li>
+      <li tal:repeat="bin_name binaries" >
+        <span tal:replace="bin_name" /> 
+        <span tal:repeat="archtag python:binaries[bin_name]">
+          (<a tal:content="archtag" tal:attributes="href 
+                           string:../../${archtag}/${bin_name}" />) 
+        </span>
+      </li>
+    </ul>
+
+    <h2 tal:condition="view/has_build_depends">
+        Package Relationship
+    </h2>
+
+    <table width="100%" valign="top">
+      <tr>
+        <td tal:condition="view/builddepends">
+          <h4>Build Dependencies</h4>
+          <ul>
+            <li tal:repeat="dep view/builddepends">
+              <a tal:content="dep/name"
+                 tal:attributes="href string:../../i386/${dep/name}" />
+              <span tal:condition="dep/signal"
+                    tal:content="string:(${dep/signal} ${dep/version})" />
             </li>
-        </ul>
-          <h2 tal:condition="python:(view.builddepends() or view.builddependsindep())">
-            Package Relationship
-          </h2>
-
-       <table width="100%" valign="top">
-       <tr>
-       <td tal:condition="view/builddepends">
-       <h4>Build Dependencies</h4>
-       <ul>
-         <li tal:repeat="dep view/builddepends">
-           <a tal:content="dep/name"
-              tal:attributes="href string:../../i386/${dep/name}" />
-           <span tal:condition="dep/signal"
-                  tal:content="string:(${dep/signal} ${dep/version})" />
-         </li>
-       </ul>
-       </td>
-
-       <td tal:condition="view/builddependsindep">
-       <h4>Platform-independent Build Dependencies</h4>
-       <ul>
-         <li tal:repeat="dep view/builddependsindep">
-           <a tal:content="dep/name"
-              tal:attributes="href string:../../i386/${dep/name}" />
-           <span tal:condition="dep/signal"
-                  tal:content="string:(${dep/signal} ${dep/version})" />
-         </li>
-        </ul>
+          </ul>
         </td>
-        </tr>
-        </table>
+
+        <td tal:condition="view/builddependsindep">
+          <h4>Platform-independent Build Dependencies</h4>
+          <ul>
+            <li tal:repeat="dep view/builddependsindep">
+              <a tal:content="dep/name"
+                 tal:attributes="href string:../../i386/${dep/name}" />
+              <span tal:condition="dep/signal"
+                    tal:content="string:(${dep/signal} ${dep/version})" />
+            </li>
+          </ul>
+        </td>
+      </tr>
+    </table>
 
   </tal:block>
 
-  </div>
+</div>
 </body>
 </html>
  

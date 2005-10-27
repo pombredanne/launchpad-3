@@ -34,7 +34,6 @@ from transaction import abort, commit
 from ZODB.DB import DB
 from ZODB.DemoStorage import DemoStorage
 import zope.interface
-from zope.publisher.browser import BrowserRequest
 from zope.publisher.http import HTTPRequest
 from zope.publisher.publish import publish
 from zope.security.interfaces import Forbidden, Unauthorized
@@ -44,15 +43,17 @@ from zope.app.debug import Debugger
 from zope.app.publication.http import HTTPPublication
 import zope.app.tests.setup
 from zope.app.component.hooks import setSite, getSite
-from zope.app.tests import ztapi
 from zope.component import getUtility
 import zope.security.management
 
 from canonical.publication import LaunchpadBrowserPublication
+from canonical.launchpad.webapp import LaunchpadBrowserRequest
 from canonical.chunkydiff import elided_source
 from canonical.config import config
 import canonical.launchpad.layers
 
+
+from canonical.launchpad.webapp import LaunchpadBrowserRequest
 
 # XXX: When we've upgraded Zope 3 to a newer version, we'll just import
 #      IHeaderOutput from zope.publisher.interfaces.http.
@@ -241,7 +242,7 @@ class BrowserTestCase(FunctionalTestCase):
         request = app._request(path, '', outstream,
                                environment=environment,
                                basic=basic, form=form,
-                               request=BrowserRequest)
+                               request=LaunchpadBrowserRequest)
         return request
 
     def __http_cookie(self, path):
@@ -283,7 +284,7 @@ class BrowserTestCase(FunctionalTestCase):
         publish(request, handle_errors=handle_errors)
         # Urgh - need to play with the response's privates to extract
         # cookies that have been set
-        for k,v in response._cookies.items():
+        for k, v in response._cookies.items():
             k = k.encode('utf8')
             self.cookies[k] = v['value'].encode('utf8')
             if self.cookies[k].has_key('Path'):
@@ -508,7 +509,7 @@ def http(request_string, port=9000, handle_errors=True, debug=False):
     if method not in ('GET', 'POST', 'HEAD'):
         raise RuntimeError("Request method was not GET, POST or HEAD.")
 
-    request_cls = BrowserRequest
+    request_cls = LaunchpadBrowserRequest
     publication_cls = LaunchpadBrowserPublication
 
     request = app._request(path, instream, outstream,

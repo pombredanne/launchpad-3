@@ -23,25 +23,24 @@
   <h1 tal:content="context/title">Feature Specification</h1>
 
   <p tal:repeat="notice view/notices" tal:content="notice"
-     class="portalMessage">
+     class="portalMessage" style="margin-bottom: 10px">
     notice goes here
+  </p>
+
+  <p tal:condition="not:context/specurl" class="portalMessage"
+     style="margin-bottom: 10px">
+    This specification is currently not linked to a URL. Visit the
+    <a href="+edit">edit page</a> if you wish to link it to a URL that others
+    can visit to read a more detailed description of the specification.
   </p>
 
     <table>
       <tbody>
         <tr>
-          <th>Name:</th>
-          <td tal:content="context/name">fix-widget-barfing</td>
-        </tr>
-        <tr>
-          <th>Title:</th>
-          <td tal:content="context/title">Fix the Widgets</td>
-        </tr>
-        <tr>
           <th>Status:</th>
           <td tal:content="context/status/title">Approved</td>
         </tr>
-        <tr>
+        <tr tal:condition="context/priority">
           <th>Priority:</th>
           <td tal:content="context/priority/title">High</td>
         </tr>
@@ -71,18 +70,20 @@
           <th>Whiteboard:</th>
           <td tal:content="context/whiteboard">whiteboard</td>
         </tr>
+        <tr tal:condition="context/specurl">
+          <th>Spec Page:</th>
+          <td>
+            <img src="/++resource++link" />
+            <a tal:attributes="href context/specurl">
+              Read the Full Specification
+            </a>
+          </td>
+        </tr>
       </tbody>
     </table>
-      <p tal:content="context/summary">
+      <p class="highlighted" tal:content="context/summary">
         The feature summary will be given here.
       </p>
-      <ul>
-        <li class="download">
-          <a tal:attributes="href context/specurl">
-            Read the complete specification
-          </a>
-        </li>
-      </ul>
     </div>
   </body>
 </html>

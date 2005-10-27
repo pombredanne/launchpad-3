@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'LoginTokenSetNavigation',
     'LoginTokenView',
     'ResetPasswordView',
     'ValidateEmailView',
@@ -24,11 +25,16 @@ from canonical.lp.dbschema import GPGKeyAlgorithm
 
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logInPerson
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, GetitemNavigation
 
 from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, IPasswordEncryptor, ILoginTokenSet,
-    IGPGKeySet, IGPGHandler, ILaunchBag)
+    IGPGKeySet, IGPGHandler)
+
+
+class LoginTokenSetNavigation(GetitemNavigation):
+
+    usedfor = ILoginTokenSet
 
 
 class LoginTokenView:
@@ -251,33 +257,46 @@ class ValidateEmailView(BaseLoginTokenView):
                 '(using <kbd>gpg --send-keys KEY</kbd>) and that you '
                 'entered the fingerprint correctly (as produced by <kbd>'
                 'gpg --fingerprint YOU</kdb>). Try later or '
-                '<a href="%s/+editgpgkey">cancel your request</a>.'
+                '<a href="%s/+editgpgkeys">cancel your request</a>.'
                 % (key, person_url))
             return        
+
+        # if key is globally revoked skip import and remove token
+        if key.revoked:
+            self.errormessage = (
+                'The key %s cannot be validated because it has been '
+                'publicly revoked. You will need to generate a new key '
+                '(using <kbd>gpg --genkey</kbd>) and repeat the previous '
+                'process to <a href="%s/+editgpgkeys">find and import</a> '
+                'the new key.' % (key.keyid, person_url))
+            logintokenset.deleteByFingerprintAndRequester(fingerprint,
+                                                          requester)
+            return
+
+        if key.expired:
+            self.errormessage = (
+                'The key %s cannot be validated because it has expired. '
+                'You will need to generate a new key '
+                '(using <kbd>gpg --genkey</kbd>) and repeat the previous '
+                'process to <a href="%s/+editgpgkeys">find and import</a> '
+                'the new key.' % (key.keyid, person_url))
+            logintokenset.deleteByFingerprintAndRequester(fingerprint,
+                                                          requester)
+            return
 
         # Is it a revalidation ?
         lpkey = gpgkeyset.getByFingerprint(fingerprint)
         
         if lpkey:            
-            # if key is globally revoked skip import and remove token
-            if key.revoked:
-                self.errormessage = (
-                    'The key %s cannot be revalidated because it has been '
-                    'publicly revoked. You will need to generate a new key '
-                    '(using <kbd>gpg --genkey</kbd>) and repeat the previous '
-                    'process to <a href="%s/+editgpgkey">find and import</a> '
-                    'the new key.' % (lpkey.displayname, person_url))
-            else:
-                gpgkeyset.activateGPGKey(lpkey.id)
-                self.infomessage = (
-                    'The key %s was successfully revalidated. '
-                    '<a href="%s/+editgpgkey">See more Information</a>'
-                    % (lpkey.displayname, person_url))
-                self.formProcessed = True
+            gpgkeyset.activateGPGKey(lpkey.id)
+            self.infomessage = (
+                'The key %s was successfully revalidated. '
+                '<a href="%s/+editgpgkeys">See more Information</a>'
+                % (lpkey.displayname, person_url))
+            self.formProcessed = True
 
             logintokenset.deleteByFingerprintAndRequester(fingerprint,
                                                           requester)
-            
             return
 
         # Otherwise prepare to add
@@ -297,7 +316,7 @@ class ValidateEmailView(BaseLoginTokenView):
 
         self.formProcessed = True
 
-        guessed, hijacked = self._guessGPGEmails(key.uids)
+        guessed, hijacked = self._guessGPGEmails(key.emails)
 
         if len(guessed):
             # build email list
@@ -407,14 +426,10 @@ class NewAccountView(AddView, BaseLoginTokenView):
         When everything went ok, we delete the LoginToken (self.context) from
         the database, so nobody can use it again.
         """
-        kw = {}
-        for key, value in data.items():
-            kw[str(key)] = value
-
         person, email = getUtility(IPersonSet).createPersonAndEmail(
-                self.context.email, displayname=kw['displayname'], 
-                givenname=kw['givenname'], familyname=kw['familyname'],
-                password=kw['password'], passwordEncrypted=True)
+                self.context.email, displayname=data['displayname'], 
+                givenname=data['givenname'], familyname=data['familyname'],
+                password=data['password'], passwordEncrypted=True)
 
         notify(ObjectCreatedEvent(person))
         notify(ObjectCreatedEvent(email))
@@ -422,6 +437,8 @@ class NewAccountView(AddView, BaseLoginTokenView):
         person.validateAndEnsurePreferredEmail(email)
         self._nextURL = canonical_url(person)
         self.context.destroySelf()
+        getUtility(ILoginTokenSet).deleteByEmailAndRequester(
+            email.email, requester=None)
         self.logInPersonByEmail(email.email)
         return True
 

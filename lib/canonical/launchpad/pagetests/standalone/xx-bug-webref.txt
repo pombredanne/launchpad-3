@@ -1,0 +1,63 @@
+It should be possible to add a external web reference to any bug. Using
+the bug 2 of the sample data, that doesn't have any external web
+reference, we will check the Add Web Reference Page, add a new external reference to it, and test if the edit link is working.
+
+Make sure we can view the Add Web Reference Page
+
+  >>> print http(r"""
+  ... GET /products/ubuntu/+bug/2/+addurl HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Add Web Link...
+  ...
+
+
+Now we can test if we can add a external web reference in the page
+
+  >>> print http(r"""
+  ... POST /products/ubuntu/+bug/2/+addurl HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------915798226605112199728632740
+  ... Content-Length: 448
+  ... 
+  ... -----------------------------915798226605112199728632740
+  ... Content-Disposition: form-data; name="field.url"
+  ... 
+  ... http://www.sample.com
+  ... -----------------------------915798226605112199728632740
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Sample Person Ref Page
+  ... -----------------------------915798226605112199728632740
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------915798226605112199728632740--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../products/ubuntu/+bug/2
+  ...
+
+Now we should see the Link added to the bug page
+
+   >>> print http(r"""
+   ... GET /products/ubuntu/+bug/2/ HTTP/1.1
+   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+   ... """)
+   HTTP/1.1 200 Ok
+   ...href="http://www.sample.com"...Sample Person Ref Page...
+   ...+edit...edit...
+   ...
+   
+And now we test if we can access the Web Reference Edit Page
+
+  >>> print http(r"""
+  ... GET /products/ubuntu/+bug/2/references/1/+edit HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Change Web Link...
+  ...
+

@@ -39,7 +39,7 @@ class ISpecification(IHasOwner):
             "Describe the feature as clearly as possible in up to 70 characters. "
             "This title is displayed in every feature list or report."))
     specurl = TextLine(
-        title=_('Specification URL'), required=True,
+        title=_('Specification URL'), required=False,
         description=_(
             "The URL of the specification. This is usually a wiki page."),
         constraint=valid_webref)
@@ -52,7 +52,7 @@ class ISpecification(IHasOwner):
         default=SpecificationStatus.BRAINDUMP)
     priority = Choice(
         title=_('Priority'), vocabulary='SpecificationPriority',
-        default=SpecificationPriority.MEDIUM)
+        default=None, required=False)
     assignee = Choice(title=_('Assignee'), required=False,
         description=_("The person responsible for implementing the feature."),
         vocabulary='ValidPersonOrTeam')
@@ -73,11 +73,13 @@ class ISpecification(IHasOwner):
         description=_(
             "The milestone in which we would like this feature to be delivered."))
     productseries = Choice(title=_('Targeted Product Series'), required=False,
-        vocabulary='FilteredProductSeries', description=_(
+        vocabulary='FilteredProductSeries',
+        description=_(
             "The release series to which this feature is targeted."))
     distrorelease = Choice(title=_('Targeted Release'), required=False,
-        vocabulary='FilteredDistroRelease', description=_('Select '
-        'the distribution release to which this feature is targeted.'))
+        vocabulary='FilteredDistroRelease',
+        description=_(
+            "The distribution release to which this feature is targeted."))
     whiteboard = Text(title=_('Status Whiteboard'), required=False,
         description=_(
             "Any notes on the status of this spec you would like to make. "
@@ -90,10 +92,21 @@ class ISpecification(IHasOwner):
     # joins
     subscriptions = Attribute('The set of subscriptions to this spec.')
     sprints = Attribute('The sprints at which this spec is discussed.')
+    sprint_links = Attribute('The entries that link this spec to sprints.')
     reviews = Attribute('The set of reviews queued.')
     bugs = Attribute('Bugs related to this spec')
     dependencies = Attribute('Specs on which this spec depends.')
     blocked_specs = Attribute('Specs for which this spec is a dependency.')
+
+    # emergent properties
+    is_incomplete = Attribute('Is True if this work still needs to '
+        'be done.')
+
+    is_blocked = Attribute('Is True if this spec depends on another spec '
+        'which is still incomplete.')
+
+    def getSprintSpecification(sprintname):
+        """Get the record that links this spec to the named sprint."""
 
     # subscription-related methods
     def subscribe(person):

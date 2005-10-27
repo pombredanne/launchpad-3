@@ -34,9 +34,10 @@
         classes="ProductSeriesContextMenu"
         />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IProductSeries"
-        function="canonical.launchpad.browser.traverseProductSeries" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="ProductSeriesNavigation ProductSeriesSetNavigation"
+        />
 
     <browser:url
         for="canonical.launchpad.interfaces.IProductSeries"
@@ -166,7 +167,7 @@
             lp:url="/products/$Product.name/+series/$ProductSeries.name/+source"
             />
     </browser:pages>
-    
+
     <browser:pages
         for="canonical.launchpad.interfaces.IProductSeriesSourceAdmin"
         class="canonical.launchpad.browser.ProductSeriesView"
@@ -178,13 +179,13 @@
             lp:url="/products/$Product.name/+series/$ProductSeries.name/+sourceadmin"
             />
     </browser:pages>
-    
+
     <browser:editform
         name="+review"
         for="canonical.launchpad.interfaces.IProductSeries"
         schema="canonical.launchpad.interfaces.IProductSeries"
         facet="overview"
-        label="Review Product Series Details:"
+        label="Review Product Series Details"
         fields="product name"
         permission="launchpad.Admin"
         template="../templates/launchpad-editform.pt"
@@ -221,7 +222,7 @@
         schema="canonical.launchpad.interfaces.IPOTemplateWithContent"
         class="canonical.launchpad.browser.POTemplateAddView"
         facet="translations"
-        label="Add a new Translation Template"
+        label="Add a New Translation Template"
         fields="potemplatename description iscurrent owner path filename
                 content"
         arguments=""
@@ -252,10 +253,6 @@
         <allow interface="canonical.launchpad.interfaces.IProductSeriesSet" />
     </securedutility>
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IProductSeriesSet"
-        getter="__getitem__" />
-
     <browser:defaultView
         for="canonical.launchpad.interfaces.IProductSeriesSet"
         name="+index" />
@@ -276,9 +273,29 @@
             />
     </browser:pages>
 
+    <!-- ProductSeriesSourceSet. Note this is only used by -->
+    <content class="canonical.launchpad.database.ProductSeriesSourceSet">
+        <allow interface="canonical.launchpad.interfaces.IProductSeriesSourceSet" />
+        <require
+            permission="zope.Public"
+            set_schema="canonical.launchpad.interfaces.IProductSeriesSourceSet"
+        />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.ProductSeriesSourceSet"
+        provides="canonical.launchpad.interfaces.IProductSeriesSourceSet">
+        <allow interface="canonical.launchpad.interfaces.IProductSeriesSourceSet" />
+    </securedutility>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IProductSeriesSourceSet"
+        layer="canonical.launchpad.layers.BazaarLayer"
+        name="+bazaar-index" />
+
     <!-- XXX need better permissions -->
     <browser:pages
-        for="canonical.launchpad.interfaces.IProductSeriesSet"
+        for="canonical.launchpad.interfaces.IProductSeriesSourceSet"
         permission="launchpad.AnyPerson"
         facet="overview"
         class="canonical.launchpad.browser.ProductSeriesSourceSetView">
@@ -288,5 +305,6 @@
             lp:url="/bazaar/series/"
             />
     </browser:pages>
+
 
 </configure>

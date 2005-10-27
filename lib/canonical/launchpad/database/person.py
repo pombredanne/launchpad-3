@@ -23,8 +23,10 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin,
     SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND, OR
-from canonical.database.sqlbase import SQLBase, quote, cursor, sqlvalues
+from sqlobject.sqlbuilder import AND
+from canonical.database.sqlbase import (
+    SQLBase, quote, cursor, sqlvalues, flush_database_updates,
+    flush_database_caches)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
@@ -36,18 +38,19 @@ from canonical.launchpad.interfaces import (
     IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IMaintainershipSet,
     IEmailAddressSet, ISourcePackageReleaseSet, IPasswordEncryptor,
     ICalendarOwner, UBUNTU_WIKI_URL, ISignedCodeOfConductSet,
-    ILoginTokenSet, KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken)
+    ILoginTokenSet, KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken,
+    NotFoundError, IKarmaSet, IKarmaCacheSet)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFile
-from canonical.launchpad.database.karma import KarmaCache, KarmaAction, Karma
+from canonical.launchpad.database.karma import KarmaAction, Karma
 from canonical.launchpad.database.shipit import ShippingRequest
 
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
-    TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType)
+    TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType, KarmaActionCategory)
 
 from canonical.foaf import nickname
 
@@ -57,7 +60,8 @@ class Person(SQLBase):
 
     implements(IPerson, ICalendarOwner)
 
-    _defaultOrder = ['displayname', 'familyname', 'givenname', 'name']
+    sortingColumns = ['displayname', 'familyname', 'givenname', 'name']
+    _defaultOrder = sortingColumns
 
     name = StringCol(dbName='name', alternateID=True, notNull=True)
     karma = IntCol(dbName='karma', notNull=True, default=0)
@@ -258,28 +262,40 @@ class Person(SQLBase):
         ret = sorted(ret, reverse=True, key=lambda a: a.datecreated)
         return ret
 
-    @property
-    def tickets(self):
+    def tickets(self, quantity=None):
         ret = set(self.created_tickets)
         ret = ret.union(self.answered_tickets)
         ret = ret.union(self.assigned_tickets)
         ret = ret.union(self.subscribed_tickets)
         ret = sorted(ret, key=lambda a: a.datecreated)
         ret.reverse()
+        if quantity is not None:
+            return ret[:quantity]
         return ret
 
     def isTeam(self):
         """See IPerson."""
         return self.teamowner is not None
 
+    def pastShipItRequests(self):
+        """See IPerson."""
+        query = '''
+            ShippingRequest.recipient = %s AND
+            (ShippingRequest.approved = false OR
+             ShippingRequest.cancelled = true OR
+             ShippingRequest.id IN (SELECT request FROM Shipment))
+            ''' % sqlvalues(self.id)
+        return ShippingRequest.select(query)
+
     def currentShipItRequest(self):
         """See IPerson."""
-        notdenied = OR(ShippingRequest.q.approved==True,
-                       ShippingRequest.q.approved==None)
-        query = AND(ShippingRequest.q.recipientID==self.id,
-                    ShippingRequest.q.shipmentID==None,
-                    notdenied,
-                    ShippingRequest.q.cancelled==False)
+        query = '''
+            (ShippingRequest.approved = true OR
+             ShippingRequest.approved IS NULL)
+            AND ShippingRequest.recipient = %s AND
+            ShippingRequest.cancelled = false AND
+            ShippingRequest.id NOT IN (SELECT request FROM Shipment)
+            ''' % sqlvalues(self.id)
         return ShippingRequest.selectOne(query)
 
     def assignKarma(self, action_name):
@@ -291,13 +307,25 @@ class Person(SQLBase):
                 "No KarmaAction found with name '%s'." % action_name)
         Karma(person=self, action=action)
 
-    def getKarmaPointsByCategory(self, category):
+    def updateKarmaCache(self):
         """See IPerson."""
-        karmacache = KarmaCache.selectOneBy(personID=self.id, category=category)
-        return getattr(karmacache, 'karmavalue', 0)
+        cacheset = getUtility(IKarmaCacheSet)
+        karmaset = getUtility(IKarmaSet)
+        totalkarma = 0
+        for cat in KarmaActionCategory.items:
+            karmavalue = karmaset.getSumByPersonAndCategory(self, cat)
+            totalkarma += karmavalue
+            cache = cacheset.getByPersonAndCategory(self, cat)
+            if cache is None:
+                cache = cacheset.new(self, cat, karmavalue)
+            else:
+                cache.karmavalue = karmavalue
+        self.karma = totalkarma
 
     def inTeam(self, team):
         """See IPerson."""
+        if team is None:
+            return False
         tp = TeamParticipation.selectOneBy(teamID=team.id, personID=self.id)
         if tp is not None or self.id == team.teamownerID:
             return True
@@ -499,6 +527,11 @@ class Person(SQLBase):
         return _getAllMembers(self)
 
     @property
+    def all_member_count(self):
+        """See IPerson."""
+        return len(self.allmembers)
+
+    @property
     def deactivatedmembers(self):
         """See IPerson."""
         return self._getMembersByStatus(TeamMembershipStatus.DEACTIVATED)
@@ -534,10 +567,19 @@ class Person(SQLBase):
         return self.approvedmembers.union(self.administrators)
 
     @property
+    def active_member_count(self):
+        """See IPerson."""
+        return len(self.activemembers)
+
+    @property
     def inactivemembers(self):
         """See IPerson."""
         return self.expiredmembers.union(self.deactivatedmembers)
 
+    # XXX: myactivememberships and activememberships are rather
+    # confusingly named, and I just fixed bug 2871 as a consequence of
+    # this. Is there a way to improve it?
+    #   -- kiko, 2005-10-07
     @property
     def myactivememberships(self):
         """See IPerson."""
@@ -732,7 +774,7 @@ class PersonSet:
     """The set of persons."""
     implements(IPersonSet)
 
-    _defaultOrder = Person._defaultOrder
+    _defaultOrder = Person.sortingColumns
 
     def __init__(self):
         self.title = 'Launchpad People'
@@ -741,13 +783,17 @@ class PersonSet:
         """See IPersonSet."""
         person = self.get(personid)
         if person is None:
-            raise KeyError(personid)
+            raise NotFoundError(personid)
         else:
             return person
 
     def topPeople(self):
         """See IPersonSet."""
-        return Person.select('password IS NOT NULL', orderBy='-karma')[:5]
+        # The odd ordering here is to ensure we hit the PostgreSQL
+        # indexes. Ideally we want to order by karma DESC, name but
+        # that will not use the indexes (at least under PostgreSQL 7.4)
+        # and be really slow.
+        return self.getAllValidPersons(orderBy=['-karma', '-id'])[:5]
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
@@ -948,6 +994,10 @@ class PersonSet:
             raise TypeError('from_person is not a person.')
         if not IPerson.providedBy(to_person):
             raise TypeError('to_person is not a person.')
+
+        # since we are doing direct SQL manipulation, make sure all
+        # changes have been flushed to the database
+        flush_database_updates()
 
         if len(getUtility(IEmailAddressSet).getByPerson(from_person)) > 0:
             raise ValueError('from_person still has email addresses.')
@@ -1233,15 +1283,24 @@ class PersonSet:
             ''' % vars())
         
         # Append a -merged suffix to the account's name.
-        name = "%s-merged" % from_person.name
-        cur.execute("SELECT id FROM Person WHERE name = '%s'" % name)
+        name = base = "%s-merged" % from_person.name.encode('ascii')
+        cur.execute("SELECT id FROM Person WHERE name = %s" % sqlvalues(name))
         i = 1
         while cur.fetchone():
-            name = "%s%d" % (name, i)
-            cur.execute("SELECT id FROM Person WHERE name = '%s'" % name)
+            name = "%s%d" % (base, i)
+            cur.execute("SELECT id FROM Person WHERE name = %s"
+                        % sqlvalues(name))
             i += 1
-        cur.execute("UPDATE Person SET name = '%s' WHERE id = %d"
-                    % (name, from_person.id))
+        cur.execute("UPDATE Person SET name = %s WHERE id = %s"
+                    % sqlvalues(name, from_person.id))
+
+        # Since we've updated the database behind SQLObject's back,
+        # flush its caches.
+        flush_database_caches()
+
+        # And now update the karma cache for both accounts.
+        from_person.updateKarmaCache()
+        to_person.updateKarmaCache()
 
 
 class EmailAddress(SQLBase):
@@ -1273,7 +1332,7 @@ class EmailAddressSet:
         """See IEmailAddressSet."""
         email = self.get(emailid)
         if email is None:
-            raise KeyError(emailid)
+            raise NotFoundError(emailid)
         else:
             return email
 
@@ -1557,6 +1616,10 @@ class TeamMembership(SQLBase):
     def statusname(self):
         return self.status.title
 
+    @property
+    def is_admin(self):
+        return self.status in [TeamMembershipStatus.ADMIN]
+
     def isExpired(self):
         return self.status == TeamMembershipStatus.EXPIRED
 
@@ -1565,7 +1628,7 @@ class TeamMembershipSet:
 
     implements(ITeamMembershipSet)
 
-    _defaultOrder = 'Person.displayname'
+    _defaultOrder = ['Person.displayname', 'Person.name']
 
     def getByPersonAndTeam(self, personID, teamID, default=None):
         result = TeamMembership.selectOneBy(personID=personID, teamID=teamID)

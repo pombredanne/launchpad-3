@@ -13,12 +13,13 @@ class DownloadFailed(Exception):
 
 
 class IFileUploadClient(Interface):
-    def addFile(name, size, file, contentType):
+    def addFile(name, size, file, contentType, expires=None):
         """Add a file to the librarian.
 
         :param name: Name to store the file as
         :param size: Size of the file
         :param file: File-like object with the content in it
+        :param expires: Expiry time of file, or None to keep until unreferenced
 
         :raises UploadFailed: If the server rejects the upload for some reason
 
@@ -30,7 +31,7 @@ class IFileUploadClient(Interface):
         Returns the id of the newly added LibraryFileAlias
         """
 
-    def remoteAddFile(name, size, file, contentType):
+    def remoteAddFile(name, size, file, contentType, expires=None):
         """Add a file to the librarian using the remote protocol.
 
         As per addFile, except that the database insertions are done by the

@@ -36,12 +36,20 @@ class ILanguage(Interface):
     visible = Attribute(
         """Whether this language should ususally be visible or not.""")
 
+    direction = Attribute("""The direction of text in this language.""")
+
     displayname = Attribute(
         "The displayname of the language (a constructed value)")
 
     alt_suggestion_language = Attribute("A language which can reasonably "
         "be expected to have good suggestions for translations in this "
         "language.")
+
+    dashedcode = Attribute("""The language code in a form suitable for use
+        in HTML and XML files.""")
+
+    abbreviated_text_dir = Attribute("""The abbreviated form of the text
+        direction, suitable for use in HTML files.""")
 
 class ILanguageSet(Interface):
     """The collection of languages."""

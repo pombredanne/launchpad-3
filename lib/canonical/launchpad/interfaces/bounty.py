@@ -37,22 +37,16 @@ class IBounty(IHasOwner, IMessageTarget):
             constraint=valid_name,
             )
     title = Title(
-            title=_('Title'), required=True,
-            description=_("""Describe the task as clearly as
-            possible in up to 70 characters. This title is
-            displayed in every bounty list or report."""),
+            title=_('Title'), required=True
             )
     summary = Summary(
-            title=_('Summary'), required=True,
-            description=_("""A single-paragraph description of the
-            bounty. This will also be displayed in most
-            bounty listings."""),
+            title=_('Summary'), required=True
             )
     description = Text(
             title=_('Description'), required=True,
-            description=_("""A detailed description. Include exact
-            results that will be acceptable to the bounty owner and
-            reviewer.""")
+            description=_("""Include exact results that will be acceptable to
+            the bounty owner and reviewer, and contact details for the person
+            coordinating the bounty.""")
             )
     usdvalue = Float(
             title=_('Estimated value (US dollars)'),
@@ -63,13 +57,10 @@ class IBounty(IHasOwner, IMessageTarget):
             )
     bountystatus = Choice(
         title=_('Status'), vocabulary='BountyStatus',
-        default=BountyStatus.OPEN, description=_("The current "
-        "status of this bounty."))
+        default=BountyStatus.OPEN)
     difficulty = Choice(
         title=_('Difficulty'), vocabulary='BountyDifficulty',
-        default=BountyDifficulty.NORMAL, description=_("The difficulty "
-        "of this bounty. Try to find the option that best matches the "
-        "work to be done."))
+        default=BountyDifficulty.NORMAL)
     reviewer = Choice(title=_('The bounty reviewer.'), required=False,
         description=_("The person who is responsible for deciding whether "
         "the bounty is awarded, and to whom if there are multiple "

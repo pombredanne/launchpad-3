@@ -18,7 +18,7 @@ INSERT INTO person (id, displayname, givenname, familyname, "password", teamowne
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (9, 'Christian Reis', 'Christian', 'Reis', NULL, NULL, NULL, 'kiko', NULL, '''rei'':3B,5C ''kiko'':1A ''christian'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.594941', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (10, 'Alexander Limi', 'Alexander', 'Limi', NULL, NULL, NULL, 'limi', NULL, '''limi'':1A,3B,5C ''alexand'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.619713', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (11, 'Steve Alexander', 'Steve', 'Alexander', NULL, NULL, NULL, 'stevea', NULL, '''steve'':2B,4C ''stevea'':1A ''alexand'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.599234', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (12, 'Sample Person', 'Sample', 'Person', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'name12', NULL, '''sampl'':2B,4C ''name12'':1A ''person'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.612277', 1, 'Australia/Perth', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (12, 'Sample Person', 'Sample', 'Person', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'name12', NULL, '''sampl'':2B,4C ''name12'':1A ''person'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.612277', 1, 'Australia/Perth', 91, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (13, 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín', 'MdB+BoAdbza3BA6mIkMm6bFo1kv9hR2PKZ3U', NULL, NULL, 'carlos', NULL, '''carlo'':1A,2B,5C ''marín'':4B,7C ''perelló'':3B,6C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.615543', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (14, 'Dafydd Harries', 'Dafydd', 'Harries', 'EvSuSe4k4tkRHSp6p+g91vyQIwL5VJ3iTbRZ', NULL, NULL, 'daf', NULL, '''daf'':1A ''harri'':3B,5C ''dafydd'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.616666', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (16, 'Foo Bar', 'Foo', 'Bar', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'name16', NULL, '''bar'':3B,5C ''foo'':2B,4C ''name16'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', 2, 'Africa/Johannesburg', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
@@ -28,7 +28,7 @@ INSERT INTO person (id, displayname, givenname, familyname, "password", teamowne
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (20, 'Warty Security Team', NULL, NULL, NULL, 1, 'This Team is responsible for Security Issues on Warty Distribution Release', 'name20', NULL, '''team'':4B ''secur'':3B ''warti'':2B ''name20'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.614468', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (21, 'Hoary Gnome Team', NULL, NULL, NULL, 1, 'This team is responsible for Security Issues on Hoary Distribution Release', 'name21', NULL, '''team'':4B ''gnome'':3B ''hoari'':2B ''name21'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.603691', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (22, 'Stuart Bishop', 'Stuart', 'Bishop', 'I+lQozEFEr+uBuxQZuKGpL4jkiy6lE1dQsZx', NULL, NULL, 'stub', NULL, '''stub'':1A ''bishop'':3B,5C ''stuart'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.59276', NULL, 'UTC', 0, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 75, '999432423', '+55 16 3374-2027', NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (23, 'David Allouche', 'David', 'Allouche', NULL, NULL, NULL, 'ddaa', NULL, '''ddaa'':1A ''david'':2B,4C ''allouch'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.620823', NULL, 'UTC', 0, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 35, '999432423', '+55 16 3374-2027', NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (23, 'David Allouche', 'David', 'Allouche', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'ddaa', NULL, '''ddaa'':1A ''david'':2B,4C ''allouch'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.620823', NULL, 'UTC', 0, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 35, '999432423', '+55 16 3374-2027', NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (24, 'Buttress Source Administrators', NULL, NULL, NULL, 2, 'Ultimate control of the Buttress systems', 'buttsource', NULL, '''sourc'':3B ''buttress'':2B ''administr'':4B ''buttsourc'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.604746', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (25, 'Launchpad Administrators', NULL, NULL, NULL, 1, 'Launchpad Administrators', 'admins', NULL, '''admin'':1A ''administr'':3B ''launchpad'':2B', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.571899', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (26, 'Daniel Silverstone', 'Daniel', 'Silverstone', NULL, NULL, NULL, 'kinnison', NULL, '''daniel'':2B,4C ''kinnison'':1A ''silverston'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.618722', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
@@ -55,12 +55,14 @@ INSERT INTO person (id, displayname, givenname, familyname, "password", teamowne
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (47, 'Morten Brix Pedersen', 'Morten', 'Brix Pedersen', 'n+KIa3PoihBN8ljj9Hjg9H3Im2LWnrn2yprgY4u/MnxOQx3dOh3bDw==', NULL, NULL, 'morten', NULL, '''brix'':3B,6C ''morten'':1A,2B,5C ''pedersen'':4B,7C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.56614', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (48, 'Matti Pöllä', 'Matti', 'Pöllä', 'U4KMnp73AYdriB7QH2NpEYhlH+fBWJKziDPcDAt25OxItZMYh0QV4Q==', NULL, NULL, 'mpo', NULL, '''mpo'':1A ''matti'':2B,4C ''pöllä'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.567224', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (49, 'Kęstutis Biliūnas', 'Kęstutis', 'Biliūnas', 'YbUJ4nzlxjYtaLLFMqUFL3LplUpS3FxcYwiCAS0WaAcnXS8Sst9BgA==', NULL, NULL, 'kebil', NULL, '''kebil'':1A ''biliūnas'':3B,5C ''kęstutis'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.568323', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (50, 'Valentina Commissari', 'Valentina', 'Commissari', 'fgwbt51c6ajsTet6DTbQBqAzQ7Q9S1G7S0APNvMX7YN2qpdbNbEn3Q==', NULL, NULL, 'tsukimi', NULL, '''tsukimi'':1A ''valentina'':2B,4C ''commissari'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.569518', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (50, 'Valentina Commissari', 'Valentina', 'Commissari', 'MdB+BoAdbza3BA6mIkMm6bFo1kv9hR2PKZ3U', NULL, NULL, 'tsukimi', NULL, '''tsukimi'':1A ''valentina'':2B,4C ''commissari'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.569518', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (51, 'Helge Kreutzmann', 'Helge', 'Kreutzmann', 'sYVFKi2dWAfkFkWekcW296s2dZ0ihYcxAXtwumI1FQJes4PWD8xvqQ==', NULL, NULL, 'kreutzm', NULL, '''helg'':2B,4C ''kreutzm'':1A ''kreutzmann'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.570701', NULL, 'UTC', 0, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 25, '999432423', '+55 16 3374-2027', NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (52, 'No Privileges Person', 'No', 'Privileges', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'no-priv', NULL, '''priv'':3A ''person'':6B ''no-priv'':1A ''privileg'':5B,7C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', NULL, 'UTC', 0, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 95, '999432423', '+55 16 3374-2027', NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (53, 'testing Spanish team', NULL, NULL, NULL, 13, NULL, 'testing-spanish-team', NULL, '''team'':4A,7B ''test'':2A,5B ''spanish'':3A,6B ''testing-spanish-team'':1A', NULL, NULL, 1, NULL, '2005-07-12 14:32:01.84779', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (54, 'ShipIt Administrators', NULL, NULL, NULL, 1, 'ShipIt Administrators', 'shipit-admins', NULL, '''admin'':3A ''shipit'':2A,4B ''administr'':5B ''shipit-admin'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.571899', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (55, 'Marilize Coetzee', 'Marilize', 'Coetzee', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'marilize', NULL, '''maril'':1A,2B,4C ''coetze'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', NULL, 'Africa/Johannesburg', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (56, 'Jordi Mallach', 'Jordi', 'Mallach', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'jordi', NULL, '''jordi'':1A,2B,4C ''mallach'':3B,5C', NULL, NULL, 1, NULL, '2005-10-07 14:17:51.593849', NULL, 'UTC', 0, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 95, '999432423', '+55 16 3374-2027', NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (57, 'Launchpad Developers', NULL, NULL, NULL, 16, 'Launchpad developers', 'launchpad', NULL, '''develop'':3B ''launchpad'':1A,2B', NULL, NULL, 3, NULL, '2005-10-13 13:03:41.668724', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'person'::pg_catalog.regclass;
@@ -77,7 +79,7 @@ INSERT INTO emailaddress (id, email, person, status) VALUES (7, 'steve.alexander
 INSERT INTO emailaddress (id, email, person, status) VALUES (8, 'colin.watson@ubuntulinux.com', 4, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (9, 'scott.james.remnant@ubuntulinux.com', 5, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (10, 'andrew.bennetts@ubuntulinux.com', 7, 1);
-INSERT INTO emailaddress (id, email, person, status) VALUES (11, 'james.blackwell@ubuntulinux.com', 8, 1);
+INSERT INTO emailaddress (id, email, person, status) VALUES (11, 'james.blackwell@ubuntulinux.com', 8, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (12, 'christian.reis@ubuntulinux.com', 9, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (13, 'jeff.waugh@ubuntulinux.com', 6, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (14, 'dave.miller@ubuntulinux.com', 3, 1);
@@ -110,13 +112,15 @@ INSERT INTO emailaddress (id, email, person, status) VALUES (40, 'morten@wtf.dk'
 INSERT INTO emailaddress (id, email, person, status) VALUES (41, 'mpo@iki.fi', 48, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (42, 'kebil@kaunas.init.lt', 49, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (43, 'tsukimi@quaqua.net', 50, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (44, 'kreutzm@itp.uni-hannover.de', 51, 1);
+INSERT INTO emailaddress (id, email, person, status) VALUES (44, 'kreutzm@itp.uni-hannover.de', 51, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (45, 'support@ubuntu.com', 17, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (46, 'no-priv@canonical.com', 52, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (47, 'stuart@stuartbishop.net', 22, 2);
 INSERT INTO emailaddress (id, email, person, status) VALUES (48, 'zen@shangri-la.dropbear.id.au', 22, 3);
 INSERT INTO emailaddress (id, email, person, status) VALUES (49, 'stub@fastmail.fm', 22, 1);
 INSERT INTO emailaddress (id, email, person, status) VALUES (50, 'marilize@hbd.com', 55, 4);
+INSERT INTO emailaddress (id, email, person, status) VALUES (51, 'jordi@ubuntu.com', 56, 4);
+INSERT INTO emailaddress (id, email, person, status) VALUES (52, 'daniel.silverstone@canonical.com', 26, 4);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'emailaddress'::pg_catalog.regclass;
@@ -124,7 +128,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'gpgkey'::pg_catalog.regclass;
 
-INSERT INTO gpgkey (id, owner, keyid, fingerprint, active, algorithm, keysize) VALUES (1, 16, '12345678', 'ABCDEF0123456789ABCDDCBA0000111112345678', true, 17, 1024);
+INSERT INTO gpgkey (id, "owner", keyid, fingerprint, active, algorithm, keysize) VALUES (1, 16, '12345678', 'ABCDEF0123456789ABCDDCBA0000111112345678', true, 17, 1024);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'gpgkey'::pg_catalog.regclass;
@@ -287,6 +291,8 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (45, 55, 54, 2, '2005-07-12 14:36:09.587753', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (46, 12, 31, 4, '2005-07-12 14:36:09.587753', NULL, NULL, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (47, 12, 32, 6, '2005-09-28 20:08:08.248467', '2007-08-29 00:00:00', 16, '');
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (48, 56, 30, 2, '2005-10-07 12:22:54.947939', NULL, 13, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (49, 16, 57, 3, '2005-10-13 13:03:41.668724', NULL, NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'teammembership'::pg_catalog.regclass;
@@ -373,6 +379,10 @@ INSERT INTO teamparticipation (id, team, person) VALUES (85, 53, 46);
 INSERT INTO teamparticipation (id, team, person) VALUES (86, 53, 16);
 INSERT INTO teamparticipation (id, team, person) VALUES (87, 54, 55);
 INSERT INTO teamparticipation (id, team, person) VALUES (88, 52, 52);
+INSERT INTO teamparticipation (id, team, person) VALUES (89, 56, 56);
+INSERT INTO teamparticipation (id, team, person) VALUES (90, 30, 56);
+INSERT INTO teamparticipation (id, team, person) VALUES (91, 57, 16);
+INSERT INTO teamparticipation (id, team, person) VALUES (92, 17, 26);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'teamparticipation'::pg_catalog.regclass;
@@ -458,6 +468,7 @@ INSERT INTO product (id, project, "owner", name, displayname, title, summary, de
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone) VALUES (12, NULL, 16, 'a52dec', 'a52dec', 'Liba52 Test Decoder', 'a52dec is a test program for liba52.', 'This tool decodes ATSC A/52 streams, and also includes a demultiplexer for mpeg-1 and mpeg-2 program streams. The liba52 source code is always distributed in the a52dec package, to make sure it easier for people to test it.', '2005-04-14 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''1'':27 ''2'':31 ''a/52'':17 ''also'':20 ''atsc'':16 ''code'':37 ''make'':46 ''mpeg'':26,30 ''sure'':47 ''test'':4B,9C,53 ''tool'':14 ''alway'':39 ''decod'':5B,15 ''peopl'':51 ''sourc'':36 ''a52dec'':1A,2A,6C,43 ''easier'':49 ''includ'':21 ''liba52'':3B,12C,35 ''mpeg-1'':25 ''mpeg-2'':29 ''packag'':44 ''stream'':18,33 ''program'':10C,32 ''distribut'':40 ''demultiplex'':23', false, NULL, 1, NULL, NULL, false, false);
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone) VALUES (13, 5, 16, 'gnomebaker', 'gnomebaker', 'Gnome Baker', 'Gnome Baker is a CD burning application', 'Gnome Baker burns CDs like there''s no tomorrow', '2005-08-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''cd'':9C ''cds'':15 ''burn'':10C,14 ''like'':16 ''baker'':4B,6C,13 ''gnome'':3B,5C,12 ''applic'':11C ''gnomebak'':1A,2A ''tomorrow'':20', false, NULL, 1, NULL, NULL, false, false);
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone) VALUES (14, NULL, 12, 'bazaar', 'Bazaar', 'Bazaar', 'Bazaar is a distributed revision control system', 'Bazaar is all about source control and double-dashes.', '2005-08-26 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, '''dash'':20 ''doubl'':19 ''revis'':8C ''sourc'':15 ''bazaar'':1A,2A,3B,4C,11 ''system'':10C ''control'':9C,16 ''distribut'':7C ''double-dash'':18', false, NULL, 1, NULL, NULL, false, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, releaseroot, calendar, official_rosetta, official_malone) VALUES (15, NULL, 1, 'alsa-utils', 'alsa-utils', 'ALSA utilities', 'Utilities for configurating and using the Advanced Linux Sound Architecture', '', '2005-09-15 09:05:11.472752', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, true, '''use'':13C ''alsa'':2A,5A,7B ''util'':3A,6A,8B,9C ''linux'':16C ''sound'':17C ''advanc'':15C ''configur'':11C ''alsa-util'':1A,4A ''architectur'':18C', false, NULL, 1, NULL, NULL, false, false);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'product'::pg_catalog.regclass;
@@ -489,6 +500,7 @@ of the product.', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NU
 INSERT INTO productseries (id, product, name, displayname, summary, branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, bkrepository, releaseroot, releasefileglob, releaseverstyle, targetarcharchive, targetarchcategory, targetarchbranch, targetarchversion, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated) VALUES (5, 11, 'releases', 'NetApplet Releases', 'Releases of Network Applet', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.899819');
 INSERT INTO productseries (id, product, name, displayname, summary, branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, bkrepository, releaseroot, releasefileglob, releaseverstyle, targetarcharchive, targetarchcategory, targetarchbranch, targetarchversion, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated) VALUES (6, 12, 'main', 'MAIN', 'The primary upstream development branch, from which all releases are made.', NULL, 2, NULL, NULL, 1, ':pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52', 'a52dec', 'MAIN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.913564');
 INSERT INTO productseries (id, product, name, displayname, summary, branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, bkrepository, releaseroot, releasefileglob, releaseverstyle, targetarcharchive, targetarchcategory, targetarchbranch, targetarchversion, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated) VALUES (7, 12, 'failedbranch', 'FAILEDBRANCH', 'A branch where auto test has failed.', NULL, 3, NULL, NULL, 1, ':pserver:anonymous@cvs.sourceforge.net:/cvsroot/liba52', 'a52dec', 'AUTOTESTFAILED', NULL, NULL, NULL, NULL, NULL, NULL, 'a52dec@bazaar.ubuntu.com', 'a52dec', 'AUTOTESTFAILED', '0', NULL, NULL, NULL, NULL, NULL, '2005-06-06 08:59:51.913564');
+INSERT INTO productseries (id, product, name, displayname, summary, branch, importstatus, datelastsynced, syncinterval, rcstype, cvsroot, cvsmodule, cvsbranch, cvstarfileurl, svnrepository, bkrepository, releaseroot, releasefileglob, releaseverstyle, targetarcharchive, targetarchcategory, targetarchbranch, targetarchversion, dateautotested, dateprocessapproved, datesyncapproved, datestarted, datefinished, datecreated) VALUES (8, 15, 'main', 'MAIN', 'The mainline for alsa-utils', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '2005-09-15 09:10:03.531637');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'productseries'::pg_catalog.regclass;
@@ -659,6 +671,8 @@ Updated translations:
    - en_CA (Adam Weinberger)
    - lt (Zygimantas Berucka)', 12, NULL, 3, NULL, '2005-06-06 08:59:51.919766');
 INSERT INTO productrelease (id, datereleased, "version", title, description, changelog, "owner", summary, productseries, manifest, datecreated) VALUES (7, '2005-03-10 16:20:00', '1.0', NULL, NULL, NULL, 12, NULL, 5, NULL, '2005-06-06 08:59:51.925908');
+INSERT INTO productrelease (id, datereleased, "version", title, description, changelog, "owner", summary, productseries, manifest, datecreated) VALUES (8, '2005-02-03 08:50:00', '1.0.8', NULL, NULL, NULL, 1, NULL, 8, 16, '2005-09-15 09:15:49.327457');
+INSERT INTO productrelease (id, datereleased, "version", title, description, changelog, "owner", summary, productseries, manifest, datecreated) VALUES (9, '2005-06-10 10:40:00', '1.0.9a', NULL, NULL, NULL, 1, NULL, 8, 17, '2005-09-15 09:16:00.235886');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'productrelease'::pg_catalog.regclass;
@@ -696,6 +710,8 @@ INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES 
 INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (7, 'plone@arch.ubuntu.com', 'Plone', 'text', false, NULL);
 INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (8, 'gnome@arch.ubuntu.com', 'GNOME', 'The GNOME Project', false, NULL);
 INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (9, 'iso-codes@arch.ubuntu.com', 'iso-codes', 'The iso-codes', false, NULL);
+INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (10, 'alsa-utils@bazaar.ubuntu.com', 'alsa-utils upstream imports', 'Imports of ALSA utilites upstream CVS and releases', true, 1);
+INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (11, 'scott@ubuntu.com--2005', 'Scott James Remnant''s 2005 Ubuntu archive', 'Ubuntu work done by Scott James Remnant during 2005', true, 5);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'archarchive'::pg_catalog.regclass;
@@ -731,6 +747,35 @@ INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible
 INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (12, 1, 'mozilla', 'release', '0.9', true);
 INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (13, 1, 'mozilla', 'release', '0.8', true);
 INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (14, 8, 'evolution', 'MAIN', '0', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (15, 10, 'alsa-utils', 'release', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (16, 10, 'alsa-utils', 'release', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (17, 10, 'alsa-utils', 'orig', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (18, 10, 'alsa-utils', 'diff', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (19, 10, 'alsa-utils', 'packaging', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (20, 10, 'alsa-utils', 'move-asound-state-to-var', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (21, 10, 'alsa-utils', 'debian-alsaconf-idmode', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (22, 10, 'alsa-utils', 'debian-alsaconf-paths', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (23, 10, 'alsa-utils', 'debian-alsaconf-noclear', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (24, 10, 'alsa-utils', 'debian-alsaconf-modprobe-driver', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (25, 10, 'alsa-utils', 'debian-alsaconf-force-stop-driver', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (26, 10, 'alsa-utils', 'debian-alsaconf-improve-intro', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (27, 10, 'alsa-utils', 'debian-alsaconf-cfgfile', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (28, 10, 'alsa-utils', 'debian-alsaconf-nodup', '1.0.8', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (29, 10, 'alsa-utils', 'orig', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (30, 10, 'alsa-utils', 'diff', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (31, 10, 'alsa-utils', 'packaging', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (32, 10, 'alsa-utils', 'move-asound-state-to-var', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (33, 10, 'alsa-utils', 'alsaconf-safe-tmp', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (34, 10, 'alsa-utils', 'debian-alsaconf-idmode', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (35, 10, 'alsa-utils', 'debian-alsaconf-paths', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (36, 10, 'alsa-utils', 'debian-alsaconf-noclear', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (37, 10, 'alsa-utils', 'debian-alsaconf-modprobe-driver', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (38, 10, 'alsa-utils', 'debian-alsaconf-unload-modules', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (39, 10, 'alsa-utils', 'debian-alsaconf-improve-intro', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (40, 10, 'alsa-utils', 'debian-alsaconf-nodup', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (41, 10, 'alsa-utils', 'debian-alsaconf-modprobe-ignoreinstall', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (45, 11, 'alsa-utils', 'packaging', '1.0.9a', true);
+INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (51, 11, 'alsa-utils', 'debian-alsaconf-modprobe-driver', '1.0.9a', true);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'archnamespace'::pg_catalog.regclass;
@@ -752,6 +797,35 @@ INSERT INTO branch (id, archnamespace, title, description, "owner", product) VAL
 INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (12, 12, 'Mozilla Firefox 0.9', 'text', 1, 4);
 INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (13, 13, 'Mozilla Firefox 0.8', 'text', 1, 4);
 INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (14, 14, 'Evolution HEAD', 'text', 1, 5);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (15, 15, 'alsa-utils 1.0.8 upstream release', 'Upstream release import of alsa-utils 1.0.8', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (16, 16, 'alsa-utils 1.0.9a upstream release', 'Upstream release import of alsa-utils 1.0.9a', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (83, 17, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (84, 18, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (85, 19, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (86, 20, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (87, 21, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (88, 22, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (89, 23, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (90, 24, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (91, 25, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (92, 26, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (93, 27, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (94, 28, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (95, 29, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (96, 30, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (97, 31, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (98, 32, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (99, 33, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (100, 34, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (101, 35, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (102, 36, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (103, 37, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (104, 38, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (105, 39, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (106, 40, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (107, 41, '', '', 1, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (108, 45, '', '', 5, 15);
+INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (109, 51, '', '', 5, 15);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'branch'::pg_catalog.regclass;
@@ -762,6 +836,42 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'changeset'::pg_catal
 INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (1, 10, '2005-03-09 15:45:00', 'base-0', 'Import of Mozilla Firefox 0.9.2', NULL, NULL);
 INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (2, 11, '2005-03-09 15:50:00', 'base-0', 'Import of Mozilla Firefox 0.9.1', NULL, NULL);
 INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (3, 12, '2005-03-09 15:55:00', 'base-0', 'Import of Mozilla Firefox 0.9', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (4, 15, '2005-09-15 09:35:37.496879', 'base-0', 'Import of alsa-utils 1.0.8', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (5, 16, '2005-09-15 09:36:07.561267', 'base-0', 'tag of alsa-utils@bazaar.ubuntu.com/alsa-utils--release--1.0.8--base-0', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (6, 16, '2005-09-15 09:36:12.939539', 'patch-1', 'Import of alsa-utils 1.0.9a', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (7, 83, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (8, 84, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (9, 85, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (10, 86, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (11, 87, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (12, 88, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (13, 89, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (14, 90, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (15, 91, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (16, 92, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (17, 93, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (18, 94, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (19, 95, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (20, 96, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (21, 97, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (22, 98, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (23, 99, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (24, 100, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (25, 101, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (26, 102, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (27, 103, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (28, 104, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (29, 105, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (30, 106, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (31, 107, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (32, 96, '2005-09-15 11:39:02.11211', 'patch-1', 'Updated something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (33, 97, '2005-09-15 11:39:10.592695', 'patch-1', 'Updated something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (34, 108, '2005-09-15 11:47:28.961834', 'base-0', 'Tag of ubuntu source', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (35, 109, '2005-09-15 11:47:33.527519', 'base-0', 'Tag of ubuntu source', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (36, 108, '2005-09-15 11:47:42.99696', 'patch-1', 'Scott changed something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (37, 109, '2005-09-15 11:47:46.07592', 'patch-1', 'Scott changed something', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (38, 108, '2005-09-15 11:48:45.449073', 'patch-2', 'Scott changed something again', NULL, NULL);
+INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (39, 109, '2005-09-15 11:48:48.584052', 'patch-2', 'Scott changed something again', NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'changeset'::pg_catalog.regclass;
@@ -817,6 +927,13 @@ INSERT INTO manifest (id, datecreated, uuid) VALUES (3, '2005-03-09 16:00:00', '
 INSERT INTO manifest (id, datecreated, uuid) VALUES (4, '2005-03-09 16:05:00', '97b4ece8-b3c5-4e07-b529-6c76b59a5455');
 INSERT INTO manifest (id, datecreated, uuid) VALUES (14, '2005-03-24 00:00:00', 'e0451064-b405-4f52-b387-ebfc1a7ee297');
 INSERT INTO manifest (id, datecreated, uuid) VALUES (15, '2005-08-24 00:00:00', 'e0451064-b405-4f52-b387-ebfc1a7ee298');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (16, '2005-09-15 09:25:03.854339', '832daafc-edc6-466e-96ca-4694d1c698c1');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (17, '2005-09-15 09:25:10.189057', 'cffc5b5a-b03a-41f8-85bf-c647bf6ca6f7');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (18, '2005-09-15 10:55:57.236793', '2b25dad3-fd3e-4fac-954c-85bf05df881e');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (19, '2005-09-15 10:56:02.929012', '4ea94cbf-02fc-41a3-b500-60f8303feb46');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (20, '2005-09-15 10:56:09.480215', 'd37d8397-9e76-41bf-a44b-34b75a6c7287');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (21, '2005-09-15 11:48:24.403679', '797ce287-ef57-4a17-a029-166a5f45ebd1');
+INSERT INTO manifest (id, datecreated, uuid) VALUES (22, '2005-09-15 11:49:08.616734', '76592d75-a554-45ba-a034-eec477674e48');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'manifest'::pg_catalog.regclass;
@@ -824,12 +941,78 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'manifestentry'::pg_catalog.regclass;
 
-INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname, hint) VALUES (1, 1, 1, 10, 1, 4, 'firefox-0.9.2.tar.gz', NULL, 'firefox-0.9.2/', 1);
-INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname, hint) VALUES (2, 2, 1, 11, 2, 4, 'firefox-0.9.1.tar.gz', NULL, 'firefox-0.9.1/', NULL);
-INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname, hint) VALUES (3, 2, 2, NULL, NULL, 1, 'firefox-0.9.1.tar.gz/random/', NULL, NULL, NULL);
-INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname, hint) VALUES (4, 3, 1, 12, 3, 5, 'firefox-0.9.zip', NULL, 'firefox-0.9/', NULL);
-INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname, hint) VALUES (5, 3, 2, 12, NULL, 6, 'firefox-0.9_unix.patch', 1, 'firefox-0.9_unix/', NULL);
-INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", patchon, dirname, hint) VALUES (6, 4, 1, 13, NULL, 3, 'firefox-0.8.ar', NULL, NULL, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (1, 1, 1, 10, 1, 4, 'firefox-0.9.2.tar.gz', 'firefox-0.9.2/', 1, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (2, 2, 1, 11, 2, 4, 'firefox-0.9.1.tar.gz', 'firefox-0.9.1/', NULL, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (3, 2, 2, NULL, NULL, 1, 'firefox-0.9.1.tar.gz/random/', NULL, NULL, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (4, 3, 1, 12, 3, 5, 'firefox-0.9.zip', 'firefox-0.9/', NULL, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (5, 3, 2, 12, NULL, 6, 'firefox-0.9_unix.patch', 'firefox-0.9_unix/', NULL, 1);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (6, 4, 1, 13, NULL, 3, 'firefox-0.8.ar', NULL, NULL, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (7, 16, 1, 15, 4, 4, 'alsa-utils-1.0.8.tar.gz', 'alsa-utils-1.0.8/', 1, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (8, 17, 1, 16, 6, 4, 'alsa-utils-1.0.9a.tar.gz', 'alsa-utils-1.0.9a/', 1, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (9, 18, 1, 83, 7, 4, 'alsa-utils_1.0.8.orig.tar.gz', 'alsa-utils-1.0.8/', 1, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (11, 18, 2, 84, 8, 2, 'alsa-utils-1.0.8', NULL, 2, 1);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (14, 18, 3, 85, 9, 2, 'alsa-utils-1.0.8/debian', NULL, 3, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (15, 18, 4, 86, 10, 6, 'alsa-utils-1.0.8/debian/patches/10_move_asound_state_to_var.dpatch', 'alsa-utils-1.0.8/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (16, 18, 5, 87, 11, 6, 'alsa-utils-1.0.8/debian/patches/90_debian_alsaconf_idmode.dpatch', 'alsa-utils-1.0.8/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (17, 18, 6, 88, 12, 6, 'alsa-utils-1.0.8/debian/patches/90_debian_alsaconf_paths.dpatch', 'alsa-utils-1.0.8/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (18, 18, 7, 89, 13, 6, 'alsa-utils-1.0.8/debian/patches/91_debian_alsaconf_noclear.dpatch', 'alsa-utils-1.0.8/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (20, 18, 8, 90, 14, 6, 'alsa-utils-1.0.8/debian/patches/94_debian_alsaconf_modprobe_driver.dpatch', 'alsa-utils-1.0.8/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (21, 18, 9, 91, 15, 6, 'alsa-utils-1.0.8/debian/patches/95_debian_alsaconf_force_stop_driver.dpatch', 'alsa-utils-1.0.8/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (22, 18, 10, 92, 16, 6, 'alsa-utils-1.0.8/debian/patches/96_debian_alsaconf_improve_intro.dpatch', 'alsa-utils-1.0.8/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (23, 18, 11, 93, 17, 6, 'alsa-utils-1.0.8/debian/patches/96_debian_alsaconf_cfgfile.dpatch', 'alsa-utils-1.0.8/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (24, 18, 12, 94, 18, 6, 'alsa-utils-1.0.8/debian/patches/97_debian_alsaconf_cfgfile.dpatch', 'alsa-utils-1.0.8/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (25, 19, 1, 95, 19, 4, 'alsa-utils_1.0.9a.orig.tar.gz', 'alsa-utils-1.0.9a/', 1, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (26, 19, 2, 96, 20, 2, 'alsa-utils-1.0.9a', NULL, 2, 1);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (27, 19, 3, 97, 21, 2, 'alsa-utils-1.0.9a/debian', NULL, 3, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (29, 19, 4, 98, 22, 6, 'alsa-utils-1.0.9a/debian/patches/10_move_asound_state_to_var.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (30, 19, 5, 99, 23, 6, 'alsa-utils-1.0.9a/debian/patches/20_alsaconf_safe_tmp.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (31, 19, 6, 100, 24, 6, 'alsa-utils-1.0.9a/debian/patches/90_debian_alsaconf_idmode.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (32, 19, 7, 101, 25, 6, 'alsa-utils-1.0.9a/debian/patches/90_debian_alsaconf_paths.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (33, 19, 8, 102, 26, 6, 'alsa-utils-1.0.9a/debian/patches/91_debian_alsaconf_noclear.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (34, 19, 9, 103, 27, 6, 'alsa-utils-1.0.9a/debian/patches/94_debian_alsaconf_modprobe_driver.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (35, 19, 10, 104, 28, 6, 'alsa-utils-1.0.9a/debian/patches/95_debian_alsaconf_unload_modules.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (36, 19, 11, 105, 29, 6, 'alsa-utils-1.0.9a/debian/patches/96_debian_alsaconf_improve_intro.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (37, 19, 12, 106, 30, 6, 'alsa-utils-1.0.9a/debian/patches/98_debian_alsaconf_nodup.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (38, 19, 13, 107, 31, 6, 'alsa-utils-1.0.9a/debian/patches/99_debian_alsaconf_modprobe_ignoreinstall.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (39, 20, 1, 95, 19, 4, 'alsa-utils_1.0.9a.orig.tar.gz', 'alsa-utils-1.0.9a/', 1, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (40, 20, 2, 96, 32, 2, 'alsa-utils-1.0.9a', NULL, 2, 1);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (41, 20, 3, 97, 33, 2, 'alsa-utils-1.0.9a/debian', NULL, 3, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (42, 20, 4, 98, 22, 6, 'alsa-utils-1.0.9a/debian/patches/10_move_asound_state_to_var.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (43, 20, 5, 99, 23, 6, 'alsa-utils-1.0.9a/debian/patches/20_alsaconf_safe_tmp.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (44, 20, 6, 100, 24, 6, 'alsa-utils-1.0.9a/debian/patches/90_debian_alsaconf_idmode.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (45, 20, 7, 101, 25, 6, 'alsa-utils-1.0.9a/debian/patches/90_debian_alsaconf_paths.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (46, 20, 8, 102, 26, 6, 'alsa-utils-1.0.9a/debian/patches/91_debian_alsaconf_noclear.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (47, 20, 9, 103, 27, 6, 'alsa-utils-1.0.9a/debian/patches/94_debian_alsaconf_modprobe_driver.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (48, 20, 10, 104, 28, 6, 'alsa-utils-1.0.9a/debian/patches/95_debian_alsaconf_unload_modules.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (49, 20, 11, 105, 29, 6, 'alsa-utils-1.0.9a/debian/patches/96_debian_alsaconf_improve_intro.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (50, 20, 12, 106, 30, 6, 'alsa-utils-1.0.9a/debian/patches/98_debian_alsaconf_nodup.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (51, 20, 13, 107, 31, 6, 'alsa-utils-1.0.9a/debian/patches/99_debian_alsaconf_modprobe_ignoreinstall.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (52, 21, 1, 95, 19, 4, 'alsa-utils_1.0.9a.orig.tar.gz', 'alsa-utils-1.0.9a/', 1, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (53, 21, 2, 96, 32, 2, 'alsa-utils-1.0.9a', NULL, 2, 1);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (54, 21, 3, 108, 36, 2, 'alsa-utils-1.0.9a/debian', NULL, 3, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (55, 21, 4, 98, 22, 6, 'alsa-utils-1.0.9a/debian/patches/10_move_asound_state_to_var.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (56, 21, 5, 99, 23, 6, 'alsa-utils-1.0.9a/debian/patches/20_alsaconf_safe_tmp.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (57, 21, 6, 100, 24, 6, 'alsa-utils-1.0.9a/debian/patches/90_debian_alsaconf_idmode.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (58, 21, 7, 101, 25, 6, 'alsa-utils-1.0.9a/debian/patches/90_debian_alsaconf_paths.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (59, 21, 8, 102, 26, 6, 'alsa-utils-1.0.9a/debian/patches/91_debian_alsaconf_noclear.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (60, 21, 9, 109, 37, 6, 'alsa-utils-1.0.9a/debian/patches/94_debian_alsaconf_modprobe_driver.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (61, 21, 10, 104, 28, 6, 'alsa-utils-1.0.9a/debian/patches/95_debian_alsaconf_unload_modules.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (62, 21, 11, 105, 29, 6, 'alsa-utils-1.0.9a/debian/patches/96_debian_alsaconf_improve_intro.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (63, 21, 12, 106, 30, 6, 'alsa-utils-1.0.9a/debian/patches/98_debian_alsaconf_nodup.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (64, 21, 13, 107, 31, 6, 'alsa-utils-1.0.9a/debian/patches/99_debian_alsaconf_modprobe_ignoreinstall.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (65, 22, 1, 95, 19, 4, 'alsa-utils_1.0.9a.orig.tar.gz', 'alsa-utils-1.0.9a/', 1, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (66, 22, 2, 96, 32, 2, 'alsa-utils-1.0.9a', NULL, 2, 1);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (67, 22, 3, 108, 38, 2, 'alsa-utils-1.0.9a/debian', NULL, 3, NULL);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (68, 22, 4, 98, 22, 6, 'alsa-utils-1.0.9a/debian/patches/10_move_asound_state_to_var.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (69, 22, 5, 99, 23, 6, 'alsa-utils-1.0.9a/debian/patches/20_alsaconf_safe_tmp.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (70, 22, 6, 100, 24, 6, 'alsa-utils-1.0.9a/debian/patches/90_debian_alsaconf_idmode.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (71, 22, 7, 101, 25, 6, 'alsa-utils-1.0.9a/debian/patches/90_debian_alsaconf_paths.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (72, 22, 8, 102, 26, 6, 'alsa-utils-1.0.9a/debian/patches/91_debian_alsaconf_noclear.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (73, 22, 9, 109, 39, 6, 'alsa-utils-1.0.9a/debian/patches/94_debian_alsaconf_modprobe_driver.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (74, 22, 10, 104, 28, 6, 'alsa-utils-1.0.9a/debian/patches/95_debian_alsaconf_unload_modules.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (75, 22, 11, 105, 29, 6, 'alsa-utils-1.0.9a/debian/patches/96_debian_alsaconf_improve_intro.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (76, 22, 12, 106, 30, 6, 'alsa-utils-1.0.9a/debian/patches/98_debian_alsaconf_nodup.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
+INSERT INTO manifestentry (id, manifest, "sequence", branch, changeset, entrytype, "path", dirname, hint, parent) VALUES (77, 22, 13, 107, 31, 6, 'alsa-utils-1.0.9a/debian/patches/99_debian_alsaconf_modprobe_ignoreinstall.dpatch', 'alsa-utils-1.0.9a/', NULL, 2);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'manifestentry'::pg_catalog.regclass;
@@ -852,6 +1035,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'processorfamily'::pg_catalog.regclass;
 
 INSERT INTO processorfamily (id, name, title, description) VALUES (1, 'x86', 'Intel 386 compatible chips', 'Bring back the 8086!');
+INSERT INTO processorfamily (id, name, title, description) VALUES (2, 'powerpc', 'PowerPC compatible systems, G3 G4 etc', 'An architecture conceived by Motorola and developed further in cooperation with IBM. Was used very successfully by Apple for their PowerMac range, until 2007.');
+INSERT INTO processorfamily (id, name, title, description) VALUES (3, 'amd64', 'AMD64 and Intel EM64T and compatible systems', 'A 64-bit extension to the venerable x86 architecture, pioneered by AMD and later adopted by Intel as well.');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'processorfamily'::pg_catalog.regclass;
@@ -867,7 +1052,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'builder'::pg_catalog.regclass;
 
-INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "trusted", url) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 1, NULL, false, NULL, false, 'http://localhost:8221/');
+INSERT INTO builder (id, processor, name, title, description, "owner", speedindex, builderok, failnotes, "trusted", url, manual) VALUES (1, 1, 'bob', 'Bob The Builder', 'The default build-slave', 1, NULL, false, NULL, false, 'http://localhost:8221/', false);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'builder'::pg_catalog.regclass;
@@ -886,6 +1071,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'section'::pg_catalog.regclass;
 
 INSERT INTO section (id, name) VALUES (1, 'default_section');
+INSERT INTO section (id, name) VALUES (2, 'editors');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'section'::pg_catalog.regclass;
@@ -893,28 +1079,28 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distribution'::pg_catalog.regclass;
 
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new
 approach to Linux Distribution that includes regular releases, and a
 simplified single-CD installation system.', 'ubuntulinux.org', 17, NULL, 'ubuntu', 'Ubuntu is a new
 approach to Linux Distribution that includes regular releases, and a
-simplified single-CD installation system.', 1, NULL, 1);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a
+simplified single-CD installation system.', 1, NULL, 1, NULL, NULL);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a
 commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, NULL, 'redhat', 'Red Hat is a
-commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is
+commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1, NULL, NULL);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is
 a non commercial distribution of a GNU/Linux Operating System for many
 platforms.', 'debian.org', 1, NULL, 'debian', 'Debian GNU/Linux is
 a non commercial distribution of a GNU/Linux Operating System for many
-platforms.', 1, NULL, 1);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very
+platforms.', 1, NULL, 1, NULL, NULL);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very
 customizeable GNU/Linux Distribution that is designed to let you build every
 single package yourself, with your own preferences.', 'gentoo.org', 1, NULL, 'gentoo', 'Gentoo is a very
 customizeable GNU/Linux Distribution that is designed to let you build every
-single package yourself, with your own preferences.', 1, NULL, 1);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
+single package yourself, with your own preferences.', 1, NULL, 1, NULL, NULL);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
 Environment as its default desktop after install.', 'kubuntu.org', 1, NULL, 'kubuntu', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
-Environment as its default desktop after install.', 1, NULL, 1);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, NULL, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1);
+Environment as its default desktop after install.', 1, NULL, 1, NULL, NULL);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, NULL, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1, NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distribution'::pg_catalog.regclass;
@@ -922,25 +1108,16 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distrorelease'::pg_catalog.regclass;
 
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount) VALUES (1, 1, 'warty', 'The Warty Warthog
-Release', 'Warty was the first stable release of Ubuntu. Key feature goals
-included releasing on time, with the latest version of the Gnome Desktop
-Environment, and the creation of all the infrastructure required to manage
-Ubuntu itself. Warty includes excellent support for Python, with most of the
-widely used Python libraries installed by default.', '4.10', 1, 1, 4, '2004-08-20 00:00:00', NULL, 17, NULL, 'Warty is the first release of Ubuntu,
-with a planned release date of October 2004.', 'warty', NULL, 0);
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount) VALUES (2, 2, 'six', 'Six Six Six', 'some text to describe the whole 666 release of RH', '6.0.1', 1, 1, 4, '2004-03-21 00:00:00', NULL, 8, NULL, 'some text to describe the whole 666 release of RH', 'six', NULL, 0);
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount) VALUES (3, 1, 'hoary', 'The Hoary Hedgehog Release', 'Hoary is the second release of Ubuntu. Key feature goals include the integration of Hoary with the Launchpad for bugs and translation information, as well as Gnome 2.10 and the X.org window system.', '5.04', 1, 1, 2, '2004-08-25 00:00:00', 1, 1, NULL, 'Hoary is the second released of Ubuntu, with release planned for April 2005.', 'hoary', NULL, 94);
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount) VALUES (4, 2, '7.0', 'Seven', 'The release that we would not expect', '7.0.1', 1, 1, 3, '2004-04-01 00:00:00', 2, 7, NULL, 'The release that we would not expect', '7.0', NULL, 0);
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount) VALUES (5, 1, 'grumpy', 'The Grumpy
-Groundhog Release', 'Grumpy, the third release of Ubuntu Linux, is not yet
-in active development. This information is purely a placeholder.', '5.10', 1, 1, 1, '2004-08-29 00:00:00', 1, 1, NULL, 'Grumpy is the third release of
-Ubuntu, planned for October 2005.', 'grumpy', NULL, 0);
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount) VALUES (6, 3, 'woody', 'WOODY', 'WOODY is the current stable verison of Debian GNU/Linux', '3.0', 1, 1, 4, '2003-01-01 00:00:00', NULL, 2, NULL, 'WOODY is the current stable verison of Debian GNU/Linux', 'woody', NULL, 0);
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount) VALUES (7, 3, 'sarge', 'Sarge', 'Sarge is the FROZEN unstable version of Debian GNU/Linux.', '3.1', 1, 1, 3, '2004-09-29 00:00:00', 6, 5, NULL, 'Sarge is the FROZEN unstable version of Debian GNU/Linux.', 'sarge', NULL, 0);
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount) VALUES (8, 3, 'sid', 'Sid', 'Sid is the CRAZY unstable version of Debian GNU/Linux.', '3.2', 1, 1, 1, '2004-12-29 00:00:00', 6, 6, NULL, 'Sid is the CRAZY unstable version of Debian GNU/Linux.', 'sid', NULL, 0);
-INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount) VALUES (9, 7, '2k5', 'Guada 2005', 'This release places extra emphasis on usability and installability. The installer is adapted from Ubuntu to assume your country, language, keyboard and time zone preference, thus ensuring that installs ask the minimum number of questions possible.', '2005', 1, 1, 2, NULL, 3, 4, NULL, 'Guada 2005 is a rapid-install version of
-Ubuntu Hoary for the Andalucian marketplace.', 'Guada2005', NULL, 0);
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount) VALUES (1, 1, 'warty', 'The Warty Warthog Release', 'Warty was the first stable release of Ubuntu. Key feature goals included releasing on time, with the latest version of the Gnome Desktop Environment, and the creation of all the infrastructure required to manage Ubuntu itself. Warty includes excellent support for Python, with most of the widely used Python libraries installed by default.', '4.10', 1, 1, 4, '2004-08-20 00:00:00', NULL, 17, NULL, 'Warty is the first release of Ubuntu, with a planned release date of October 2004.', 'warty', NULL, 0, 1, NULL, 1, 3);
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount) VALUES (2, 2, 'six', 'Six Six Six', 'some text to describe the whole 666 release of RH', '6.0.1', 1, 1, 4, '2004-03-21 00:00:00', NULL, 8, NULL, 'some text to describe the whole 666 release of RH', 'six', NULL, 0, NULL, NULL, 0, 0);
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount) VALUES (3, 1, 'hoary', 'The Hoary Hedgehog Release', 'Hoary is the second release of Ubuntu. Key feature goals include the integration of Hoary with the Launchpad for bugs and translation information, as well as Gnome 2.10 and the X.org window system.', '5.04', 1, 1, 2, '2004-08-25 00:00:00', 1, 1, NULL, 'Hoary is the second released of Ubuntu, with release planned for April 2005.', 'hoary', NULL, 94, 6, NULL, 1, 4);
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount) VALUES (4, 2, '7.0', 'Seven', 'The release that we would not expect', '7.0.1', 1, 1, 3, '2004-04-01 00:00:00', 2, 7, NULL, 'The release that we would not expect', '7.0', NULL, 0, NULL, NULL, 0, 0);
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount) VALUES (5, 1, 'grumpy', 'The Grumpy Groundhog Release', 'Grumpy, the third release of Ubuntu Linux, is not yet in active development. This information is purely a placeholder.', '5.10', 1, 1, 1, '2004-08-29 00:00:00', 1, 1, NULL, 'Grumpy is the third release of Ubuntu, planned for October 2005.', 'grumpy', NULL, 0, NULL, NULL, 0, 0);
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount) VALUES (6, 3, 'woody', 'WOODY', 'WOODY is the current stable verison of Debian GNU/Linux', '3.0', 1, 1, 4, '2003-01-01 00:00:00', NULL, 2, NULL, 'WOODY is the current stable verison of Debian GNU/Linux', 'woody', NULL, 0, NULL, NULL, 0, 0);
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount) VALUES (7, 3, 'sarge', 'Sarge', 'Sarge is the FROZEN unstable version of Debian GNU/Linux.', '3.1', 1, 1, 3, '2004-09-29 00:00:00', 6, 5, NULL, 'Sarge is the FROZEN unstable version of Debian GNU/Linux.', 'sarge', NULL, 0, NULL, NULL, 0, 0);
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount) VALUES (8, 3, 'sid', 'Sid', 'Sid is the CRAZY unstable version of Debian GNU/Linux.', '3.2', 1, 1, 1, '2004-12-29 00:00:00', 6, 6, NULL, 'Sid is the CRAZY unstable version of Debian GNU/Linux.', 'sid', NULL, 0, NULL, NULL, 0, 1);
+INSERT INTO distrorelease (id, distribution, name, title, description, "version", components, sections, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount) VALUES (9, 7, '2k5', 'Guada 2005', 'This release places extra emphasis on usability and installability. The installer is adapted from Ubuntu to assume your country, language, keyboard and time zone preference, thus ensuring that installs ask the minimum number of questions possible.', '2005', 1, 1, 2, NULL, 3, 4, NULL, 'Guada 2005 is a rapid-install version of
+Ubuntu Hoary for the Andalucian marketplace.', 'Guada2005', NULL, 0, NULL, NULL, 0, 0);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distrorelease'::pg_catalog.regclass;
@@ -948,8 +1125,9 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distroarchrelease'::pg_catalog.regclass;
 
-INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner") VALUES (1, 1, 1, 'i386', 1);
-INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner") VALUES (6, 3, 1, 'i386', 1);
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (1, 1, 1, 'i386', 1, true, 1);
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (6, 3, 1, 'i386', 1, true, 1);
+INSERT INTO distroarchrelease (id, distrorelease, processorfamily, architecturetag, "owner", official, package_count) VALUES (7, 6, 1, 'i386', 1, true, 0);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distroarchrelease'::pg_catalog.regclass;
@@ -991,6 +1169,12 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) V
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (32, '2005-05-18 08:03:28.021862', NULL, 4908, '874a6ef9cd1aaef17653c6c12f4b83ef9487c1c3');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (33, '2005-05-18 08:03:28.021862', NULL, 4908, '874a6ef9cd1aaef17653c6c12f4b83ef9487c1c3');
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (34, '2005-08-10 09:31:29.606407', NULL, 2, '71853c6197a6a7f222db0f1978c7cb232b87c5ee');
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (35, '2005-08-01 09:31:29.606407', NULL, 2, '71853c6197a6a7f222db0f1978c7cb232b87c5ee');
+
+
+INSERT INTO LibraryFileContent (id, filesize, sha1, deleted) VALUES (
+    36, 3, sha1('foo'), true
+    );
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'libraryfilecontent'::pg_catalog.regclass;
@@ -1032,6 +1216,12 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (32, 32, 'es.po', 'application/x-po', NULL);
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (33, 33, 'es.po', 'application/x-po', NULL);
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (34, 34, 'evolution-2.2-test.pot', 'application/x-po', NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (35, 35, 'Ubuntu-High-Pri-2005-08-01.csv', 'text/plain', NULL);
+
+
+INSERT INTO LibraryFileAlias (id, content, filename, mimetype) VALUES (
+    36, 36, 'foo.txt', 'text/plain'
+    );
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'libraryfilealias'::pg_catalog.regclass;
@@ -1056,6 +1246,7 @@ INSERT INTO sourcepackagename (id, name) VALUES (15, 'a52dec');
 INSERT INTO sourcepackagename (id, name) VALUES (16, 'mozilla');
 INSERT INTO sourcepackagename (id, name) VALUES (17, 'uberfrob');
 INSERT INTO sourcepackagename (id, name) VALUES (18, 'thunderbird');
+INSERT INTO sourcepackagename (id, name) VALUES (19, 'alsa-utils');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sourcepackagename'::pg_catalog.regclass;
@@ -1064,6 +1255,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'packaging'::pg_catalog.regclass;
 
 INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 1, 1, 3, 2, '2005-07-05 14:20:26.577312', NULL);
+INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 10, 19, 1, 8, '2005-09-15 11:55:38.640138', NULL);
+INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 11, 19, 8, 8, '2005-09-15 11:55:48.109778', NULL);
 INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 2, 9, 3, 3, '2005-07-05 14:20:26.577312', NULL);
 INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 3, 10, 1, 5, '2005-07-05 14:20:26.577312', NULL);
 INSERT INTO packaging (packaging, id, sourcepackagename, distrorelease, productseries, datecreated, "owner") VALUES (1, 4, 9, 1, 3, '2005-07-05 14:20:26.577312', NULL);
@@ -1083,6 +1276,9 @@ INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency,
 INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (17, 1, '0.99.6-1', '2005-03-14 18:00:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 1, 10, 1, 1);
 INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (20, 1, '0.1-1', '2005-03-24 20:59:31.439579', 1, NULL, 1, 'This is a placeholder changelog for pmount 0.1-1', NULL, NULL, NULL, NULL, 1, 14, 1, 14, 3, 1);
 INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (21, 1, '0.1-2', '2005-06-24 20:59:31.439579', 1, NULL, 1, 'This is a placeholder changelog for pmount 0.1-2', NULL, NULL, NULL, NULL, 1, 15, 1, 14, 3, 1);
+INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (23, 1, '1.0.8-1ubuntu1', '2005-02-03 08:50:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, 18, 1, 19, 1, 1);
+INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (24, 1, '1.0.9a-4', '2005-07-01 22:47:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 1, 19, 8, 1);
+INSERT INTO sourcepackagerelease (id, creator, "version", dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (25, 1, '1.0.9a-4ubuntu1', '2005-08-01 14:10:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 1, 19, 3, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sourcepackagerelease'::pg_catalog.regclass;
@@ -1101,6 +1297,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'build'::pg_catalog.r
 
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, gpgsigningkey, changes, sourcepackagerelease) VALUES (2, '2004-09-27 11:57:13', 1, 1, 1, '2004-09-27 11:57:13', '00:02:01', 1, 1, NULL, 'Sample changes :)....', 14);
 INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, gpgsigningkey, changes, sourcepackagerelease) VALUES (7, '2005-03-24 00:00:00', 1, 6, 1, '2005-03-25 00:00:01', '00:01:20', 1, 1, NULL, 'changes', 20);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, gpgsigningkey, changes, sourcepackagerelease) VALUES (8, '2005-09-30 00:00:00', 1, 6, 0, NULL, NULL, NULL, NULL, NULL, 'wanted changes', 14);
+INSERT INTO build (id, datecreated, processor, distroarchrelease, buildstate, datebuilt, buildduration, buildlog, builder, gpgsigningkey, changes, sourcepackagerelease) VALUES (9, '2005-10-01 00:00:00', 1, 1, 2, '2005-10-02 00:00:01', '00:03:20', 1, 1, NULL, 'broken changes', 20);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'build'::pg_catalog.regclass;
@@ -1117,8 +1315,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'binarypackagerelease'::pg_catalog.regclass;
 
-INSERT INTO binarypackagerelease (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 10, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', NULL, NULL, NULL, 'mozilla-firefox', false, NULL, NULL, NULL, true, '''web'':3C,7 ''browser'':4C,8 ''firefox'':2C,6 ''mozilla'':1C,5');
-INSERT INTO binarypackagerelease (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti) VALUES (15, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 7, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, '''pmount'':1C,3 ''descript'':4 ''shortdesc'':2C');
+INSERT INTO binarypackagerelease (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 10, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', NULL, NULL, NULL, 'mozilla-firefox', false, NULL, NULL, NULL, true, '''web'':3B,7C ''browser'':4B,8C ''firefox'':2B,6C ''mozilla'':1B,5C', '2005-10-19 17:50:10.874189');
+INSERT INTO binarypackagerelease (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (15, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 7, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, '''pmount'':1B,3C ''descript'':4C ''shortdesc'':2B', '2005-10-19 17:50:10.878712');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'binarypackagerelease'::pg_catalog.regclass;
@@ -2791,564 +2989,565 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = '"language"'::pg_catalog.regclass;
 
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (1, 'aa', 'Afar', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (2, 'ab', 'Abkhazian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (3, 'ace', 'Achinese', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (4, 'ach', 'Acoli', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (5, 'ada', 'Adangme', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (6, 'ady', 'Adyghe; Adygei', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (7, 'afa', 'Afro-Asiatic (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (8, 'afh', 'Afrihili', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (9, 'af', 'Afrikaans', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (10, 'aka', 'Akan', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (11, 'ak', 'Akkadian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (12, 'sq', 'Albanian', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (13, 'ale', 'Aleut', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (14, 'alg', 'Algonquian languages', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (15, 'am', 'Amharic', NULL, 2, 'n > 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (16, 'ang', 'English, Old (ca.450-1100)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (17, 'apa', 'Apache languages', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (18, 'ar', 'Arabic', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (19, 'arc', 'Aramaic', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (20, 'an', 'Aragonese', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (21, 'hy', 'Armenian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (22, 'arn', 'Araucanian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (23, 'arp', 'Arapaho', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (24, 'art', 'Artificial (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (25, 'arw', 'Arawak', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (26, 'as', 'Assamese', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (27, 'ast', 'Asturian; Bable', NULL, 1, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (28, 'ath', 'Athapascan language', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (29, 'aus', 'Australian languages', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (30, 'av', 'Avaric', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (31, 'ae', 'Avestan', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (32, 'awa', 'Awadhi', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (33, 'ay', 'Aymara', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (34, 'az', 'Azerbaijani', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (35, 'bad', 'Banda', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (36, 'bai', 'Bamileke languages', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (37, 'ba', 'Bashkir', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (38, 'bal', 'Baluchi', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (39, 'bm', 'Bambara', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (40, 'ban', 'Balinese', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (41, 'eu', 'Basque', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (42, 'bas', 'Basa', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (43, 'bat', 'Baltic (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (44, 'bej', 'Beja', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (45, 'be', 'Belarusian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (46, 'bem', 'Bemba', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (47, 'bn', 'Bengali', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (48, 'ber', 'Berber (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (49, 'bho', 'Bhojpuri', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (50, 'bh', 'Bihari', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (51, 'bik', 'Bikol', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (52, 'bin', 'Bini', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (53, 'bi', 'Bislama', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (54, 'bla', 'Siksika', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (55, 'bnt', 'Bantu (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (56, 'bs', 'Bosnian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (57, 'bra', 'Braj', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (58, 'br', 'Breton', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (59, 'btk', 'Batak (Indonesia)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (60, 'bua', 'Buriat', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (61, 'bug', 'Buginese', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (62, 'bg', 'Bulgarian', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (63, 'my', 'Burmese', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (64, 'byn', 'Blin; Bilin', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (65, 'cad', 'Caddo', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (66, 'cai', 'Central American Indian (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (67, 'car', 'Carib', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (68, 'ca', 'Catalan', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (69, 'cau', 'Caucasian (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (70, 'ceb', 'Cebuano', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (71, 'cel', 'Celtic (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (72, 'ch', 'Chamorro', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (73, 'chb', 'Chibcha', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (74, 'ce', 'Chechen', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (75, 'chg', 'Chagatai', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (76, 'zh', 'Chinese', NULL, 1, '0', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (77, 'chk', 'Chukese', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (78, 'chm', 'Mari', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (79, 'chn', 'Chinook jargon', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (80, 'cho', 'Choctaw', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (81, 'chp', 'Chipewyan', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (82, 'chr', 'Cherokee', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (83, 'chu', 'Church Slavic', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (84, 'cv', 'Chuvash', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (85, 'chy', 'Cheyenne', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (86, 'cmc', 'Chamic languages', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (87, 'cop', 'Coptic', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (88, 'kw', 'Cornish', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (89, 'co', 'Corsican', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (90, 'cpe', 'English-based (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (91, 'cpf', 'French-based (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (92, 'cpp', 'Portuguese-based (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (93, 'cr', 'Cree', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (94, 'crh', 'Crimean Turkish; Crimean Tatar', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (95, 'crp', 'Creoles and pidgins (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (96, 'csb', 'Kashubian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (97, 'cus', 'Cushitic (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (98, 'cs', 'Czech', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (99, 'dak', 'Dakota', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (100, 'da', 'Danish', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (101, 'dar', 'Dargwa', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (102, 'del', 'Delaware', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (103, 'den', 'Slave (Athapascan)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (104, 'dgr', 'Dogrib', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (105, 'din', 'Dinka', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (106, 'dv', 'Divehi', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (107, 'doi', 'Dogri', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (108, 'dra', 'Dravidian (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (109, 'dsb', 'Lower Sorbian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (110, 'dua', 'Duala', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (111, 'dum', 'Dutch, Middle (ca. 1050-1350)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (112, 'nl', 'Dutch', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (113, 'dyu', 'Dyula', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (114, 'dz', 'Dzongkha', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (115, 'efi', 'Efik', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (116, 'egy', 'Egyptian (Ancient)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (117, 'eka', 'Ekajuk', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (118, 'elx', 'Elamite', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (119, 'en', 'English', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (120, 'enm', 'English, Middle (1100-1500)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (121, 'eo', 'Esperanto', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (122, 'et', 'Estonian', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (123, 'ee', 'Ewe', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (124, 'ewo', 'Ewondo', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (125, 'fan', 'Fang', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (126, 'fo', 'Faroese', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (127, 'fat', 'Fanti', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (128, 'fj', 'Fijian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (129, 'fi', 'Finnish', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (130, 'fiu', 'Finno-Ugrian (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (131, 'fon', 'Fon', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (132, 'fr', 'French', NULL, 2, 'n > 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (133, 'frm', 'French, Middle (ca.1400-1600)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (134, 'fro', 'French, Old (842-ca.1400)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (135, 'fy', 'Frisian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (136, 'ff', 'Fulah', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (137, 'fur', 'Friulian', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (138, 'gaa', 'Ga', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (139, 'gay', 'Gayo', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (140, 'gba', 'Gbaya', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (141, 'gem', 'Germanic (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (142, 'ka', 'Georgian', NULL, 1, '0', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (143, 'de', 'German', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (144, 'gez', 'Geez', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (145, 'gil', 'Gilbertese', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (146, 'gd', 'Gaelic; Scottish', NULL, 3, 'n < 2 ? 0 : n == 2 ? 1 : 2', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (147, 'ga', 'Irish', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (148, 'gl', 'Galician', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (149, 'gv', 'Manx', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (150, 'gmh', 'German, Middle High (ca.1050-1500)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (151, 'goh', 'German, Old High (ca.750-1050)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (152, 'gon', 'Gondi', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (153, 'gor', 'Gorontalo', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (154, 'got', 'Gothic', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (155, 'grb', 'Grebo', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (156, 'grc', 'Greek, Ancient (to 1453)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (157, 'el', 'Greek, Modern (1453-)', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (158, 'gn', 'Guarani', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (159, 'gu', 'Gujarati', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (160, 'gwi', 'Gwichin', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (161, 'hai', 'Haida', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (162, 'ht', 'Haitian; Haitian Creole', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (163, 'ha', 'Hausa', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (164, 'haw', 'Hawaiian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (165, 'he', 'Hebrew', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (166, 'hz', 'Herero', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (167, 'hil', 'Hiligaynon', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (168, 'him', 'Himachali', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (169, 'hi', 'Hindi', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (170, 'hit', 'Hittite', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (171, 'hmn', 'Hmong', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (172, 'ho', 'Hiri', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (173, 'hsb', 'Upper Sorbian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (174, 'hu', 'Hungarian', NULL, 1, '0', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (175, 'hup', 'Hupa', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (176, 'iba', 'Iban', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (177, 'ig', 'Igbo', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (178, 'is', 'Icelandic', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (179, 'io', 'Ido', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (180, 'ii', 'Sichuan Yi', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (181, 'ijo', 'Ijo', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (182, 'iu', 'Inuktitut', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (183, 'ie', 'Interlingue', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (184, 'ilo', 'Iloko', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (185, 'ia', 'Interlingua', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (186, 'inc', 'Indic (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (187, 'id', 'Indonesian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (188, 'ine', 'Indo-European (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (189, 'inh', 'Ingush', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (190, 'ik', 'Inupiaq', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (191, 'ira', 'Iranian (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (192, 'iro', 'Iroquoian languages', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (193, 'it', 'Italian', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (194, 'jv', 'Javanese', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (195, 'jbo', 'Lojban', NULL, 1, '0', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (196, 'ja', 'Japanese', NULL, 1, '0', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (197, 'jpr', 'Judeo-Persian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (198, 'jrb', 'Judeo-Arabic', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (199, 'kaa', 'Kara-Kalpak', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (200, 'kab', 'Kabyle', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (201, 'kac', 'Kachin', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (202, 'kl', 'Greenlandic (Kalaallisut)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (203, 'kam', 'Kamba', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (204, 'kn', 'Kannada', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (205, 'kar', 'Karen', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (206, 'ks', 'Kashmiri', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (207, 'kr', 'Kanuri', NULL, 1, '0', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (208, 'kaw', 'Kawi', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (209, 'kk', 'Kazakh', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (210, 'kbd', 'Kabardian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (211, 'kha', 'Khazi', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (212, 'khi', 'Khoisan (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (213, 'km', 'Khmer', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (214, 'kho', 'Khotanese', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (215, 'ki', 'Kikuyu', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (216, 'rw', 'Kinyarwanda', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (217, 'ky', 'Kirghiz', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (218, 'kmb', 'Kimbundu', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (219, 'kok', 'Konkani', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (220, 'kv', 'Komi', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (221, 'kg', 'Kongo', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (222, 'ko', 'Korean', NULL, 1, '0', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (223, 'kos', 'Kosraean', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (224, 'kpe', 'Kpelle', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (225, 'krc', 'Karachay-Balkar', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (226, 'kro', 'Kru', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (227, 'kru', 'Kurukh', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (228, 'kj', 'Kuanyama', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (229, 'kum', 'Kumyk', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (230, 'ku', 'Kurdish', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (231, 'kut', 'Kutenai', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (232, 'lad', 'Ladino', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (233, 'lah', 'Lahnda', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (234, 'lam', 'Lamba', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (235, 'lo', 'Lao', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (236, 'la', 'Latin', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (237, 'lv', 'Latvian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (238, 'lez', 'Lezghian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (239, 'li', 'Limburgian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (240, 'ln', 'Lingala', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (241, 'lt', 'Lithuanian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (242, 'lol', 'Mongo', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (243, 'loz', 'Lozi', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (244, 'lb', 'Luxembourgish', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (245, 'lua', 'Luba-Lulua', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (246, 'lu', 'Luba-Katanga', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (247, 'lg', 'Ganda', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (248, 'lui', 'Luiseno', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (249, 'lun', 'Lunda', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (250, 'luo', 'Luo (Kenya and Tanzania)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (251, 'lus', 'Lushai', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (252, 'mk', 'Macedonian', NULL, 2, '(n % 10 == 1 && n % 100 != 11) ? 0 : 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (253, 'mad', 'Madurese', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (254, 'mag', 'Magahi', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (255, 'mh', 'Marshallese', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (256, 'mai', 'Maithili', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (257, 'mak', 'Makasar', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (258, 'ml', 'Malayalam', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (259, 'man', 'Mandingo', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (260, 'mi', 'Maori', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (261, 'map', 'Austronesian (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (262, 'mr', 'Marathi', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (263, 'mas', 'Masai', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (264, 'ms', 'Malay', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (265, 'mdf', 'Moksha', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (266, 'mdr', 'Mandar', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (267, 'men', 'Mende', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (268, 'mga', 'Irish, Middle (900-1200)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (269, 'mic', 'Micmac', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (270, 'min', 'Minangkabau', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (271, 'mis', 'Miscellaneous languages', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (272, 'mkh', 'Mon-Khmer (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (273, 'mg', 'Malagasy', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (274, 'mt', 'Maltese', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (275, 'mnc', 'Manchu', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (276, 'mno', 'Manobo languages', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (277, 'moh', 'Mohawk', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (278, 'mo', 'Moldavian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (279, 'mn', 'Mongolian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (280, 'mos', 'Mossi', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (281, 'mul', 'Multiple languages', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (282, 'mun', 'Munda languages', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (283, 'mus', 'Creek', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (284, 'mwr', 'Marwari', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (285, 'myn', 'Mayan languages', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (286, 'myv', 'Erzya', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (287, 'nah', 'Nahuatl', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (288, 'nai', 'North American Indian (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (289, 'nap', 'Neapolitan', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (290, 'na', 'Nauru', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (291, 'nv', 'Navaho', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (292, 'nr', 'Ndebele, South', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (293, 'nd', 'Ndebele, North', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (294, 'ng', 'Ndonga', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (295, 'nds', 'German, Low', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (296, 'ne', 'Nepali', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (297, 'new', 'Newari', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (298, 'nia', 'Nias', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (299, 'nic', 'Niger-Kordofanian (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (300, 'niu', 'Niuean', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (301, 'nn', 'Norwegian Nynorsk', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (302, 'nb', 'Norwegian Bokmål', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (303, 'nog', 'Nogai', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (304, 'non', 'Norse, Old', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (305, 'no', 'Norwegian', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (306, 'nso', 'Sotho, Northern', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (307, 'nub', 'Nubian languages', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (308, 'nwc', 'Classical Newari; Old Newari', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (309, 'ny', 'Chewa; Chichewa; Nyanja', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (310, 'nym', 'Nyankole', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (311, 'nyo', 'Nyoro', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (312, 'nzi', 'Nzima', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (313, 'oc', 'Occitan (post 1500)', NULL, 2, 'n > 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (314, 'oj', 'Ojibwa', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (315, 'or', 'Oriya', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (316, 'om', 'Oromo', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (317, 'osa', 'Osage', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (318, 'os', 'Ossetian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (319, 'ota', 'Turkish, Ottoman (1500-1928)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (320, 'oto', 'Otomian languages', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (321, 'paa', 'Papuan (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (322, 'pag', 'Pangasinan', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (323, 'pal', 'Pahlavi', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (324, 'pam', 'Pampanga', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (325, 'pa', 'Panjabi', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (326, 'pap', 'Papiamento', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (327, 'pau', 'Palauan', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (328, 'peo', 'Persian, Old (ca.600-400 B.C.)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (329, 'fa', 'Persian', NULL, 1, '0', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (330, 'phi', 'Philippine (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (331, 'phn', 'Phoenician', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (332, 'pi', 'Pali', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (333, 'pl', 'Polish', NULL, 3, 'n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (334, 'pt', 'Portuguese', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (335, 'pon', 'Pohnpeian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (336, 'pra', 'Prakrit languages', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (337, 'pro', 'Provençal, Old (to 1500)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (338, 'ps', 'Pushto', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (339, 'qu', 'Quechua', NULL, 2, '(n % 10 == 1 && n % 100 != 11) ? 0 : 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (340, 'raj', 'Rajasthani', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (341, 'rap', 'Rapanui', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (342, 'rar', 'Rarotongan', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (343, 'roa', 'Romance (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (344, 'rm', 'Raeto-Romance', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (345, 'rom', 'Romany', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (346, 'ro', 'Romanian', NULL, 3, '(n == 1 ? 0: (((n % 100 > 19) || ((n % 100 == 0) && (n != 0))) ? 2: 1))', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (347, 'rn', 'Rundi', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (348, 'ru', 'Russian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (349, 'sad', 'Sandawe', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (350, 'sg', 'Sango', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (351, 'sah', 'Yakut', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (352, 'sai', 'South American Indian (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (353, 'sal', 'Salishan languages', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (354, 'sam', 'Samaritan Aramaic', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (355, 'sa', 'Sanskrit', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (356, 'sas', 'Sasak', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (357, 'sat', 'Santali', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (358, 'sr', 'Serbian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (359, 'sco', 'Scots', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (360, 'hr', 'Croatian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (361, 'sel', 'Selkup', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (362, 'sem', 'Semitic (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (363, 'sga', 'Irish, Old (to 900)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (364, 'sgn', 'Sign languages', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (365, 'shn', 'Shan', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (366, 'sid', 'Sidamo', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (367, 'si', 'Sinhalese', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (368, 'sio', 'Siouan languages', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (369, 'sit', 'Sino-Tibetan (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (370, 'sla', 'Slavic (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (371, 'sk', 'Slovak', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (372, 'sl', 'Slovenian', NULL, 4, 'n%100==1 ? 0 : n%100==2 ? 1 : n%100==3 || n%100==4 ? 2 : 3', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (373, 'sma', 'Southern Sami', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (374, 'se', 'Northern Sami', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (375, 'smi', 'Sami languages (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (376, 'smj', 'Lule Sami', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (377, 'smn', 'Inari Sami', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (378, 'sm', 'Samoan', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (379, 'sms', 'Skolt Sami', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (380, 'sn', 'Shona', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (381, 'sd', 'Sindhi', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (382, 'snk', 'Soninke', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (383, 'sog', 'Sogdian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (384, 'so', 'Somali', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (385, 'son', 'Songhai', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (386, 'st', 'Sotho, Southern', NULL, 1, '0', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (387, 'es', 'Spanish', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (388, 'sc', 'Sardinian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (389, 'srr', 'Serer', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (390, 'ssa', 'Nilo-Saharan (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (391, 'ss', 'Swati', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (392, 'suk', 'Sukuma', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (393, 'su', 'Sundanese', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (394, 'sus', 'Susu', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (395, 'sux', 'Sumerian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (396, 'sw', 'Swahili', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (397, 'sv', 'Swedish', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (398, 'syr', 'Syriac', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (399, 'ty', 'Tahitian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (400, 'tai', 'Tai (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (401, 'ta', 'Tamil', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (402, 'ts', 'Tsonga', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (403, 'tt', 'Tatar', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (404, 'te', 'Telugu', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (405, 'tem', 'Timne', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (406, 'ter', 'Tereno', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (407, 'tet', 'Tetum', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (408, 'tg', 'Tajik', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (409, 'tl', 'Tagalog', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (410, 'th', 'Thai', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (411, 'bo', 'Tibetan', NULL, 1, '0', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (412, 'tig', 'Tigre', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (413, 'ti', 'Tigrinya', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (414, 'tiv', 'Tiv', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (415, 'tlh', 'Klingon; tlhIngan-Hol', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (416, 'tkl', 'Tokelau', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (417, 'tli', 'Tlinglit', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (418, 'tmh', 'Tamashek', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (419, 'tog', 'Tonga (Nyasa)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (420, 'to', 'Tonga (Tonga Islands)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (421, 'tpi', 'Tok Pisin', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (422, 'tsi', 'Tsimshian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (423, 'tn', 'Tswana', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (424, 'tk', 'Turkmen', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (425, 'tum', 'Tumbuka', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (426, 'tup', 'Tupi languages', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (427, 'tr', 'Turkish', NULL, 1, '0', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (428, 'tut', 'Altaic (Other)', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (429, 'tvl', 'Tuvalu', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (430, 'tw', 'Twi', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (431, 'tyv', 'Tuvinian', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (432, 'udm', 'Udmurt', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (433, 'uga', 'Ugaritic', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (434, 'ug', 'Uighur', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (435, 'uk', 'Ukrainian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (436, 'umb', 'Umbundu', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (437, 'und', 'Undetermined', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (438, 'urd', 'Urdu', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (439, 'uz', 'Uzbek', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (440, 'vai', 'Vai', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (441, 've', 'Venda', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (442, 'vi', 'Vietnamese', NULL, 1, '0', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (443, 'vo', 'Volapuk', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (444, 'vot', 'Votic', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (445, 'wak', 'Wakashan languages', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (446, 'wal', 'Walamo', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (447, 'war', 'Waray', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (448, 'was', 'Washo', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (449, 'cy', 'Welsh', NULL, 4, 'n==1 ? 0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (450, 'wen', 'Sorbian languages', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (451, 'wa', 'Walloon', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (452, 'wo', 'Wolof', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (453, 'xal', 'Kalmyk', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (454, 'xh', 'Xhosa', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (455, 'yao', 'Yao', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (456, 'yap', 'Yapese', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (457, 'yi', 'Yiddish', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (458, 'yo', 'Yoruba', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (459, 'ypk', 'Yupik languages', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (460, 'zap', 'Zapotec', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (461, 'zen', 'Zenaga', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (462, 'za', 'Chuang; Zhuang', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (463, 'znd', 'Zande', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (464, 'zu', 'Zulu', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (465, 'zun', 'Zuni', NULL, NULL, NULL, true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (466, 'ti_ER', 'Tigrinya (Eritrea)', NULL, NULL, NULL, false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (467, 'ti_ET', 'Tigrinya (Ethiopia)', NULL, NULL, NULL, false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (468, 'gez_ER', 'Geez (Eritrea)', NULL, NULL, NULL, false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (469, 'gez_ET', 'Geez (Ethiopia)', NULL, NULL, NULL, false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (470, 'de_AT', 'German (Austria)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (471, 'de_BE', 'German (Belgium)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (472, 'de_CH', 'German (Switzerland)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (473, 'de_DE', 'German (Germany)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (474, 'de_LU', 'German (Luxembourg)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (475, 'en_AU', 'English (Australia)', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (476, 'en_BW', 'English (Botswana)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (477, 'en_CA', 'English (Canada)', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (478, 'en_DK', 'English (Denmark)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (479, 'en_GB', 'English (United Kingdom)', NULL, 2, 'n != 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (480, 'en_HK', 'English (Hong Kong)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (481, 'en_IE', 'English (Ireland)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (482, 'en_IN', 'English (India)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (483, 'en_NZ', 'English (New Zealand)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (484, 'en_PH', 'English (Philippines)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (485, 'en_SG', 'English (Singapore)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (486, 'en_US', 'English (United States)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (487, 'en_ZA', 'English (South Africa)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (488, 'en_ZW', 'English (Zimbabwe)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (489, 'zh_CN', 'Chinese (China)', NULL, 1, '0', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (490, 'zh_HK', 'Chinese (Hong Kong)', NULL, 1, '0', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (491, 'zh_SG', 'Chinese (Singapore)', NULL, 1, '0', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (492, 'zh_TW', 'Chinese (Taiwan)', NULL, 1, '0', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (493, 'eu_ES', 'Basque (Spain)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (494, 'eu_FR', 'Basque (France)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (495, 'es_AR', 'Spanish (Argentina)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (496, 'es_BO', 'Spanish (Bolivia)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (497, 'es_CL', 'Spanish (Chile)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (498, 'es_CO', 'Spanish (Colombia)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (499, 'es_CR', 'Spanish (Costa Rica)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (500, 'es_DO', 'Spanish (Dominican Republic)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (501, 'es_EC', 'Spanish (Ecuador)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (502, 'es_ES', 'Spanish (Spain)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (503, 'es_GT', 'Spanish (Guatemala)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (504, 'es_HN', 'Spanish (Honduras)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (505, 'es_MX', 'Spanish (Mexico)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (506, 'es_NI', 'Spanish (Nicaragua)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (507, 'es_PA', 'Spanish (Panama)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (508, 'es_PE', 'Spanish (Peru)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (509, 'es_PR', 'Spanish (Puerto Rico)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (510, 'es_PY', 'Spanish (Paraguay)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (511, 'es_SV', 'Spanish (El Salvador)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (512, 'es_US', 'Spanish (United States)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (513, 'es_UY', 'Spanish (Uruguay)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (514, 'es_VE', 'Spanish (Venezuela)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (515, 'ru_RU', 'Russian (Russian Federation)', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (516, 'ru_UA', 'Russian (Ukraine)', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (517, 'bn_BD', 'Bengali (Bangladesh)', NULL, NULL, NULL, false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (518, 'bn_IN', 'Bengali (India)', NULL, NULL, NULL, false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (519, 'om_ET', 'Oromo (Ethiopia)', NULL, NULL, NULL, false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (520, 'om_KE', 'Oromo (Kenya)', NULL, NULL, NULL, false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (521, 'pt_BR', 'Portuguese (Brazil)', NULL, 2, 'n > 1', true);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (522, 'pt_PT', 'Portuguese (Portugal)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (523, 'aa_DJ', 'Afar (Djibouti)', NULL, NULL, NULL, false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (524, 'aa_ER', 'Afar (Eritrea)', NULL, NULL, NULL, false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (525, 'aa_ET', 'Afar (Ethiopia)', NULL, NULL, NULL, false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (526, 'it_CH', 'Italian (Switzerland)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (527, 'it_IT', 'Italian (Italy)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (528, 'ar_AE', 'Arabic (United Arab Emirates)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (529, 'ar_BH', 'Arabic (Bahrain)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (530, 'ar_DZ', 'Arabic (Algeria)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (531, 'ar_EG', 'Arabic (Egypt)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (532, 'ar_IN', 'Arabic (India)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (533, 'ar_IQ', 'Arabic (Iraq)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (534, 'ar_JO', 'Arabic (Jordan)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (535, 'ar_KW', 'Arabic (Kuwait)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (536, 'ar_LB', 'Arabic (Lebanon)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (537, 'ar_LY', 'Arabic (Libyan Arab Jamahiriya)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (538, 'ar_MA', 'Arabic (Morocco)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (539, 'ar_OM', 'Arabic (Oman)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (540, 'ar_QA', 'Arabic (Qatar)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (541, 'ar_SA', 'Arabic (Saudi Arabia)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (542, 'ar_SD', 'Arabic (Sudan)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (543, 'ar_SY', 'Arabic (Syrian Arab Republic)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (544, 'ar_TN', 'Arabic (Tunisia)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (545, 'ar_YE', 'Arabic (Yemen)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (546, 'nl_BE', 'Dutch (Belgium)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (547, 'nl_NL', 'Dutch (Netherlands)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (548, 'fr_BE', 'French (Belgium)', NULL, 2, 'n > 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (549, 'fr_CA', 'French (Canada)', NULL, 2, 'n > 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (550, 'fr_CH', 'French (Switzerland)', NULL, 2, 'n > 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (551, 'fr_FR', 'French (France)', NULL, 2, 'n > 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (552, 'fr_LU', 'French (Luxembourg)', NULL, 2, 'n > 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (553, 'sv_FI', 'Swedish (Finland)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (554, 'sv_SE', 'Swedish (Sweden)', NULL, 2, 'n != 1', false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (555, 'so_DJ', 'Somali (Djibouti)', NULL, NULL, NULL, false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (556, 'so_ET', 'Somali (Ethiopia)', NULL, NULL, NULL, false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (557, 'so_KE', 'Somali (Kenya)', NULL, NULL, NULL, false);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible) VALUES (558, 'so_SO', 'Somali (Somalia)', NULL, NULL, NULL, false);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (1, 'aa', 'Afar', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (2, 'ab', 'Abkhazian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (3, 'ace', 'Achinese', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (4, 'ach', 'Acoli', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (5, 'ada', 'Adangme', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (6, 'ady', 'Adyghe; Adygei', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (7, 'afa', 'Afro-Asiatic (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (8, 'afh', 'Afrihili', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (9, 'af', 'Afrikaans', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (10, 'aka', 'Akan', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (11, 'ak', 'Akkadian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (12, 'sq', 'Albanian', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (13, 'ale', 'Aleut', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (14, 'alg', 'Algonquian languages', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (15, 'am', 'Amharic', NULL, 2, 'n > 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (16, 'ang', 'English, Old (ca.450-1100)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (17, 'apa', 'Apache languages', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (18, 'ar', 'Arabic', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', true, 1);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (19, 'arc', 'Aramaic', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (20, 'an', 'Aragonese', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (21, 'hy', 'Armenian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (22, 'arn', 'Araucanian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (23, 'arp', 'Arapaho', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (24, 'art', 'Artificial (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (25, 'arw', 'Arawak', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (26, 'as', 'Assamese', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (27, 'ast', 'Asturian; Bable', NULL, 1, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (28, 'ath', 'Athapascan language', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (29, 'aus', 'Australian languages', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (30, 'av', 'Avaric', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (31, 'ae', 'Avestan', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (32, 'awa', 'Awadhi', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (33, 'ay', 'Aymara', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (34, 'az', 'Azerbaijani', NULL, 2, 'n != 1', true, 1);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (35, 'bad', 'Banda', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (36, 'bai', 'Bamileke languages', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (37, 'ba', 'Bashkir', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (38, 'bal', 'Baluchi', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (39, 'bm', 'Bambara', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (40, 'ban', 'Balinese', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (41, 'eu', 'Basque', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (42, 'bas', 'Basa', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (43, 'bat', 'Baltic (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (44, 'bej', 'Beja', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (45, 'be', 'Belarusian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (46, 'bem', 'Bemba', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (47, 'bn', 'Bengali', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (48, 'ber', 'Berber (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (49, 'bho', 'Bhojpuri', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (50, 'bh', 'Bihari', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (51, 'bik', 'Bikol', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (52, 'bin', 'Bini', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (53, 'bi', 'Bislama', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (54, 'bla', 'Siksika', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (55, 'bnt', 'Bantu (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (56, 'bs', 'Bosnian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (57, 'bra', 'Braj', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (58, 'br', 'Breton', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (59, 'btk', 'Batak (Indonesia)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (60, 'bua', 'Buriat', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (61, 'bug', 'Buginese', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (62, 'bg', 'Bulgarian', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (63, 'my', 'Burmese', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (64, 'byn', 'Blin; Bilin', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (65, 'cad', 'Caddo', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (66, 'cai', 'Central American Indian (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (67, 'car', 'Carib', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (68, 'ca', 'Catalan', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (69, 'cau', 'Caucasian (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (70, 'ceb', 'Cebuano', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (71, 'cel', 'Celtic (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (72, 'ch', 'Chamorro', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (73, 'chb', 'Chibcha', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (74, 'ce', 'Chechen', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (75, 'chg', 'Chagatai', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (76, 'zh', 'Chinese', NULL, 1, '0', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (77, 'chk', 'Chukese', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (78, 'chm', 'Mari', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (79, 'chn', 'Chinook jargon', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (80, 'cho', 'Choctaw', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (81, 'chp', 'Chipewyan', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (82, 'chr', 'Cherokee', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (83, 'chu', 'Church Slavic', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (84, 'cv', 'Chuvash', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (85, 'chy', 'Cheyenne', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (86, 'cmc', 'Chamic languages', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (87, 'cop', 'Coptic', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (88, 'kw', 'Cornish', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (89, 'co', 'Corsican', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (90, 'cpe', 'English-based (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (91, 'cpf', 'French-based (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (92, 'cpp', 'Portuguese-based (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (93, 'cr', 'Cree', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (94, 'crh', 'Crimean Turkish; Crimean Tatar', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (95, 'crp', 'Creoles and pidgins (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (96, 'csb', 'Kashubian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (97, 'cus', 'Cushitic (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (98, 'cs', 'Czech', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (99, 'dak', 'Dakota', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (100, 'da', 'Danish', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (101, 'dar', 'Dargwa', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (102, 'del', 'Delaware', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (103, 'den', 'Slave (Athapascan)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (104, 'dgr', 'Dogrib', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (105, 'din', 'Dinka', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (106, 'dv', 'Divehi', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (107, 'doi', 'Dogri', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (108, 'dra', 'Dravidian (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (109, 'dsb', 'Lower Sorbian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (110, 'dua', 'Duala', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (111, 'dum', 'Dutch, Middle (ca. 1050-1350)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (112, 'nl', 'Dutch', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (113, 'dyu', 'Dyula', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (114, 'dz', 'Dzongkha', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (115, 'efi', 'Efik', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (116, 'egy', 'Egyptian (Ancient)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (117, 'eka', 'Ekajuk', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (118, 'elx', 'Elamite', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (119, 'en', 'English', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (120, 'enm', 'English, Middle (1100-1500)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (121, 'eo', 'Esperanto', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (122, 'et', 'Estonian', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (123, 'ee', 'Ewe', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (124, 'ewo', 'Ewondo', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (125, 'fan', 'Fang', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (126, 'fo', 'Faroese', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (127, 'fat', 'Fanti', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (128, 'fj', 'Fijian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (129, 'fi', 'Finnish', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (130, 'fiu', 'Finno-Ugrian (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (131, 'fon', 'Fon', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (132, 'fr', 'French', NULL, 2, 'n > 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (133, 'frm', 'French, Middle (ca.1400-1600)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (134, 'fro', 'French, Old (842-ca.1400)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (135, 'fy', 'Frisian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (136, 'ff', 'Fulah', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (137, 'fur', 'Friulian', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (138, 'gaa', 'Ga', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (139, 'gay', 'Gayo', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (140, 'gba', 'Gbaya', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (141, 'gem', 'Germanic (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (142, 'ka', 'Georgian', NULL, 1, '0', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (143, 'de', 'German', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (144, 'gez', 'Geez', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (145, 'gil', 'Gilbertese', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (146, 'gd', 'Gaelic; Scottish', NULL, 3, 'n < 2 ? 0 : n == 2 ? 1 : 2', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (147, 'ga', 'Irish', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (148, 'gl', 'Galician', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (149, 'gv', 'Manx', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (150, 'gmh', 'German, Middle High (ca.1050-1500)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (151, 'goh', 'German, Old High (ca.750-1050)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (152, 'gon', 'Gondi', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (153, 'gor', 'Gorontalo', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (154, 'got', 'Gothic', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (155, 'grb', 'Grebo', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (156, 'grc', 'Greek, Ancient (to 1453)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (157, 'el', 'Greek, Modern (1453-)', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (158, 'gn', 'Guarani', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (159, 'gu', 'Gujarati', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (160, 'gwi', 'Gwichin', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (161, 'hai', 'Haida', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (162, 'ht', 'Haitian; Haitian Creole', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (163, 'ha', 'Hausa', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (164, 'haw', 'Hawaiian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (165, 'he', 'Hebrew', NULL, 2, 'n != 1', true, 1);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (166, 'hz', 'Herero', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (167, 'hil', 'Hiligaynon', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (168, 'him', 'Himachali', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (169, 'hi', 'Hindi', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (170, 'hit', 'Hittite', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (171, 'hmn', 'Hmong', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (172, 'ho', 'Hiri', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (173, 'hsb', 'Upper Sorbian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (174, 'hu', 'Hungarian', NULL, 1, '0', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (175, 'hup', 'Hupa', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (176, 'iba', 'Iban', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (177, 'ig', 'Igbo', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (178, 'is', 'Icelandic', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (179, 'io', 'Ido', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (180, 'ii', 'Sichuan Yi', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (181, 'ijo', 'Ijo', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (182, 'iu', 'Inuktitut', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (183, 'ie', 'Interlingue', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (184, 'ilo', 'Iloko', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (185, 'ia', 'Interlingua', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (186, 'inc', 'Indic (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (187, 'id', 'Indonesian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (188, 'ine', 'Indo-European (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (189, 'inh', 'Ingush', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (190, 'ik', 'Inupiaq', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (191, 'ira', 'Iranian (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (192, 'iro', 'Iroquoian languages', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (193, 'it', 'Italian', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (194, 'jv', 'Javanese', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (195, 'jbo', 'Lojban', NULL, 1, '0', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (196, 'ja', 'Japanese', NULL, 1, '0', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (197, 'jpr', 'Judeo-Persian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (198, 'jrb', 'Judeo-Arabic', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (199, 'kaa', 'Kara-Kalpak', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (200, 'kab', 'Kabyle', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (201, 'kac', 'Kachin', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (202, 'kl', 'Greenlandic (Kalaallisut)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (203, 'kam', 'Kamba', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (204, 'kn', 'Kannada', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (205, 'kar', 'Karen', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (206, 'ks', 'Kashmiri', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (207, 'kr', 'Kanuri', NULL, 1, '0', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (208, 'kaw', 'Kawi', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (209, 'kk', 'Kazakh', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (210, 'kbd', 'Kabardian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (211, 'kha', 'Khazi', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (212, 'khi', 'Khoisan (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (213, 'km', 'Khmer', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (214, 'kho', 'Khotanese', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (215, 'ki', 'Kikuyu', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (216, 'rw', 'Kinyarwanda', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (217, 'ky', 'Kirghiz', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (218, 'kmb', 'Kimbundu', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (219, 'kok', 'Konkani', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (220, 'kv', 'Komi', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (221, 'kg', 'Kongo', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (222, 'ko', 'Korean', NULL, 1, '0', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (223, 'kos', 'Kosraean', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (224, 'kpe', 'Kpelle', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (225, 'krc', 'Karachay-Balkar', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (226, 'kro', 'Kru', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (227, 'kru', 'Kurukh', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (228, 'kj', 'Kuanyama', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (229, 'kum', 'Kumyk', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (230, 'ku', 'Kurdish', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (231, 'kut', 'Kutenai', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (232, 'lad', 'Ladino', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (233, 'lah', 'Lahnda', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (234, 'lam', 'Lamba', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (235, 'lo', 'Lao', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (236, 'la', 'Latin', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (237, 'lv', 'Latvian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n != 0 ? 1 : 2', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (238, 'lez', 'Lezghian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (239, 'li', 'Limburgian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (240, 'ln', 'Lingala', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (241, 'lt', 'Lithuanian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (242, 'lol', 'Mongo', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (243, 'loz', 'Lozi', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (244, 'lb', 'Luxembourgish', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (245, 'lua', 'Luba-Lulua', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (246, 'lu', 'Luba-Katanga', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (247, 'lg', 'Ganda', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (248, 'lui', 'Luiseno', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (249, 'lun', 'Lunda', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (250, 'luo', 'Luo (Kenya and Tanzania)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (251, 'lus', 'Lushai', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (252, 'mk', 'Macedonian', NULL, 2, '(n % 10 == 1 && n % 100 != 11) ? 0 : 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (253, 'mad', 'Madurese', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (254, 'mag', 'Magahi', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (255, 'mh', 'Marshallese', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (256, 'mai', 'Maithili', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (257, 'mak', 'Makasar', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (258, 'ml', 'Malayalam', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (259, 'man', 'Mandingo', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (260, 'mi', 'Maori', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (261, 'map', 'Austronesian (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (262, 'mr', 'Marathi', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (263, 'mas', 'Masai', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (264, 'ms', 'Malay', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (265, 'mdf', 'Moksha', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (266, 'mdr', 'Mandar', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (267, 'men', 'Mende', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (268, 'mga', 'Irish, Middle (900-1200)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (269, 'mic', 'Micmac', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (270, 'min', 'Minangkabau', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (271, 'mis', 'Miscellaneous languages', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (272, 'mkh', 'Mon-Khmer (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (273, 'mg', 'Malagasy', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (274, 'mt', 'Maltese', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (275, 'mnc', 'Manchu', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (276, 'mno', 'Manobo languages', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (277, 'moh', 'Mohawk', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (278, 'mo', 'Moldavian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (279, 'mn', 'Mongolian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (280, 'mos', 'Mossi', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (281, 'mul', 'Multiple languages', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (282, 'mun', 'Munda languages', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (283, 'mus', 'Creek', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (284, 'mwr', 'Marwari', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (285, 'myn', 'Mayan languages', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (286, 'myv', 'Erzya', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (287, 'nah', 'Nahuatl', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (288, 'nai', 'North American Indian (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (289, 'nap', 'Neapolitan', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (290, 'na', 'Nauru', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (291, 'nv', 'Navaho', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (292, 'nr', 'Ndebele, South', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (293, 'nd', 'Ndebele, North', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (294, 'ng', 'Ndonga', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (295, 'nds', 'German, Low', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (296, 'ne', 'Nepali', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (297, 'new', 'Newari', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (298, 'nia', 'Nias', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (299, 'nic', 'Niger-Kordofanian (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (300, 'niu', 'Niuean', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (301, 'nn', 'Norwegian Nynorsk', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (302, 'nb', 'Norwegian Bokmål', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (303, 'nog', 'Nogai', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (304, 'non', 'Norse, Old', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (305, 'no', 'Norwegian', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (306, 'nso', 'Sotho, Northern', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (307, 'nub', 'Nubian languages', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (308, 'nwc', 'Classical Newari; Old Newari', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (309, 'ny', 'Chewa; Chichewa; Nyanja', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (310, 'nym', 'Nyankole', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (311, 'nyo', 'Nyoro', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (312, 'nzi', 'Nzima', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (313, 'oc', 'Occitan (post 1500)', NULL, 2, 'n > 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (314, 'oj', 'Ojibwa', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (315, 'or', 'Oriya', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (316, 'om', 'Oromo', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (317, 'osa', 'Osage', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (318, 'os', 'Ossetian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (319, 'ota', 'Turkish, Ottoman (1500-1928)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (320, 'oto', 'Otomian languages', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (321, 'paa', 'Papuan (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (322, 'pag', 'Pangasinan', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (323, 'pal', 'Pahlavi', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (324, 'pam', 'Pampanga', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (325, 'pa', 'Panjabi', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (326, 'pap', 'Papiamento', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (327, 'pau', 'Palauan', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (328, 'peo', 'Persian, Old (ca.600-400 B.C.)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (329, 'fa', 'Persian', NULL, 1, '0', true, 1);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (330, 'phi', 'Philippine (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (331, 'phn', 'Phoenician', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (332, 'pi', 'Pali', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (333, 'pl', 'Polish', NULL, 3, 'n==1 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (334, 'pt', 'Portuguese', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (335, 'pon', 'Pohnpeian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (336, 'pra', 'Prakrit languages', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (337, 'pro', 'Provençal, Old (to 1500)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (338, 'ps', 'Pushto', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (339, 'qu', 'Quechua', NULL, 2, '(n % 10 == 1 && n % 100 != 11) ? 0 : 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (340, 'raj', 'Rajasthani', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (341, 'rap', 'Rapanui', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (342, 'rar', 'Rarotongan', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (343, 'roa', 'Romance (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (344, 'rm', 'Raeto-Romance', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (345, 'rom', 'Romany', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (346, 'ro', 'Romanian', NULL, 3, '(n == 1 ? 0: (((n % 100 > 19) || ((n % 100 == 0) && (n != 0))) ? 2: 1))', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (347, 'rn', 'Rundi', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (348, 'ru', 'Russian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (349, 'sad', 'Sandawe', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (350, 'sg', 'Sango', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (351, 'sah', 'Yakut', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (352, 'sai', 'South American Indian (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (353, 'sal', 'Salishan languages', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (354, 'sam', 'Samaritan Aramaic', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (355, 'sa', 'Sanskrit', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (356, 'sas', 'Sasak', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (357, 'sat', 'Santali', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (358, 'sr', 'Serbian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (359, 'sco', 'Scots', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (360, 'hr', 'Croatian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (361, 'sel', 'Selkup', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (362, 'sem', 'Semitic (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (363, 'sga', 'Irish, Old (to 900)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (364, 'sgn', 'Sign languages', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (365, 'shn', 'Shan', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (366, 'sid', 'Sidamo', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (367, 'si', 'Sinhalese', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (368, 'sio', 'Siouan languages', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (369, 'sit', 'Sino-Tibetan (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (370, 'sla', 'Slavic (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (371, 'sk', 'Slovak', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (372, 'sl', 'Slovenian', NULL, 4, 'n%100==1 ? 0 : n%100==2 ? 1 : n%100==3 || n%100==4 ? 2 : 3', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (373, 'sma', 'Southern Sami', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (374, 'se', 'Northern Sami', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (375, 'smi', 'Sami languages (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (376, 'smj', 'Lule Sami', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (377, 'smn', 'Inari Sami', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (378, 'sm', 'Samoan', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (379, 'sms', 'Skolt Sami', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (380, 'sn', 'Shona', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (381, 'sd', 'Sindhi', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (382, 'snk', 'Soninke', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (383, 'sog', 'Sogdian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (384, 'so', 'Somali', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (385, 'son', 'Songhai', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (386, 'st', 'Sotho, Southern', NULL, 1, '0', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (387, 'es', 'Spanish', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (388, 'sc', 'Sardinian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (389, 'srr', 'Serer', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (390, 'ssa', 'Nilo-Saharan (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (391, 'ss', 'Swati', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (392, 'suk', 'Sukuma', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (393, 'su', 'Sundanese', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (394, 'sus', 'Susu', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (395, 'sux', 'Sumerian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (396, 'sw', 'Swahili', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (397, 'sv', 'Swedish', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (398, 'syr', 'Syriac', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (399, 'ty', 'Tahitian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (400, 'tai', 'Tai (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (401, 'ta', 'Tamil', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (402, 'ts', 'Tsonga', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (403, 'tt', 'Tatar', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (404, 'te', 'Telugu', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (405, 'tem', 'Timne', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (406, 'ter', 'Tereno', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (407, 'tet', 'Tetum', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (408, 'tg', 'Tajik', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (409, 'tl', 'Tagalog', NULL, 2, 'n > 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (410, 'th', 'Thai', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (411, 'bo', 'Tibetan', NULL, 1, '0', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (412, 'tig', 'Tigre', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (413, 'ti', 'Tigrinya', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (414, 'tiv', 'Tiv', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (415, 'tlh', 'Klingon; tlhIngan-Hol', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (416, 'tkl', 'Tokelau', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (417, 'tli', 'Tlinglit', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (418, 'tmh', 'Tamashek', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (419, 'tog', 'Tonga (Nyasa)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (420, 'to', 'Tonga (Tonga Islands)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (421, 'tpi', 'Tok Pisin', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (422, 'tsi', 'Tsimshian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (423, 'tn', 'Tswana', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (424, 'tk', 'Turkmen', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (425, 'tum', 'Tumbuka', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (426, 'tup', 'Tupi languages', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (427, 'tr', 'Turkish', NULL, 1, '0', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (428, 'tut', 'Altaic (Other)', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (429, 'tvl', 'Tuvalu', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (430, 'tw', 'Twi', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (431, 'tyv', 'Tuvinian', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (432, 'udm', 'Udmurt', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (433, 'uga', 'Ugaritic', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (434, 'ug', 'Uighur', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (435, 'uk', 'Ukrainian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (436, 'umb', 'Umbundu', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (437, 'und', 'Undetermined', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (438, 'urd', 'Urdu', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (439, 'uz', 'Uzbek', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (440, 'vai', 'Vai', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (441, 've', 'Venda', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (442, 'vi', 'Vietnamese', NULL, 1, '0', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (443, 'vo', 'Volapuk', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (444, 'vot', 'Votic', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (445, 'wak', 'Wakashan languages', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (446, 'wal', 'Walamo', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (447, 'war', 'Waray', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (448, 'was', 'Washo', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (449, 'cy', 'Welsh', NULL, 4, 'n==1 ? 0 : n==2 ? 1 : (n != 8 || n != 11) ? 2 : 3', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (450, 'wen', 'Sorbian languages', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (451, 'wa', 'Walloon', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (452, 'wo', 'Wolof', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (453, 'xal', 'Kalmyk', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (454, 'xh', 'Xhosa', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (455, 'yao', 'Yao', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (456, 'yap', 'Yapese', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (457, 'yi', 'Yiddish', NULL, NULL, NULL, true, 1);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (458, 'yo', 'Yoruba', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (459, 'ypk', 'Yupik languages', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (460, 'zap', 'Zapotec', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (461, 'zen', 'Zenaga', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (462, 'za', 'Chuang; Zhuang', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (463, 'znd', 'Zande', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (464, 'zu', 'Zulu', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (465, 'zun', 'Zuni', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (466, 'ti_ER', 'Tigrinya (Eritrea)', NULL, NULL, NULL, false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (467, 'ti_ET', 'Tigrinya (Ethiopia)', NULL, NULL, NULL, false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (468, 'gez_ER', 'Geez (Eritrea)', NULL, NULL, NULL, false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (469, 'gez_ET', 'Geez (Ethiopia)', NULL, NULL, NULL, false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (470, 'de_AT', 'German (Austria)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (471, 'de_BE', 'German (Belgium)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (472, 'de_CH', 'German (Switzerland)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (473, 'de_DE', 'German (Germany)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (474, 'de_LU', 'German (Luxembourg)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (475, 'en_AU', 'English (Australia)', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (476, 'en_BW', 'English (Botswana)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (477, 'en_CA', 'English (Canada)', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (478, 'en_DK', 'English (Denmark)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (479, 'en_GB', 'English (United Kingdom)', NULL, 2, 'n != 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (480, 'en_HK', 'English (Hong Kong)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (481, 'en_IE', 'English (Ireland)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (482, 'en_IN', 'English (India)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (483, 'en_NZ', 'English (New Zealand)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (484, 'en_PH', 'English (Philippines)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (485, 'en_SG', 'English (Singapore)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (486, 'en_US', 'English (United States)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (487, 'en_ZA', 'English (South Africa)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (488, 'en_ZW', 'English (Zimbabwe)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (489, 'zh_CN', 'Chinese (China)', NULL, 1, '0', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (490, 'zh_HK', 'Chinese (Hong Kong)', NULL, 1, '0', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (491, 'zh_SG', 'Chinese (Singapore)', NULL, 1, '0', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (492, 'zh_TW', 'Chinese (Taiwan)', NULL, 1, '0', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (493, 'eu_ES', 'Basque (Spain)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (494, 'eu_FR', 'Basque (France)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (495, 'es_AR', 'Spanish (Argentina)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (496, 'es_BO', 'Spanish (Bolivia)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (497, 'es_CL', 'Spanish (Chile)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (498, 'es_CO', 'Spanish (Colombia)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (499, 'es_CR', 'Spanish (Costa Rica)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (500, 'es_DO', 'Spanish (Dominican Republic)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (501, 'es_EC', 'Spanish (Ecuador)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (502, 'es_ES', 'Spanish (Spain)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (503, 'es_GT', 'Spanish (Guatemala)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (504, 'es_HN', 'Spanish (Honduras)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (505, 'es_MX', 'Spanish (Mexico)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (506, 'es_NI', 'Spanish (Nicaragua)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (507, 'es_PA', 'Spanish (Panama)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (508, 'es_PE', 'Spanish (Peru)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (509, 'es_PR', 'Spanish (Puerto Rico)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (510, 'es_PY', 'Spanish (Paraguay)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (511, 'es_SV', 'Spanish (El Salvador)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (512, 'es_US', 'Spanish (United States)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (513, 'es_UY', 'Spanish (Uruguay)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (514, 'es_VE', 'Spanish (Venezuela)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (515, 'ru_RU', 'Russian (Russian Federation)', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (516, 'ru_UA', 'Russian (Ukraine)', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (517, 'bn_BD', 'Bengali (Bangladesh)', NULL, NULL, NULL, false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (518, 'bn_IN', 'Bengali (India)', NULL, NULL, NULL, false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (519, 'om_ET', 'Oromo (Ethiopia)', NULL, NULL, NULL, false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (520, 'om_KE', 'Oromo (Kenya)', NULL, NULL, NULL, false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (521, 'pt_BR', 'Portuguese (Brazil)', NULL, 2, 'n > 1', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (522, 'pt_PT', 'Portuguese (Portugal)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (523, 'aa_DJ', 'Afar (Djibouti)', NULL, NULL, NULL, false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (524, 'aa_ER', 'Afar (Eritrea)', NULL, NULL, NULL, false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (525, 'aa_ET', 'Afar (Ethiopia)', NULL, NULL, NULL, false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (526, 'it_CH', 'Italian (Switzerland)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (527, 'it_IT', 'Italian (Italy)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (528, 'ar_AE', 'Arabic (United Arab Emirates)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false, 1);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (529, 'ar_BH', 'Arabic (Bahrain)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false, 1);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (530, 'ar_DZ', 'Arabic (Algeria)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false, 1);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (531, 'ar_EG', 'Arabic (Egypt)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false, 1);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (532, 'ar_IN', 'Arabic (India)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false, 1);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (533, 'ar_IQ', 'Arabic (Iraq)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false, 1);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (534, 'ar_JO', 'Arabic (Jordan)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false, 1);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (535, 'ar_KW', 'Arabic (Kuwait)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false, 1);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (536, 'ar_LB', 'Arabic (Lebanon)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false, 1);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (537, 'ar_LY', 'Arabic (Libyan Arab Jamahiriya)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false, 1);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (538, 'ar_MA', 'Arabic (Morocco)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false, 1);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (539, 'ar_OM', 'Arabic (Oman)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false, 1);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (540, 'ar_QA', 'Arabic (Qatar)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false, 1);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (541, 'ar_SA', 'Arabic (Saudi Arabia)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false, 1);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (542, 'ar_SD', 'Arabic (Sudan)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false, 1);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (543, 'ar_SY', 'Arabic (Syrian Arab Republic)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false, 1);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (544, 'ar_TN', 'Arabic (Tunisia)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false, 1);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (545, 'ar_YE', 'Arabic (Yemen)', NULL, 3, 'n==1 ? 0 : n==2 ? 1 : 2', false, 1);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (546, 'nl_BE', 'Dutch (Belgium)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (547, 'nl_NL', 'Dutch (Netherlands)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (548, 'fr_BE', 'French (Belgium)', NULL, 2, 'n > 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (549, 'fr_CA', 'French (Canada)', NULL, 2, 'n > 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (550, 'fr_CH', 'French (Switzerland)', NULL, 2, 'n > 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (551, 'fr_FR', 'French (France)', NULL, 2, 'n > 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (552, 'fr_LU', 'French (Luxembourg)', NULL, 2, 'n > 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (553, 'sv_FI', 'Swedish (Finland)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (554, 'sv_SE', 'Swedish (Sweden)', NULL, 2, 'n != 1', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (555, 'so_DJ', 'Somali (Djibouti)', NULL, NULL, NULL, false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (556, 'so_ET', 'Somali (Ethiopia)', NULL, NULL, NULL, false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (557, 'so_KE', 'Somali (Kenya)', NULL, NULL, NULL, false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (558, 'so_SO', 'Somali (Somalia)', NULL, NULL, NULL, false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (559, 'fil', 'Filipino', NULL, NULL, NULL, true, 0);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = '"language"'::pg_catalog.regclass;
@@ -3634,11 +3833,13 @@ INSERT INTO spokenin ("language", country, id) VALUES (41, 75, 76);
 INSERT INTO spokenin ("language", country, id) VALUES (45, 21, 125);
 INSERT INTO spokenin ("language", country, id) VALUES (47, 101, 131);
 INSERT INTO spokenin ("language", country, id) VALUES (47, 19, 129);
+INSERT INTO spokenin ("language", country, id) VALUES (51, 171, 337);
 INSERT INTO spokenin ("language", country, id) VALUES (56, 28, 134);
 INSERT INTO spokenin ("language", country, id) VALUES (58, 75, 133);
 INSERT INTO spokenin ("language", country, id) VALUES (62, 34, 126);
 INSERT INTO spokenin ("language", country, id) VALUES (64, 68, 10);
 INSERT INTO spokenin ("language", country, id) VALUES (68, 200, 142);
+INSERT INTO spokenin ("language", country, id) VALUES (70, 171, 336);
 INSERT INTO spokenin ("language", country, id) VALUES (76, 193, 70);
 INSERT INTO spokenin ("language", country, id) VALUES (76, 209, 72);
 INSERT INTO spokenin ("language", country, id) VALUES (76, 45, 66);
@@ -3686,6 +3887,7 @@ INSERT INTO spokenin ("language", country, id) VALUES (149, 225, 1);
 INSERT INTO spokenin ("language", country, id) VALUES (157, 85, 37);
 INSERT INTO spokenin ("language", country, id) VALUES (159, 101, 2);
 INSERT INTO spokenin ("language", country, id) VALUES (165, 106, 156);
+INSERT INTO spokenin ("language", country, id) VALUES (167, 171, 338);
 INSERT INTO spokenin ("language", country, id) VALUES (169, 101, 155);
 INSERT INTO spokenin ("language", country, id) VALUES (174, 99, 154);
 INSERT INTO spokenin ("language", country, id) VALUES (178, 100, 173);
@@ -3714,6 +3916,8 @@ INSERT INTO spokenin ("language", country, id) VALUES (305, 162, 224);
 INSERT INTO spokenin ("language", country, id) VALUES (313, 75, 140);
 INSERT INTO spokenin ("language", country, id) VALUES (316, 112, 138);
 INSERT INTO spokenin ("language", country, id) VALUES (316, 70, 136);
+INSERT INTO spokenin ("language", country, id) VALUES (322, 171, 340);
+INSERT INTO spokenin ("language", country, id) VALUES (324, 171, 339);
 INSERT INTO spokenin ("language", country, id) VALUES (325, 101, 151);
 INSERT INTO spokenin ("language", country, id) VALUES (329, 103, 240);
 INSERT INTO spokenin ("language", country, id) VALUES (333, 173, 152);
@@ -3766,6 +3970,7 @@ INSERT INTO spokenin ("language", country, id) VALUES (427, 218, 9);
 INSERT INTO spokenin ("language", country, id) VALUES (435, 223, 127);
 INSERT INTO spokenin ("language", country, id) VALUES (439, 229, 157);
 INSERT INTO spokenin ("language", country, id) VALUES (442, 232, 172);
+INSERT INTO spokenin ("language", country, id) VALUES (447, 171, 341);
 INSERT INTO spokenin ("language", country, id) VALUES (449, 225, 143);
 INSERT INTO spokenin ("language", country, id) VALUES (451, 22, 128);
 INSERT INTO spokenin ("language", country, id) VALUES (454, 198, 141);
@@ -3864,6 +4069,7 @@ INSERT INTO spokenin ("language", country, id) VALUES (555, 60, 253);
 INSERT INTO spokenin ("language", country, id) VALUES (556, 70, 255);
 INSERT INTO spokenin ("language", country, id) VALUES (557, 112, 257);
 INSERT INTO spokenin ("language", country, id) VALUES (558, 197, 259);
+INSERT INTO spokenin ("language", country, id) VALUES (559, 171, 342);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'spokenin'::pg_catalog.regclass;
@@ -3961,10 +4167,10 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Report-Msgid-Bugs-To: serrador@hispalinux.es
-X-Generator: Rosetta (http://launchpad.ubuntu.com/rosetta/)
+X-Generator: Rosetta (https://launchpad.net/rosetta/)
 Plural-Forms: nplurals=2; plural=(n != 1);
 ', true, NULL, NULL, 7, 0, 0, NULL, 12, 2, NULL, NULL, 13, '2005-04-07 13:18:57.59704', 1, 33, NULL, NULL, NULL, '2005-06-06 08:59:54.24073', 690);
-INSERT INTO pofile (id, potemplate, "language", description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawimporter, daterawimport, rawimportstatus, rawfile, exportfile, exporttime, rawfilepublished, datecreated, latestsubmission) VALUES (3, 2, 502, NULL, ' Spanish (Spain) translation for mount removable devices as normal user
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawimporter, daterawimport, rawimportstatus, rawfile, exportfile, exporttime, rawfilepublished, datecreated, latestsubmission) VALUES (3, 2, 387, NULL, ' Spanish (Spain) translation for mount removable devices as normal user
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
  This file is distributed under the same license as the mount removable devices as normal user package.
  FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
@@ -3977,10 +4183,9 @@ Language-Team: Spanish (Spain) <es_ES@li.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Rosetta-Version: 0.1
 Plural-Forms: nplurals=2; plural=n != 1
-X-Generator: Rosetta (http://launchpad.ubuntu.com/rosetta/)
-', true, NULL, NULL, 63, 0, 0, NULL, 31, 2, NULL, NULL, 30, '2005-05-06 20:07:24.255804', 3, 14, NULL, NULL, NULL, '2005-06-06 08:59:54.236824', 265);
+X-Generator: Rosetta (https://launchpad.net/rosetta/)
+', true, NULL, NULL, 63, 0, 0, NULL, 31, 2, 'test', NULL, 30, '2005-05-06 20:07:24.255804', 3, 14, NULL, NULL, NULL, '2005-06-06 08:59:54.236824', 265);
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawimporter, daterawimport, rawimportstatus, rawfile, exportfile, exporttime, rawfilepublished, datecreated, latestsubmission) VALUES (4, 2, 143, NULL, ' German translations for PACKAGE package
  German messages for PACKAGE.
  Copyright (C) 2004 Martin Pitt
@@ -4011,9 +4216,8 @@ Language-Team: Catalan <ca@li.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Rosetta-Version: 0.1
 Plural-Forms: nplurals=2; plural=n != 1
-X-Generator: Rosetta (http://launchpad.ubuntu.com/rosetta/)
+X-Generator: Rosetta (https://launchpad.net/rosetta/)
 ', true, NULL, NULL, 62, 0, 0, NULL, 31, 2, NULL, NULL, 30, '2005-05-06 20:07:24.255804', 3, 11, NULL, NULL, NULL, '2005-06-06 08:59:54.254523', 76);
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawimporter, daterawimport, rawimportstatus, rawfile, exportfile, exporttime, rawfilepublished, datecreated, latestsubmission) VALUES (6, 2, 132, NULL, ' French translation for mount removable devices as normal user
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
@@ -4029,9 +4233,8 @@ Language-Team: French <fr@li.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Rosetta-Version: 0.1
 Plural-Forms: nplurals=2; plural=n > 1
-X-Generator: Rosetta (http://launchpad.ubuntu.com/rosetta/)
+X-Generator: Rosetta (https://launchpad.net/rosetta/)
 ', true, NULL, NULL, 57, 0, 0, NULL, 31, 2, NULL, NULL, 30, '2005-05-06 20:07:24.255804', 3, 16, NULL, NULL, NULL, '2005-06-06 08:59:54.256914', 391);
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawimporter, daterawimport, rawimportstatus, rawfile, exportfile, exporttime, rawfilepublished, datecreated, latestsubmission) VALUES (7, 2, 360, NULL, ' Croatian translation for pmount
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
@@ -4047,9 +4250,8 @@ Language-Team: Croatian <hr@li.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Rosetta-Version: 0.1
 Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
-X-Generator: Rosetta (http://launchpad.ubuntu.com/rosetta/)
+X-Generator: Rosetta (https://launchpad.net/rosetta/)
 ', true, NULL, NULL, 63, 0, 0, NULL, 31, 3, NULL, NULL, 30, '2005-05-06 20:07:24.255804', 3, 10, NULL, NULL, NULL, '2005-06-06 08:59:54.255734', 13);
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawimporter, daterawimport, rawimportstatus, rawfile, exportfile, exporttime, rawfilepublished, datecreated, latestsubmission) VALUES (8, 2, 527, NULL, ' Italian (Italy) translation for pmount
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
@@ -4065,9 +4267,8 @@ Language-Team: Italian (Italy) <it_IT@li.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Rosetta-Version: 0.1
 Plural-Forms: nplurals=2; plural=n != 1
-X-Generator: Rosetta (http://launchpad.ubuntu.com/rosetta/)
+X-Generator: Rosetta (https://launchpad.net/rosetta/)
 ', true, NULL, NULL, 49, 0, 0, NULL, 31, 2, NULL, NULL, 30, '2005-05-06 20:07:24.255804', 3, 17, NULL, NULL, NULL, '2005-06-06 08:59:54.259358', 454);
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawimporter, daterawimport, rawimportstatus, rawfile, exportfile, exporttime, rawfilepublished, datecreated, latestsubmission) VALUES (9, 2, 98, NULL, ' Czech translation for mount removable devices as normal user
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
@@ -4083,9 +4284,8 @@ Language-Team: Czech <cs@li.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Rosetta-Version: 0.1
 Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
-X-Generator: Rosetta (http://launchpad.ubuntu.com/rosetta/)
+X-Generator: Rosetta (https://launchpad.net/rosetta/)
 ', true, NULL, NULL, 56, 0, 0, NULL, 31, 3, NULL, NULL, 30, '2005-05-06 20:07:24.255804', 3, 13, NULL, NULL, NULL, '2005-06-06 08:59:54.249601', 202);
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawimporter, daterawimport, rawimportstatus, rawfile, exportfile, exporttime, rawfilepublished, datecreated, latestsubmission) VALUES (10, 2, 302, NULL, ' Bokmål, Norwegian translation for pmount
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
@@ -4101,9 +4301,8 @@ Language-Team: Bokmål, Norwegian <nb@li.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Rosetta-Version: 0.1
 Plural-Forms: nplurals=2; plural=n != 1
-X-Generator: Rosetta (http://launchpad.ubuntu.com/rosetta/)
+X-Generator: Rosetta (https://launchpad.net/rosetta/)
 ', true, NULL, NULL, 63, 0, 0, NULL, 31, 2, NULL, NULL, 30, '2005-05-06 20:07:24.255804', 3, 12, NULL, NULL, NULL, '2005-06-06 08:59:54.248418', 139);
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawimporter, daterawimport, rawimportstatus, rawfile, exportfile, exporttime, rawfilepublished, datecreated, latestsubmission) VALUES (11, 2, 387, NULL, ' Spanish translation for mount removable devices as normal user
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
@@ -4119,9 +4318,8 @@ Language-Team: Spanish <es@li.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Rosetta-Version: 0.1
 Plural-Forms: nplurals=2; plural=n != 1
-X-Generator: Rosetta (http://launchpad.ubuntu.com/rosetta/)
+X-Generator: Rosetta (https://launchpad.net/rosetta/)
 ', true, NULL, NULL, 54, 0, 0, NULL, 31, 2, NULL, NULL, 30, '2005-05-06 20:07:24.255804', 3, 18, NULL, NULL, NULL, '2005-06-06 08:59:54.229882', 503);
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawimporter, daterawimport, rawimportstatus, rawfile, exportfile, exporttime, rawfilepublished, datecreated, latestsubmission) VALUES (12, 4, 387, NULL, ' traducción de es.po al Spanish
  translation of es.po to Spanish
@@ -4146,7 +4344,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Report-Msgid-Bugs-To: serrador@hispalinux.es
-X-Generator: Rosetta (http://launchpad.ubuntu.com/rosetta/)
+X-Generator: Rosetta (https://launchpad.net/rosetta/)
 Plural-Forms: nplurals=2; plural=(n != 1);
 ', true, NULL, NULL, 7, 1, 1, NULL, 31, 2, NULL, NULL, 13, '2005-05-06 21:05:21.272603', 3, 32, NULL, NULL, NULL, '2005-06-06 08:59:54.235169', 689);
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawimporter, daterawimport, rawimportstatus, rawfile, exportfile, exporttime, rawfilepublished, datecreated, latestsubmission) VALUES (13, 5, 132, NULL, '
@@ -4171,7 +4369,7 @@ Language-Team: French <debian-l10n-french@lists.debian.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 8bit
-plural-forms: nplurals=2; plural=n > 1
+Plural-Forms: nplurals=2; plural=n > 1
 ', true, NULL, NULL, 9, 0, 0, NULL, 31, 2, NULL, NULL, 30, '2005-05-06 21:10:39.821363', 3, 19, NULL, NULL, NULL, '2005-06-06 08:59:54.243358', 577);
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawimporter, daterawimport, rawimportstatus, rawfile, exportfile, exporttime, rawfilepublished, datecreated, latestsubmission) VALUES (14, 5, 112, NULL, '
     Translators, if you are not familiar with the PO format, gettext
@@ -4194,7 +4392,7 @@ Language-Team: Debian l10n Dutch <debian-l10n-dutch@lists.debian.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Transfer-Encoding: 8bit
-plural-forms: nplurals=2; plural=n != 1
+Plural-Forms: nplurals=2; plural=n != 1
 ', true, NULL, NULL, 9, 0, 0, NULL, 31, 2, NULL, NULL, 30, '2005-05-06 21:10:39.821363', 3, 23, NULL, NULL, NULL, '2005-06-06 08:59:54.260522', 610);
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawimporter, daterawimport, rawimportstatus, rawfile, exportfile, exporttime, rawfilepublished, datecreated, latestsubmission) VALUES (15, 5, 521, NULL, '
     Translators, if you are not familiar with the PO format, gettext
@@ -4218,7 +4416,7 @@ Language-Team: Debian-BR Porject <debian-l10n-portuguese@lists.debian.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8bit
-plural-forms: nplurals=2; plural=n > 1
+Plural-Forms: nplurals=2; plural=n > 1
 ', true, NULL, NULL, 9, 0, 0, NULL, 31, 2, NULL, NULL, 30, '2005-05-06 21:10:39.821363', 3, 20, NULL, NULL, NULL, '2005-06-06 08:59:54.24721', 586);
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawimporter, daterawimport, rawimportstatus, rawfile, exportfile, exporttime, rawfilepublished, datecreated, latestsubmission) VALUES (16, 5, 143, NULL, '
     Translators, if you are not familiar with the PO format, gettext
@@ -4242,7 +4440,7 @@ Language-Team: de <debian-l10n-german@lists.debian.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 8bit
-plural-forms: nplurals=2; plural=n != 1
+Plural-Forms: nplurals=2; plural=n != 1
 ', true, NULL, NULL, 9, 0, 0, NULL, 31, 2, NULL, NULL, 30, '2005-05-06 21:10:39.821363', 3, 31, NULL, NULL, NULL, '2005-06-06 08:59:54.253299', 676);
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawimporter, daterawimport, rawimportstatus, rawfile, exportfile, exporttime, rawfilepublished, datecreated, latestsubmission) VALUES (17, 5, 427, NULL, ' Turkish translation of mozilla.
  This file is distributed under the same license as the mozilla package.
@@ -4272,7 +4470,7 @@ Content-Type: text/plain; charset=iso-8859-1
 Content-Transfer-Encoding: 8bit
 X-Poedit-Language: Italian
 X-Poedit-Country: ITALY
-plural-forms: nplurals=2; plural=n != 1
+Plural-Forms: nplurals=2; plural=n != 1
 ', true, NULL, NULL, 9, 0, 0, NULL, 31, 2, NULL, NULL, 30, '2005-05-06 21:10:39.821363', 3, 29, NULL, NULL, NULL, '2005-06-06 08:59:54.246003', 661);
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawimporter, daterawimport, rawimportstatus, rawfile, exportfile, exporttime, rawfilepublished, datecreated, latestsubmission) VALUES (19, 5, 100, NULL, '
     Translators, if you are not familiar with the PO format, gettext
@@ -4298,7 +4496,7 @@ Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8bit
 X-Poedit-Language: Italian
 X-Poedit-Country: ITALY
-plural-forms: nplurals=2; plural=n != 1
+Plural-Forms: nplurals=2; plural=n != 1
 ', true, NULL, NULL, 9, 0, 0, NULL, 31, 2, NULL, NULL, 30, '2005-05-06 21:10:39.821363', 3, 25, NULL, NULL, NULL, '2005-06-06 08:59:54.24466', 628);
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawimporter, daterawimport, rawimportstatus, rawfile, exportfile, exporttime, rawfilepublished, datecreated, latestsubmission) VALUES (20, 5, 241, NULL, ' Lithuanian translation of mozilla.
  This file is distributed under the same license as the mozilla package.
@@ -4314,7 +4512,7 @@ MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 X-Generator: KBabel 1.3.1
-plural-forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2
+Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && (n%100<10 || n%100>=20) ? 1 : 2
 ', true, NULL, NULL, 9, 0, 0, NULL, 31, 3, NULL, NULL, 30, '2005-05-06 21:10:39.821363', 3, 28, NULL, NULL, NULL, '2005-06-06 08:59:54.232379', 652);
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawimporter, daterawimport, rawimportstatus, rawfile, exportfile, exporttime, rawfilepublished, datecreated, latestsubmission) VALUES (21, 5, 98, NULL, '
     Translators, if you are not familiar with the PO format, gettext
@@ -4338,7 +4536,7 @@ Language-Team: Czech <provoz@debian.cz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 8bit
-plural-forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
+Plural-Forms: nplurals=3; plural=n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2
 ', true, NULL, NULL, 9, 0, 0, NULL, 31, 3, NULL, NULL, 30, '2005-05-06 21:10:39.821363', 3, 24, NULL, NULL, NULL, '2005-06-06 08:59:54.2394', 619);
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawimporter, daterawimport, rawimportstatus, rawfile, exportfile, exporttime, rawfilepublished, datecreated, latestsubmission) VALUES (22, 5, 129, NULL, '  translation of fi.po to Finnish
   mozilla translation
@@ -4365,7 +4563,7 @@ Language-Team: Finnish <debian-l10n-finnish@lists.debian.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-plural-forms: nplurals=2; plural=n != 1
+Plural-Forms: nplurals=2; plural=n != 1
 ', true, NULL, NULL, 9, 0, 0, NULL, 31, 2, NULL, NULL, 30, '2005-05-06 21:10:39.821363', 3, 26, NULL, NULL, NULL, '2005-06-06 08:59:54.242018', 637);
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawimporter, daterawimport, rawimportstatus, rawfile, exportfile, exporttime, rawfilepublished, datecreated, latestsubmission) VALUES (23, 5, 148, NULL, '
     Translators, if you are not familiar with the PO format, gettext
@@ -4389,7 +4587,7 @@ Language-Team: LANGUAGE <LL@li.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 8bit
-plural-forms: nplurals=1; plural=0
+Plural-Forms: nplurals=1; plural=0
 ', true, NULL, NULL, 3, 0, 0, NULL, 31, 1, NULL, NULL, 30, '2005-05-06 21:10:39.821363', 3, 27, NULL, NULL, NULL, '2005-06-06 08:59:54.258136', 649);
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawimporter, daterawimport, rawimportstatus, rawfile, exportfile, exporttime, rawfilepublished, datecreated, latestsubmission) VALUES (24, 5, 196, NULL, '
     Translators, if you are not familiar with the PO format, gettext
@@ -4413,7 +4611,7 @@ Language-Team: LANGUAGE <LL@li.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=EUC-JP
 Content-Transfer-Encoding: 8bit
-plural-forms: nplurals=1; plural=0
+Plural-Forms: nplurals=1; plural=0
 ', true, NULL, NULL, 9, 0, 0, NULL, 31, 1, NULL, NULL, 30, '2005-05-06 21:10:39.821363', 3, 21, NULL, NULL, NULL, '2005-06-06 08:59:54.233769', 595);
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawimporter, daterawimport, rawimportstatus, rawfile, exportfile, exporttime, rawfilepublished, datecreated, latestsubmission) VALUES (25, 5, 387, NULL, '
     Translators, if you are not familiar with the PO format, gettext
@@ -4439,7 +4637,7 @@ Language-Team: Debian L10n Spanish <debian-l10n-spanish@lists.debian.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 8bit
-plural-forms: nplurals=2; plural=n != 1
+Plural-Forms: nplurals=2; plural=n != 1
 ', true, NULL, NULL, 6, 0, 0, NULL, 31, 2, NULL, NULL, 30, '2005-05-06 21:10:39.821363', 3, 22, NULL, NULL, NULL, '2005-06-06 08:59:54.251898', 604);
 INSERT INTO pofile (id, potemplate, "language", description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawimporter, daterawimport, rawimportstatus, rawfile, exportfile, exporttime, rawfilepublished, datecreated, latestsubmission) VALUES (28, 4, 454, NULL, ' Xhosa translation for evolution
  Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
@@ -4455,9 +4653,24 @@ Language-Team: Xhosa <xh@li.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
-X-Rosetta-Version: 0.1
 Plural-Forms: nplurals=2; plural=n != 1
 ', true, NULL, NULL, 0, 0, 0, NULL, 31, 2, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, false, '2005-06-15 19:26:21.919196', NULL);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, header, fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", pluralforms, variant, filename, rawimporter, daterawimport, rawimportstatus, rawfile, exportfile, exporttime, rawfilepublished, datecreated, latestsubmission) VALUES (29, 4, 196, NULL, ' Japanese translation for evolution
+ Copyright (c) (c) 2005 Canonical Ltd, and Rosetta Contributors 2005
+ This file is distributed under the same license as the evolution package.
+ FIRST AUTHOR <EMAIL@ADDRESS>, 2005.
+
+', 'Project-Id-Version: evolution
+Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>
+POT-Creation-Date: 2005-05-06 20:39:27.778946+00:00
+PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+Last-Translator: FULL NAME <EMAIL@ADDRESS>
+Language-Team: Japanese <ja@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=1; plural=0
+', true, NULL, NULL, 0, 0, 1, NULL, 13, 1, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, NULL, '2005-10-11 23:08:01.899322', 695);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'pofile'::pg_catalog.regclass;
@@ -4473,7 +4686,6 @@ INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, com
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (6, 6, 1, false, false, false, '', 6, false, false, false);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (7, 7, 1, false, false, false, '', 7, false, false, false);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (8, 8, 1, false, false, false, '', 8, false, false, false);
-INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (9, 9, 1, false, false, false, '', 9, false, false, false);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (10, 10, 1, false, false, false, '', 10, false, false, false);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (11, 11, 1, false, false, false, '', 11, false, false, false);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (12, 12, 1, false, false, false, '', 12, false, false, false);
@@ -5198,6 +5410,16 @@ INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, com
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (729, 7, 16, true, false, false, '', 158, false, true, false);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (730, 8, 16, true, false, false, '', 159, false, true, false);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (731, 9, 16, true, false, false, '', 160, false, true, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (732, 0, 29, false, false, false, NULL, 140, false, false, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (733, 0, 29, false, false, false, NULL, 141, false, false, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (734, 0, 29, false, false, false, NULL, 142, false, false, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (735, 0, 29, false, false, false, NULL, 143, false, false, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (736, 0, 29, true, false, false, NULL, 144, false, false, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (737, 0, 29, false, false, false, NULL, 145, false, false, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (738, 0, 29, false, false, false, NULL, 146, false, false, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (739, 0, 29, false, false, false, NULL, 147, false, false, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (740, 0, 29, false, false, false, NULL, 148, false, false, false);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated) VALUES (741, 0, 29, false, false, false, NULL, 149, false, false, false);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'pomsgset'::pg_catalog.regclass;
@@ -5441,6 +5663,7 @@ Crash!
 
 Expected Results:  
 Not crashed.', 12, 5, 0, '2005-01-14 17:35:39.548665', 0, '2005-01-14 17:35:39.548665', 0, '2005-01-14 17:35:39.548665', NULL, '''1'':67 ''2'':72 ''4'':83 ''5'':86 ''6'':109 ''7'':116 ''8'':126 ''u'':20 ''en'':24 ''ok'':85,96 ''rv'':26 ''us'':25 ''1.6'':27 ''bug'':107 ''two'':101 ''use'':56 ''x11'':19 ''back'':88 ''caus'':52 ''i686'':22 ''open'':58,78,91 ''save'':4B,32,102 ''step'':64 ''user'':14 ''58777'':108 ''agent'':15 ''alway'':63 ''build'':16 ''click'':73 ''close'':12B,44,110,117,127 ''crash'':2B,47,135,139 ''en-us'':23 ''exist'':39 ''first'':129 ''linux'':21 ''press'':84,95 ''start'':122 ''visit'':68 ''actual'':133 ''appear'':82 ''cancel'':115,132 ''dialog'':6B,34,42,61,80,93,104,113,130 ''expect'':136 ''happen'':55 ''result'':134,137 ''second'':112 ''switch'':87 ''window'':10B,38,120 ''browser'':119 ''firefox'':1B,45 ''possibl'':50 ''user-ag'':13 ''download'':75 ''identifi'':17 ''nonexist'':9B,37 ''reproduc'':62,66 ''with/save'':59,79,92 ''firefox/0.8'':29 ''mozilla/5.0'':18 ''gecko/20040207'':28 ''www.mozilla.org'':70 ''/products/firefox/'':71 ''www.mozilla.org/products/firefox/'':69', false);
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, summary, fti, private) VALUES (7, '2005-10-14 15:12:29.602117', NULL, 'A test bug', 'A test description', 16, NULL, 0, '2005-10-14 15:12:29.602117', 0, '2005-10-14 15:12:29.602117', 0, '2005-10-14 15:12:29.602117', NULL, '''bug'':3B ''test'':2B,5 ''descript'':6', false);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bug'::pg_catalog.regclass;
@@ -5451,6 +5674,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'bugsubscription'::pg
 INSERT INTO bugsubscription (id, person, bug) VALUES (1, 11, 1);
 INSERT INTO bugsubscription (id, person, bug) VALUES (4, 12, 1);
 INSERT INTO bugsubscription (id, person, bug) VALUES (5, 11, 2);
+INSERT INTO bugsubscription (id, person, bug) VALUES (6, 16, 7);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bugsubscription'::pg_catalog.regclass;
@@ -5469,6 +5693,8 @@ INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, ne
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (9, 1, '2005-08-04 01:15:48.241836', 16, 'bug', NULL, NULL, 'assigned to source package mozilla-firefox');
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (10, 3, '2005-08-10 16:30:32.295049', 12, 'bug', NULL, NULL, 'assigned to source package mozilla-firefox');
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (11, 3, '2005-08-10 16:30:47.448639', 12, 'bug', NULL, NULL, 'assigned to source package mozilla-firefox');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (12, 7, '2005-10-14 15:12:29.602117', 16, 'bug', NULL, NULL, 'added bug');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (13, 7, '2005-10-14 15:12:49.943257', 16, 'evolution: assignee', NULL, 'name16', 'XXX: not yet implemented');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bugactivity'::pg_catalog.regclass;
@@ -5535,6 +5761,9 @@ INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rf
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (8, '2005-01-14 17:27:03.702622', 'Firefox install instructions should be complete', 12, NULL, NULL, '<20050114172703.6687.71983.malonedeb@localhost.localdomain>', '''instal'':2B ''complet'':6B ''firefox'':1B ''instruct'':3B', NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (9, '2005-01-14 17:35:39.548665', 'Firefox crashes when Save As dialog for a nonexistent window is closed', 12, NULL, NULL, '<20050114173539.6687.81610.malonedeb@localhost.localdomain>', '''save'':4B ''close'':12B ''crash'':2B ''dialog'':6B ''window'':10B ''firefox'':1B ''nonexist'':9B', NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (10, '2004-10-05 00:00:00', 'Re: Bug Title Test', 12, NULL, NULL, '<20050831114528.7616.78129.malone@localhost.localdomain>', '''re'':1B ''bug'':2B ''test'':4B ''titl'':3B', NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (11, '2005-10-14 15:12:29.602117', 'A test bug', 16, NULL, NULL, '<20051014151229.28962.1536.malonedeb@localhost.localdomain>', '''bug'':3B ''test'':2B', NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (12, '2005-10-14 12:25:21.508923', 'Re: Newly installed plug-in doesn''t seem to be used', 16, NULL, NULL, '<20051014122521.14276.39260.lptickets@localhost.localdomain>', '''re'':1B ''use'':12B ''plug'':5B ''seem'':9B ''doesn'':7B ''newli'':2B ''instal'':3B ''plug-in'':4B', NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (13, '2005-10-14 13:28:11.554476', 'Re: Slow system', 12, NULL, NULL, '<20051014132811.14276.65873.lptickets@localhost.localdomain>', '''re'':1B ''slow'':2B ''system'':3B', NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'message'::pg_catalog.regclass;
@@ -5549,6 +5778,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'componentselection'::pg_catalog.regclass;
 
+INSERT INTO componentselection (id, distrorelease, component) VALUES (1, 3, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'componentselection'::pg_catalog.regclass;
@@ -5556,6 +5786,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sectionselection'::pg_catalog.regclass;
 
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (1, 3, 2);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sectionselection'::pg_catalog.regclass;
@@ -5632,9 +5863,9 @@ INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, file
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (18, 21, 18, 1, ' start po-group: common', 'encfs/FileUtils.cpp:1044', 'xgroup(common)', '');
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (19, 22, 19, 1, '', 'encfs/main.cpp:340', 'xgroup(usage)', '');
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (20, 23, 20, 1, '', 'encfs/FileUtils.cpp:535', 'xgroup(setup)', 'c-format');
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (21, 24, 21, 1, '', 'encfs/encfsctl.cpp:346', '', 'c-format');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (21, 24, 0, 1, '', 'encfs/encfsctl.cpp:346', '', 'c-format');
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (22, 26, 22, 1, '', 'modules/aggregator.module:15', '', '');
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (23, 27, 0, 1, NULL, '', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (23, 27, 0, 1, NULL, 'foo.c:123', 'This is a comment...', '');
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (24, 28, 1, 3, '', 'src/netapplet.c:131', '', '');
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (25, 29, 2, 3, '', 'src/netapplet.c:133', '', '');
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (26, 30, 3, 3, '', 'src/netapplet.c:135', '', '');
@@ -5784,7 +6015,7 @@ INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, file
 Description', '');
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (160, 142, 9, 5, '', '../mozilla-browser.templates:24', 'Type: boolean
 Description', '');
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (161, 27, 0, 4, NULL, '', '', '');
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (161, 27, 0, 4, NULL, 'foo.c:123', 'This is a comment...', '');
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (162, 143, 0, 5, NULL, '', '', '');
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (163, 144, 0, 5, NULL, '', '', '');
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment) VALUES (164, 145, 0, 5, NULL, '', '', '');
@@ -5853,6 +6084,7 @@ INSERT INTO bugmessage (id, bug, message) VALUES (6, 4, 7);
 INSERT INTO bugmessage (id, bug, message) VALUES (7, 5, 8);
 INSERT INTO bugmessage (id, bug, message) VALUES (8, 6, 9);
 INSERT INTO bugmessage (id, bug, message) VALUES (9, 3, 10);
+INSERT INTO bugmessage (id, bug, message) VALUES (10, 7, 11);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bugmessage'::pg_catalog.regclass;
@@ -5869,20 +6101,22 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'karma'::pg_catalog.regclass;
 
-INSERT INTO karma (id, datecreated, person, "action") VALUES (1, '2005-07-05 05:24:07.409248', 12, 1);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (2, '2005-07-05 05:24:07.414864', 12, 2);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (3, '2005-07-05 05:24:07.415443', 12, 3);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (4, '2005-07-05 05:24:07.415915', 12, 4);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (5, '2005-07-05 05:24:07.416384', 12, 5);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (6, '2005-07-05 05:24:07.416837', 12, 6);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (7, '2005-07-05 05:24:07.41729', 12, 7);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (8, '2005-07-05 05:24:07.417756', 12, 8);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (9, '2005-07-05 05:24:07.418209', 12, 9);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (10, '2005-07-13 14:43:02.452716', 12, 9);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (11, '2005-08-03 12:04:50.669962', 16, 9);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (12, '2005-08-04 01:15:48.241836', 16, 9);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (13, '2005-08-10 16:30:32.295049', 12, 9);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (14, '2005-08-10 16:30:47.448639', 12, 9);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (1, '2025-07-05 05:24:07.409248', 12, 1);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (2, '2025-07-05 05:24:07.414864', 12, 2);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (3, '2025-07-05 05:24:07.415443', 12, 3);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (4, '2025-07-05 05:24:07.415915', 12, 4);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (5, '2025-07-05 05:24:07.416384', 12, 5);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (6, '2025-07-05 05:24:07.416837', 12, 6);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (7, '2025-07-05 05:24:07.41729', 12, 7);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (8, '2025-07-05 05:24:07.417756', 12, 8);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (9, '2025-07-05 05:24:07.418209', 12, 9);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (10, '2025-07-13 14:43:02.452716', 12, 9);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (11, '2025-08-03 12:04:50.669962', 16, 9);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (12, '2025-08-04 01:15:48.241836', 16, 9);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (13, '2025-08-10 16:30:32.295049', 12, 9);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (14, '2025-08-10 16:30:47.448639', 12, 9);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (15, '2025-10-14 15:12:29.602117', 16, 1);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (16, '2025-10-14 15:12:29.602117', 16, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'karma'::pg_catalog.regclass;
@@ -5912,6 +6146,7 @@ INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackag
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (18, 3, NULL, NULL, 6, 1, NULL, 10, 30, 30, NULL, '2005-08-10 16:30:32.295049', '2005-08-10 16:30:32.295049', 12, NULL, NULL, NULL, '');
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (19, 3, NULL, NULL, 7, 1, NULL, 10, 30, 30, NULL, '2005-08-10 16:30:47.448639', '2005-08-10 16:30:47.448639', 12, NULL, NULL, NULL, '');
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (20, 2, NULL, NULL, 6, 1, NULL, 10, 30, 30, NULL, '2005-08-22 13:54:57.840344', '2005-08-22 13:54:57.840344', 12, NULL, NULL, NULL, '');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (21, 7, 5, NULL, NULL, NULL, NULL, 10, NULL, 30, 16, '2005-10-14 15:12:29.602117', '2005-10-14 15:12:29.602117', 16, NULL, NULL, NULL, '');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bugtask'::pg_catalog.regclass;
@@ -5949,7 +6184,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'signedcodeofconduct'::pg_catalog.regclass;
 
-INSERT INTO signedcodeofconduct (id, owner, signingkey, datecreated, signedcode,recipient, active, admincomment) VALUES (1, 16, 1, '2005-09-27 10:01:13', 'Sampledata signedcode', NULL, true, NULL); 
+INSERT INTO signedcodeofconduct (id, "owner", signingkey, datecreated, signedcode, recipient, active, admincomment) VALUES (1, 16, 1, '2005-09-27 10:01:13', 'Sampledata signedcode', NULL, true, NULL);
+
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'signedcodeofconduct'::pg_catalog.regclass;
 
@@ -5973,12 +6209,12 @@ INSERT INTO productbounty (id, bounty, product) VALUES (2, 4, 5);
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'productbounty'::pg_catalog.regclass;
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distrobounty'::pg_catalog.regclass;
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distributionbounty'::pg_catalog.regclass;
 
-INSERT INTO distrobounty (id, bounty, distribution) VALUES (1, 1, 1);
+INSERT INTO distributionbounty (id, bounty, distribution) VALUES (1, 1, 1);
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distrobounty'::pg_catalog.regclass;
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distributionbounty'::pg_catalog.regclass;
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'projectbounty'::pg_catalog.regclass;
@@ -6062,6 +6298,9 @@ INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (6
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (7, 5, 1, 'This would be a real killer feature. If there is already code to make it possible, why aren''t there tons of press announcements about the secuirty possibilities. Imagine - no more embarrassing emails for Mr Gates... everything they delete would actually disappear! I''m sure Redmond will switch over as soon as they hear about this. It''s not a bug, it''s a feature!', NULL, '''m'':44C ''mr'':35C ''bug'':61C ''ton'':21C ''aren'':18C ''code'':12C ''gate'':36C ''hear'':54C ''make'':14C ''real'':5C ''soon'':51C ''sure'':45C ''delet'':39C ''email'':33C ''press'':23C ''would'':2C,40C ''actual'':41C ''featur'':7C,65C ''imagin'':29C ''killer'':6C ''switch'':48C ''alreadi'':11C ''announc'':24C ''everyth'':37C ''possibl'':16C,28C ''redmond'':46C ''secuirti'':27C ''disappear'':42C ''embarrass'':32C');
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (8, 6, 1, 'Oddly enough the bug system seems only capable of displaying the first two comments that are made against a bug. I wonder why that is? Lets have a few more decent legth comments in here so we can see what the spacing is like. Also, at some stage, we''ll need a few comments that get displayed in a fixed-width font, so we have a clue about code-in-bug-comments etc.', NULL, '''ll'':50C ''bug'':4C,20C,73C ''etc'':75C ''fix'':61C ''get'':56C ''let'':26C ''odd'':1C ''see'':39C ''two'':13C ''also'':45C ''clue'':68C ''code'':71C ''font'':63C ''like'':44C ''made'':17C ''need'':51C ''seem'':6C ''first'':12C ''legth'':32C ''space'':42C ''stage'':48C ''width'':62C ''capabl'':8C ''decent'':31C ''enough'':2C ''system'':5C ''wonder'':22C ''comment'':14C,33C,54C,74C ''display'':10C,57C ''fixed-width'':60C ''code-in-bug-com'':70C');
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (9, 10, 1, 'Initial bug report.', NULL, '''bug'':2C ''initi'':1C ''report'':3C');
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (10, 11, 1, 'A test description', NULL, '''test'':2C ''descript'':3C');
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (11, 12, 1, 'After you''ve installed a new plugin, you need to restart the browser. Does it work if you restart Firefox?', NULL, '''ve'':3C ''new'':6C ''need'':9C ''work'':16C ''instal'':4C ''plugin'':7C ''browser'':13C ''firefox'':20C ''restart'':11C,19C');
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (12, 13, 1, 'Maybe DMA isn''t enabled?', NULL, '''dma'':2C ''isn'':3C ''mayb'':1C ''enabl'':5C');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'messagechunk'::pg_catalog.regclass;
@@ -6075,6 +6314,10 @@ INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, dist
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (5, 16, 3, 2, 1, 1, '2004-03-10 16:30:00', '2004-03-10 16:30:00', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (8, 20, 3, 3, 1, 1, '2005-04-18 17:34:15.308434', '2005-04-18 17:34:15.308434', '2005-08-24 17:01:15.308434', NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (9, 21, 3, 2, 1, 1, '2005-08-24 17:01:15.308434', '2005-08-24 17:01:15.308434', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (10, 23, 1, 2, 1, 1, '2005-09-15 11:42:02.870714', '2005-09-15 11:42:02.870714', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (11, 24, 8, 2, 1, 1, '2005-09-15 11:42:21.070926', '2005-09-15 11:42:21.070926', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (12, 25, 3, 2, 1, 1, '2005-09-15 11:43:00.05741', '2005-09-15 11:43:00.05741', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (14, 24, 3, 7, 1, 1, '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', 25, '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', 0, false, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'securesourcepackagepublishinghistory'::pg_catalog.regclass;
@@ -6118,13 +6361,13 @@ INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datec
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (2, 2, 0, 2, 1, '2005-04-07 13:19:17.601068', 13, 0);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (3, 3, 0, 3, 1, '2005-04-07 13:19:17.601068', 13, 0);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (4, 5, 0, 4, 1, '2005-04-07 13:19:17.601068', 13, 0);
-INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (5, 14, 0, 5, 1, '2005-04-07 13:19:17.601068', 13, 0);
-INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (6, 15, 0, 6, 1, '2005-04-07 13:19:17.601068', 13, 0);
-INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (7, 15, 1, 7, 1, '2005-04-07 13:19:17.601068', 13, 0);
-INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (8, 16, 0, 8, 1, '2005-04-07 13:19:17.601068', 13, 0);
-INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (9, 16, 1, 9, 1, '2005-04-07 13:19:17.601068', 13, 0);
-INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (10, 17, 0, 10, 1, '2005-04-07 13:19:17.601068', 13, 0);
-INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (11, 18, 0, 11, 1, '2005-04-07 13:19:17.601068', 13, 0);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (5, 14, 0, 5, 1, '2005-04-07 13:19:17.601068', 13, 1);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (6, 15, 0, 6, 1, '2005-04-07 13:19:17.601068', 13, 1);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (7, 15, 1, 7, 1, '2005-04-07 13:19:17.601068', 13, 1);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (8, 16, 0, 8, 1, '2005-04-07 13:19:17.601068', 13, 1);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (9, 16, 1, 9, 1, '2005-04-07 13:19:17.601068', 13, 1);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (10, 17, 0, 10, 1, '2005-04-07 13:19:17.601068', 13, 1);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (11, 18, 0, 11, 1, '2005-04-07 13:19:17.601068', 13, 1);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (12, 22, 0, 12, 1, '2005-04-07 13:19:17.601068', 13, 0);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (13, 23, 0, 13, 1, '2005-05-06 20:09:31.825695', 33, 0);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (14, 24, 0, 14, 1, '2005-05-06 20:09:31.825695', 33, 0);
@@ -6802,6 +7045,8 @@ INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datec
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (689, 594, 0, 648, 2, '2005-06-06 20:05:03.244905', 50, 0);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (690, 5, 0, 649, 2, '2005-06-06 20:08:02.521892', 1, 0);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (693, 14, 0, 652, 2, '2005-08-29 16:16:58.010285', 52, 1);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (694, 15, 2, 7, 2, '2005-10-11 20:18:55.9815', 13, 1);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus) VALUES (695, 736, 0, 10, 2, '2005-10-11 23:08:01.899322', 13, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'posubmission'::pg_catalog.regclass;
@@ -7494,6 +7739,8 @@ INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsu
 INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission) VALUES (683, 730, 0, 683, 683);
 INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission) VALUES (684, 731, 0, 684, 684);
 INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission) VALUES (685, 599, 0, NULL, NULL);
+INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission) VALUES (686, 15, 2, 694, NULL);
+INSERT INTO poselection (id, pomsgset, pluralform, activesubmission, publishedsubmission) VALUES (687, 736, 0, 695, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'poselection'::pg_catalog.regclass;
@@ -7579,25 +7826,25 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distroreleaselanguage'::pg_catalog.regclass;
 
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (1, 3, 68, 62, 0, 0, 1, '2005-07-22 22:51:42.32511');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (2, 3, 196, 9, 0, 0, 1, '2005-07-22 22:51:42.32511');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (3, 3, 360, 63, 0, 0, 1, '2005-07-22 22:51:42.32511');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (4, 3, 193, 9, 0, 0, 1, '2005-07-22 22:51:42.32511');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (5, 3, 98, 65, 0, 0, 2, '2005-07-22 22:51:42.32511');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (6, 3, 241, 9, 0, 0, 1, '2005-07-22 22:51:42.32511');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (7, 3, 112, 9, 0, 0, 1, '2005-07-22 22:51:42.32511');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (8, 3, 143, 72, 0, 0, 2, '2005-07-22 22:51:42.32511');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (9, 3, 527, 49, 0, 0, 1, '2005-07-22 22:51:42.32511');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (10, 3, 454, 0, 0, 0, 0, '2005-07-22 22:51:42.32511');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (11, 3, 148, 3, 0, 0, 1, '2005-07-22 22:51:42.32511');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (12, 3, 302, 63, 0, 0, 1, '2005-07-22 22:51:42.32511');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (13, 3, 387, 67, 1, 1, 5, '2005-07-22 22:51:42.32511');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (14, 3, 427, 6, 0, 0, 1, '2005-07-22 22:51:42.32511');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (15, 3, 129, 9, 0, 0, 1, '2005-07-22 22:51:42.32511');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (16, 3, 502, 63, 0, 0, 1, '2005-07-22 22:51:42.32511');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (17, 3, 132, 66, 0, 0, 2, '2005-07-22 22:51:42.32511');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (18, 3, 521, 9, 0, 0, 1, '2005-07-22 22:51:42.32511');
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (19, 3, 100, 9, 0, 0, 1, '2005-07-22 22:51:42.32511');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (1, 3, 68, 62, 0, 0, 1, '2005-10-24 17:37:34.607626');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (2, 3, 196, 9, 0, 1, 2, '2005-10-24 17:37:35.002211');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (3, 3, 360, 63, 0, 0, 1, '2005-10-24 17:37:34.660542');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (4, 3, 193, 9, 0, 0, 1, '2005-10-24 17:37:34.936386');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (5, 3, 98, 65, 0, 0, 2, '2005-10-24 17:37:34.694071');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (6, 3, 241, 9, 0, 0, 1, '2005-10-24 17:37:35.042371');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (7, 3, 112, 9, 0, 0, 1, '2005-10-24 17:37:34.763603');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (8, 3, 143, 72, 0, 0, 2, '2005-10-24 17:37:34.901201');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (9, 3, 527, 49, 0, 0, 1, '2005-10-24 17:37:34.969591');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (10, 3, 454, 0, 0, 0, 0, '2005-10-24 17:37:35.246703');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (11, 3, 148, 3, 0, 0, 1, '2005-10-24 17:37:34.867566');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (12, 3, 302, 63, 0, 0, 1, '2005-10-24 17:37:35.078099');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (13, 3, 387, 130, 1, 1, 6, '2005-10-24 17:37:35.146022');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (14, 3, 427, 6, 0, 0, 1, '2005-10-24 17:37:35.213717');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (15, 3, 129, 9, 0, 0, 1, '2005-10-24 17:37:34.796161');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (16, 3, 502, 0, 0, 0, 0, '2005-10-24 17:37:35.182173');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (17, 3, 132, 66, 0, 0, 2, '2005-10-24 17:37:34.829262');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (18, 3, 521, 9, 0, 0, 1, '2005-10-24 17:37:35.11265');
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated) VALUES (19, 3, 100, 9, 0, 0, 1, '2005-10-24 17:37:34.729364');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distroreleaselanguage'::pg_catalog.regclass;
@@ -7617,25 +7864,25 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'polloption'::pg_catalog.regclass;
 
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (1, 1, 'A', 'A', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (2, 1, 'B', 'B', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (3, 1, 'C', 'C', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (4, 1, 'D', 'D', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (5, 2, 'William Big-Middle-Name Graham', 'Will Graham', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (6, 2, 'Jack Crawford', 'Jack Crawford', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (7, 2, 'Francis Dolarhyde', 'Francis Dolarhyde', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (8, 3, 'A', 'A', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (9, 3, 'B', 'B', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (10, 3, 'C', 'C', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (11, 3, 'D', 'D', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (12, 4, 'Option 1', 'Option 1', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (13, 4, 'Option 2', 'Option 2', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (14, 4, 'Option 3', 'Option 3', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (15, 4, 'Option 4', 'Option 4', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (16, 5, 'Option 1', 'Option 1', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (17, 5, 'Option 2', 'Option 2', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (18, 5, 'Option 3', 'Option 3', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (19, 5, 'Option 4', 'Option 4', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (1, 1, 'A', 'A', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (2, 1, 'B', 'B', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (3, 1, 'C', 'C', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (4, 1, 'D', 'D', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (5, 2, 'William Big-Middle-Name Graham', 'Will Graham', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (6, 2, 'Jack Crawford', 'Jack Crawford', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (7, 2, 'Francis Dolarhyde', 'Francis Dolarhyde', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (8, 3, 'A', 'A', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (9, 3, 'B', 'B', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (10, 3, 'C', 'C', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (11, 3, 'D', 'D', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (12, 4, 'Option 1', 'Option 1', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (13, 4, 'Option 2', 'Option 2', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (14, 4, 'Option 3', 'Option 3', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (15, 4, 'Option 4', 'Option 4', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (16, 5, 'Option 1', 'Option 1', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (17, 5, 'Option 2', 'Option 2', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (18, 5, 'Option 3', 'Option 3', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (19, 5, 'Option 4', 'Option 4', true);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'polloption'::pg_catalog.regclass;
@@ -7695,11 +7942,11 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'launchpadstatistic'::pg_catalog.regclass;
 
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (1, 'potemplate_count', 5, '2005-07-22 22:51:42.32511');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (2, 'pofile_count', 25, '2005-07-22 22:51:42.32511');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (3, 'pomsgid_count', 145, '2005-07-22 22:51:42.32511');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (4, 'translator_count', 23, '2005-07-22 22:51:42.32511');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (5, 'language_count', 19, '2005-07-22 22:51:42.32511');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (1, 'potemplate_count', 6, '2005-10-24 17:37:35.386948');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (2, 'pofile_count', 26, '2005-10-24 17:37:35.400943');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (3, 'pomsgid_count', 146, '2005-10-24 17:37:35.41595');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (4, 'translator_count', 24, '2005-10-24 17:37:35.42953');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (5, 'language_count', 18, '2005-10-24 17:37:35.449103');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'launchpadstatistic'::pg_catalog.regclass;
@@ -7707,10 +7954,11 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'specification'::pg_catalog.regclass;
 
-INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (1, 'extension-manager-upgrades', 'Extension Manager Upgrades', 'Simplify the way extensions are installed and registered so that: 1. third party applications can easily register and deregister extensions that live with their code. 2. developers can easily register extensions that they are developing out of a location apart from their build (e.g. their home directory), and  3. developers can easily install extensions for testing.', 16, 13, NULL, NULL, '2005-08-24 16:03:46.479655', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://wiki.mozilla.org/Firefox:1.1_Product_Team', NULL);
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (1, 'extension-manager-upgrades', 'Extension Manager Upgrades', 'Simplify the way extensions are installed and registered so that: 1. third party applications can easily register and deregister extensions that live with their code. 2. developers can easily register extensions that they are developing out of a location apart from their build (e.g. their home directory), and  3. developers can easily install extensions for testing.', 16, 13, NULL, 1, '2005-08-24 16:03:46.479655', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://wiki.mozilla.org/Firefox:1.1_Product_Team', NULL);
 INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (2, 'canvas', 'Support <canvas> Objects', 'With the Firefox 1.1 Developer Preview Release, Firefox includes a new HTML element for programmable graphics. <canvas> is based on the WhatWG canvas specification (http://www.whatwg.org/specs/web-apps/current-work/#graphics), which itself is based on Apple''s <canvas> implemented in Safari. It can be used for rendering graphs, UI elements, and other custom graphics on the client.', 16, NULL, NULL, NULL, '2005-08-24 16:05:03.406307', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://developer.mozilla.org/en/docs/Drawing_Graphics_with_Canvas', NULL);
 INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (3, 'svg-support', 'Support Native SVG Objects', 'Scalable Vector Graphics (SVG) is an XML markup language for describing two-dimensional vector graphics. Mozilla should natively support embedded SVG images in HTML documents, or SVG served directly, much as PNG or JPEG images can be served.', 16, 13, 2, NULL, '2005-08-24 16:10:05.078543', 4, NULL, NULL, NULL, NULL, 10, 70, 'http://developer.mozilla.org/en/docs/SVG', NULL);
 INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (4, 'e4x', 'Support E4X in EcmaScript', 'E4X adds native XML datatypes to the ECMAScript language, extends the semantics of familiar ECMAScript operators for manipulating XML objects and adds a small set of new operators for common XML operations, such as searching and filtering. It also adds support for XML literals, namespaces, qualified names and other mechanisms to facilitate XML processing.', 16, 14, 28, NULL, '2005-08-24 16:11:37.431981', 4, NULL, NULL, NULL, 1, 20, 0, 'http://www.ecma-international.org/publications/standards/Ecma-357.htm', 'This is the status whiteboard. Dig it?');
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (5, 'mergewin', 'Merge Open Browser Windows with "Consolidate Windows"', 'It should be possible to merge multiple open browser windows with a "Consolidate Windows" menu option.', 16, NULL, NULL, NULL, '2005-10-19 18:03:59.900723', 4, NULL, NULL, NULL, NULL, 40, 50, NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'specification'::pg_catalog.regclass;
@@ -7764,6 +8012,9 @@ INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product
 INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (2, 12, 'Problem showing the SVG demo on W3C site', 'Hi! I''m trying to learn about SVG but I can''t get it to work at all in firefox. Maybe there is a plugin? Help! Thanks.', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 18:47:27.657124', '2005-09-05 18:47:27.657124', NULL, NULL, NULL, NULL, NULL, NULL, '''m'':11B ''hi'':9B ''get'':21B ''svg'':4A,16B ''tri'':12B ''w3c'':7A ''demo'':5A ''help'':34B ''mayb'':29B ''show'':2A ''site'':8A ''work'':24B ''learn'':14B ''thank'':35B ''plugin'':33B ''firefox'':28B ''problem'':1A');
 INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (3, 16, 'Firefox is slow and consumes too much RAM', 'I''m running on a 486 with 32 MB ram. And Firefox is slow! What should I do?', NULL, 16, NULL, 1, 1, 50, 10, '2005-09-05 19:46:22.786269', '2005-09-05 19:46:22.786269', NULL, NULL, '2005-09-05 20:00:58.913139', '2005-09-05 20:00:58.913139', '2005-09-05 20:00:58.913139', NULL, '''m'':10B ''32'':16B ''mb'':17B ''486'':14B ''ram'':8A,18B ''run'':11B ''much'':7A ''slow'':3A,22B ''consum'':5A ''firefox'':1A,20B');
 INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (4, 16, 'Firefox loses focus and gets stuck', 'Every now and then I can''t type anything in the fields on a web form, and I have to click my mouse in the URL bar. Is that normal?', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 20:03:10.967079', '2005-09-05 20:03:10.967079', NULL, NULL, NULL, NULL, NULL, NULL, '''bar'':33B ''get'':5A ''url'':32B ''web'':21B ''form'':22B ''lose'':2A ''mous'':29B ''type'':14B ''anyth'':15B ''click'':27B ''everi'':7B ''field'':18B ''focus'':3A ''stuck'':6A ''normal'':36B ''firefox'':1A');
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (5, 12, 'Installation failed', 'I can''t install Ubuntu, it fails to find my CD-ROM drive.', NULL, NULL, NULL, 1, NULL, 10, 10, '2005-10-13 09:08:27.006633', '2005-10-13 09:08:27.006633', NULL, NULL, NULL, NULL, NULL, NULL, '''cd'':14B ''rom'':15B ''fail'':2A,9B ''find'':11B ''drive'':16B ''cd-rom'':13B ''instal'':1A,6B ''ubuntu'':7B');
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (6, 12, 'Newly installed plug-in doesn''t seem to be used', 'I''ve installed a new plug-in in Firefox, but it doesn''t seem to be used.', NULL, 16, 4, NULL, NULL, 30, 10, '2005-10-14 12:24:14.271257', '2005-10-14 12:24:14.271257', NULL, NULL, '2005-10-14 12:25:21.508923', '2005-10-14 12:25:21.508923', NULL, NULL, '''ve'':13B ''new'':16B ''use'':11A,29B ''plug'':4A,18B ''seem'':8A,26B ''doesn'':6A,24B ''newli'':1A ''instal'':2A,14B ''firefox'':21B ''plug-in'':3A,17B');
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (7, 16, 'Slow system', 'I get really poor hard drive performance.', NULL, 12, NULL, 1, NULL, 30, 10, '2005-10-14 13:27:35.664194', '2005-10-14 13:27:35.664194', NULL, NULL, '2005-10-14 13:28:11.554476', '2005-10-14 13:28:11.554476', NULL, NULL, '''get'':4B ''hard'':7B ''poor'':6B ''slow'':1A ''drive'':8B ''realli'':5B ''system'':2A ''perform'':9B');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'ticket'::pg_catalog.regclass;
@@ -7792,6 +8043,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'ticketmessage'::pg_catalog.regclass;
 
+INSERT INTO ticketmessage (id, ticket, message) VALUES (1, 6, 12);
+INSERT INTO ticketmessage (id, ticket, message) VALUES (2, 7, 13);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'ticketmessage'::pg_catalog.regclass;
@@ -7806,6 +8059,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'shippingrun'::pg_catalog.regclass;
 
+INSERT INTO shippingrun (id, datecreated, sentforshipping, csvfile) VALUES (1, '2005-08-01 18:38:24.526648', false, 35);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'shippingrun'::pg_catalog.regclass;
@@ -7813,6 +8067,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'shipment'::pg_catalog.regclass;
 
+INSERT INTO shipment (id, logintoken, shippingrun, dateshipped, shippingservice, trackingcode, request) VALUES (1, 'fdsa78fdsa78f', 1, '2005-08-01 18:38:24.526648', 1, NULL, 14);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'shipment'::pg_catalog.regclass;
@@ -7827,19 +8082,20 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'shippingrequest'::pg_catalog.regclass;
 
-INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (1, 52, NULL, 55, false, NULL, '2005-08-01 18:38:24.526648', true, NULL, 'noreason', false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 25, '999432423', '+55 16 3374-2027');
-INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (2, 22, NULL, NULL, false, NULL, '2005-09-01 18:38:24.526648', true, NULL, NULL, false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 95, '999432423', '+55 16 3374-2027');
-INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (3, 51, NULL, NULL, false, NULL, '2005-07-01 18:38:24.526648', true, NULL, NULL, false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 35, '999432423', '+55 16 3374-2027');
-INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (4, 2, NULL, NULL, false, NULL, '2005-04-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 45, '999432423', '+55 16 3374-2027');
-INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (5, 23, NULL, NULL, false, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
-INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (6, 28, NULL, NULL, true, 55, '2005-04-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 19, '999432423', '+55 16 3374-2027');
-INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (7, 27, NULL, NULL, false, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
-INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (8, 46, NULL, NULL, false, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
-INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (9, 50, NULL, NULL, false, NULL, '2005-05-04 18:38:24.526648', NULL, NULL, 'noreason', false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
-INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (10, 14, NULL, NULL, false, NULL, '2005-05-03 18:38:24.526648', NULL, NULL, 'noreason', false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
-INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (11, 13, NULL, NULL, false, NULL, '2005-05-02 18:38:24.526648', NULL, NULL, 'noreason', false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
-INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (12, 6, NULL, NULL, false, NULL, '2005-05-08 18:38:24.526648', NULL, NULL, 'noreason', false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
-INSERT INTO shippingrequest (id, recipient, shipment, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, addressline1, addressline2, organization, city, province, country, postcode, phone) VALUES (13, 2, NULL, NULL, false, NULL, '2005-05-09 18:38:24.526648', NULL, NULL, 'noreason', false, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (1, 52, 55, false, NULL, '2005-08-01 18:38:24.526648', true, NULL, 'noreason', false, 'No Privileges Person', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 25, '999432423', '+55 16 3374-2027', '''person'':3A ''privileg'':2A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (2, 22, NULL, false, NULL, '2005-09-01 18:38:24.526648', true, NULL, NULL, false, 'Stuart Bishop', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 95, '999432423', '+55 16 3374-2027', '''bishop'':2A ''stuart'':1A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (3, 51, NULL, false, NULL, '2005-07-01 18:38:24.526648', true, NULL, NULL, false, 'Helge Kreutzmann', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 35, '999432423', '+55 16 3374-2027', '''helg'':1A ''kreutzmann'':2A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (4, 2, NULL, false, NULL, '2005-04-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Robert Collins', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 45, '999432423', '+55 16 3374-2027', '''collin'':2A ''robert'':1A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (5, 23, NULL, false, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'David Allouche', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''david'':1A ''allouch'':2A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (6, 28, NULL, true, 55, '2005-04-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Celso Providelo', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 19, '999432423', '+55 16 3374-2027', '''celso'':1A ''providelo'':2A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (7, 27, NULL, false, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Daniel Debonzi', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''daniel'':1A ''debonzi'':2A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (8, 46, NULL, false, NULL, '2005-05-01 18:38:24.526648', NULL, NULL, 'noreason', false, 'Miroslav Kure', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''kure'':2A ''miroslav'':1A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (9, 50, NULL, false, NULL, '2005-05-04 18:38:24.526648', NULL, NULL, 'noreason', false, 'Valentina Commissari', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''valentina'':1A ''commissari'':2A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (10, 14, NULL, false, NULL, '2005-05-03 18:38:24.526648', NULL, NULL, 'noreason', false, 'Dafydd Harries', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''harri'':2A ''dafydd'':1A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (11, 13, NULL, false, NULL, '2005-05-02 18:38:24.526648', NULL, NULL, 'noreason', false, 'Carlos Marin', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''carlo'':1A ''marin'':2A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (12, 6, NULL, false, NULL, '2005-05-08 18:38:24.526648', NULL, NULL, 'noreason', false, 'Jeff Waugh', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''jeff'':1A ''waugh'':2A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (13, 55, NULL, false, NULL, '2005-05-09 18:38:24.526648', NULL, NULL, 'noreason', false, 'Marilize Coetzee', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''maril'':1A ''coetze'':2A');
+INSERT INTO shippingrequest (id, recipient, whoapproved, cancelled, whocancelled, daterequested, approved, shockandawe, reason, highpriority, recipientdisplayname, addressline1, addressline2, organization, city, province, country, postcode, phone, fti) VALUES (14, 8, 55, false, NULL, '2005-05-19 18:38:24.526648', true, NULL, 'noreason', true, 'James Blackwell', 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 32, '999432423', '+55 16 3374-2027', '''jame'':1A ''blackwel'':2A');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'shippingrequest'::pg_catalog.regclass;
@@ -7886,6 +8142,9 @@ INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, archite
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (37, 13, 9, 1, 1, 1, NULL);
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (38, 13, 6, 1, 1, 2, NULL);
 INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (39, 13, 9, 1, 1, 3, NULL);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (40, 14, 9, 1, 1, 1, 9);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (41, 14, 6, 1, 1, 2, 6);
+INSERT INTO requestedcds (id, request, quantity, flavour, distrorelease, architecture, quantityapproved) VALUES (42, 14, 9, 1, 1, 3, 9);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'requestedcds'::pg_catalog.regclass;
@@ -7977,6 +8236,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'developmentmanifest'::pg_catalog.regclass;
 
+INSERT INTO developmentmanifest (id, "owner", distrorelease, sourcepackagename, manifest, datecreated) VALUES (1, 5, 3, 19, 21, '2005-09-14 00:00:00');
+INSERT INTO developmentmanifest (id, "owner", distrorelease, sourcepackagename, manifest, datecreated) VALUES (2, 5, 3, 19, 22, '2005-09-15 12:52:12.626654');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'developmentmanifest'::pg_catalog.regclass;
@@ -7999,12 +8260,61 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sprintspecification'::pg_catalog.regclass;
 
-INSERT INTO sprintspecification (id, sprint, specification) VALUES (1, 1, 3);
-INSERT INTO sprintspecification (id, sprint, specification) VALUES (2, 1, 1);
-INSERT INTO sprintspecification (id, sprint, specification) VALUES (3, 1, 4);
+INSERT INTO sprintspecification (id, sprint, specification, status, needs_discussion) VALUES (1, 1, 3, 10, true);
+INSERT INTO sprintspecification (id, sprint, specification, status, needs_discussion) VALUES (2, 1, 1, 10, true);
+INSERT INTO sprintspecification (id, sprint, specification, status, needs_discussion) VALUES (3, 1, 4, 10, true);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sprintspecification'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distrocomponentuploader'::pg_catalog.regclass;
+
+INSERT INTO distrocomponentuploader (id, distribution, component, uploader) VALUES (1, 1, 1, 17);
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distrocomponentuploader'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distributionsourcepackagecache'::pg_catalog.regclass;
+
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti) VALUES (1, 3, 19, 'alsa-utils', '', '', '', '''alsa'':2A ''util'':3A ''alsa-util'':1A');
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti) VALUES (2, 1, 1, 'mozilla-firefox', 'mozilla-firefox', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', '''web'':9C,13 ''browser'':10C,14 ''firefox'':3A,6B,8C,12 ''mozilla'':2A,5B,7C,11 ''mozilla-firefox'':1A,4B');
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti) VALUES (3, 1, 9, 'evolution', '', '', '', '''evolut'':1A');
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti) VALUES (4, 1, 10, 'netapplet', '', '', '', '''netapplet'':1A');
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti) VALUES (5, 1, 14, 'pmount', 'pmount', 'pmount shortdesc', 'pmount description', '''pmount'':1A,2B,3C,5 ''descript'':6 ''shortdesc'':4C');
+INSERT INTO distributionsourcepackagecache (id, distribution, sourcepackagename, name, binpkgnames, binpkgsummaries, binpkgdescriptions, fti) VALUES (6, 1, 19, 'alsa-utils', '', '', '', '''alsa'':2A ''util'':3A ''alsa-util'':1A');
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distributionsourcepackagecache'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distroreleasepackagecache'::pg_catalog.regclass;
+
+INSERT INTO distroreleasepackagecache (id, distrorelease, binarypackagename, name, summary, description, summaries, descriptions, fti) VALUES (1, 3, 13, 'pmount', 'pmount shortdesc', 'pmount description', 'pmount shortdesc', 'pmount description', '''pmount'':1A,2B,4C ''descript'':5C ''shortdesc'':3B');
+INSERT INTO distroreleasepackagecache (id, distrorelease, binarypackagename, name, summary, description, summaries, descriptions, fti) VALUES (2, 1, 8, 'mozilla-firefox', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', '''web'':6B,10C ''browser'':7B,11C ''firefox'':3A,5B,9C ''mozilla'':2A,4B,8C ''mozilla-firefox'':1A');
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distroreleasepackagecache'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distroreleasequeuecustom'::pg_catalog.regclass;
+
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distroreleasequeuecustom'::pg_catalog.regclass;
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

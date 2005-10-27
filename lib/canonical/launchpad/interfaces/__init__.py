@@ -43,9 +43,17 @@ from canonical.launchpad.interfaces.cve import *
 from canonical.launchpad.interfaces.cvereference import *
 from canonical.launchpad.interfaces.distribution import *
 from canonical.launchpad.interfaces.distributionbounty import *
+from canonical.launchpad.interfaces.distributionsourcepackage import *
+from canonical.launchpad.interfaces.distributionsourcepackagecache import *
+from canonical.launchpad.interfaces.distributionsourcepackagerelease import *
 from canonical.launchpad.interfaces.distroarchrelease import *
+from canonical.launchpad.interfaces.distroarchreleasebinarypackage import *
+from canonical.launchpad.interfaces.distroarchreleasebinarypackagerelease import *
 from canonical.launchpad.interfaces.distrorelease import *
+from canonical.launchpad.interfaces.distroreleasebinarypackage import *
 from canonical.launchpad.interfaces.distroreleaselanguage import *
+from canonical.launchpad.interfaces.distroreleasepackagecache import *
+from canonical.launchpad.interfaces.distroreleasesourcepackagerelease import *
 from canonical.launchpad.interfaces.files import *
 from canonical.launchpad.interfaces.general import *
 from canonical.launchpad.interfaces.geoip import *
@@ -97,12 +105,12 @@ from canonical.launchpad.interfaces.publishing import *
 from canonical.launchpad.interfaces.pyarch import *
 from canonical.launchpad.interfaces.queue import *
 from canonical.launchpad.interfaces.rawfiledata import *
+from canonical.launchpad.interfaces.rosetta import *
 from canonical.launchpad.interfaces.rosettastats import *
 from canonical.launchpad.interfaces.schema import *
 from canonical.launchpad.interfaces.section import *
 from canonical.launchpad.interfaces.shipit import *
 from canonical.launchpad.interfaces.sourcepackage import *
-from canonical.launchpad.interfaces.sourcepackageindistro import *
 from canonical.launchpad.interfaces.sourcepackagename import *
 from canonical.launchpad.interfaces.sourcepackagerelease import *
 from canonical.launchpad.interfaces.specification import *
@@ -123,12 +131,10 @@ from canonical.launchpad.interfaces.ticketsubscription import *
 from canonical.launchpad.interfaces.translationgroup import *
 from canonical.launchpad.interfaces.translator import *
 from canonical.launchpad.interfaces.vpoexport import *
-from canonical.launchpad.interfaces.vsourcepackagereleasepublishing import *
 from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.poexportrequest import *
+from canonical.launchpad.interfaces.developmentmanifest import *
+from canonical.launchpad.interfaces.distrocomponentuploader import *
 
 from canonical.launchpad.interfaces.cal import *
-
-# XXX sabdfl 29/03/05 given the comments at the top of the file, should
-# these not be elsewhere?
 

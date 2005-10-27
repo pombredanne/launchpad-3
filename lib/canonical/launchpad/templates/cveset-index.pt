@@ -15,7 +15,7 @@
     <table>
       <tr>
         <td>
-          <input name="text" size="45" tal:attributes="value view/text" />
+          <input name="text" size="35" tal:attributes="value view/text" />
           <input tal:condition="view/text" type="submit"
               value="Search Again" />
           <input tal:condition="not: view/text" type="submit"
@@ -36,7 +36,7 @@
   </p>
 
   <tal:searching condition="view/searchrequested">
-    <table class="data" tal:define="results view/searchresults">
+    <table class="listing" tal:define="results view/searchresults">
       <thead>
         <tr class="results">
           <th colspan="0">
@@ -59,8 +59,7 @@
               </tal:block>
             </dl>
             <p tal:condition="not: view/matches">
-              <img src="/++resource++alert" />
-              No matching CVE entries were found.
+              <i>No matching CVE entries were found.</i>
             </p>
           </td>
         </tr>

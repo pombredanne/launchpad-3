@@ -46,6 +46,7 @@ else:
     upstreamHost = upstreamPort = None
 root = fatweb.LibraryFileResource(storage, upstreamHost, upstreamPort)
 root.putChild('search', fatweb.DigestSearchResource(storage))
+root.putChild('robots.txt', fatweb.robotsTxt)
 site = server.Site(root)
 site.displayTracebacks = False
 webPort = str(config.librarian.download_port)

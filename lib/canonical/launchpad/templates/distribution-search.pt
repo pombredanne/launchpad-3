@@ -5,70 +5,61 @@
 
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
 <div metal:fill-slot="main">
 
-    <h1>Soyuz Distribution Search</h1>
+  <h1>Source Package Search</h1>
 
-    <div class="documentDescription">
-        Total of <span tal:replace="context/count">xx</span>
-        Distributions in Soyuz
+  <form name="search" method="GET">
+    <div>
+      <label for="text">
+        Show <span tal:replace="context/title" />packages containing:
+      </label>
     </div>
+    <input type="text"
+      name="text"
+      size="35"
+      tal:attributes="value request/text|nothing" />
 
-    <form name="search" action="." method="POST">
-    <fieldset>
-    	<legend><h3>Search Distribution</h3></legend>
-	<table>
-	<tr><td>
-	<div class="field">
-	    <label>Name</label>
-	    <div class="formHelp">
-	    Enter the Distribution Name.
-            </div>
-	    <input type="text" name="name"
-	    tal:attributes="value request/name|nothing" />
-	 </div>
-	 </td></tr>
-	 <tr><td>
-	<div class="field">
-	    <label>Title</label>
-	    <div class="formHelp">
-	    Enter the Distribution Title.
-            </div>
-	    <input type="text" name="title"
-	    tal:attributes="value request/title|nothing" />
-	 </div>
-	 </td></tr>
-	 <tr><td>
-	<div class="field">
-	    <label>Description</label>
-	    <div class="formHelp">
-	    Enter the Distribution Description.
-            </div>
-	    <input type="text" name="description"
-	    tal:attributes="value request/description|nothing" />
-	 </div>
-	 </td></tr>
-	 <tr><td>
-	 <div class="formControls">
-	    <input type="submit" value="Search"/>
-	 </div>
-	 </td></tr>
-	 </table>
-    </form>
+    <input type="submit" value="Search"
+        tal:condition="not: view/searchrequested" />
+    <input type="submit" value="Search Again"
+        tal:condition="view/searchrequested" />
 
-    <div tal:condition="view/search_action">
-    <h3>Results</h3>
-    <h4><span tal:content="view/count"/> entries found</h4> 
-    <ul>
-        <li tal:repeat="distro view/results"> 
-	<a tal:attributes="href distro/name" tal:content="distro/title"></a>
-        </li>
-    </ul>
-    </div>
+  </form>
 
-    </div>
+  <tal:searching condition="view/searchrequested">
 
+    <tal:has_matches condition="view/searchresults">
 
+      <tal:per_match repeat="dsp view/searchresults">
+        <img src="/++resource++package-source" />
+        <a tal:content="dsp/name"
+           tal:attributes="href dsp/fmt:url">foobar</a>:
+        <div style="margin-left: 30px; font-size: 80%;"
+          tal:content="dsp/binary_package_names">
+          apache2 apache-runtime-utils apr
+        </div>
+      </tal:per_match>
+
+    </tal:has_matches>
+
+    <tal:no_matches condition="not: view/matches">
+
+      <img src="/++resource++alert" />
+      <i>No packages matching "<span tal:replace="view/text">amarok</span>"
+      are published in
+      <span tal:replace="context/displayname">ubuntu</span>.</i>
+
+    </tal:no_matches>
+
+  </tal:searching>
+
+</div>
 
 </body>
+
 </html>

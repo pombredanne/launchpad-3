@@ -13,14 +13,7 @@
 
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_addform/addform">
-
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Register your meeting using the form below. Be sure to get the
-      timezone correct!
-    </div>
-
-  </div>
+  <div metal:use-macro="context/@@launchpad_addform/addform" />
 
 </div>
     

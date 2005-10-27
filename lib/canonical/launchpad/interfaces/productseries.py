@@ -9,6 +9,7 @@ __all__ = [
     'IProductSeriesSource',
     'IProductSeriesSourceAdmin',
     'IProductSeriesSet',
+    'IProductSeriesSourceSet',
     ]
 
 from zope.schema import  Choice, Datetime, Int, Text, TextLine
@@ -17,12 +18,12 @@ from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.interfaces import ISpecificationTarget
 
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.name import name_validator
 
 _ = MessageIDFactory('launchpad')
 
 class IProductSeries(ISpecificationTarget):
-    """A series of releases. For example "2.0" or "1.3" or "dev"."""
+    """A series of releases. For example '2.0' or '1.3' or 'dev'."""
     # XXX Mark Shuttleworth 14/10/04 would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly
     # instead of using object.id.
@@ -31,21 +32,20 @@ class IProductSeries(ISpecificationTarget):
     product = Choice(title=_('Product'), required=True,
                      vocabulary='Product')
     name = TextLine(title=_('Name'), required=True, 
-                    description=_('The name of the series is a short, unique '
-                                  'name that identifies it, being used in URLs.'
-                                  'It must be all lowercase, with no special '
-                                  'characters. For example, "2.0" or "trunk".'),
-                    constraint=valid_name)
+                    description=_("The name of the series is a short, "
+                        "unique name that identifies it, being used in "
+                        "URLs. It must be all lowercase, with no special "
+                        "characters. For example, '2.0' or 'trunk'."),
+                    constraint=name_validator)
     datecreated = Datetime(title=_('Date Registered'), required=True,
                            readonly=True)
     title = Attribute('Title')
     displayname = TextLine(title=_('Display Name'),
-                           description=_('The "display name" of the Series is '
-                                         'a short, capitalized name. It should '
-                                         'make sense as part of a paragraph of '
-                                         'text. For example, "2.0 (Stable)" or '
-                                         '"MAIN (development)" or "1.3 '
-                                         '(Obsolete)".'),
+                           description=_("The 'display name' of the "
+                               "Series is a short, capitalized name. It "
+                               "should make sense as part of a paragraph "
+                               "of text. For example, '2.0 (Stable)' or "
+                               "'MAIN (development)' or '1.3 (Obsolete)'."),
                            required=True)
     summary = Text(title=_("Summary"), 
                    description=_('A single paragraph introduction or overview '
@@ -62,8 +62,8 @@ class IProductSeries(ISpecificationTarget):
     potemplates = Attribute(
         _("Return an iterator over this productrelease's PO templates."))
     currentpotemplates = Attribute(
-        _("Return an iterator over this productrelease's PO templates that"
-          " have the 'iscurrent' flag set'."))
+        _("Return an iterator over this productrelease's PO templates that "
+          "have the 'iscurrent' flag set'."))
     packagings = Attribute("An iterator over the Packaging entries "
         "for this product series.")
     specifications = Attribute("The specifications targeted to this "
@@ -183,37 +183,22 @@ class IProductSeriesSourceAdmin(Interface):
 
     def enableAutoSync():
         """enable this series RCS for automatic baz syncronisation"""
-    
+
 
 class IProductSeriesSet(Interface):
-    """A set of ProductSeries objects. Note that it can be restricted by
-    initialising it with a product, in which case it iterates over only the
-    Product Release Series' for that Product."""
+    """A set of ProductSeries objects for a specific product."""
 
     def __iter__():
         """Return an interator over the ProductSeries', constrained by
-        self.product if the ProductSeries was initialised that way."""
+        self.product."""
 
     def __getitem__(name):
         """Return a specific ProductSeries, by name, constrained by the
-        self.product. For __getitem__, a self.product is absolutely
-        required, as ProductSeries names are only unique within the Product
-        they cover."""
+        self.product."""
 
-    def _querystr(ready=None, text=None, forimport=None, importstatus=None):
-        """Return a querystring and clauseTables for use in a search or a
-        get or a query. Arguments:
-          ready - boolean indicator of whether or not to limit the search
-                  to products and projects that have been reviewed and are
-                  active.
-          text - text to search for in the product and project titles and
-                 descriptions
-          forimport - whether or not to limit the search to series which
-                      have RCS data on file
-          importstatus - limit the list to series which have the given
-                         import status.
-        """
 
+class IProductSeriesSourceSet(Interface):
+    """The set of ProductSeries with a view to source imports"""
     def search(ready=None, text=None, forimport=None, importstatus=None,
                start=None, length=None):
         """return a list of series matching the arguments, which are passed

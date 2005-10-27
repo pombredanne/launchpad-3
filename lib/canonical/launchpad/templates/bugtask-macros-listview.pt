@@ -2,32 +2,33 @@
   <tal:comment replace="nothing">
   This macro expects the following variables defined:
       :task: An IBugTask to be rendered.
+      :show_packagename: Should the sourcepackage name be shown?
+      Defaults to False.
   </tal:comment>
 
-  <td style="width: 20px" valign="baseline">
+  <td class="icon left">
     <tal:taskicon content="structure task/fmt:icon" />&nbsp;
   </td>
-  <th valign="baseline">
-    <a tal:attributes="href task/fmt:url">
-      <tal:id replace="task/bug/id">42</tal:id>.&nbsp;
-    </a>
-  </th>
-  <td valign="baseline">
+  <td>
     <div>
-      <a
-        tal:attributes="href task/fmt:url"
-        tal:content="task/bug/title"
-      >A Test Title</a>
-      <small
-        class="discreet"
-        tal:content="string:(${task/age/fmt:approximateduration} old)"
-      >(2 weeks old)</small>
+      <a tal:attributes="href task/fmt:url">
+        <tal:id replace="task/bug/id">42</tal:id>.
+        <strong tal:content="task/bug/title">A test title</strong>
+      </a>
     </div>
-    <div
-      tal:content="task/bug/description/fmt:shorten/80"
-      class="lesser"
-    >It doesn't work.</div>
     <div class="lesser">
+      <tal:packagename condition="show_packagename|nothing">
+        <tal:has_package condition="task/sourcepackagename">
+        in
+        <a
+          tal:attributes="
+            href string:${task/target/fmt:url}/+bugs;
+            title string:All bug reports about ${task/targetname};
+          "
+          tal:content="task/sourcepackagename/name"
+        >firefox</a>,
+        </tal:has_package>
+      </tal:packagename>
       <tal:status content="structure task/statusdisplayhtml">
         assigned to Foo Bar
       </tal:status>
@@ -37,9 +38,45 @@
            tal:content="task/milestone/name">1.0</a>
       </tal:milestone>
     </div>
-    <div
-      tal:content="task/statuselsewhere"
-      class="discreet"
-    >Not wanted elsewhere</div>
+    <div class="discreet">
+      <tal:age
+        replace="string:${task/age/fmt:approximateduration} old"
+      >2 weeks old</tal:age>
+      &mdash;
+      <tal:elsewhere replace="task/statuselsewhere">
+        Not wanted elsewhere
+      </tal:elsewhere>
+    </div>
   </td>
+</metal:item>
+
+<metal:item define-macro="sortwidget_label">
+  <label for="orderby">Sorted by:</label>
+</metal:item>
+
+<metal:item define-macro="sortwidget">
+  <tal:comment condition="nothing">
+    This macro expects that the callsite's view class has a shouldShowPackageName
+    method.
+  </tal:comment>
+
+  <select name="orderby" id="orderby" size="1"
+          tal:define="orderby request/orderby|string:-priority,-severity">
+    <option value="-datecreated"
+            tal:attributes="selected python:orderby == '-datecreated'">newest first</option>
+    <option value="datecreated"
+            tal:attributes="selected python:orderby == 'datecreated'">oldest first</option>
+    <option value="-priority,-severity"
+            tal:attributes="selected python:orderby == '-priority,-severity'">priority, then severity</option>
+    <option value="-severity,-priority"
+            tal:attributes="selected python:orderby == '-severity,-priority'">severity, then priority</option>
+    <option value="title"
+            tal:attributes="selected python:orderby == 'title'">title</option>
+    <option value="milestone"
+            tal:attributes="selected python:orderby == 'milestone'">milestone</option>
+    <option tal:condition="view/shouldShowPackageName|nothing"
+            tal:attributes="selected python:orderby == 'package'"
+            value="package">package</option>
+  </select>
+
 </metal:item>

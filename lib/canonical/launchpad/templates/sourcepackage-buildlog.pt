@@ -22,16 +22,28 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Build Log</h1>
+  <h1><span tal:replace="context/title"/> Build Log</h1>
 
-  <p class="documentDescription">This shows the latest build log for the
-  latest source package release uploaded, if available.</p>
+  <p class="documentDescription">This page shows the build logs list for 
+  all source package release uploaded in 
+  <span tal:replace="context/distrorelease/title"/>.</p>
 
-  <pre>
-This should show the last part of the build log of the latest build
-for the current release of the source package. It shoudl show the
-last 30 or so lines of the log, and include a link to the full
-log, which comes from the Librarian.</pre>
+  <ul tal:repeat="release context/releases">
+  <li tal:condition="release/builds">
+  <p tal:content="release/title">TITLE</p>
+    <ul>
+      <li tal:repeat="build release/builds">
+        <tal:block condition="build/buildlog"> 
+        <a tal:attributes="href build/buildlog/url"
+           tal:content="build/buildlog/filename">BUILDLOG</a>
+        </tal:block>
+        <tal:block condition="not: build/buildlog">
+        <p> No buildlog for <span tal:replace="build/title">BUILD</span></p>
+        </tal:block>
+      </li>
+    </ul>
+  </li>
+  </ul>
 
 </div>
 </body>

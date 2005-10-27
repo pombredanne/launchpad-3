@@ -32,6 +32,6 @@ class ManifestEntry(SQLBase):
     hint = EnumCol(dbName='hint', notNull=False,
                    schema=ManifestEntryHint)
     path = StringCol(dbName='path', notNull=True)
-    patchon = IntCol(dbName='patchon')
+    parent = IntCol(dbName='parent')
     dirname = StringCol(dbName='dirname')
 

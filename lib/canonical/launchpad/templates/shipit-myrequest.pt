@@ -4,24 +4,25 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-<metal:leftportlets tal:condition="view/userIsShipItAdmin"
-      fill-slot="portlets_two">
-  <div class="shipitPortlet"
-       tal:content="structure context/@@+portlet-actions" />
-</metal:leftportlets>
-
 <body>
 
-  <div metal:fill-slot="main">
-  
+  <div metal:fill-slot="body">
+
   <tal:block condition="view/standardShipItRequests"
              define="order view/order">
 
-    <tal:block condition="view/orderIsCancelled">
-      <h1>This order was cancelled</h1>
+    <table>
+    <tbody>
+    <tr>
+    <td width="80%">
+  
+    <tal:block condition="view/orderIsCancelledOrShipped">
+      <h1 tal:condition="order/cancelled">This order was cancelled</h1>
+      <h1 tal:condition="order/shipment">This order is being processed by the
+        shippin company</h1>
     </tal:block>
 
-    <tal:block condition="not: view/orderIsCancelled">
+    <tal:block condition="not: view/orderIsCancelledOrShipped">
 
       <tal:block condition="view/orderCreated">
         <br />
@@ -40,11 +41,29 @@
 
       <tal:block condition="view/hasErrorMessages">
         <br />
-        <p class="portalErrorMessage">There were errors in your request:
-        please see the messages below.</p>
+        <p class="portalErrorMessage">There were errors in your request.</p>
       </tal:block>
 
     <tal:block condition="view/shouldShowOrderDetails">
+
+      <tal:block condition="not: view/userIsShipItAdmin">
+      <tal:block condition="view/user/pastShipItRequests">
+        <h1>Your previous requests</h1>
+
+        <ul>
+          <li tal:repeat="pastorder view/user/pastShipItRequests">
+            <span tal:replace="pastorder/daterequested/fmt:date" />:
+            <span tal:replace="pastorder/totalCDs" /> CDs 
+            <span tal:condition="pastorder/cancelled">(cancelled)</span>
+            <tal:block tal:condition="not: pastorder/cancelled">
+              <span tal:condition="pastorder/shipment">(sent to shipping
+                company)</span>
+              <span tal:condition="pastorder/isDenied">(denied)</span>
+            </tal:block>
+          </li>
+        </ul>
+      </tal:block>
+      </tal:block>
 
       <tal:block condition="not: order">
         <h1>How many CDs would you like?</h1> 
@@ -131,7 +150,7 @@
       </tal:block>
 
       <tal:block condition="view/orderFormMessages">
-        <p class="portalErrorMessage" tal:repeat="msg view/orderFormMessages"
+        <p class="portalError" tal:repeat="msg view/orderFormMessages"
         tal:content="msg" />
       </tal:block>
       <br />
@@ -155,16 +174,16 @@
                 should choose a standard one.
               </div>
               <select name="standardrequest" class="listing">
-                <tal:block tal:condition="view/selectedOrder|nothing">
+                <tal:block tal:condition="view/selectedOrderType|nothing">
                   <option tal:repeat="request view/standardShipItRequests"
                           tal:attributes="
                             value request/id;
-                            selected python: view.selectedOrder == request.id"
+                            selected python: view.selectedOrderType == request.id"
                           tal:content="request/description">
                     Request description
                   </option>
                 </tal:block>
-                <tal:block tal:condition="not: view/selectedOrder|nothing">
+                <tal:block tal:condition="not: view/selectedOrderType|nothing">
                   <option tal:repeat="request view/standardShipItRequests"
                           tal:attributes="value request/id; selected request/isdefault"
                           tal:content="request/description">
@@ -251,7 +270,7 @@
       <h1>Shipping Address</h1>
 
       <tal:block condition="view/addressFormMessages">
-        <p class="portalErrorMessage" tal:repeat="msg view/addressFormMessages" 
+        <p class="portalError" tal:repeat="msg view/addressFormMessages" 
            tal:content="msg" />
         <br />
       </tal:block>
@@ -260,33 +279,12 @@
         <tr>
           <th>Name:</th>
           <td>
-          <tal:block condition="view/userIsShipItAdmin">
-            <tal:block condition="not: order">
-              <input 
-                name="recipientdisplayname" size="30" maxlength="30" type="text"
-                tal:attributes="value view/recipientdisplayname|
-                                      order/recipientname|
-                                      nothing">
-              <span class="formHelp">(required)</span>
-            </tal:block>
-            <tal:block condition="order">
-              <tal:block condition="order/recipientdisplayname|nothing">
-                <input 
-                  name="recipientdisplayname" size="30" maxlength="30" type="text"
-                  tal:attributes="value view/recipientdisplayname|
-                                        order/recipientname|
-                                        nothing">
-                <span class="formHelp">(required)</span>
-              </tal:block>
-              <tal:block condition="not: order/recipientdisplayname|nothing">
-                <span tal:content="order/recipient/displayname" />
-              </tal:block>
-            </tal:block>
-          </tal:block>
-          </td>
-          <td tal:condition="not: view/userIsShipItAdmin">
-            <span tal:content="view/user/displayname" />
-          </td>
+            <input 
+              name="recipientdisplayname" size="20" maxlength="20" type="text"
+              tal:attributes="value view/recipientdisplayname|
+                                    order/recipientdisplayname|
+                                    nothing">
+            <span class="formHelp">(required)</span>
         </tr>
         <tr>
           <th>Organization:</th>
@@ -410,6 +408,13 @@
 
     </tal:block>
     </tal:block>
+
+    </td>
+    <td tal:condition="view/userIsShipItAdmin"
+        width="20%" style="vertical-align: top;"
+        tal:content="structure context/@@+portlet-navigation" />
+    </tr>
+    </table>  
   </tal:block>
 
   <tal:block condition="not: view/standardShipItRequests">

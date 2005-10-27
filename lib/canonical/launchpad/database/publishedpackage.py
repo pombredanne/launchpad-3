@@ -73,3 +73,8 @@ class PublishedPackageSet:
             querytxt += " AND binarypackagefti @@ ftq(%s)" % quote(text)
         return PublishedPackage.select(querytxt)
 
+    def findDepCandidate(self, name, distroarchrelease):
+        """See IPublishedSet."""
+        return PublishedPackage.selectOneBy(
+            binarypackagename=name, distroarchreleaseID=distroarchrelease.id
+            )

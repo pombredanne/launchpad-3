@@ -1,0 +1,13 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+  <!-- SourcePackagePublishing -->
+  <content class="canonical.launchpad.database.SourcePackagePublishing">
+    <allow interface="canonical.launchpad.interfaces.ISourcePackagePublishing" />
+  </content>
+
+</configure>

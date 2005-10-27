@@ -1,0 +1,79 @@
+First, we set the 'structured' permission for the netapplet product
+translations.
+
+  >>> print http(r"""
+  ... POST /products/netapplet/+changetranslators HTTP/1.1
+  ... Content-Length: 766
+  ... Content-Type: multipart/form-data; boundary=---------------------------13732029051312745333834570722
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/products/netapplet/+changetranslators
+  ... 
+  ... -----------------------------13732029051312745333834570722
+  ... Content-Disposition: form-data; name="field.translationgroup"
+  ... 
+  ... testing-translation-team
+  ... -----------------------------13732029051312745333834570722
+  ... Content-Disposition: form-data; name="field.translationgroup-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------13732029051312745333834570722
+  ... Content-Disposition: form-data; name="field.translationpermission"
+  ... 
+  ... Structured
+  ... -----------------------------13732029051312745333834570722
+  ... Content-Disposition: form-data; name="field.translationpermission-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------13732029051312745333834570722
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------13732029051312745333834570722--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/products/netapplet
+  ...
+
+Now, we test that a member of a translation team is able to translate
+directly, in this example, we are using 'tsukimi' account.
+
+  >>> print http(r"""
+  ... GET /products/netapplet/+series/releases/+pots/netapplet/es/+translate HTTP/1.1
+  ... Authorization: Basic dHN1a2ltaUBxdWFxdWEubmV0OnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...You are translating...
+  ...
+  ...Dial-up connection...
+  ...
+
+Next test is with a non member of that translation team, the 'No Privileges'
+account. We check that we get the warning that we are not members of the team.
+
+  >>> print http(r"""
+  ... GET /products/netapplet/+series/releases/+pots/netapplet/es/+translate HTTP/1.1
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...You are translating...
+  ...
+  ...You are not an official translator for this file...
+  ...
+
+And finally, we test that a language without a team lets to anyone (in this
+case, the 'No Privileges' account) to translate directly.
+
+  >>> print http(r"""
+  ... GET /products/netapplet/+series/releases/+pots/netapplet/fr/+translate HTTP/1.1
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...You are translating...
+  ...
+  ...French...
+  ...Translators:...
+  ...No translators currently designated for this PO file...
+  ...

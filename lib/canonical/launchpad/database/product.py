@@ -6,10 +6,8 @@ __metaclass__ = type
 __all__ = ['Product', 'ProductSet']
 
 import sets
-from warnings import warn
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 from zope.component import getUtility
 
 from sqlobject import (
@@ -20,8 +18,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
-    EnumCol, TranslationPermission, BugTaskSeverity, BugTaskStatus,
-    RosettaImportStatus)
+    EnumCol, TranslationPermission, BugTaskSeverity, BugTaskStatus)
 from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productbounty import ProductBounty
@@ -34,7 +31,8 @@ from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.ticket import Ticket
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
-    IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner)
+    IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner, NotFoundError
+    )
 
 
 class Product(SQLBase):
@@ -84,9 +82,7 @@ class Product(SQLBase):
                           default=None, forceDBName=True)
 
     specifications = MultipleJoin('Specification', joinColumn='product',
-        orderBy=['-datecreated', 'id'])
-    tickets = MultipleJoin('Ticket', joinColumn='product',
-        orderBy=['-datecreated', 'id'])
+        orderBy=['-priority', '-datecreated', 'id'])
 
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
@@ -164,6 +160,14 @@ class Product(SQLBase):
         return BugSet().createBug(
             product=self, comment=description, title=title, owner=owner)
 
+    def tickets(self, quantity=None):
+        """See ITicketTarget."""
+        return Ticket.select("""
+            product = %s
+            """ % sqlvalues(self.id),
+            orderBy='-datecreated',
+            limit=quantity)
+
     def newTicket(self, owner, title, description):
         """See ITicketTarget."""
         return Ticket(title=title, description=description, owner=owner,
@@ -187,14 +191,8 @@ class Product(SQLBase):
         packages = sets.Set([package
                             for package in self.sourcepackages
                             if len(package.currentpotemplates) > 0])
-        # Sort the list of packages by distrorelease.name and package.name
-        L = [(item.distrorelease.name + item.name, item)
-             for item in packages]
-        # XXX kiko: use sort(key=foo) instead of the DSU here
-        L.sort()
-        # Get the final list of sourcepackages.
-        packages = [item for sortkey, item in L]
-        return packages
+        # Sort packages by distrorelease.name and package.name
+        return sorted(packages, key=lambda p: (p.distrorelease.name, p.name))
 
     @property
     def translatable_series(self):
@@ -318,7 +316,7 @@ class Product(SQLBase):
         for curr_bounty in self.bounties:
             if bounty.id == curr_bounty.id:
                 return None
-        linker = ProductBounty(product=self, bounty=bounty)
+        ProductBounty(product=self, bounty=bounty)
         return None
 
 
@@ -334,13 +332,15 @@ class ProductSet:
 
     def __getitem__(self, name):
         """See canonical.launchpad.interfaces.product.IProductSet."""
-        item = Product.selectOneBy(name=name)
+        item = Product.selectOneBy(name=name, active=True)
         if item is None:
             raise NotFoundError(name)
         return item
 
     def latest(self, quantity=5):
-        return Product.select(orderBy='-datecreated', limit=quantity)
+        return Product.select(Product.q.active==True,
+                              orderBy='-datecreated',
+                              limit=quantity)
 
     def get(self, productid):
         """See canonical.launchpad.interfaces.product.IProductSet."""
@@ -376,6 +376,7 @@ class ProductSet:
                bazaar=None,
                show_inactive=False):
         """See canonical.launchpad.interfaces.product.IProductSet."""
+        # XXX: soyuz is unused
         clauseTables = sets.Set()
         clauseTables.add('Product')
         query = '1=1 '

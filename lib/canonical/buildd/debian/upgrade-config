@@ -1,0 +1,31 @@
+#!/usr/bin/python
+
+# Copyright Canonical Ltd 2005
+
+"""Upgrade a launchpad-buildd configuration file."""
+
+import sys
+import os
+import subprocess
+
+(old_version, conf_file) = sys.argv[1:]
+
+def upgrade_to_12():
+    print "Upgrading %s to version 12" % conf_file
+    subprocess.call(["mv", conf_file, conf_file+"-prev12~"])
+    in_file = open(conf_file+"-prev12~", "r")
+    out_file = open(conf_file, "w")
+    for line in in_file:
+        if line.startswith("[debianmanager]"):
+            line += "ogrepath = /usr/share/launchpad-buildd/slavebin/apply-ogre-model\n"
+        if line.startswith("sbuildargs"):
+            line = line.replace("-A", "")
+        out_file.write(line)
+    in_file.close()
+    out_file.close()
+
+
+if __name__ == "__main__":
+    if int(old_version) < 12:
+        upgrade_to_12()
+

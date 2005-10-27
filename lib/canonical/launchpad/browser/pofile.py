@@ -48,7 +48,7 @@ class POFileFacets(StandardLaunchpadFacets):
         potemplate = self.context.potemplate
 
         if potemplate.distrorelease:
-            source_package = potemplate.distrorelease.getSourcePackageByName(
+            source_package = potemplate.distrorelease.getSourcePackage(
                 potemplate.sourcepackagename)
             return canonical_url(source_package)
         else:
@@ -141,7 +141,7 @@ class POFileView:
         self.status_message = None
         self.header = POHeader(msgstr=context.header)
         self.URL = '%s/+translate' % self.context.language.code
-        self.header.finish()
+        self.header.updateDict()
         self._table_index_value = 0
         self.pluralFormCounts = None
         self.alerts = []

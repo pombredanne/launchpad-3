@@ -3,7 +3,7 @@
 import sys
 import logging
 import unittest
-import pybaz.tests.framework
+
 
 class RevisionFactory:
     import CVS
@@ -25,21 +25,21 @@ class RevisionFactory:
             revA._predecessor=predecessor
         return revA
 
-class LogCollector(logging.Handler):
-    def __init__(self):
-        logging.Handler.__init__(self)
-        self.records=[]
-    def emit(self, record):
-        self.records.append(record.getMessage())
 
-def makeCollectingLogger():
-    """I make a logger instance that collects its logs for programmatic analysis
-    -> (logger, collector)"""
-    logger=logging.Logger("collector")
-    handler=LogCollector()
-    handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+class SilentLogHandler(logging.Handler):
+
+    def emit(self, record):
+        unused = record
+        pass
+
+
+def makeSilentLogger():
+    """Create a logger that collects prints nothing."""
+    logger = logging.Logger("collector")
+    handler = SilentLogHandler()
     logger.addHandler(handler)
-    return logger, handler
+    return logger
+
 
 class TestSuite(unittest.TestSuite):
     """I am an extended TestSuite with a visitor interface.

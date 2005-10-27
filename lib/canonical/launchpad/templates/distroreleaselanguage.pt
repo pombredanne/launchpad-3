@@ -44,7 +44,9 @@
           </a>
         </td>
         <td>
-          <!-- this content is used for the purpose of sorting -->
+          <tal:comment condition="nothing">
+            This text is used for the sorting.
+          </tal:comment>
           <span style="display: none" tal:content="pf/translatedPercentage"/>
           <div tal:replace="structure pf/@@+barchart" />
         </td>

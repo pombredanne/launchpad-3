@@ -61,7 +61,7 @@
         name="+edit"
         schema="canonical.launchpad.interfaces.IBounty"
         class="canonical.launchpad.browser.BountyEditView"
-        label="Modify Bounty Details"
+        label="Change Bounty Details"
         fields="title bountystatus summary difficulty description"
         permission="launchpad.Edit"
         template="../templates/bounty-edit.pt"
@@ -103,20 +103,16 @@
         <allow interface="canonical.launchpad.interfaces.IBountySet" />
     </securedutility>
 
-    <browser:suburl
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        utility="canonical.launchpad.interfaces.IBountySet"
-        name="bounties" />
-
     <browser:url
         for="canonical.launchpad.interfaces.IBountySet"
         path_expression="string:bounties"
         parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
         />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IBountySet"
-        getter="__getitem__" />
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BountySetNavigation"
+        />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBountySet"
@@ -126,7 +122,7 @@
         name="+new"
         for="canonical.launchpad.interfaces.IBountySet"
         schema="canonical.launchpad.interfaces.IBounty"
-        label="Register A New Bounty"
+        label="Register a New Bounty"
         fields="name title summary usdvalue difficulty description"
         class="canonical.launchpad.browser.BountyAddView"
         permission="launchpad.AnyPerson"

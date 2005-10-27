@@ -107,7 +107,7 @@ Revalidate inactive key.
 Certify the key is revalidated
 
   >>> print http(r"""
-  ... GET /foaf/people/name12/+editgpgkeys HTTP/1.1
+  ... GET /people/name12/+editgpgkeys HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

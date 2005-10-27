@@ -85,6 +85,7 @@ class LaunchpadDatabaseAdapter(PsycopgAdapter):
 
 _local = threading.local()
 
+
 def set_request_started(starttime=None):
     """Set the start time for the request being served by the current
     thread.
@@ -101,6 +102,7 @@ def set_request_started(starttime=None):
         starttime = time.time()
     _local.request_start_time = starttime
 
+
 def clear_request_started():
     """Clear the request timer.  This function should be called when
     the request completes.
@@ -109,6 +111,7 @@ def clear_request_started():
         warnings.warn('clear_request_started() called outside of a request')
 
     _local.request_start_time = None
+
 
 def _request_expired():
     """Checks whether the current request has expired."""
@@ -124,8 +127,12 @@ def _request_expired():
 
 
 class RequestExpired(RuntimeError):
-    """Request has timed out"""
+    """Request has timed out."""
     implements(IRequestExpired)
+
+
+class RequestQueryTimedOut(RequestExpired):
+    """A query that was part of a request timed out."""
 
 
 class ConnectionWrapper:
@@ -153,7 +160,7 @@ class CursorWrapper:
     Overrides the execute() method to check whether the current
     request has expired.
     """
-    
+
     def __init__(self, cursor):
         self.__dict__['_cur'] = cursor
 
@@ -173,8 +180,16 @@ class CursorWrapper:
                 self._cur.execute('break this transaction')
             except psycopg.DatabaseError:
                 pass
-            raise RequestExpired('The current request has expired')
-        return self._cur.execute(*args, **kwargs)
+            raise RequestExpired(args, kwargs)
+        try:
+            return self._cur.execute(*args, **kwargs)
+        except psycopg.ProgrammingError, error:
+            if len(error.args):
+                errorstr = error.args[0]
+                if errorstr.startswith(
+                    'ERROR:  canceling query due to user request'):
+                    raise RequestQueryTimedOut(args, kwargs, errorstr)
+            raise
 
     def __getattr__(self, attr):
         return getattr(self._cur, attr)

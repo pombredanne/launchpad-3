@@ -5,9 +5,6 @@
                     xml:lang default_language|default;">
 <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
-    <!-- Plone style sheet -->
-    <style type="text/css"
-        media="screen">@import url(/@@/plone.css);</style>
     <!-- Launchpad style sheet -->
     <style type="text/css"
         media="screen">@import url(/@@/launchpad.css);</style>
@@ -50,6 +47,9 @@
           display: block;
           font-size: 1em;
           font-weight: normal;
+        }
+        #body {
+          margin: 1em;
         }
         :link {
           color: #660000;

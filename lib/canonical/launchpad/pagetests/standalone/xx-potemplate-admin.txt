@@ -1,7 +1,27 @@
+Check to be sure that an unpriviledged user cannot reach this page
+
+  >>> print http(r"""
+  ... GET /products/evolution/+series/main/+pots/evolution-2.2/+admin HTTP/1.1
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 403 Forbidden
+  ...
+
+Check to be sure that a Rosetta expert (Jordi) can reach the POTemplate admin
+page.
+
+  >>> print http(r"""
+  ... GET /products/evolution/+series/main/+pots/evolution-2.2/+admin HTTP/1.1
+  ... Authorization: Basic am9yZGlAdWJ1bnR1LmNvbTp0ZXN0
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Template "evolution-2.2" in Evolution MAIN edit in Rosetta...
+  ...
+
 Check to be sure that an admin can reach the POTemplate admin page.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+admin HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+admin HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
@@ -11,11 +31,11 @@ Check to be sure that an admin can reach the POTemplate admin page.
 And that we are able to POST it.
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+admin HTTP/1.1
+  ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+admin HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... Content-Length: 2420
   ... Content-Type: multipart/form-data; boundary=---------------------------80986468519315900241075667433
-  ... Referer: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+admin
+  ... Referer: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+admin
   ... 
   ... -----------------------------80986468519315900241075667433
   ... Content-Disposition: form-data; name="field.potemplatename"

@@ -14,10 +14,32 @@
     </span>
   </h1>
 
-  <table id="sourcepackagebugs">
-    <tr tal:repeat="task view/open_bugs">
+  <table metal:use-macro="context/@@+bugtask-macros-listview/bugtask_search_form" />
+
+  <script>
+  <!--
+  document.forms[0].elements['field.searchtext'].focus();
+  //-->
+  </script>
+
+  <table id="sourcepackagebugs"
+         tal:define="open_bugs view/open_bugs"
+         width="100%">
+    <tr>
+      <td colspan="3">
+        <table width="100%">
+          <tr>
+            <td>
+              <tal:block content="string:${open_bugs/count:len} open bug">42 open bugs</tal:block><tal:block condition="python:len(open_bugs) > 1">s</tal:block>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr tal:repeat="task open_bugs">
       <metal:taskrow use-macro="task/@@+bugtask-macros-listview/item" />
     </tr>
+  </table>
 </div>
 
 </body>

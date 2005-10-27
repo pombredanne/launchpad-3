@@ -189,3 +189,44 @@ hours:
   Event 2
   </a>
   ...
+
+
+There are special view names for views that correspond to the current
+time.  These are made available for bookmarking:
+
+  >>> print http(r"""
+  ... GET /people/name12/+calendar/today HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+
+  >>> print http(r"""
+  ... GET /people/name12/+calendar/this-week HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+
+  >>> print http(r"""
+  ... GET /people/name12/+calendar/this-month HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+
+  >>> print http(r"""
+  ... GET /people/name12/+calendar/this-year HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+

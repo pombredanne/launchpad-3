@@ -46,7 +46,6 @@ __all__ = (
 'DistributionReleaseStatus',
 'EmailAddressStatus',
 'GPGKeyAlgorithm',
-'HashAlgorithm',
 'ImportTestStatus',
 'ImportStatus',
 'KarmaActionCategory',
@@ -70,13 +69,16 @@ __all__ = (
 'ShipItArchitecture',
 'ShipItDistroRelease',
 'ShipItFlavour',
+'ShippingService',
 'SourcePackageFileType',
 'SourcePackageFormat',
 'SourcePackageRelationships',
 'SourcePackageUrgency',
 'SpecificationPriority',
 'SpecificationStatus',
+'SprintSpecificationStatus',
 'SSHKeyType',
+'TextDirection',
 'TicketPriority',
 'TicketStatus',
 'TeamMembershipStatus',
@@ -85,6 +87,7 @@ __all__ = (
 'TranslationPermission',
 'TranslationValidationStatus',
 'DistroReleaseQueueStatus',
+'DistroReleaseQueueCustomFormat',
 'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
 )
@@ -136,7 +139,7 @@ class DBSchemaValidator(validators.Validator):
         >>> validator.fromPython(ImportTestStatus.NEW, None)
         Traceback (most recent call last):
         ...
-        TypeError: DBSchema Item from wrong class
+        TypeError: DBSchema Item from wrong class, <class 'canonical.lp.dbschema.ImportTestStatus'> != <class 'canonical.lp.dbschema.BugTaskStatus'>
         >>>
 
         """
@@ -151,9 +154,15 @@ class DBSchemaValidator(validators.Validator):
         if value is DEFAULT:
             return value
         if value.__class__ != Item:
-            raise TypeError('Not a DBSchema Item: %r' % value)
-        if value.schema is not self.schema:
-            raise TypeError('DBSchema Item from wrong class')
+            # We use repr(value) because if it's a tuple (yes, it has been
+            # seen in some cases) then the interpolation would swallow that
+            # fact, confusing poor programmers like Daniel.
+            raise TypeError('Not a DBSchema Item: %s' % repr(value))
+        # Using != rather than 'is not' in order to cope with Security Proxy
+        # proxied items and their schemas.
+        if value.schema != self.schema:
+            raise TypeError('DBSchema Item from wrong class, %r != %r' % (
+                value.schema, self.schema))
         return value.value
 
     def toPython(self, value, state):
@@ -899,32 +908,6 @@ class TeamSubscriptionPolicy(DBSchema):
         """)
 
 
-class HashAlgorithm(DBSchema):
-    """Hash Algorithms
-
-    We use "hash" or "digest" cryptographic algorithms in a number of
-    places in Launchpad. Usually these are a way of verifying the
-    integrity of a file, but they can also be used to check if a file
-    has been seen before.
-    """
-
-    MD5 = Item(0, """
-        The MD5 Digest Algorithm
-
-        A widely-used cryptographic hash function with a 128-bit hash value. As
-        an Internet standard (RFC 1321), MD5 has been employed in a wide
-        variety of security applications.
-        """)
-
-    SHA1 = Item(1, """
-        The SHA-1 Digest Algorithm
-
-        This algorithm is specified by the US-NIST and is used as part
-        of TLS and other common cryptographic protocols. It is a 168-bit
-        digest algorithm.
-        """)
-
-
 class ProjectRelationship(DBSchema):
     """Project Relationship
 
@@ -1224,6 +1207,14 @@ class SpecificationStatus(DBSchema):
         codebase to which it was targeted.
         """)
 
+    INFORMATIONAL = Item(55, """
+        Informational
+
+        This specification does not need to be implemented. It is an
+        overview, or documentation spec, that describes high level behaviour
+        and links to actual specifications for implementation.
+        """)
+
     SUPERCEDED = Item(60, """
         Superceded
 
@@ -1239,6 +1230,35 @@ class SpecificationStatus(DBSchema):
         This specification has been obsoleted. Probably, we decided not to
         implement it for some reason. It should not be displayed, and people
         should not put any effort into implementing it.
+        """)
+
+
+class SprintSpecificationStatus(DBSchema):
+    """The current approval status of the spec on this sprints agenda.
+    
+    This enum allows us to know whether or not the meeting admin team has
+    agreed to discuss an item.
+    """
+
+    APPROVED = Item(10, """
+        approved
+
+        This spec has been approved for the meeting agenda.
+        """)
+
+    DECLINED = Item(20, """
+        declined
+
+        This spec was submitted for consideration for the meeting agenda but
+        has been declined.
+        """)
+
+    SUBMITTED = Item(30, """
+        submitted
+
+        This spec has been submitted for consideration by the meeting
+        organisers. It has not yet been approved or declined for the meeting
+        agenda.
         """)
 
 
@@ -1502,12 +1522,25 @@ class TranslationPermission(DBSchema):
         logged-in user can add or edit translations in any language, without
         any review.""")
 
+    STRUCTURED = Item(20, """
+        Structured
+
+        This group has designated translators for certain languages. In
+        those languages, people who are not designated translators can only
+        make suggestions. However, in languages which do not yet have a
+        designated translator, anybody can edit the translations directly,
+        with no further review.""")
+
     CLOSED = Item(100, """
         Closed
 
         This group allows only designated translators to edit the
-        translations of its files. No other contributions will be considered
-        or allowed.""")
+        translations of its files. You can become a designated translator
+        either by joining an existing language translation team for this
+        project, or by getting permission to start a new team for a new
+        language. People who are not designated translators can still make
+        suggestions for new translations, but those suggestions need to be
+        reviewed before being accepted by the designated translator.""")
 
 class DistroReleaseQueueStatus(DBSchema):
     """Distro Release Queue Status
@@ -1518,14 +1551,7 @@ class DistroReleaseQueueStatus(DBSchema):
     DistroRelease) the effects are published via the PackagePublishing and
     SourcePackagePublishing tables.  """
 
-    UNCHECKED = Item(1, """
-        Unchecked
-
-        This upload has been checked enough to get it into the database but
-        has yet to be checked for new binary packages, mismatched overrides
-        or similar.  """)
-
-    NEW = Item(2, """
+    NEW = Item(0, """
         New
 
         This upload is either a brand-new source package or contains a
@@ -1535,7 +1561,7 @@ class DistroReleaseQueueStatus(DBSchema):
         then entries will be made in the overrides tables and further
         uploads will bypass this state """)
 
-    UNAPPROVED = Item(3, """
+    UNAPPROVED = Item(1, """
         Unapproved
 
         If a DistroRelease is frozen or locked out of ordinary updates then
@@ -1545,21 +1571,13 @@ class DistroReleaseQueueStatus(DBSchema):
         releases where you want the security team of a DistroRelease to
         approve uploads.  """)
 
-    BYHAND = Item(4, """
-        ByHand
-
-        If an upload contains files which are not stored directly into the
-        pool tree (I.E. not .orig.tar.gz .tar.gz .diff.gz .dsc .deb or
-        .udeb) then the package must be processed by hand. This may involve
-        unpacking a tarball somewhere special or similar.  """)
-
-    ACCEPTED = Item(5, """
+    ACCEPTED = Item(2, """
         Accepted
 
         An upload in this state has passed all the checks required of it and
         is ready to have its publishing records created.  """)
 
-    DONE = Item(7, """
+    DONE = Item(3, """
         Done
 
         An upload in this state has had its publishing records created if it
@@ -1568,7 +1586,7 @@ class DistroReleaseQueueStatus(DBSchema):
         uploads and create entries in a journal or similar before removing
         the queue item.  """)
 
-    REJECTED = Item(6, """
+    REJECTED = Item(4, """
         Rejected
 
         An upload which reaches this state has, for some reason or another
@@ -1577,6 +1595,30 @@ class DistroReleaseQueueStatus(DBSchema):
         is present to allow logging tools to record the rejection and then
         clean up any subsequently unnecessary records.  """)
 
+# If you change this (add items, change the meaning, whatever) search for
+# the token ##CUSTOMFORMAT## e.g. database/queue.py or nascentupload.py and
+# update the stuff marked with it.
+class DistroReleaseQueueCustomFormat(DBSchema):
+    """Custom formats valid for the upload queue
+
+    An upload has various files potentially associated with it, from source
+    package releases, through binary builds, to specialist upload forms such
+    as a debian-installer tarball or a set of translations.
+    """
+
+    DEBIAN_INSTALLER = Item(0, """
+        raw-installer
+
+        A raw-installer file is a tarball. This is processed as a version
+        of the debian-installer to be unpacked into the archive root.
+        """)
+
+    ROSETTA_TRANSLATIONS = Item(1, """
+        raw-translations
+
+        A raw-translations file is a tarball. This is passed to the rosetta
+        import queue to be incorporated into that package's translations.
+        """)
 
 class PackagePublishingStatus(DBSchema):
     """Package Publishing Status
@@ -1871,6 +1913,13 @@ class BinaryPackageFileType(DBSchema):
 
         This format is the standard package format used on Ubuntu and other
         similar operating systems.
+        """)
+
+    UDEB = Item(3, """
+        UDEB Format
+
+        This format is the standard package format used on Ubuntu and other
+        similar operating systems for the installation system.
         """)
 
     RPM = Item(2, """
@@ -2553,6 +2602,7 @@ class BuildStatus(DBSchema):
         has been fixed.
         """)
 
+
 class MirrorFreshness(DBSchema):
     """ Mirror Freshness
 
@@ -2682,6 +2732,22 @@ class TranslationValidationStatus(DBSchema):
         """)
 
 
+class ShippingService(DBSchema):
+    """The Shipping company we use to ship CDs."""
+
+    TNT = Item(1, """
+        TNT
+
+        The TNT shipping company.
+        """)
+
+    SPRING = Item(2, """
+        Spring
+
+        The Spring shipping company.
+        """)
+
+
 class ShipItFlavour(DBSchema):
     """The Distro Flavour, used only to link with ShippingRequest."""
 
@@ -2723,3 +2789,18 @@ class ShipItDistroRelease(DBSchema):
         The Breezy Badger release.
         """)
 
+
+class TextDirection(DBSchema):
+    """The base text direction for a language."""
+
+    LTR = Item(0, """
+        Left to Right
+
+        Text is normally written from left to right in this language.
+        """)
+
+    RTL = Item(1, """
+        Right to Left
+
+        Text is normally written from left to right in this language.
+        """)

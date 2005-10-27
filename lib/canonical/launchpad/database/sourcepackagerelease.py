@@ -11,11 +11,13 @@ from zope.component import getUtility
 
 from sqlobject import StringCol, ForeignKey, MultipleJoin
 
+from canonical.launchpad.helpers import shortlist
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
-    EnumCol, SourcePackageUrgency, SourcePackageFormat)
+    EnumCol, SourcePackageUrgency, SourcePackageFormat,
+    SourcePackageFileType, BuildStatus)
 
 from canonical.launchpad.interfaces import (ISourcePackageRelease,
     ISourcePackageReleaseSet)
@@ -27,6 +29,7 @@ from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishing)
 
+from canonical.launchpad.database.files import SourcePackageReleaseFile
 
 class SourcePackageRelease(SQLBase):
     implements(ISourcePackageRelease)
@@ -36,37 +39,32 @@ class SourcePackageRelease(SQLBase):
     creator = ForeignKey(foreignKey='Person', dbName='creator', notNull=True)
     component = ForeignKey(foreignKey='Component', dbName='component')
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
-                                   dbName='sourcepackagename', notNull=True)
+        dbName='sourcepackagename', notNull=True)
     maintainer = ForeignKey(foreignKey='Person', dbName='maintainer',
-                            notNull=True)
+        notNull=True)
     dscsigningkey = ForeignKey(foreignKey='GPGKey', dbName='dscsigningkey')
     manifest = ForeignKey(foreignKey='Manifest', dbName='manifest')
     urgency = EnumCol(dbName='urgency', schema=SourcePackageUrgency,
-                      default=SourcePackageUrgency.LOW,
-                      notNull=True)
+        default=SourcePackageUrgency.LOW, notNull=True)
     dateuploaded = UtcDateTimeCol(dbName='dateuploaded', notNull=True,
-                                  default=UTC_NOW)
+        default=UTC_NOW)
     dsc = StringCol(dbName='dsc')
     version = StringCol(dbName='version', notNull=True)
     changelog = StringCol(dbName='changelog')
     builddepends = StringCol(dbName='builddepends')
     builddependsindep = StringCol(dbName='builddependsindep')
     architecturehintlist = StringCol(dbName='architecturehintlist')
-    format = EnumCol(dbName='format',
-                     schema=SourcePackageFormat,
-                     default=SourcePackageFormat.DPKG,
-                     notNull=True)
+    format = EnumCol(dbName='format', schema=SourcePackageFormat,
+        default=SourcePackageFormat.DPKG, notNull=True)
     uploaddistrorelease = ForeignKey(foreignKey='DistroRelease',
-                                     dbName='uploaddistrorelease')
+        dbName='uploaddistrorelease')
 
-    builds = MultipleJoin('Build', joinColumn='sourcepackagerelease')
+    builds = MultipleJoin('Build', joinColumn='sourcepackagerelease',
+        orderBy=['-datecreated'])
     files = MultipleJoin('SourcePackageReleaseFile',
-                         joinColumn='sourcepackagerelease')
-
-    @property
-    def builds(self):
-        return Build.selectBy(sourcepackagereleaseID=self.id,
-            orderBy=['-datecreated'])
+        joinColumn='sourcepackagerelease')
+    publishings = MultipleJoin('SourcePackagePublishing',
+        joinColumn='sourcepackagerelease')
 
     @property
     def latest_build(self):
@@ -78,6 +76,10 @@ class SourcePackageRelease(SQLBase):
     @property
     def name(self):
         return self.sourcepackagename.name
+
+    @property
+    def title(self):
+        return '%s - %s' % (self.sourcepackagename.name, self.version)
 
     @property
     def productrelease(self):
@@ -127,6 +129,16 @@ class SourcePackageRelease(SQLBase):
                  ' AND Build.sourcepackagerelease = %i' % self.id)
         return BinaryPackageRelease.select(query, clauseTables=clauseTables)
 
+    @property
+    def current_publishings(self):
+        """See ISourcePackageRelease."""
+        from canonical.launchpad.database.distroreleasesourcepackagerelease \
+            import DistroReleaseSourcePackageRelease
+        return[DistroReleaseSourcePackageRelease(
+            publishing.distrorelease,
+            self) for publishing in self.publishings]
+
+
     def architecturesReleased(self, distroRelease):
         # The import is here to avoid a circular import. See top of module.
         from canonical.launchpad.database.soyuz import DistroArchRelease
@@ -141,6 +153,41 @@ class SourcePackageRelease(SQLBase):
             % (distroRelease.id, self.id),
             clauseTables=clauseTables))
         return archReleases
+
+    def addFile(self, file):
+        """See ISourcePackageRelease."""
+        determined_filetype = None
+        if file.filename.endswith(".dsc"):
+            determined_filetype = SourcePackageFileType.DSC
+        elif file.filename.endswith(".orig.tar.gz"):
+            determined_filetype = SourcePackageFileType.ORIG
+        elif file.filename.endswith(".diff.gz"):
+            determined_filetype = SourcePackageFileType.DIFF
+        elif file.filename.endswith(".tar.gz"):
+            determined_filetype = SourcePackageFileType.TARBALL
+
+        return SourcePackageReleaseFile(sourcepackagerelease=self.id,
+                                        filetype=determined_filetype,
+                                        libraryfile=file.id)
+
+    def createBuild(self, distroarchrelease, processor=None,
+                    status=BuildStatus.NEEDSBUILD):
+        """See ISourcePackageRelease."""
+        # Guess a processor if one is not provided
+        if processor is None:
+            pf = distroarchrelease.processorfamily
+            # We guess at the first processor in the family
+            processor = shortlist(pf.processors)[0]
+
+        return Build(distroarchrelease=distroarchrelease.id,
+                     sourcepackagerelease=self.id,
+                     processor=processor.id, buildstate=status)
+
+
+    def getBuildByArch(self, distroarchrelease):
+        """See ISourcePackageRelease."""
+        return Build.selectOneBy(sourcepackagereleaseID=self.id,
+                                 distroarchreleaseID=distroarchrelease.id)
 
 
 class SourcePackageReleaseSet:

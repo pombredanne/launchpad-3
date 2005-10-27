@@ -14,6 +14,7 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-search" />
     <div tal:replace="structure context/target/@@+portlet-latestbugs" />
     <div tal:condition="context/bug/specifications"
          tal:replace="structure context/@@+portlet-specs" />
@@ -78,7 +79,7 @@
       $Bug.description
     </tal:description>
 
-  <tal:block repeat="message context/bug/messages">
+  <tal:message repeat="message context/bug/messages">
     <div class="boardComment"
          tal:condition="python:context.bug.description != message.contents">
 
@@ -108,7 +109,7 @@
       </div>
 
     </div>
-  </tal:block> <!-- repeating over message -->
+  </tal:message>
 
   <tal:logged-in condition="request/lp:person">
     <fieldset class="collapsible collapsed">

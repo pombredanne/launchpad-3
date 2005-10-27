@@ -1,0 +1,21 @@
+<div class="portlet">
+
+  <h4>Recently Reported Bugs:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul class="bugs">
+      <li tal:repeat="task view/latest_bugtasks">
+        <a tal:attributes="href task/bug/fmt:url"
+           tal:content="task/bug/title/fmt:shorten/80">Foo does not Bar</a>
+        (<span tal:replace="task/owner/browsername">Foo Bar</span>)
+        <span tal:replace="task/status/title">Fixed</span>
+      </li>
+      <li tal:condition="not: view/latest_bugtasks">
+        <i>No bugs filed on this package yet.</i>
+      </li>
+    </ul>
+
+  </div>
+
+</div>

@@ -5,6 +5,8 @@
 __metaclass__ = type
 
 __all__ = [
+    'ProductNavigation',
+    'ProductSetNavigation',
     'ProductFacets',
     'ProductOverviewMenu',
     'ProductBugsMenu',
@@ -28,28 +30,74 @@ from urllib import quote as urlquote
 import zope.security.interfaces
 from zope.component import getUtility
 from zope.event import notify
-from zope.exceptions import NotFoundError
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
     IPerson, IProduct, IProductSet, IProductSeries, ISourcePackage,
-    ICountry, IBugSet, ICalendarOwner)
+    ICountry, IBugSet, ICalendarOwner, NotFoundError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.potemplate import POTemplateView
+from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
-    enabled_with_permission, structured)
+    enabled_with_permission, structured, GetitemNavigation, Navigation,
+    stepthrough, stepto)
+
+
+class ProductNavigation(
+    Navigation, BugTargetTraversalMixin, CalendarTraversalMixin):
+
+    usedfor = IProduct
+
+    def breadcrumb(self):
+        return self.context.displayname
+
+    @stepthrough('+spec')
+    def traverse_spec(self, name):
+        return self.context.getSpecification(name)
+
+    @stepthrough('+series')
+    def traverse_series(self, name):
+        return self.context.getSeries(name)
+
+    @stepthrough('+milestone')
+    def traverse_milestone(self, name):
+        return self.context.getMilestone(name)
+
+    @stepthrough('+ticket')
+    def traverse_ticket(self, name):
+        # tickets should be ints
+        try:
+            ticket_num = int(name)
+        except ValueError:
+            raise NotFoundError
+        return self.context.getTicket(ticket_num)
+
+    def traverse(self, name):
+        return self.context.getRelease(name)
+
+
+class ProductSetNavigation(GetitemNavigation):
+
+    usedfor = IProductSet
+
+    def breadcrumb(self):
+        return 'Products'
 
 
 class ProductFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProduct."""
 
     usedfor = IProduct
+
+    enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
+                   'translations', 'calendar']
 
     def overview(self):
         target = ''
@@ -171,14 +219,18 @@ class ProductSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'specifications'
-    links = ['roadmap', 'new']
+    links = ['roadmap', 'table', 'new']
 
     def roadmap(self):
         text = 'Roadmap'
         return Link('+specplan', text, icon='info')
 
+    def table(self):
+        text = 'Assignments Table'
+        return Link('+specstable', text, icon='info')
+
     def new(self):
-        text = 'Register New Specification'
+        text = 'New Specification'
         return Link('+addspec', text, icon='add')
 
 
@@ -394,8 +446,12 @@ class ProductEditView(ProductView, SQLObjectEditView):
         SQLObjectEditView.__init__(self, context, request)
 
     def changed(self):
-        # If the name changed then the URL changed, so redirect
-        self.request.response.redirect(canonical_url(self.context))
+        # If the name changed then the URL will have changed
+        if self.context.active:
+            self.request.response.redirect(canonical_url(self.context))
+        else:
+            productset = getUtility(IProductSet)
+            self.request.response.redirect(canonical_url(productset))
 
 
 class ProductSeriesAddView(AddView):

@@ -6,10 +6,11 @@ import sys
 import traceback
 
 from zope.exceptions.exceptionformatter import format_exception
+from zope.component import getUtility
 
 from canonical.config import config
 import canonical.launchpad.layers
-
+from canonical.launchpad.interfaces import ILaunchBag, ILaunchpadCelebrities
 
 class SystemErrorView:
     """Helper class for views on exceptions.
@@ -23,6 +24,7 @@ class SystemErrorView:
     show_tracebacks = False
     pagetesting = False
     debugging = False
+    specialuser = False
 
     def __init__(self, context, request):
         self.context = context
@@ -36,6 +38,10 @@ class SystemErrorView:
             self.pagetesting = True
         if canonical.launchpad.layers.DebugLayer.providedBy(self.request):
             self.debugging = True
+        user = getUtility(ILaunchBag).user
+        if user is not None:
+            if user.inTeam(getUtility(ILaunchpadCelebrities).launchpad_developers):
+                self.specialuser = True
 
     def computeDebugOutput(self):
         """Inspect the exception, and set up instance attributes.
@@ -70,9 +76,12 @@ class SystemErrorView:
 
     def maybeShowTraceback(self):
         """Return a traceback, but only if it is appropriate to do so."""
+        # Always show tracebacks in page tests, but formatted as plain text.
         if self.pagetesting:
             return self.inside_div('<pre>\n%s</pre>' % self.plaintext)
-        elif self.show_tracebacks or self.debugging:
+        # If the config says to show tracebacks, or we're on the debug port,
+        # or the logged in user is in the launchpad team, show HTML tracebacks.
+        elif self.show_tracebacks or self.debugging or self.specialuser:
             return self.inside_div(self.htmltext)
         else:
             return ''

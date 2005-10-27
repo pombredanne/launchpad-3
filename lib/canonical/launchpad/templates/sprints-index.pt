@@ -18,8 +18,14 @@
     of the specifications that will be discussed at that meeting.
   </p>
 
-  <div tal:repeat="sprint context"
-       tal:replace="structure sprint/@@+listing-detailed" />
+      <table class="listing">
+        <tbody>
+          <tal:sprint
+            repeat="sprint context"
+            replace="structure sprint/@@+listing-detailed"
+          />
+        </tbody>
+      </table>
 
 </div>
 </body>

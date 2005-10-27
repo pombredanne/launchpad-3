@@ -8,7 +8,7 @@ any login credentials.
   HTTP/1.1 303 See Other
   Content-Length: 0
   Content-Type: text/plain;charset=utf-8
-  Location: .../rosetta/groups/+new/+login
+  Location: .../rosetta/groups/+new/+login?...
   <BLANKLINE>
 
 OK, best we try again, with a login!

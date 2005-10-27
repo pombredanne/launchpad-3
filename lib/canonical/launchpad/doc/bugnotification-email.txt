@@ -56,7 +56,7 @@ Let's take a look at what the notification email looks like:
     Public bug reported:
     http://.../malone/bugs/4
     <BLANKLINE>
-    Affects: upstream firefox
+    Affects: firefox (upstream)
            Severity: Normal
            Priority: Medium
              Status: New
@@ -193,7 +193,7 @@ pretend we had just added task five:
    Private bug report changed:
    http://.../bugs/2
    <BLANKLINE>
-   Also affects: mozilla-firefox (Debian)
+   Also affects: mozilla-firefox (debian)
           Severity: Minor
           Priority: High
           Assignee: name12 <test@canonical.com>

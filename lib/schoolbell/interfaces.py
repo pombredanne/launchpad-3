@@ -290,31 +290,23 @@ class ICalendarEvent(Interface):
         """)
 
     dtstart = Datetime(
-        title=u"Start",
-        description=u"""
-        Date and time when the event starts.
-        """)
+        title=u"Starting date and time",
+        description=u"""Format: yyyy-mm-dd hh:mm"""
+        )
 
-    duration = Field( # zope.schema does not have TimeInterval
-        title=u"Duration",
-        description=u"""
-        The duration of the event (datetime.timedelta).
+    duration = Field(title=u"Duration")
+        # The duration of the event (datetime.timedelta).
+        # You can compute the event end date/time by adding duration to dtstart.
+        # zope.schema does not have TimeInterval.
 
-        You can compute the event end date/time by adding duration to dtstart.
-        """)
+    title = TextLine(title=u"Name")
 
-    title = TextLine(
-        title=u"Title",
-        description=u"""The title of the event.""")
-
-    description = Text(
-        title=u"Description",
-        description=u"""A detailed description of the event.""")
+    description = Text(title=u"Description")
 
     location = TextLine(
         title=u"Location",
         required=False,
-        description=u"""The location where this event takes place.""")
+        description=u"""Where the event will take place.""")
 
     recurrence = Object(
         title=u"Recurrence",

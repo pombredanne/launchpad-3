@@ -5,17 +5,20 @@ __all__ = ['BinaryPackageRelease', 'BinaryPackageReleaseSet']
 
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 
 from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues, quote_like
 
 from canonical.launchpad.interfaces import (
-    IBinaryPackageRelease, IBinaryPackageReleaseSet )
+    IBinaryPackageRelease, IBinaryPackageReleaseSet, NotFoundError)
+
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.database.publishing import BinaryPackagePublishing
-
+from canonical.launchpad.database.binarypackagename import BinaryPackageName
+from canonical.launchpad.database.files import BinaryPackageFile
 from canonical.launchpad.helpers import shortlist
 
 from canonical.lp import dbschema
@@ -26,18 +29,18 @@ class BinaryPackageRelease(SQLBase):
     implements(IBinaryPackageRelease)
     _table = 'BinaryPackageRelease'
     binarypackagename = ForeignKey(dbName='binarypackagename', 
-                                 foreignKey='BinaryPackageName', notNull=True)
+        foreignKey='BinaryPackageName', notNull=True)
     version = StringCol(dbName='version', notNull=True)
     summary = StringCol(dbName='summary', notNull=True, default="")
     description = StringCol(dbName='description', notNull=True)
     build = ForeignKey(dbName='build', foreignKey='Build', notNull=True)
     binpackageformat = EnumCol(dbName='binpackageformat', notNull=True,
-                               schema=dbschema.BinaryPackageFormat)
+        schema=dbschema.BinaryPackageFormat)
     component = ForeignKey(dbName='component', foreignKey='Component',
-                           notNull=True)
+        notNull=True)
     section = ForeignKey(dbName='section', foreignKey='Section', notNull=True)
     priority = EnumCol(dbName='priority',
-                       schema=dbschema.PackagePublishingPriority)
+        schema=dbschema.PackagePublishingPriority)
     shlibdeps = StringCol(dbName='shlibdeps')
     depends = StringCol(dbName='depends')
     recommends = StringCol(dbName='recommends')
@@ -49,26 +52,32 @@ class BinaryPackageRelease(SQLBase):
     installedsize = IntCol(dbName='installedsize')
     copyright = StringCol(dbName='copyright')
     licence = StringCol(dbName='licence')
-    architecturespecific = BoolCol(dbName='architecturespecific', notNull=True)
+    architecturespecific = BoolCol(dbName='architecturespecific',
+        notNull=True)
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
 
     files = MultipleJoin('BinaryPackageFile',
-                         joinColumn='binarypackagerelease')
+        joinColumn='binarypackagerelease')
 
+    @property
     def title(self):
+        """See IBinaryPackageRelease."""
         return '%s-%s' % (self.binarypackagename.name, self.version)
-    title = property(title, None)
 
-
+    @property
     def name(self):
+        """See IBinaryPackageRelease."""
         return self.binarypackagename.name
-    name = property(name)
 
-    def maintainer(self):
-        # XXX: this method is unused or untested; there was a trivial
-        # AttributeError here that I fixed. Please test.
-        #   -- kiko, 2005-09-23
-        return self.build.sourcepackagerelease.sourcepackage.maintainer
-    maintainer = property(maintainer)
+    @property
+    def distributionsourcepackagerelease(self):
+        """See IBinaryPackageRelease."""
+        # import here to avoid circular import problems
+        from canonical.launchpad.database.distributionsourcepackagerelease \
+            import DistributionSourcePackageRelease
+        return DistributionSourcePackageRelease(
+            distribution=self.build.distribution,
+            sourcepackagerelease=self.build.sourcepackagerelease)
 
     def current(self, distroRelease):
         """Return currently published releases of this package for a given
@@ -139,6 +148,37 @@ class BinaryPackageRelease(SQLBase):
         if item is None:
             raise NotFoundError("Version Not Found", version)
         return item
+
+    def addFile(self, file):
+        """See IBinaryPackageRelease."""
+        determined_filetype = None
+        if file.filename.endswith(".deb"):
+            determined_filetype = dbschema.BinaryPackageFileType.DEB
+        elif file.filename.endswith(".rpm"):
+            determined_filetype = dbschema.BinaryPackageFileType.RPM
+        elif file.filename.endswith(".udeb"):
+            determined_filetype = dbschema.BinaryPackageFileType.UDEB
+
+        return BinaryPackageFile(binarypackagerelease=self.id,
+                                 filetype=determined_filetype,
+                                 libraryfile=file.id)
+
+    def publish(self, priority, status, pocket, embargo,
+                distroarchrelease=None):
+        """See IBinaryPackageRelease."""
+        if not distroarchrelease:
+            distroarchrelease = self.build.distroarchrelease
+
+        return SecureBinaryPackagePublishingHistory(
+            binarypackagereleaseID=self.id,
+            distroarchreleaseID=distroarchrelease.id,
+            componentID=self.build.sourcepackagerelease.component,
+            sectionID=build.sourcepackagerelease.section,
+            priority=priority,
+            status=status,
+            pocket=pocket,
+            embargo=embargo,
+            )
 
 
 class BinaryPackageReleaseSet:
@@ -304,4 +344,3 @@ class BinaryPackageReleaseSet:
 #             distrorelease is None and text is None):
 #             raise ValueError('must give something to the query.')
 #         clauseTables = Set(['BinaryPackageRelease'])
-

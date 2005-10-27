@@ -100,7 +100,7 @@ bazaar_index = 'The Launchpad Bazaar'
 
 bazaar_sync_review = 'Review upstream repositories for Launchpad Bazaar syncing'
 
-def binarypackage_index(context, view):
+def binarypackagerelease_index(context, view):
     return "%s binary package in Launchpad" % context.title
 
 binarypackagenames_index = 'Binary package name set'
@@ -174,6 +174,10 @@ bug_subscription = ContextId('Subscribe or unsubscribe from Bug #%s')
 
 bug_watch_add = LaunchbagBugID('Bug #%d - Add an External Bug Watch')
 
+buglisting_advanced = ContextTitle("Bugs in %s")
+
+buglisting_default = ContextTitle("Bugs in %s")
+
 def bugwatch_editform(context, view):
     return 'Bug #%d - Edit an External Bug Watch (%s in %s)' % (
         context.bug.id, context.remotebug, context.bugtracker.title)
@@ -196,13 +200,11 @@ bugtask_index = BugTaskPageTitle()
 
 bugtask_release_targeting = BugTaskTargetingTitle()
 
-bugtask_search_listing = ContextTitle('Bugs in %s')
-
 bugtask_view = BugTaskPageTitle()
 
 bugtask_edit = BugTaskPageTitle()
 
-# bugtask_search_listing contains only macros
+# bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
 
 bugtracker_edit = ContextTitle('Edit %s Details')
@@ -213,15 +215,21 @@ bugtrackers_add = 'Register External Bugtracker in Malone'
 
 bugtrackers_index = 'Malone-Registered Bug Trackers'
 
+build_buildlog = ContextTitle('%s: Build Log')
+
+build_changes = ContextTitle('%s: Changes')
+
+build_index = ContextTitle('%s: Overview')
+
 builders = 'Launchpad Build Farm Overview'
 
 builder_edit = ContextTitle('Editing %s details')
 
 builder_index = ContextTitle('%s Overview')
 
-builder_abort = ContextTitle('%s Abort')
+builder_cancel = ContextTitle('Cancel %s Job')
 
-builder_stop = ContextTitle('%s Stop')
+builder_mode = ContextTitle('Change %s Mode')
 
 calendar = ContextTitle('%s')
 
@@ -270,6 +278,8 @@ debug_unauthorized = 'Launchpad - Not Permitted'
 
 default_editform = 'Default "Edit" Page'
 
+distribution_allpackages = ContextTitle('All packages in %s')
+
 distribution_cvereport = ContextTitle('CVE Reports for %s')
 
 distribution_members = ContextTitle('%s distribution members')
@@ -280,9 +290,17 @@ distribution_translations = ContextDisplayName('Translating %s')
 
 distribution_translators = 'Appoint Distribution Translation Group'
 
-distribution_search = 'Locate Distributions in Launchpad'
+distribution_search = ContextDisplayName('Search Packages in %s')
 
 distribution_index = ContextTitle('%s in Launchpad')
+
+distribution_builds = ContextTitle('%s Builds')
+
+distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
+
+distributionsourcepackage_index = ContextTitle('%s')
+
+distributionsourcepackagerelease_index = ContextTitle('%s')
 
 distro_add = 'Adding New Distribution'
 
@@ -292,11 +310,19 @@ distro_edit = 'Create a new Distribution in Launchpad'
 # <title metal:fill-slot="title"><span tal:replace="context/title" />: Source
 # Packages</title>
 
+distroarchrelease_admin = ContextTitle('Administer %s')
+
 distroarchrelease_index = ContextTitle('%s overview')
 
 distroarchrelease_builds = ContextTitle('Builds for %s')
 
-distroarchrelease_pkgsearch = 'Binary Package Search'
+distroarchrelease_search = 'Binary Package Search'
+
+distroarchreleasebinarypackage_index = ContextTitle('%s')
+
+distroarchreleasebinarypackagerelease_index = ContextTitle('%s')
+
+distrorelease_addport = ContextTitle('Add Port for %s')
 
 distrorelease_bugs = ContextTitle('Release %s: Bugs')
 
@@ -308,20 +334,20 @@ def distrorelease_index(context, view):
 distrorelease_packaging = ContextDisplayName('Mapping packages to upstream '
     'for %s')
 
-distrorelease_search = ContextDisplayName('%s Packages')
+distrorelease_search = ContextDisplayName('Search Packages in %s')
 
 distrorelease_translations = ContextTitle('Translation of %s')
 
-distrorelease_builds = ContextTitle(
-    'Builds for %s')
+distrorelease_builds = ContextTitle('Builds for %s')
+
+distroreleasebinarypackage_index = ContextTitle('%s')
 
 distroreleaselanguage = ContextTitle('%s')
 
+distroreleasesourcepackagerelease_index = ContextTitle('%s')
+
 distros_index = 'Overview of Distributions in Launchpad'
 
-def distrosourcepackage_bugs(context, view):
-    return 'Bugs in %s %s' % (
-        context.distribution.name, context.name)
 
 errorservice_config = 'Configure Error Log'
 
@@ -503,8 +529,6 @@ person_translations = ContextDisplayName('Translations Made By %s')
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 
-# plone.css is a css file
-
 pofile_edit = 'Rosetta: Edit PO file details'
 
 pofile_export = ContextTitle('%s file exports')
@@ -532,13 +556,13 @@ def poll_new(context, view):
     return 'Create a new Poll in team %s' % context.team.displayname
 
 def polloption_edit(context, view):
-    return 'Edit option %s' % context.shortname
+    return 'Edit option: %s' % context.title
 
-poll_options = ContextTitle('Options of Poll %s')
+poll_options = ContextTitle('Options of Poll: %s')
 
-poll_vote_condorcet = ContextTitle('Vote in %s')
+poll_vote_condorcet = ContextTitle('Vote on: %s')
 
-poll_vote_simple = ContextTitle('Vote in %s')
+poll_vote_simple = ContextTitle('Vote on: %s')
 
 potemplate_add = 'Add a new template to Rosetta'
 
@@ -661,9 +685,13 @@ def productseries(context, view):
 
 shipit_index = 'ShipIt'
 
+shipit_exports = 'ShipIt Exports'
+
 shipit_myrequest = "Your ShipIt Order"
 
 shipitrequests_index = 'ShipIt Requests'
+
+shipitrequests_search = 'Search ShipIt Requests'
 
 shipitrequest_edit = 'Edit ShipIt Request'
 
@@ -683,10 +711,7 @@ signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
 
 sourcepackage = ContextTitle('%s')
 
-def sourcepackage_bugs(context, view):
-    return 'Bugs in %s %s' % (
-        context.distrorelease.distribution.name,
-        context.sourcepackagename)
+sourcepackage_bugs = ContextDisplayName('Bugs in %s')
 
 sourcepackage_buildlog = ContextTitle('%s Build Logs')
 
@@ -734,6 +759,8 @@ sourcesource_index = 'Upstream Source Import'
 
 specification_add = 'Register a feature specification in Launchpad'
 
+specification_addsubscriber = 'Subscribe someone else to this spec'
+
 specification_bug = ContextTitle(
   'Link specification \N{left double quotation mark}%s'
   '\N{right double quotation mark} to a bug report')
@@ -747,6 +774,8 @@ specification_deptree = 'Complete Dependency Tree'
 specification_milestone = 'Target Feature to Milestone'
 
 specification_people = 'Change the Specification Assignee, Drafter and Reviewer'
+
+specification_priority = 'Change the Specification Priority'
 
 specification_distrorelease = ('Target Feature Specification at '
                                'Distribution Release')
@@ -777,13 +806,23 @@ specificationtarget_specs = ContextTitle('Specifications for %s')
 
 specificationtarget_specplan = ContextTitle('Project Plan for %s')
 
-sprint_index = ContextTitle('%s (Sprint or Meeting)')
+sprint_attend = ContextTitle('Register your Attendance at %s')
 
 sprint_edit = ContextTitle('Edit Meeting Details: %s')
 
+sprint_index = ContextTitle('%s (Sprint or Meeting)')
+
 sprint_new = 'Register a new Meeting or Sprint in Launchpad'
 
+sprint_table = ContextTitle('Table of Specs for %s')
+
+sprint_workload = ContextTitle('Workload at %s')
+
 sprints_index = 'Launchpad Meeting or Sprint Registry'
+
+sprintspecification_edit = 'Edit details of spec at sprint.'
+
+sprintspecification_admin = 'Approve spec for sprint agenda.'
 
 tickets_index = 'Launchpad tech support system'
 
@@ -865,52 +904,4 @@ translationgroups = 'Rosetta Translation Groups'
 unauthorized = 'Launchpad Permissions Notice'
 
 user_error = 'Launchpad Error'
-
-# watches_index is a redirect
-
-# widget_searchselection has a commented-out title.
-#     <title xmetal:fill-slot="title">Rosetta: <span
-#       xtal:replace="context/title">Project Title</span></title>
-
-
-# XXX: dead pagetitles from templates I removed
-#   -- kiko, 2005-09-29
-# binary_index = 'Binary Packages'
-# binarypackagebuild_index = 'Binary Package Build Details'
-# binarypackagerelease_index = 'Binary Package Release Details'
-# binarypackagerelease_license = 'Binary Package Licence'
-# binarypackage_search = 'Search Binary Package Database'
-# bug_distrotask = ContextId('Request fix of bug #%s in additional distribution')
-# bug_references = ContextId('External references for bug #%s')
-# def bugsubscription_edit(context, view):
-#     return "Bug #%d - Edit Subscription (%s)" % (
-#         context.bug.id, context.person.browsername)
-# bug_upstreamtask = ContextId('Request fix of bug #%s in additional application')
-# cvereferences_index is a redirect
-# def cvereference_index(context, view):
-#     return 'Malone Bug #%s CVE Reference' % context.bug.id
-# def distrorelease_deliver(context, view):
-#     return 'Generate ISO image for %s' % context.release.title
-# 
-# def distrorelease_edit(context, view):
-#     return 'Edit %s Details' % context.release.displayname
-# 
-# def distrorelease_new(context, view):
-#     return 'Create New Release of %s' % context.distribution.title
-# def distrorelease_sources(context, view):
-#     return '%s %s: Source Packages' % (
-#         context.release.distribution.title,
-#         context.release.title
-#         )
-# def productseries_review(context, view):
-#     return 'Review %s %s Details' % (context.product.displayname, context.name)
-# project_new = 'Register a project with Launchpad'
-# sourcepackagerelease_buildlog = 'Source Package Build Log'
-# soyuz_about = 'About Soyuz'
-#
-# soyuz_index = 'Soyuz: Linux Distribution Management'
-# ubuntite_list = 'FOAF: Ubuntite List'
-# malone_distro_index = ContextTitle('Malone Distribution Manager: %s')
-# default_addform = 'Default "Add" Page'
-
 

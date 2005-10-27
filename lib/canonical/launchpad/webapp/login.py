@@ -11,8 +11,8 @@ from zope.component import getUtility
 from zope.app.session.interfaces import ISession
 from zope.event import notify
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
-from zope.app.security.interfaces import IAuthenticationService
 
+from canonical.launchpad import _
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.interfaces import CookieAuthLoggedInEvent
@@ -54,6 +54,9 @@ class UnauthorizedView(SystemErrorView):
             if query_string:
                 query_string = '?' + query_string
             target = self.request.getURL() + '/+login' + query_string
+            self.request.response.addNoticeNotification(_(
+                    'The requested page is protected. You will need to login.'
+                    ))
             self.request.response.redirect(target)
             # Maybe render page with a link to the redirection?
             return ''
@@ -130,7 +133,7 @@ class LoginOrRegister:
         email = self.request.form.get(self.input_email)
         password = self.request.form.get(self.input_password)
         if not email or not password:
-            self.login_error = "Enter your email address and password."
+            self.login_error = _("Enter your email address and password.")
             return
 
         appurl = self.get_application_url()
@@ -139,13 +142,13 @@ class LoginOrRegister:
         if principal is not None and principal.validate(password):
             person = getUtility(IPersonSet).getByEmail(email)
             if person.preferredemail is None:
-                self.login_error = (
+                self.login_error = _(
                     "The email address '%s', which you're trying to use to "
                     "login has not yet been validated to use in Launchpad. We "
                     "sent an email to that address with instructions on how "
                     "to confirm that it belongs to you. As soon as we have "
                     "that confirmation you'll be able to log into Launchpad."
-                    % email)
+                    ) % email
                 token = getUtility(ILoginTokenSet).new(
                             person, email, email, LoginTokenType.VALIDATEEMAIL)
                 token.sendEmailValidationRequest(appurl)
@@ -248,6 +251,9 @@ def logInPerson(request, principal, email):
     authdata['logintime'] = datetime.utcnow()
     authdata['login'] = email
     notify(CookieAuthLoggedInEvent(request, email))
+    request.response.addNoticeNotification(
+        _(u'You have been logged in')
+        )
 
 
 class CookieLogoutPage:
@@ -264,6 +270,9 @@ class CookieLogoutPage:
             # There is no cookie-based login currently.
             # So, don't attempt to log out.  Just redirect
             pass
+        self.request.response.addNoticeNotification(
+            _(u'You have been logged out')
+            )
         target = '%s/?loggingout=1' % self.request.URL[-1]
         self.request.response.redirect(target)
         return ''

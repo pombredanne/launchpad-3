@@ -2,13 +2,14 @@
     <h4>Translating Applications:</h4>
 
     <div class="portletBody portletContent" i18n:translate="rosetta-blurb">
-      <img src="/++resource++languages.gif" />
+      <p>
+      <img alt="" src="/++resource++languages.gif" />
       <a i18n:attributes="title" title="Rosetta"
          href="rosetta" i18n:translate="">Rosetta</a> is a
-      <b>web-based translation portal</b>.
+      <strong>Web-based translation system</strong>.
       You can easily collaborate with translators for your software
-      through Rosetta.<br />
-      <hr />
+      through Rosetta.
+      </p>
       <b><span tal:replace="view/ubuntu_translationrelease/displayname">
         Ubuntu 5.04</span> Translations:</b><br />
       <tal:block repeat="drl view/ubuntu_languages">
@@ -16,9 +17,5 @@
         <a tal:attributes="href drl/fmt:url"
           ><div tal:replace="structure drl/@@+barchart" /></a><br />
       </tal:block>
-      <ul style="text-align: right;">
-        <li class="languages"><a i18n:attributes="title" title="Rosetta"
-        href="rosetta" i18n:translate="">Translate now!</a></li>
-      </ul>
     </div>
   </div>

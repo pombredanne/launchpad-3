@@ -6,9 +6,11 @@ __metaclass__ = type
 
 __all__ = [
     'POTemplateSubsetView', 'POTemplateView', 'POTemplateEditView',
-    'POTemplateAdminView', 'POTemplateAddView', 'BaseExportView',
-    'POTemplateExportView', 'POTemplateTranslateView',
-    'POTemplateSubsetURL', 'POTemplateURL']
+    'POTemplateAdminView', 'POTemplateAddView', 'POTemplateExportView',
+    'POTemplateTranslateView', 'POTemplateSubsetURL', 'POTemplateURL',
+    'POTemplateSetNavigation', 'POTemplateSubsetNavigation',
+    'POTemplateNavigation'
+    ]
 
 from sets import Set
 from datetime import datetime
@@ -24,12 +26,27 @@ from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, IPOTemplateNameSet, IPOExportRequestSet,
     IPersonSet, RawFileAttachFailed, ICanonicalUrlData, ILaunchpadCelebrities,
-    ILaunchBag, IPOFileSet)
+    ILaunchBag, IPOFileSet, IPOTemplateSubset)
 from canonical.launchpad.browser.pofile import (
     POFileView, BaseExportView, POFileAppMenus)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission)
+    StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
+    GetitemNavigation, Navigation)
+
+
+class POTemplateNavigation(Navigation):
+
+    usedfor = IPOTemplate
+
+    def traverse(self, name):
+        user = getUtility(ILaunchBag).user
+        if self.request.method in ['GET', 'HEAD']:
+            return self.context.getPOFileOrDummy(name, owner=user)
+        elif self.request.method == 'POST':
+            return self.context.getOrCreatePOFile(name, owner=user)
+        else:
+            raise AssertionError('We only know about GET, HEAD, and POST')
 
 
 class POTemplateFacets(StandardLaunchpadFacets):
@@ -38,11 +55,13 @@ class POTemplateFacets(StandardLaunchpadFacets):
 
     defaultlink = 'translations'
 
+    enable_only = ['overview', 'translations']
+
     def _parent_url(self):
         """Return the URL of the thing this PO template is attached to."""
 
         if self.context.distrorelease:
-            source_package = self.context.distrorelease.getSourcePackageByName(
+            source_package = self.context.distrorelease.getSourcePackage(
                 self.context.sourcepackagename)
             return canonical_url(source_package)
         else:
@@ -57,12 +76,6 @@ class POTemplateFacets(StandardLaunchpadFacets):
         target = ''
         text = 'Translations'
         return Link(target, text)
-
-    def bugs(self):
-        return Link("", "Bugs", enabled=False)
-
-    def calendar(self):
-        return Link("", "Calendar", enabled=False)
 
 
 class POTemplateAppMenus(POFileAppMenus):
@@ -408,7 +421,7 @@ class POTemplateSubsetURL:
         if potemplatesubset.distrorelease is not None:
             assert potemplatesubset.productseries is None
             assert potemplatesubset.sourcepackagename is not None
-            return '+sources/%s/+pots' % (
+            return '+source/%s/+pots' % (
                 potemplatesubset.sourcepackagename.name)
         else:
             assert potemplatesubset.productseries is not None
@@ -450,4 +463,14 @@ class POTemplateURL:
     @property
     def inside(self):
         return self.potemplatesubset
+
+
+class POTemplateSetNavigation(GetitemNavigation):
+
+    usedfor = IPOTemplateSet
+
+
+class POTemplateSubsetNavigation(GetitemNavigation):
+
+    usedfor = IPOTemplateSubset
 

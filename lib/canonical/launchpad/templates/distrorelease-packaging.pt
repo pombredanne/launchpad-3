@@ -7,15 +7,11 @@
 
 <metal:leftportlets fill-slot="portlets_one">
   <div class="portlet">
-    <h4>About this page:</h4>
     <div class="portletBody portletContent">
-
       <img src="/++resource++info_icon.gif" />
-      This page shows the links from packages in the distribution to
-      upstream branches. Those links enable us to share bugs and
-      translations and patches very efficiently between the distribution and
-      upstream.
-
+      Links from distribution packages to upstream branches let
+      distribution and upstream maintainers share bugs, patches, and
+      translations efficiently.
     </div>
   </div>
 </metal:leftportlets>
@@ -25,15 +21,17 @@
 
   <h1>Linking to Upstream</h1>
 
-  <p>HCT uses "packaging" information to link a source package in a
-  distribution to upstream product series.</p>
-
+  <p>
+    <abbr title="The Hypothetical Changeset Tool">HCT</abbr> uses packaging
+    information to link a source package in a distribution to an upstream
+    product series.
+  </p>
   <p class="portalMessage" tal:condition="not: context/packagings">
     There are no links between packages in <span
-    tal:replace="context/displayname">Hoary</span> and upstream! Please add
-    packaging information for specific packages in this release that are
-    different to previous Ubuntu releases, to ensure we can collaborate
-    effectively with upstream.
+    tal:replace="context/displayname">Hoary</span> and upstream.
+    By adding packaging information for specific packages in this release that
+    are different to previous distribution releases,
+    you can help the distribution developers collaborate with upstream.
   </p>
 
   <h2>Unlinked Translatable Packages</h2>
@@ -57,13 +55,12 @@
     </tr>
   </table>
 
-  <h2>Known Upstream Links</h2>
+  <h2>
+    Known Upstream Links for All Source Packages in
+    <span tal:replace="context/title">Ubuntu Hoary</span>
+  </h2>
 
   <table class="listing" tal:condition="context/packagings">
-    <caption>Packaging data for all source packages in
-      <span tal:replace="context/title">Ubuntu Hoary</span>
-    </caption>
-
     <thead>
       <tr>
         <th>Source Package</th>
@@ -86,11 +83,12 @@
 
   </table>
 
-  <p>Note: the distribution will also inherit packaging data from
-  previous releases, as well as its parent Ubuntu distribution, so you may
-  also want to look for packaging information in those releases too. This
-  page should list only the packaging details for packages which have been
-  specifically modified inside this release.</p>
+  <p tal:condition="context/packagings">
+    These are the packaging details for only those packages that have been
+    specifically modified inside this release.
+    The distribution will also inherit packaging data from previous releases,
+    as well as its parent distribution.
+  </p>
 
 </div> 
 </body>

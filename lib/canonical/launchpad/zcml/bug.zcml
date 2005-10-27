@@ -131,9 +131,17 @@
         template="../templates/bug-portlet-subscribers.pt"
         permission="zope.Public" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IBugSet"
-        function="canonical.launchpad.browser.traversers.traverse_bugs" />
+    <browser:page
+        for="canonical.launchpad.interfaces.IBug"
+        class="canonical.launchpad.browser.BugTaskView"
+        name="+portlet-search"
+        template="../templates/bugtarget-portlet-search.pt"
+        permission="zope.Public" />
+
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BugSetNavigation"
+        />
 
     <browser:url
         for="canonical.launchpad.interfaces.IBugSet"

@@ -1,3 +1,518 @@
+/* === Things browsers should do, but don't: === */
+
+abbr[title], acronym[title] {
+  border-bottom: 1px dotted Black;
+  color: Black;
+  background-color: transparent;
+  cursor: help;
+}
+address {
+  font-style: inherit;
+}
+dd {
+  margin-bottom: 1em;
+}
+dt dfn {
+  font-style: inherit;
+  font-weight: bold;
+}
+img {
+  border: none;
+}
+kbd {
+  border: 1px solid;
+  border-color: white gray gray white;
+  color: black;
+  background-color: #ccc;
+  min-width: 1em;
+}
+label {
+  white-space: nowrap;
+}
+legend {
+  font-weight: bold;
+}
+legend legend {
+  font-weight: normal;
+}
+tr {
+  vertical-align: top;
+}
+th {
+  text-align: right;
+}
+thead {
+  vertical-align: bottom;
+}
+thead th, tr.thead th {
+  text-align: center;
+}
+
+.listbox { /* a scrolling list of checkboxes or radio buttons */
+  border: 1px solid #8cacbb;
+  display: inline-block;
+  max-height: 12em;
+  overflow: auto;
+  overflow: -moz-scrollbars-vertical;
+}
+.listbox label {
+  background-color: #f6f6f6;
+  border: solid white;
+  border-width: 0 0 1px 0;
+  display: block;
+}
+
+/* === Global Launchpad design: === */
+body {
+  background-color: #fcfcfc;
+  color: black;
+  font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
+  margin: 0;
+  padding: 0.5em 0.75em;
+}
+:visited {
+  background: none;
+  color: #8888bb;
+}
+:link, .hierarchy :visited, .footer :visited,
+.app :visited, .sidebar :visited, .portlet :visited {
+  background: none;
+  color: #000088;
+}
+:link:active, :visited:active {
+  background: none;
+  color: #c00;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  background: none;
+  color: #708a96;
+  font-size: 100%;
+  font-weight: normal;
+  margin: 0;
+  padding-top: 0.5em;
+  text-align: left;
+}
+h1 :link, h2 :link, h3 :link, h4 :link, h5 :link, h6 :link,
+h1 :visited, h2 :visited, h3 :visited, h4 :visited, h5 :visited, h6 :visited {
+  color: inherit; 
+}
+h1 {
+  font-size: 1.6em;
+  margin-bottom: 0.5em;
+}
+h2 {
+  font-size: 1.25em;
+  margin: 0.5em 0;
+}
+h2.lpcontext {
+  font-size: 1.5em;
+}
+h3, h4, h5, h6 {
+  font-size: 1em;
+  margin-bottom: 0;
+}
+label {
+  font-weight: bold;
+}
+pre {
+    border: 1px dashed #8cacbb;
+    color: Black;
+    background-color: #dee7ec;
+    overflow: auto;
+}
+table {
+  margin-left: auto;
+  margin-right: auto;
+  border-collapse: collapse;
+}
+table table { /* assumes that the overall page layout is a <table> */
+  width: 100%;
+}
+table table th, table table td {
+  padding: 0.25em;
+}
+th.icon, td.icon {
+  width: 1px;
+}
+th.icon.left, td.icon.left {
+  padding-right: 0;
+}
+th.icon.right, td.icon.right {
+  padding-left: 0;
+}
+td p:first-child, td ol:first-child, td blockquote:first-child {
+  margin-top: 0;
+}
+
+table.listing {
+  font-size: 85%;
+  margin: 1em 0;
+}
+table.listing, table.listing tbody {
+  border-bottom: 1px solid #8cacbb;
+}
+table.listing>thead, table.listing>thead>tr>th {
+  border: 1px solid #8cacbb;
+  background-color: #dee7ec;
+}
+table.listing>thead>tr>td {
+  border: none;
+}
+tr.highlight { /* highlight specific table entry */
+  border: 1px solid #ffa500;
+  background-color: #ffce7b;
+}
+table.listing>tr.note, table.listing>tbody>tr.note {
+  font-size: smaller;
+}
+tr.amount, td.amount {
+  text-align: right;
+}
+table.listing th, table.listing td {
+  padding: 0.125em 0.25em;
+}
+table.listing th {
+  font-weight: normal;
+  white-space: nowrap;
+}
+table.listing>tr>td, table.listing>tbody>tr>td {
+  border: 1px #8cacbb;
+  border-style: dotted none none none;
+}
+table.listing>tr.note>td, table.listing>tbody>tr.note>td {
+  border-style: none;
+}
+table.listing img {
+  vertical-align: middle;
+}
+table.listing tr.secondary>th, table.listing tr.secondary td {
+  border-top: none;
+}
+/* Sortable tables: */
+table.sortable a.sortheader {
+  color:#666666;
+  font-weight: bold;
+  text-decoration: none;
+  display: block;
+}
+table.sortable img.sortarrow {
+  padding-left: 2px;
+}
+th.ascending {
+  background-image: url(/++resource++arrowDown.gif);
+  background-position: center right;
+  background-repeat: no-repeat;
+}
+th.descending {
+  background-image: url(/++resource++arrowUp.gif);
+  background-position: center right;
+  background-repeat: no-repeat;
+}
+ol, ul {
+  padding: 0;
+}
+ul { 
+  list-style-type: square;
+  list-style-image: url(/@@/bullet.gif);
+  margin: 0.5em 0 0 24px; /* because bullet graphics are px width */
+}
+ol {
+  margin: 0.5em 0 0 1.5em;
+}
+
+.portlet {
+  border: none;
+  font-size: smaller;
+  margin-bottom: 1em;
+  padding: 0;
+  background-color: #f4f5f8; /* changed by sabdfl, 2005-10-22 */
+}
+.portlet h4, .portlet h5, .portlet h6 {
+  background-color: #dee7ec;
+  border: 1px solid #8cacbb;
+  font-weight: normal;
+}
+.portlet h4 { /* the base portlet heading */
+  padding: 0em 0.3em 0em 1em;
+  display: block;
+  font-size: 1em;
+}
+.portlet h5 { 
+  padding: 0em 1em 0em 1em;
+  display: inline;
+  font-size: 1em;
+  white-space: nowrap;
+  position: relative;
+  top: -1px;
+}
+.portlet h6 { 
+  padding: 0em 0.3em 0em 1em;
+  display: block;
+  font-size: 1em;
+}
+.portletBody {
+  position: relative;
+  top: -1px;
+  border: 1px solid #8cacbb;
+}
+.portletContent {
+  padding: 1em;
+}
+
+/* -- Form controls: -- */
+textarea {
+  border: 1px solid #8cacbb;  
+  color: black;
+  background-color: white;
+  width: 100%;
+}
+.fieldRequired {
+  color: #999;
+}
+.formHelp {
+  color: #666666;
+  font-size: smaller;
+  margin-bottom: 1em;
+}
+.portalError .fieldRequired {
+  color: #666;
+} 
+/* Temporarily make *all* buttons look plone-y. Ugh. */
+button {
+  border: 1px solid #8cacbb;  
+  color: Black;
+  background-color: white;
+}
+/* Don't give radiobuttons a square border in Opera: */
+input[type="radio"] {
+  border: none;
+}
+
+/* -- Form errors: -- */
+.portalMessage {
+  background-color: #ffce7b;
+  border: 1px solid #ffa500;
+  color: black;
+  margin: 1em 0em 0em 0em;
+  padding: 0.5em 1em 0.5em 30px; /* 30px because the image has a pixel size */
+  vertical-align: middle;
+  background-position: 5px 0.75em;
+  background-image: url(/@@/info_icon.gif);
+  background-repeat: no-repeat;
+}
+.portalMessage a {
+  color: Black;
+}
+.portalError {
+  background-color: #ff9070;
+  border: 1px solid #998080;
+  color: Black;
+  padding: 0.25em;
+}
+.portalError .error {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 85%;
+}
+
+/* portlet links must not be underlined -- sabdfl */
+.portlet a {
+  text-decoration: none;
+}
+
+/* -- Page layout: -- */
+
+.header, .footer {
+  font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
+}
+.header {
+  font-size: 0.875em;
+}
+.footer {
+  font-size: smaller;
+  text-align: center;
+}
+.login {
+  text-align: right;
+  min-height: 1.75em;
+}
+.login input[type="submit"] {
+  padding: 0;
+}
+.header td, .footer {
+  padding: 0.25em;
+}
+.header, .footer, ul.app>li {
+  background-color: #dee7ec;
+  color: inherit;
+}
+ul.facets {
+  text-align: right;
+}
+ul.app {
+  padding: 0;
+  margin: 1em 0 1em;
+  border-bottom: 1px solid #8cacbb;
+  font-weight: bold;
+  font-size: 1em;
+  font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
+}
+ul.app>li
+{
+  border: 1px solid #8cacbb;
+  border-bottom: none;
+  display: inline;
+  list-style: none;
+  margin: 0 0.5em 0 0;
+  padding: 0 0.5em;
+}
+ul.app a {
+  text-decoration: none;
+}
+ul.app>li.current {
+  background: #fcfcfc;
+  border-bottom: 1px solid #fcfcfc;
+}
+
+
+
+
+
+
+/* ----------------------- UNCHANGED FROM PLONE.CSS ----------------------- */
+
+p {
+    margin: 0.5em 0em 1em 0em;
+    line-height: 1.5em;
+}
+p img {
+    border: 0;
+    margin: 0;
+}
+
+fieldset {
+    border: 1px solid #8cacbb;
+    margin: 1em 0em 1em 0em;
+    padding: 0em 1em 1em 1em;
+    line-height: 1.5em;
+    width: auto;
+}
+
+form {
+    border: none;
+    margin: 0;
+}
+input {
+    font-family: "Lucida Grande", Verdana, Lucida, Helvetica, Arial, sans-serif;
+    visibility: visible;
+    border: 1px solid #8cacbb;  
+    color: Black;
+    background-color: white;
+    vertical-align: middle;
+}
+select {
+    border: 1px solid #8cacbb;
+    color: Black;
+    background-color: White;
+    vertical-align: top;
+}
+blockquote {
+    font-family: Times, "Times New Roman", serif;
+    font-style: italic;
+    font-size: 120%;
+}
+ins {
+    color: green;
+    text-decoration: none;
+}
+
+.documentDescription {
+    /* The summary text describing the document */
+    font-weight: bold;
+    display: block;
+    margin: 1em 0em;
+    line-height: 1.5em;
+}
+
+/* The new form elements */
+
+.field {
+    top: 0;
+    left: 0;
+    margin: 0 1em 1em 0;
+}
+
+.field .field {
+    margin: 1em 0 0 0;
+}
+
+.formControls {
+   margin: 1em 0 0 0; 
+}
+
+.error {
+    /* Class for error indication in forms */
+    background-color: #ffce7b;
+    border: 1px solid #ffa500;
+    padding: 1em;
+    margin: 0 0 1em 0;
+    width: 95% !important;
+}
+
+
+.discreet {
+    color: #76797c;
+    font-size: 85%;
+    font-weight: normal;
+}
+
+.listingBar {
+    background-color: #dee7ec;
+    border-color: #8cacbb;
+    border-style: solid;
+    border-width: 1px;
+    padding: 0em 1em;
+    text-align: center;
+    vertical-align: top;
+    margin: 1em 0em;
+    font-size: 94%;
+    clear: both;
+}
+.listingBar span.previous,
+.listingPrevious {
+    text-align: left;
+    float: left;
+    margin-right: 1em;
+}
+.listingBar span.next,
+.listingNext {
+    text-align: right;
+    float: right;
+    margin-left: 1em;
+}
+.listingBar img {
+	vertical-align: middle;
+}
+
+/*
+** Accessibility and visual enhancement elements 
+*/
+
+.visualClear {
+    display: block;
+    clear: both;
+}
+#portal-column-content fieldset > * input:focus,
+#portal-column-content fieldset > * textarea:focus {
+    border-color: #ffa500; 
+    border-width: 1px;
+}
+
+/* -------------------------- END OF PLONE.CSS -------------------------- */
+
+
 /* Column definitions */
 
 #portal-columns {
@@ -28,22 +543,6 @@
   padding: 0.5em;
 }
 
-.rosettaTile {
-  display: block;
-  width: 40%;
-  padding: 1em;
-  margin: 1em;
-  background-color: #93bee2;
-  border: 1px solid #364970;
-  text-decoration: none;
-}
-
-.rosettaDashboardElement {
-  width: 30%;
-  float: left;
-  margin: 1em;
-}
-
 .interpolation {
   background-color: #7090a0;
 }
@@ -58,19 +557,6 @@
   margin-bottom: 0;
 }
 
-table.data input[type='text'] {
-  width: 100%;
-}
-
-fieldset.message-strings input[type=checkbox] { width: auto !important; }
-
-fieldset.two-column {
-  width: 45%;
-  float: left;
-  display: block;
-  margin-right: 1em;
-}
-
 /* Visually differentiate disabled and enabled form fields. */
 select[disabled],
 textarea[disabled],
@@ -79,139 +565,10 @@ input[disabled] {
     color: #999;
 }
 
-/* Classes for error indication in forms */
-.portalErrorMessage,
-.portalError {
-    background-color: #ff9070;
-    border: 1px solid #ddb0b0;
-    color: Black;
-    margin: 0em 0em 0em 0em;
-    padding: 0.3em 0.3em 0.3em 0.3em;
+tr.highlight {
+    border: 1px solid #ffc550;
+    background-color: #ffe7ab;
 }
-
-.portalError .error {
-    background: none;
-    border: none;
-    padding: 0;
-    font-size: 85%;
-}
-
-.portalErrorMessage {
-    background-image: url(/++resource++alert_icon.gif);
-    background-repeat: no-repeat;
-    background-position: 5px 50%;
-    padding: 0.5em 1em 0.5em 3em;
-}
-
-
-/* Plone elements that should be changed */
-
-h1, h2, h3, h4, h5, h6 {
-  border-bottom: none;
-}
-
-h3 {
-  list-style-image: url(/++resource++bullet.gif);
-}
-
-label {
-  font-weight: bold;
-}
-
-.listingBar a,
-#portal-personaltools a,
-#portal-breadcrumbs a {
-  text-decoration: none;
-  text-transform: lowercase;
-  font-size: 80%;
-}
-
-#portal-logo {
-  background: url(/++resource++rosetta.png) no-repeat;
-}
-
-#portal-personaltools {
-  clear: both;
-}
-
-#portal-personaltools .portalUser {
-  background: transparent url(/++resource++user.gif) center left no-repeat;
-}
-
-#portal-personaltools li {
-  background: transparent url(/++resource++linkOpaque.gif) center left no-repeat;
-}
-
-.contentActions {
-  background-image: url(/++resource++arrowDownAlternative.gif);
-}
-
-.portalMessage,
-.system-message,  /* These two last ones are reST error indicators */
-#error-handling {
-  background-image: url(/++resource++info_icon.gif);
-}
-
-.standalone,
-.documentEditable * .standalone {
-  background: #8fb3d9 url(/++resource++linkOpaque.gif) 9px 1px no-repeat;
-}
-
-.context,
-.documentEditable * .context {
-  background: transparent url(/++resource++linkTransparent.gif) 9px 1px no-repeat;
-}
-
-.destructive,
-.documentEditable * .context {
-  background: #ffce7b url(/++resource++linkTransparent.gif) 9px 1px no-repeat;
-}
-
-input.searchButton {
-  background: White url(/++resource++search_icon.gif) 2px 1px no-repeat;
-}
-
-.fieldRequired {
-  background: url(/++resource++required.gif) center left no-repeat;
-}
-
-.link-parent {
-  background: transparent url(/++resource++arrowUp.gif) 4px 5px no-repeat;
-}
-
-.link-user {
-  background: transparent url(/++resource++user.gif) 0px 1px no-repeat;
-}
-
-.link-https {
-  background: transparent url(/++resource++lock_icon.gif) 0px 1px no-repeat;
-}
-
-.link-mailto {
-  background: transparent url(/++resource++mail_icon.gif) 0px 1px no-repeat;
-}
-
-.link-news {
-  background: transparent url(/++resource++topic_icon.gif) 0px 1px no-repeat;
-}
-
-.link-ftp {
-  background: transparent url(/++resource++file_icon.gif) 0px 1px no-repeat;
-}
-
-.link-irc {
-  background: transparent url(/++resource++discussionitem_icon.gif) 0px 1px no-repeat;
-}
-
-.link-callto {
-  background: transparent url(/++resource++phone_icon.gif) 0px 1px no-repeat;
-}
-
-.link-comment {
-  background: transparent url(/++resource++discussionitem_icon.gif) 0px 1px no-repeat;
-}
-
-
 
 /* XXX Just setting a fixed width until the rest of the layout is in place */
 
@@ -222,63 +579,6 @@ input.searchButton {
 #portal-columns {
   margin: auto;
 }
-
-/* Explanatory elements, just until the correct mechanisms are in place */
-
-.authenticated {
-  border: 2px dashed green;
-  padding: 2px;
-  margin: 2px;
-}
-
-.anonymous {
-  border: 2px dashed red;
-  padding: 2px;
-  margin: 2px;
-}
-
-/* highlight on hover in table */
-
-table.rowNavigation tr:hover {
-  background-color: #93bee2 !important;
-  cursor:pointer;
-}
-table.rowNavigation>thead>tr:hover {
-  background-color: #dee7ec !important;
-  cursor: default;
-}
-
-/* highlight specific table entry */
-
-tr.highlight {
-    border: 1px solid #ffa500;
-    background-color: #ffce7b;
-}
-
-tr.amount, td.amount {
-    text-align: right;
-}
-
-/* Display links as blocks, so we can make the whole row clickable */
-
-tr.rowLinkified a {
-  text-decoration: none;
-  display: block;
-}
-
-/* Overwride values from 'listing' class */
-.lpListing td {
-  padding: 0em 0em;
-}
-
-.lpListing td a {
-  padding: 0em 1em;
-}
-
-.lpListing a:hover {
-  text-decoration: none;
-}
-
 
 /* batch navigation links */
 
@@ -294,22 +594,6 @@ tr.rowLinkified a {
   text-align: center;
   border-top: 1px solid #364970;
   vertical-align: bottom;
-}
-
-/* Bug status markers */
-
-.bug-confirmed {
-  color: white;
-  background-color: red;
-  border: 1px solid #990000;
-  padding: 0 0.25em;
-}
-
-.bug-pending {
-  color: black;
-  background-color: yellow;
-  border: 1px dashed #999900;
-  padding: 0 0.25em;
 }
 
 /* Bug Status, Severity, Priority markers */
@@ -336,6 +620,31 @@ tr.rowLinkified a {
 .priorityLow     { color: Black; }
 .priorityWontfix { color: Gray; }
 
+/* Spec status and priority */
+
+.specstatusIMPLEMENTED   { color: Green; }
+.specstatusAPPROVED      { color: Black; }
+.specstatusPENDING       { color: Yellow; }
+.specstatusDRAFT         { color: Orange; }
+.specstatusBRAINDUMP     { color: Red; }
+.specstatusSUPERSEDED    { color: Gray; }
+.specstatusOBSOLETE      { color: Gray; }
+
+.specpriorityWISHLIST   { color: Gray; }
+.specpriorityLOW        { color: Black; }
+.specpriorityMEDIUM     { color: Orange; }
+.specpriorityHIGH       { color: Red; }
+.specpriorityEMERGENCY  { color: Red; }
+
+/* Board-like comment CSS */
+
+.boardComment {
+  border: 1px solid #364970;
+  margin-bottom: 1.5em;
+  margin-top: 1em;
+  position: relative;
+}
+
 /* Board-like comment CSS */
 
 .boardComment {
@@ -351,6 +660,7 @@ tr.rowLinkified a {
   clear: both;
   width: 99%;
 }
+
 
 .boardCommentDetails {
   font-size: 80%;
@@ -374,37 +684,12 @@ tr.rowLinkified a {
   padding: 0;
   margin: 0;
 }
-
-.boardCommentActions {
-  border: 1px solid #364970;
-  border-style: solid none none none;
-  background-color: #93bee2;
-  padding: 0.5em 1em 0 1em;
-  text-align: right;
-}
-
-.boardCommentActions {
-  right: 1em;
-}
-
-.boardCommentPortrait {
-  float: right;
-  margin-bottom: 1em;
-}
-
-.portrait {
-  float: right;
-  clear: both;
-}
-
 /* used to mark dummy data with div entity */
 .dummy {
   background-color: #eeeeee;
   color: #656565;
 }
-
 /* Various custom list formats: */
-
 ul.add>li, li.add {
   list-style-image: url(/++resource++add.gif);
 }
@@ -450,6 +735,9 @@ ul.download>li, li.download {
 ul.edit>li, li.edit {
   list-style-image: url(/++resource++edit.gif);
 }
+ul.file>li, li.file {
+  list-style-image: url(/++resource++file);
+}
 ul.info>li, li.info {
   list-style-image: url(/++resource++info_icon.gif);
 }
@@ -474,7 +762,10 @@ ul.milestone>li, li.milestone {
 ul.news>li, li.news {
   list-style-image: url(/++resource++news);
 }
-ul.packages>li, li.packages, ul.products>li, li.products {
+ul.packages>li, li.packages {
+  list-style-image: url(/++resource++package-binary);
+}
+ul.products>li, li.products {
   list-style-image: url(/++resource++product_icon.gif);
 }
 ul.person>li, li.person, ul.people>li, li.people {
@@ -508,18 +799,6 @@ ul.search>li, li.search {
   list-style-image: url(/++resource++search_icon.gif);
 }
 
-/* Translation template stuff: */
-
-.messageSourceString {
-  padding: 0.5em 1em;
-  background-color: #93bee2;
-  border: 1px solid #364970;
-}
-
-.language-label {
-  float: left;
-}
-
 /* Used for source and translator comments on the translation page. */
 
 .po-comment {
@@ -540,346 +819,6 @@ ul.search>li, li.search {
   color: #cc0000;
 }
 
-/* === Undo bugs in plone.css === */
-
-/* -- Stop accessing resources on plone.org: -- */
-
-.portalMessage {font-weight: normal;}
-
-ul {
-  margin-left: 24px;
-  list-style-image: none;
-}
-#portal-personaltools .portalUser, .link-user {
-  background-image: url(/@@/user.gif);
-}
-#portal-personaltools li {
-  background-image: url(/@@/linkOpaque.gif);
-}
-.contentActions li {
-  background-image: url(/@@/arrowDownAlternative.gif);
-}
-#error-handling {
-  background-image: url(/@@/info_icon.gif);
-}
-.standalone, .documentEditable * .standalone {
-  background-image: url(/@@/linkOpaque.gif);
-}
-.context, .documentEditable * .context, .destructive,
-.documentEditable * .destructive {
-  background-image: url(/@@/linkTransparent.gif);
-}
-input.searchButton {
-  background-image: url(/@@/search_icon.gif);
-}
-.fieldRequired {
-  background-image: none;
-  padding-left: 0;
-}
-.link-parent {
-  background-image: url(/@@/arrowUp.gif);
-}
-.link-external {
-  background-image: url(/@@/link_icon.gif);
-}
-.link-https {
-  background-image: url(/@@/lock_icon.gif);
-}
-.link-mailto {
-  background-image: url(/@@/mail_icon.gif);
-}
-.link-news {
-  background-image: url(/@@/news);
-}
-.link-ftp {
-  background-image: url(/@@/link_icon.gif);
-}
-.link-irc, .link-comment {
-  background-image: url(/@@/info.png);
-}
-.link-document {
-  background-image: url(/@@/document_icon.gif);
-}
-.link-callto {
-  background-image: url(/@@/phone_icon.gif);
-}
-
-/* -- "Links must look like links." -- SteveA */
-
-a, #portal-footer a {
-  text-decoration: underline;
-}
-
-/* -- Don't stomp on people's preferred fonts (much): -- */
-
-body {
-  font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
-  font-size: 100%;
-}
-code {
-  font-family: monospace;
-  font-size: 100%;
-  color: inherit;
-  background: transparent;
-  border: none;
-  padding: inherit;
-}
-pre, textarea {
-  font-family: monospace;
-  font-size: 100%;
-}
-
-/* -- Fix icon alignment in notes and error messages: -- */
-
-.portalMessage, .system-message, #error-handling {
-  background-position: 5px 0.5em;
-  padding-left: 30px;
-} /* need a px value because the image has a pixel size */
-
-img {
-  vertical-align: baseline;
-}
-
-/* -- Make headings lay out properly -- */
-
-h1 {
-  margin-bottom: 0.5em;
-  padding-right: 0;
-}
-
-/* -- Fix listing table styles: -- */
-
-table.listing {
-  border: none;
-  width: 100%;
-}
-table.listing, table.listing tbody {
-  border-bottom: 1px solid #8cacbb;
-}
-table.listing th, table.listing td {
-  padding: 0.125em 0.25em;
-}
-table.listing th {
-  white-space: nowrap;
-}
-table.listing>tr>td, table.listing>tbody>tr>td {
-  border: 1px #8cacbb;
-  border-style: dotted none none none;
-}
-table.listing>tr.note>td, table.listing>tbody>tr.note>td {
-  border-style: none;
-}
-table.listing>tr.note, table.listing>tbody>tr.note {
-  font-size: smaller;
-}
-table.listing>thead, table.listing>thead>tr>th {
-  border: 1px solid #8cacbb;
-}
-table.listing>thead>tr>td {
-  border: none;
-}
-
-/* Alternating "even" and "odd" colors are bong */
-
-.portlet {
-  background-color: #f7f9fa;
-}
-
-/* Abbreviations should only be marked if they actually have explanations */
-
-abbr, acronym, .explain {
-  border-bottom: none;
-  color: inherit;
-  cursor: inherit;
-}
-abbr[title], acronym[title], .explain[title] {
-  border-bottom: 1px dotted Black;
-  color: Black;
-  background-color: transparent;
-  cursor: help;
-}
-
-/* Not all of a <dt> should be bold: -- */
-
-dt {
-  font-weight: inherit;
-}
-dt dfn {
-  font-style: inherit;
-  font-weight: bold;
-}
-
-/* -- Q!: -- */
-
-q {
-  font-family: inherit;
-  font-style: inherit;
-  font-size: inherit;
-}
-
-/* -- Temporarily make *all* buttons look plone-y. Ugh. -- */
-
-button {
-  border: 1px solid #8cacbb;  
-  color: Black;
-  background-color: white;
-}
-
-/* -- Other bugs: -- */
-
-.documentContent {
-  background: none;
-}
-
-.formHelp, .formHelp:hover {
-  color: #666666;
-  margin-bottom: 1em;
-  cursor: inherit;
-}
-
-.portlet, #portal-top, #portal-footer {
-  font-size: smaller;
-}
-
-legend {
-  background: none;
-}
-li {
-  margin-bottom: 0;
-}
-
-#portal-personaltools .portalUser {
-  background: transparent url(/++resource++user.gif)
-}
-
-.portlet {
-  background-color: #f4f5f8;
-}
-
-.portlet li {
-  margin-bottom: 0.5em;
-}
-
-/* === New design === */
-
-/* -- Stuff browsers should do, but don't -- */
-
-abbr, address {
-	font-style: inherit;
-}
-
-kbd {
-  border: 1px solid;
-  border-color: white gray gray white;
-  color: black;
-  background-color: #ccc;
-  min-width: 1em;
-}
-
-label, .field label {
-  white-space: nowrap;
-}
-
-caption {
-  text-align: left;
-  color: #666666;
-  margin-top: 0;
-  margin-bottom: 0;
-}
-
-legend {
-  font-weight: bold;
-}
-
-th {
-  font-weight: bold;
-  text-align: right;
-}
-thead th, tr.thead th {
-  text-align: center;
-}
-thead {
-  vertical-align: bottom;
-}
-
-/* -- Launchpad-wide -- */
-
-body {
-  background-color: #fcfcfc;
-  color: black;
-  padding: 0.5em 0.75em;
-}
-:visited {
-  background: none;
-  color: #8888bb;
-}
-:link, .hierarchy :visited, .footer :visited,
-.app :visited, .sidebar :visited, .portlet :visited {
-  background: none;
-	color: #000088;
-}
-
-.header, .footer {
-  font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
-}
-.header {
-  font-size: 0.875em;
-}
-.footer {
-  font-size: smaller;
-  text-align: center;
-}
-.login {
-  text-align: right;
-  min-height: 1.75em;
-}
-.login input[type="submit"] {
-  padding: 0;
-}
-.header td, .footer {
-  padding: 0.25em;
-}
-.header, .footer, ul.app>li {
-  background-color: #dee7ec;
-  color: inherit;
-}
-h2.lpcontext {
-  font-size: 1.5em;
-}
-ul.facets {
-  text-align: right;
-}
-ul.app {
-  padding: 0;
-  margin: 1em 0 1em;
-  border-bottom: 1px solid #8cacbb;
-  font-weight: bold;
-  font-size: 1em;
-  font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
-  /* Why? We're undoing the nonsense plone.css does; essentially, it
-   * sets a line-height to ul, and that breaks layout for tabs. IE
-   * doesn't support inherit, so we need the max-height hack. When we
-   * nuke plone.css, this can go away. Can that be tomorrow? -- kiko */
-  line-height: inherit;
-  max-height: 1.3em;
-}
-ul.app>li
-{
-  border: 1px solid #8cacbb;
-  border-bottom: none;
-  display: inline;
-  list-style: none;
-  margin: 0 0 0 0.5em;
-  padding: 0 0.5em;
-}
-ul.app a {
-  text-decoration: none;
-}
-ul.app>li.current {
-  background: #fcfcfc;
-  border-bottom: 1px solid #fcfcfc;
-}
-
 .personal {
   clear: left;
   float: left;
@@ -892,58 +831,30 @@ ul.app>li.current {
   margin-left: 2%;
   width: 48%;
 }
+
 .lesser {
   font-size: smaller;
 }
 
-.sidebar {
-  background-color: #f7f9fa;
-  border: 1px solid #8cacbb;
-  border-top: none;
-  padding-bottom: 1em;
-  clear: right;
-  float: right;
-  font-size: smaller;
+/* sabdfl 22/10/2005 indented and moreindented useful for listings */
+.indented {
   margin-left: 1em;
-  width: 25%;
-  min-width: 8em;
-  max-width: 50%;
 }
-
-.sidebar h4 { /* plone.css .portlet h4 paste-o */
-    background-color: #dee7ec;
-    border-top: 1px solid #8cacbb;
-    border-bottom: 1px solid #8cacbb;
-    padding: 0em 0.3em 0em 1em;
-    text-transform: lowercase;
-    display: block;
-    font-size: 1em;
-    font-weight: normal;
-}
-
-.sidebar ul {
-    margin-left: 2.5em;
+.moreindented {
+  margin-left: 2em;
 }
 
 input[type="image"] {
   border: none;
 }
 
-.debug {
-  background-color: #ffddee;
-}
-.debug th, .debug td {
-  border: 1px dotted red;
-}
-.debug th th, .debug th td, .debug td th, .debug td td {
-  border: 1px dotted green;
-}
-.fixme {
-  color: #ff6699;
-  background-color: #ffff00;
-}
 .actions {
   margin: 0.5em 0;
+}
+
+.unavailable {
+  color: #999;
+  background: none;
 }
 .list {
   text-align: left;
@@ -957,56 +868,7 @@ input[type="image"] {
   margin: 0 0 0 4px;
 }
 
-h1, h2, h3, h4, h5, h6 {
-  background: none;
-  clear: left;
-	color: #708a96;
-	font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
-	font-weight: normal;
-	margin-top: 0;
-	text-align: left;
-}
-h2 {
-  font-size: 1.25em;
-	margin: 0.5em 0;
-}
-h3, h4, h5, h6 {
-	font-size: 1em;
-  margin-bottom: 0;
-}
-table {
-  margin-left: auto;
-  margin-right: auto;
-  border-collapse: collapse;
-}
-table table {
-  width: 100%;
-}
-table table th, table table td {
-  padding: 0.25em;
-}
-table.data, table.data>thead, table.data>tfoot {
-	border: solid #999;
-	border-width: 1pt 0;
-}
-table.data>thead>tr, table.data>tbody>tr, table.data>tfoot>tr {
-	border: dotted #999;
-	border-width: 1pt 0;
-}
-table.data>tr>th, table.data>tr>td,
-table.data>thead>tr>th, table.data>thead>tr>td,
-table.data>tbody>tr>th, table.data>tbody>tr>td, table.data>tfoot>tr>th,table.data>tfoot>tr>td {
-  padding: 0.25em 0.125em 0.25em;
-}
-th.icon, td.icon {
-  width: 1px;
-}
-th.icon.left, td.icon.left {
-  padding-right: 0;
-}
-th.icon.right, td.icon.right {
-  padding-left: 0;
-}
+
 td p:first-child, td ol:first-child, td blockquote:first-child {
 	margin-top: 0;
 }
@@ -1054,96 +916,11 @@ tr {
 	width: 100%;
 }
 
-/* -- Malone: -- */
-
-.bugid {
-  text-align: left;
-  width: 50%;
-  float: left;
-}
-.created {
-  text-align: right;
-  width: 50%;
-  float: right;
-}
-
-td.plain {
-  border: 1px dotted #8cacbb;
-}
-td.plain:hover {
-  background-color: #dee7ec;
-  color: #436976;
-  border: 1px solid #8cacbb;
-}
-td.selected {
-  background-color: #dee7ec;
-  color: #436976;
-  border: 1px solid #8cacbb;
-}
-
 /* from richard braine for the series source forms */
 /* otherwise inputs don't disappear along with surrounding layer */
 input {
   visibility:inherit
 }
-/* this lines up text inputs so they don't look a mess */
-.textinput {
-  position: absolute;
-  left: 250px;
-}
-/* radios had 1px left and right borders - don't know if intended
-  but looked shit imo */
-.radios {
-  border:none;
-}
-/* this style was making the text '(Required)' invisible:
-   same colour as background */
-.fieldRequired {
-  color: #999999
-}
-
-/* A listbox is a scrolling list of checkboxes or radio buttons. */
-.listbox {
-  border: 1px solid #8cacbb;
-  display: inline-block;
-  max-height: 12em;
-  overflow: auto;
-  overflow: -moz-scrollbars-vertical;
-}
-.listbox label {
-  background-color: #f6f6f6;
-  border: solid white;
-  border-width: 0 0 1px 0;
-  display: block;
-}
-
-/*
-  Sortable tables
-*/
-
-table.sortable a.sortheader {
-    color:#666666;
-    font-weight: bold;
-    text-decoration: none;
-    display: block;
-}
-
-table.sortable img.sortarrow {
-    padding-left: 2px;
-}
-
-th.ascending {
-  background-image: url(/++resource++arrowDown.gif);
-  background-position: center right;
-  background-repeat: no-repeat;
-}
-
-th.descending {
-  background-image: url(/++resource++arrowUp.gif);
-  background-position: center right;
-  background-repeat: no-repeat;
-}
-
 /*
 Calendar stuff.
 */
@@ -1250,4 +1027,35 @@ Calendar stuff.
 #calendar-view-day .other {
   background: #e0b6af;
   border: 1px #884631 solid;
+}
+
+.error-notification,
+.warning-notification {
+  background-position: 5px 0.5em;
+  padding-left: 30px;
+  background-color: #ff9070;
+  border: 1px solid #ddb0b0;
+  color: Black;
+  background-image: url(/++resource++alert_icon.gif);
+  font-size: 85%;
+  font-weight: bold;
+  margin: 1em 0em 0em 0em;
+  padding: 0.5em 1em 0.5em 3em;
+  background-repeat: no-repeat;
+}
+
+.notice-notification,
+.info-notification,
+.debug-notification {
+  background-position: 5px 0.5em;
+  padding-left: 30px;
+  background-color: #ffce7b;
+  border: 1px solid #ddb0b0;
+  color: Black;
+  background-image: url(/++resource++info_icon.gif);
+  font-size: 85%;
+  font-weight: bold;
+  margin: 1em 0em 0em 0em;
+  padding: 0.5em 1em 0.5em 3em;
+  background-repeat: no-repeat;
 }

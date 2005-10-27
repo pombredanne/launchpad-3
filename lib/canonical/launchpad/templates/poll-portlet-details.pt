@@ -6,29 +6,15 @@
     <b>Title:</b>
     <span tal:replace="context/title" /><br />
 
-    <b>Team:</b>
+    <b>Voting Team:</b>
     <a tal:attributes="href context/team/fmt:url"
        tal:content="context/team/browsername" /><br />
 
-    <tal:block condition="context/isNotYetOpened">
-      <b>Opens in:</b>
-      <span tal:replace="context/opensIn/fmt:approximateduration" /><br />
-    </tal:block>
+    <b>Opens:</b>
+    <span tal:replace="context/dateopens/fmt:date" /><br />
 
-    <tal:block condition="context/isOpen">
-      <b>Opened since:</b>
-      <span tal:replace="context/dateopens/fmt:date" /><br />
-      <b>Closes in:</b>
-      <span tal:replace="context/closesIn/fmt:approximateduration" /><br />
-    </tal:block>
-
-    <tal:block condition="context/isClosed">
-      <b>Closed since:</b>
-      <span tal:replace="context/datecloses/fmt:date" /><br />
-    </tal:block>
-
-    <b>Proposition:</b>
-    <span tal:replace="context/proposition" /><br />
+    <b>Closes:</b>
+    <span tal:replace="context/datecloses/fmt:date" /><br />
 
     <b>Type:</b>
     <span tal:replace="context/type/title" /><br />

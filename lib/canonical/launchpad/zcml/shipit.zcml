@@ -5,6 +5,11 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="ShipItNavigation ShippingRequestSetNavigation
+               StandardShipItRequestSetNavigation"
+      />
 
   <view
       type="zope.publisher.interfaces.browser.IBrowserRequest"
@@ -67,6 +72,13 @@
         <allow interface="canonical.launchpad.interfaces.IShipItApplication" />
     </securedutility>
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        name="robots.txt"
+        template="../templates/robotstxt.pt"
+        permission="zope.Public"
+        />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IShipItApplication"
         name="+index" />
@@ -74,9 +86,9 @@
     <browser:page
         for="canonical.launchpad.interfaces.IShipItApplication"
         permission="launchpad.Admin"
-        name="+portlet-actions"
-        template="../templates/shipit-portlet-actions.pt"
-        lp:url="/shipit/requests/+portlet-actions">
+        name="+portlet-navigation"
+        template="../templates/shipit-portlet-navigation.pt"
+        lp:url="/shipit/requests/+portlet-navigation">
     </browser:page>
 
     <browser:page
@@ -95,17 +107,12 @@
         permission="launchpad.AnyPerson"
         name="myrequest" />
 
-    <browser:suburl
-      for="canonical.launchpad.interfaces.IShipItApplication"
-      name="requests"
-      utility="canonical.launchpad.interfaces.IShippingRequestSet"
-      permission="launchpad.Admin" />
-
-    <browser:suburl
-      for="canonical.launchpad.interfaces.IShipItApplication"
-      name="standardoptions"
-      utility="canonical.launchpad.interfaces.IStandardShipItRequestSet"
-      permission="launchpad.Admin" />
+    <browser:page
+        name="exports"
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        class="canonical.launchpad.browser.ShipItExportsView"
+        permission="launchpad.Admin" 
+        template="../templates/shipit-exports.pt" />
 
 
     <!-- ShippingRequest -->
@@ -137,9 +144,9 @@
     <browser:page
         for="canonical.launchpad.interfaces.IShippingRequest"
         permission="launchpad.Admin"
-        name="+portlet-actions"
-        template="../templates/shipit-portlet-actions.pt"
-        lp:url="/shipit/requests/+portlet-actions">
+        name="+portlet-navigation"
+        template="../templates/shipit-portlet-navigation.pt"
+        lp:url="/shipit/requests/+portlet-navigation">
     </browser:page>
 
     <!-- ShippingRequestSet -->
@@ -157,10 +164,6 @@
         for="canonical.launchpad.interfaces.IShippingRequestSet"
         name="+index" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IShippingRequestSet"
-        getter="get" />
-
     <browser:page
         for="canonical.launchpad.interfaces.IShippingRequestSet"
         facet="overview"
@@ -174,9 +177,17 @@
     <browser:page
         for="canonical.launchpad.interfaces.IShippingRequestSet"
         permission="launchpad.Admin"
-        name="+portlet-actions"
-        template="../templates/shipit-portlet-actions.pt"
-        lp:url="/shipit/requests/+portlet-actions">
+        class="canonical.launchpad.browser.RedirectToOldestPendingRequest"
+        attribute="__call__"
+        name="+oldestpending">
+    </browser:page>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShippingRequestSet"
+        permission="launchpad.Admin"
+        name="+portlet-navigation"
+        template="../templates/shipit-portlet-navigation.pt"
+        lp:url="/shipit/requests/+portlet-navigation">
     </browser:page>
 
 
@@ -212,9 +223,9 @@
     <browser:page
         for="canonical.launchpad.interfaces.IStandardShipItRequest"
         permission="launchpad.Admin"
-        name="+portlet-actions"
-        template="../templates/shipit-portlet-actions.pt"
-        lp:url="/shipit/requests/+portlet-actions">
+        name="+portlet-navigation"
+        template="../templates/shipit-portlet-navigation.pt"
+        lp:url="/shipit/requests/+portlet-navigation">
     </browser:page>
 
 
@@ -233,10 +244,6 @@
         for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
         name="+index" />
 
-    <browser:traverse
-        for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
-        getter="get" />
-
     <browser:page
         name="+index"
         for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
@@ -249,9 +256,9 @@
     <browser:page
         for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
         permission="launchpad.Admin"
-        name="+portlet-actions"
-        template="../templates/shipit-portlet-actions.pt"
-        lp:url="/shipit/requests/+portlet-actions">
+        name="+portlet-navigation"
+        template="../templates/shipit-portlet-navigation.pt"
+        lp:url="/shipit/requests/+portlet-navigation">
     </browser:page>
 
     <browser:addform
@@ -274,5 +281,32 @@
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IRequestedCDs" />
     </content>
+
+
+    <!-- Shipment -->
+    <content class="canonical.launchpad.database.Shipment">
+        <allow interface="canonical.launchpad.interfaces.IShipment" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.ShipmentSet"
+        provides="canonical.launchpad.interfaces.IShipmentSet">
+        <allow interface="canonical.launchpad.interfaces.IShipmentSet" />
+    </securedutility>
+
+
+    <!-- ShippingRun -->
+    <content class="canonical.launchpad.database.ShippingRun">
+        <allow interface="canonical.launchpad.interfaces.IShippingRun" />
+        <require 
+            permission="launchpad.Admin"
+            set_schema="canonical.launchpad.interfaces.IShippingRun" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.ShippingRunSet"
+        provides="canonical.launchpad.interfaces.IShippingRunSet">
+        <allow interface="canonical.launchpad.interfaces.IShippingRunSet" />
+    </securedutility>
 
 </configure>

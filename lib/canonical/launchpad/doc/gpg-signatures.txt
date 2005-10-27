@@ -23,6 +23,8 @@ GPG Signature Verification
     >>> from zope.component import getUtility
     >>> gpghandler = getUtility(IGPGHandler)
 
+    >>> from canonical.launchpad.interfaces import GPGVerificationError
+
 The text below was "clear signed" by 0xDFD20543 master key:
 
     >>> content = """-----BEGIN PGP SIGNED MESSAGE-----
@@ -65,3 +67,23 @@ The text below was "clear signed" by a 0x02BA5EF6, a subkey of 0xDFD20543
 
    >>> master_sig.fingerprint == subkey_sig.fingerprint
    True
+
+The text below was "clear signed" by 0xDFD20543 master key but tampered with:
+
+    >>> content = """-----BEGIN PGP SIGNED MESSAGE-----
+    ... Hash: SHA1
+    ...
+    ... Test Message
+    ... -----BEGIN PGP SIGNATURE-----
+    ... Version: GnuPG v1.2.5 (GNU/Linux)
+    ...
+    ... iD8DBQFC7ZYY2yWXVgK6XvYRAgcwAJ43g/8X6DguixRucoXN86No67/W2wCgjFDj
+    ... jLeauuXDPTcnzDmDzCaQLXo=
+    ... =ettP
+    ... -----END PGP SIGNATURE-----
+    ... """
+
+    >>> master_sig = gpghandler.getVerifiedSignature(content)
+    Traceback (most recent call last):
+    ...
+    GPGVerificationError: Bad signature

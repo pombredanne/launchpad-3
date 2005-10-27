@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'TicketSetNavigation',
     'TicketView',
     'TicketAddView',
     'TicketEditView',
@@ -17,12 +18,17 @@ from zope.component import getUtility
 from canonical.lp.dbschema import TicketStatus
 
 from canonical.launchpad.interfaces import (
-    IProduct, IDistribution, ILaunchBag, ITicket, ITicketSet, IBugSet)
+    IProduct, IDistribution, ILaunchBag, ITicket, ITicketSet)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ContextMenu, Link, canonical_url,
-    enabled_with_permission)
+    ContextMenu, Link, canonical_url, enabled_with_permission,
+    GetitemNavigation)
+
+
+class TicketSetNavigation(GetitemNavigation):
+
+    usedfor = ITicketSet
 
 
 class TicketView:

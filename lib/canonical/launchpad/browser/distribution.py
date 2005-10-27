@@ -3,16 +3,15 @@
 __metaclass__ = type
 
 __all__ = [
+    'DistributionNavigation',
+    'DistributionSetNavigation',
     'DistributionFacets',
     'DistributionView',
-    'DistributionBugsView',
     'DistributionFileBugView',
     'DistributionSetView',
     'DistributionSetAddView',
-    'DistributionSetSearchView',
     ]
 
-from zope.interface import implements
 from zope.component import getUtility
 from zope.app.form.browser.add import AddView
 from zope.event import notify
@@ -20,19 +19,64 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSet, IPerson, IBugTaskSearchListingView,
-    IBugSet)
+    IDistribution, IDistributionSet, IPerson, IBugSet, IPublishedPackageSet,
+    ISourcePackageNameSet, NotFoundError)
 from canonical.launchpad.browser.addview import SQLObjectAddView
-from canonical.launchpad.browser import BugTaskSearchListingView
+from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
-    enabled_with_permission)
+    StandardLaunchpadFacets, Link, canonical_url, ApplicationMenu,
+    enabled_with_permission, GetitemNavigation, stepthrough, stepto)
+
+
+class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
+
+    usedfor = IDistribution
+
+    def breadcrumb(self):
+        return self.context.displayname
+
+    @stepto('+packages')
+    def packages(self):
+        return getUtility(IPublishedPackageSet)
+
+    @stepthrough('+source')
+    def traverse_sources(self, name):
+        return self.context.getSourcePackage(name)
+
+    @stepthrough('+milestone')
+    def traverse_milestone(self, name):
+        return self.context.getMilestone(name)
+
+    @stepthrough('+spec')
+    def traverse_spec(self, name):
+        return self.context.getSpecification(name)
+
+    @stepthrough('+ticket')
+    def traverse_ticket(self, name):
+        # tickets should be ints
+        try:
+            ticket_num = int(name)
+        except ValueError:
+            raise NotFoundError
+        return self.context.getTicket(ticket_num)
+
+
+class DistributionSetNavigation(GetitemNavigation):
+
+    usedfor = IDistributionSet
+
+    def breadcrumb(self):
+        return 'Distributions'
 
 
 class DistributionFacets(StandardLaunchpadFacets):
 
     usedfor = IDistribution
+
+    enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
+                   'translations', 'calendar']
 
     def specifications(self):
         target = '+specs'
@@ -52,7 +96,8 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'overview'
-    links = ['edit', 'reassign', 'members', 'milestone_add']
+    links = ['search', 'allpkgs', 'milestone_add', 'members', 'edit',
+             'reassign', 'addrelease']
 
     def edit(self):
         text = 'Edit Details'
@@ -63,6 +108,10 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'Change Admin'
         return Link('+reassign', text, icon='edit')
 
+    def allpkgs(self):
+        text = 'List All Packages'
+        return Link('+allpackages', text, icon='info')
+
     def members(self):
         text = 'Change Members'
         return Link('+selectmemberteam', text, icon='edit')
@@ -71,14 +120,14 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'Add Milestone'
         return Link('+addmilestone', text, icon='add')
 
-    def searchpackages(self):
+    def search(self):
         text = 'Search Packages'
-        return Link('+packages', text, icon='search')
+        return Link('+search', text, icon='search')
 
     @enabled_with_permission('launchpad.Admin')
     def addrelease(self):
-        text = 'Add New Distribution Release'
-        return Link('+add', text, icon='add')
+        text = 'Add Release'
+        return Link('+addrelease', text, icon='add')
 
 
 class DistributionBugsMenu(ApplicationMenu):
@@ -89,7 +138,7 @@ class DistributionBugsMenu(ApplicationMenu):
 
     def cve_list(self):
         text = 'CVE List'
-        return Link('+cve', text, icon='info')
+        return Link('+cve', text, icon='cve')
 
     def new(self):
         text = 'Report a Bug'
@@ -103,7 +152,7 @@ class DistributionBountiesMenu(ApplicationMenu):
     links = ['new', 'link']
 
     def new(self):
-        text = 'Register a New Bounty'
+        text = 'Register New Bounty'
         return Link('+addbounty', text, icon='add')
 
     def link(self):
@@ -115,14 +164,18 @@ class DistributionSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'specifications'
-    links = ['new', 'roadmap']
+    links = ['roadmap', 'table', 'new']
 
     def roadmap(self):
         text = 'Roadmap'
         return Link('+specplan', text, icon='info')
 
+    def table(self):
+        text = 'Assignments Table'
+        return Link('+specstable', text, icon='info')
+
     def new(self):
-        text = 'Register a New Specification'
+        text = 'New Specification'
         return Link('+addspec', text, icon='add')
 
 
@@ -154,33 +207,38 @@ class DistributionTranslationsMenu(ApplicationMenu):
         return Link('+changetranslators', text, icon='edit')
 
 
-class DistributionView:
+class DistributionView(BuildRecordsView):
     """Default Distribution view class."""
-
-
-class DistributionBugsView(BugTaskSearchListingView):
-
-    implements(IBugTaskSearchListingView)
-
+    
     def __init__(self, context, request):
-        BugTaskSearchListingView.__init__(self, context, request)
-        self.milestone_widget = None
+        self.context = context
+        self.request = request
+        form = self.request.form
+        self.text = form.get('text', None)
+        self.matches = 0
+        self.detailed = True
+        self._results = None
 
-    def task_columns(self):
-        """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
-        return [
-            "select", "id", "title", "package", "status", "submittedby",
-            "assignedto"]
+        self.searchrequested = False
+        if self.text is not None and self.text <> '':
+            self.searchrequested = True
+
+    def searchresults(self):
+        """Try to find the source packages in this distribution that match
+        the given text, then present those as a list. Cache previous results
+        so the search is only done once.
+        """
+        if self._results is None:
+            self._results = self.context.searchSourcePackages(self.text)
+        self.matches = len(self._results)
+        if self.matches > 5:
+            self.detailed = False
+        return self._results
 
 
 class DistributionFileBugView(SQLObjectAddView):
 
     __used_for__ = IDistribution
-
-    def __init__(self, context, request):
-        self.request = request
-        self.context = context
-        AddView.__init__(self, context, request)
 
     def createAndAdd(self, data):
         # add the owner information for the bug
@@ -247,20 +305,4 @@ class DistributionSetAddView(AddView):
 
     def nextURL(self):
         return self._nextURL
-
-class DistributionSetSearchView:
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.form  = request.form
-
-    def results(self):
-        return []
-
-    def search_action(self):
-        return True
-
-    def count(self):
-        return 3
 

@@ -42,7 +42,8 @@ from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed, DownloadFailed)
 from canonical.launchpad.interfaces import (
     ILaunchBag, IOpenLaunchBag, IHasOwner, IRequestPreferredLanguages,
-    IRequestLocalLanguages, RawFileAttachFailed, ITeam, RawFileFetchFailed)
+    IRequestLocalLanguages, RawFileAttachFailed, ITeam, RawFileFetchFailed,
+    TranslationConstants)
 from canonical.launchpad.components.poparser import (
     POSyntaxError, POInvalidInputError, POParser)
 from canonical.launchpad.mail import SignedMessage
@@ -92,15 +93,6 @@ def text_replaced(text, replacements, _cache={}):
     return _cache[cachekey](text)
 
 CHARACTERS_PER_LINE = 50
-
-class TranslationConstants:
-    """Set of constants used inside the context of translations."""
-
-    SINGULAR_FORM = 0
-    PLURAL_FORM = 1
-    SPACE_CHAR = u'<span class="po-message-special">\u2022</span>'
-    NEWLINE_CHAR = u'<span class="po-message-special">\u21b5</span><br/>\n'
-
 
 class RosettaReadTarFile:
     """Wrapper around the tarfile module.
@@ -997,7 +989,12 @@ def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
 
     # Replace newlines and tabs with their respective representations.
 
-    return expand_rosetta_tabs(newline.join(lines))
+    html = expand_rosetta_tabs(newline.join(lines))
+    html = text_replaced(html, {
+        '[tab]': TranslationConstants.TAB_CHAR,
+        r'\[tab]': TranslationConstants.TAB_CHAR_ESCAPED
+        })
+    return html
 
 def check_po_syntax(s):
     parser = POParser()

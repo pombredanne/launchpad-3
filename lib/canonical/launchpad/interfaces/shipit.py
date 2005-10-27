@@ -2,7 +2,9 @@
 
 __all__ = ['IStandardShipItRequest', 'IStandardShipItRequestSet',
            'IRequestedCDs', 'IShippingRequest', 'IShippingRequestSet',
-           'ShippingRequestStatus', 'IShipItCountry']
+           'ShippingRequestStatus', 'IShipment', 'IShippingRun',
+           'IShipItCountry', 'IShippingRunSet', 'IShipmentSet',
+           'ShippingRequestPriority']
 
 from zope.schema import Bool, Choice, Int, Datetime, Text, TextLine
 from zope.interface import Interface, Attribute, implements
@@ -49,8 +51,6 @@ class IShippingRequest(Interface):
     id = Int(title=_('The unique ID'), required=True, readonly=True)
 
     recipient = Int(title=_('Recipient'), required=True, readonly=True)
-
-    shipment = Int(title=_('Shipment'), required=True, readonly=False)
 
     daterequested = Datetime(
         title=_('Date of Request'), required=True, readonly=True)
@@ -123,6 +123,13 @@ class IShippingRequest(Interface):
             title=_('Organization'), required=False, readonly=False,
             description=_('The Organization requesting the CDs')
             )
+
+    shipment = Attribute(_(
+        "This request's Shipment or None if the request wasn't shipped yet."))
+    countrycode = Attribute(
+        _("The iso3166code2 code of this request's country. Can't be None."))
+    shippingservice = Attribute(
+        _("The shipping service used to ship this request. Can't be None."))
     totalCDs = Attribute(_('Total number of CDs in this request.'))
     totalapprovedCDs = Attribute(
         _('Total number of approved CDs in this request.'))
@@ -132,7 +139,6 @@ class IShippingRequest(Interface):
     quantityx86approved = Int(title=_('Approved X86 CDs'), readonly=False)
     quantityppcapproved = Int(title=_('Approved PowerPC CDs'), readonly=False)
     quantityamd64approved = Int(title=_('Approved AMD64 CDs'), readonly=False)
-    recipientname = Attribute(_("The recipient's name"))
 
     def isStandardRequest():
         """Return True if this is one of the Standard requests."""
@@ -208,8 +214,10 @@ class ShippingRequestStatus:
 class IShippingRequestSet(Interface):
     """The set of all ShippingRequests"""
 
-    def new(recipient, quantityx86, quantityamd64, quantityppc, reason=None,
-            shockandawe=None):
+    def new(recipient, quantityx86, quantityamd64, quantityppc,
+            recipientdisplayname, country, city, addressline1,
+            addressline2=None, province=None, postcode=None, phone=None,
+            organization=None, reason=None, shockandawe=None):
         """Create and return a new ShippingRequest.
         
         This method can't be used if recipient already has a
@@ -223,23 +231,31 @@ class IShippingRequestSet(Interface):
         Return None if there's no requests with status PENDING.
         """
 
+    def getUnshippedRequests(priority):
+        """Return all requests that are eligible for shipping.
+
+        These are approved requests that weren't shipped yet.
+        """
+
     def get(id, default=None):
         """Return the ShippingRequest with the given id.
         
         Return the default value if there's no ShippingRequest with this id.
         """
 
-    def searchCustomRequests(status=ShippingRequestStatus.ALL,
-                             omit_cancelled=True):
-        """Search for custom requests and return the ones that match."""
-
-    def searchStandardRequests(status=ShippingRequestStatus.ALL,
-                               omit_cancelled=True, standard_type=None):
-        """Search for standard requests and return the ones that match.
+    def getRequestsByType(request_type, standard_type=None,
+                          status=ShippingRequestStatus.ALL,
+                          omit_cancelled=True):
+        """Return all requests of the given type with the given status.
         
-        :standard_type: Either None or a StandardShipItRequest object. If it's
-                        not None, the search is restricted to requests of that
-                        StandardShipItRequest only.
+        :request_type: Either 'custom' or 'standard'
+        If request_type is 'standard', then standard_type can be any of the
+        StandardShipItRequests or None.
+        """
+
+    def search(recipient_name):
+        """Search for requests made by any recipient whose name or email
+        address match <recipient_name>.
         """
 
 
@@ -321,3 +337,72 @@ class IStandardShipItRequestSet(Interface):
         of CDs.
         """
 
+
+class IShipment(Interface):
+    """The shipment of a given request."""
+
+    id = Int(title=_('The unique ID'), required=True, readonly=True)
+    logintoken = TextLine(title=_('Token'), readonly=True, required=True)
+    dateshipped = Datetime(
+        title=_('Date Shipped'), readonly=True, required=True)
+    shippingservice = Int(
+        title=_('Shipping Service'), readonly=True, required=True)
+    shippingrun = Int(title=_('Shipping Run'), readonly=True, required=True)
+    request = Int(title=_('The ShipIt Request'), readonly=True, required=True)
+    trackingcode = TextLine(
+        title=_('Tracking Code'), readonly=True, required=False)
+
+
+class IShipmentSet(Interface):
+    """The set of Shipment objects."""
+
+    def new(shippingservice, shippingrun, trackingcode=None, dateshipped=None):
+        """Create a new Shipment object with the given arguments."""
+
+    def getByToken(token):
+        """Return the Shipment with the given token or None if it doesn't 
+        exist.
+        """
+
+
+class IShippingRun(Interface):
+    """A set of requests that were sent to shipping at the same date."""
+
+    id = Int(title=_('The unique ID'), required=True, readonly=True)
+    datecreated = Datetime(
+        title=_('Date of Creation'), required=True, readonly=True)
+
+    csvfile = Int(
+        title=_('A csv file with all requests of this run.'),
+        required=False, readonly=False)
+
+    sentforshipping = Bool(
+        title=_('Was this ShippingRun sent for shipping?'),
+        required=False, readonly=False)
+
+    requests = Attribute(_('All requests that are part of this shipping run.'))
+
+
+class IShippingRunSet(Interface):
+    """The set of ShippingRun objects."""
+
+    def new():
+        """Create a new ShippingRun object."""
+
+    def get(id):
+        """Return the ShippingRun with the given id or None if it doesn't
+        exist.
+        """
+
+    def getUnshipped():
+        """Return all ShippingRuns that are not yet sent for shipping. """
+
+    def getShipped():
+        """Return all ShippingRuns that are already sent for shipping. """
+
+
+class ShippingRequestPriority:
+    """The priority of a given ShippingRequest."""
+
+    HIGH = 'high'
+    NORMAL = 'normal'

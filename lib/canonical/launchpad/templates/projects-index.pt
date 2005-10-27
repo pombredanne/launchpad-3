@@ -24,7 +24,7 @@
         <table>
           <tr>
             <td>
-              <input name="text" size="30" tal:attributes="value view/text" />
+              <input name="text" size="35" tal:attributes="value view/text" />
                 <input
                   tal:condition="view/searchrequested"
                   type="submit"
@@ -47,7 +47,7 @@
 
     <div tal:condition="view/searchrequested">
 
-        <table class="data" tal:define="results view/searchresults">
+        <table class="listing" tal:define="results view/searchresults">
           <thead>
             <tr class="results">
               <td colspan="0">

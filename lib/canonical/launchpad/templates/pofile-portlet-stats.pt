@@ -4,7 +4,7 @@
 
     <div class="portletBody">
 
-        <div class="portletContent even">
+        <div class="portletContent">
 
             <b>Messages:</b>
             <span tal:replace="context/potemplate/count:len">N</span>

@@ -8,7 +8,7 @@ from sqlos.adapter import PostgresAdapter
 from sqlobject.sqlbuilder import sqlrepr
 from sqlobject.styles import Style
 from datetime import datetime
-from sqlobject import connectionForURI
+from sqlobject import connectionForURI, SQLObjectNotFound
 import thread, warnings
 import time
 
@@ -16,8 +16,8 @@ from canonical.config import config
 
 __all__ = ['SQLBase', 'quote', 'quote_like', 'quoteIdentifier', 'sqlvalues',
            'ZopelessTransactionManager', 'ConflictingTransactionManagerError',
-           'flush_database_updates', 'cursor', 'begin', 'commit', 'rollback',
-           'alreadyInstalledMsg', 'connect']
+           'flush_database_updates', 'flush_database_caches', 'cursor',
+           'begin', 'commit', 'rollback', 'alreadyInstalledMsg', 'connect']
 
 
 # First, let's monkey-patch SQLObject a little, to stop its getID function from
@@ -356,6 +356,13 @@ def quote(x):
     >>> quote(r"\'hello")
     "'\\\\\\'hello'"
 
+    Note that we need to receive a Unicode string back, because our
+    query will be a Unicode string (the entire query will be encoded
+    before sending across the wire to the database).
+
+    >>> quote(u"\N{TRADE MARK SIGN}")
+    u"'\u2122'"
+
     Timezone handling is not implemented, since all timestamps should
     be UTC anyway.
 
@@ -375,7 +382,7 @@ def quote(x):
     >>> sqlrepr(datetime(2003, 12, 4, 13, 45, 50), 'postgres')
     "'2003-12-04T13:45:50'"
 
-    """
+    """ #'
     if isinstance(x, datetime):
         return "'%s'" % x
     return sqlrepr(x, 'postgres')
@@ -508,6 +515,35 @@ def flush_database_updates():
     #        - Brad Bollenbach, 2005-04-20
     for object in list(SQLBase._connection._dm.objects):
         object.syncUpdate()
+
+def flush_database_caches():
+    """Flush all cached values from the database for the current connection.
+
+    SQLObject caches field values from the database in SQLObject
+    instances.  If SQL statements are issued that change the state of
+    the database behind SQLObject's back, these cached values will be
+    invalid.
+
+    This function iterates through all the objects in the SQLObject
+    connection's cache, and synchronises them with the database.  This
+    ensures that they all reflect the values in the database.
+    """
+    for cache in SQLBase._connection.cache.allSubCaches():
+        # iterate over all the live objects
+        for obj in cache.cache.values():
+            try:
+                obj.sync()
+            except SQLObjectNotFound:
+                obj.expire()
+        # update all non-expired sqlobjects in the expiredCache dict.
+        for value in cache.expiredCache.values():
+            obj = value()
+            if obj is None or obj._expired:
+                continue
+            try:
+                obj.sync()
+            except SQLObjectNotFound:
+                obj.expire()
 
 
 # Some helpers intended for use with initZopeless.  These allow you to avoid

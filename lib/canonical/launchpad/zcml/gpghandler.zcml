@@ -24,4 +24,8 @@
         <allow interface="canonical.launchpad.interfaces.IPymeKey" />
     </content>
 
+    <content class="canonical.launchpad.utilities.PymeUserId">
+        <allow interface="canonical.launchpad.interfaces.IPymeUserId" />
+    </content>
+
 </configure>

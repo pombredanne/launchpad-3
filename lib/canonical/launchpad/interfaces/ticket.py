@@ -15,7 +15,6 @@ from zope.interface import Interface, Attribute
 
 from zope.schema import Datetime, Int, Choice, Text, TextLine
 
-from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.interfaces import IHasOwner, IMessageTarget
 from canonical.lp.dbschema import TicketStatus, TicketPriority
 
@@ -107,8 +106,8 @@ class ITicket(IHasOwner, IMessageTarget):
 
         Depending on whether this is the requestor (owner) or someone else,
         it will affect the status in different ways. When the owner says it
-        is resolved, we mark it as "closed". When someone else says it is
-        resolved, we mark it as "answered."
+        is resolved, we mark it as 'closed'. When someone else says it is
+        resolved, we mark it as 'answered.'
         """
 
     def accept():
@@ -165,4 +164,6 @@ class ITicketSet(Interface):
         distribution=None):
         """Create a new trouble ticket."""
 
+    def getAnsweredTickets():
+        """Return all tickets with the status ANSWERED."""
 

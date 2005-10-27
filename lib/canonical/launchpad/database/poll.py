@@ -29,7 +29,8 @@ class Poll(SQLBase):
 
     implements(IPoll)
     _table = 'Poll'
-    _defaultOrder = 'title'
+    sortingColumns = ['title', 'id']
+    _defaultOrder = sortingColumns
 
     team = ForeignKey(dbName='team', foreignKey='Person', notNull=True)
 
@@ -51,13 +52,9 @@ class Poll(SQLBase):
     secrecy = EnumCol(dbName='secrecy', schema=PollSecrecy,
                       default=PollSecrecy.SECRET)
 
-    def newOption(self, name, shortname=None, active=True):
+    def newOption(self, name, title, active=True):
         """See IPoll."""
-        # We don't want shortname to be an empty string. That's why we're
-        # using "if not shortname" instead of "if shortname is not None".
-        if not shortname:
-            shortname = name
-        return getUtility(IPollOptionSet).new(self, name, shortname, active)
+        return getUtility(IPollOptionSet).new(self, name, title, active)
 
     def isOpen(self, when=None):
         """See IPoll."""
@@ -241,8 +238,6 @@ class PollSet:
 
     implements(IPollSet)
 
-    _defaultOrder = Poll._defaultOrder
-
     def new(self, team, name, title, proposition, dateopens, datecloses,
             secrecy, allowspoilt, poll_type=PollAlgorithm.SIMPLE):
         """See IPollSet."""
@@ -257,7 +252,7 @@ class PollSet:
             when = datetime.now(pytz.timezone('UTC'))
 
         if orderBy is None:
-            orderBy = self._defaultOrder
+            orderBy = Poll.sortingColumns
 
         teamfilter = Poll.q.teamID == team.id
         results = Poll.select(teamfilter)
@@ -293,20 +288,15 @@ class PollOption(SQLBase):
 
     implements(IPollOption)
     _table = 'PollOption'
-    _defaultOrder = 'shortname'
+    _defaultOrder = ['title', 'id']
 
     poll = ForeignKey(dbName='poll', foreignKey='Poll', notNull=True)
 
-    name = StringCol(dbName='name', notNull=True)
+    name = StringCol(notNull=True)
 
-    shortname = StringCol(dbName='shortname', notNull=True)
+    title = StringCol(notNull=True)
 
-    active = BoolCol(dbName='active', notNull=True, default=False)
-
-    @property
-    def title(self):
-        """See IPollOption."""
-        return self.shortname
+    active = BoolCol(notNull=True, default=False)
 
 
 class PollOptionSet:
@@ -314,10 +304,10 @@ class PollOptionSet:
 
     implements(IPollOptionSet)
 
-    def new(self, poll, name, shortname, active=True):
+    def new(self, poll, name, title, active=True):
         """See IPollOptionSet."""
         return PollOption(
-            pollID=poll.id, name=name, shortname=shortname, active=active)
+            pollID=poll.id, name=name, title=title, active=active)
 
     def selectByPoll(self, poll, only_active=False):
         """See IPollOptionSet."""
@@ -341,6 +331,7 @@ class VoteCast(SQLBase):
 
     implements(IVoteCast)
     _table = 'VoteCast'
+    _defaultOrder = 'id'
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 
@@ -362,6 +353,7 @@ class Vote(SQLBase):
 
     implements(IVote)
     _table = 'Vote'
+    _defaultOrder = ['preference', 'id']
 
     person = ForeignKey(dbName='person', foreignKey='Person')
 

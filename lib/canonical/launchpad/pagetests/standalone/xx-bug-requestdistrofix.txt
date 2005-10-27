@@ -1,0 +1,120 @@
+In the bug page, you could request a fix for a Upstream or distribution.
+This is a pagetest for requesting a fix for a distribution leaving the
+source package blank.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+bug/6/+distrotask HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------1447716409915377146573672
+  ... Content-Length: 424
+  ...
+  ... -----------------------------1447716409915377146573672
+  ... Content-Disposition: form-data; name="field.distribution"
+  ... 
+  ... ubuntu
+  ... -----------------------------1447716409915377146573672
+  ... Content-Disposition: form-data; name="field.sourcepackagename"
+  ... 
+  ... 
+  ... -----------------------------1447716409915377146573672
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------1447716409915377146573672--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../distros/ubuntu/+bug/6
+  ...
+
+Now we test if the ubuntu distribution is on the request list.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+bug/6 HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...click here...">ubuntu</a>...
+  ...
+
+
+Now we test if we can get the Target fix to Release page
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+bug/6/+target HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...<h1>Target Fix to Releases</h1>...
+  ...hoary...
+  ...warty...
+  ...
+
+Now we check the warty checkbox and try to Target Fix to Selected
+Release
+  
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+bug/6/+target HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... target=warty&savetargets=Target+Fix+to+Selected+Releases""")
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../distros/ubuntu/+bug/6
+  ...
+
+
+Now we check if the target is on the Bugtask 
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+bug/6 HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...Ubuntu Warty...
+  ...
+
+Now from the Distro release context we test if it's possible to target a fix
+to a release.
+
+First we get the distro release page
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/warty/+bug/6/+target HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...Target Fix to Releases...
+  ...hoary...
+  ...warty...
+  ...
+
+And now we check the hoary checkbox and click on the Target Fix to Selected Release
+  
+  >>> print http(r"""
+  ... POST /distros/ubuntu/warty/+bug/6/+target HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... target=hoary&savetargets=Target+Fix+to+Selected+Releases""")
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../distros/ubuntu/warty/+bug/6
+  ...
+
+And check if the Hoary Distro Release is there on the Bug Task
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/warty/+bug/6 HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...Ubuntu Hoary...
+  ...
+

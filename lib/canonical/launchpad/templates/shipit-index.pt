@@ -20,8 +20,8 @@
             <h1>Welcome to ShipIt</h1>
           </tal:block>
 
-          <p>ShipIt lets you order Ubuntu 5.10 CDs that will be posted to
-          you free of charge.</p>
+          <p>ShipIt lets you order Ubuntu 5.10 (Breezy Badger) CDs that will
+          be posted to you free of charge.</p>
 
           <p><strong>Please note that orders placed now will not ship until
           approximately one week after the release of Version
@@ -83,8 +83,9 @@
                 </td>
               </tr>
             </table>
-            <!-- Preserve extra query parameters as hidden fields. -->
-            <tal:replacement tal:replace="structure view/preserve_query" />
+            <tal:replacement replace="structure view/preserve_query">
+              This preserves extra query parameters as hidden fields.
+            </tal:replacement>
           </form>
         </tal:block>
       </tal:block>
