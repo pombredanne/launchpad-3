@@ -142,12 +142,16 @@ Now we take a look at a ticket and see what we can do with it.
 Sample Person was the one who filed the ticket, so he can close the
 ticket if he thinks it's not relevant anymore:
 
-    >>> from canonical.lp.dbschema import TicketStatus
-    >>> firefox_ticket.status = TicketStatus.CLOSED
+    >>> firefox_ticket.mark_resolved(sample_person)
+    >>> firefox_ticket.status.title
+    'Closed'
 
 He can also reopen it:
 
-    >>> firefox_ticket.status = TicketStatus.OPEN
+    >>> firefox_ticket.reopen(sample_person)
+    <TicketReopening at ...>
+    >>> firefox_ticket.status.title
+    'Open'
 
 Now let's log in as another, non admin, to show that anyone can edit a
 ticket. First of all the title and description don't say much about the
@@ -188,11 +192,15 @@ Let's help Sample Person with his problem by providing an answer:
     ...     no_priv, firefox_ticket.followup_subject,
     ...     "Go to 'http://www.google.com', enter the preferences "
     ...     "dialog, and choose 'Use Current Page'.")
-    >>> firefox_ticket.status = TicketStatus.ANSWERED
+    >>> firefox_ticket.mark_resolved(no_priv)
+    >>> firefox_ticket.status.title
+    'Answered'
 
 Sample Person is happy with the answer, so he closes the ticket:
 
     >>> login('test@canonical.com')
     >>> comment = firefox_ticket.newMessage(
     ...     sample_person, firefox_ticket.followup_subject, 'Thanks!')
-    >>> firefox_ticket.status = TicketStatus.CLOSED
+    >>> firefox_ticket.mark_resolved(sample_person)
+    >>> firefox_ticket.status.title
+    'Closed'
