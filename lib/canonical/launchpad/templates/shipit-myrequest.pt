@@ -150,7 +150,7 @@
       </tal:block>
 
       <tal:block condition="view/orderFormMessages">
-        <p class="portalErrorMessage" tal:repeat="msg view/orderFormMessages"
+        <p class="portalError" tal:repeat="msg view/orderFormMessages"
         tal:content="msg" />
       </tal:block>
       <br />
@@ -270,7 +270,7 @@
       <h1>Shipping Address</h1>
 
       <tal:block condition="view/addressFormMessages">
-        <p class="portalErrorMessage" tal:repeat="msg view/addressFormMessages" 
+        <p class="portalError" tal:repeat="msg view/addressFormMessages" 
            tal:content="msg" />
         <br />
       </tal:block>

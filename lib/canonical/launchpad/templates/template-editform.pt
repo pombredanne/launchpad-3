@@ -31,7 +31,7 @@
     </div>
 
     <div class="row" metal:fill-slot="extra_top" tal:replace="nothing">
-      <div class="label">Extra top</div>
+      <div>Extra top</div>
       <div class="field"><input type="text" style="width:100%" /></div>
       Put any additional widgets you want at the top of the form here,
       or delete this section altogether, or just leave it and it will
@@ -39,7 +39,7 @@
     </div>
 
     <div class="row" metal:fill-slot="extra_bottom" tal:replace="nothing">
-      <div class="label">Extra bottom</div>
+      <div>Extra bottom</div>
       <div class="field"><input type="text" style="width:100%" /></div>
       Put any additional widgets you want at the bottom of the form here,
       or delete this section altogether, or just leave it and it will

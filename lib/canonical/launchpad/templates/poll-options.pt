@@ -13,7 +13,7 @@
     <h1>Poll Options</h1>
 
     <tal:block condition="context/getAllOptions">
-      <table class="listing data">
+      <table class="listing">
         <thead>
           <tr>
             <th>Name</th>

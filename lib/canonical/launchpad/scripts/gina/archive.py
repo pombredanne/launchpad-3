@@ -88,7 +88,7 @@ class ArchiveComponentItems:
     This class holds ArchiveFilesystemInfo instances
     for each architecture/component pair that will be imported
     """
-    def __init__(self, package_root, distrorelease, components, archs):
+    def __init__(self, archive_root, distrorelease, components, archs):
 
         # Runs through architectures.
         archive_archs = []
@@ -96,7 +96,7 @@ class ArchiveComponentItems:
             # Runs through components.
             for component in components:
                 # Create the ArchiveFilesystemInfo instance.
-                archive_info = ArchiveFilesystemInfo(package_root,
+                archive_info = ArchiveFilesystemInfo(archive_root,
                                                      distrorelease,
                                                      component, arch)
                 # Hold it in a list.

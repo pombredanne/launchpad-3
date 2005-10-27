@@ -20,9 +20,9 @@
               tal:content="view/label"
               metal:fill-slot="heading"
               >Form Label will come from ZCML label="xxx"</h1>
+    </div>
 
   </div>
 
-</div>
 </body>
 </html>

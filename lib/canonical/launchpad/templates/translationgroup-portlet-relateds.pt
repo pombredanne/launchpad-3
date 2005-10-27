@@ -2,7 +2,7 @@
     <h4>this group translates for...</h4>
 
     <div class="portletBody">
-        <div class="portletContent even">
+        <div class="portletContent">
 
             <h4 tal:condition="context/distributions">distributions</h4>
             <ul>

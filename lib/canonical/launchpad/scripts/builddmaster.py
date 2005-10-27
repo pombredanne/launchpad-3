@@ -25,6 +25,7 @@ import os
 import apt_pkg
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from sqlobject import SQLObjectNotFound
 
@@ -97,12 +98,15 @@ class BuilderGroup:
             if not builder.builderok:
                 continue
             try:
+                # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
+                slave = removeSecurityProxy(builder.slave)
+
                 # verify the echo method
-                if builder.slave.echo("Test")[0] != "Test":
+                if slave.echo("Test")[0] != "Test":
                     raise BuildDaemonError("Failed to echo OK")
 
                 # ask builder information
-                builder_vers, builder_arch, mechanisms = builder.slave.info()
+                builder_vers, builder_arch, mechanisms = slave.info()
 
                 # attempt to wrong builder version 
                 if builder_vers != '1.0':
@@ -116,13 +120,15 @@ class BuilderGroup:
             # catch only known exceptions 
             except (ValueError, TypeError, xmlrpclib.Fault,
                     socket.error, BuildDaemonError), reason:
-                builder.builderok = False
-                builder.failnotes = reason
-                self.logger.debug("Builder on %s marked as failed due to: %s",
+                # XXX cprov 20051026: repr() is required for socket.error
+                builder.failbuilder(repr(reason))
+                self.logger.debug("Builder on %s marked as failed due to: %r",
                                   builder.url, reason, exc_info=True)
-            # verify if the builder slave is working with sane information
-            self.rescueBuilderIfLost(builder)
-            
+            else:
+                # verify if the builder slave is working with sane information
+                self.rescueBuilderIfLost(builder)
+
+        self.commit()
         self.updateOkSlaves()
 
     def rescueBuilderIfLost(self, builder):
@@ -131,8 +137,11 @@ class BuilderGroup:
         If builder is BUILDING or WAITING an unknown job clean it.
         Assuming the XMLRPC is working properly at this point.
         """
+        # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
+        slave = removeSecurityProxy(builder.slave)
+
         # request slave status sentence 
-        sentence = builder.slave.status()
+        sentence = slave.status()
             
         # ident_position dict relates the position of the job identifier
         # token in the sentence received from status(), according the
@@ -163,7 +172,7 @@ class BuilderGroup:
                 raise BuildJobMismatch('Job build entry mismatch')
 
         except (SQLObjectNotFound, BuildJobMismatch), reason:
-            builder.slave.clean()
+            slave.clean()
             self.logger.warn("Builder '%s' rescued from '%s-%s: %s'" % (
                 builder.name, build_id, queue_item_id, reason))
     
@@ -185,8 +194,7 @@ class BuilderGroup:
         Set builderok as False, store the reason in failnotes and update
         the list of working builders (self.okslaves).
         """
-        builder.builderok = False
-        builder.failnotes = reason
+        builder.failbuilder(reason)
         self.updateOkSlaves()
 
     def giveToBuilder(self, builder, libraryfilealias, librarian):
@@ -211,11 +219,14 @@ class BuilderGroup:
         self.logger.debug("Asking builder on %s to ensure it has file %s "
                           "(%s, %s)" % (builder.url, libraryfilealias.filename,
                                         url, libraryfilealias.content.sha1))
-        
-        if not builder.slave.ensurepresent(libraryfilealias.content.sha1, url):
-            raise BuildDaemonError("Build slave was unable to fetch from %s" %
-                                   url)
 
+        # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
+        slave = removeSecurityProxy(builder.slave)
+
+        if not slave.ensurepresent(libraryfilealias.content.sha1, url):
+            raise BuildDaemonError(
+                "Build slave was unable to fetch from %s" % url)
+        
     def findChrootFor(self, build_candidate, pocket):
         """Return the CHROOT librarian identifier for (buildCandidate, pocket).
         
@@ -237,8 +248,11 @@ class BuilderGroup:
         if not chroot:
             self.logger.critical("OOPS! Could not find CHROOT")
             return
-        
-        builder.slave.build(buildid, buildtype, chroot, filemap, args)
+
+        # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
+        slave = removeSecurityProxy(builder.slave)
+
+        slave.build(buildid, buildtype, chroot, filemap, args)
 
     def getLogFromSlave(self, slave, buildid, librarian):
         """Get last buildlog from slave.
@@ -364,8 +378,8 @@ class BuilderGroup:
         # build the slave build job id key
         buildid = "%s-%s" % (queueItem.build.id, queueItem.id)
 
-        # retrieve slave xmlrpc instance correspondent to this build
-        slave = queueItem.builder.slave
+        # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
+        slave = removeSecurityProxy(queueItem.builder.slave)
 
         try:
             res = slave.status()
@@ -584,8 +598,9 @@ class BuilderGroup:
                                       "MANUAL MODE." % builder.url)
                     continue
 
-                # ensure communication works
-                slave = builder.slave
+                # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
+                slave = removeSecurityProxy(builder.slave)
+
                 try:
                     slavestatus = slave.status()
                 except Exception, e:
@@ -608,7 +623,10 @@ class BuilderGroup:
             if builder.builderok:
                 if builder.manual:
                     continue
-                slave = builder.slave
+
+                # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
+                slave = removeSecurityProxy(builder.slave)
+
                 try:
                     slavestatus = slave.status()
                 except Exception, e:
@@ -684,33 +702,33 @@ class BuilddMaster:
         builders = self._archreleases[archrelease].get("builders")
 
         # if annotation for builders was already done, return 
-        if builders is None:
+        if builders:
+            return
 
-            # query the global annotation registry and verify if
-            # we have already done the builder checks for the
-            # processor family in question. if it's already done
-            # simply refer to that information in the _archreleases
-            # attribute.
-            if 'builders' not in notes[archrelease.processorfamily]:
+        # query the global annotation registry and verify if
+        # we have already done the builder checks for the
+        # processor family in question. if it's already done
+        # simply refer to that information in the _archreleases
+        # attribute.
+        if 'builders' not in notes[archrelease.processorfamily]:
+            
+            # setup a BuilderGroup object
+            info = "builders.%s" % archrelease.processorfamily.name
+            builderGroup = BuilderGroup(self.getLogger(info), self._tm)
+            
+            # check the available slaves for this archrelease
+            builderGroup.checkAvailableSlaves(archrelease)
+            
+            # annotate the group of builders for the
+            # DistroArchRelease.processorfamily in question and the
+            # label 'builders'
+            notes[archrelease.processorfamily]["builders"] = builderGroup
+            
+        # consolidate the annotation for the architecture release
+        # in the private attribute _archreleases
+        builders = notes[archrelease.processorfamily]["builders"]
+        self._archreleases[archrelease]["builders"] = builders
 
-                # setup a BuilderGroup object
-                info = "builders.%s" % archrelease.processorfamily.name
-                builderGroup = BuilderGroup(self.getLogger(info), self._tm)
-
-                # check the available slaves for this archrelease
-                builderGroup.checkAvailableSlaves(archrelease)
-                
-                # annotate the group of builders for the
-                # DistroArchRelease.processorfamily in question and the
-                # label 'builders'
-                notes[archrelease.processorfamily]["builders"] = builderGroup
-
-            # consolidate the annotation for the architecture release
-            # in the private attribute _archreleases
-            builders = notes[archrelease.processorfamily]["builders"]
-            self._archreleases[archrelease]["builders"] = builders
-
-                                                         
     def createMissingBuilds(self, distrorelease):
         """Iterate over published package and ensure we have a proper
         build entry for it.
@@ -856,8 +874,6 @@ class BuilddMaster:
             except KeyError:
                 continue
             builders.updateBuild(job, self.librarian)
-
-        self.commit()
 
     def getLogger(self, subname=None):
         """Return the logger instance with specific prefix"""
@@ -1077,7 +1093,7 @@ class BuilddMaster:
         except Exception, e:
             self._logger.warn("Disabling builder: %s" % builder.url,
                               exc_info=1)
-            builders.failBuilder(builder, ("Exception %s passing a chroot"
+            builders.failBuilder(builder, ("Exception %s passing a chroot "
                                            "to the builder" % e))
         else:
             filemap = {}

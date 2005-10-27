@@ -3,7 +3,7 @@
   <h4>Malone Statistics:</h4>
 
   <div class="portletBody">
-    <div class="portletContent even">
+    <div class="portletContent">
 
       <img src="/++resource++info_icon.gif">
       <span tal:replace="context/bug_count">5</span> Bugs<br />

@@ -2,7 +2,7 @@
     <h4 tal:content="context/title">product title</h4>
 
     <div class="portletBody">
-        <div class="portletContent even">
+        <div class="portletContent">
 
         <div tal:condition="context/homepageurl" tal:omit-tag>
             <b>External links:</b><br />

@@ -4,7 +4,7 @@
     <h4>Template Details:</h4>
 
     <div class="portletBody">
-        <div class="portletContent odd">
+        <div class="portletContent">
             <img src="/++resource++document_icon.gif" />
             <span tal:replace="view/num_messages" /><br />
             <img src="/++resource++languages.gif" />

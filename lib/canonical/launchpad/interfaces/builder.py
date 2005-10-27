@@ -86,6 +86,9 @@ class IBuilder(IHasOwner):
     currentjob = Attribute("Build Job being processed")
     status = Attribute("Generated status information")
 
+    def failbuilder(reason):
+        """Mark builder as failed for a given reason."""
+    
 
 class IBuilderSet(Interface):
     """Collections of builders.

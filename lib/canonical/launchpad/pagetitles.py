@@ -529,8 +529,6 @@ person_translations = ContextDisplayName('Translations Made By %s')
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 
-# plone.css is a css file
-
 pofile_edit = 'Rosetta: Edit PO file details'
 
 pofile_export = ContextTitle('%s file exports')

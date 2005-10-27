@@ -104,7 +104,7 @@
             define="prev_url bn/prevBatchURL;
             next_url bn/nextBatchURL;"
           >
-            <table class="data">
+            <table class="listing">
               <thead class="results">
                 <tr tal:condition="python:prev_url or next_url">
                   <td colspan="3">
@@ -123,12 +123,12 @@
                   </td>
                 </tr>
                 <tr>
-                  <td colspan="2">
+                  <th colspan="2">
                     Name
-                  </td>
-                  <td>
+                  </th>
+                  <th>
                     Karma
-                  </td>
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -137,7 +137,7 @@
                          tal:attributes="href person/name"/>
                   </td>
                   <td tal:content="person/name">foobar</td>
-                  <td tal:content="person/karma">34</td>
+                  <td class="amount" tal:content="person/karma">34</td>
                 </tr>    
               </tbody>
             </table>
