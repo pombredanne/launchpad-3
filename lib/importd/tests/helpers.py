@@ -30,6 +30,7 @@ __all__ = [
     'ZopelessTestCase',
     'ArchiveManagerTestCase',
     'BazTreeTestCase',
+    'WebserverTestCase',
     ]
 
 
@@ -83,17 +84,6 @@ class ArchiveManagerJobHelper(object):
         job.archversion = "0"
         job.slave_home = self.sandbox_helper.sandbox_path
         job.archive_mirror_dir = self.sandbox_helper.path('mirrors')
-        return job
-
-
-class TaxiJobHelper(ArchiveManagerJobHelper):
-    """Job Factory for Taxi test cases."""
-
-    def makeJob(self):
-        from importd.tests import test_Job
-        job = ArchiveManagerJobHelper.makeJob(self)
-        job.product_id = test_Job.sampleData.product_id
-        job.description = 'description of the branch'
         return job
 
 
@@ -382,21 +372,6 @@ class ZopelessTestCase(unittest.TestCase):
 
     def tearDown(self):
         self.zopeless_helper.tearDown()
-
-
-class TaxiTestCase(BazTreeTestCase):
-    """Base class for Taxi test cases."""
-
-    jobHelperType = TaxiJobHelper
-
-    def setUp(self):
-        BazTreeTestCase.setUp(self)        
-        self.zopeless_helper = ZopelessHelper()
-        self.zopeless_helper.setUp()
-
-    def tearDown(self):
-        self.zopeless_helper.tearDown()
-        BazTreeTestCase.tearDown(self)
 
 
 # Webserver helper was based on the bzr code for doing http tests.

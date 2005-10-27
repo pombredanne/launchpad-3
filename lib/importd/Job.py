@@ -35,38 +35,6 @@ def _interval_to_seconds(interval):
         raise TypeError(msg)
 
 
-class _JobNameMunger(object):
-    # XXX ddaa 2004-10-28: This is part of a short term workaround for
-    # code in cscvs which does not perform shell quoting correctly.
-    # https://bugzilla.canonical.com/bugzilla/show_bug.cgi?id=2149
-
-    def __init__(self):
-        self._table = None
-
-    def is_munged(self, char):
-        import string
-        return not (char in string.ascii_letters or char in string.digits
-                    or char in ",-.:=@^_" or ord(char) > 127)
-
-    def translation_table(self):
-        if self._table is not None: return self._table
-        table = []
-        for code in range(256):
-            if self.is_munged(chr(code)):
-                table.append('_')
-            else:
-                table.append(chr(code))
-        self._table = ''.join(table)
-        return self._table
-
-    def translate(self, text):
-        return text.encode('utf8').translate(self.translation_table())
-
-
-# XXX ddaa 2004-10-28: workaround for broken cscvs shell quoting
-_job_name_munger = _JobNameMunger()
-
-
 class Job:
     """I represent a single Job in the importd system. I'm not a base
     class as the cross machine serialisation issues get annoying - but
@@ -153,18 +121,14 @@ class Job:
 
         self.tagging_rules=[]
 
-        # XXX ddaa 2004-10-28: workaround for broken cscvs shell quoting
         name = series.product.name + '-' + series.name
         if series.product.project is not None:
             name = series.product.project.name + '-' + name
-        name = _job_name_munger.translate(name)
-        # XXX end
         self.name = name
-        RCSNames = {RevisionControlSystems.CVS: 'cvs',
-                    RevisionControlSystems.SVN: 'svn',
-                    RevisionControlSystems.ARCH: 'arch',
-                    RevisionControlSystems.BITKEEPER: 'bitkeeper',
-                    }
+        RCSNames = {
+            RevisionControlSystems.CVS: 'cvs',
+            RevisionControlSystems.SVN: 'svn',
+            }
         self.RCS = RCSNames[series.rcstype]
 
         # set the repository
@@ -182,17 +146,12 @@ class Job:
         elif self.RCS == 'svn':
             assert series.svnrepository
             self.repository = str(series.svnrepository)
-        elif self.RCS == 'bitkeeper':
-            assert series.bkrepository
-            self.repository = str(series.bkrepository)
 
         self._arch_from_series(series)
 
         self.product_id = series.product.id
         self.seriesID = series.id
         self.description = series.summary
-        self.releaseRoot = str(series.releaseroot)
-        self.releaseFileGlob = str(series.releasefileglob)
         return self
 
     def _use_cvstarfileurl(self, series):
@@ -293,19 +252,7 @@ class Job:
         self.__jobTrigger(name)
 
     def mirrorTarget(self, dir=".", logger=None):
-        self.mirrorVersion(dir, logger, self.bazFullPackageVersion())
-
-    def mirrorVersion(self, dir, logger, version):
-        """Publish a version to the database and the wide world.
-
-        :type version: str
-        """
-        import taxi
-        import util
-        aTaxi = taxi.Taxi(self)
-        aTaxi.logger = logger
-        aTaxi.txnManager = util.getTxnManager()
-        aTaxi.importBranch()
+        self.makeArchiveManager().mirrorBranch()
 
     def makeArchiveManager(self):
         """Factory method to create an ArchiveManager for this job.

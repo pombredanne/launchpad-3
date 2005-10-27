@@ -172,6 +172,10 @@ class ArchiveManager(object):
         mirrorer = self._master.make_mirrorer(self._mirror)
         mirrorer.mirror(revision)
 
+    def mirrorBranch(self):
+        mirrorer = self._master.make_mirrorer(self._mirror)
+        mirrorer.mirror()
+
     def mirrorIsEmpty(self):
         """Is the mirror empty or non-existent?
 

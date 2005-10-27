@@ -130,70 +130,6 @@ def jobsBuilders(jobs, slavenames, runner_path=None, autotest=False):
             'periodicBuildTime': job.frequency})
     return builders
 
-def productJobsDict(jobs):
-    """Mapping of products to jobs.
-
-    :type jobs: iterable of importd.Job.Job
-    :return: mapping from product ids to jobs.
-    :rtype: dict of int to buildbot.importd.Job.Job
-    """
-    by_product = {}
-    for job in jobs:
-        product_jobs = by_product.get(job.product_id, [])
-        product_jobs.append(job)
-        by_product[job.product_id] = product_jobs
-    return by_product
-
-def anonymousInterlock(jobs):
-    """Create anonymous interlock between for sources and packages.
-
-    :type jobs: iterable of importd.Job.Job
-    :return: anonymous interlock ([sources], [packages]), or ``None`` if there
-        are no sources or no packages.
-    :rtype: 2-tuple of lists of importd.Job.Job or ``None``
-    """
-    sources, packages = [], []
-    for job in jobs:
-        if job.RCS == 'package':
-            packages.append(job.name)
-        elif job.RCS in ('cvs', 'svn'):
-            sources.append(job.name)
-        else:
-            raise RuntimeError('RCS of job %r is %r'
-                               % (job.name, job.RCS))
-    if len(sources) == 0 or len(packages) == 0:
-        return None
-    else:
-        return sources, packages
-
-def nameInterlock(product_id, interlock):
-    """Put the product name into an anonymous interlock.
-
-    :param product_id: id of the product associated to the interlock
-    :param interlock: ([feeders], [watchers]) pair
-    :precondition: all jobs in the interlock have product_id.
-    :return: named interlock, ("name", [feeders], [watchers])
-    """
-    feeders, watchers = interlock
-    name = Product.get(product_id).name
-    return name, feeders, watchers
-
-def jobsInterlocks(jobs):
-    """Create interlocks for the given jobs.
-
-    :param jobs: jobs to create interlocks for.
-    :type jobs: iterable of importd.Job.Job
-    :return: interlocks for BuildmasterConfig.
-    :rtype: list of (name, [feeders], [watchers]) tuples
-    """
-    interlocks = []
-    by_product = productJobsDict(jobs)
-    for product_id, product_jobs in by_product.items():
-        anon = anonymousInterlock(product_jobs)
-        if anon is not None:
-            inter = nameInterlock(product_id, anon)
-            interlocks.append(inter)
-    return interlocks
 
 
 from twisted.python.failure import Failure
@@ -322,7 +258,7 @@ class ImportDBImplementor(object):
         self.refreshBuilder(rerun=False)
 
     def processingComplete(self, successful):
-        """Impot or sync run is complete, update database and buildbot.
+        """Import or sync run is complete, update database and buildbot.
 
         If the job was an import, make it a sync and rerun it immediately.
         """
@@ -360,10 +296,7 @@ class ImportDBuildFactory(ConfigurableBuildFactory):
                 self.addImportDStep('mirrorTarget')
 
     def addImportDStep(self, method):
-        steps.append((RunJobStep, {
-            'job': self.job,
-            'method': 'mirrorTarget',
-            'workdir': self.jobfile}))
+        raise NotImplementedError
 
     def newBuild(self):
         # Save the job inside the build, so the startBuild and buildFinished
@@ -525,41 +458,3 @@ class MakeJobFileStep(JobBuildStep):
                                   "job", args)
         # might raise UnknownCommand if it isn't implemented
         d.addErrback(self.stepFailed)
-
-
-class RunJobStep(JobBuildStep):
-    """ I 'run' a job as a single operation"""
-
-    def __init__(self, job, method,workdir=".", **kwargs):
-        JobBuildStep.__init__(self, **kwargs)
-        self.job = job
-        self.workdir=workdir
-        self.log = Logfile()
-        self.method=method
-        self.name="%s" % self.words()
-
-    def words(self):
-        return ["runJobStep %s" % self.method]
-
-    def start(self):
-        assert(self.job != None)
-        args = {'job': self.job,
-                'method': self.method,
-                'args': [],
-                'dir': self.workdir
-        }
-        #here, these are all passed to the child's copy of <class>. There is
-        # a case based constructor on the child, which is used to determine
-        # the class to instantiate.
-        #
-        #args = {'command': self.command,
-        #        'dir': self.workdir,
-        #        'env': self.env,
-        #        # env, want_stdout, want_stderr
-        #        'timeout': self.timeout
-        #        }
-        d = self.remote.callRemote("startCommand", self, self.stepId,
-                                  "job", args)
-        # might raise UnknownCommand if it isn't implemented
-        d.addErrback(self.stepFailed)
-
