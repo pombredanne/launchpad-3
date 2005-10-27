@@ -11,7 +11,7 @@ We should be able to see the workload of a sprint:
 We should be able to see the spec assignment table of a sprint:
 
   >>> print http(r"""
-  ... GET /sprints/ubz/+table HTTP/1.1
+  ... GET /sprints/ubz/+specstable HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...

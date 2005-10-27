@@ -11,7 +11,7 @@ First, let's make sure we can see the link called "Subscribe..."
   ... GET /products/firefox/+spec/e4x HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...Subscribe to Spec...
+  ...Subscribe Yourself...
 
 
 And let's make sure we can see the subscription page. The form should want
@@ -44,7 +44,7 @@ Now the link should say "Unsubscribe" in the actions menu.
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
-  ...Unsubscribe from Spec...
+  ...Unsubscribe Yourself...
 
 We don't really want to be subscribed, so lets unsubscribe from that spec.
 We load the subscription page, and now the button says "Unsubscribe".

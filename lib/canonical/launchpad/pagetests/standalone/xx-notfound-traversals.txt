@@ -82,7 +82,7 @@ spider -- StuartBishop 20050822
 
 >>> check("/products")
 >>> check("/products/firefox")
->>> check_redirect("/products/firefox/+series")
+>>> check_not_found("/products/firefox/+series")
 >>> check("/products/firefox/+series/1.0")
 >>> check("/products/firefox/+series/1.0/+addpackage", auth=True)
 >>> check("/products/firefox/+series/1.0/+ubuntupkg", auth=True)

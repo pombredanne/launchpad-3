@@ -22,7 +22,7 @@ To create a new Specification, use ISpecificationSet.new:
     >>> from canonical.lp.dbschema import SpecificationPriority
     >>> from canonical.lp.dbschema import SpecificationStatus
     >>> sabdfl = Person.byName('sabdfl')
-    >>> newspec = specset.new('mng', 'Support MNG Format', 'http://www.silly.me/SpecName', 'we really need this', SpecificationPriority.EMERGENCY, SpecificationStatus.APPROVED, sabdfl, product=upstream_firefox)
+    >>> newspec = specset.new('mng', 'Support MNG Format', 'http://www.silly.me/SpecName', 'we really need this', SpecificationStatus.APPROVED, sabdfl, product=upstream_firefox)
     >>> print newspec.name
     mng
 
@@ -41,7 +41,6 @@ We attach now a spec to a distribution.
     ...                       'Fix Specification Permissions',
     ...                       'http://www.ubuntu.com/FixBrokenSpecPerms',
     ...                       'we really need this',
-    ...                       SpecificationPriority.EMERGENCY,
     ...                       SpecificationStatus.APPROVED,
     ...                       sabdfl,
     ...                       distribution=ubuntu)
