@@ -31,7 +31,7 @@ Let's check the complex properties of a build object.
 
   >>> firefox_build.buildlog = 34
   >>> firefox_build.buildlog.url
-  'http://localhost:58000/34/34/evolution-2.2-test.pot'
+  'http://localhost:58000/34/evolution-2.2-test.pot'
 
 The BuildSet class gives us some useful ways to consider the
 collection of builds.
