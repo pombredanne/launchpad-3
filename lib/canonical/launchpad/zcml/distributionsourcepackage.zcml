@@ -84,15 +84,11 @@
     facet="bugs"
     schema="canonical.launchpad.interfaces.IBugAddForm"
     label="Report a bug in a distribution source package"
-    class="canonical.launchpad.browser.sourcepackage.SourcePackageFilebugView"
+    class="canonical.launchpad.browser.FileBugView"
     permission="launchpad.AnyPerson"
-    fields="title comment private owner"
-    keyword_arguments="title comment private owner"
-    template="../templates/sourcepackage-filebug.pt"
-    >
-    <browser:widget
-      field="owner"
-      class="canonical.widgets.HiddenUserWidget" />
+    fields="title comment private"
+    keyword_arguments="title comment private"
+    template="../templates/sourcepackage-filebug.pt">
     <browser:widget
       field="title"
       class="zope.app.form.browser.TextWidget"
