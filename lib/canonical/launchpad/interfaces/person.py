@@ -354,6 +354,11 @@ class IPerson(IHasSpecifications):
         changed.
         """
 
+    def shippedShipItRequests():
+        """Return all requests placed by this person that were sent to the
+        shipping company already.
+        """
+
     def currentShipItRequest():
         """Return this person's unshipped ShipIt request, if there's one.
         

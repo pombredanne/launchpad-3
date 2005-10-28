@@ -112,7 +112,11 @@ class ShipItRequestView:
     shipit_admins = 'info@shipit.ubuntu.com'
     from_addr = "ShipIt <noreply@ubuntu.com>"
     mail_template = """
-The user %(recipientname)s (%(recipientemail)s) placed a new request in ShipIt.
+The user %(recipientname)s, logged in with the email address %(recipientemail)s,
+placed a new request in ShipIt.
+%(recipientname)s already has %(shipped_requests)d requests sent to the shipping
+company.
+
 This request can be seen at:
 %(requesturl)s
 
@@ -179,15 +183,14 @@ Reason:
         standardrequestset = getUtility(IStandardShipItRequestSet)
         standardrequest = standardrequestset.getByNumbersOfCDs(
             order.quantityx86, order.quantityamd64, order.quantityppc)
+        self.reason = order.reason
         if standardrequest is not None:
             self.selectedOrderType = standardrequest.id
-            self.reason = None
         else:
             self.quantityx86 = order.quantityx86
             self.quantityamd64 = order.quantityamd64
             self.quantityppc = order.quantityppc
             self.isCustomOrder = True
-            self.reason = order.reason
 
     def orderIsCancelledOrShipped(self):
         """Return True if self.order is not None and is cancelled or shipped."""
@@ -260,6 +263,8 @@ Reason:
                         'quantityx86': order.quantityx86,
                         'quantityamd64': order.quantityamd64,
                         'quantityppc': order.quantityppc,
+                        'shipped_requests':
+                            len(recipient.shippedShipItRequests()),
                         'reason': order.reason}
         message = self.mail_template % replacements
         simple_sendmail(self.from_addr, self.shipit_admins, subject, message,
@@ -284,17 +289,33 @@ Reason:
         kw['recipient'] = self.user
         order = getUtility(IShippingRequestSet).new(**kw)
         self.order = order
-        # Orders with a total of 80 CDs or less get approved automatically.
-        # XXX: Ideally it should be possible to tweak this number through
-        # a web interface. -- Guilherme Salgado 2005-09-27
-        if (self.isCustomOrder and order.totalCDs > 80 and 
-            not self.userIsShipItAdmin):
-            self._notifyShipItAdmins(order)
-        else:
+        if self._shouldAutomaticallyApprove(order):
             order.approve(
                 self.quantityx86, self.quantityamd64, self.quantityppc)
+        else:
+            self._notifyShipItAdmins(order)
 
         return order
+
+    def _shouldAutomaticallyApprove(self, order):
+        """Return True if the given order should be automatically approved.
+
+        Any order placed by a shipit admin is automatically approved.
+        Also, orders placed by normal users with a total of 80 CDs or less
+        get approved automatically if the user doesn't have any order that
+        was already shipped.
+        """
+        recipient = order.recipient
+        if recipient.inTeam(getUtility(ILaunchpadCelebrities).shipit_admin):
+            assert self.userIsShipItAdmin
+            return True
+
+        # XXX: Ideally it should be possible to tweak this number through
+        # a web interface. -- Guilherme Salgado 2005-09-27
+        if recipient.shippedShipItRequests() or order.totalCDs > 80:
+            return False
+        else:
+            return True
 
     def _changeExistingOrder(self):
         """Save the order quantities and shipping details in the current order.
@@ -319,11 +340,17 @@ Reason:
         order.quantityppc = self.quantityppc
         order.quantityamd64 = self.quantityamd64
         order.reason = self.reason
-        if order.totalCDs <= 80 and order.isAwaitingApproval():
-            # Orders with 80 or less CDs get approved automatically.
+        if self.userIsShipItAdmin:
+            # All orders placed by shipit admins are approved, so no need to
+            # do anything here.
+            return
+
+        if (self._shouldAutomaticallyApprove(order) and 
+            order.isAwaitingApproval()):
             order.approve(
                 order.quantityx86, order.quantityamd64, order.quantityppc)
-        elif order.totalCDs > 80 and order.isApproved():
+        elif (not self._shouldAutomaticallyApprove(order) and
+              order.isApproved()):
             order.clearApproval()
             self._notifyShipItAdmins(order)
 
@@ -333,6 +360,19 @@ Reason:
         """
         self._readAndValidateOrderDetails()
         self._readAndValidateContactDetails()
+
+    def userMustProvideReasonForStandardOrder(self):
+        """Return True if the logged in user must provide a reason even when
+        placing a standard order.
+
+        An user has to provide a reason for a standard order when there's at
+        least one existing order placed by this user that was already sent to
+        the shipping company and this user is not a shipit admin.
+        """
+        if self.userIsShipItAdmin or not self.user.shippedShipItRequests():
+            return False
+        else:
+            return True
 
     def _readAndValidateOrderDetails(self):
         """Read the request details from the form, do any necessary validation
@@ -353,7 +393,12 @@ Reason:
             self.quantityx86 = order.quantityx86
             self.quantityamd64 = order.quantityamd64
             self.quantityppc = order.quantityppc
-            self.reason = None
+            self.reason = form.get('reasonforstandardrequest')
+            if self.userMustProvideReasonForStandardOrder() and not self.reason:
+                msg = _(("You already have one or more requests sent to the "
+                         "shipping company. This means you have to provide "
+                         "a reason to justify every new request you place."))
+                self.orderFormMessages.append(msg)
         elif ordertype == 'custom':
             self.isCustomOrder = True
             self.quantityx86 = intOrZero(form.get('quantityx86'))
@@ -574,10 +619,12 @@ class ShippingRequestsView:
                 self.selectedType)
             request_type = 'standard'
 
+        orderby = str(request.get('orderby'))
         self.recipient_text = request.get('recipient_text')
         results = requestset.search(
             request_type=request_type, standard_type=standard_type,
-            status=status, recipient_text=self.recipient_text)
+            status=status, recipient_text=self.recipient_text,
+            orderBy=orderby)
         self.batchNavigator = self._getBatchNavigator(results)
 
     def _getBatchNavigator(self, list):
