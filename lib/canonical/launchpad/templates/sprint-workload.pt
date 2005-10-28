@@ -29,18 +29,39 @@
       <li tal:repeat="spec group/approver">
         <a tal:content="spec/title"
            tal:attributes="href spec/fmt:url">Go to Beginning</a>
+        <span tal:condition="spec/priority"
+              tal:content="spec/priority/title"
+              tal:attributes="class string:specpriority${spec/priority/name}"
+              >Essential</span>
+        <span tal:content="spec/status/title"
+              tal:attributes="class string:specstatus${spec/status/name}"
+              >Approved</span>
       </li>
 
       <li tal:condition="group/assignee"><b>Assignee:</b></li>
       <li tal:repeat="spec group/assignee">
         <a tal:content="spec/title"
            tal:attributes="href spec/fmt:url">Go to Beginning</a>
+        <span tal:condition="spec/priority"
+              tal:content="spec/priority/title"
+              tal:attributes="class string:specpriority${spec/priority/name}"
+              >Essential</span>
+        <span tal:content="spec/status/title"
+              tal:attributes="class string:specstatus${spec/status/name}"
+              >Approved</span>
       </li>
 
       <li tal:condition="group/drafter"><b>Drafter:</b></li>
       <li tal:repeat="spec group/drafter">
         <a tal:content="spec/title"
            tal:attributes="href spec/fmt:url">Go to Beginning</a>
+        <span tal:condition="spec/priority"
+              tal:content="spec/priority/title"
+              tal:attributes="class string:specpriority${spec/priority/name}"
+              >Essential</span>
+        <span tal:content="spec/status/title"
+              tal:attributes="class string:specstatus${spec/status/name}"
+              >Approved</span>
       </li>
     </ul>
   </tal:workload>

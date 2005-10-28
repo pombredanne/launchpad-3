@@ -58,17 +58,9 @@
 
   <p class="lesser">
     <b>Priority:</b>
-    <span tal:condition="context/priority"
-          tal:attributes="class string:specpriority${context/priority/name}"
+    <span tal:attributes="class string:specpriority${context/priority/name}"
           tal:content="context/priority/title">Approved</span>.
-    <i tal:condition="not: context/priority">Proposed</i>.
-    <tal:null_prio condition="not: context/priority">
-      This specification has been proposed for 
-      <span tal:replace="context/target/name">ubuntu</span> but has not yet
-      been assigned a priority by the project drivers.
-    </tal:null_prio>
-    <tal:priority_description condition="context/priority"
-                              content="context/priority/description">
+    <tal:priority_description content="context/priority/description">
       This status means that.
     </tal:priority_description>
   </p>

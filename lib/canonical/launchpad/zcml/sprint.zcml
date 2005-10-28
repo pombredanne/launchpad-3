@@ -89,11 +89,15 @@
     name="+register"
     for="canonical.launchpad.interfaces.ISprint"
     schema="canonical.launchpad.interfaces.ISprintAttendance"
+    class="canonical.launchpad.browser.SprintAttendanceAddView"
     fields="attendee time_starts time_ends"
     arguments="attendee time_starts time_ends"
-    class="canonical.launchpad.browser.SprintAttendanceAddView"
+    title="Register Someone Else"
+    description="Register someone for attendance at the conference. Note
+                 that anybody can register anybody else as being an
+                 attendee."
     permission="launchpad.AnyPerson"
-    template="../templates/sprint-attend.pt"
+    template="../templates/sprint-register.pt"
     />
 
   <!-- SprintSet -->

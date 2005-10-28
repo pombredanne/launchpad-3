@@ -842,6 +842,16 @@ class DistributionVocabulary(NamedSQLObjectVocabulary):
     _table = Distribution
     _orderBy = 'name'
 
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.title)
+
+    def getTermByToken(self, token):
+        obj = Distribution.selectOne("name=%s" % sqlvalues(token))
+        if obj is None:
+            raise LookupError(token)
+        else:
+            return self._toTerm(obj)
+
     def search(self, query):
         """Return terms where query is a substring of the name"""
         if query:
@@ -873,7 +883,7 @@ class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
             yield self._toTerm(obj)
 
     def _toTerm(self, obj):
-        # NB: We use '/' as the seperater because '-' is valid in
+        # NB: We use '/' as the separator because '-' is valid in
         # a distribution.name
         token = '%s/%s' % (obj.distribution.name, obj.name)
         return SimpleTerm(obj.id, token, obj.title)

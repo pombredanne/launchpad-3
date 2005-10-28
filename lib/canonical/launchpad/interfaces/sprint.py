@@ -68,7 +68,8 @@ class ISprint(IHasOwner):
     
     def specificationLinks(status=None):
         """Return the SprintSpecification records matching the status given,
-        or all of them if no status is passed.
+        or all of them if no status is passed. They should be in order of
+        priority, highest first.
         """
 
     # subscription-related methods

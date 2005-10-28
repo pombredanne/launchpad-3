@@ -20,9 +20,7 @@
     <br />
 
     <b>Priority:</b>
-    <span tal:condition="context/priority"
-          tal:replace="context/priority/title">High</span>
-    <i tal:condition="not: context/priority">Unassigned</i>
+    <span tal:replace="context/priority/title">High</span>
     <br />
 
     <b>Status:</b>

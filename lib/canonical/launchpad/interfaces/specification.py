@@ -85,8 +85,10 @@ class ISpecification(IHasOwner):
             "Any notes on the status of this spec you would like to make. "
             "Your changes will override the current text."))
     # other attributes
-    product = Attribute('The product to which this feature belongs.')
-    distribution = Attribute('The distribution to which this spec belongs.')
+    product = Choice(title=_('Product'), required=False,
+        vocabulary='Product')
+    distribution = Choice(title=_('Distribution'), required=False,
+        vocabulary='Distribution')
     target = Attribute(
         "The product or distribution to which this spec belongs.")
     # joins

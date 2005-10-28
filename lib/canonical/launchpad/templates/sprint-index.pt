@@ -50,17 +50,19 @@
       <a tal:condition="spec_link/required:launchpad.Admin"
          tal:content="spec_link/status/title"
          tal:attributes="href string:${spec_link/fmt:url}/+admin"
-         >approved</a>
-      <span tal:condition="not: spec_link/required:launchpad.Admin"
-            tal:replace="spec_link/status/title">Approved</span>.
+         >approved</a><span
+            tal:condition="not: spec_link/required:launchpad.Admin"
+            tal:replace="spec_link/status/title">Approved</span><tal:wb
+            condition="spec_link/whiteboard"> <i>(<span
+            tal:replace="spec_link/whiteboard" />)</i></tal:wb>.
       <a tal:condition="spec_link/required:launchpad.Edit"
          tal:attributes="href spec_link/fmt:url">
         <tal:needs_discussion condition="spec_link/needs_discussion">
-          Needs further discussion
+          Needs discussion.
         </tal:needs_discussion>
         <tal:needs_discussion condition="not: spec_link/needs_discussion">
-          No discussion required
-        </tal:needs_discussion>.
+          No discussion required.
+        </tal:needs_discussion>
       </a>
       <tal:cannot_edit condition="not: spec_link/required:launchpad.Edit">
         <tal:needs_discussion condition="spec_link/needs_discussion">

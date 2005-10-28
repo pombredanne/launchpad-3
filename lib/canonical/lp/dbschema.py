@@ -1132,6 +1132,13 @@ class SpecificationPriority(DBSchema):
         to be accepted by the mainline developers.
         """)
 
+    PROPOSED = Item(5, """
+        Proposed
+
+        This feature has recently been proposed and has not yet been
+        evaluated and prioritised by the project leaders.
+        """)
+
     LOW = Item(10, """
         Low
 
@@ -1145,9 +1152,9 @@ class SpecificationPriority(DBSchema):
     MEDIUM = Item(50, """
         Medium
 
-        The specification is of a medium, or normal priority. We will
-        definitely get to this feature but perhaps not in the next major
-        release or two.
+        The specification is of a medium, or normal priority. The project
+        developers will definitely get to this feature but perhaps not in
+        the next major release or two.
         """)
 
     HIGH = Item(70, """
@@ -1162,8 +1169,8 @@ class SpecificationPriority(DBSchema):
         Essential
 
         The specification is essential for the next release, and should be
-        the focus of current development. Use this state only only for
-        the most important of all features.
+        the focus of current development. Use this state only for the most
+        important of all features.
         """)
 
 

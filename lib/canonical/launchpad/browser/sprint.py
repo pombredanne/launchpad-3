@@ -38,13 +38,17 @@ class SprintFacets(StandardLaunchpadFacets):
 class SprintContextMenu(ContextMenu):
 
     usedfor = ISprint
-    links = ['attendance', 'workload',
+    links = ['attendance', 'registration', 'workload',
              'all', 'confirmed', 'deferred', 'submitted',
              'table', 'edit']
 
     def attendance(self):
-        text = 'Register Attendance'
+        text = 'Register Yourself'
         return Link('+attend', text, icon='add')
+
+    def registration(self):
+        text = 'Register Someone'
+        return Link('+register', text, icon='add')
 
     def workload(self):
         text = 'Show Workload'

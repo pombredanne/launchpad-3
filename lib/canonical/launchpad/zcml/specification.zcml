@@ -93,6 +93,17 @@
     template="../templates/specification-addsubscriber.pt"
     />
 
+  <browser:generalform
+    name="+retarget"
+    for="canonical.launchpad.interfaces.ISpecification"
+    schema="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationRetargetingView"
+    fields="product distribution"
+    keyword_arguments="product distribution"
+    permission="launchpad.Edit"
+    template="../templates/specification-retargeting.pt"
+    />
+
   <browser:editform
     name="+edit"
     schema="canonical.launchpad.interfaces.ISpecification"

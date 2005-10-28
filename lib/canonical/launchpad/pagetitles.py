@@ -767,6 +767,8 @@ specification_bug = ContextTitle(
 
 specification_removebug = 'Remove link to bug report'
 
+specification_retargeting = 'Attach spec to a different product or distribution'
+
 specification_dependency = 'Create a Specification Dependency'
 
 specification_deptree = 'Complete Dependency Tree'
@@ -813,6 +815,8 @@ sprint_edit = ContextTitle('Edit Meeting Details: %s')
 sprint_index = ContextTitle('%s (Sprint or Meeting)')
 
 sprint_new = 'Register a new Meeting or Sprint in Launchpad'
+
+sprint_register = 'Register someone to attend this meeting'
 
 sprint_table = ContextTitle('Table of Specs for %s')
 

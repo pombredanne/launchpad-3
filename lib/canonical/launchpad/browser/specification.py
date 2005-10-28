@@ -13,7 +13,7 @@ from canonical.launchpad.browser.addview import SQLObjectAddView
 
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
-    LaunchpadView, Navigation)
+    LaunchpadView, Navigation, GeneralFormView)
 
 __all__ = [
     'SpecificationContextMenu',
@@ -21,6 +21,7 @@ __all__ = [
     'SpecificationView',
     'SpecificationAddView',
     'SpecificationEditView',
+    'SpecificationRetargetingView',
     ]
 
 
@@ -40,7 +41,7 @@ class SpecificationContextMenu(ContextMenu):
              'milestone', 'requestreview', 'doreview', 'subscription',
              'subscribeanother',
              'linkbug', 'unlinkbug', 'adddependency', 'removedependency',
-             'dependencytree', 'linksprint', 'administer']
+             'dependencytree', 'linksprint', 'retarget', 'administer']
 
     def edit(self):
         text = 'Edit Summary and Title'
@@ -122,6 +123,11 @@ class SpecificationContextMenu(ContextMenu):
     def linksprint(self):
         text = 'Add to Meeting'
         return Link('+linksprint', text, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def retarget(self):
+        text = 'Retarget'
+        return Link('+retarget', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def administer(self):
@@ -240,4 +246,29 @@ class SpecificationEditView(SQLObjectEditView):
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.context))
+
+class SpecificationRetargetingView(GeneralFormView):
+
+    def process(self, product=None, distribution=None):
+        if product and distribution:
+            return 'Please choose a product OR a distribution, not both.'
+        if not (product or distribution):
+            return 'Please choose a product or distribution for this spec.'
+        # we need to ensure that there is not already a spec with this name
+        # for this new target
+        if product:
+            if product.getSpecification(self.context.name) is not None:
+                return '%s already has a spec called %s' % (
+                    product.name, self.context.name)
+        elif distribution:
+            if distribution.getSpecification(self.context.name) is not None:
+                return '%s already has a spec called %s' % (
+                    distribution.name, self.context.name)
+        self.context.product = product
+        self.context.distribution = distribution
+        self.context.productseries = None
+        self.context.distrorelease = None
+        self.context.milestone = None
+        self._nextURL = canonical_url(self.context)
+        return 'Done.'
 

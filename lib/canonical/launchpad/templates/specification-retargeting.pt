@@ -18,10 +18,9 @@
 
   <div metal:use-macro="context/@@launchpad_generalform/generalform">
 
-    <h1 metal:fill-slot="heading">Register Someone Else</h1>
-
     <div metal:fill-slot="extra_info" class="documentDescription">
-      Use this form to register someone else to attend the meeting.
+      Choose a different product or distribution to which this specification
+      should be attached.
     </div>
 
   </div>
@@ -30,4 +29,3 @@
     
 </body>
 </html>
-

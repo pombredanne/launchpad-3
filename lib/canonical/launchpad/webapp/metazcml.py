@@ -24,6 +24,7 @@ from zope.app.pagetemplate.engine import Engine
 from zope.app.component.fields import LayerField
 from zope.app.file.image import Image
 import zope.app.publisher.browser.metadirectives
+from zope.app.publisher.browser.menu import menuItemDirective
 import zope.app.form.browser.metaconfigure
 from zope.app.publisher.browser.viewmeta import (
     pages as original_pages,
@@ -258,8 +259,6 @@ class GeneralFormDirective(
 
     view = GeneralFormView
     default_template = '../templates/template-generalform.pt'
-    # XXX sabdfl i'm cargo culting and trying to be minimalist
-    # for_ = IAdding
 
     # default form information
     description = None
@@ -268,9 +267,6 @@ class GeneralFormDirective(
 
     def _handle_menu(self):
         if self.menu or self.title:
-            if (not self.menu) or (not self.title):
-                raise ValueError("If either menu or title are specified, "
-                                 "they must both be specified")
             menuItemDirective(
                 self._context, self.menu, self.for_, '@@' + self.name,
                 self.title, permission=self.permission,
@@ -307,7 +303,7 @@ class GeneralFormDirective(
 
     def __call__(self):
         self._processWidgets()
-        self._handle_menu()
+        #self._handle_menu()
         self._handle_arguments()
         self._context.action(
             discriminator=self._discriminator(),
