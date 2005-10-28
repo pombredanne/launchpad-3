@@ -99,9 +99,14 @@ class ISpecification(IHasOwner):
     blocked_specs = Attribute('Specs for which this spec is a dependency.')
 
     # emergent properties
+    is_complete = Attribute('Is True if this spec is already completely '
+        'implemented. Note that it is True for informational specs, since '
+        'they describe general funcitonality rather than specific '
+        'code to be written. It is also true of obsolete and superceded '
+        'specs, since there is no longer any need to schedule work for '
+        'them.')
     is_incomplete = Attribute('Is True if this work still needs to '
-        'be done.')
-
+        'be done. Is in fact always the opposite of is_complete.')
     is_blocked = Attribute('Is True if this spec depends on another spec '
         'which is still incomplete.')
 

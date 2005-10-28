@@ -74,8 +74,7 @@
   <div tal:replace="structure context/@@+headline-tasks" />
 
     <tal:description
-      content="structure context/bug/description/fmt:text-to-html"
-    >
+      content="structure context/bug/description/fmt:text-to-html">
       $Bug.description
     </tal:description>
 

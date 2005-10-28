@@ -39,7 +39,7 @@ class SprintContextMenu(ContextMenu):
 
     usedfor = ISprint
     links = ['attendance', 'workload',
-             'approved', 'all', 'declined', 'submitted',
+             'all', 'confirmed', 'deferred', 'submitted',
              'table', 'edit']
 
     def attendance(self):
@@ -58,20 +58,20 @@ class SprintContextMenu(ContextMenu):
         text = 'Edit Details'
         return Link('+edit', text, icon='edit')
 
-    def approved(self):
-        text = 'Approved specs'
+    def confirmed(self):
+        text = 'Show confirmed'
         return Link('.', text, icon='info')
 
     def all(self):
-        text = 'All specs'
+        text = 'Show all'
         return Link('./?show=all', text, icon='info')
 
-    def declined(self):
-        text = 'Declined specs'
-        return Link('./?show=declined', text, icon='info')
+    def deferred(self):
+        text = 'Show deferred'
+        return Link('./?show=deferred', text, icon='info')
 
     def submitted(self):
-        text = 'Submitted specs'
+        text = 'Show newly submitted'
         return Link('./?show=submitted', text, icon='info')
 
 
@@ -99,6 +99,7 @@ class SprintView:
         self.request = request
         self._sprint_spec_links = None
         self._workload = None
+        self._count = None
         self.show = request.form.get('show', None)
         self.listing_detailed = True
         self.listing_compact = False
@@ -123,19 +124,28 @@ class SprintView:
             return self._sprint_spec_links
         if self.show is None:
             self._sprint_spec_links = self.context.specificationLinks(
-                status=SprintSpecificationStatus.APPROVED)
+                status=SprintSpecificationStatus.CONFIRMED)
         elif self.show == 'all':
             self._sprint_spec_links = self.context.specificationLinks()
-        elif self.show == 'declined':
+        elif self.show == 'deferred':
             self._sprint_spec_links = self.context.specificationLinks(
-                status=SprintSpecificationStatus.DECLINED)
+                status=SprintSpecificationStatus.DEFERRED)
         elif self.show == 'submitted':
             self._sprint_spec_links = self.context.specificationLinks(
                 status=SprintSpecificationStatus.SUBMITTED)
-        if len(self._sprint_spec_links) > 5:
+        self._count = len(self._sprint_spec_links)
+        if self._count > 5:
             self.listing_detailed = False
             self.listing_compact = True
         return self._sprint_spec_links
+
+    @property
+    def count(self):
+        if self._count is not None:
+            return self._count
+        # creating list of spec links will set self._count
+        spec_links = self.spec_links()
+        return self._count
 
     @property
     def specs(self):

@@ -70,11 +70,29 @@
       height="3" />
   </browser:editform>
 
-  <browser:page
+  <browser:generalform
     name="+attend"
     for="canonical.launchpad.interfaces.ISprint"
+    schema="canonical.launchpad.interfaces.ISprintAttendance"
+    fields="attendee time_starts time_ends"
+    arguments="attendee time_starts time_ends"
     class="canonical.launchpad.browser.SprintAttendanceAddView"
-    permission="launchpad.Edit"
+    permission="launchpad.AnyPerson"
+    template="../templates/sprint-attend.pt"
+    >
+    <browser:widget
+      field="attendee"
+      class="canonical.widgets.HiddenUserWidget" />
+  </browser:generalform>
+
+  <browser:generalform
+    name="+register"
+    for="canonical.launchpad.interfaces.ISprint"
+    schema="canonical.launchpad.interfaces.ISprintAttendance"
+    fields="attendee time_starts time_ends"
+    arguments="attendee time_starts time_ends"
+    class="canonical.launchpad.browser.SprintAttendanceAddView"
+    permission="launchpad.AnyPerson"
     template="../templates/sprint-attend.pt"
     />
 

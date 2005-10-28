@@ -60,7 +60,7 @@ header.
   ... GET /products/firefox/+spec/e4x HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...Must Deliver For:.../products/firefox/+series/1.0...
+  ...products/firefox/+series/1.0...
 
 
 And now it should show on the "+specs" page for that product series.

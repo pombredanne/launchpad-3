@@ -32,6 +32,10 @@
     at the moment.
   </p>
 
+  <p class="lesser">
+    <b><span tal:replace="view/count">5</span> matching specifications.</b>
+  </p>
+
   <tal:spec_links repeat="spec_link view/spec_links">
     <div
         tal:condition="view/listing_detailed"

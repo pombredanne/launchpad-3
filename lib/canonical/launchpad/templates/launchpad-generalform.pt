@@ -8,8 +8,9 @@
 <div metal:fill-slot="main">
 
   <div tal:condition="nothing">
-    This is a general form. You should not edit this file, but rather copy
-    template-form.pt to your own form page, and edit that.
+    This is a general form. You should not edit this file, or copy it and
+    use it, but rather copy the example page template in
+    template-generalform.pt to your own form page, and edit that.
   </div>
 
   <div metal:define-macro="generalform">

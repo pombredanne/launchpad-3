@@ -111,7 +111,6 @@ class Specification(SQLBase):
         return None
 
     # emergent properties
-
     @property
     def is_incomplete(self):
         """See ISpecification."""
@@ -119,8 +118,13 @@ class Specification(SQLBase):
             SpecificationStatus.IMPLEMENTED,
             SpecificationStatus.INFORMATIONAL,
             SpecificationStatus.OBSOLETE,
-            SpecificationStatus.SUPERCEDED,
+            SpecificationStatus.SUPERSEDED,
             ]
+
+    @property
+    def is_complete(self):
+        """See ISpecification."""
+        return not self.is_incomplete
 
     @property
     def is_blocked(self):

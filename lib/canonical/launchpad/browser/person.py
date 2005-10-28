@@ -64,7 +64,6 @@ from canonical.launchpad.interfaces import (
     IPollSet)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.form import FormView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.helpers import (
         obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
@@ -75,7 +74,7 @@ from canonical.launchpad.event.team import JoinTeamRequestEvent
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
-    redirection)
+    redirection, GeneralFormView)
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
@@ -1167,13 +1166,9 @@ class PersonEditView(SQLObjectEditView):
         self.request.response.redirect(canonical_url(self.context))
 
 
-class PersonEmblemView(FormView):
+class PersonEmblemView(GeneralFormView):
 
-    schema = IPerson
-    fieldNames = ['emblem',]
-    _arguments = ['emblem',]
-
-    def process(self, emblem):
+    def process(self, emblem=None):
         # XXX use Bjorn's nice file upload widget when he writes it
         if emblem is not None:
             filename = self.request.get('field.emblem').filename
@@ -1182,19 +1177,13 @@ class PersonEmblemView(FormView):
             self.context.emblem = getUtility(ILibraryFileAliasSet).create(
                 name=filename, size=len(emblem), file=StringIO(emblem),
                 contentType=content_type)
+        self._nextURL = canonical_url(self.context)
         return 'Success'
 
-    def nextURL(self):
-        return canonical_url(self.context)
 
+class PersonHackergotchiView(GeneralFormView):
 
-class PersonHackergotchiView(FormView):
-
-    schema = IPerson
-    fieldNames = ['hackergotchi',]
-    _arguments = ['hackergotchi',]
-
-    def process(self, hackergotchi):
+    def process(self, hackergotchi=None):
         # XXX use Bjorn's nice file upload widget when he writes it
         if hackergotchi is not None:
             filename = self.request.get('field.hackergotchi').filename

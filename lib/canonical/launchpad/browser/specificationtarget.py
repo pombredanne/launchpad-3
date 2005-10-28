@@ -151,12 +151,8 @@ class SpecificationTargetView:
         """
         plan = []
         specs = set(self.context.specifications)
-        # filter out the ones that are already implemented, or have been
-        # declared obsolete or superceded
-        specs = [spec for spec in specs if spec.status not in [
-            SpecificationStatus.OBSOLETE, SpecificationStatus.SUPERCEDED,
-            SpecificationStatus.IMPLEMENTED,
-            SpecificationStatus.INFORMATIONAL]]
+        # filter out the ones that are already complete
+        specs = [spec for spec in specs if not spec.is_complete]
         # sort the specs first by priority (most important first) then by
         # status (most complete first)
         specs = sorted(specs, key=lambda a: (a.priority, -a.status.value),
