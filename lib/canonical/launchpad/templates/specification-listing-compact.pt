@@ -30,8 +30,21 @@
              tal:attributes="href context/assignee/fmt:url"
              tal:content="context/assignee/browsername">Foo Bar</a>
       </tal:block>
+      <br />
+      <span tal:replace="context/summary/fmt:shorten/120">summary</span>.
+      <tal:sprints repeat="sprint context/sprints">
+        <a tal:content="sprint/name"
+           tal:attributes="href sprint/fmt:url">ubz</a>
+      </tal:sprints>
     </td>
     <td>
     </td>
+  </tr>
+  <tr class="lesser">
+    <td> </td>
+    <td>
+      <i tal:content="context/summary/fmt:shorten/120" />
+    </td>
+    <td> </td>
   </tr>
 </table>
