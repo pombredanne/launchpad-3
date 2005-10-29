@@ -329,11 +329,13 @@ on them, e.g. IDistroRelease and ISourcePackage.
 
 >>> ubuntu_warty = getUtility(IDistroReleaseSet).get(1)
 >>> ubuntu_warty_firefox = ubuntu_warty.getSourcePackage("mozilla-firefox")
->>> ubuntu_warty.createBug(title="test", comment="test")
+>>> ubuntu_warty.createBug(
+...     owner=getUtility(ILaunchBag).user, title="test", comment="test")
 Traceback (most recent call last):
   ...
 NotImplementedError: A new bug cannot be filed directly on a distribution release, because releases are meant for "targeting" a fix to a specific release. It's possible that we may change this behaviour to allow filing a bug on a distribution release in the not-too-distant future. For now, you probably meant to file the bug on the distribution instead.
->>> ubuntu_warty_firefox.createBug(title="test", comment="test")
+>>> ubuntu_warty_firefox.createBug(
+...     owner=getUtility(ILaunchBag).user, title="test", comment="test")
 Traceback (most recent call last):
   ...
 NotImplementedError: A new bug cannot be filed directly on a source package in a specific distribution release, because releases are meant for "targeting" a fix to a specific release. It's possible that we may change this behaviour to allow filing a bug on a distribution release source package in the not-too-distant future. For now, you probably meant to file the bug on the distro-wide (i.e. not release-specific) source package.
