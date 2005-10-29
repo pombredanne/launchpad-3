@@ -3,15 +3,18 @@
 __metaclass__ = type
 __all__ = ['TranslationImportQueue', 'TranslationImportQueueSet']
 
-from zope.exceptions import NotFoundError
+import tarfile
+from StringIO import StringIO
 from zope.interface import implements
+from zope.component import getUtility
 from sqlobject import SQLObjectNotFound, StringCol, ForeignKey, BoolCol
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import DEFAULT
 from canonical.launchpad.interfaces import (ITranslationImportQueue,
-    ITranslationImportQueueSet)
+    ITranslationImportQueueSet, NotFoundError)
+from canonical.librarian.interfaces import ILibrarianClient
 
 class TranslationImportQueue(SQLBase):
     implements(ITranslationImportQueue)
@@ -75,11 +78,9 @@ class TranslationImportQueue(SQLBase):
 
         # Update the fields of the given object
         pofile_or_potemplate.path = self.path
-        rawfile = IRawFileData(pofile_or_potemplate)
-        rawfile.rawfile = self.content
-        rawfile.daterawimport = self.dateimport
-        rawfile.rawimporter = self.importer
-        rawfile.rawimportstatus = RosettaImportStatus.PENDING
+        attach_object = ICanAttachRawFileData(pofile_or_potemplate)
+        attach_object.attachRawFileDataAsFileAlias(
+            file.content, file.ispublished, file.importer, file.dateimport)
 
         # The import is noted now, so we should remove this entry from the
         # queue.
@@ -91,20 +92,19 @@ class TranslationImportQueueSet:
 
     def __iter__(self):
         """See ITranslationImportQueueSet."""
-        res = TranslationImportQueue.select()
-        for entry in res:
+        for entry in self.getEntries(include_ignored=True):
             yield entry
 
-    def addOrUpdateEntry(self, path, content, ispublished, importer,
-        securesourcepackagepublishinghistory=None, productseries=None):
+    def addOrUpdateEntry(self, path, content, is_published, importer,
+        sourcepackagename=None, distrorelease=None, productseries=None):
         """See ITranslationImportQueueSet."""
-        if (securesourcepackagepublishinghistory is not None and
+        if ((sourcepackagename is not None or distrorelease is not None) and
             productseries is not None):
             raise ValueError('The productseries argument cannot be not None'
-                ' if securesourcepackagepublishinghistory is also not None.')
-        if (securesourcepackagepublishinghistory is None and
+                ' if sourcepackagename or distrorelease is also not None.')
+        if (sourcepackagename is None and distrorelease is None and
             productseries is None):
-            raise ValueError('Either securesourcepackagepublishinghistory or'
+            raise ValueError('Any of sourcepackagename, distrorelease or'
                 ' productseries must be not None.')
 
         if content is None or content == '':
@@ -113,15 +113,24 @@ class TranslationImportQueueSet:
         if path is None or path == '':
             raise ValueError('The path cannot be empty')
 
-        sourcepackagerelease = (
-            securesourcepackagepublishinghistory.sourcepackagerelease
-            )
-        sourcepackagename = sourcepackagerelease.sourcepackagename
-        distrorelease = securesourcepackagepublishinghistory.distrorelease
+        if sourcepackagename is not None:
+            sourcepackagenameid = sourcepackagename.id
+        else:
+            sourcepackagenameid = None
+        if distrorelease is not None:
+            distroreleaseid = distrorelease.id
+        else:
+            distroreleaseid = None
+        if productseries is not None:
+            productseriesid = productseries.id
+        else:
+            productseriesid = None
 
         res = TranslationImportQueue.selectBy(
-            path=path, importer=importer, sourcepackagename=sourcepackagename,
-            distrorelease=distrorelease, productseries=productseries)
+            path=path, importerID=importer.id,
+            sourcepackagenameID=sourcepackagenameid,
+            distroreleaseID=distroreleaseid,
+            productseriesID=productseriesid)
 
         filename = path.split('/')[-1]
         size = len(content)
@@ -137,7 +146,7 @@ class TranslationImportQueueSet:
             # It's an update.
             entry = res[0]
             entry.content = alias
-            entry.ispublished = ispublished
+            entry.ispublished = is_published
             entry.sync()
             return entry
         else:
@@ -145,12 +154,42 @@ class TranslationImportQueueSet:
             entry = TranslationImportQueue(path=path, content=alias,
                 importer=importer, sourcepackagename=sourcepackagename,
                 distrorelease=distrorelease, productseries=productseries,
-                ispublished=ispublished)
+                ispublished=is_published)
             return entry
+
+    def addOrUpdateEntriesFromTarball(self, content, is_published, importer,
+        sourcepackagename=None, distrorelease=None, productseries=None):
+        """See ITranslationImportQueueSet."""
+
+        tarball = tarfile.open('', 'r', StringIO(content))
+        names = tarball.getnames()
+
+        files = [name
+                 for name in names
+                 if name.endswith('.pot') or name.endswith('.po')
+                ]
+
+        for file in files:
+            content = tarball.extractfile(file).read()
+            self.addOrUpdateEntry(file, content, is_published, importer,
+            sourcepackagename=sourcepackagename, distrorelease=distrorelease,
+            productseries=productseries)
+
+        return len(files)
+
+    def getEntries(self, include_ignored=False):
+        """See ITranslationImportQueueSet."""
+        if include_ignored == True:
+            query = ''
+        else:
+            query = 'ignore = FALSE'
+        res = TranslationImportQueue.select(query)
+        for entry in res:
+            yield entry
 
     def getEntriesForProductSeries(self, productseries):
         """See ITranslationImportQueueSet."""
-        res = TranslationImportQueue.selectBy(productseries=productseries)
+        res = TranslationImportQueue.selectBy(productseriesID=productseries.id)
         for entry in res:
             yield entry
 
@@ -158,8 +197,8 @@ class TranslationImportQueueSet:
         sourcepackagename):
         """See ITranslationImportQueueSet."""
         res = TranslationImportQueue.selectBy(
-            distrorelease=distrorelease,
-            sourcepackagename=sourcepackagename)
+            distroreleaseID=distrorelease.id,
+            sourcepackagenameID=sourcepackagename.id)
         for entry in res:
             yield entry
 

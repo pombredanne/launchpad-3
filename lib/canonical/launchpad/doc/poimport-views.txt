@@ -56,11 +56,25 @@ Commit the transaction so as to be able to access Librarian data.
     >>> import transaction
     >>> transaction.commit()
 
-Check the data has been imported.
+Check the data has been attached.
 
-    >>> from canonical.launchpad.helpers import getRawFileData
-    >>> getRawFileData(potemplate)
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import ITranslationImportQueueSet
+    >>> from canonical.librarian.interfaces import ILibrarianClient
+    >>> translation_import_queue_set = getUtility(ITranslationImportQueueSet)
+    >>> librarian_client = getUtility(ILibrarianClient)
+    >>> entries = list(
+    ...     translation_import_queue_set.getEntriesForProductSeries(
+    ...         potemplate.productseries))
+    >>> len(entries)
+    1
+    >>> librarian_client.getFileByAlias(entries[0].content.id).read()
     '# Hello!'
+
+Also, check to be sure that the we get the right path with the .pot upload
+
+    >>> entries[0].path
+    u'po/evolution-2.2.pot'
 
 Try the same thing all over again but with a tarball upload.
 
@@ -91,32 +105,39 @@ Try the same thing all over again but with a tarball upload.
     >>> view = POTemplateView(potemplate, request)
     >>> view.submitForm()
     >>> view.status_message
-    '2 files were queued for import from the tar file you uploaded.'
+    'Thank you for your upload. 2 files from the tarball will be imported into Rosetta in a few minutes.'
 
 Check the files are stored properly.
 
     >>> transaction.commit()
 
-    >>> for line in getRawFileData(potemplate).splitlines():
-    ...     print line
-    # This is the PO template.
-    msgid ""
-    msgstr ""
-    "Content-Type: text/plain; charset=ascii\n"
+    >>> entries = list(
+    ...     translation_import_queue_set.getEntriesForProductSeries(
+    ...         potemplate.productseries))
 
-    >>> getRawFileData(potemplate.getPOFileByLang('es'))
-    '# This is the Spanish PO file.'
+We should have three entries, the previous one + the new additions.
+
+    >>> len(entries)
+    3
+    >>> count = 0
+    >>> for entry in entries:
+    ...     content = librarian_client.getFileByAlias(entry.content.id).read()
+    ...     if entry.path == 'foo/foo.pot':
+    ...         count += 1
+    ...         content == pot_contents
+    ...     elif entry.path == 'foo/es.po':
+    ...         count += 1
+    ...         content == '# This is the Spanish PO file.'
+    True
+    True
 
 Now let's test the upload view on POFile. This works very similarly. The extra
-twist is that we check that the 'rawfilepublished' attribute gets set.
+twist is that we check that the 'ispublished' attribute gets set.
 
 First, our POFile object.
 
     >>> from canonical.launchpad.database import POFile
     >>> pofile = POFile.get(1)
-
-    >>> pofile.rawfilepublished
-    True
 
 Then a TestFileUpload and a TestRequest as before.
 
@@ -145,16 +166,32 @@ Check the status message.
     >>> view.status_message
     'Thank you for your upload. The translation content will appear in Rosetta in a few minutes.'
 
-Check the raw file data.
+Check the import.
 
     >>> transaction.commit()
 
-    >>> getRawFileData(pofile)
-    '# Yo!'
+    >>> entries = list(
+    ...     translation_import_queue_set.getEntriesForProductSeries(
+    ...         pofile.potemplate.productseries))
 
-Check the 'rawfilepublished' flag.
+We should have four entries, the previous one + the new additions.
 
-    >>> pofile.rawfilepublished
+    >>> len(entries)
+    4
+    >>> entry = None
+    >>> content = None
+    >>> for entry in entries:
+    ...     if entry.path == 'es.po':
+    ...         content = librarian_client.getFileByAlias(
+    ...             entry.content.id).read()
+    ...         break
+
+    >>> content == '# Yo!'
+    True
+
+Check the 'ispublished' flag.
+
+    >>> entry.ispublished
     False
 
     >>> LibrarianTestSetup().tearDown()

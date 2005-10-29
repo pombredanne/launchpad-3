@@ -11,7 +11,7 @@ import time
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (IPOTemplateSet, IPOFileSet,
-    IPOFile, IPOTemplate)
+    IPOFile, IPOTemplate, ITranslationImportQueueSet)
 
 class ImportProcess:
     """Import .po and .pot files attached to Rosetta."""
@@ -90,6 +90,75 @@ class ImportProcess:
         for pofile in self.pofileset.getPOFilesPendingImport():
             yield pofile
 
+    def fetchFromImportQueue(self):
+        """Iterates over the Import Queue and moves the imports to the know
+        IPOFile or IPOTemplate objects.
+
+        If there were objects in the queue, return True, if it's empty,
+        return False.
+        """
+        importqueue = getUtility(ITranslationImportQueueSet)
+        potemplateset = getUtility(IPOTemplateSet)
+        there_are_things_to_import = False
+        for file in importqueue.getEntries():
+            if not (file.path.endswith('.po') or file.path.endswith('.pot')):
+                raise NotImplementedError('Unknown file: %s' % file.path)
+            distrorelease = file.distrorelease
+            productseries = file.productseries
+            if sourcepackage is not None:
+                # The entry is for a sourcepackagename
+                potemplate_subset = (
+                    potemplateset.getSubsetFromRealSourcePackageName(
+                        distrorelease, sourcepackagename)
+                    )
+                if len(potemplate_subset) == 0:
+                    # There are no special templates pending to be imported
+                    # we go for the normal ones.
+                    potemplate_subset = potemplateset.getSubset(
+                        distrorelease=distrorelease,
+                        sourcepackagename=sourcepackagename)
+            else:
+                # The entry is for a productseries
+                potemplate_subset = potemplateset.getSubset(
+                    productseries=productseries)
+            if file.path.endswith('.po'):
+                # It's a .po import
+                for template in potemplate_subset:
+                    try:
+                        pofile = template.getPOFileByPath(file.path)
+                    except NotFoundError:
+                        # There is no pofile for that path in this template
+                        continue
+                    try:
+                        file.attachToPOFileOrPOTemplate(pofile)
+                    except RawFileBusy:
+                        # There is already something to import waiting.
+                        continue
+                    # Do the commit to save the changes.
+                    self.ztm.commit()
+                    there_are_things_to_import = True
+                    # We don't need to continue looking in the other
+                    # IPOTemplate.
+                    break
+            else:
+                # It's a .pot import
+                try:
+                    potemplate = potemplate_subset.getPOTemplateByPath(
+                        file.path)
+                except NotFoundError:
+                    # The .pot file is new, needs manually handling.
+                    continue
+                try:
+                    file.attachToPOFileOrPOTemplate(potemplate)
+                except RawFileBusy:
+                    # There is already something to import waiting.
+                    continue
+                # Do the commit to save the changes.
+                self.ztm.commit()
+                there_are_things_to_import = True
+
+        return there_are_things_to_import
+
     def run(self):
         UTC = pytz.timezone('UTC')
         while True:
@@ -112,8 +181,14 @@ class ImportProcess:
                     break
 
             if object is None:
-                # There are no objects to import. Exit the script.
-                break
+                # There are no objects to import.
+                # Fetch any pending import from the queue.
+                if self.fetchFromImportQueue():
+                    # There are new files to be imported.
+                    continue
+                else:
+                    # No pending imports in the queue. Exit the script.
+                    break
 
             # object could be a POTemplate or a POFile but both
             # objects implement the doRawImport method so we don't
@@ -147,3 +222,4 @@ class ImportProcess:
                 self.logger.error('We got an unexpected exception while'
                                   ' committing the transaction', exc_info=1)
                 self.ztm.abort()
+

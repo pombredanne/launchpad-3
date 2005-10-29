@@ -31,7 +31,7 @@ from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.interfaces import (
     IPOFileSet, IPOFile, IRawFileData, IPOTemplateExporter,
     ZeroLengthPOExportError, ILibraryFileAliasSet, ILaunchpadCelebrities,
-    NotFoundError)
+    NotFoundError, RawFileBusy)
 
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
@@ -147,7 +147,7 @@ class POFile(SQLBase, RosettaStats):
     variant = StringCol(dbName='variant',
                         notNull=False,
                         default=None)
-    filename = StringCol(dbName='filename',
+    path = StringCol(dbName='path',
                          notNull=False,
                          default=None)
     exportfile = ForeignKey(foreignKey='LibraryFileAlias',
@@ -579,17 +579,37 @@ class POFile(SQLBase, RosettaStats):
             return True
 
     # ICanAttachRawFileData implementation
-    def attachRawFileData(self, contents, published, importer=None):
+    def attachRawFileData(self, contents, published, importer=None,
+        date_import=UTC_NOW):
         """See ICanAttachRawFileData."""
+        rawfile = IRawFileData(self)
+
+        if rawfile.rawimportstatus == RosettaImportStatus.PENDING:
+            raise RawFileBusy
+
         if self.variant:
             filename = '%s@%s.po' % (
                 self.language.code, self.variant.encode('utf8'))
         else:
             filename = '%s.po' % self.language.code
 
-        helpers.attachRawFileData(self, filename, contents, importer)
+        helpers.attachRawFileData(
+            self, filename, contents, importer, date_import)
 
-        self.rawfilepublished = published
+        rawfile.rawfilepublished = published
+
+    def attachRawFileDataAsFileAlias(self, alias, published, importer=None,
+        date_import=UTC_NOW):
+        """See ICanAttachRawFileData."""
+        rawfile = IRawFileData(self)
+
+        if rawfile.rawimportstatus == RosettaImportStatus.PENDING:
+            raise RawFileBusy
+
+        helpers.attachRawFileDataByFileAlias(
+            self, alias, importer, date_import)
+
+        rawfile.rawfilepublished = published
 
     # IRawFileData implementation
 

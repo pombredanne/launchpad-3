@@ -17,10 +17,16 @@ CREATE TABLE TranslationImportQueue(
                  (((productseries IS NULL) <> (distrorelease IS NULL)) AND
                   ((distrorelease IS NULL) = (sourcepackagename IS NULL)))),
   CONSTRAINT        unique_entry_per_importer UNIQUE (importer, distrorelease,
-                        sourcepackagename, productseries)
+                        sourcepackagename, productseries, path)
 );
 
 ALTER TABLE POFile RENAME COLUMN filename TO path;
+
+-- This new field will help us to automatically import POTemplates from
+-- one sourcepackage into another sourcepackage. It's main useage is for
+-- KDE official packages.
+ALTER TABLE POTemplate ADD COLUMN fromsourcepackagename integer REFERENCES SourcePackageName(id);
+ALTER TABLE POTemplate ADD CONSTRAINT valid_fromsourcepackagename CHECK (sourcepackagename IS NOT NULL OR fromsourcepackagename IS NULL);
 
 -- We need a join of the path and filename fields before removing that column.
 --ALTER TABLE POTemplate DROP COLUMN filename;

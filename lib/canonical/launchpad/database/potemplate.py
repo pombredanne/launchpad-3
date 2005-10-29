@@ -22,8 +22,9 @@ from canonical.database.constants import DEFAULT, UTC_NOW
 
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    IEditPOTemplate, IPOTemplateSet, IPOTemplateSubset, IRawFileData,
-    LanguageNotFound, TranslationConstants, NotFoundError, NameNotAvailable)
+    IPOTemplate, IPOTemplateSet, IPOTemplateSubset, IRawFileData,
+    LanguageNotFound, TranslationConstants, NotFoundError, NameNotAvailable,
+    RawFileBusy)
 
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.potmsgset import POTMsgSet
@@ -59,7 +60,7 @@ standardPOFileHeader = (
 )
 
 class POTemplate(SQLBase, RosettaStats):
-    implements(IEditPOTemplate, IRawFileData)
+    implements(IPOTemplate, IRawFileData)
 
     _table = 'POTemplate'
 
@@ -78,6 +79,8 @@ class POTemplate(SQLBase, RosettaStats):
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='sourcepackagename', notNull=False, default=None)
+    fromsourcepackagename = ForeignKey(foreignKey='SourcePackageName',
+        dbName='fromsourcepackagename', notNull=False, default=None)
     sourcepackageversion = StringCol(dbName='sourcepackageversion',
         notNull=False, default=None)
     distrorelease = ForeignKey(foreignKey='DistroRelease',
@@ -292,12 +295,7 @@ class POTemplate(SQLBase, RosettaStats):
             "POTMsgSet.potemplate = %d AND POTMsgSet.id = %d" % (self.id, id))
 
     def languages(self):
-        """This returns the set of languages for which we have
-        POFiles for this POTemplate.
-
-        NOTE that variants are simply ignored, if we have three variants for
-        en_GB we will simply return the one with variant=NULL.
-        """
+        """See IPOTemplate."""
         return Language.select("POFile.language = Language.id AND "
                                "POFile.potemplate = %d AND "
                                "POFile.variant IS NULL" % self.id,
@@ -306,11 +304,23 @@ class POTemplate(SQLBase, RosettaStats):
                                )
 
     def poFilesToImport(self):
+        """See IPOTemplate."""
         for pofile in self.pofiles:
             if pofile.rawimportstatus == RosettaImportStatus.PENDING:
                 yield pofile
 
+    def getPOFileByPath(self, path):
+        """See IPOTemplate."""
+        pofile = POFile.selectOne("""
+            POFile.potemplate = %s AND
+            POFile.path %s
+            """ % sqlvalues(self.id, path))
+        if pofile is None:
+            raise NotFoundError(path)
+        return pofile
+
     def getPOFileByLang(self, language_code, variant=None):
+        """See IPOTemplate."""
         if variant is None:
             variantspec = 'IS NULL'
         elif isinstance(variant, unicode):
@@ -380,7 +390,6 @@ class POTemplate(SQLBase, RosettaStats):
         rawfile = IRawFileData(self)
         return helpers.getRawFileData(rawfile)
 
-    # Methods defined in IEditPOTemplate
     def expireAllMessages(self):
         """See IPOTemplate."""
         for potmsgset in self:
@@ -524,14 +533,32 @@ class POTemplate(SQLBase, RosettaStats):
 
     # ICanAttachRawFileData implementation
 
-    def attachRawFileData(self, contents, published, importer=None):
+    def attachRawFileData(self, contents, published, importer=None,
+        date_import=UTC_NOW):
         """See ICanAttachRawFileData."""
+        rawfile = IRawFileData(self)
+        if rawfile.rawimportstatus == RosettaImportStatus.PENDING:
+            raise RawFileBusy
 
         # a POTemplate is ALWAYS "published"
         assert published == True, 'POTemplate is always "published"'
 
         filename = '%s.pot' % self.potemplatename.translationdomain
-        helpers.attachRawFileData(self, filename, contents, importer)
+        helpers.attachRawFileData(
+            self, filename, contents, importer, date_import)
+
+    def attachRawFileDataAsFileAlias(self, alias, published, importer=None,
+        date_import=UTC_NOW):
+        """See ICanAttachRawFileData."""
+        rawfile = IRawFileData(self)
+        if rawfile.rawimportstatus == RosettaImportStatus.PENDING:
+            raise RawFileBusy
+
+        # a POTemplate is ALWAYS "published"
+        assert published == True, 'POTemplate is always "published"'
+
+        helpers.attachRawFileDataByFileAlias(
+            self, alias, importer, date_import)
 
     # IRawFileData implementation
 
@@ -644,26 +671,18 @@ class POTemplateSubset:
         for potemplate in res:
             yield potemplate
 
+    def __len__(self):
+        """See IPOTemplateSubset."""
+        res = POTemplate.select(self.query, clauseTables=self.clausetables)
+        return res.count()
+
     def __getitem__(self, name):
         """See IPOTemplateSubset."""
-        try:
-            ptn = POTemplateName.byName(name)
-        except SQLObjectNotFound:
-            raise NotFoundError(name)
-
-        if self.query is None:
-            query = 'POTemplate.potemplatename = %d' % ptn.id
-        else:
-            query = '%s AND POTemplate.potemplatename = %d' % (
-                    self.query, ptn.id)
-
-        result = POTemplate.selectOne(query, clauseTables=self.clausetables)
-        if result is None:
-            raise NotFoundError(name)
-        return result
+        return self.getPOTemplateByName(name)
 
     @property
     def title(self):
+        """See IPOTemplateSubset."""
         titlestr = ''
         if self.distrorelease:
             titlestr += ' ' + self.distrorelease.displayname
@@ -675,6 +694,7 @@ class POTemplateSubset:
         return titlestr
 
     def new(self, potemplatename, contents, owner):
+        """See IPOTemplateSubset."""
         filename = '%s.pot' % potemplatename.translationdomain
         alias = helpers.uploadRosettaFile(filename, contents)
         return POTemplate(potemplatename=potemplatename,
@@ -686,6 +706,36 @@ class POTemplateSubset:
                           rawfile=alias,
                           rawimporter=owner,
                           rawimportstatus=RosettaImportStatus.PENDING)
+
+    def getPOTemplateByName(self, name):
+        """See IPOTemplateSubset."""
+        try:
+            ptn = POTemplateName.byName(name)
+        except SQLObjectNotFound:
+            raise NotFoundError(name)
+
+        if self.query is None:
+            query = 'POTemplate.potemplatename = %d' % ptn.id
+        else:
+            query = '%s AND POTemplate.potemplatename = %d' % (self.query,
+                ptn.id)
+
+        result = POTemplate.selectOne(query, clauseTables=self.clausetables)
+        if result is None:
+            raise NotFoundError(name)
+        return result
+
+    def getByPath(self, path):
+        """See IPOTemplateSubset."""
+        if self.query is None:
+            query = 'POTemplate.path = %s' % path
+        else:
+            query = '%s POTemplate.path = %s' % (self.query, path)
+
+        result = POTemplate.selectOne(query, clauseTables=self.clausetables)
+        if result is None:
+            raise NotFoundError(path)
+        return result
 
 
 class POTemplateSet:
@@ -730,6 +780,17 @@ class POTemplateSet:
         #      -- SteveAlexander 2005-04-23
         assert kw.get('productseries')
         return POTemplateSubset(productseries=kw['productseries'])
+
+    def getSubsetFromRealSourcePackageName(self, distrorelease,
+        sourcepackagename):
+        """See IPOTemplateSet."""
+        if distrorelease is None or sourcepackage is None:
+            raise RunTimeError(
+                'distrorelease and sourcepackage must be not None.')
+
+        return POTemplateSubset(
+            distrorelease=distrorelease,
+            fromsourcepackagename=sourcepackagename)
 
     def getTemplatesPendingImport(self):
         """See IPOTemplateSet."""

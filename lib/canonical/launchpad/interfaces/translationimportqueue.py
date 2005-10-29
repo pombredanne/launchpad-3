@@ -73,20 +73,43 @@ class ITranslationImportQueueSet(Interface):
     def __iter__():
         """Iterate over all entries in the queue."""
 
-    def addOrUpdateEntry(path, content, ispublished, importer,
-        securesourcepackagepublishinghistory=None, productseries=None):
+    def addOrUpdateEntry(path, content, is_published, importer,
+        sourcepackagename=None, distrorelease=None, productseries=None):
         """Return a new or updated entry of the import queue.
 
         'path' is the path, with the filename, of the file imported.
         'content' is the file content.
-        'ispublished' indicates if the imported file is already published by
+        'is_published' indicates if the imported file is already published by
         upstream.
         'importer' is the person that did the import.
-        'securesourcepackagepublishinghistory' is the link of this import
-        with a distribution package.
+        'sourcepackagename' is the link of this import with source package.
+        'distrorelease' is the link of this import with a distribution.
         'productseries' is the link of this import with a product branch.
-        'securesourcepackagepublishinghistory' and 'productseries' are exclusive,
-        we must have only one of them.
+        'sourcepackagename' + 'distrorelease' and 'productseries' are exclusive,
+        we must have only one combination of them.
+        """
+
+    def addOrUpdateEntriesFromTarball(content, is_published, importer,
+        sourcepackagename=None, distrorelease=None, productseries=None):
+        """Add all .po or .pot files from the tarball at 'content'.
+
+        'content' is a tarball stream.
+        'is_published' indicates if the imported file is already published by
+        upstream.
+        'importer' is the person that did the import.
+        'sourcepackagename' is the link of this import with source package.
+        'distrorelease' is the link of this import with a distribution.
+        'productseries' is the link of this import with a product branch.
+        'sourcepackagename' + 'distrorelease' and 'productseries' are exclusive,
+        we must have only one combination of them.
+        Return the number of files attached.
+        """
+
+    def getEntries(include_ignored=False):
+        """Iterate over the entries in the queue.
+
+        If the 'include_ignored' flag is True all entries are returned, if
+        it's False only the ones with 'ignore'= False are returned.
         """
 
     def getEntriesForProductSeries(productseries):

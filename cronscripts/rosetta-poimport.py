@@ -11,7 +11,7 @@ from canonical.config import config
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (execute_zcml_for_scripts, logger,
     logger_options)
-from canonical.launchpad.scripts.rosetta import ImportProcess
+from canonical.launchpad.scripts.po_import import ImportProcess
 
 default_lock = '/var/lock/launchpad-poimport.lock'
 

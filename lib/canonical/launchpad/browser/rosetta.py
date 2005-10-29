@@ -143,6 +143,10 @@ class RosettaApplicationNavigation(Navigation):
     def groups(self):
         return getUtility(ITranslationGroupSet)
 
+    @stepto('imports')
+    def imports(self):
+        return getUtility(ITranslationImportQueueSet)
+
     @stepto('projects')
     def projects(self):
         # DEPRECATED

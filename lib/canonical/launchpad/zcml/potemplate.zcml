@@ -11,7 +11,7 @@
     <content class="canonical.launchpad.database.POTemplate">
         <require
             permission="zope.Public"
-            interface="canonical.launchpad.interfaces.IEditPOTemplate"
+            interface="canonical.launchpad.interfaces.IPOTemplate"
             set_attributes="potemplatename description header iscurrent
                             owner productseries distrorelease
                             sourcepackagename sourcepackageversion
@@ -91,14 +91,6 @@
                 productseries distrorelease sourcepackagename
                 sourcepackageversion binarypackagename languagepack path
                 filename" 
-        />
-
-    <browser:page
-        name="+translate"
-        for="canonical.launchpad.interfaces.IPOTemplate"
-        permission="launchpad.AnyPerson"
-        class="canonical.launchpad.browser.POTemplateTranslateView"
-        attribute="__call__"
         />
 
     <browser:page

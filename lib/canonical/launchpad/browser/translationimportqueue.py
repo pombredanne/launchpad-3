@@ -5,9 +5,25 @@
 __metaclass__ = type
 
 __all__ = [
+    'TranslationImportQueueNavigation',
+    'TranslationImportQueueSetNavigation',
     'TranslationImportQueueSetView',
     'TranslationImportQueueView',
     ]
+
+from canonical.launchpad.interfaces import (ITranslationImportQueue,
+    ITranslationImportQueueSet)
+from canonical.launchpad.webapp import GetitemNavigation
+
+class TranslationImportQueueNavigation(GetitemNavigation):
+
+    usedfor = ITranslationImportQueue
+
+
+class TranslationImportQueueSetNavigation(GetitemNavigation):
+
+    usedfor = ITranslationImportQueueSet
+
 
 class TranslationImportQueueSetView:
 

@@ -94,194 +94,6 @@ def text_replaced(text, replacements, _cache={}):
 
 CHARACTERS_PER_LINE = 50
 
-class RosettaReadTarFile:
-    """Wrapper around the tarfile module.
-
-    This class provides implements a variety tar file processing used by
-    Rosetta. As opposed to RosettaWriteTarFile, which creates new archives,
-    this class only reads existing ones.
-    """
-
-    def __init__(self, stream=None, data=None, archive=None):
-        if len([thing for thing in (stream, data, archive) if thing]) != 1:
-            raise TypeError(
-                "Must provide either a stream or a data string or a tarfile.")
-
-        if stream:
-            self.tarfile = tarfile.open('', 'r', stream)
-        elif data:
-            self.tarfile = tarfile.open('', 'r', StringIO(data))
-        elif archive:
-            self.tarfile = archive
-
-    def find_po_directories(self):
-        """Find all directories named 'po' in a tarfile."""
-
-        return [
-            member.name
-            for member in self.tarfile.getmembers()
-            if member.isdir()
-            and os.path.basename(member.name.strip("/")) == 'po'
-            ]
-
-    def examine(self):
-        """Find POT and PO files within a tar file object.
-
-        Return a tuple with the list of .pot files and the list of .po files
-        found.
-
-        Two methods of finding files are employed:
-
-         1. Directories named 'po' are searched for in the tar file, and if
-            there is exactly one non-empty such directory, it is searched for
-            files ending in '.pot' and '.po'.
-
-         2. Otherwise, files ending in '.pot' and '.po' are searched for
-            directly.
-        """
-
-        # All files in the tarfile.
-
-        names = self.tarfile.getnames()
-
-        # Directories named 'po' in the tarfile.
-
-        po_directories = self.find_po_directories()
-
-        if po_directories:
-            # Look for interesting PO directories. (I.e. ones that contain POT
-            # or PO files.)
-
-            interesting = []
-
-            for directory in po_directories:
-                for name in names:
-                    if name != directory and name.startswith(directory) and (
-                        name.endswith('.pot') or name.endswith('.po')):
-                        if directory not in interesting:
-                            interesting.append(directory)
-
-            # If there's exactly one interesting PO directory, get a list of
-            # all the interesting files in it. Otherwise, use method 2.
-
-            if len(interesting) == 1:
-                directory = interesting[0]
-                pot_files, po_files = [], []
-
-                for name in names:
-                    if name.startswith(directory):
-                        if name.endswith('.pot'):
-                            pot_files.append(name)
-                        elif name.endswith('.po'):
-                            po_files.append(name)
-
-                return (tuple(pot_files), tuple(po_files))
-
-        # All files which look interesting.
-
-        pot_files = [name for name in names if name.endswith('.pot')]
-
-        po_files =  [name for name in names if name.endswith('.po')]
-
-        return (tuple(pot_files), tuple(po_files))
-
-    def check_for_import(self, pot_paths, po_paths):
-        """Check whether this tar file is suitable for importing into Rosetta.
-
-        Returns an error message if a problem was detected, or None otherwise.
-        """
-
-        # Check that at most one .pot file was found.
-        if len(pot_paths) > 1:
-            return (
-                "More than one PO template was found in the tar file you "
-                "uploaded. This is not currently supported.")
-
-        # Check the syntax of the .pot file, if present.
-        if len(pot_paths) > 0:
-            pot_contents = self.tarfile.extractfile(pot_paths[0]).read()
-
-            if not check_po_syntax(pot_contents):
-                return (
-                    "There was a problem parsing the PO template file in the "
-                    "tar file you uploaded.")
-
-        # Complain if no files at all were found.
-        if len(pot_paths) == 0 and len(po_paths) == 0:
-            return (
-                "The tar file you uploaded could not be imported. This may be "
-                "because there was more than one 'po' directory, or because "
-                "the PO templates and PO files found did not share a common "
-                "location.")
-
-        return None
-
-    def do_import(self, potemplate, importer, pot_paths, po_paths):
-        """Import a tar file into Rosetta.
-
-        Extract PO templates and PO files from the paths specified.
-        A status message is returned.
-
-        Currently, it is assumed that since check_for_import() will have been
-        called before import(), checking the syntax of the PO template will
-        not be necessary and also, we are 100% sure there is one .pot file and
-        only one. The syntax of PO files is checked, but errors are not fatal.
-        """
-
-        # At this point we are only getting one .pot file so this should be
-        # safe. # We don't support other kinds of tarballs and before calling
-        # this function we did already the needed tests to be sure that
-        # pot_paths follows our requirements.
-        contents = self.tarfile.extractfile(pot_paths[0]).read()
-        potemplate.attachRawFileData(contents=contents, published=True,
-                                     importer=importer)
-        pot_base_dir = os.path.dirname(pot_paths[0])
-
-        # List of .pot and .po files that were not able to be imported.
-        errors = []
-
-        for path in po_paths:
-            if pot_base_dir != os.path.dirname(path):
-                # The po file is not inside the same directory than the pot
-                # file, we ignore it.
-                errors.append(path)
-                continue
-
-            contents = self.tarfile.extractfile(path).read()
-
-            basename = os.path.basename(path)
-            root, extension = os.path.splitext(basename)
-
-            if '@' in root:
-                # PO files with variants are not currently supported. If they
-                # were, we would use some code like this:
-                #
-                #   code, variant = [ unicode(x) for x in root.split('@', 1) ]
-
-                continue
-            else:
-                code, variant = root, None
-
-            pofile = potemplate.getOrCreatePOFile(code, variant, importer)
-
-            try:
-                # we are assming that a tarball import is ALWAYS of a
-                # "published" potemplate and "published" pofiles
-                pofile.attachRawFileData(contents, True, importer)
-            except (POSyntaxError, POInvalidInputError):
-                errors.append(path)
-                continue
-
-        message = ("%d files were queued for import from the tar file you "
-            "uploaded." % (len(pot_paths + po_paths) - len(errors)))
-
-        if errors != []:
-            message += (
-                "The following files were skipped due to syntax errors or "
-                "other problems: " + ', '.join(errors) + ".")
-
-        return message
-
 class SnapshotCreationError(Exception):
     """Something went wrong while creating a snapshot."""
 
@@ -684,12 +496,19 @@ def uploadRosettaFile(filename, contents):
 
     return alias
 
-def attachRawFileData(raw_file_data, filename, contents, importer):
+def attachRawFileDataByFileAlias(raw_file_data, alias, importer,
+    date_import):
     """Attach the contents of a file to a raw file data object."""
-    raw_file_data.rawfile = uploadRosettaFile(filename, contents)
-    raw_file_data.daterawimport = UTC_NOW
+    raw_file_data.rawfile = alias
+    raw_file_data.daterawimport = date_import
     raw_file_data.rawimporter = importer
     raw_file_data.rawimportstatus = RosettaImportStatus.PENDING
+
+def attachRawFileData(raw_file_data, filename, contents, importer,
+    date_import):
+    """Attach the contents of a file to a raw file data object."""
+    alias = uploadRosettaFile(filename, contents)
+    attachRawFileDataByFileAlias(raw_file_data, alias, importer, date_import)
 
 def getRawFileData(raw_file_data):
     client = getUtility(ILibrarianClient)
@@ -1015,6 +834,7 @@ def is_tar_filename(filename):
 
     return (filename.endswith('.tar') or
             filename.endswith('.tar.gz') or
+            filename.endswith('.tgz') or
             filename.endswith('.tar.bz2'))
 
 

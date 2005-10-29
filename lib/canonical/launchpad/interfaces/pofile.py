@@ -44,7 +44,7 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
 
     variant = Attribute("The language variant for this PO file.")
 
-    filename = Attribute("The name of the file that was imported")
+    path = Attribute("The path to the file that was imported")
 
     exportfile = Attribute("The Librarian alias of the last cached export.")
 

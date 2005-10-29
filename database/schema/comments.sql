@@ -315,6 +315,7 @@ COMMENT ON COLUMN POTemplate.sourcepackageversion IS 'The sourcepackage version 
 COMMENT ON COLUMN POTemplate.header IS 'The header of a .pot file when we import it. Most important info from it is POT-Creation-Date and custom headers.';
 COMMENT ON COLUMN POTemplate.potemplatename IS 'A reference to a POTemplateName row that tells us the name/domain for this POTemplate.';
 COMMENT ON COLUMN POTemplate.productseries IS 'A reference to a ProductSeries from where this POTemplate comes.';
+COMMENT ON COLUMN POTemplate.fromsourcepackagename IS 'A reference to a SourcePackageName when the .pot file came from another package instead of the one noted at POTemplate.sourcepackagename.';
 
 -- POTemplateName
 COMMENT ON TABLE POTemplateName IS 'POTemplate Name. This table stores the domains/names of a set of POTemplate rows.';

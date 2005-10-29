@@ -24,7 +24,7 @@ from zope.exceptions import NotFoundError
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad.interfaces import (
     IPOFile, IPOExportRequestSet, ILaunchBag, ILanguageSet,
-    RawFileAttachFailed)
+    RawFileAttachFailed, ITranslationImportQueueSet)
 from canonical.launchpad.components.poparser import POHeader
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.pomsgset import POMsgSetView
@@ -277,11 +277,19 @@ class POFileView:
             return
 
         filename = file.filename
+        content = file.read()
+
+        if len(content) == 0:
+            self.status_message = (
+                'Sorry, the uploaded file is empty. Upload ignored.')
+            return
+
+        translation_import_queue_set = getUtility(ITranslationImportQueueSet)
 
         if not filename.endswith('.po'):
             self.status_message = (
-                'The file you uploaded was not recognised as a file that '
-                'can be imported.')
+                'The name of the file that you uploaded does not ends with'
+                ' the \'.po\' suffix. Upload rejected.')
             return
 
         # We only set the 'published' flag if the upload is marked as an
@@ -291,16 +299,16 @@ class POFileView:
         else:
             published = False
 
-        pofile = file.read()
-        try:
-            self.context.attachRawFileData(pofile, published, self.user)
-            self.status_message = (
-                'Thank you for your upload. The translation content will'
-                ' appear in Rosetta in a few minutes.')
-        except RawFileAttachFailed, error:
-            # We had a problem while uploading it.
-            self.status_message = (
-                'There was a problem uploading the file: %s.' % error)
+        # Add it to the queue.
+        translation_import_queue_set.addOrUpdateEntry(
+            self.context.path, content, published, self.user,
+            sourcepackagename=self.context.potemplate.sourcepackagename,
+            distrorelease=self.context.potemplate.distrorelease,
+            productseries=self.context.potemplate.productseries)
+
+        self.status_message = (
+            'Thank you for your upload. The translation content will'
+            ' appear in Rosetta in a few minutes.')
 
     def edit(self):
         # XXX: See bug 2358; the plural-forms here should be validated
