@@ -85,7 +85,7 @@
 
   <tal:block condition="context/branches">
 
-    <h2>Bazaar branches</h2>
+    <h2>Bazaar Branches</h2>
 
     <div>
 
