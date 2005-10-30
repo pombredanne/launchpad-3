@@ -5,6 +5,9 @@ Branches are collection of revisions, and a revision can exist independently
 from any branch. Revisions are created automatically by scanning branches, they
 have no creation interface and Launchpad cannot create or modify them.
 
+Creating revisions
+------------------
+
 Revisions have an owner attribute. I do not think that is useful at all, but
 Mark wants to keep that around. As a convention, the owner of a Revision is
 always the Launchpad Admins team.
@@ -26,12 +29,11 @@ The log-body of a revision is the commit message of that revision.
 >>> log_body_1 = "Initial import"
 >>> log_body_2 = "Fix froboizer"
 
-The revision-id is the id used by the revision control system. For Arch
-revision it's a revision full name (archive/category--branch--version--level),
-for native Bazaar2 revisions it's a GUID, for Bazaar2 imports it's some
-arbitrary string.
+The revision-id is the globally unique id used by the revision control. For
+native Bazaar2 revisions it's a GUID, for Bazaar2 imports it's a string based
+on the Arch revision id.
 
->>> revision_id_1 = "ddaa@example.com/junk--devel--base-0"
+>>> revision_id_1 = "Arch-1:ddaa@example.com/junk--devel--base-0"
 >>> revision_id_2 = "some random unique string, we do not care, really"
 
 The revision_date is the commit date recorded by the revision control system,
@@ -43,6 +45,9 @@ while the date_created is the time when the database record was created.
 >>> from canonical.launchpad.database import Revision
 >>> revision_1 = Revision(owner=admins, log_body=log_body_1,
 ...     revision_author=author, revision_id=revision_id_1, revision_date=date)
+
+Ancestors
+---------
 
 Bazaar revisions can have multiple ancestors, the "leftmost" ancestor is the
 revision that was used as a base when committing, other ancestors are used to
@@ -58,6 +63,9 @@ we can represent revision whose at least one ancestor is a ghost revision.
 >>> rev2_parent = RevisionParent(sequence=0, revision=revision_2,
 ...                              parent_id=revision_1.revision_id)
 
+Revision numbers
+----------------
+
 Revisions are associated to branches through the RevisionNumber table. A given
 revision may appear in different positions in different branches thanks to
 Bazaar2 converge-on-pull logic.
@@ -67,11 +75,8 @@ Bazaar2 converge-on-pull logic.
 >>> branch.revision_history
 [] 
 
-TODO: Rename RevisionNumber.rev_no to RevisionNumber.sequence
--- David Allouche 2005-10-19
-
 RevisionNumber does not have a creation interface, like for Revision, new
-records are only created automatically by scanning revision control data.
+records are only created by a non-zope batch job.
 
 >>> from canonical.launchpad.database import RevisionNumber
 >>> junkcode_sql = Branch.selectOneBy(name='junkcode')

@@ -29,6 +29,9 @@ Bazaar model does not forbid users from replacing the history of a branch.
 Actually, the conceptual model of Bazaar does not really have an identifiable
 concept of a branch. Branch describes a Launchpad concept.
 
+Creating branches
+-----------------
+
 Branches can be created with IBranchSet.new. IBranchSet can be accessed as an
 utility.
 
@@ -74,6 +77,9 @@ True
 >>> junkcode.home_page is None
 True
 
+Branches and products
+---------------------
+
 Branch not associated to a product are called "junk" branch and treated for
 navigation purposes as if they were associated to a magic product named
 "+junk".
@@ -83,8 +89,37 @@ navigation purposes as if they were associated to a magic product named
 >>> firefox_dev.product_name
 u'firefox'
 
-    TODO: test Person.registered_branches, Person.authored_branches and
-    Person.related_branches -- DavidAllouche 2005-10-21
+Branches registered and authored
+--------------------------------
+
+You can get the list of branches for a given Launchpad owner. These are called
+the "registered branches", because the owner is initially set to the current
+user by the branch creation forms.
+
+>>> def getName(branch):
+...     return branch.name
+>>> sorted(ddaa.registered_branches, key=getName) == [firefox_dev, junkcode]
+True
+
+Branches are associated to an "author" user, which may be different from the
+registrant. You can get the branch authored by a given person. Junk branches
+should generally have at least an author, but that is not enforced.
+
+>>> list(ddaa.authored_branches)
+[]
+>>> junkcode.author = ddaa
+>>> list(ddaa.authored_branches) == [junkcode]
+True
+
+The list of registered branches does not include branches whose registrant is
+also the author. That avoids duplicating the same branch in the registered and
+authored branch listings for a person.
+
+>>> list(ddaa.registered_branches) == [firefox_dev]
+True
+
+Branch subscriptions
+--------------------
 
 Branches can be subscribed to and unsubscribed from by a Person.
 
@@ -107,22 +142,44 @@ True
 >>> firefox_dev.subscribers
 []
 
+Branches related to a person
+----------------------------
+
+Finally, you can get the list of related branches for a person, that includes
+the branches registered, authored and subscribed to by this person.
+
+>>> lifeless = personset.getByName('lifeless')
+>>> lifeless.branches
+[]
+>>> url = 'http://example.com/~lifeless/mesh-merge'
+>>> title = "Experimental mesh merging algorithm."
+>>> meshmerge = branchset.new('mesh-merge', lifeless, None, url,
+...     title, summary=title)
+>>> junkcode.author = lifeless
+>>> unused = firefox_dev.subscribe(lifeless)
+>>> [getName(b) for b in lifeless.branches]
+
+>>> sorted(lifeless.branches, key=getName) == [firefox_dev, junkcode, meshmerge]
+True
+
+Branches and revisions
+----------------------
+
 See revision.txt for a doctest covering the creation of revisions and related
-objects. Revision data is loaded in the database by Taxi, Launchpad code is
-only concened with using this data.
+objects. Revision data is loaded in the database by a batch job using a
+different user, Launchpad code is only concened with using this data.
 
     TODO: test Branch.revision_history, Branch.revision_count, and
     Branch.latest_revisions from sampledata. Cannot populate the tables from
     here because only the importd user is allowed to do that, and importd works
     in a zopeless environment. -- DavidAllouche 2005-10-21
 
-    TODO: There should be tests for registered_branches, authored_branches and
-    related_branches properties of Person. -- DavidAllouche 2005-10-25
-
     TODO: There should be tests for Revision, RevisionNumber and RevisionParent
     as well. -- DavidAllouche 2005-10-25
 
-    TODO: Test Revision.parents and demonstrate usage.
+    TODO: Test Revision.parents_ids and demonstrate usage.
     -- DavidAllouche 2005-10-25
 
     TODO: Test Branch.revisions_since
+
+    TODO: Test RevisionSet.getByRevisionID
