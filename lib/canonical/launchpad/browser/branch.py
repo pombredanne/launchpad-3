@@ -13,9 +13,8 @@ from canonical.launchpad.interfaces import IBranch, IBranchSet, ILaunchBag
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 
-from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, enabled_with_permission)
+    canonical_url, ContextMenu, Link, enabled_with_permission, LaunchpadView)
 
 __all__ = [
     'BranchContextMenu',
@@ -66,19 +65,15 @@ def has_branch_subscription(person, branch):
     return False
 
 
-class BranchView:
+class BranchView(LaunchpadView):
 
     __used_for__ = IBranch
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    def initialize(self):
         self.notices = []
-        # figure out who the user is for this transaction
-        self.user = getUtility(ILaunchBag).user
         # establish if a subscription form was posted
-        newsub = request.form.get('subscribe', None)
-        if newsub is not None and self.user and request.method == 'POST':
+        newsub = self.request.form.get('subscribe', None)
+        if newsub is not None and self.user and self.request.method == 'POST':
             if newsub == 'Subscribe':
                 self.context.subscribe(self.user)
                 self.notices.append("You have subscribed to this branch.")

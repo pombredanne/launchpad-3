@@ -48,7 +48,7 @@
       <tr>
         <td></td>
         <th>Date</th>
-        <th>Author</th>
+        <th tal:condition="view/user">Author</th>
         <th>Message</th>
       </tr>
     </thead>
@@ -56,7 +56,7 @@
       <tr tal:repeat="rev_no context/latest_revisions">
         <td tal:content="rev_no/sequence">1</td>
         <td tal:content="rev_no/revision/revision_date/fmt:date">2005-10-05</td>
-        <td tal:content="rev_no/revision/revision_author/name">John Doe &lt;jdoe@example.com&gt;</td>
+        <td tal:condition="view/user" tal:content="rev_no/revision/revision_author/name">John Doe &lt;jdoe@example.com&gt;</td>
         <td tal:content="rev_no/revision/log_body">The revision commit message.</td>
       </tr>
     </tbody>
