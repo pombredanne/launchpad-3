@@ -1,13 +1,14 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Revision', 'RevisionAuthor', 'RevisionParent', 'RevisionNumber']
+__all__ = ['Revision', 'RevisionAuthor', 'RevisionParent', 'RevisionNumber',
+           'RevisionSet']
 
 from zope.interface import implements
 from sqlobject import ForeignKey, IntCol, StringCol
 
 from canonical.launchpad.interfaces import (
-    IRevision, IRevisionAuthor, IRevisionParent, IRevisionNumber)
+    IRevision, IRevisionAuthor, IRevisionParent, IRevisionNumber, IRevisionSet)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
@@ -30,7 +31,8 @@ class Revision(SQLBase):
 
     @property
     def parent_ids(self):
-        parents = RevisionParent.selectBy(revisionID=self, orderBy='sequence')
+        parents = RevisionParent.selectBy(
+            revisionID=self.id, orderBy='sequence')
         return [parent.parent_id for parent in parents]
 
 
@@ -67,3 +69,11 @@ class RevisionNumber(SQLBase):
         dbName='branch', foreignKey='Branch', notNull=True)
     revision = ForeignKey(
         dbName='revision', foreignKey='Revision', notNull=True)
+
+
+class RevisionSet:
+
+    implements(IRevisionSet)
+
+    def getByRevisionId(self, revision_id):
+        return Revision.selectOneBy(revision_id=revision_id)

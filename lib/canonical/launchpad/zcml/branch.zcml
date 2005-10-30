@@ -133,4 +133,15 @@
       <allow interface="canonical.launchpad.interfaces.IBranchSet" />
   </securedutility>
 
+  <!-- RevisionSet -->
+  <content class="canonical.launchpad.database.RevisionSet">
+    <allow interface="canonical.launchpad.interfaces.IRevisionSet" />
+  </content>
+
+  <securedutility
+    class="canonical.launchpad.database.RevisionSet"
+    provides="canonical.launchpad.interfaces.IRevisionSet" >
+      <allow interface="canonical.launchpad.interfaces.IRevisionSet" />
+  </securedutility>
+
 </configure>
