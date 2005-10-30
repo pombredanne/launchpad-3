@@ -33,6 +33,12 @@ def import_public_key(email_addr):
     key = gpghandler.importKey(pubkey)               
 
     person = personset.getByEmail(email_addr)
+
+    # Some of the sample keys do not have corresponding Launchpad
+    # users, so ignore them.
+    if not person:
+        return
+
     for gpgkey in person.gpgkeys:
         if gpgkey.fingerprint == key.fingerprint:
             # If the key's already added to the database, do nothing.

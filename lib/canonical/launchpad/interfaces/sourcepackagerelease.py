@@ -84,6 +84,12 @@ class ISourcePackageRelease(Interface):
         If the status isn't given, use NEEDSBUILD.
         """
 
+    def getBuildByArch(distroarchrelease):
+        """Return build for the given distroarchrelease.
+
+        Return None if not found.
+        """
+
 
 class ISourcePackageReleaseSet(Interface):
 

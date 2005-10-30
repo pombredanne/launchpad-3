@@ -25,7 +25,7 @@
 
     <div tal:condition="view/potemplatenames">
 
-        <table class="data">
+        <table class="listing">
           <tbody>
             <tr>
               <td>

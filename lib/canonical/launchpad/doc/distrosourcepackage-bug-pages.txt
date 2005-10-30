@@ -17,6 +17,7 @@ Simple searching is possible on the distro source package bug view page.
   >>> request = TestRequest(
   ...     form={'field.searchtext': 'svg', 'search': 'Search'})
   >>> dsp_bugs_view = getView(debian_mozilla_firefox, '+bugs', request)
+  >>> dsp_bugs_view.initialize()
 
-  >>> [task.bug.id for task in dsp_bugs_view.open_bugs]
+  >>> [task.bug.id for task in dsp_bugs_view.search().batch]
   [1]

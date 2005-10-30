@@ -13,10 +13,9 @@
 
   <h1>Translations</h1>
 
-  <p class="documentDescription">
+  <p>
     If <span tal:replace="context/displayname">Ubuntu</span> is using
-    Launchpad for translations then you will be able to choose a
-    release and start translating below:
+    Launchpad for translations, you can choose a release and start translating.
   </p>
 
   <tal:block repeat="distrorelease context/releases">

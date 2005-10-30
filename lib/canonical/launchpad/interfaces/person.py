@@ -30,6 +30,8 @@ from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.interfaces.specificationtarget import (
+    IHasSpecifications)
 from canonical.launchpad.interfaces.validation import (
     valid_emblem, valid_hackergotchi)
 
@@ -71,7 +73,7 @@ class PersonNameField(TextLine):
                 "The name %s is already in use." % value))
 
 
-class IPerson(Interface):
+class IPerson(IHasSpecifications):
     """A Person."""
 
     id = Int(
@@ -219,6 +221,8 @@ class IPerson(Interface):
     activemembers = Attribute("List of members with ADMIN or APPROVED status")
     active_member_count = Attribute("The number of real people who are "
         "members of this team.")
+    all_member_count = Attribute("The total number of real people who are "
+        "members of this team, including subteams.")
     administrators = Attribute("List of members with ADMIN status")
     expiredmembers = Attribute("List of members with EXPIRED status")
     approvedmembers = Attribute("List of members with APPROVED status")

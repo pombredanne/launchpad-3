@@ -242,10 +242,13 @@ Finally we can ask the upload to process itself.
   END
   >>> ed_upload.rejected
   False
-  >>> for msg in ed_upload.do_accept():
-  ...     print msg, "END"
+  >>> success, msgs = ed_upload.do_accept()
   DEBUG: Attempting to decide if James Troup is in the keyring.
   DEBUG: Decision: False
+  >>> print success
+  True
+  >>> for msg in msgs:
+  ...     print msg, "END"
   From: Root <root@localhost>
   To: Root <root@localhost>, Daniel Silverstone <daniel.silverstone@canonical.com>
   Precedence: bulk
@@ -265,4 +268,6 @@ Finally we can ask the upload to process itself.
 
 (and some tear down)
 
+  >>> import transaction
+  >>> transaction.abort()
   >>> LibrarianTestSetup().tearDown()

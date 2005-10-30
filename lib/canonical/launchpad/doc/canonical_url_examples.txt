@@ -45,11 +45,6 @@ The Registry homepage.
     >>> canonical_url(getUtility(IRegistryApplication))
     u'http://localhost:8086/registry'
 
-The FOAF homepage.
-
-    >>> canonical_url(getUtility(IFOAFApplication))
-    u'http://localhost:8086/foaf'
-
 The Bazaar homepage.
 
     >>> canonical_url(getUtility(IBazaarApplication))

@@ -6,7 +6,7 @@
       :listing_columns: a list of strings specifying columns to display
   </tal:comment>
 
-  <table class="listing data" width="67%"
+  <table class="listing" width="67%"
          tal:define="tasks task_batch_navigator/batch;
                      default_columns python:['id', 'title', 'status',
                                              'priority', 'severity'];

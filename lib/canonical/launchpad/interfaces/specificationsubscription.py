@@ -18,10 +18,10 @@ class ISpecificationSubscription(Interface):
     """A subscription for a person to a specification."""
 
     person = Choice(
-            title=_('Person ID'), required=True, vocabulary='ValidPersonOrTeam',
-            readonly=True,
+            title=_('Subscriber'), required=True,
+            vocabulary='ValidPersonOrTeam', readonly=True,
             )
-    specification = Int(title=_('Specification ID'), required=True,
+    specification = Int(title=_('Specification'), required=True,
         readonly=True)
 
 

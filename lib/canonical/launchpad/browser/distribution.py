@@ -7,13 +7,11 @@ __all__ = [
     'DistributionSetNavigation',
     'DistributionFacets',
     'DistributionView',
-    'DistributionBugsView',
     'DistributionFileBugView',
     'DistributionSetView',
     'DistributionSetAddView',
     ]
 
-from zope.interface import implements
 from zope.component import getUtility
 from zope.app.form.browser.add import AddView
 from zope.event import notify
@@ -21,15 +19,14 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSet, IPerson, IBugTaskSearchListingView,
-    IBugSet, IPublishedPackageSet, ISourcePackageNameSet, NotFoundError)
+    IDistribution, IDistributionSet, IPerson, IBugSet, IPublishedPackageSet,
+    ISourcePackageNameSet, NotFoundError)
 from canonical.launchpad.browser.addview import SQLObjectAddView
-from canonical.launchpad.browser import BugTaskSearchListingView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
+    StandardLaunchpadFacets, Link, canonical_url, ApplicationMenu,
     enabled_with_permission, GetitemNavigation, stepthrough, stepto)
 
 
@@ -99,8 +96,8 @@ class DistributionOverviewMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'overview'
-    links = ['search', 'milestone_add', 'members', 'edit', 'reassign',
-             'addrelease']
+    links = ['search', 'allpkgs', 'milestone_add', 'members', 'edit',
+             'reassign', 'addrelease']
 
     def edit(self):
         text = 'Edit Details'
@@ -110,6 +107,10 @@ class DistributionOverviewMenu(ApplicationMenu):
     def reassign(self):
         text = 'Change Admin'
         return Link('+reassign', text, icon='edit')
+
+    def allpkgs(self):
+        text = 'List All Packages'
+        return Link('+allpackages', text, icon='info')
 
     def members(self):
         text = 'Change Members'
@@ -151,7 +152,7 @@ class DistributionBountiesMenu(ApplicationMenu):
     links = ['new', 'link']
 
     def new(self):
-        text = 'Register a New Bounty'
+        text = 'Register New Bounty'
         return Link('+addbounty', text, icon='add')
 
     def link(self):
@@ -163,14 +164,18 @@ class DistributionSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'specifications'
-    links = ['new', 'roadmap']
+    links = ['roadmap', 'table', 'new']
 
     def roadmap(self):
         text = 'Roadmap'
         return Link('+specplan', text, icon='info')
 
+    def table(self):
+        text = 'Assignments Table'
+        return Link('+specstable', text, icon='info')
+
     def new(self):
-        text = 'Register a New Specification'
+        text = 'New Specification'
         return Link('+addspec', text, icon='add')
 
 
@@ -209,8 +214,9 @@ class DistributionView(BuildRecordsView):
         self.context = context
         self.request = request
         form = self.request.form
-        self.text = form.get('text')
+        self.text = form.get('text', None)
         self.matches = 0
+        self.detailed = True
         self._results = None
 
         self.searchrequested = False
@@ -225,32 +231,14 @@ class DistributionView(BuildRecordsView):
         if self._results is None:
             self._results = self.context.searchSourcePackages(self.text)
         self.matches = len(self._results)
+        if self.matches > 5:
+            self.detailed = False
         return self._results
-
-
-class DistributionBugsView(BugTaskSearchListingView):
-
-    implements(IBugTaskSearchListingView)
-
-    def __init__(self, context, request):
-        BugTaskSearchListingView.__init__(self, context, request)
-        self.milestone_widget = None
-
-    def task_columns(self):
-        """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
-        return [
-            "select", "id", "title", "package", "status", "submittedby",
-            "assignedto"]
 
 
 class DistributionFileBugView(SQLObjectAddView):
 
     __used_for__ = IDistribution
-
-    def __init__(self, context, request):
-        self.request = request
-        self.context = context
-        AddView.__init__(self, context, request)
 
     def createAndAdd(self, data):
         # add the owner information for the bug

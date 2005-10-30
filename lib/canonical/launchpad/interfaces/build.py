@@ -33,6 +33,7 @@ class IBuild(Interface):
     section = Attribute("The BinaryPackage Section")
     sourcepackagerelease = Attribute("SourcePackageRelease reference")
     distrorelease = Attribute("Direct parent needed by CanonicalURL")
+    buildqueue_record = Attribute("Corespondent BuildQueue record")
 
     title = Attribute("Build Title")
 
@@ -66,6 +67,9 @@ class IBuild(Interface):
         to this specific build.
         """
 
+    def createBuildQueueEntry():
+        """Create a BuildQueue entry for this build record.""" 
+
 class IBuildSet(Interface):
     """Interface for BuildSet"""
 
@@ -79,6 +83,19 @@ class IBuildSet(Interface):
         I.E. getUtility(IBuildSet).getByBuildID(foo).id == foo
         """
 
+    def getPendingBuildsForArchSet(archrelease):
+        """Return all pending build records within a group of ArchReleases 
+
+        Pending means that buildstatus is NEEDSBUILDING.
+        """
+
+    def getBuildsForBuilder(builder, limit=10):
+        """Return the build records touched by builder
+
+        Returns an SelectResult, ordered by datebuild (descending)
+        Return up to 'limit' results.
+        """
+
 
 class IHasBuildRecords(Interface):
     """An Object that has build records"""
@@ -87,8 +104,8 @@ class IHasBuildRecords(Interface):
         """Return build records owned by the object.
 
         The optional 'status' argument selects build records in a specific
-        state. If the 'status' argument is omitted, it returns the "worked"
-        entries. A "worked" entry is one that has been touched by a builder.
+        state. If the 'status' argument is omitted, it returns the 'worked'
+        entries. A 'worked' entry is one that has been touched by a builder.
         That is, where 'builder is not NULL'.
 
         At most 'limit' results are returned.

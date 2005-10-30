@@ -10,7 +10,7 @@ about this problem, for example.
   ... """)
   HTTP/1.1 200 Ok
   ...
-          <h1>Add External Reference</h1>
+          <h1>Add Web Link</h1>
   ...
 
 At the time of this writing, a bug external reference can take the
@@ -47,7 +47,7 @@ how to add a URL external reference.
   ... """)
   HTTP/1.1 303 See Other
   ...
-          <h1>Add External Reference</h1>
+          <h1>Add Web Link</h1>
   ...name="field.url" size="60" type="text" value="http://www.example.com"...
   ...name="field.title"...
 

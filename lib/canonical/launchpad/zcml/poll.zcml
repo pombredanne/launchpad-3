@@ -55,7 +55,13 @@
         <browser:page
             name="+portlet-details"
             template="../templates/poll-portlet-details.pt"
-            lp:url="/people/$team.name/+poll/$poll.name/+portlet-details" />
+            lp:url="/people/$team.name/+poll/$poll.name/+portlet-details"
+            />
+        <browser:page
+            name="+portlet-options"
+            template="../templates/poll-portlet-options.pt"
+            lp:url="/people/$team.name/+poll/$poll.name/+portlet-options"
+            />
     </browser:pages>
 
     <browser:pages
@@ -90,11 +96,15 @@
         for="canonical.launchpad.interfaces.IPoll"
         class="canonical.launchpad.browser.PollOptionAddView"
         schema="canonical.launchpad.interfaces.IPollOption"
-        fields="name shortname"
+        fields="name title"
         label="Create a New Option for a Poll"
         permission="launchpad.Edit"
         template="../templates/poll-newoption.pt"
         lp:url="/people/$team.id/+poll/$poll/+newoption">
+        <browser:widget
+           field="title"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="45" />
     </browser:addform>
 
 
@@ -118,13 +128,17 @@
     <browser:editform
         name="+edit"
         for="canonical.launchpad.interfaces.IPollOption"
-        class="canonical.launchpad.browser.editview.SQLObjectEditView"
+        class="canonical.launchpad.browser.poll.PollOptionEditView"
         schema="canonical.launchpad.interfaces.IPollOption"
-        fields="name shortname"
+        fields="name title"
         label="Edit Poll Details"
         permission="launchpad.Edit"
         template="../templates/polloption-edit.pt"
         lp:url="/people/$team.id/+poll/$poll/$option/+edit">
+        <browser:widget
+           field="title"
+           class="zope.app.form.browser.TextWidget"
+           displayWidth="45" />
     </browser:editform>
 
 

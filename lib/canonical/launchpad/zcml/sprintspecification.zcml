@@ -1,0 +1,50 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  xmlns:lp="http://launchpad.canonical.com"
+  i18n_domain="launchpad">
+
+  <!-- SprintSpecification -->
+  <content class="canonical.launchpad.database.SprintSpecification">
+    <allow interface="canonical.launchpad.interfaces.ISprintSpecification" />
+    <require
+      permission="launchpad.Edit"
+      set_attributes="needs_discussion"
+      />
+    <require
+      permission="launchpad.Admin"
+      set_attributes="status"
+      />
+  </content>
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.ISprintSpecification"
+    name="+edit" />
+
+  <browser:url
+    for="canonical.launchpad.interfaces.ISprintSpecification"
+    path_expression="string:${sprint/name}"
+    attribute_to_parent="specification" />
+
+  <browser:editform
+    name="+edit"
+    schema="canonical.launchpad.interfaces.ISprintSpecification"
+    class="canonical.launchpad.browser.SprintSpecificationEditView"
+    label="Does spec require further discussion?"
+    fields="needs_discussion"
+    permission="launchpad.Edit"
+    template="../templates/sprintspecification-edit.pt"
+  />
+
+  <browser:editform
+    name="+admin"
+    schema="canonical.launchpad.interfaces.ISprintSpecification"
+    class="canonical.launchpad.browser.SprintSpecificationEditView"
+    label="Approve spec for meeting agenda?"
+    fields="status"
+    permission="launchpad.Admin"
+    template="../templates/sprintspecification-edit.pt"
+  />
+
+</configure>

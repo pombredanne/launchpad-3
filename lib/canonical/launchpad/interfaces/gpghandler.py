@@ -120,6 +120,7 @@ class IPymeKey(Interface):
     fingerprint = Attribute("Key Fingerprint")
     algorithm = Attribute("Key Algorithm")
     revoked = Attribute("Key Revoked")
+    expired = Attribute("Key Expired")
     keysize = Attribute("Key Size")
     keyid = Attribute("Pseudo Key ID, composed by last fingerprint 8 digits ")
     uids = Attribute("List of user IDs associated with this key")

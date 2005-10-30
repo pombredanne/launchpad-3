@@ -25,8 +25,10 @@ class ISprintAttendance(Interface):
         description=_("Select the meeting from the list presented above."))
     time_starts = Datetime(title=_('Starting At'), required=True,
         description=_("The date and time you will be arriving and "
-        "available for sessions during the sprint."))
+        "available for sessions during the sprint. Use a time and date "
+        "in UTC (GMT). For example: 2005-10-12 13:30:00"))
     time_ends = Datetime(title=_('Finishing At'), required=True,
         description=_("The date and time you will be departing and "
-        "hence no longer available for sessions during the sprint."))
+        "hence no longer available for sessions during the sprint. "
+        "Again, use UTC."))
 

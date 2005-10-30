@@ -79,7 +79,7 @@
       $Bug.description
     </tal:description>
 
-  <tal:block repeat="message context/bug/messages">
+  <tal:message repeat="message context/bug/messages">
     <div class="boardComment"
          tal:condition="python:context.bug.description != message.contents">
 
@@ -109,7 +109,7 @@
       </div>
 
     </div>
-  </tal:block> <!-- repeating over message -->
+  </tal:message>
 
   <tal:logged-in condition="request/lp:person">
     <fieldset class="collapsible collapsed">

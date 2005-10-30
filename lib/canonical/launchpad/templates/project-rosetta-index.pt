@@ -31,11 +31,11 @@
     chat software and calendar application.
     </p>
 
-    <div tal:condition="view/hasProducts">
+    <tal:hasproducts condition="view/hasProducts">
 
         <h2>Products</h2>
 
-        <table class="listing rowNavigation">
+        <table class="listing">
             <thead>
                 <th>Product</th>
                 <th>Translated</th>
@@ -79,7 +79,7 @@
             </tbody>
         </table>
 
-    </div> <!-- tal:condition="view/hasProducts -->
+    </tal:hasproducts>
 
     <div tal:condition="not: view/hasProducts">
         <p>

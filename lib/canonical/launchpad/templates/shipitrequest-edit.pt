@@ -43,8 +43,7 @@
     <tal:block condition="not: view/contextCancelledOrShipped">
       <tal:block condition="context/isApproved">
         <br />
-        <p class="portalMessage">This request is currently approved. The
-        approved quantities are shown below.</p>
+        <p class="portalMessage">This request is currently approved.</p>
       </tal:block>
       <tal:block condition="context/isAwaitingApproval">
         <br />

@@ -20,16 +20,15 @@
 
 <div metal:fill-slot="main">
 
-    <h1>ChangeLog</h1>
+    <h1><span tal:replace="context/title"/> ChangeLog</h1>
 
     <tal:block condition="context/changelog">
       <p>This is the latest changelog we have on file for this source
       package:</p>
     
-      <pre>
-<!-- No identation on pre structure -->
+<pre>
 <span tal:replace="structure view/linkified_changelog" />
-      </pre>
+</pre>
     </tal:block>
 
     <p tal:condition="not: context/changelog" class="portalMessage">

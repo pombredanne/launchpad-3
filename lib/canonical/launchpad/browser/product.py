@@ -49,8 +49,6 @@ from canonical.launchpad.webapp import (
     enabled_with_permission, structured, GetitemNavigation, Navigation,
     stepthrough, stepto)
 
-# XXX: this import has to go!  SteveAlexander, 2005-10-07
-from canonical.launchpad.database import ProductSeriesSet
 
 class ProductNavigation(
     Navigation, BugTargetTraversalMixin, CalendarTraversalMixin):
@@ -64,9 +62,9 @@ class ProductNavigation(
     def traverse_spec(self, name):
         return self.context.getSpecification(name)
 
-    @stepto('+series')
-    def series(self):
-        return ProductSeriesSet(product=self.context)
+    @stepthrough('+series')
+    def traverse_series(self, name):
+        return self.context.getSeries(name)
 
     @stepthrough('+milestone')
     def traverse_milestone(self, name):
@@ -221,14 +219,18 @@ class ProductSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'specifications'
-    links = ['roadmap', 'new']
+    links = ['roadmap', 'table', 'new']
 
     def roadmap(self):
         text = 'Roadmap'
         return Link('+specplan', text, icon='info')
 
+    def table(self):
+        text = 'Assignments Table'
+        return Link('+specstable', text, icon='info')
+
     def new(self):
-        text = 'Register New Specification'
+        text = 'New Specification'
         return Link('+addspec', text, icon='add')
 
 

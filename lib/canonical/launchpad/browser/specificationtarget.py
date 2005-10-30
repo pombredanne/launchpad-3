@@ -18,28 +18,31 @@ class SpecificationTargetView:
         self.request = request
         self._plan = None
         self._dangling = None
+        self._categories = None
+        self._count = None
+        self._specs = None
+        self.listing_detailed = True
+        self.listing_compact = False
+        url = self.request.getURL()
+        if '+createdspecs' in url:
+            self.view_title = 'Created by %s' % self.context.title
+        elif '+approverspecs' in url:
+            self.view_title = 'For approval by %s' % self.context.title
+        elif '+assignedspecs' in url:
+            self.view_title = 'Assigned to %s' % self.context.title
+        elif '+reviewspecs' in url:
+            self.view_title = 'For review by %s' % self.context.title
+        elif '+draftedspecs' in url:
+            self.view_title = 'Drafted by %s' % self.context.title
+        elif '+subscribedspecs' in url:
+            self.view_title = 'Subscribed by %s' % self.context.title
+        else:
+            self.view_title = ''
 
-    def categories(self):
-        """This organises the specifications related to this target by
-        "category", where a category corresponds to a particular spec
-        status. It also determines the order of those categories, and the
-        order of the specs inside each category. This is used for the +specs
-        view.
-
-        It is also used in IPerson, which is not an ISpecificationTarget but
-        which does have a IPerson.specifications. In this case, it will also
-        detect which set of specifications you want to see. The options are:
-
-         - all specs (self.context.specifications)
-         - created by this person (self.context.created_specs)
-         - assigned to this person (self.context.assigned_specs)
-         - for review by this person (self.context.review_specs)
-         - specs this person must approve (self.context.approver_specs)
-         - drafted by this person (self.context.drafted_specs)
-         - subscribed by this person (self.context.subscriber_specs)
-
-        """
-        categories = {}
+    @property
+    def specs(self):
+        if self._specs is not None:
+            return self._specs
         if not IPerson.providedBy(self.context):
             specs = self.context.specifications
         else:
@@ -62,7 +65,39 @@ class SpecificationTargetView:
                 specs = self.context.subscribed_specs
             else:
                 specs = self.context.specifications
-        for spec in specs:
+        self._specs = specs
+        # update listing style
+        self._count = len(specs)
+        if self._count > 5:
+            self.listing_detailed = False
+            self.listing_compact = True
+        return self._specs
+
+    @property
+    def categories(self):
+        """This organises the specifications related to this target by
+        "category", where a category corresponds to a particular spec
+        status. It also determines the order of those categories, and the
+        order of the specs inside each category. This is used for the +specs
+        view.
+
+        It is also used in IPerson, which is not an ISpecificationTarget but
+        which does have a IPerson.specifications. In this case, it will also
+        detect which set of specifications you want to see. The options are:
+
+         - all specs (self.context.specifications)
+         - created by this person (self.context.created_specs)
+         - assigned to this person (self.context.assigned_specs)
+         - for review by this person (self.context.review_specs)
+         - specs this person must approve (self.context.approver_specs)
+         - drafted by this person (self.context.drafted_specs)
+         - subscribed by this person (self.context.subscriber_specs)
+
+        """
+        if self._categories is not None:
+            return self._categories
+        categories = {}
+        for spec in self.specs:
             if categories.has_key(spec.status):
                 category = categories[spec.status]
             else:
@@ -72,7 +107,17 @@ class SpecificationTargetView:
                 categories[spec.status] = category
             category['specs'].append(spec)
         categories = categories.values()
-        return sorted(categories, key=lambda a: a['status'].value)
+        self._categories = sorted(categories, key=lambda a: a['status'].value)
+        return self._categories
+
+    @property
+    def count(self):
+        """Return the number of specs in this view."""
+        if self._count is not None:
+            return self._count
+        # generating the spec list will set self._count
+        speclist = self.specs
+        return self._count
 
     def getLatestSpecifications(self, quantity=5):
         """Return <quantity> latest specs created for this target. This
@@ -110,11 +155,12 @@ class SpecificationTargetView:
         # declared obsolete or superceded
         specs = [spec for spec in specs if spec.status not in [
             SpecificationStatus.OBSOLETE, SpecificationStatus.SUPERCEDED,
-            SpecificationStatus.IMPLEMENTED]]
+            SpecificationStatus.IMPLEMENTED,
+            SpecificationStatus.INFORMATIONAL]]
         # sort the specs first by priority (most important first) then by
         # status (most complete first)
-        specs = sorted(specs, key=lambda a: (-a.priority.value,
-            a.status.value))
+        specs = sorted(specs, key=lambda a: (a.priority, -a.status.value),
+            reverse=True)
         found_spec = True
         while found_spec:
             found_spec = False

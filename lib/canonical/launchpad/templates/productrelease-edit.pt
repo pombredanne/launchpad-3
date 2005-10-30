@@ -26,25 +26,15 @@
               metal:fill-slot="heading"
               >Form Label will come from ZCML label="xxx"</h1>
 
-          <div metal:fill-slot="extra_info"
-            class="documentDescription">
-            Edit the details of this release of
+          <p metal:fill-slot="extra_info">
+            The information you enter here for
             <span tal:replace="context/product/displayname">Apache</span>
-            below. This information will be displayed on the release home
-            page and used in RSS feeds for
-            <span tal:replace="context/product/displayname">Apache</span>.
-          </div>
+            will be displayed on the release home page, and used in RSS feeds.
+            If you need to modify the actual version number
+            (<span tal:replace="context/version">2.1.6</span>),
+            <a href="/feedback">ask a Launchpad admin</a> to help you.
+          </p>
 
-          <div class="row" metal:fill-slot="extra_bottom">
-            Thanks very much for updating this information! If you need to
-            modify the actual version number (currently
-            <span tal:replace="context/version">2.1.6</span>) then you
-            should ask the Launchpad Admins to help you, see the bottom of
-            the page for contact details.
-          </div>
-
-          <div class="row" metal:fill-slot="extra_buttons">
-          </div>
       </div>
     
     </div>

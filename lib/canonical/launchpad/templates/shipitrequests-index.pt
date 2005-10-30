@@ -90,7 +90,7 @@
     </p>
 
     <tal:block condition="bn/currentBatch">
-      <table width="80%" class="listing data" id="results">
+      <table width="80%" class="listing" id="results" style="border-left: none">
         <thead>
           <tr>
             <th>id</th>

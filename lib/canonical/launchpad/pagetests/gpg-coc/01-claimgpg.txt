@@ -8,7 +8,7 @@ Setup the stub KeyServer
 Clean page
 
   >>> print http(r"""
-  ... GET /foaf/people/name12/+editgpgkeys HTTP/1.1
+  ... GET /people/name12/+editgpgkeys HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -120,7 +120,7 @@ Validate UID and consequently import the Key.
 Certify the key is imported
 
   >>> print http(r"""
-  ... GET /foaf/people/name12/+editgpgkeys HTTP/1.1
+  ... GET /people/name12/+editgpgkeys HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -136,7 +136,7 @@ Attempt to the fact the revoked uid present in the key in question
 wasn't added.
 
   >>> print http(r"""
-  ... GET /foaf/people/name12/+editemails HTTP/1.1
+  ... GET /people/name12/+editemails HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

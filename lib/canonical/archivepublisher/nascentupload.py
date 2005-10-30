@@ -36,7 +36,7 @@ from canonical.archivepublisher.utils import (
 from canonical.lp.dbschema import (
     SourcePackageUrgency, PackagePublishingPriority,
     DistroReleaseQueueCustomFormat, BinaryPackageFormat,
-    BuildStatus)
+    BuildStatus, DistroReleaseQueueStatus)
 
 from canonical.launchpad.interfaces import (
     IGPGHandler, GPGVerificationError, IGPGKeySet, IPersonSet,
@@ -50,6 +50,10 @@ from canonical.config import config
 from zope.component import getUtility
 from canonical.database.constants import UTC_NOW
 
+# This is a marker as per the comment in dbschema.py: ##CUSTOMFORMAT##
+# Essentially if you change anything to do with custom formats, grep for
+# the marker in the codebase and make sure the same changes are made
+# everywhere which needs them.
 custom_sections = {
     'raw-installer': DistroReleaseQueueCustomFormat.DEBIAN_INSTALLER,
     'raw-translations': DistroReleaseQueueCustomFormat.ROSETTA_TRANSLATIONS,
@@ -1678,7 +1682,7 @@ class NascentUpload:
                 copyright='',
                 licence='',
                 architecturespecific=control.get("Architecture",
-                                                 "").lower()=='all'
+                                                 "").lower()!='all'
                 ) # the binarypackagerelease constructor
             
             library_file = self.librarian.create(
@@ -1696,7 +1700,11 @@ class NascentUpload:
             self.insert_binary_into_db()
 
         # Create a Queue item for us to attach our uploads to.
-        queue_root = self.distrorelease.createQueueEntry(self.policy.pocket)
+        status = DistroReleaseQueueStatus.ACCEPTED
+        if self.is_new():
+            status = DistroReleaseQueueStatus.NEW
+        queue_root = self.distrorelease.createQueueEntry(
+            self.policy.pocket, status=status)
         # Next, if we're sourceful, add a source to the queue
         if self.sourceful:
             queue_root.addSource(self.policy.sourcepackagerelease)
@@ -1752,14 +1760,15 @@ class NascentUpload:
             self.insert_into_queue()
 
             if self.is_new():
-                return [new_msg % interpolations]
+                return True, [new_msg % interpolations]
             else:
-                return [accept_msg % interpolations,
-                        announce_msg % interpolations]
+                return True, [accept_msg % interpolations,
+                              announce_msg % interpolations]
 
         except Exception, e:
             # Any exception which occurs while processing an accept will
-            # cause a rejection to occur.
+            # cause a rejection to occur. The exception is logged in the
+            # reject message rather than being swallowed up.
             self.reject("Exception while accepting: %s" % e)
-            return self.do_reject()
+            return False, self.do_reject()
     

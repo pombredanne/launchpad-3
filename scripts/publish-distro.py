@@ -34,7 +34,7 @@ if sys.argv[1] == "--careful":
     # XXX: dsilvers: 20050921: Replace all this with an option parser
     # but for now, and just for SteveA:
     # "lookee here, altering sys.argv"
-    sys.argv.remove(1)
+    sys.argv.remove("--careful")
     
 
 distroname = sys.argv[1]

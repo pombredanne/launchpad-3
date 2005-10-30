@@ -23,10 +23,8 @@
 
   <tal:per_item repeat="cache context/source_package_caches">
     <tal:pkg define="package cache/distributionsourcepackage">
-      <img src="/++resource++package-source" />
-      <a tal:content="context/name"
+      <a tal:content="package/name"
          tal:attributes="href package/fmt:url">apache2</a>
-      <br />
     </tal:pkg>
   </tal:per_item>
 

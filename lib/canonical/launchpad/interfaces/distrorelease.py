@@ -16,6 +16,8 @@ from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import (
     IHasOwner, IBugTarget, ISpecificationTarget)
 
+from canonical.lp.dbschema import DistroReleaseQueueStatus
+
 from canonical.launchpad import _
 
 class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
@@ -101,6 +103,9 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
     specifications = Attribute("The specifications targeted to this "
         "product series.")
 
+    binary_package_caches = Attribute("All of the cached binary package "
+        "records for this distrorelease.")
+
     # other properties
     previous_releases = Attribute("Previous distroreleases from the same "
         "distribution.")
@@ -125,6 +130,10 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
 
     def updateStatistics(self):
         """Update all the Rosetta stats for this distro release."""
+
+    def updatePackageCount(self):
+        """Update the binary and source package counts for this distro
+        release."""
 
     def findSourcesByName(name):
         """Return an iterator over source packages with a name that matches
@@ -152,6 +161,11 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         published SourcePackageReleases as SourcePackagePublishing records.
 
         If pocket is not specified, we look in all pockets.
+        """
+
+    def getAllReleasesByStatus(status):
+        """Return all sourcepackages in a given published_status for this
+        DistroRelease.
         """
 
     def publishedBinaryPackages(component=None):
@@ -211,13 +225,19 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         DistroReleaseBinaryPackage objects that match the given text.
         """
 
-    def createQueueEntry(pocket):
+    def createQueueEntry(pocket, status=DistroReleaseQueueStatus.ACCEPTED):
         """Create a queue item attached to this distrorelease and the given
-        pocket.
+        pocket. If status is not supplied, then default to an ACCEPTED item.
         """
     
     def newArch(architecturetag, processorfamily, official, owner):
         """Create a new port or DistroArchRelease for this DistroRelease."""
+
+    def getQueueItems(status=DistroReleaseQueueStatus):
+        """Get the queue items for this distrorelease that are in the given
+        queue state. If status is not supplied, default to the ACCEPTED items
+        in the queue.
+        """
 
 
 class IDistroReleaseSet(Interface):
