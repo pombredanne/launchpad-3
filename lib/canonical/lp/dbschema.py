@@ -48,8 +48,6 @@ __all__ = (
 'GPGKeyAlgorithm',
 'ImportTestStatus',
 'ImportStatus',
-'KarmaActionCategory',
-'KarmaActionName',
 'LoginTokenType',
 'ManifestEntryType',
 'ManifestEntryHint',
@@ -1146,7 +1144,8 @@ class SpecificationPriority(DBSchema):
         code, but it's not on any critical path and is likely to get bumped
         in favour of higher-priority work. The idea behind the specification
         is sound and the project leaders would incorporate this
-        functionality if the work was done.
+        functionality if the work was done. In general, "low" priority
+        specifications will not get core resources assigned to them.
         """)
 
     MEDIUM = Item(50, """
@@ -1187,7 +1186,7 @@ class SpecificationStatus(DBSchema):
         Approved
 
         This specification has been approved. The project team believe that
-        is ready to be implemented without substantial further issues being
+        it is ready to be implemented without substantial further issues being
         encountered.
         """)
 
@@ -2357,155 +2356,6 @@ class RosettaImportStatus(DBSchema):
 
         The attached rawfile import failed.
         """)
-
-
-class KarmaActionName(DBSchema):
-    """The name of an action that gives karma to a user."""
-
-    BUGCREATED = Item(1, """
-        New Bug Created
-
-        """)
-
-    BUGCOMMENTADDED = Item(2, """
-        New Comment
-
-        """)
-
-    BUGTITLECHANGED = Item(3, """
-        Bug Title Changed
-
-        """)
-
-    BUGSUMMARYCHANGED = Item(4, """
-        Bug Summary Changed
-
-        """)
-
-    BUGDESCRIPTIONCHANGED = Item(5, """
-        Bug Description Changed
-
-        """)
-
-    BUGEXTREFADDED = Item(6, """
-        Bug External Reference Added
-
-        """)
-
-    BUGCVEREFADDED = Item(7, """
-        Bug CVE Reference Added
-
-        """)
-
-    BUGFIXED = Item(8, """
-        Bug Status Changed to FIXED
-
-        """)
-
-    BUGTASKCREATED = Item(9, """
-        New Bug Task Created
-
-        """)
-
-    TRANSLATIONTEMPLATEIMPORT = Item(10, """
-        Translation Template Import
-
-        """)
-
-    TRANSLATIONIMPORTUPSTREAM = Item(11, """
-        Import Upstream Translation
-
-        """)
-
-    TRANSLATIONTEMPLATEDESCRIPTIONCHANGED = Item(12, """
-        Translation Template Description Changed
-
-        """)
-
-    TRANSLATIONSUGGESTIONADDED = Item(13, """
-        Translation Suggestion Added
-
-        """)
-
-    TRANSLATIONSUGGESTIONAPPROVED = Item(14, """
-        Translation Suggestion Approved
-
-        """)
-
-    TRANSLATIONREVIEW = Item(15, """
-        Translation Review
-
-        """)
-
-    BUGREJECTED = Item(16, """
-        Bug Status Changed to REJECTED
-
-        """)
-
-    BUGACCEPTED = Item(17, """
-        Bug Status Changed to ACCEPTED
-
-        """)
-
-    BUGTASKSEVERITYCHANGED = Item(18, """
-        Change the Severity of a Bug Task
-
-        """)
-
-    BUGTASKPRIORITYCHANGED = Item(19, """
-        Change the Priority of a Bug Task
-
-        """)
-
-    BUGMARKEDASDUPLICATE = Item(20, """
-        Mark a Bug as a Duplicate
-
-        """)
-
-    BUGWATCHADDED = Item(21, """
-        New Bug Watch Added
-
-        """)
-
-
-class KarmaActionCategory(DBSchema):
-    """The class of an action that gives karma to a user.
-
-    This schema documents the different classes of actions that can result
-    in Karma assigned to a person. A person have a list of assigned Karmas,
-    each of these Karma entries have a KarmaAction and each of these actions
-    have a Class, which is represented by one of the following items.
-    """
-
-    MISC = Item(1, """
-        Miscellaneous
-
-        Any action that doesn't fit into any other class.
-    """)
-
-    BUGS = Item(2, """
-        Bugs
-
-        All actions related to bugs.
-    """)
-
-    TRANSLATIONS = Item(3, """
-        Translations
-
-        All actions related to translations.
-    """)
-
-    BOUNTIES = Item(4, """
-        Bounties
-
-        All actions related to bounties.
-    """)
-
-    HATCHERY = Item(5, """
-        Hatchery
-
-        All actions related to the Hatchery.
-    """)
 
 
 class SSHKeyType(DBSchema):

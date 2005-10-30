@@ -23,6 +23,7 @@ __all__ = [
     'DistroReleaseVocabulary',
     'FilteredDistroReleaseVocabulary',
     'FilteredProductSeriesVocabulary',
+    'KarmaCategoryVocabulary',
     'LanguageVocabulary',
     'MilestoneVocabulary',
     'PackageReleaseVocabulary',
@@ -60,7 +61,8 @@ from canonical.launchpad.database import (
     SourcePackageName, BinaryPackageRelease, BugWatch, Sprint,
     BinaryPackageName, Language, Milestone, Product, Project, ProductRelease,
     ProductSeries, TranslationGroup, BugTracker, POTemplateName, Schema,
-    Bounty, Country, Specification, Bug, Processor, ProcessorFamily)
+    Bounty, Country, Specification, Bug, Processor, ProcessorFamily,
+    KarmaCategory)
 from canonical.launchpad.interfaces import (
     ILaunchBag, ITeam, ITeamMembershipSubset, IPersonSet, IEmailAddressSet)
 
@@ -185,6 +187,43 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
                 yield self._toTerm(o)
 
 
+class BasePersonVocabulary:
+    """This is a base class to be used by all different Person Vocabularies."""
+    _table = Person
+
+    def _toTerm(self, obj):
+        """Return the term for this object.
+
+        Preference is given to email-based terms, falling back on
+        name-based terms when no preferred email exists for the IPerson.
+        """
+        if obj.preferredemail is not None:
+            return SimpleTerm(obj, obj.preferredemail.email, obj.browsername)
+        else:
+            return SimpleTerm(obj, obj.name, obj.browsername)
+
+    def getTermByToken(self, token):
+        """Return the term for the given token.
+
+        If the token contains an '@', treat it like an email. Otherwise,
+        treat it like a name.
+        """
+        if "@" in token:
+            # This looks like an email token, so let's do an object
+            # lookup based on that.
+            email = getUtility(IEmailAddressSet).getByEmail(token)
+            if email is None:
+                raise LookupError(token)
+            return self._toTerm(email.person)
+        else:
+            # This doesn't look like an email, so let's simply treat
+            # it like a name.
+            person = getUtility(IPersonSet).getByName(token)
+            if person is None:
+                raise LookupError(token)
+            return self._toTerm(person)
+
+
 class CountryNameVocabulary(SQLObjectVocabularyBase):
     """A vocabulary for country names."""
 
@@ -205,6 +244,49 @@ class BinaryPackageNameVocabulary(NamedSQLObjectVocabulary):
 class BugVocabulary(SQLObjectVocabularyBase):
     _table = Bug
     _orderBy = 'id'
+
+
+# We cannot refer to a BinaryPackage unambiguously by a name, as
+# we have no assurace that a generated name using $BinaryPackageName.name
+# and $BinaryPackage.version will be unique
+# TODO: The edit ibugtask form does not default its
+# binary package field
+class BinaryPackageVocabulary(SQLObjectVocabularyBase):
+    # XXX: 2004/10/06 Brad Bollenbach -- may be broken, but there's
+    # no test data for me to check yet. This'll be fixed by the end
+    # of the week (2004/10/08) as we get Malone into usable shape.
+    _table = BinaryPackageRelease
+    _orderBy = 'id'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj.id, str(obj.id), obj.title)
+
+    def getTermByToken(self, token):
+        return self.getTerm(token)
+
+
+class BountyVocabulary(SQLObjectVocabularyBase):
+    _table = Bounty
+
+
+class BugTrackerVocabulary(SQLObjectVocabularyBase):
+    # XXX: 2004/10/06 Brad Bollenbach -- may be broken, but there's
+    # no test data for me to check yet. This'll be fixed by the end
+    # of the week (2004/10/08) as we get Malone into usable shape.
+    _table = BugTracker
+
+
+class LanguageVocabulary(SQLObjectVocabularyBase):
+    _table = Language
+    _orderBy = 'englishname'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.id, obj.displayname)
+
+
+class KarmaCategoryVocabulary(NamedSQLObjectVocabulary):
+    _table = KarmaCategory
+    _orderBy = 'name'
 
 
 class ProductVocabulary(SQLObjectVocabularyBase):
@@ -304,86 +386,11 @@ class ProjectVocabulary(SQLObjectVocabularyBase):
         return []
 
 
-# We cannot refer to a BinaryPackage unambiguously by a name, as
-# we have no assurace that a generated name using $BinaryPackageName.name
-# and $BinaryPackage.version will be unique
-# TODO: The edit ibugtask form does not default its
-# binary package field
-class BinaryPackageVocabulary(SQLObjectVocabularyBase):
-    # XXX: 2004/10/06 Brad Bollenbach -- may be broken, but there's
-    # no test data for me to check yet. This'll be fixed by the end
-    # of the week (2004/10/08) as we get Malone into usable shape.
-    _table = BinaryPackageRelease
-    _orderBy = 'id'
-
-    def _toTerm(self, obj):
-        return SimpleTerm(obj.id, str(obj.id), obj.title)
-
-    def getTermByToken(self, token):
-        return self.getTerm(token)
-
-
-class BountyVocabulary(SQLObjectVocabularyBase):
-    _table = Bounty
-
-
-class BugTrackerVocabulary(SQLObjectVocabularyBase):
-    # XXX: 2004/10/06 Brad Bollenbach -- may be broken, but there's
-    # no test data for me to check yet. This'll be fixed by the end
-    # of the week (2004/10/08) as we get Malone into usable shape.
-    _table = BugTracker
-
-
-class LanguageVocabulary(SQLObjectVocabularyBase):
-    _table = Language
-    _orderBy = 'englishname'
-
-    def _toTerm(self, obj):
-        return SimpleTerm(obj, obj.id, obj.displayname)
-
-
 class TranslationGroupVocabulary(NamedSQLObjectVocabulary):
     _table = TranslationGroup
 
     def _toTerm(self, obj):
         return SimpleTerm(obj, obj.name, obj.title)
-
-
-class BasePersonVocabulary:
-    """This is a base class to be used by all different Person Vocabularies."""
-    _table = Person
-
-    def _toTerm(self, obj):
-        """Return the term for this object.
-
-        Preference is given to email-based terms, falling back on
-        name-based terms when no preferred email exists for the IPerson.
-        """
-        if obj.preferredemail is not None:
-            return SimpleTerm(obj, obj.preferredemail.email, obj.browsername)
-        else:
-            return SimpleTerm(obj, obj.name, obj.browsername)
-
-    def getTermByToken(self, token):
-        """Return the term for the given token.
-
-        If the token contains an '@', treat it like an email. Otherwise,
-        treat it like a name.
-        """
-        if "@" in token:
-            # This looks like an email token, so let's do an object
-            # lookup based on that.
-            email = getUtility(IEmailAddressSet).getByEmail(token)
-            if email is None:
-                raise LookupError(token)
-            return self._toTerm(email.person)
-        else:
-            # This doesn't look like an email, so let's simply treat
-            # it like a name.
-            person = getUtility(IPersonSet).getByName(token)
-            if person is None:
-                raise LookupError(token)
-            return self._toTerm(person)
 
 
 class PersonAccountToMergeVocabulary(

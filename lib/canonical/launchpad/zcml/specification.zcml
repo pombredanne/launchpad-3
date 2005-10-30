@@ -34,6 +34,16 @@
     path_expression="string:+spec/${name}"
     attribute_to_parent="target" />
 
+  <subscriber
+    for="canonical.launchpad.interfaces.ISpecification
+         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+    factory="canonical.launchpad.subscribers.karma.spec_created" />
+
+  <subscriber
+    for="canonical.launchpad.interfaces.ISpecification
+         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+    factory="canonical.launchpad.subscribers.karma.spec_modified" />
+
   <browser:pages
     for="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationView"
@@ -333,6 +343,11 @@
       name="+portlet-sprints"
       template="../templates/specifications-portlet-sprints.pt" />
   </browser:pages>
+
+  <!-- SpecificationDelta -->
+  <content class="canonical.launchpad.components.specification.SpecificationDelta">
+    <allow interface="canonical.launchpad.interfaces.ISpecificationDelta" />
+  </content>
 
 </facet>
 

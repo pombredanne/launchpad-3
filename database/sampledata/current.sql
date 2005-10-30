@@ -1135,46 +1135,42 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'libraryfilecontent'::pg_catalog.regclass;
 
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (1, '2005-04-07 16:46:05.265391', NULL, 178859, '378b3498ead213d35a82033a6e9196014a5ef25c');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (2, '2005-04-07 16:46:05.266763', NULL, 9922560, 'a57faa6287aee2c58e115673a119c6083d31d1b9');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (3, '2005-04-07 16:46:05.26727', NULL, 309386, 'b218ca7b52fa813550e3f14cdcf3ba68606e4446');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (4, '2005-04-07 16:46:05.267803', NULL, 162927750, 'cfbd3ee1f510c66d49be465b900a3334e8488184');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (5, '2005-05-18 08:03:28.021862', NULL, 4381, '9b1f78faa39fb09a9fd955d744002c2d8f32d88d');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (6, '2005-05-18 08:03:28.021862', NULL, 7910, 'afdf21d698587a6601e2ffed0f44292b7ad5dd07');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (7, '2005-05-18 08:03:28.021862', NULL, 10826, '502828e7591277535abe9015ffbc6918dbba8ef4');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (8, '2005-05-18 08:03:28.021862', NULL, 10826, '502828e7591277535abe9015ffbc6918dbba8ef4');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (9, '2005-05-18 08:03:28.021862', NULL, 2655, 'ca3b107af84c05eaf98ba073376153986566ec28');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (10, '2005-05-18 08:03:28.021862', NULL, 13110, 'bc7bebca1e3c5c166838b19f0eeb7f171e51805d');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (11, '2005-05-18 08:03:28.021862', NULL, 13499, '78a26efee75a54f113063b78783b2d4612fee409');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (12, '2005-05-18 08:03:28.021862', NULL, 12695, '8812d04c170ca90bb1423e188ce9706869aa03d7');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (13, '2005-05-18 08:03:28.021862', NULL, 13133, 'db1b50cbde7142d344bd8ef9b2e1fe3b3116f77c');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (14, '2005-05-18 08:03:28.021862', NULL, 13641, 'e19cc1446e3004f10475c37b2cd363f75b8ae89a');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (15, '2005-05-18 08:03:28.021862', NULL, 13269, 'fc8cab1cb1e5fb1efa3c3c475b8f7c8dc5038d50');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (16, '2005-05-18 08:03:28.021862', NULL, 13983, 'e17ee3031bd29dcd1e5905c0fd17945600a91ccf');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (17, '2005-05-18 08:03:28.021862', NULL, 12652, '07b01d1e6fe9a729f911e72dfe674a5e0abdc4ee');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (18, '2005-05-18 08:03:28.021862', NULL, 13240, '801dc911c2bd67e17eff087516fdc63a2ac322ce');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (19, '2005-05-18 08:03:28.021862', NULL, 4165, 'fca78a2292e4034b8dfbb2de6f69e17ebeecaaa1');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (20, '2005-05-18 08:03:28.021862', NULL, 4093, 'fc67a1770f78c45c396b4724195aeb10683aa2fd');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (21, '2005-05-18 08:03:28.021862', NULL, 3635, '4ab2ca308dafe152789640942488e23a33e4f46c');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (22, '2005-05-18 08:03:28.021862', NULL, 3553, '20815563ee33368d51e3213354f97c05b4685968');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (23, '2005-05-18 08:03:28.021862', NULL, 3778, '965968d3e6668f39ebc64bc11a3f1a5cd07c213b');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (24, '2005-05-18 08:03:28.021862', NULL, 3666, 'cca8fb78e05a34481e07683cea8c3a47f01c609e');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (25, '2005-05-18 08:03:28.021862', NULL, 3793, '28a7accfb491a2b4895b49b810ca7cda0badc787');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (26, '2005-05-18 08:03:28.021862', NULL, 4773, '03efb176f04f3897de7d5e6484864b0559fd6cd6');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (27, '2005-05-18 08:03:28.021862', NULL, 2961, '4468039e1d2cbdfc78d2e53477e5fe0537bae302');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (28, '2005-05-18 08:03:28.021862', NULL, 3558, 'd6c2ddacdab7618ce2a555c20a4a730fcdb42600');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (29, '2005-05-18 08:03:28.021862', NULL, 3561, '9eb09455e6a568605c1bbab4cdf1936eee92222d');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (30, '2005-05-18 08:03:28.021862', NULL, 3305, 'b45b170da29f9b22650315657505124766c93720');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (31, '2005-05-18 08:03:28.021862', NULL, 3987, '9668ba9f0a59f9e6e6bc73fc5dc9f116b202bceb');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (32, '2005-05-18 08:03:28.021862', NULL, 4908, '874a6ef9cd1aaef17653c6c12f4b83ef9487c1c3');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (33, '2005-05-18 08:03:28.021862', NULL, 4908, '874a6ef9cd1aaef17653c6c12f4b83ef9487c1c3');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (34, '2005-08-10 09:31:29.606407', NULL, 2, '71853c6197a6a7f222db0f1978c7cb232b87c5ee');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (35, '2005-08-01 09:31:29.606407', NULL, 2, '71853c6197a6a7f222db0f1978c7cb232b87c5ee');
-
-
-INSERT INTO LibraryFileContent (id, filesize, sha1, deleted) VALUES (
-    36, 3, sha1('foo'), true
-    );
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (1, '2005-04-07 16:46:05.265391', NULL, 178859, '378b3498ead213d35a82033a6e9196014a5ef25c', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (2, '2005-04-07 16:46:05.266763', NULL, 9922560, 'a57faa6287aee2c58e115673a119c6083d31d1b9', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (3, '2005-04-07 16:46:05.26727', NULL, 309386, 'b218ca7b52fa813550e3f14cdcf3ba68606e4446', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (4, '2005-04-07 16:46:05.267803', NULL, 162927750, 'cfbd3ee1f510c66d49be465b900a3334e8488184', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (5, '2005-05-18 08:03:28.021862', NULL, 4381, '9b1f78faa39fb09a9fd955d744002c2d8f32d88d', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (6, '2005-05-18 08:03:28.021862', NULL, 7910, 'afdf21d698587a6601e2ffed0f44292b7ad5dd07', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (7, '2005-05-18 08:03:28.021862', NULL, 10826, '502828e7591277535abe9015ffbc6918dbba8ef4', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (8, '2005-05-18 08:03:28.021862', NULL, 10826, '502828e7591277535abe9015ffbc6918dbba8ef4', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (9, '2005-05-18 08:03:28.021862', NULL, 2655, 'ca3b107af84c05eaf98ba073376153986566ec28', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (10, '2005-05-18 08:03:28.021862', NULL, 13110, 'bc7bebca1e3c5c166838b19f0eeb7f171e51805d', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (11, '2005-05-18 08:03:28.021862', NULL, 13499, '78a26efee75a54f113063b78783b2d4612fee409', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (12, '2005-05-18 08:03:28.021862', NULL, 12695, '8812d04c170ca90bb1423e188ce9706869aa03d7', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (13, '2005-05-18 08:03:28.021862', NULL, 13133, 'db1b50cbde7142d344bd8ef9b2e1fe3b3116f77c', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (14, '2005-05-18 08:03:28.021862', NULL, 13641, 'e19cc1446e3004f10475c37b2cd363f75b8ae89a', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (15, '2005-05-18 08:03:28.021862', NULL, 13269, 'fc8cab1cb1e5fb1efa3c3c475b8f7c8dc5038d50', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (16, '2005-05-18 08:03:28.021862', NULL, 13983, 'e17ee3031bd29dcd1e5905c0fd17945600a91ccf', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (17, '2005-05-18 08:03:28.021862', NULL, 12652, '07b01d1e6fe9a729f911e72dfe674a5e0abdc4ee', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (18, '2005-05-18 08:03:28.021862', NULL, 13240, '801dc911c2bd67e17eff087516fdc63a2ac322ce', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (19, '2005-05-18 08:03:28.021862', NULL, 4165, 'fca78a2292e4034b8dfbb2de6f69e17ebeecaaa1', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (20, '2005-05-18 08:03:28.021862', NULL, 4093, 'fc67a1770f78c45c396b4724195aeb10683aa2fd', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (21, '2005-05-18 08:03:28.021862', NULL, 3635, '4ab2ca308dafe152789640942488e23a33e4f46c', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (22, '2005-05-18 08:03:28.021862', NULL, 3553, '20815563ee33368d51e3213354f97c05b4685968', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (23, '2005-05-18 08:03:28.021862', NULL, 3778, '965968d3e6668f39ebc64bc11a3f1a5cd07c213b', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (24, '2005-05-18 08:03:28.021862', NULL, 3666, 'cca8fb78e05a34481e07683cea8c3a47f01c609e', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (25, '2005-05-18 08:03:28.021862', NULL, 3793, '28a7accfb491a2b4895b49b810ca7cda0badc787', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (26, '2005-05-18 08:03:28.021862', NULL, 4773, '03efb176f04f3897de7d5e6484864b0559fd6cd6', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (27, '2005-05-18 08:03:28.021862', NULL, 2961, '4468039e1d2cbdfc78d2e53477e5fe0537bae302', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (28, '2005-05-18 08:03:28.021862', NULL, 3558, 'd6c2ddacdab7618ce2a555c20a4a730fcdb42600', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (29, '2005-05-18 08:03:28.021862', NULL, 3561, '9eb09455e6a568605c1bbab4cdf1936eee92222d', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (30, '2005-05-18 08:03:28.021862', NULL, 3305, 'b45b170da29f9b22650315657505124766c93720', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (31, '2005-05-18 08:03:28.021862', NULL, 3987, '9668ba9f0a59f9e6e6bc73fc5dc9f116b202bceb', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (32, '2005-05-18 08:03:28.021862', NULL, 4908, '874a6ef9cd1aaef17653c6c12f4b83ef9487c1c3', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (33, '2005-05-18 08:03:28.021862', NULL, 4908, '874a6ef9cd1aaef17653c6c12f4b83ef9487c1c3', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (34, '2005-08-10 09:31:29.606407', NULL, 2, '71853c6197a6a7f222db0f1978c7cb232b87c5ee', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (35, '2005-08-01 09:31:29.606407', NULL, 2, '71853c6197a6a7f222db0f1978c7cb232b87c5ee', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (36, '2005-10-30 18:00:27.899028', NULL, 3, '0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33', true);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'libraryfilecontent'::pg_catalog.regclass;
@@ -1182,46 +1178,42 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'libraryfilealias'::pg_catalog.regclass;
 
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (1, 1, 'netapplet-1.0.0.tar.gz', 'application/x-gtar', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (2, 1, 'netapplet_1.0.0.orig.tar.gz', 'application/x-gtar', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (3, 2, 'firefox-0.9.2.tar.gz', 'application/x-gtar', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (4, 3, 'evolution-1.0.tar.gz', 'application/x-gtar', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (5, 5, 'netapplet.pot', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (6, 6, 'pmount.pot', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (7, 7, 'evolution-2.2.pot', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (8, 8, 'evolution-2.2.pot', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (9, 9, 'pkgconf-mozilla.pot', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (10, 10, 'hr.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (11, 11, 'ca.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (12, 12, 'nb.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (13, 13, 'cs.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (14, 14, 'es_ES.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (15, 15, 'de.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (16, 16, 'fr.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (17, 17, 'it_IT.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (18, 18, 'es.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (19, 19, 'fr.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (20, 20, 'pt_BR.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (21, 21, 'ja.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (22, 22, 'es.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (23, 23, 'nl.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (24, 24, 'cs.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (25, 25, 'da.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (26, 26, 'fi.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (27, 27, 'gl.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (28, 28, 'lt.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (29, 29, 'it.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (30, 30, 'tr.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (31, 31, 'de.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (32, 32, 'es.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (33, 33, 'es.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (34, 34, 'evolution-2.2-test.pot', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (35, 35, 'Ubuntu-High-Pri-2005-08-01.csv', 'text/plain', NULL);
-
-
-INSERT INTO LibraryFileAlias (id, content, filename, mimetype) VALUES (
-    36, 36, 'foo.txt', 'text/plain'
-    );
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (1, 1, 'netapplet-1.0.0.tar.gz', 'application/x-gtar', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (2, 1, 'netapplet_1.0.0.orig.tar.gz', 'application/x-gtar', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (3, 2, 'firefox-0.9.2.tar.gz', 'application/x-gtar', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (4, 3, 'evolution-1.0.tar.gz', 'application/x-gtar', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (5, 5, 'netapplet.pot', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (6, 6, 'pmount.pot', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (7, 7, 'evolution-2.2.pot', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (8, 8, 'evolution-2.2.pot', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (9, 9, 'pkgconf-mozilla.pot', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (10, 10, 'hr.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (11, 11, 'ca.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (12, 12, 'nb.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (13, 13, 'cs.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (14, 14, 'es_ES.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (15, 15, 'de.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (16, 16, 'fr.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (17, 17, 'it_IT.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (18, 18, 'es.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (19, 19, 'fr.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (20, 20, 'pt_BR.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (21, 21, 'ja.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (22, 22, 'es.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (23, 23, 'nl.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (24, 24, 'cs.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (25, 25, 'da.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (26, 26, 'fi.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (27, 27, 'gl.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (28, 28, 'lt.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (29, 29, 'it.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (30, 30, 'tr.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (31, 31, 'de.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (32, 32, 'es.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (33, 33, 'es.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (34, 34, 'evolution-2.2-test.pot', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (35, 35, 'Ubuntu-High-Pri-2005-08-01.csv', 'text/plain', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (36, 36, 'foo.txt', 'text/plain', NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'libraryfilealias'::pg_catalog.regclass;
@@ -7755,27 +7747,41 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'karmaaction'::pg_catalog.regclass;
 
-INSERT INTO karmaaction (id, name, category, points) VALUES (1, 1, 2, 10);
-INSERT INTO karmaaction (id, name, category, points) VALUES (2, 2, 2, 0);
-INSERT INTO karmaaction (id, name, category, points) VALUES (3, 3, 2, 1);
-INSERT INTO karmaaction (id, name, category, points) VALUES (4, 4, 2, 2);
-INSERT INTO karmaaction (id, name, category, points) VALUES (5, 5, 2, 3);
-INSERT INTO karmaaction (id, name, category, points) VALUES (6, 6, 2, 10);
-INSERT INTO karmaaction (id, name, category, points) VALUES (7, 7, 2, 15);
-INSERT INTO karmaaction (id, name, category, points) VALUES (8, 8, 2, 10);
-INSERT INTO karmaaction (id, name, category, points) VALUES (9, 9, 2, 10);
-INSERT INTO karmaaction (id, name, category, points) VALUES (10, 10, 3, 10);
-INSERT INTO karmaaction (id, name, category, points) VALUES (11, 11, 3, 30);
-INSERT INTO karmaaction (id, name, category, points) VALUES (12, 12, 3, 5);
-INSERT INTO karmaaction (id, name, category, points) VALUES (13, 13, 3, 1);
-INSERT INTO karmaaction (id, name, category, points) VALUES (14, 14, 3, 1);
-INSERT INTO karmaaction (id, name, category, points) VALUES (15, 15, 3, 1);
-INSERT INTO karmaaction (id, name, category, points) VALUES (16, 16, 2, 3);
-INSERT INTO karmaaction (id, name, category, points) VALUES (17, 17, 2, 5);
-INSERT INTO karmaaction (id, name, category, points) VALUES (18, 18, 2, 1);
-INSERT INTO karmaaction (id, name, category, points) VALUES (19, 19, 2, 1);
-INSERT INTO karmaaction (id, name, category, points) VALUES (20, 20, 2, 5);
-INSERT INTO karmaaction (id, name, category, points) VALUES (21, 21, 2, 10);
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (1, 2, 10, 'bugcreated', 'New Bug Filed', 'The user filed a new bug report. This is distinct from creating a new "task" for an existing bug, on, say, an upstream product.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (2, 2, 0, 'bugcommentadded', 'Bug Comment Added', 'The user commented on an existing bug in Malone.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (3, 2, 1, 'bugtitlechanged', 'Edited Bug Title', 'The user edited the title of the bug to provide a clearer idea of the core issue.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (4, 2, 2, 'bugsummarychanged', 'Edited Bug Summary', 'The user edited the bug summary. This will specifically help users searching for existing bugs in Malone.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (5, 2, 3, 'bugdescriptionchanged', 'Edited Bug Description', 'The user edited the bug description to describe more clearly the specific symptoms and expected outcomes for the bug. This will also improve the ability of other users to find this bug report and avoid creating duplicates.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (6, 2, 10, 'bugextrefadded', 'Bug External Reference Added', 'The user provided a URL to information which is relevant to this bug, for example, to a mailing list archive where it is discussed, or to a detailed problem report.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (7, 2, 15, 'bugcverefadded', 'Bug CVE Link Added', 'The user has linked a bug report to a specific entry in the CVE database.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (8, 2, 10, 'bugfixed', 'Bug Marked as Fixed', 'The user marked a bug as fixed.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (9, 2, 10, 'bugtaskcreated', 'Bug Task Created', 'The user has created a new task on a bug. This means that they have indicated that the same bug exists in another place (for example, upstream) and have reported that in Malone.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (10, 3, 10, 'translationtemplateimport', 'Import of Translation Template', 'The user updated a translation template, providing a newer version to be imported in Rosetta.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (11, 3, 30, 'translationimportupstream', 'Upstream Translation Imported', 'The user imported a set of upstream translations into Rosetta');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (12, 3, 5, 'translationtemplatedescriptionchanged', 'Edited Translation Template Description', 'The user updated the description of a specific translation template.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (13, 3, 1, 'translationsuggestionadded', 'Translation Suggestion', 'The user contributed a new suggested translation. That may not yet have been accepted, but is valued nonetheless.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (14, 3, 1, 'translationsuggestionapproved', 'Translation Suggestion Approved', 'The user approved a translation suggestion that was previously contributed by someone else.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (15, 3, 1, 'translationreview', 'Translation Review', 'The user has completed a review of suggested translations.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (16, 2, 3, 'bugrejected', 'Bug Rejected', 'The user has rejected a bug.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (17, 2, 5, 'bugaccepted', 'Bug Accepted', 'The user has marked a bug as accepted.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (18, 2, 1, 'bugtaskseveritychanged', 'Bug Severity Changed', 'The user has updated the severity of a bug task. Note that the severity of a bug can vary depending on where the code is being used, so each bug task has its own severity.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (19, 2, 1, 'bugtaskprioritychanged', 'Bug Priority Changed', 'The user has updated the priority of a particular bug task. Note that bug task has a distinct priority, because each of them will likely have a different developer responsible for them.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (20, 2, 5, 'bugmarkedasduplicate', 'Bug Marked as Duplicate', 'The user has marked a bug as a duplicate of another bug. This greatly reduces the amount of time developers need to spend reviewing existing bug lists.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (21, 2, 10, 'bugwatchadded', 'Bug Watch Added', 'The user has linked an existing bug in Launchpad to an external bug tracker, to indicate that the bug is being tracked in that bug tracker too.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (22, 6, 30, 'addspec', 'Registered Specification', 'The user has registered a new specification in the Launchpad spec tracker.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (23, 6, 5, 'specpriority', 'Updated Specification Priority', 'The user has changed the priority of a specification to match the requirements of the project.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (24, 6, 2, 'spectitlechanged', 'Edited Specification Title', 'The user edited the title of a specification.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (25, 6, 2, 'specsummarychanged', 'Edited Specification Summary', 'The user edited the summary of a specification.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (26, 6, 5, 'specseries', 'Targeted Specification to Series', 'The user has targetted a specification to a particular series.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (27, 6, 5, 'specrelease', 'Targeted Specification to Release', 'The user has targetted a specification to a particular distribution release.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (28, 6, 5, 'specmilestone', 'Targeted Specification to Milestone', 'The user has targetted a specification to a particular milestone.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (29, 6, 3, 'specdraft', 'Specification Drafting', 'The user has changed the status of the specification to indicate that drafting has begun.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (30, 6, 15, 'specpendingapproval', 'Specification is Pending Approval', 'The user has set the status of the spec to PendingApproval');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (31, 6, 10, 'specreviewed', 'Specification Review', 'The user has completed a review of a specification.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (32, 6, 10, 'specbugadded', 'Linked Bug to Specification', 'The user has indicated that a particular bug is related to a specification.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (33, 6, 10, 'specbugremoved', 'Removed Bug from Specification', 'The user has indicated that a particular bug is not related to a specification.');
+INSERT INTO KarmaAction (id, category, name, points, title, summary) VALUES (34, 6, 'specurlchanged', 2, 'Specification URL Updated', 'The user edited the URL of a specification.');
+
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'karmaaction'::pg_catalog.regclass;
@@ -7954,11 +7960,11 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'specification'::pg_catalog.regclass;
 
-INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (1, 'extension-manager-upgrades', 'Extension Manager Upgrades', 'Simplify the way extensions are installed and registered so that: 1. third party applications can easily register and deregister extensions that live with their code. 2. developers can easily register extensions that they are developing out of a location apart from their build (e.g. their home directory), and  3. developers can easily install extensions for testing.', 16, 13, NULL, 1, '2005-08-24 16:03:46.479655', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://wiki.mozilla.org/Firefox:1.1_Product_Team', NULL);
-INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (2, 'canvas', 'Support <canvas> Objects', 'With the Firefox 1.1 Developer Preview Release, Firefox includes a new HTML element for programmable graphics. <canvas> is based on the WhatWG canvas specification (http://www.whatwg.org/specs/web-apps/current-work/#graphics), which itself is based on Apple''s <canvas> implemented in Safari. It can be used for rendering graphs, UI elements, and other custom graphics on the client.', 16, NULL, NULL, NULL, '2005-08-24 16:05:03.406307', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://developer.mozilla.org/en/docs/Drawing_Graphics_with_Canvas', NULL);
-INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (3, 'svg-support', 'Support Native SVG Objects', 'Scalable Vector Graphics (SVG) is an XML markup language for describing two-dimensional vector graphics. Mozilla should natively support embedded SVG images in HTML documents, or SVG served directly, much as PNG or JPEG images can be served.', 16, 13, 2, NULL, '2005-08-24 16:10:05.078543', 4, NULL, NULL, NULL, NULL, 10, 70, 'http://developer.mozilla.org/en/docs/SVG', NULL);
-INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (4, 'e4x', 'Support E4X in EcmaScript', 'E4X adds native XML datatypes to the ECMAScript language, extends the semantics of familiar ECMAScript operators for manipulating XML objects and adds a small set of new operators for common XML operations, such as searching and filtering. It also adds support for XML literals, namespaces, qualified names and other mechanisms to facilitate XML processing.', 16, 14, 28, NULL, '2005-08-24 16:11:37.431981', 4, NULL, NULL, NULL, 1, 20, 0, 'http://www.ecma-international.org/publications/standards/Ecma-357.htm', 'This is the status whiteboard. Dig it?');
-INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (5, 'mergewin', 'Merge Open Browser Windows with "Consolidate Windows"', 'It should be possible to merge multiple open browser windows with a "Consolidate Windows" menu option.', 16, NULL, NULL, NULL, '2005-10-19 18:03:59.900723', 4, NULL, NULL, NULL, NULL, 40, 50, NULL, NULL);
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by) VALUES (1, 'extension-manager-upgrades', 'Extension Manager Upgrades', 'Simplify the way extensions are installed and registered so that: 1. third party applications can easily register and deregister extensions that live with their code. 2. developers can easily register extensions that they are developing out of a location apart from their build (e.g. their home directory), and  3. developers can easily install extensions for testing.', 16, 13, NULL, 1, '2005-08-24 16:03:46.479655', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://wiki.mozilla.org/Firefox:1.1_Product_Team', NULL, NULL);
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by) VALUES (2, 'canvas', 'Support <canvas> Objects', 'With the Firefox 1.1 Developer Preview Release, Firefox includes a new HTML element for programmable graphics. <canvas> is based on the WhatWG canvas specification (http://www.whatwg.org/specs/web-apps/current-work/#graphics), which itself is based on Apple''s <canvas> implemented in Safari. It can be used for rendering graphs, UI elements, and other custom graphics on the client.', 16, NULL, NULL, NULL, '2005-08-24 16:05:03.406307', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://developer.mozilla.org/en/docs/Drawing_Graphics_with_Canvas', NULL, NULL);
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by) VALUES (3, 'svg-support', 'Support Native SVG Objects', 'Scalable Vector Graphics (SVG) is an XML markup language for describing two-dimensional vector graphics. Mozilla should natively support embedded SVG images in HTML documents, or SVG served directly, much as PNG or JPEG images can be served.', 16, 13, 2, NULL, '2005-08-24 16:10:05.078543', 4, NULL, NULL, NULL, NULL, 10, 70, 'http://developer.mozilla.org/en/docs/SVG', NULL, NULL);
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by) VALUES (4, 'e4x', 'Support E4X in EcmaScript', 'E4X adds native XML datatypes to the ECMAScript language, extends the semantics of familiar ECMAScript operators for manipulating XML objects and adds a small set of new operators for common XML operations, such as searching and filtering. It also adds support for XML literals, namespaces, qualified names and other mechanisms to facilitate XML processing.', 16, 14, 28, NULL, '2005-08-24 16:11:37.431981', 4, NULL, NULL, NULL, 1, 20, 0, 'http://www.ecma-international.org/publications/standards/Ecma-357.htm', 'This is the status whiteboard. Dig it?', NULL);
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by) VALUES (5, 'mergewin', 'Merge Open Browser Windows with "Consolidate Windows"', 'It should be possible to merge multiple open browser windows with a "Consolidate Windows" menu option.', 16, NULL, NULL, NULL, '2005-10-19 18:03:59.900723', 4, NULL, NULL, NULL, NULL, 40, 50, NULL, NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'specification'::pg_catalog.regclass;
@@ -8260,9 +8266,9 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sprintspecification'::pg_catalog.regclass;
 
-INSERT INTO sprintspecification (id, sprint, specification, status, needs_discussion) VALUES (1, 1, 3, 10, true);
-INSERT INTO sprintspecification (id, sprint, specification, status, needs_discussion) VALUES (2, 1, 1, 10, true);
-INSERT INTO sprintspecification (id, sprint, specification, status, needs_discussion) VALUES (3, 1, 4, 10, true);
+INSERT INTO sprintspecification (id, sprint, specification, status, needs_discussion, whiteboard) VALUES (1, 1, 3, 10, true, NULL);
+INSERT INTO sprintspecification (id, sprint, specification, status, needs_discussion, whiteboard) VALUES (2, 1, 1, 10, true, NULL);
+INSERT INTO sprintspecification (id, sprint, specification, status, needs_discussion, whiteboard) VALUES (3, 1, 4, 10, true, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sprintspecification'::pg_catalog.regclass;
@@ -8303,6 +8309,23 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distroreleasequeuecu
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distroreleasequeuecustom'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'karmacategory'::pg_catalog.regclass;
+
+INSERT INTO karmacategory (id, name, title, summary) VALUES (1, 'misc', 'Miscellaneous', 'This category is a catch-all that is used for karma events that do not fit neatly into any other obvious category.');
+INSERT INTO karmacategory (id, name, title, summary) VALUES (2, 'bugs', 'Bug Management', 'This karma category covers work in the Malone bug tracking system, such as filing, closing and otherwise working with bugs.');
+INSERT INTO karmacategory (id, name, title, summary) VALUES (3, 'translations', 'Translations in Rosetta', 'This categor covers all actions related to translation using the Rosetta web translation portal. Creating new translation projects, submitting new translations and editing existing translations will all earn karma.');
+INSERT INTO karmacategory (id, name, title, summary) VALUES (4, 'bounties', 'Bounty Tracking', 'This covers all karma associated with the bounty system. Registering bounties, or closing them, will earn you karma.');
+INSERT INTO karmacategory (id, name, title, summary) VALUES (5, 'registry', 'The Registry', 'This category covers all work with product, projects and the general registry which Launchpad maintains of the open source world.');
+INSERT INTO karmacategory (id, name, title, summary) VALUES (6, 'specs', 'Specification Tracking', 'This category includes all karma associated with the Launchpad specification tracking system.');
+INSERT INTO karmacategory (id, name, title, summary) VALUES (7, 'support', 'Support Tracker', 'This is the category for all karma associated with technical support, and the ticket tracker in Launchpad. Help solve users problems to earn this karma.');
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'karmacategory'::pg_catalog.regclass;
+
+
+
 
 
 

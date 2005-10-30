@@ -7,6 +7,11 @@
 
 <facet facet="overview">
 
+    <!-- Karma -->
+    <content class="canonical.launchpad.database.Karma">
+        <allow interface="canonical.launchpad.interfaces.IKarma" />
+    </content>
+
     <!-- KarmaSet -->
     <content class="canonical.launchpad.database.KarmaSet">
         <allow interface="canonical.launchpad.interfaces.IKarmaSet" />
@@ -32,6 +37,14 @@
         provides="canonical.launchpad.interfaces.IKarmaCacheSet">
         <allow interface="canonical.launchpad.interfaces.IKarmaCacheSet" />
     </securedutility>
+
+    <!-- KarmaCategory -->
+    <content class="canonical.launchpad.database.KarmaCategory">
+        <allow interface="canonical.launchpad.interfaces.IKarmaCategory" />
+        <require 
+            permission="launchpad.Admin"
+            set_schema="canonical.launchpad.interfaces.IKarmaCategory" />
+    </content>
 
     <!-- KarmaAction -->
     <content class="canonical.launchpad.database.KarmaAction">
@@ -81,7 +94,6 @@
         for="canonical.launchpad.interfaces.IKarmaActionSet"
         name="+index"
         permission="launchpad.Admin" 
-        class="canonical.launchpad.browser.KarmaActionSetView"
         template="../templates/karmaaction-index.pt"
         lp:url="karmaaction/$action/+index" />
 </facet>

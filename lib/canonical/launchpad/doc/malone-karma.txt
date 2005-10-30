@@ -6,7 +6,6 @@ documentation cleaner:
     ...     IKarmaActionSet, IDistributionSet, IBugSet, IMessageSet)
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
 
-    >>> from canonical.lp.dbschema import KarmaActionName
     >>> karmaset = getUtility(IKarmaSet)
 
 First let's define a variable, so that we can make sure that every
@@ -23,7 +22,7 @@ was covered in this document.
     >>> from zope.event import notify
     >>> def make_sure_karma_is_added(karma_action_name, event, points):
     ...     karma_action = getUtility(IKarmaActionSet).getByName(
-    ...         KarmaActionName.items[karma_action_name])
+    ...         karma_action_name)
     ...     previous_karma = karmaset.getSumByPerson(foo_bar)
     ...     previous_karma_actions = len(
     ...         karmaset.selectByPersonAndAction(foo_bar, karma_action))

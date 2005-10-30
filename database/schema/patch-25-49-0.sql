@@ -13,4 +13,12 @@ ALTER TABLE Specification ADD CONSTRAINT specification_not_self_superseding
 
 ALTER TABLE SprintSpecification ADD COLUMN whiteboard text;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (25,76,0);
+/* dealing with a NULL priority is just a pain in the nexk that results in
+ * unnecessarily complicated TAL. */
+
+UPDATE Specification SET priority=5 WHERE priority IS NULL;
+ALTER TABLE Specification ALTER COLUMN priority SET DEFAULT 5;
+ALTER TABLE Specification ALTER COLUMN priority SET NOT NULL;
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (25,49,0);
+

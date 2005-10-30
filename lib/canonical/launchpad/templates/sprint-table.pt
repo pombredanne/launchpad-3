@@ -32,7 +32,9 @@
     <tbody>
       <tr tal:repeat="spec view/specs" class="lesser">
         <td><a tal:content="spec/name/fmt:shorten/25"
-               tal:attributes="href spec/fmt:url">foo-bar-baz</a></td>
+               tal:attributes="
+                 href spec/fmt:url;
+                 title spec/title">foo-bar-baz</a></td>
         <td><a tal:condition="spec/assignee"
                tal:content="spec/assignee/browsername"
                tal:attributes="href spec/assignee/fmt:url">Assignee Bar</a></td>
@@ -45,6 +47,12 @@
       </tr>
     </tbody>
   </table>
+
+  <p class="discreet">
+    This table is sorted by priority, highest first, by default. Click a
+    column heading to sort by that column. Point your mouse at a
+    specification name to see the title.
+  </p>
 
 </div>
 </body>

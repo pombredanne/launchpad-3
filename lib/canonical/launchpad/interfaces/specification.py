@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'ISpecification',
     'ISpecificationSet',
+    'ISpecificationDelta',
     ]
 
 from zope.i18nmessageid import MessageIDFactory
@@ -115,6 +116,15 @@ class ISpecification(IHasOwner):
     def getSprintSpecification(sprintname):
         """Get the record that links this spec to the named sprint."""
 
+    # event-related methods
+    def getDelta(new_spec, user):
+        """Return a dictionary of things that changed between this spec and
+        the new_spec.
+
+        This method is primarily used by event subscription code, to
+        determine what has changed during an SQLObjectModifiedEvent.
+        """
+
     # subscription-related methods
     def subscribe(person):
         """Subscribe this person to the feature specification."""
@@ -181,3 +191,25 @@ class ISpecificationSet(Interface):
         distribution=None):
         """Create a new specification."""
 
+
+class ISpecificationDelta(Interface):
+    """The quantitative changes made to a spec that was edited."""
+
+    specification = Attribute("The ISpec, after it's been edited.")
+    user = Attribute("The IPerson that did the editing.")
+
+    # fields on the spec itself, we provide just the new changed value
+    title = Attribute("The spec title or None.")
+    summary = Attribute("The spec summary or None.")
+    specurl = Attribute("The URL to the spec home page (not in Launchpad).")
+    productseries = Attribute("The product series.")
+    distrorelease = Attribute("The release to which this is targeted.")
+    milestone = Attribute("The milestone to which the spec is targeted.")
+    bugs_linked = Attribute("A list of new bugs linked to this spec.")
+    bugs_unlinked = Attribute("A list of bugs unlinked from this spec.")
+
+    # items where we provide 'old' and 'new' values if they changed
+    name = Attribute("Old and new names, or None.")
+    priority = Attribute("Old and new priorities, or None")
+    status = Attribute("Old and new statuses, or None")
+    target = Attribute("Old and new target, or None")

@@ -127,16 +127,18 @@ class SprintView:
         if self._sprint_spec_links is not None:
             return self._sprint_spec_links
         if self.show is None:
-            self._sprint_spec_links = self.context.specificationLinks(
+            spec_links = self.context.specificationLinks(
                 status=SprintSpecificationStatus.CONFIRMED)
         elif self.show == 'all':
-            self._sprint_spec_links = self.context.specificationLinks()
+            spec_links = self.context.specificationLinks()
         elif self.show == 'deferred':
-            self._sprint_spec_links = self.context.specificationLinks(
+            spec_links = self.context.specificationLinks(
                 status=SprintSpecificationStatus.DEFERRED)
         elif self.show == 'submitted':
-            self._sprint_spec_links = self.context.specificationLinks(
+            spec_links = self.context.specificationLinks(
                 status=SprintSpecificationStatus.SUBMITTED)
+        self._sprint_spec_links = [
+            link for link in spec_links if link.specification.is_incomplete]
         self._count = len(self._sprint_spec_links)
         if self._count > 5:
             self.listing_detailed = False

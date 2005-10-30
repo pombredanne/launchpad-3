@@ -11,14 +11,13 @@ __all__ = [
     'IKarmaActionSet',
     'IKarmaCache',
     'IKarmaCacheSet',
+    'IKarmaCategory',
     ]
 
 from zope.app.form.browser.interfaces import IAddFormCustomization
-from zope.schema import Int, Datetime, Choice
+from zope.schema import Int, Datetime, Choice, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
-
-from canonical.lp.dbschema import KarmaActionCategory
 
 _ = MessageIDFactory('launchpad')
 
@@ -75,19 +74,14 @@ class IKarmaSet(Interface):
 class IKarmaAction(Interface):
     """The Action that gives karma to a Person."""
 
-    title = Attribute('Title')
-
-    id = Int(title=_("Database ID"), required=True, readonly=True)
-
-    name = Int(
-        title=_("Name"), required=True, readonly=True, 
-        description=_("The name of this KarmaAction. A dbschema value."))
-
+    #id = Int(title=_("Database ID"), required=True, readonly=True)
+    name = TextLine(
+        title=_("Name"), required=True, readonly=True)
     category = Choice(
         title=_("Category"), required=True, readonly=False,
-        vocabulary='KarmaActionCategory', default=KarmaActionCategory.MISC,
-        description=_("The category of this action."))
-
+        vocabulary='KarmaCategory')
+    title = TextLine(title=_("Title"), required=True)
+    summary = Text(title=_("Summary"), required=True)
     points = Int(
         title=_("Points"), required=True, readonly=False,
         description=_("The number of points we give to a user which performs "
@@ -133,8 +127,7 @@ class IKarmaCache(Interface):
 
     category = Choice(
         title=_("Category"), required=True, readonly=True,
-        vocabulary='KarmaActionCategory', default=KarmaActionCategory.MISC,
-        description=_("The category of the actions."))
+        vocabulary='KarmaCategory')
 
     karmavalue = Int(
         title=_("Karma"), required=True, readonly=False,
@@ -159,4 +152,13 @@ class IKarmaCacheSet(Interface):
 
         Return the newly created KarmaCache.
         """
+
+
+class IKarmaCategory(Interface):
+    """A catgory of karma events."""
+
+    name = Attribute("The name of the category.")
+    title = Attribute("The title of the karma category.")
+    summary = Attribute("A brief summary of this karma category.")
+
 

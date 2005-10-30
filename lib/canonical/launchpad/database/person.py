@@ -45,12 +45,13 @@ from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFile
-from canonical.launchpad.database.karma import KarmaAction, Karma
+from canonical.launchpad.database.karma import (
+    KarmaAction, Karma, KarmaCategory)
 from canonical.launchpad.database.shipit import ShippingRequest
 
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
-    TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType, KarmaActionCategory)
+    TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType)
 
 from canonical.foaf import nickname
 
@@ -118,6 +119,8 @@ class Person(SQLBase):
     subscribedBounties = RelatedJoin('Bounty', joinColumn='person',
         otherColumn='bounty', intermediateTable='BountySubscription',
         orderBy='id')
+    karma_category_caches = MultipleJoin('KarmaCache', joinColumn='person',
+        orderBy='category')
     signedcocs = MultipleJoin('SignedCodeOfConduct', joinColumn='owner')
     ircnicknames = MultipleJoin('IrcID', joinColumn='person')
     jabberids = MultipleJoin('JabberID', joinColumn='person')
@@ -305,14 +308,14 @@ class Person(SQLBase):
         except SQLObjectNotFound:
             raise ValueError(
                 "No KarmaAction found with name '%s'." % action_name)
-        Karma(person=self, action=action)
+        return Karma(person=self, action=action)
 
     def updateKarmaCache(self):
         """See IPerson."""
         cacheset = getUtility(IKarmaCacheSet)
         karmaset = getUtility(IKarmaSet)
         totalkarma = 0
-        for cat in KarmaActionCategory.items:
+        for cat in KarmaCategory.select():
             karmavalue = karmaset.getSumByPersonAndCategory(self, cat)
             totalkarma += karmavalue
             cache = cacheset.getByPersonAndCategory(self, cat)
@@ -321,6 +324,11 @@ class Person(SQLBase):
             else:
                 cache.karmavalue = karmavalue
         self.karma = totalkarma
+
+    def latestKarma(self, quantity=25):
+        """See IPerson."""
+        return Karma.selectBy(personID=self.id,
+            orderBy='-datecreated')[:quantity]
 
     def inTeam(self, team):
         """See IPerson."""

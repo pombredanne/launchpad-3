@@ -231,6 +231,8 @@ class SpecificationAddView(SQLObjectAddView):
             distribution=distribution, assignee=assignee, drafter=drafter,
             approver=approver)
         self._nextURL = canonical_url(spec)
+        # give karma where it is due
+        owner.assignKarma('addspec')
         return spec
 
     def add(self, content):
@@ -246,6 +248,7 @@ class SpecificationEditView(SQLObjectEditView):
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.context))
+
 
 class SpecificationRetargetingView(GeneralFormView):
 

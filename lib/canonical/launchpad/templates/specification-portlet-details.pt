@@ -57,7 +57,9 @@
       <tal:sprint repeat="sprint_link sprint_links">
         <a tal:attributes="href sprint_link/sprint/fmt:url"
            tal:content="sprint_link/sprint/name" /> 
-        (<span tal:replace="sprint_link/status/title">Approved</span>)<br />
+        (<a tal:content="sprint_link/status/title"
+            tal:attributes="href string:${sprint_link/fmt:url}/+admin"
+            >Approved</a>)<br />
       </tal:sprint>
 	</tal:has_sprints>
   </div>

@@ -50,7 +50,7 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
-    KarmaActionCategory, TeamSubscriptionPolicy, BugTaskStatus)
+    TeamSubscriptionPolicy, BugTaskStatus)
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
@@ -250,27 +250,27 @@ class PersonSpecsMenu(ApplicationMenu):
              'subscribed']
 
     def created(self):
-        text = 'Specifications Created'
+        text = 'Specs Created'
         return Link('+createdspecs', text, icon='spec')
 
     def approver(self):
-        text = 'Specifications to Approve'
+        text = 'Specs to Approve'
         return Link('+approverspecs', text, icon='spec')
 
     def assigned(self):
-        text = 'Specifications Assigned'
+        text = 'Specs Assigned'
         return Link('+assignedspecs', text, icon='spec')
 
     def drafted(self):
-        text = 'Specifications Drafted'
+        text = 'Specs Drafted'
         return Link('+draftedspecs', text, icon='spec')
 
     def review(self):
-        text = 'Specifications To Review'
+        text = 'Specs To Review'
         return Link('+reviewspecs', text, icon='spec')
 
     def subscribed(self):
-        text = 'Subscribed Specifications'
+        text = 'Subscribed Specs'
         return Link('+subscribedspecs', text, icon='spec')
 
 
@@ -331,8 +331,9 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = IPerson
     facet = 'overview'
-    links = ['common_edit', 'common_edithomepage', 'common_edithackergotchi',
-             'common_editemblem', 'karma', 'editsshkeys', 'editgpgkeys',
+    links = ['karma', 'common_edit', 'common_edithomepage',
+             'common_edithackergotchi',
+             'common_editemblem', 'editsshkeys', 'editgpgkeys',
              'codesofconduct', 'administer', 'common_packages']
 
     def karma(self):
@@ -564,6 +565,7 @@ class PersonView:
         self.request = request
         self.message = None
         self.user = getUtility(ILaunchBag).user
+        self._karma_categories = None
         if context.isTeam():
             # These methods are called here because their return values are
             # going to be used in some other places (including
@@ -659,20 +661,6 @@ class PersonView:
         """Return True if this is not a restricted team."""
         restricted = TeamSubscriptionPolicy.RESTRICTED
         return self.context.subscriptionpolicy != restricted
-
-    def actionCategories(self):
-        return KarmaActionCategory.items
-
-    def actions(self, actionCategory):
-        """Return a list of actions of the given category performed by
-        this person."""
-        kas = getUtility(IKarmaActionSet)
-        return kas.selectByCategoryAndPerson(actionCategory, self.context)
-
-    def actionsCount(self, action):
-        """Return the number of times this person performed this action."""
-        karmaset = getUtility(IKarmaSet)
-        return len(karmaset.selectByPersonAndAction(self.context, action))
 
     def reportedBugTasks(self):
         """Return up to 30 bug tasks reported recently by this person."""

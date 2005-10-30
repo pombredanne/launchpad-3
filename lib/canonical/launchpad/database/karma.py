@@ -1,8 +1,15 @@
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Karma', 'KarmaSet', 'KarmaAction', 'KarmaActionSet', 'KarmaCache',
-           'KarmaCacheSet']
+__all__ = [
+    'Karma',
+    'KarmaSet',
+    'KarmaAction',
+    'KarmaActionSet',
+    'KarmaCache',
+    'KarmaCacheSet',
+    'KarmaCategory'
+    ]
 
 from datetime import datetime, timedelta
 
@@ -19,8 +26,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     IKarma, IKarmaAction, IKarmaActionSet, IKarmaCache, IKarmaSet,
-    IKarmaCacheSet)
-from canonical.lp.dbschema import EnumCol, KarmaActionCategory, KarmaActionName
+    IKarmaCacheSet, IKarmaCategory)
 
 
 class Karma(SQLBase):
@@ -105,9 +111,11 @@ class KarmaAction(SQLBase):
     sortingColumns = ['category', 'name']
     _defaultOrder = sortingColumns
 
-    name = EnumCol(dbName='name', schema=KarmaActionName, alternateID=True)
-    category = EnumCol(
-                dbName='category', schema=KarmaActionCategory, notNull=True)
+    name = StringCol(notNull=True, alternateID=True)
+    title = StringCol(notNull=True)
+    summary = StringCol(notNull=True)
+    category = ForeignKey(dbName='category', foreignKey='KarmaCategory',
+        notNull=True)
     points = IntCol(dbName='points', notNull=True)
 
 
@@ -144,8 +152,8 @@ class KarmaCache(SQLBase):
     _table = 'KarmaCache'
 
     person = ForeignKey(dbName='person', notNull=True)
-    category = EnumCol(
-                dbName='category', schema=KarmaActionCategory, notNull=True)
+    category = ForeignKey(dbName='category', foreignKey='KarmaCategory',
+        notNull=True)
     karmavalue = IntCol(dbName='karmavalue', notNull=True)
 
 
@@ -164,4 +172,13 @@ class KarmaCacheSet:
         if cache is None:
             cache = default
         return cache
+
+
+class KarmaCategory(SQLBase):
+    """See IKarmaCategory."""
+    implements(IKarmaCategory)
+
+    name = StringCol(notNull=True, alternateID=True)
+    title = StringCol(notNull=True)
+    summary = StringCol(notNull=True)
 
