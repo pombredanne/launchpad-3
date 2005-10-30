@@ -83,6 +83,8 @@ packages successfully (at least partially):
    * 3dchess, a source package that generates a binary package.
    * 9wm, a source package that generates a binary package, and whose
      changelog file name starts with the binary package name.
+   * rioutil, a source package that generates a binary package, and
+     whose source contains a shlibs file.
 
 And one completely broken package:
 
@@ -164,14 +166,14 @@ We should have more source packages in the database:
 
     >>> transaction.commit()
     >>> existing = 9
-    >>> hoary = 12 - 2   # 2 packages fail
+    >>> hoary = 13 - 2   # 2 packages fail
     >>> breezy = 9 - 3 - 2 + 1  # 3 packages are the same as in hoary, 2 fail,
     ... #one that is imported forcefully (ubuntu-meta)
     >>> hoary + breezy
-    15
+    16
     >>> count = SourcePackageRelease.select().count()
     >>> count - orig_spr_count
-    15
+    16
 
 Check that x11proto-damage has its Build-Depends-Indep value correctly set:
 
@@ -275,13 +277,13 @@ successfully processed.
       util-linux (again, poor thing)
 
     >>> print SSPPH.select().count() - orig_sspph_count
-    18
+    19
 
 Ensure all we published to was main, in the main pocket:
 
     >>> print SSPPH.selectBy(componentID=1,
     ...                     pocket=0).count() - orig_sspph_count
-    18
+    19
 
 === Testing Binary Package Results ===
 
@@ -293,15 +295,22 @@ We have 23 binary packages in breezy. db1-compat, ed, the 3 libcap packages and
 python-pam is unchanged.  python-sqlite fails. The 5 ubuntu-meta packages work.
 
     >>> BinaryPackageRelease.select().count() - orig_bpr_count
-    38
+    39
     >>> Build.select().count() - orig_build_count
-    11
+    12
     >>> SBPPH.select().count() - orig_sbpph_count
-    44
+    45
+
+Check that the shlibs parsing works as expected:
+
+    >>> from canonical.launchpad.database import BinaryPackageName
+    >>> n = BinaryPackageName.selectOneBy(name="rioutil")
+    >>> rio = BinaryPackageRelease.selectOneBy(binarypackagenameID=n.id)
+    >>> print rio.shlibdeps
+    librioutil 1 rioutil
 
 Test all the data got to the ed BPR intact:
 
-    >>> from canonical.launchpad.database import BinaryPackageName
     >>> n = BinaryPackageName.selectOneBy(name="ed")
     >>> ed = BinaryPackageRelease.selectOneBy(binarypackagenameID=n.id)
     >>> print ed.version
@@ -353,13 +362,13 @@ that we imported exactly 9 people (13 packages with 3 being uploaded by Kamion,
     >>> print p.name
     cjwatson
     >>> print Person.select().count() - orig_person_count
-    11
+    12
     >>> print TeamParticipation.select().count() - orig_tp_count 
-    11
+    12
     >>> print EmailAddress.select().count() - orig_email_count
-    11
+    12
     >>> print WikiName.select().count() - orig_wiki_count
-    11
+    12
 
 === Re-run Gina ===
 
@@ -401,24 +410,24 @@ packages that failed to import the last time.
 Nothing should happen to our data -- no counts should have changed, etc.
 
     >>> SourcePackageRelease.select().count() - orig_spr_count
-    15
+    16
     >>> print SecureSourcePackagePublishingHistory.select().count() \
     ...     - orig_sspph_count
-    18
+    19
     >>> print Person.select().count() - orig_person_count
-    11
+    12
     >>> print TeamParticipation.select().count() - orig_tp_count 
-    11
+    12
     >>> print EmailAddress.select().count() - orig_email_count
-    11
+    12
     >>> print WikiName.select().count() - orig_wiki_count
-    11
+    12
     >>> BinaryPackageRelease.select().count() - orig_bpr_count
-    38
+    39
     >>> Build.select().count() - orig_build_count
-    11
+    12
     >>> SBPPH.select().count() - orig_sbpph_count
-    44
+    45
 
 === Other tests ===
 

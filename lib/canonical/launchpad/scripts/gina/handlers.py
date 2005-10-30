@@ -210,6 +210,8 @@ class ImporterHandler:
         sourcepackagerelease = self.sphandler.checkSource(sourcepackagedata, 
                                                           self.distrorelease)
         if not sourcepackagerelease:
+            log.debug('SPR not found in preimport: %r %r' %
+                (sourcepackagedata.package, sourcepackagedata.version))
             return None
 
         # Append to the sourcepackagerelease imported list.
@@ -224,10 +226,7 @@ class ImporterHandler:
         sourcepackagerelease = handler(sourcepackagedata,
                                        self.distrorelease)
 
-        # Append to the sourcepackagerelease imported list.
-        if sourcepackagerelease:
-            self._store_sprelease_for_publishing(sourcepackagerelease)
-
+        self._store_sprelease_for_publishing(sourcepackagerelease)
         return sourcepackagerelease
 
     def preimport_binarycheck(self, archtag, binarypackagedata):
@@ -239,8 +238,11 @@ class ImporterHandler:
         self._store_archinfo(archtag)
         distroarchinfo = self.archinfo[archtag]
         binarypackagerelease = self.bphandler.checkBin(binarypackagedata,
-                                                          distroarchinfo)
+                                                       distroarchinfo)
         if not binarypackagerelease:
+            log.debug('BPR not found in preimport: %r %r %r' %
+                (binarypackagedata.package, binarypackagedata.version,
+                 binarypackagedata.architecture))
             return None
 
         # Append to the sourcepackagerelease imported list.
@@ -251,19 +253,12 @@ class ImporterHandler:
         """Handler the binarypackage import process"""
         self._store_archinfo(archtag)
         distroarchinfo = self.archinfo[archtag]
-        distrorelease = distroarchinfo['distroarchrelease'].distrorelease
 
-        # Check if the binarypackage already exists.
-        binarypackage = self.bphandler.checkBin(binarypackagedata,
-                                                distroarchinfo)
-        if binarypackage:
-            # Already imported, so return it.
-            log.debug('Binary package %s version %s already exists for %s' % (
-                binarypackagedata.package, binarypackagedata.version, archtag))
-            self._store_bprelease_for_publishing(binarypackage, archtag)
-            return
+        # We know that preimport_binarycheck has run
+        assert not self.bphandler.checkBin(binarypackagedata, distroarchinfo)
 
         # Find the sourcepackagerelease that generated this binarypackage.
+        distrorelease = distroarchinfo['distroarchrelease'].distrorelease
         sourcepackage = self.sphandler.getSourceForBinary(
             binarypackagedata, distrorelease)
 
@@ -283,7 +278,6 @@ class ImporterHandler:
                                  binarypackagedata.source,
                                  binarypackagedata.source_version))
 
-        # Create the binarypackage on db and import into librarian
         binarypackage = self.bphandler.createBinaryPackage(binarypackagedata,
                                                            sourcepackage,
                                                            distroarchinfo,
@@ -422,6 +416,12 @@ class SourcePackageReleaseHandler:
             # Aah well, no source package in archive either.
             return None
 
+        # XXX: if get_dsc_path found the package in /another/ component,
+        # we need to update:
+        #   - sp_component (directory will be changed updated)
+        #   - files need to be changed to the other component
+        # XXX: 
+
         dsc_contents = parse_tagfile(dsc_path, allow_unsigned=True)
 
         # Since the dsc doesn't know, we add in the directory, package
@@ -537,23 +537,23 @@ class SourcePackageReleaseHandler:
         sectionID = self.distro_handler.ensureSection(src.section).id
         name = self.ensureSourcePackageName(src.package)
         spr = SourcePackageRelease(
+                                   section=sectionID,
                                    creator=maintainer.id,
-                                   version=src.version,
-                                   dateuploaded=src.date_uploaded,
-                                   urgency=urgencymap[src.urgency],
-                                   dscsigningkey=key,
                                    component=componentID,
+                                   sourcepackagename=name.id,
+                                   maintainer=maintainer.id,
+                                   dscsigningkey=key,
+                                   manifest=None,
+                                   urgency=urgencymap[src.urgency],
+                                   dateuploaded=src.date_uploaded,
+                                   dsc=src.dsc,
+                                   version=src.version,
                                    changelog=src.changelog,
                                    builddepends=src.build_depends,
                                    builddependsindep=src.build_depends_indep,
                                    architecturehintlist=src.architecture,
-                                   dsc=src.dsc,
-                                   section=sectionID,
-                                   manifest=None,
-                                   maintainer=maintainer.id,
-                                   sourcepackagename=name.id,
-                                   uploaddistrorelease=distrorelease.id,
-                                   format=SourcePackageFormat.DPKG)
+                                   format=SourcePackageFormat.DPKG,
+                                   uploaddistrorelease=distrorelease.id)
         log.info('Source Package Release %s (%s) created' % 
                  (name.name, src.version))
 
@@ -636,20 +636,18 @@ class BinaryPackageHandler:
         self.source_handler = sphandler
         self.archive_root = archive_root
 
-    def checkBin(self, binarypackagedata, archinfo):
+    def checkBin(self, binarypackagedata, distroarchinfo):
+        """Returns a binarypackage -- if it exists."""
         try:
-            bin_name = BinaryPackageName.byName(binarypackagedata.package)
+            binaryname = BinaryPackageName.byName(binarypackagedata.package)
         except SQLObjectNotFound:
             # If the binary package's name doesn't exist, don't even
             # bother looking for a binary package.
             return None
 
-        return self._getBinary(bin_name, binarypackagedata.version,
-                               binarypackagedata.architecture,
-                               archinfo)
+        version = binarypackagedata.version
+        architecture = binarypackagedata.architecture
 
-    def _getBinary(self, binaryname, version, architecture, distroarchinfo):
-        """Returns a binarypackage -- if it exists."""
         clauseTables = ["BinaryPackageRelease", "DistroRelease", "Build",
                         "DistroArchRelease"]
         distrorelease = distroarchinfo['distroarchrelease'].distrorelease
@@ -680,9 +678,6 @@ class BinaryPackageHandler:
                     "entry for %s (%s) for %s in %s" %
                     (binaryname.name, version, architecture,
                      distrorelease.distribution.name))
-        if bpr is None:
-            log.debug('BPR not found: %r %r %r, query=%s' % (
-                binaryname, version, architecture, query))
         return bpr
 
     def createBinaryPackage(self, bin, srcpkg, distroarchinfo, archtag):

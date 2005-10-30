@@ -599,3 +599,24 @@ Description: emulation of the Plan 9 window manager 8-1/2
 Bugs: mailto:ubuntu-users@lists.ubuntu.com
 Origin: Ubuntu
 
+Package: rioutil
+Priority: optional
+Section: sound
+Installed-Size: 272
+Maintainer: Jens Schmalzing <jensen@debian.org>
+Architecture: i386
+Version: 1.4.4-1
+Depends: libc6 (>= 2.3.2.ds1-4), libusb-0.1-4 (>= 1:0.1.8), zlib1g (>= 1:1.2.1)
+Filename: pool/main/r/rioutil/rioutil_1.4.4-1_i386.deb
+Size: 70884
+MD5sum: ae2f24614a8fcf50e7b9f19107981347
+Description: Talk to USB based Diamond MM products
+ rioutil is a program designed to interface with the MP3 players
+ by Sonic Blue, Diamond MM and Digital Networks NA.  It is known
+ to work with a number of models from the Rio series, namely 600,
+ 800, 900, Riot, S-Series and psa[play.  The models Nitrus, Cali,
+ Chiba and Fuse are also supported.  The package includes headers
+ and a set of libraries apart from the tool itself.
+Bugs: mailto:ubuntu-users@lists.ubuntu.com
+Origin: Ubuntu
+

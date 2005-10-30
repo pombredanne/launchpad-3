@@ -182,3 +182,19 @@ Files:
  b7e9502f430550ac5fff7507fc9ae8b6 20766 9wm_1.2.orig.tar.gz
  3bccc7fd96b584891d336a7afd1dbd04 2533 9wm_1.2-6.diff.gz
 
+Package: rioutil
+Binary: rioutil
+Version: 1.4.4-1
+Priority: optional
+Section: sound
+Maintainer: Jens Schmalzing <jensen@debian.org>
+Build-Depends: debhelper (>> 3.0.0), libusb-dev, zlib1g-dev
+Architecture: any
+Standards-Version: 3.6.1
+Format: 1.0
+Directory: pool/main/r/rioutil
+Files:
+ 7dc0ee63d77e28ef7b14a045fe0a4df0 587 rioutil_1.4.4-1.dsc
+ 65902f2e8a0ae18b71937ee4d1803f8b 408302 rioutil_1.4.4.orig.tar.gz
+ d24420813f9b6911ca0f37dd7d2a2cb1 4222 rioutil_1.4.4-1.diff.gz
+

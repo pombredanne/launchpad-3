@@ -127,7 +127,6 @@ def read_licence(package, version, component, archive_root,
                  binary_package):
     source_dir, dsc_path = unpack_dsc(package, version, component,
                                       archive_root)
-
     # Look for the license. License is an interesting case: we obtain it
     # when opening the DSC file, but we only really do this when
     # creating a BinaryPackageRelease, because that's where it needs to
@@ -317,11 +316,15 @@ class SourcePackageData(AbstractPackageData):
     # Defaults, potentially overwritten by __init__
     build_depends = ""
     build_depends_indep = ""
+    # XXX: this isn't stored at all
     standards_version = ""
 
     # Defaults, overwritten by do_package and ensure_required
     section = None
     format = None
+
+    # XXX: handle missing priorities?
+    priority = None
 
     is_processed = False
     is_created = False
@@ -481,7 +484,7 @@ class BinaryPackageData(AbstractPackageData):
     essential = False
 
     # Overwritten in do_package, optionally
-    shlibs = ""
+    shlibs = None
 
     # Overwritten by __init__ and ensure_required
     section = None
@@ -557,10 +560,8 @@ class BinaryPackageData(AbstractPackageData):
         call("dpkg -e %s" % fullpath)
         shlibfile = os.path.join("DEBIAN", "shlibs")
         if os.path.exists(shlibfile):
-            # XXX: untested
-            log.debug("Grabbing shared library info from %s" % 
-                      os.path.basename(fullpath))
             self.shlibs = open(shlibfile).read().strip()
+            log.debug("Grabbing shared library info from %s" % shlibfile)
 
         licence = read_licence(self.source, self.source_version,
                                self.component, archive_root, self.package)
