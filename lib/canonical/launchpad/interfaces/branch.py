@@ -54,9 +54,16 @@ class IBranch(IHasOwner):
                       " to display on that branch."))
 
     # People attributes
-    owner = Int(title=_('Owner'), required=True)
+    """Product owner, it can either a valid Person or Team
+            inside Launchpad context."""
+    owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
+        description=_("Branch owner, it can be either a valid Person or Team"
+                      " inside Launchpad context."))
     author = Choice(
-        title=_('Author'), required=False, vocabulary='ValidPersonOrTeam')
+        title=_('Author'), required=False, vocabulary='ValidPersonOrTeam',
+        description=_("The Launchpad user which is the author of the branch. "
+                      "It may be none since the branch author might not have "
+                      "a Launchpad account."))
 
     # Product attributes
     product = Choice(

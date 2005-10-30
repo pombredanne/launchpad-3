@@ -71,7 +71,7 @@
     class="canonical.launchpad.browser.BranchEditView"
     facet="code"
     label="Edit Branch Details"
-    fields="title url home_page summary whiteboard"
+    fields="author title url home_page summary whiteboard"
     permission="launchpad.Edit"
     template="../templates/branch-edit.pt">
     <browser:widget
@@ -87,6 +87,10 @@
       class="zope.app.form.browser.TextWidget"
       displayWidth="65" />
     <browser:widget
+      field="title"
+      class="zope.app.form.browser.TextWidget"
+      displayWidth="65" />
+    <browser:widget
       field="summary"
       class="zope.app.form.browser.TextAreaWidget"
       height="5" />
@@ -98,7 +102,7 @@
     class="canonical.launchpad.browser.BranchEditView"
     facet="code"
     label="Branch Administration"
-    fields="product name whiteboard"
+    fields="owner product name whiteboard"
     permission="launchpad.Admin"
     template="../templates/branch-edit.pt">
     <browser:widget
