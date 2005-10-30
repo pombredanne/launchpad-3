@@ -6,15 +6,14 @@ __all__ = [
     'SourcePackageNavigation',
     'SourcePackageFacets',
     'SourcePackageView',
-    'SourcePackageBugsView',
-    'SourcePackageFilebugView']
+    'SourcePackageBugsView']
 
 # Python standard library imports
 import cgi
 import re
 import sets
 
-from zope.component import getUtility, queryView
+from zope.component import getUtility
 from zope.app.form.interfaces import IInputWidget
 from zope.app import zapi
 
@@ -23,18 +22,16 @@ from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import PackagePublishingPocket
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    IPOTemplateSet, IPackaging, ILaunchBag, ICountry, IBugTaskSet,
-    ISourcePackage, IBugSet, IDistributionSourcePackage)
+    IPOTemplateSet, IPackaging, ILaunchBag, ICountry, ISourcePackage)
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.soyuz.generalapp import builddepsSet
-from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 
 from canonical.launchpad.webapp import (
-    canonical_url, StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu,
-    enabled_with_permission, structured, GetitemNavigation, Navigation,
-    stepto)
+    StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
+    structured, GetitemNavigation, stepto, redirection)
 
 from apt_pkg import ParseSrcDepends
 
@@ -55,6 +52,14 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
                    distrorelease=self.context.distrorelease,
                    sourcepackagename=self.context.sourcepackagename)
 
+    @stepto('+filebug')
+    def filebug(self):
+        """Redirect to the IDistributionSourcePackage +filebug page."""
+        sourcepackage = self.context
+        distro_sourcepackage = sourcepackage.distribution.getSourcePackage(
+            sourcepackage.name)
+
+        return redirection(canonical_url(distro_sourcepackage) + "/+filebug")
 
 
 def linkify_changelog(changelog, sourcepkgnametxt):
@@ -144,42 +149,6 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Edit')
     def templates(self):
         return Link('+potemplatenames', 'Edit Template Names', icon='edit')
-
-
-class SourcePackageFilebugView(SQLObjectAddView):
-    """View for filing a bug on a source package."""
-
-    def create(self, **kw):
-        """Create a new bug on the source package."""
-        # Because distribution and sourcepackagename are things
-        # inferred from the context rather than data entered on the
-        # filebug form, we have to manually add these values to the
-        # keyword arguments.
-        assert 'distribution' not in kw
-        assert 'sourcepackagename' not in kw
-
-        sourcepackage = self.context
-        if sourcepackage.distribution:
-            kw['distribution'] = sourcepackage.distribution
-        else:
-            kw['distribution'] = sourcepackage.distrorelease.distribution
-
-        kw['sourcepackagename'] = sourcepackage.sourcepackagename
-
-        # Store the added bug so that it can be accessed easily in any
-        # other method on this class (e.g. nextURL)
-        self.addedBug = getUtility(IBugSet).createBug(**kw)
-
-        return self.addedBug
-
-    def nextURL(self):
-        """Return the bug page URL of the bug that was just filed.
-
-        Effectively, this is the canonical URL of the first task that
-        has just been created.
-        """
-        bugtask = self.addedBug.bugtasks[0]
-        return canonical_url(bugtask)
 
 
 class SourcePackageView(BuildRecordsView):

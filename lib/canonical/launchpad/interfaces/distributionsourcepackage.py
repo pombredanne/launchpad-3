@@ -8,8 +8,7 @@ __all__ = [
     'IDistributionSourcePackage',
     ]
 
-from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
+from zope.interface import Attribute
 
 from canonical.launchpad.interfaces.bug import IBugTarget
 from canonical.launchpad.interfaces.tickettarget import ITicketTarget
@@ -23,7 +22,7 @@ class IDistributionSourcePackage(ITicketTarget, IBugTarget):
     displayname = Attribute("Display name for this package.")
     title = Attribute("Title for this package.")
 
-    # XXX sabdfl 16/10/2005 
+    # XXX sabdfl 16/10/2005
     distro = Attribute("The distribution.")
 
     by_distroreleases = Attribute("Return a list of "
@@ -47,9 +46,15 @@ class IDistributionSourcePackage(ITicketTarget, IBugTarget):
     binary_package_names = Attribute("A string of al the binary package "
         "names associated with this source package in this distribution.")
 
+    def subscribe(person):
+        """Subscribe a person to this package.
+
+        :person: The person to subscribe. An IPerson.
+        """
+
     def __getitem__(version):
         """Should map to getVersion."""
-    
+
     def getVersion(version):
         """Return the a DistributionSourcePackageRelease with the given
         version, or None if there has never been a release with that
@@ -58,7 +63,7 @@ class IDistributionSourcePackage(ITicketTarget, IBugTarget):
 
     def bugtasks(quantity=None):
         """Bug tasks on this source package, sorted newest first.
-        
+
         If needed, you can limit the number of bugtasks you are interested
         in using the quantity parameter.
         """
