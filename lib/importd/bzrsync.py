@@ -25,9 +25,10 @@ class BzrSync:
     def __init__(self, trans_manager, branch_id):
         self.trans_manager = trans_manager
         self.db_branch = Branch.get(branch_id)
+        print self.db_branch.url
         self.bzr_branch = BzrBranch.open(self.db_branch.url)
         self.bzr_history = self.bzr_branch.revision_history()
-        self._seen_ids = {}
+        self._seen_ids = set()
         self._admins = Person.selectOneBy(name="admins")
         assert self._admins
 
@@ -46,19 +47,20 @@ class BzrSync:
     def syncRevision(self, revision_id, pending_parents=None):
         if revision_id in self._seen_ids:
             return False
-        self._seen_ids[revision_id] = True
+        self._seen_ids.add(revision_id)
+        print revision_id
         didsomething = False
+        try:
+            bzr_revision = self.bzr_branch.get_revision(revision_id)
+        except NoSuchRevision:
+            return didsomething
         self.trans_manager.begin()
         db_revision = Revision.selectOneBy(revision_id=revision_id)
         if not db_revision:
-            # Do we want a fixed offset timezone instead?
-            try:
-                bzr_revision = self.bzr_branch.get_revision(revision_id)
-            except NoSuchRevision:
-                return didsomehting
-            revision_date = datetime.fromtimestamp(bzr_revision.timestamp +
-                                                   bzr_revision.timezone,
-                                                   tz=UTC)
+            timestamp = bzr_revision.timestamp
+            if bzr_revision.timezone:
+                timestamp += bzr_revision.timezone
+            revision_date = datetime.fromtimestamp(timestamp, tz=UTC)
             db_author = RevisionAuthor.selectOneBy(name=bzr_revision.committer)
             if not db_author:
                 db_author = RevisionAuthor(name=bzr_revision.committer)
@@ -67,10 +69,13 @@ class BzrSync:
                                    revision_date=revision_date,
                                    revision_author=db_author.id,
                                    owner=self._admins.id)
-            if pending_parents is not None:
-                for sequence, parent_id in enumerate(bzr_revision.parent_ids):
-                    pending_parents.append((revision_id, sequence, parent_id))
             didsomething = True
+        if pending_parents is not None:
+            seen_parent_ids = set()
+            for sequence, parent_id in enumerate(bzr_revision.parent_ids):
+                if parent_id not in seen_parent_ids:
+                    seen_parent_ids.add(parent_id)
+                    pending_parents.append((revision_id, sequence, parent_id))
         if revision_id in self.bzr_history:
             bzr_revno = self.bzr_history.index(revision_id) + 1
             db_revno = RevisionNumber.selectOneBy(revisionID=db_revision.id,
@@ -102,9 +107,11 @@ class BzrSync:
             db_parent = RevisionParent.selectOneBy(revisionID=db_revision.id,
                                                    parent_id=parent_id)
             if db_parent:
-                assert db_parent.sequence == sequence, \
-                    "This revision was previously imported with this parent" \
-                    " in a different position. Something is VERY wrong!"
+                assert db_parent.sequence == sequence, (
+                    "Revision %r already has parent %r  with index %d. But we"
+                    " tried to import this parent again with index %d."
+                    % (db_revision.revision_id, parent_id,
+                       db_parent.sequence, sequence))
             else:
                 self.trans_manager.begin()
                 RevisionParent(revision=db_revision.id, parent_id=parent_id,
