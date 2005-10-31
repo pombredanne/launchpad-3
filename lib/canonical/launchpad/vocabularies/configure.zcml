@@ -26,6 +26,16 @@
     />
 
   <vocabulary
+    name="BranchLifecycleStatus"
+    factory="canonical.launchpad.vocabularies.BranchLifecycleStatusVocabulary"
+    />
+
+  <vocabulary
+    name="BranchReviewStatus"
+    factory="canonical.launchpad.vocabularies.BranchReviewStatusVocabulary"
+    />
+
+  <vocabulary
     name="Bug"
     factory="canonical.launchpad.vocabularies.BugVocabulary"
     />

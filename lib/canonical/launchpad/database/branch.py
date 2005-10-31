@@ -1,12 +1,138 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['BranchRelationship', 'BranchLabel']
+__all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
 
-from sqlobject import ForeignKey, IntCol
+from zope.interface import implements
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.lp import dbschema
+from sqlobject import (
+    ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin)
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote
+from canonical.database.datetimecol import UtcDateTimeCol
+
+from canonical.launchpad.interfaces import IBranch, IBranchSet
+from canonical.launchpad.database.revision import Revision, RevisionNumber
+from canonical.launchpad.database.branchsubscription import BranchSubscription
+
+from canonical.lp.dbschema import (
+    EnumCol, BranchRelationships, BranchLifecycleStatus)
+
+
+class Branch(SQLBase):
+    """A sequence of ordered revisions in Bazaar."""
+
+    implements(IBranch)
+
+    _table = 'Branch'
+    name = StringCol(notNull=True)
+    title = StringCol(notNull=True)
+    summary = StringCol(notNull=True)
+    url = StringCol(dbName='url')
+    whiteboard = StringCol(default=None)
+    started_at = ForeignKey(
+        dbName='started_at', foreignKey='RevisionNumber', default=None)
+
+    owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    author = ForeignKey(dbName='author', foreignKey='Person', default=None)
+
+    product = ForeignKey(dbName='product', foreignKey='Product', default=None)
+    branch_product_name = StringCol(default=None)
+    product_locked = BoolCol(default=False, notNull=True)
+
+    home_page = StringCol()
+    branch_home_page = StringCol(default=None)
+    home_page_locked = BoolCol(default=False, notNull=True)
+
+    starred = IntCol(default=1, notNull=True)
+    lifecycle_status = EnumCol(schema=BranchLifecycleStatus, notNull=True,
+        default=BranchLifecycleStatus.NEW)
+
+    landing_target = ForeignKey(
+        dbName='landing_target', foreignKey='Branch', default=None)
+    current_delta_url = StringCol(default=None)
+    current_diff_adds = IntCol(default=None)
+    current_diff_deletes = IntCol(default=None)
+    current_conflicts_url = StringCol(default=None)
+    current_activity = IntCol(default=0, notNull=True)
+    stats_updated = UtcDateTimeCol(default=None)
+
+    # mirror_status = EnumCol(schema=MirrorStatus, default=MirrorStatus.XXX,
+    #                         notNull=True)
+    last_mirrored = UtcDateTimeCol(default=None)
+    last_mirror_attempt = UtcDateTimeCol(default=None)
+    mirror_failures = IntCol(default=0, notNull=True)
+
+    cache_url = StringCol(default=None)
+
+    revision_history = MultipleJoin('RevisionNumber', joinColumn='branch',
+        orderBy='-rev_no')
+
+    subjectRelations = MultipleJoin('BranchRelationship', joinColumn='subject')
+    objectRelations = MultipleJoin('BranchRelationship', joinColumn='object')
+
+    subscriptions = MultipleJoin(
+        'BranchSubscription', joinColumn='branch', orderBy='id')
+    subscribers = RelatedJoin(
+        'Person', joinColumn='branch', otherColumn='person',
+        intermediateTable='BranchSubscription', orderBy='name')
+
+    @property
+    def product_name(self):
+        if self.product is None:
+            return '+junk'
+        return self.product.name
+
+    def revision_count(self):
+        return RevisionNumber.selectBy(branchID=self.id).count()
+
+    def latest_revisions(self, quantity=10):
+        return RevisionNumber.selectBy(
+            branchID=self.id, orderBy='-sequence').limit(quantity)
+
+    def revisions_since(self, timestamp):
+        return Revision.select('Revision.id=RevisionNumber.revision AND '
+                               'RevisionNumber.branch = %d AND '
+                               'Revision.revision_date > %s' %
+                               (self.id, quote(timestamp)),
+                               orderBy='-RevisionNumber.sequence',
+                               clauseTables=['RevisionNumber'])
+
+    def createRelationship(self, branch, relationship):
+        BranchRelationship(subject=self, object=branch, label=relationship)
+
+    def getRelations(self):
+        return tuple(self.subjectRelations) + tuple(self.objectRelations)
+
+    # subscriptions
+    def subscribe(self, person):
+        """See IBranch."""
+        for sub in self.subscriptions:
+            if sub.person.id == person.id:
+                return sub
+        return BranchSubscription(branch=self, person=person)
+
+    def unsubscribe(self, person):
+        """See IBranch."""
+        for sub in self.subscriptions:
+            if sub.person.id == person.id:
+                BranchSubscription.delete(sub.id)
+                break
+
+
+class BranchSet:
+    """The set of all branches."""
+
+    implements(IBranchSet)
+
+    def new(self, name, owner, product, url, title,
+            lifecycle_status=BranchLifecycleStatus.NEW, author=None,
+            summary=None, home_page=None):
+        if not home_page:
+            home_page = None
+        return Branch(
+            name=name, owner=owner, author=author, product=product, url=url,
+            title=title, lifecycle_status=lifecycle_status, summary=summary,
+            home_page=home_page)
 
 
 class BranchRelationship(SQLBase):
@@ -35,7 +161,7 @@ class BranchRelationship(SQLBase):
         self.object = value
 
     def _get_labelText(self):
-        return dbschema.BranchRelationships.items[self.label]
+        return BranchRelationships.items[self.label]
 
     def nameSelector(self, sourcepackage=None, selected=None):
         # XXX: Let's get HTML out of the database code.
@@ -67,4 +193,3 @@ class BranchLabel(SQLBase):
 
     label = ForeignKey(foreignKey='Label', dbName='label', notNull=True)
     branch = ForeignKey(foreignKey='Branch', dbName='branch', notNull=True)
-

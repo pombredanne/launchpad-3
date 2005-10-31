@@ -14,6 +14,7 @@ __all__ = [
     'ProductSpecificationsMenu',
     'ProductBountiesMenu',
     'ProductTranslationsMenu',
+    'ProductCodeMenu',
     'ProductSetContextMenu',
     'ProductView',
     'ProductEditView',
@@ -97,7 +98,9 @@ class ProductFacets(StandardLaunchpadFacets):
     usedfor = IProduct
 
     enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
-                   'translations', 'calendar']
+                   'translations', 'calendar', 'code']
+
+    links = StandardLaunchpadFacets.links + ['code']
 
     def overview(self):
         target = ''
@@ -136,6 +139,12 @@ class ProductFacets(StandardLaunchpadFacets):
         summary = 'Translations of %s in Rosetta' % self.context.displayname
         return Link(target, text, summary)
 
+    def code(self):
+        target = '+branches'
+        text = 'Code'
+        summary = 'Bazaar Branches for %s' % self.context.displayname
+        return Link(target, text, summary)
+
     def calendar(self):
         target = '+calendar'
         text = 'Calendar'
@@ -150,7 +159,7 @@ class ProductOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'reassign', 'distributions', 'packages', 'series_add',
-        'milestone_add', 'launchpad_usage', 'rdf', 'administer'
+        'branch_add', 'milestone_add', 'launchpad_usage', 'rdf', 'administer'
         ]
 
     def edit(self):
@@ -172,6 +181,10 @@ class ProductOverviewMenu(ApplicationMenu):
     def series_add(self):
         text = 'Add Release Series'
         return Link('+addseries', text, icon='add')
+
+    def branch_add(self):
+        text = 'Add Branch'
+        return Link('+addbranch', text, icon='add')
 
     def milestone_add(self):
         text = 'Add Milestone'
@@ -263,6 +276,18 @@ class ProductTranslationsMenu(ApplicationMenu):
     def edit(self):
         text = 'Edit Template Names'
         return Link('+potemplatenames', text, icon='edit')
+
+
+class ProductCodeMenu(ApplicationMenu):
+
+    usedfor = IProduct
+    facet = 'code'
+    links = ['new']
+
+    def new(self):
+        text = 'Add Bazaar Branch'
+        return Link('+addbranch', text, icon='add')
+
 
 def _sort_distros(a, b):
     """Put Ubuntu first, otherwise in alpha order."""

@@ -1,25 +1,128 @@
-Arch Branches
-=============
+Bazaar Branches
+===============
 
-The Branch table holds information about an Arch Branch, it's an
-abstract table that holds a reference to an Arch Namespace which
-itself holds a reference to an Arch Archive.
+The Branch table holds information about an Bazaar Branch. It describes the
+Launchpad user model of a branch, and in particular should be able (in the
+future) to support un-committing of revisions.
 
-We need to represent this as an Arch "package" string suitable for
-the command-line tool.  So we provide a function to do that.
+It has a N-N association to the Revision table through the RevisionNumber
+table. An association table is required because the sequence of revisions
+listed by "bzr log" is defined by a "revision-history" file which has some
+freedom with respect to the ancestry of revisions.
 
-We can get a Branch object in the normal way.
+  * Distinct revision histories may point to same revision.
 
-    >>> from canonical.launchpad.database.archbranch import Branch
-    >>> branch = Branch.get(13)
+  * Revision histories including the same revision may have different starting
+    points, they need not trace history back to the initial import. Therefore a
+    given revision may have a different order number in different branches.
 
-Calling getPackageName() should yield the full string:
+  * A revision history is required to follow the ancestry DAG, but two
+    different branches may have histories tracing a different path between two
+    shared revisions. This is exercised by the "convergence" feature of "bzr
+    pull".
 
-    >>> print branch.getPackageName()
-    mozilla@arch.ubuntu.com/mozilla--release--0.8
+A Branch is not tied to an URL, since a branch may change locations over time.
+It's not tied to a specific revision history because each new commit appends to
+the history, and it's not restricted to appending to the history because the
+Bazaar model does not forbid users from replacing the history of a branch.
 
-It should work for a branch without a complete namespace too:
+Actually, the conceptual model of Bazaar does not really have an identifiable
+concept of a branch. Branch describes a Launchpad concept.
 
-    >>> branch = Branch.get(1)
-    >>> print branch.getPackageName()
-    mozilla@arch.ubuntu.com/mozilla
+Branches can be created with IBranchSet.new. IBranchSet can be accessed as an
+utility.
+
+>>> from zope.component import getUtility
+>>> from canonical.launchpad.interfaces import IBranchSet
+>>> branchset = getUtility(IBranchSet)
+
+>>> from canonical.launchpad.interfaces import IProductSet
+>>> productset = getUtility(IProductSet)
+>>> firefox_product = productset.get(4)
+
+>>> from canonical.launchpad.interfaces import IPersonSet
+>>> personset = getUtility(IPersonSet)
+>>> ddaa = personset.getByName('ddaa')
+
+>>> url = 'http://example.com/~ddaa/firefox.dev'
+>>> title = "David Allouche's Main Firefox Branch"
+>>> summary = "Main line of development for David Allouche on Firefox."
+>>> home_page = "http://example.com/~ddaa/"
+>>> firefox_dev = branchset.new('dev', ddaa, firefox_product, url,
+...     title, summary=summary, home_page=home_page)
+>>> firefox_dev.name
+u'dev'
+>>> firefox_dev.product == firefox_product
+True
+
+Branches must implement the IBranch interface.
+
+>>> from zope.interface.verify import verifyObject
+>>> from canonical.launchpad.interfaces import IBranch
+>>> verifyObject(IBranch, firefox_dev)
+True
+
+Branch may or may not be associated to a product, and may have no home_page
+
+>>> url = 'http://example.com/~ddaa/junkcode'
+>>> junkcode = branchset.new('junkcode', ddaa, None, url,
+...     title, summary=summary)
+>>> junkcode.name
+u'junkcode'
+>>> junkcode.product is None
+True
+>>> junkcode.home_page is None
+True
+
+Branch not associated to a product are called "junk" branch and treated for
+navigation purposes as if they were associated to a magic product named
+"+junk".
+
+>>> junkcode.product_name
+'+junk'
+>>> firefox_dev.product_name
+u'firefox'
+
+    TODO: test Person.registered_branches, Person.authored_branches and
+    Person.related_branches -- DavidAllouche 2005-10-21
+
+Branches can be subscribed to and unsubscribed from by a Person.
+
+>>> from canonical.launchpad.interfaces import IPerson, IBranchSubscription
+>>> sabdfl = personset.getByName('sabdfl')
+>>> sabdfl.subscribed_branches
+[]
+>>> subscription = firefox_dev.subscribe(sabdfl)
+>>> verifyObject(IBranchSubscription, subscription)
+True
+>>> subscription.branch == firefox_dev and subscription.person == sabdfl
+True
+>>> firefox_dev.subscriptions == [subscription]
+True
+>>> firefox_dev.subscribers == [sabdfl]
+True
+>>> sabdfl.subscribed_branches == [firefox_dev]
+True
+>>> firefox_dev.unsubscribe(sabdfl)
+>>> firefox_dev.subscribers
+[]
+
+See revision.txt for a doctest covering the creation of revisions and related
+objects. Revision data is loaded in the database by Taxi, Launchpad code is
+only concened with using this data.
+
+    TODO: test Branch.revision_history, Branch.revision_count, and
+    Branch.latest_revisions from sampledata. Cannot populate the tables from
+    here because only the importd user is allowed to do that, and importd works
+    in a zopeless environment. -- DavidAllouche 2005-10-21
+
+    TODO: There should be tests for registered_branches, authored_branches and
+    related_branches properties of Person. -- DavidAllouche 2005-10-25
+
+    TODO: There should be tests for Revision, RevisionNumber and RevisionParent
+    as well. -- DavidAllouche 2005-10-25
+
+    TODO: Test Revision.parents and demonstrate usage.
+    -- DavidAllouche 2005-10-25
+
+    TODO: Test Branch.revisions_since

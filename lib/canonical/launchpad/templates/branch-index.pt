@@ -6,25 +6,62 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-subscribers" />
 </metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
 
 <div metal:fill-slot="main">
 
-    <h1>
-      &#8220;<span tal:replace="context/title">title</span>&#8221;
-      branch
-    </h1>
+  <p tal:repeat="notice view/notices" tal:content="notice"
+     class="portalMessage">
+    notice goes here
+  </p>
 
-    <div class="documentDescription" tal:content="context/summary">
-        $Branch.summary goes here. This should be quite short,
-        just a single paragraph of text really, giving the product
-        highlights.
-    </div>
+  <div class="documentDescription" tal:content="context/summary">
+    $Branch.summary goes here. This should be quite short, just a single
+    paragraph of text really, giving the branch highlights.
+  </div>
+
+  <table class="listing"  style="line-height: 1.5;">
+    <tbody>
+      <tr style="border-top: 1px solid #8cacbb;">
+        <td><b>Branch URL:</b></td>
+        <td><tt><a tal:attributes="href context/url"
+                   tal:content="structure view/url"
+          >http://example.com/software/hello.devel</a></tt></td>
+      </tr>
+      <tr>
+        <td><b>Status:</b></td>
+        <td tal:content="context/lifecycle_status/title">Stable</td>
+      </tr>
+      <tr tal:condition="context/whiteboard">
+        <td><b>Whiteboard:</b></td>
+        <td tal:content="context/whiteboard">whiteboard</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Revision History:</h2>
+
+  <table class="listing">
+    <thead>
+      <tr>
+        <td></td>
+        <th>Date</th>
+        <th>Author</th>
+        <th>Message</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="rev_no context/latest_revisions">
+        <td tal:content="rev_no/sequence">1</td>
+        <td tal:content="rev_no/revision/revision_date/fmt:date">2005-10-05</td>
+        <td tal:content="rev_no/revision/revision_author/name">John Doe &lt;jdoe@example.com&gt;</td>
+        <td tal:content="rev_no/revision/log_body">The revision commit message.</td>
+      </tr>
+    </tbody>
+  </table>
 
 </div>
-
 </body>
 </html>

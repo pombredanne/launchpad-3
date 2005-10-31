@@ -1,0 +1,42 @@
+Product Branches
+================
+
+
+  Test that products have a "code" facet and an "Add Branch" action.
+
+
+  >>> print http(r"""
+  ... GET /products/thunderbird HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+  <li title="Bazaar Branches for Mozilla Thunderbird"><a
+      href="http://localhost:9000/products/thunderbird/+branches">Code</a></li>
+  ...
+  <a href="http://localhost:9000/products/thunderbird/+addbranch">Add Branch</a>
+  ...
+
+
+  Test that we can display the code facet page for Thunderbird.
+
+
+  >>> print http(r"""
+  ... GET /products/thunderbird/+branches HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  <BLANKLINE>
+  ...
+  <title>Branches for Mozilla Thunderbird</title>
+  ...
+  <li class="current"
+      title="Bazaar Branches for Mozilla Thunderbird"><strong
+      title="Bazaar Branches for Mozilla Thunderbird">Code</strong></li>
+  ...
+  <img src="/++resource++lock_icon.gif" />
+  <b><a href="http://localhost:9000/people/stevea/+branch/thunderbird/thunderbird@arch.ubuntu.com_thunderbird--MAIN--0">Mozilla Thunderbird 0.9.1</a></b>
+  ...

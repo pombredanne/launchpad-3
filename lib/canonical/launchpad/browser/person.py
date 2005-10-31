@@ -11,6 +11,7 @@ __all__ = [
     'PersonBugsMenu',
     'PersonSpecsMenu',
     'PersonSupportMenu',
+    'PersonCodeMenu',
     'PersonOverviewMenu',
     'TeamOverviewMenu',
     'BaseListView',
@@ -61,7 +62,7 @@ from canonical.launchpad.interfaces import (
     IKarmaSet, UBUNTU_WIKI_URL, ITeamMembershipSet, IObjectReassignment,
     ITeamReassignment, IPollSubset, IPerson, ICalendarOwner,
     BugTaskSearchParams, ITeam, ILibraryFileAliasSet, ITeamMembershipSubset,
-    IPollSet)
+    IPollSet, NotFoundError)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.form import FormView
@@ -89,6 +90,18 @@ class PersonNavigation(Navigation, CalendarTraversalMixin):
 
     def breadcrumb(self):
         return self.context.displayname
+
+    @stepto('+branch')
+    def traverse_branch(self):
+        stepstogo = self.request.stepstogo
+        product_name = stepstogo.consume()
+        branch_name = stepstogo.consume()
+        if product_name is not None and branch_name is not None:
+            if product_name == '+junk':
+                return self.context.getBranch(None, branch_name)
+            else:
+                return self.context.getBranch(product_name, branch_name)
+        raise NotFoundError
 
 
 class TeamNavigation(Navigation, CalendarTraversalMixin):
@@ -151,7 +164,9 @@ class PersonFacets(StandardLaunchpadFacets):
     usedfor = IPerson
 
     enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
-                   'translations', 'calendar']
+                   'translations', 'calendar', 'code']
+
+    links = StandardLaunchpadFacets.links + ['code']
 
     def overview(self):
         target = ''
@@ -206,6 +221,12 @@ class PersonFacets(StandardLaunchpadFacets):
         summary = (
             'Software that %s is involved in translating' %
             self.context.browsername)
+        return Link(target, text, summary)
+
+    def code(self):
+        target = '+branches'
+        text = 'Code'
+        summary = 'Bazaar Branches for %s' % self.context.browsername
         return Link(target, text, summary)
 
     def calendar(self):
@@ -296,6 +317,29 @@ class PersonSupportMenu(ApplicationMenu):
     def subscribed(self):
         text = 'Tickets Subscribed'
         return Link('+subscribedtickets', text, icon='ticket')
+
+
+class PersonCodeMenu(ApplicationMenu):
+
+    usedfor = IPerson
+    facet = 'code'
+    links = ['authored', 'registered', 'subscribed', 'add']
+
+    def authored(self):
+        text = 'Show Authored Branches'
+        return Link('+authoredbranches', text, icon='branch')
+
+    def registered(self):
+        text = 'Show Registered Branches'
+        return Link('+registeredbranches', text, icon='branch')
+
+    def subscribed(self):
+        text = 'Show Subscribed Branches'
+        return Link('+subscribedbranches', text, icon='branch')
+
+    def add(self):
+        text = 'Add Bazaar Branch'
+        return Link('+addbranch', text, icon='add')
 
 
 class CommonMenuLinks:

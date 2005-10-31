@@ -29,7 +29,7 @@
   <browser:menus
       module="canonical.launchpad.browser.person"
       classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
-          PersonSpecsMenu PersonSupportMenu PeopleContextMenu"
+          PersonSpecsMenu PersonSupportMenu PersonCodeMenu PeopleContextMenu"
       />
 
   <browser:url
@@ -112,10 +112,6 @@
           name="+index"
           template="../templates/person-index.pt"
           lp:url="/people/$Person.name/" />
-      <browser:page
-          name="+branches"
-          template="../templates/person-branches.pt"
-          lp:url="/people/$Person.name/+branches" />
       <browser:page
           name="+packages"
           template="../templates/person-packages.pt"
@@ -302,6 +298,29 @@
         template="../templates/tickettarget-tickets.pt" />
   </browser:pages>
 
+  <browser:pages
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.BranchTargetView"
+    permission="zope.Public"
+    facet="code"
+    >
+    <!-- there is trickery here, in the view class, which detects the view
+    name and then gives the template a different set of branches to work
+    with.-->
+    <browser:page
+        name="+branches"
+        template="../templates/branchtarget-branches.pt" />
+    <browser:page
+        name="+authoredbranches"
+        template="../templates/branchtarget-branches.pt" />
+    <browser:page
+        name="+registeredbranches"
+        template="../templates/branchtarget-branches.pt" />
+    <browser:page
+        name="+subscribedbranches"
+        template="../templates/branchtarget-branches.pt" />
+  </browser:pages>
+
   <!-- Team Views -->
 
   <browser:pages
@@ -388,6 +407,36 @@
       template="../templates/team-newpoll.pt"
       lp:url="/people/$team.id/+newpoll">
   </browser:addform>
+
+  <browser:addform
+      name="+addbranch"
+      for="canonical.launchpad.interfaces.IPerson"
+      schema="canonical.launchpad.interfaces.IBranch"
+      fields="product name owner author title url home_page lifecycle_status summary"
+      class="canonical.launchpad.browser.BranchAddView"
+      facet="code"
+      keyword_arguments="product name owner author title url home_page lifecycle_status summary"
+      permission="launchpad.AnyPerson"
+      template="../templates/person-branch-add.pt">
+      <browser:widget
+	  field="url"
+	  class="zope.app.form.browser.TextWidget"
+	  displayWidth="65" />
+      <browser:widget
+	  field="home_page"
+	  class="zope.app.form.browser.TextWidget"
+	  displayWidth="65" />
+      <browser:widget
+	  field="summary"
+	  class="zope.app.form.browser.TextAreaWidget"
+	  height="5" />
+      <browser:widget
+	  field="owner"
+	  class="canonical.widgets.HiddenUserWidget" />
+      <browser:widget
+	  field="author"
+	  class="canonical.widgets.ContextWidget" />
+    </browser:addform>
 
   <!-- PersonSet -->
   <content class="canonical.launchpad.database.PersonSet">

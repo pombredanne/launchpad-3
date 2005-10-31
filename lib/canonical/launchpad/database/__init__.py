@@ -32,9 +32,6 @@ from canonical.launchpad.database.pomsgset import *
 from canonical.launchpad.database.potranslation import *
 from canonical.launchpad.database.poselection import *
 from canonical.launchpad.database.posubmission import *
-from canonical.launchpad.database.archarchive import *
-from canonical.launchpad.database.archbranch import *
-from canonical.launchpad.database.archchangeset import *
 from canonical.launchpad.database.librarian import *
 from canonical.launchpad.database.launchpadstatistic import *
 from canonical.launchpad.database.maintainership import *
@@ -68,6 +65,7 @@ from canonical.launchpad.database.manifest import *
 from canonical.launchpad.database.manifestentry import *
 from canonical.launchpad.database.manifestancestry import *
 from canonical.launchpad.database.branch import *
+from canonical.launchpad.database.branchsubscription import *
 from canonical.launchpad.database.build import *
 from canonical.launchpad.database.builder import *
 from canonical.launchpad.database.publishing import *
@@ -103,4 +101,4 @@ from canonical.launchpad.database.ticketsubscription import *
 from canonical.launchpad.database.poexportrequest import *
 from canonical.launchpad.database.developmentmanifest import *
 from canonical.launchpad.database.distrocomponentuploader import *
-
+from canonical.launchpad.database.revision import *

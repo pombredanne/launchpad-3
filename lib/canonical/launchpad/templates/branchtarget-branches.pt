@@ -1,0 +1,55 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Bazaar Branches</h1>
+
+  <p class="documentDescription">
+    This page shows the Bazaar branches that
+    are <span tal:replace="view/context_relationship">related to</span>
+    <span tal:replace="context/displayname">Steve Alexander</span>.
+  </p>
+
+  <p>(Grey areas indicate parts of the page that are not yet implemented.
+     Please try again later.)</p>
+
+  <p tal:replace="nothing">
+    <!-- ABOUT THIS PAGE
+    XXX: This page was cargo-culted from tickettarget-tickets.pt
+         David Allouche 2005-09-09
+
+    This page uses a view class that organises the tasks into a set of
+    categories (by status). it determines the sequence of the categories,
+    and the sequence of the branches in each category.
+
+       view/categories => the list of branch statuses to be displayed
+       category/status => the category Branchestatus
+       category/branches => the list of branches
+       branch => an IBranch
+    -->
+  </p>
+
+  <p tal:condition="not:context/branches">
+    <i>There are no branches currently registered for
+    <span tal:replace="context/displayname">Steve Alexander</span> at
+    present.</i>
+  </p>
+
+  <tal:block repeat="category view/categories"
+    ><h2 tal:content="category/status/title">Experimental</h2>
+    <div tal:repeat="branch category/branches"
+         tal:replace="structure branch/@@+summary-listing"
+  /></tal:block>
+
+</div>
+</body>
+</html>

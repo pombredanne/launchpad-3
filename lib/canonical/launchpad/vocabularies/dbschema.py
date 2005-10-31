@@ -11,6 +11,8 @@ __all__ = [
     'vocab_factory',
     'BountyDifficultyVocabulary',
     'BountyStatusVocabulary',
+    'BranchLifecycleStatusVocabulary',
+    'BranchReviewStatusVocabulary',
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
     'BugTaskPriorityVocabulary',
@@ -62,6 +64,9 @@ def vocab_factory(schema, noshow=[]):
 
 BountyDifficultyVocabulary = vocab_factory(dbschema.BountyDifficulty)
 BountyStatusVocabulary = vocab_factory(dbschema.BountyStatus)
+BranchLifecycleStatusVocabulary = \
+    vocab_factory(dbschema.BranchLifecycleStatus)
+BranchReviewStatusVocabulary = vocab_factory(dbschema.BranchReviewStatus)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugTaskStatusVocabulary = vocab_factory(dbschema.BugTaskStatus)
 BugTaskPriorityVocabulary = vocab_factory(dbschema.BugTaskPriority)
