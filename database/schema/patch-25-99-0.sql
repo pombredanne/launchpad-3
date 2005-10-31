@@ -199,6 +199,15 @@ CREATE TABLE BranchSubscription (
         CONSTRAINT branchsubscription_branch_fk REFERENCES Branch
     );
 
+-- Drop some obsolete tables
+DROP TABLE ArchNamespace;
+DROP TABLE ArchArchiveLocationSigner;
+DROP TABLE ArchArchiveLocation;
+DROP TABLE ArchArchive;
+DROP TABLE ChangesetFileHash;
+DROP TABLE ChangesetFile;
+DROP TABLE ChangesetFilename;
+DROP TABLE ProductBkBranch;
 
 -- Tidy up some foreign keys
 ALTER TABLE Branch DROP CONSTRAINT "$2";
