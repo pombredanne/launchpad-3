@@ -305,7 +305,7 @@ class Bugzilla:
                 bug.component.encode('ASCII'))
         except ValueError:
             logger.warning('could not find package name for "%s"',
-                           bug.component.encode('ASCII'))
+                           bug.component.encode('ASCII'), exc_info=True)
             srcpkg = binpkg = None
 
         return {

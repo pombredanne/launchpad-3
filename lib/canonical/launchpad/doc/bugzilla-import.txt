@@ -226,6 +226,9 @@ Bugzilla bug.
   None
   >>> bug = bz.handleBug(2)
   WARNING:canonical.launchpad.scripts.bugzilla:could not find package name for "unknown"
+  Traceback (most recent call last):
+    ...
+  ValueError: Unknown package: unknown
   >>> bugInfo(bug)
   Title: Test bug 2
   Reporter: Foo Bar
@@ -453,6 +456,9 @@ then the bug is filed directly against the distribution.
 
   >>> showMapping('Ubuntu', 'unknown-package-name')
   WARNING:canonical.launchpad.scripts.bugzilla:could not find package name for "unknown-package-name"
+  Traceback (most recent call last):
+    ...
+  ValueError: Unknown package: unknown-package-name
   Distribution: ubuntu
 
   >>> showMapping('not-Ubuntu', 'general')
