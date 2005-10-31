@@ -34,7 +34,8 @@ class SubsystemOnlySession(session.SSHSession, object):
 
 
 class SFTPOnlyAvatar(avatar.ConchUser):
-    def __init__(self, avatarId, homeDirsRoot):
+    def __init__(self, avatarId, homeDirsRoot, personMapFilename,
+                 productMapFilename):
         # Double-check that we don't get unicode -- directory names on the file
         # system are a sequence of bytes as far as we're concerned.  We don't
         # want any tricky login names turning into a security problem.
@@ -51,6 +52,13 @@ class SFTPOnlyAvatar(avatar.ConchUser):
 
         self.avatarId = avatarId
         self.homeDirsRoot = homeDirsRoot
+        # XXX: need to get the list of teams this user is a member of from the
+        # authserver somehow.
+        # XXX: don't need person map -- the authserver gives us this info in the
+        # teams dict.  (the person map is only needed for mod_rewrite).
+        #self.personMapFilename = personMapFilename
+        self.productMapFilename = productMapFilename
+        self.teams = XXX_authserver.getUser(XXX_person_id)['teams']
 
         # Set the only channel as a session that only allows requests for
         # subsystems...
@@ -76,12 +84,88 @@ class SFTPOnlyAvatar(avatar.ConchUser):
         return os.path.join(self.homeDirsRoot, self.avatarId)
 
 
+class SFTPServerBase:
+    """Functionality common to other SFTP file system hierarchy classes."""
+    implements(filetransfer.ISFTPServer)
+
+    def __init__(self, avatar):
+        self.avatar = avatar
+        self.homedir = FilePath(self.avatar.getHomeDir())
+        # Make the home dir if it doesn't already exist
+        try:
+            self.homedir.makedirs()
+        except OSError, e:
+            if e.errno != errno.EEXIST:
+                raise
+
+    def _childPath(self, path):
+        if path.startswith('/'):
+            path = '.' + path
+        return self.homedir.preauthChild(path)
+
+    def gotVersion(self, otherVersion, extData):
+        # we don't support anything extra beyond standard SFTP
+        return {}
+
+    def extendedRequest(self, extendedName, extendedData):
+        # We don't implement any extensions to SFTP.
+        raise NotImplementedError
+    
+    def openFile(self, filename, flags, attrs):
+        # XXX SFH: for the top-levels, maybe this needs access restrictions?
+        return unix.UnixSFTPFile(self, self._childPath(filename).path, flags,
+                attrs)
+
+    def removeFile(self, filename):
+        # XXX: what is the right way to return this error?
+        # XXX: what about filenames that are paths that they do have this
+        # permission for?
+        raise OSError(errno.EPERM, "Permission denied for " + filename)
+
+    def renameFile(self, oldpath, newpath):
+        # XXX: what is the right way to return this error?
+        # XXX: what about filenames that are paths that they do have this
+        # permission for?
+        raise OSError(errno.EPERM, "Permission denied for " + filename)
+
+
+class SFTPServerRoot(SFTPServerBase):  # was SFTPServerForPushMirrorUser
+    """For /
+    
+    Shows ~username and ~teamname directories for the user.
+    """
+
+class SFTPServerUserDir(SFTPServerBase):
+    """For /~username
+    
+    Ensures 'username' corresponds to a launchpad person name.
+    """
+
+class SFTPServerProductDir(SFTPServerBase):
+    """For /~username/product
+    
+    Ensures 'product' is a launchpad product name, or possibly '+junk' if this
+    is not inside a team directory.
+    """
+
+class SFTPServerBranch(SFTPServerBase):
+    """For /~username/product/branch, and below.
+    
+    Anything is allowed here, except for tricks like symlinks that point above
+    this point.
+
+    Can also be used for Bazaar 1.x branches.
+    """
+
+
 class SFTPServerForPushMirrorUser:
     """This is much like unix.SFTPServerForUnixConchUser, but:
         - doesn't allow any traversal above the home directory
         - uid/gid can't be set
         - symlinks cannot be made
     """
+    # XXX: refactor all this into the SFTPServerBase class hierarchy.
+    
     # TODO: This doesn't return friendly error messages to the client when
     #       restricted operations are attempted (they generally are sent as
     #       "Failure").
@@ -194,11 +278,14 @@ components.registerAdapter(SFTPServerForPushMirrorUser, SFTPOnlyAvatar,
 class Realm:
     implements(IRealm)
 
-    def __init__(self, homeDirsRoot):
+    def __init__(self, homeDirsRoot, personMapFilename, productMapFilename):
         self.homeDirsRoot = homeDirsRoot
+        self.personMapFilename = personMapFilename
+        self.productMapFilename = productMapFilename
 
     def requestAvatar(self, avatarId, mind, *interfaces):
-        avatar = SFTPOnlyAvatar(avatarId, self.homeDirsRoot)
+        avatar = SFTPOnlyAvatar(avatarId, self.homeDirsRoot,
+                                self.personMapFilename, self.productMapFilename)
         return interfaces[0], avatar, lambda: None
 
 
