@@ -1,6 +1,6 @@
 
-from zope.schema import Text, TextLine
-from zope.schema.interfaces import IText, ITextLine
+from zope.schema import Text, TextLine, Field
+from zope.schema.interfaces import IText, ITextLine, IField
 from zope.interface import implements, classImplements
 
 import datetime
@@ -18,6 +18,9 @@ class IDescription(IText):
 
 class ITimeInterval(ITextLine):
     """A field that captures a time interval in days, hours, minutes."""
+
+class IBugField(IField):
+    """A Field that allows entry of a Bug number"""
 
 # Title
 # A field to capture a launchpad object title
@@ -47,4 +50,8 @@ class TimeInterval(TextLine):
         if 'mon' in value:
             return 0
         return 1
+
+
+class BugField(Field):
+    implements(IBugField)
 

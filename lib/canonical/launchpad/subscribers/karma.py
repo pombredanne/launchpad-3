@@ -32,11 +32,13 @@ def bug_modified(bug, event):
     bug_delta = get_bug_delta(
         event.object_before_modification, event.object, user)
 
+    assert bug_delta is not None
+
     attrs_actionnames = {'title': KarmaActionName.BUGTITLECHANGED,
                          'summary': KarmaActionName.BUGSUMMARYCHANGED,
                          'description': KarmaActionName.BUGDESCRIPTIONCHANGED,
                          'duplicateof': KarmaActionName.BUGMARKEDASDUPLICATE}
-
+    
     for attr, actionname in attrs_actionnames.items():
         if getattr(bug_delta, attr) is not None:
             user.assignKarma(actionname)

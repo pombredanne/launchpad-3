@@ -201,9 +201,6 @@
         template="../templates/bug-mark-as-duplicate.pt"
         fields="duplicateof"
         lp:url="malone/bugs/$Bug.id/+duplicate">
-        <browser:widget
-            field="duplicateof"
-            class="canonical.widgets.bug.BugWidget" />
     </browser:editform>
 
     <!-- NullBugTask -->

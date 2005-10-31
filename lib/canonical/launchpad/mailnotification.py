@@ -685,6 +685,8 @@ def notify_bug_modified(modified_bug, event):
         old_bug=event.object_before_modification,
         new_bug=event.object, user=event.user)
 
+    assert bug_delta is not None
+
     send_bug_edit_notification(bug_delta)
 
     if bug_delta.duplicateof is not None:
