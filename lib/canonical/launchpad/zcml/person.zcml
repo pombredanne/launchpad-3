@@ -427,6 +427,10 @@
 	  class="zope.app.form.browser.TextWidget"
 	  displayWidth="65" />
       <browser:widget
+          field="title"
+          class="zope.app.form.browser.TextWidget"
+          displayWidth="65" />
+      <browser:widget
 	  field="summary"
 	  class="zope.app.form.browser.TextAreaWidget"
 	  height="5" />
