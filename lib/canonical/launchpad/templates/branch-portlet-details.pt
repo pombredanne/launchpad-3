@@ -20,11 +20,13 @@
              class="link">Author Nome</a><br />
         </tal:has_author>
 
-        <b>Registrant:</b><br />
-        <img src="/++resource++user.gif">
-        <a tal:attributes="href context/owner/fmt:url"
-           tal:content="context/owner/browsername"
-           class="link">Owner Name</a><br />
+	<tal:different_registrant condition="not:view/author_is_owner">
+          <b>Registrant:</b><br />
+          <img src="/++resource++user.gif">
+          <a tal:attributes="href context/owner/fmt:url"
+             tal:content="context/owner/browsername"
+             class="link">Owner Name</a><br />
+        </tal:different_registrant>
 
         <tal:has_product condition="context/product">
           <b>Product:</b><br />
