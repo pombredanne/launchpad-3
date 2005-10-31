@@ -225,6 +225,7 @@ Bugzilla bug.
   >>> print getUtility(IPersonSet).getByEmail('new.user@canonical.com')
   None
   >>> bug = bz.handleBug(2)
+  WARNING:canonical.launchpad.scripts.bugzilla:could not find package name for "unknown"
   >>> bugInfo(bug)
   Title: Test bug 2
   Reporter: Foo Bar
@@ -451,6 +452,7 @@ then the bug is filed directly against the distribution.
   Binary package: netapplet
 
   >>> showMapping('Ubuntu', 'unknown-package-name')
+  WARNING:canonical.launchpad.scripts.bugzilla:could not find package name for "unknown-package-name"
   Distribution: ubuntu
 
   >>> showMapping('not-Ubuntu', 'general')

@@ -304,6 +304,8 @@ class Bugzilla:
             srcpkg, binpkg = ubuntu.getPackageNames(
                 bug.component.encode('ASCII'))
         except ValueError:
+            logger.warning('could not find package name for "%s"',
+                           bug.component.encode('ASCII'))
             srcpkg = binpkg = None
 
         return {
