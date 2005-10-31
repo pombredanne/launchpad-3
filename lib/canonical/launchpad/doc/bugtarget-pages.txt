@@ -111,9 +111,9 @@ All bugtasks ever reported on the target, including closed ones.
     >>> all_bugtasks = list(all_bugtasks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name)
     ...         for bugtask in all_bugtasks])
-    [(1, 'ACCEPTED'), (2, 'ACCEPTED'), (3, 'NEW')]
+    [(1, 'ACCEPTED'), (2, 'ACCEPTED'), (3, 'NEW'), (8, 'FIXED')]
     >>> all_bugtasks_view.taskCount
-    3
+    4
 
 Advanced search
 ---------------
