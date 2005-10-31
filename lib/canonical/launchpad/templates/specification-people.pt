@@ -14,15 +14,9 @@
 
   <div metal:fill-slot="main">
 
-    <div metal:use-macro="context/@@launchpad_editform/editform">
-
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Change the status and priority of this specification
-      using the form below.
-    </div>
+    <div metal:use-macro="context/@@launchpad_editform/editform" />
 
   </div>
     
-</div>
 </body>
 </html>

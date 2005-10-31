@@ -18,7 +18,7 @@ from canonical.launchpad.interfaces import (
     ILaunchBag, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.browser.bugtask import (
-    BugTargetTraversalMixin, get_sortorder_from_request)
+    BugTargetTraversalMixin, BugTaskSearchListingView)
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu,
@@ -74,49 +74,12 @@ class DistributionSourcePackageSupportMenu(ApplicationMenu):
         return Link('+addticket', 'Request Support', icon='add')
 
 
-class DistributionSourcePackageBugsView:
+class DistributionSourcePackageBugsView(BugTaskSearchListingView):
     """View class for the buglist for an IDistributionSourcePackage."""
 
-    DEFAULT_ORDER = ['-priority', '-severity']
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-        setUpWidgets(self, IBugTaskSearch, IInputWidget)
-
-        self._searchtext = self._get_searchtext_form_param()
-
-        # If the _searchtext looks like a bug ID, redirect to that bug's page in
-        # this context, if the bug exists.
-        if self._searchtext and self._searchtext.isdigit():
-            try:
-                bug = getUtility(IBugSet).get(self._searchtext)
-            except NotFoundError:
-                # No bug with that ID exists, so let's skip this and continue
-                # with a normal text search.
-                pass
-            else:
-                if bug:
-                    # The bug does exist, so redirect to the bug page in this
-                    # context.
-                    context_url = canonical_url(self.context)
-                    self.request.response.redirect(
-                        "%s/+bug/%d" % (context_url, bug.id))
-
-    def _get_searchtext_form_param(self):
-        """Return the value of the searchtext form parameter.
-
-        The searchtext form parameter will only be returned if there is also a
-        'search' parameter in the form (i.e. the search button was clicked.)
-        """
-        if self.request.form.get("search"):
-            # The user pressed the "Search" button
-            form_params = getWidgetsData(self, IBugTaskSearch)
-            return form_params.get("searchtext")
-        else:
-            # The user did not press the "Search" button
-            return None
+    def _distributionContext(self):
+        """Return the source package's distribution."""
+        return self.context.distribution
 
     def showTableView(self):
         """Should the search results be displayed as a table?"""
@@ -126,25 +89,18 @@ class DistributionSourcePackageBugsView:
         """Should the search results be displayed as a list?"""
         return True
 
+    def showBatchedListing(self):
+        """Is the listing batched?"""
+        return False
+
     @property
-    def listing_columns(self):
+    def task_columns(self):
         """Return the columns that should be displayed in the bug listing."""
         return ["assignedto", "id", "priority", "severity", "status", "title"]
 
-    @property
-    def open_bugs(self):
-        """Return a list of unresolved bugs open on this package."""
-        # Query for open tasks for mydistribution
-        searchtext = None
-        if self.request.form.get("search"):
-            searchtext = getWidgetsData(self, IBugTaskSearch).get("searchtext")
-
-        search_params = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES),
-            searchtext=searchtext,
-            orderby=get_sortorder_from_request(self.request))
-        return self.context.searchTasks(search_params)
+    def getExtraSearchParams(self):
+        """Search for all unresolved bugs on this package."""
+        return {'status': any(*UNRESOLVED_BUGTASK_STATUSES)}
 
 
 class DistributionSourcePackageView:

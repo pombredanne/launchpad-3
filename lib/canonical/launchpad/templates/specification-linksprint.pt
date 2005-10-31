@@ -16,14 +16,7 @@
 
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_addform/addform">
-
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Use this form to put this spec onto the agenda for a particular
-      meeting.
-    </div>
-
-  </div>
+  <div metal:use-macro="context/@@launchpad_addform/addform" />
 
 </div>
     

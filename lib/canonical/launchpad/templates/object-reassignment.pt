@@ -51,8 +51,9 @@
           </label>
           <br />
 
-          You can change details and members<br />
-          of the team once it's created.
+          The new team's name must begin with a lower-case letter or number,
+          and contain only letters, numbers, dots, hyphens, or plus signs.
+          <br />
         </td>
       </tr>
 

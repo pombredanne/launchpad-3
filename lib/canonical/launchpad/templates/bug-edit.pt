@@ -24,8 +24,8 @@
     <div metal:use-macro="context/@@launchpad_editform/editform">
 
       <p metal:fill-slot="extra_info">
-        Note that your changes will be reflected in all contexts in
-        which this bug has been reported.
+        Your changes will be reflected in all contexts where
+        this bug has been reported.
       </p>
 
     </div>

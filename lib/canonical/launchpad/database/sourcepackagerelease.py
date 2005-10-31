@@ -184,6 +184,12 @@ class SourcePackageRelease(SQLBase):
                      processor=processor.id, buildstate=status)
 
 
+    def getBuildByArch(self, distroarchrelease):
+        """See ISourcePackageRelease."""
+        return Build.selectOneBy(sourcepackagereleaseID=self.id,
+                                 distroarchreleaseID=distroarchrelease.id)
+
+
 class SourcePackageReleaseSet:
 
     implements(ISourcePackageReleaseSet)

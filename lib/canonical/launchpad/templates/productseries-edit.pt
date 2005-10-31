@@ -9,21 +9,16 @@
 
 <div metal:fill-slot="main">
 
-    <!--
-    This tal:dummy block never turns into HTML, but it triggers the edit
+    <tal:x condition="nothing">
+      <!--This tal:dummy block never turns into HTML, but it triggers the edit
     method on the ProductSeriesView class. This checks to see if a form has been
-    submitted to it, and if so updates the product.
-    -->
+    submitted to it, and if so updates the product.-->
+    </tal:x>
     <tal:dummy condition="view/edit" />
 
     <h1>Edit "<span
     tal:content="context/displayname">$ProductSeries.displayname</span>"
     Release Series Details</h1>
-
-    <div class="documentDescription">
-    Please edit the Product Release Series details below for <span
-    tal:content="context/displayname">$ProductRelease.displayname</span>.
-    </div>
 
     <fieldset>
 
@@ -116,12 +111,13 @@
         
         <div class="formControls">
 
-            <!--
-            NB the name and value of the submit field below are essential to
-            clue the ProductView.edit() method in that the form has been
-            submitted.
-            -->
-            <input class="context" type="submit"
+            <tal:comment condition="nothing">
+              The name and value of the submit field are essential to
+              tell the ProductView.edit() method that the form has been
+              submitted.
+            </tal:comment>
+
+            <input type="submit"
                    name="Update"
                    value="Update Series" />
 

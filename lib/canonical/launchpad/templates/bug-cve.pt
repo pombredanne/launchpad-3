@@ -20,10 +20,11 @@
 
   <div metal:use-macro="context/@@launchpad_generalform/generalform">
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
-       Enter the CVE sequence number related to this bug using the form
-       below.
-    </div>
+    <p metal:fill-slot="extra_info">
+       Launchpad will poll the
+       <abbr title="Common Vulnerabilities and Exposures">CVE</abbr> database
+       regularly, to keep track of the <abbr>CVE</abbr> status.
+    </p>
 
   </div>
 

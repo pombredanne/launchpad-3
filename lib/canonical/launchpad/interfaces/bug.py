@@ -165,9 +165,12 @@ class IBugTarget(Interface):
         except IProduct.
         """
 
-    def newBug(owner, title, description):
-        """Create a new bug on this target, with the given title,
-        description and owner.
+    def createBug(owner, title, comment, private=False):
+        """Create a new bug on this target.
+
+        :title: The title of the bug, as a string.
+        :comment: The initial comment/default description.
+        :private: Is this a private bug? A boolean value.
         """
 
     bugtasks = Attribute("A list of BugTasks for this target.")

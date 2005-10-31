@@ -69,6 +69,7 @@ from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.helpers import (
         obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
 from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 from canonical.launchpad.webapp import (
@@ -1650,6 +1651,13 @@ class ObjectReassignmentView:
                     "Launchpad. Please choose a different name or select "
                     "the option to make that person/team the new owner, "
                     "if that's what you want." % owner_name)
+                return None
+
+            if not valid_name(owner_name):
+                self.errormessage = (
+                    "'%s' is not a valid name for a team. Please make sure "
+                    "it contains only the allowed characters and no spaces."
+                    % owner_name)
                 return None
 
             owner = personset.newTeam(

@@ -14,7 +14,7 @@ INSERT INTO person (id, displayname, givenname, familyname, "password", teamowne
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (5, 'Scott James Remnant', 'Scott James', 'Remnant', NULL, NULL, NULL, 'keybuk', NULL, '''jame'':3B,6C ''scott'':2B,5C ''keybuk'':1A ''remnant'':4B,7C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.608802', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (6, 'Jeff Waugh', 'Jeff', 'Waugh', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'jdub', NULL, '''jdub'':1A ''jeff'':2B,4C ''waugh'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.600523', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (7, 'Andrew Bennetts', 'Andrew', 'Bennetts', NULL, NULL, NULL, 'spiv', NULL, '''spiv'':1A ''andrew'':2B,4C ''bennett'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.551196', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (8, 'James Blackwell', 'James', 'Blackwell', NULL, NULL, NULL, 'jblack', NULL, '''jame'':2B,4C ''jblack'':1A ''blackwel'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.601584', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (8, 'James Blackwell', 'James', 'Blackwell', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'jblack', NULL, '''jame'':2B,4C ''jblack'':1A ''blackwel'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.601584', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (9, 'Christian Reis', 'Christian', 'Reis', NULL, NULL, NULL, 'kiko', NULL, '''rei'':3B,5C ''kiko'':1A ''christian'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.594941', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (10, 'Alexander Limi', 'Alexander', 'Limi', NULL, NULL, NULL, 'limi', NULL, '''limi'':1A,3B,5C ''alexand'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.619713', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (11, 'Steve Alexander', 'Steve', 'Alexander', NULL, NULL, NULL, 'stevea', NULL, '''steve'':2B,4C ''stevea'':1A ''alexand'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.599234', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
@@ -1172,6 +1172,11 @@ INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) V
 INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (35, '2005-08-01 09:31:29.606407', NULL, 2, '71853c6197a6a7f222db0f1978c7cb232b87c5ee');
 
 
+INSERT INTO LibraryFileContent (id, filesize, sha1, deleted) VALUES (
+    36, 3, sha1('foo'), true
+    );
+
+
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'libraryfilecontent'::pg_catalog.regclass;
 
 
@@ -1212,6 +1217,11 @@ INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (33, 33, 'es.po', 'application/x-po', NULL);
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (34, 34, 'evolution-2.2-test.pot', 'application/x-po', NULL);
 INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (35, 35, 'Ubuntu-High-Pri-2005-08-01.csv', 'text/plain', NULL);
+
+
+INSERT INTO LibraryFileAlias (id, content, filename, mimetype) VALUES (
+    36, 36, 'foo.txt', 'text/plain'
+    );
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'libraryfilealias'::pg_catalog.regclass;
@@ -6199,12 +6209,12 @@ INSERT INTO productbounty (id, bounty, product) VALUES (2, 4, 5);
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'productbounty'::pg_catalog.regclass;
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distrobounty'::pg_catalog.regclass;
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distributionbounty'::pg_catalog.regclass;
 
-INSERT INTO distrobounty (id, bounty, distribution) VALUES (1, 1, 1);
+INSERT INTO distributionbounty (id, bounty, distribution) VALUES (1, 1, 1);
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distrobounty'::pg_catalog.regclass;
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distributionbounty'::pg_catalog.regclass;
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'projectbounty'::pg_catalog.regclass;
@@ -7854,25 +7864,25 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'polloption'::pg_catalog.regclass;
 
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (1, 1, 'A', 'A', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (2, 1, 'B', 'B', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (3, 1, 'C', 'C', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (4, 1, 'D', 'D', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (5, 2, 'William Big-Middle-Name Graham', 'Will Graham', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (6, 2, 'Jack Crawford', 'Jack Crawford', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (7, 2, 'Francis Dolarhyde', 'Francis Dolarhyde', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (8, 3, 'A', 'A', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (9, 3, 'B', 'B', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (10, 3, 'C', 'C', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (11, 3, 'D', 'D', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (12, 4, 'Option 1', 'Option 1', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (13, 4, 'Option 2', 'Option 2', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (14, 4, 'Option 3', 'Option 3', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (15, 4, 'Option 4', 'Option 4', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (16, 5, 'Option 1', 'Option 1', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (17, 5, 'Option 2', 'Option 2', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (18, 5, 'Option 3', 'Option 3', true);
-INSERT INTO polloption (id, poll, name, shortname, active) VALUES (19, 5, 'Option 4', 'Option 4', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (1, 1, 'A', 'A', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (2, 1, 'B', 'B', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (3, 1, 'C', 'C', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (4, 1, 'D', 'D', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (5, 2, 'William Big-Middle-Name Graham', 'Will Graham', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (6, 2, 'Jack Crawford', 'Jack Crawford', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (7, 2, 'Francis Dolarhyde', 'Francis Dolarhyde', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (8, 3, 'A', 'A', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (9, 3, 'B', 'B', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (10, 3, 'C', 'C', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (11, 3, 'D', 'D', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (12, 4, 'Option 1', 'Option 1', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (13, 4, 'Option 2', 'Option 2', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (14, 4, 'Option 3', 'Option 3', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (15, 4, 'Option 4', 'Option 4', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (16, 5, 'Option 1', 'Option 1', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (17, 5, 'Option 2', 'Option 2', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (18, 5, 'Option 3', 'Option 3', true);
+INSERT INTO polloption (id, poll, name, title, active) VALUES (19, 5, 'Option 4', 'Option 4', true);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'polloption'::pg_catalog.regclass;
@@ -7944,7 +7954,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'specification'::pg_catalog.regclass;
 
-INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (1, 'extension-manager-upgrades', 'Extension Manager Upgrades', 'Simplify the way extensions are installed and registered so that: 1. third party applications can easily register and deregister extensions that live with their code. 2. developers can easily register extensions that they are developing out of a location apart from their build (e.g. their home directory), and  3. developers can easily install extensions for testing.', 16, 13, NULL, NULL, '2005-08-24 16:03:46.479655', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://wiki.mozilla.org/Firefox:1.1_Product_Team', NULL);
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (1, 'extension-manager-upgrades', 'Extension Manager Upgrades', 'Simplify the way extensions are installed and registered so that: 1. third party applications can easily register and deregister extensions that live with their code. 2. developers can easily register extensions that they are developing out of a location apart from their build (e.g. their home directory), and  3. developers can easily install extensions for testing.', 16, 13, NULL, 1, '2005-08-24 16:03:46.479655', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://wiki.mozilla.org/Firefox:1.1_Product_Team', NULL);
 INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (2, 'canvas', 'Support <canvas> Objects', 'With the Firefox 1.1 Developer Preview Release, Firefox includes a new HTML element for programmable graphics. <canvas> is based on the WhatWG canvas specification (http://www.whatwg.org/specs/web-apps/current-work/#graphics), which itself is based on Apple''s <canvas> implemented in Safari. It can be used for rendering graphs, UI elements, and other custom graphics on the client.', 16, NULL, NULL, NULL, '2005-08-24 16:05:03.406307', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://developer.mozilla.org/en/docs/Drawing_Graphics_with_Canvas', NULL);
 INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (3, 'svg-support', 'Support Native SVG Objects', 'Scalable Vector Graphics (SVG) is an XML markup language for describing two-dimensional vector graphics. Mozilla should natively support embedded SVG images in HTML documents, or SVG served directly, much as PNG or JPEG images can be served.', 16, 13, 2, NULL, '2005-08-24 16:10:05.078543', 4, NULL, NULL, NULL, NULL, 10, 70, 'http://developer.mozilla.org/en/docs/SVG', NULL);
 INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (4, 'e4x', 'Support E4X in EcmaScript', 'E4X adds native XML datatypes to the ECMAScript language, extends the semantics of familiar ECMAScript operators for manipulating XML objects and adds a small set of new operators for common XML operations, such as searching and filtering. It also adds support for XML literals, namespaces, qualified names and other mechanisms to facilitate XML processing.', 16, 14, 28, NULL, '2005-08-24 16:11:37.431981', 4, NULL, NULL, NULL, 1, 20, 0, 'http://www.ecma-international.org/publications/standards/Ecma-357.htm', 'This is the status whiteboard. Dig it?');
@@ -8250,9 +8260,9 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sprintspecification'::pg_catalog.regclass;
 
-INSERT INTO sprintspecification (id, sprint, specification, status, needs_discussion) VALUES (1, 1, 3, 30, true);
-INSERT INTO sprintspecification (id, sprint, specification, status, needs_discussion) VALUES (2, 1, 1, 30, true);
-INSERT INTO sprintspecification (id, sprint, specification, status, needs_discussion) VALUES (3, 1, 4, 30, true);
+INSERT INTO sprintspecification (id, sprint, specification, status, needs_discussion) VALUES (1, 1, 3, 10, true);
+INSERT INTO sprintspecification (id, sprint, specification, status, needs_discussion) VALUES (2, 1, 1, 10, true);
+INSERT INTO sprintspecification (id, sprint, specification, status, needs_discussion) VALUES (3, 1, 4, 10, true);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sprintspecification'::pg_catalog.regclass;

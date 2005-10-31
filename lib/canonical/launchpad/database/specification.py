@@ -110,6 +110,26 @@ class Specification(SQLBase):
                 return sprintspecification
         return None
 
+    # emergent properties
+
+    @property
+    def is_incomplete(self):
+        """See ISpecification."""
+        return self.status not in [
+            SpecificationStatus.IMPLEMENTED,
+            SpecificationStatus.INFORMATIONAL,
+            SpecificationStatus.OBSOLETE,
+            SpecificationStatus.SUPERCEDED,
+            ]
+
+    @property
+    def is_blocked(self):
+        """See ISpecification."""
+        for spec in self.dependencies:
+            if spec.is_incomplete:
+                return True
+        return False
+
     # subscriptions
     def subscribe(self, person):
         """See ISpecification."""
@@ -244,9 +264,9 @@ class SpecificationSet:
         return Sprint.select("time_starts > 'NOW'", orderBy='-time_starts',
             limit=5)
 
-    def new(self, name, title, specurl, summary, priority, status,
+    def new(self, name, title, specurl, summary, status,
         owner, approver=None, product=None, distribution=None, assignee=None,
-        drafter=None, whiteboard=None):
+        drafter=None, whiteboard=None, priority=None):
         """See ISpecificationSet."""
         return Specification(name=name, title=title, specurl=specurl,
             summary=summary, priority=priority, status=status,

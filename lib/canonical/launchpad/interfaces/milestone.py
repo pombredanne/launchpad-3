@@ -23,8 +23,8 @@ class IMilestone(IHasProduct):
     """
     id = Int(title=_("Id"))
     name = TextLine(title=_("Name"), required=True,
-        description=_("A short and unique name for this milestone, only "
-        "letters,numbers, and simple punctuation are allowed."))
+        description=_(
+            "Only letters, numbers, and simple punctuation are allowed."))
     product = Choice(
         title=_("Product"),
         description=_("The product to which this milestone is associated"),
@@ -33,8 +33,7 @@ class IMilestone(IHasProduct):
         description=_("The distribution to which this milestone belongs."),
         vocabulary="Distribution")
     dateexpected = Date(title=_("Date Targeted"), required=False,
-        description=_("The date on which we expect this milestone to be "
-            "delivered."))
+        description=_("Example: 2005-11-24"))
     visible = Bool(title=_("Active"), description=_("Whether or not this "
         "milestone should be shown in web forms for bug targeting."))
     target = Attribute("The product or distribution of this milestone.")

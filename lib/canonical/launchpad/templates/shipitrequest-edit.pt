@@ -29,6 +29,13 @@
     <tr>
     <td width="80%">
 
+    <p tal:define="shipped_requests context/recipient/shippedShipItRequests"
+       tal:condition="shipped_requests" class="portalMessage">
+      This person already has
+      <span tal:replace="shipped_requests/count:len" />
+      requests sent to the shipping company.
+    </p>
+
     <tal:block condition="view/contextCancelledOrShipped">
       <p tal:condition="context/cancelled" 
          class="portalMessage">This request was cancelled by 
@@ -43,8 +50,7 @@
     <tal:block condition="not: view/contextCancelledOrShipped">
       <tal:block condition="context/isApproved">
         <br />
-        <p class="portalMessage">This request is currently approved. The
-        approved quantities are shown below.</p>
+        <p class="portalMessage">This request is currently approved.</p>
       </tal:block>
       <tal:block condition="context/isAwaitingApproval">
         <br />

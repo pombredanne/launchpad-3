@@ -174,6 +174,10 @@ bug_subscription = ContextId('Subscribe or unsubscribe from Bug #%s')
 
 bug_watch_add = LaunchbagBugID('Bug #%d - Add an External Bug Watch')
 
+buglisting_advanced = ContextTitle("Bugs in %s")
+
+buglisting_default = ContextTitle("Bugs in %s")
+
 def bugwatch_editform(context, view):
     return 'Bug #%d - Edit an External Bug Watch (%s in %s)' % (
         context.bug.id, context.remotebug, context.bugtracker.title)
@@ -196,13 +200,11 @@ bugtask_index = BugTaskPageTitle()
 
 bugtask_release_targeting = BugTaskTargetingTitle()
 
-bugtask_search_listing = ContextTitle('Bugs in %s')
-
 bugtask_view = BugTaskPageTitle()
 
 bugtask_edit = BugTaskPageTitle()
 
-# bugtask_search_listing contains only macros
+# bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
 
 bugtracker_edit = ContextTitle('Edit %s Details')
@@ -527,8 +529,6 @@ person_translations = ContextDisplayName('Translations Made By %s')
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 
-# plone.css is a css file
-
 pofile_edit = 'Rosetta: Edit PO file details'
 
 pofile_export = ContextTitle('%s file exports')
@@ -556,7 +556,7 @@ def poll_new(context, view):
     return 'Create a new Poll in team %s' % context.team.displayname
 
 def polloption_edit(context, view):
-    return 'Edit option: %s' % context.shortname
+    return 'Edit option: %s' % context.title
 
 poll_options = ContextTitle('Options of Poll: %s')
 
@@ -759,6 +759,8 @@ sourcesource_index = 'Upstream Source Import'
 
 specification_add = 'Register a feature specification in Launchpad'
 
+specification_addsubscriber = 'Subscribe someone else to this spec'
+
 specification_bug = ContextTitle(
   'Link specification \N{left double quotation mark}%s'
   '\N{right double quotation mark} to a bug report')
@@ -811,6 +813,10 @@ sprint_edit = ContextTitle('Edit Meeting Details: %s')
 sprint_index = ContextTitle('%s (Sprint or Meeting)')
 
 sprint_new = 'Register a new Meeting or Sprint in Launchpad'
+
+sprint_table = ContextTitle('Table of Specs for %s')
+
+sprint_workload = ContextTitle('Workload at %s')
 
 sprints_index = 'Launchpad Meeting or Sprint Registry'
 

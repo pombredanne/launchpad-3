@@ -110,7 +110,7 @@ class SprintSet:
 
     def __init__(self):
         """See ISprintSet."""
-        self.title = 'Launchpad Sprints and Meetings Registry'
+        self.title = 'Sprints and Meetings'
 
     def __getitem__(self, name):
         """See ISprintSet."""

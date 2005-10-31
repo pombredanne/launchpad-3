@@ -35,16 +35,14 @@ from canonical.launchpad.database.distroreleasebinarypackage import (
     DistroReleaseBinaryPackage)
 from canonical.launchpad.database.distroreleasepackagecache import (
     DistroReleasePackageCache)
-from canonical.launchpad.database.publishing import (
-    BinaryPackagePublishing, SourcePackagePublishing)
+from canonical.launchpad.database.publishing import SourcePackagePublishing
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.distroreleaselanguage import (
     DistroReleaseLanguage, DummyDistroReleaseLanguage)
 from canonical.launchpad.database.sourcepackage import SourcePackage
-from canonical.launchpad.database.sourcepackagename import (
-    SourcePackageName, SourcePackageNameSet)
+from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.bugtask import BugTaskSet, BugTask
@@ -112,6 +110,15 @@ class DistroRelease(SQLBase):
         'Section', joinColumn='distrorelease', otherColumn='section',
         intermediateTable='SectionSelection')
 
+    # XXX: dsilvers: 20051013: At some point, get rid of components/sections
+    # from above and rename these and fix up the uploader and queue stuff.
+    real_components = RelatedJoin(
+        'Component', joinColumn='distrorelease', otherColumn='component',
+        intermediateTable='ComponentSelection')
+    real_sections = RelatedJoin(
+        'Section', joinColumn='distrorelease', otherColumn='section',
+        intermediateTable='SectionSelection')
+
     @property
     def packagings(self):
         packagings = list(Packaging.selectBy(distroreleaseID=self.id))
@@ -143,7 +150,7 @@ class DistroRelease(SQLBase):
         if not datereleased:
             datereleased = 'NOW'
         return DistroRelease.select('''
-                distribution = %s AND 
+                distribution = %s AND
                 datereleased < %s
                 ''' % sqlvalues(self.distribution.id, datereleased),
                 orderBy=['-datereleased'])
@@ -361,6 +368,11 @@ class DistroRelease(SQLBase):
             clauseTables = ['SourcePackageRelease'])
         return shortlist(published)
 
+    def getAllReleasesByStatus(self, status):
+        """See IDistroRelease."""
+        return SourcePackagePublishing.selectBy(distroreleaseID=self.id,
+                                                status=status)
+
     def publishedBinaryPackages(self, component=None):
         """See IDistroRelease."""
         # XXX sabdfl 04/07/05 this can become a utility when that works
@@ -380,7 +392,7 @@ class DistroRelease(SQLBase):
         if not arch_ids:
             return None
 
-        # specific status or simply worked 
+        # specific status or simply worked
         if status:
             status_clause = "buildstate=%s" % sqlvalues(status)
         else:
@@ -438,7 +450,7 @@ class DistroRelease(SQLBase):
 
         # get the set of package names that should be there
         bpns = set(BinaryPackageName.select("""
-            BinaryPackagePublishing.distroarchrelease = 
+            BinaryPackagePublishing.distroarchrelease =
                 DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %s AND
             BinaryPackagePublishing.binarypackagerelease =
@@ -454,13 +466,13 @@ class DistroRelease(SQLBase):
         for cache in self.binary_package_caches:
             if cache.binarypackagename not in bpns:
                 cache.destroySelf()
- 
+
     def updateCompletePackageCache(self, ztm=None):
         """See IDistroRelease."""
 
         # get the set of package names to deal with
         bpns = list(BinaryPackageName.select("""
-            BinaryPackagePublishing.distroarchrelease = 
+            BinaryPackagePublishing.distroarchrelease =
                 DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %s AND
             BinaryPackagePublishing.binarypackagerelease =
@@ -482,7 +494,7 @@ class DistroRelease(SQLBase):
                 counter = 0
                 if ztm is not None:
                     ztm.commit()
-            
+
 
     def updatePackageCache(self, binarypackagename):
         """See IDistroRelease."""
@@ -492,7 +504,7 @@ class DistroRelease(SQLBase):
             BinaryPackageRelease.binarypackagename = %s AND
             BinaryPackageRelease.id =
                 BinaryPackagePublishing.binarypackagerelease AND
-            BinaryPackagePublishing.distroarchrelease = 
+            BinaryPackagePublishing.distroarchrelease =
                 DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %s
             """ % sqlvalues(binarypackagename.id, self.id),
@@ -549,13 +561,34 @@ class DistroRelease(SQLBase):
             processorfamily=processorfamily, official=official,
             distrorelease=self, owner=owner)
         return dar
-        
-    def createQueueEntry(self, pocket):
+
+    def createQueueEntry(self, pocket,
+                         status=DistroReleaseQueueStatus.ACCEPTED):
         """See IDistroRelease."""
 
         return DistroReleaseQueue(distrorelease=self.id,
                                   pocket=pocket,
-                                  status=DistroReleaseQueueStatus.ACCEPTED)
+                                  status=status)
+
+    def getQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED):
+        """See IDistroRelease."""
+
+        return DistroReleaseQueue.selectBy(distroreleaseID=self.id,
+                                           status=status)
+
+    def createBug(self, owner, title, comment, private=False):
+        """See canonical.launchpad.interfaces.IBugTarget."""
+        # We don't currently support opening a new bug on an IDistroRelease,
+        # because internally bugs are reported against IDistroRelease only when
+        # targetted to be fixed in that release, which is rarely the case for a
+        # brand new bug report.
+        raise NotImplementedError(
+            "A new bug cannot be filed directly on a distribution release, "
+            "because releases are meant for \"targeting\" a fix to a specific "
+            "release. It's possible that we may change this behaviour to "
+            "allow filing a bug on a distribution release in the "
+            "not-too-distant future. For now, you probably meant to file "
+            "the bug on the distribution instead.")
 
 
 class DistroReleaseSet:
@@ -613,9 +646,9 @@ class DistroReleaseSet:
         """See IDistroReleaseSet."""
         return DistroRelease(
             distribution = distribution,
-            name = name, 
-            displayname = displayname, 
-            title = title, 
+            name = name,
+            displayname = displayname,
+            title = title,
             summary = summary,
             description = description,
             version = version,

@@ -35,6 +35,12 @@
       name="+index"
       template="../templates/sprint-index.pt" />
     <browser:page
+      name="+specstable"
+      template="../templates/sprint-table.pt" />
+    <browser:page
+      name="+workload"
+      template="../templates/sprint-workload.pt" />
+    <browser:page
       name="+listing-detailed"
       template="../templates/sprint-listing-detailed.pt" />
     <browser:page
@@ -114,7 +120,7 @@
     for="canonical.launchpad.interfaces.ISprintSet"
     schema="canonical.launchpad.interfaces.ISprint"
     class="canonical.launchpad.browser.SprintAddView"
-    label="Register A Meeting"
+    label="Register a Meeting"
     permission="launchpad.AnyPerson"
     fields="owner name title summary home_page time_zone time_starts
             time_ends"

@@ -1,6 +1,12 @@
-<img src="/++resource++spec" />
-<a tal:attributes="href context/fmt:url"
-   tal:content="context/title">Spec Title Here</a>
+<table style="width: 100%;">
+  <tbody>
+    <tr>
+      <td class="icon left">
+        <img alt="" src="/++resource++spec" />
+      </td>
+      <td>
+        <strong><a tal:attributes="href context/fmt:url"
+        tal:content="context/title">Spec Title Here</a></strong>
 <tal:block condition="context/milestone">
   <img src="/++resource++target" />&nbsp;<a
      tal:attributes="href context/milestone/fmt:url"
@@ -21,7 +27,8 @@
         tal:content="context/priority/title"
         tal:attributes="class string:specpriority${context/priority/name}"
         >High</span>
-  <i tal:condition="not: context/priority">None assigned</i>.
+  <i tal:condition="not: context/priority">None set</i>.
+  <i tal:condition="context/is_blocked">Blocked</i>.
   <span tal:replace="context/summary">
     summary here
   </span>
@@ -38,4 +45,7 @@
           tal:condition="view/review/queuemsg">Msg goes here</span>
     </b>
   </tal:block>
-</div>
+      </td>
+    </tr>
+  </tbody>
+</table>

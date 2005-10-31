@@ -7,7 +7,7 @@
     </h4>
 
     <div class="portletBody">
-        <div class="portletContent odd">
+        <div class="portletContent">
           <ul class="remote bug">
             <li tal:repeat="watch context/watches">
               <a tal:attributes="href watch/url">

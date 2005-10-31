@@ -26,7 +26,7 @@
     <div tal:repeat="spec context/all_deps"
          tal:replace="structure spec/@@+listing-detailed" />
     <p tal:condition="not: context/dependencies">
-      This specification does not block any others.
+      <i>None - this specification does not depend on any others.</i>
     </p>
 
   <h2>This specification</h2>

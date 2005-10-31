@@ -30,7 +30,7 @@
     </fieldset>
   </form>
 
-  <table class="listing rowNavigation" width="100%">
+  <table class="listing" width="100%">
     <tr>
         <th>Product</th>
         <th>Series</th>

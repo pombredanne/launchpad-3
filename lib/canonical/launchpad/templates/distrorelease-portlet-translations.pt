@@ -4,7 +4,7 @@
 
   <div class="portletBody">
 
-    <div class="portletContent even">
+    <div class="portletContent">
 
       <div>
         <span tal:replace="context/currentpotemplates/count:len">9</span>

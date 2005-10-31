@@ -133,7 +133,6 @@ scoreBuildQueueEntry() method.
   >>> bq4.name, bq4.lastscore
   ('Vier', 1026)
 
-
 * 750 point for restricted component
 * 5 point for LOW priority
 * 20 points for queue_time ( > 3600 seconds)

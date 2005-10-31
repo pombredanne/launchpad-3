@@ -1,46 +1,3 @@
-<metal:item define-macro="bugtask_search_form">
-  <tal:comment condition="nothing">
-    This macro expects the following names are defined on the view class of the
-    callsite.
-
-    :searchtext_widget: The widget in which search keywords can be entered.
-    :shouldShowPackageName: Should the sourcepackage name be shown in the
-    listing?
-  </tal:comment>
-
-  <form name="bugtask_search" action="" method="GET">
-    <table>
-      <tr>
-        <th>
-          <label tal:content="view/searchtext_widget/label">
-            Bug id or text:
-          </label>
-        </th>
-        <td>
-          <tal:searchtext content="structure view/searchtext_widget" />
-        </td>
-      </tr>
-      <tr>
-        <th>
-          <label metal:use-macro="context/@@+bugtask-macros-listview/sortwidget_label" />
-        </th>
-        <td>
-          <metal:widget use-macro="context/@@+bugtask-macros-listview/sortwidget" />
-        </td>
-      </tr>
-      <tr>
-        <th>
-        </th>
-        <td>
-          <input type="submit" name="search" value="Search" />
-          <input type="hidden"
-                 name="advanced" tal:attributes="value request/advanced|nothing" />
-        </td>
-      </tr>
-    </table>
-  </form>
-</metal:item>
-
 <metal:item define-macro="item">
   <tal:comment replace="nothing">
   This macro expects the following variables defined:
@@ -49,45 +6,27 @@
       Defaults to False.
   </tal:comment>
 
-  <td style="width: 20px" valign="baseline">
-    <a tal:condition="task/priority"
-       tal:attributes="href task/fmt:url;
-                       title string:${task/priority/title} priority">
-      <tal:taskicon content="structure task/fmt:icon" />
-    </a>
-    <a tal:condition="not: task/priority"
-       tal:attributes="href task/fmt:url"
-       title="No priority set">
-      <tal:taskicon content="structure task/fmt:icon" />
-    </a>
-    &nbsp;
+  <td class="icon left">
+    <tal:taskicon content="structure task/fmt:icon" />&nbsp;
   </td>
-  <th valign="baseline">
-    <a tal:attributes="href task/fmt:url">
-      <tal:id replace="task/bug/id">42</tal:id>.&nbsp;
-    </a>
-  </th>
-  <td valign="baseline">
+  <td>
     <div>
-      <a
-        tal:attributes="href task/fmt:url"
-        tal:content="task/bug/title"
-      >A Test Title</a>
-      <small
-        class="discreet"
-        tal:content="string:(${task/age/fmt:approximateduration} old)"
-      >(2 weeks old)</small>
+      <a tal:attributes="href task/fmt:url">
+        <tal:id replace="task/bug/id">42</tal:id>.
+        <strong tal:content="task/bug/title">A test title</strong>
+      </a>
     </div>
-    <div
-      tal:content="task/bug/description/fmt:shorten/80"
-      class="lesser"
-    >It doesn't work.</div>
     <div class="lesser">
       <tal:packagename condition="show_packagename|nothing">
         <tal:has_package condition="task/sourcepackagename">
-            reported in <a tal:attributes="href string:${task/target/fmt:url}/+bugs;
-                                           title string:Show bugs in ${task/targetname}"
-                           tal:content="task/sourcepackagename/name">blah</a>,
+        in
+        <a
+          tal:attributes="
+            href string:${task/target/fmt:url}/+bugs;
+            title string:All bug reports about ${task/targetname};
+          "
+          tal:content="task/sourcepackagename/name"
+        >firefox</a>,
         </tal:has_package>
       </tal:packagename>
       <tal:status content="structure task/statusdisplayhtml">
@@ -99,10 +38,15 @@
            tal:content="task/milestone/name">1.0</a>
       </tal:milestone>
     </div>
-    <div
-      tal:content="task/statuselsewhere"
-      class="discreet"
-    >Not wanted elsewhere</div>
+    <div class="discreet">
+      <tal:age
+        replace="string:${task/age/fmt:approximateduration} old"
+      >2 weeks old</tal:age>
+      &mdash;
+      <tal:elsewhere replace="task/statuselsewhere">
+        Not wanted elsewhere
+      </tal:elsewhere>
+    </div>
   </td>
 </metal:item>
 

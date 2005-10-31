@@ -75,14 +75,22 @@
       </metal:suggestions>
       </tal:block>
 
-      <p>This is a Rosetta translation page. The template you are translating
-        is the <strong tal:content="context/title">spanish for foo bar</strong>.
-        This page allows you to translate that template into
-        <span tal:replace="context/language/englishname">Portugese</span>.
-        Use the forms below to provide good translations of the strings listed
-        there, taking care to understand the context within which each string
-        is being used.
-      </p>
+      <div>You are translating</div>
+      <h1>
+        <tal:productseries
+          condition="exists:context/potemplate/productseries/displayname"
+          tal:replace="context/potemplate/productseries/displayname"
+        />
+        <tal:sourcepackage
+          condition="exists:context/potemplate/sourcepackagename"
+          replace="context/potemplate/sourcepackagename"
+        />
+        into
+        <tal:language replace="context/language/englishname" />
+      </h1>
+      <div class="discreet">
+        Template: <tal:template replace="context/title" />
+      </div>
 
       <p class="portalMessage" tal:condition="not: view/is_editor">
         You are not an official translator for this file. You can still make
@@ -90,9 +98,10 @@
         acceptance later by the designated translators.
       </p>
 
-    <!-- Plural form error message. -->
-
-    <div tal:condition="view/lacksPluralFormInformation" class="portalMessage">
+    <div
+      tal:condition="view/lacksPluralFormInformation"
+      class="portalMessage"
+    >
         <p>
           Rosetta can&#8217;t handle the plural items in this file, because it doesn&#8217;t yet know how plural forms work for
           <span tal:replace="context/language/englishname">language</span>.
@@ -101,9 +110,9 @@
           To fix this, please e-mail the <a
           href="mailto:rosetta-users@lists.ubuntu.com">Rosetta users
           mailing list</a> with this information, preferably in the
-          format described in Rosetta's
-          <a href="https://wiki.ubuntu.com/RosettaFAQ">
-          FAQ</a>.
+          format described in the
+          <a href="https://wiki.ubuntu.com/RosettaFAQ">Rosetta FAQ</a>.
+        </p>
         <p>
           This only needs to be done once per language.
           Thanks for helping Rosetta.
@@ -112,14 +121,12 @@
     </div>
 
 
-    <!-- Make sure we have plural form details. -->
-    <div tal:condition="not: view/lacksPluralFormInformation">
+    <tal:havepluralforms condition="not: view/lacksPluralFormInformation">
 
       <!-- If we have errors, say so -->
       <p class="portalMessage" tal:condition="view/errorcount">
         There are <span tal:replace="view/errorcount">4</span> errors in the
-        translations you provided. Please correct them below and then
-        continue translating.
+        translations you provided. Please correct them before continuing.
       </p>
 
     <!-- Display settings. -->
@@ -371,11 +378,10 @@
                             <tal:with-content
                               condition="python:messageSet.getTranslation(index)">
                               <tal:comment tal:replace="nothing">
-                                Note that the lack of indentation for
+                                The lack of indentation for
                                 tal:content is deliberate or we would add extra
                                 whitespaces to the textarea, which causes us to
                                 potentially corrupt translations.
-                                For more information, please read:
                                 https://bugzilla.mozilla.org/show_bug.cgi?id=299009
                               </tal:comment>
                               <textarea
@@ -461,9 +467,9 @@
                               metal:use-macro="template/macros/translation-suggestions">
                               <metal:fill metal:fill-slot="suggestion-title"><tal:block
                                 condition="not:messageSet/isMultiline"
-                                >Unofficial suggestions</tal:block><tal:block
+                                >Suggested elsewhere</tal:block><tal:block
                                 condition="messageSet/isMultiline"
-                                >Unofficial suggestions</tal:block></metal:fill>
+                                >Suggested elsewhere</tal:block></metal:fill>
                             </metal:use>
                           </tal:block>
                           <tal:block define="submissions python:messageSet.getAlternateLanguageSubmissions(index)">
@@ -521,7 +527,7 @@
           >Spanish</span>
           <span tal:replace="view/completeness" tal:omit-tag="">0 %</span>
         </p>
-      </div> <!-- condition: not: view/lacksPluralFormInformation -->
+      </tal:havepluralforms>
     </div>
 
   </body>

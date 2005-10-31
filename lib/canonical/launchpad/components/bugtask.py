@@ -157,15 +157,15 @@ class BugTaskMixin:
                 [task for task in related_tasks
                  if task.status == BugTaskStatus.FIXED])
             if fixes_found:
-                return "Fixed in %d of %d places" % (
+                return "fixed in %d of %d places" % (
                     fixes_found, len(self.bug.bugtasks))
             else:
                 if len(related_tasks) == 1:
-                    return "Filed in 1 other place"
+                    return "filed in 1 other place"
                 else:
-                    return "Filed in %d other places" % len(related_tasks)
+                    return "filed in %d other places" % len(related_tasks)
         else:
-            return "Not filed elsewhere"
+            return "not filed elsewhere"
 
 
 class NullBugTask(BugTaskMixin):

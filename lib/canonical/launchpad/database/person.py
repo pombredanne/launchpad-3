@@ -277,6 +277,14 @@ class Person(SQLBase):
         """See IPerson."""
         return self.teamowner is not None
 
+    def shippedShipItRequests(self):
+        """See IPerson."""
+        query = '''
+            ShippingRequest.recipient = %s AND
+            ShippingRequest.id IN (SELECT request FROM Shipment)
+            ''' % sqlvalues(self.id)
+        return ShippingRequest.select(query)
+
     def pastShipItRequests(self):
         """See IPerson."""
         query = '''
@@ -525,6 +533,11 @@ class Person(SQLBase):
     def allmembers(self):
         """See IPerson."""
         return _getAllMembers(self)
+
+    @property
+    def all_member_count(self):
+        """See IPerson."""
+        return len(self.allmembers)
 
     @property
     def deactivatedmembers(self):

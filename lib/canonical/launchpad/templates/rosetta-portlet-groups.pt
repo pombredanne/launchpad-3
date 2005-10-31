@@ -4,7 +4,7 @@
 
   <div class="portletBody">
 
-    <div class="portletContent even">
+    <div class="portletContent">
 
       <ul>
         <li tal:repeat="group context/translation_groups">

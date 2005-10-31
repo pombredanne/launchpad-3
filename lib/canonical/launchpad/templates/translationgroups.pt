@@ -7,7 +7,6 @@
 <head>
   <title metal:fill-slot="title">Rosetta Translation Groups</title>
   <!-- Plone style sheet -->
-  <style type="text/css" media="screen">@import url(plone.css);</style>
 </head>
 
 <body>

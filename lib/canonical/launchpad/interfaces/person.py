@@ -221,6 +221,8 @@ class IPerson(IHasSpecifications):
     activemembers = Attribute("List of members with ADMIN or APPROVED status")
     active_member_count = Attribute("The number of real people who are "
         "members of this team.")
+    all_member_count = Attribute("The total number of real people who are "
+        "members of this team, including subteams.")
     administrators = Attribute("List of members with ADMIN status")
     expiredmembers = Attribute("List of members with EXPIRED status")
     approvedmembers = Attribute("List of members with APPROVED status")
@@ -350,6 +352,11 @@ class IPerson(IHasSpecifications):
         
         Any request that is cancelled, denied or sent for shipping can't be
         changed.
+        """
+
+    def shippedShipItRequests():
+        """Return all requests placed by this person that were sent to the
+        shipping company already.
         """
 
     def currentShipItRequest():

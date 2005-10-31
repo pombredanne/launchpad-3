@@ -12,10 +12,6 @@ __metaclass__ = type
 
 __all__ = ['BuilddMaster']
 
-# XXX 20050617 cprov
-# needs total refactoring for using common zcml configuration
-# execute_zcml_for_script() then getUtility() and so on. 
-
 
 import logging
 import warnings
@@ -28,29 +24,21 @@ import tempfile
 import os
 import apt_pkg
 
+from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
+
 from sqlobject import SQLObjectNotFound
-from sqlobject.sqlbuilder import AND, IN
 
-from canonical.launchpad.database import (
-    Builder, BuildQueue, Build, SourcePackagePublishing,
-    LibraryFileAlias, BinaryPackageRelease, BinaryPackageFile,
-    BinaryPackageName, Processor, SecureBinaryPackagePublishingHistory,
-    PublishedPackageSet
-    )
+from canonical.librarian.interfaces import ILibrarianClient
 
-from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackagePublishingPocket,
-    PackagePublishingPriority, BinaryPackageFormat, BinaryPackageFileType, 
+from canonical.launchpad.interfaces import (
+    IBuilderSet, IBuildQueueSet, IBuildSet, ILibraryFileAliasSet,
+    IBinaryPackageReleaseSet
     )
 
 from canonical.lp import dbschema
-
 from canonical import encoding
-
-from canonical.librarian.client import LibrarianClient
-
 from canonical.database.constants import UTC_NOW
-
 from canonical.launchpad.helpers import filenameToContentType
 
 from canonical.buildd.slave import BuilderStatus
@@ -76,6 +64,9 @@ class BuildDaemonError(Exception):
 class ProtocolVersionMismatch(BuildDaemonError):
     """The build slave had a protocol version. This is a serious error."""
 
+class BuildJobMismatch(BuildDaemonError):
+    """The build slave is working with mismatched information, needs rescue."""
+    
 class BuilderGroup:
     """Manage a set of builders based on a given architecture"""
 
@@ -89,16 +80,14 @@ class BuilderGroup:
         self._tm = tm
         self.logger = logger
 
-    def checkAvailableSlaves(self, archFamilyId, archTag):
+    def checkAvailableSlaves(self, arch):
         """Iter through available builder-slaves for an given architecture."""
         # available slaves
-        self.builders = Builder.select('builder.processor = processor.id '
-                                       'AND processor.family = %d'
-                                       % archFamilyId,
-                                       clauseTables=("Processor",))
+        self.builders = getUtility(IBuilderSet).getBuildersByArch(arch)
+        
         # Actualise the results because otherwise we get our exceptions
         # at odd times
-        self.logger.debug("Initialising builders for " + archTag)
+        self.logger.debug("Initialising builders for " + arch.architecturetag)
 
         self.builders = set(self.builders)
 
@@ -109,32 +98,37 @@ class BuilderGroup:
             if not builder.builderok:
                 continue
             try:
+                # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
+                slave = removeSecurityProxy(builder.slave)
+
                 # verify the echo method
-                if builder.slave.echo("Test")[0] != "Test":
+                if slave.echo("Test")[0] != "Test":
                     raise BuildDaemonError("Failed to echo OK")
 
                 # ask builder information
-                vers, arch, mechanisms = builder.slave.info()
+                builder_vers, builder_arch, mechanisms = slave.info()
 
                 # attempt to wrong builder version 
-                if vers != '1.0':
+                if builder_vers != '1.0':
                     raise ProtocolVersionMismatch("Protocol version mismatch")
 
                 # attempt to wrong builder architecture
-                if arch != archTag:
+                if builder_arch != arch.architecturetag:
                     raise BuildDaemonError(
-                        "Architecture tag mismatch: %s != %s" % (arch,
-                                                                 archTag))
+                        "Architecture tag mismatch: %s != %s"
+                        % (arch, arch.architecturetag))
             # catch only known exceptions 
             except (ValueError, TypeError, xmlrpclib.Fault,
                     socket.error, BuildDaemonError), reason:
-                builder.builderok = False
-                builder.failnotes = reason
-                self.logger.debug("Builder on %s marked as failed due to: %s",
+                # XXX cprov 20051026: repr() is required for socket.error
+                builder.failbuilder(repr(reason))
+                self.logger.debug("Builder on %s marked as failed due to: %r",
                                   builder.url, reason, exc_info=True)
-            # verify if the builder slave is working with sane information
-            self.rescueBuilderIfLost(builder)
-            
+            else:
+                # verify if the builder slave is working with sane information
+                self.rescueBuilderIfLost(builder)
+
+        self.commit()
         self.updateOkSlaves()
 
     def rescueBuilderIfLost(self, builder):
@@ -143,8 +137,11 @@ class BuilderGroup:
         If builder is BUILDING or WAITING an unknown job clean it.
         Assuming the XMLRPC is working properly at this point.
         """
+        # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
+        slave = removeSecurityProxy(builder.slave)
+
         # request slave status sentence 
-        sentence = builder.slave.status()
+        sentence = slave.status()
             
         # ident_position dict relates the position of the job identifier
         # token in the sentence received from status(), according the
@@ -168,14 +165,14 @@ class BuilderGroup:
 
         # check if build_id and queue_item_id exist
         try:
-            build = Build.get(int(build_id))
-            queue_item = BuildQueue.get(int(queue_item_id))
+            build = getUtility(IBuildSet).getByBuildID(int(build_id))
+            queue_item = getUtility(IBuildQueueSet).get(int(queue_item_id))
             # also check it build and buildqueue are properly related
             if queue_item.build.id != build.id:
-                raise ValueError('Job build entry mismatch')
+                raise BuildJobMismatch('Job build entry mismatch')
 
-        except (SQLObjectNotFound, ValueError), reason:
-            builder.slave.clean()
+        except (SQLObjectNotFound, BuildJobMismatch), reason:
+            slave.clean()
             self.logger.warn("Builder '%s' rescued from '%s-%s: %s'" % (
                 builder.name, build_id, queue_item_id, reason))
     
@@ -197,8 +194,7 @@ class BuilderGroup:
         Set builderok as False, store the reason in failnotes and update
         the list of working builders (self.okslaves).
         """
-        builder.builderok = False
-        builder.failnotes = reason
+        builder.failbuilder(reason)
         self.updateOkSlaves()
 
     def giveToBuilder(self, builder, libraryfilealias, librarian):
@@ -223,11 +219,14 @@ class BuilderGroup:
         self.logger.debug("Asking builder on %s to ensure it has file %s "
                           "(%s, %s)" % (builder.url, libraryfilealias.filename,
                                         url, libraryfilealias.content.sha1))
-        
-        if not builder.slave.ensurepresent(libraryfilealias.content.sha1, url):
-            raise BuildDaemonError("Build slave was unable to fetch from %s" %
-                                   url)
 
+        # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
+        slave = removeSecurityProxy(builder.slave)
+
+        if not slave.ensurepresent(libraryfilealias.content.sha1, url):
+            raise BuildDaemonError(
+                "Build slave was unable to fetch from %s" % url)
+        
     def findChrootFor(self, build_candidate, pocket):
         """Return the CHROOT librarian identifier for (buildCandidate, pocket).
         
@@ -249,8 +248,11 @@ class BuilderGroup:
         if not chroot:
             self.logger.critical("OOPS! Could not find CHROOT")
             return
-        
-        builder.slave.build(buildid, buildtype, chroot, filemap, args)
+
+        # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
+        slave = removeSecurityProxy(builder.slave)
+
+        slave.build(buildid, buildtype, chroot, filemap, args)
 
     def getLogFromSlave(self, slave, buildid, librarian):
         """Get last buildlog from slave.
@@ -324,62 +326,49 @@ class BuilderGroup:
         return aliasid
 
     def processBinaryPackage(self, build, aliasid, filename):
-        alias = LibraryFileAlias.get(aliasid)
+        """Process the binary package resulted of the a build process."""
+        # extract name and version from filename
         binname, version = extractNameAndVersion(filename)
 
-        archdep = not filename.endswith("all.deb")
-
-        binnameid = BinaryPackageName.ensure(binname)
-
-        # XXX cprov 20050628
-        # Try to use BinaryPackageSet utility for this job 
-        binpkgid = BinaryPackageRelease(
-            binarypackagename=binnameid,
-            version=version,
-            build=build,
-            binpackageformat=BinaryPackageFormat.DEB,
-            architecturespecific=archdep,
-            component=build.sourcepackagerelease.component,
-            section=build.sourcepackagerelease.section,
-            # XXX cprov 20050628
-            # Those fields should be extracted form the
-            # dsc file somehow, maybe apt_pkg ? 
-            summary="",
-            description="",
-            priority=PackagePublishingPriority.STANDARD,
-            shlibdeps=None,
-            depends=None,
-            recommends=None,
-            suggests=None,
-            conflicts=None,
-            replaces=None,
-            provides=None,
-            essential=False,
-            installedsize=None,
-            copyright=None,
-            licence=None
-            )
+        # XXX cprov 20051019
+        # * is this DEB dependent part mandatory
+        # * create a binarypackagerelease with default fields for a while
+        # Practically speaking, all the code below will be replaced by the
+        # uploader-integration branch, the binary is treated properly there,
+        # not here.
+        binname = getUtility(IBinaryPackageNameSet).ensure(name)
+        archspec = not filename.endswith("all.deb")
+        binpackageformat = dbschema.BinaryPackageFormat.DEB
+        component = build.sourcepackagerelease.component
+        section = build.sourcepackagerelease.section
+        priority = dbschema.PackagePublishingPriority.STANDARD
+        shllibdeps = None
+        depends = None
+        recomends = None
+        suggests = None
+        conflicts = None
+        replaces = None
+        provides = None
+        essential = False
+        installedsize = None
+        licence = None
         
-        binfile = BinaryPackageFile(
-            binarypackagerelease=binpkgid,
-            libraryfile=alias,
-            filetype=BinaryPackageFileType.DEB
-            )
+        build.createBinaryPackageRelease(
+            binname, version, summary, description, binpackageformat,
+            component, section, priority, shlibdeps, depends, recommends,
+            suggests, conflicts, replaces, provides, essential, installedsize,
+            copyright, licence, archespec)
         
-        # XXX cprov 20050926
-        # totaly bogus fields, ensure they work in review, since we can't
-        # test yet
-        pubhistory = SecureBinaryPackagePublishingHistory(
-            binarypackagerelease=binpkgid,
-            distroarchrelease=build.distroarchrelease.id,
-            component=build.sourcepackagerelease.component,
-            section=build.sourcepackagerelease.section,
-            priority=PackagePublishingPriority.STANDARD,
-            status=PackagePublishingStatus.PENDING,
-            pocket=PackagePublishingPocket.RELEASE,
-            embargo=False
-            )
+        # add the binary file
+        alias = getUtility(ILibraryFileAliasSet).get(aliasid)
+        binpkg.addFile(alias)
 
+        # publish file as PENDING in pocket RELEASE with no EMBARGO 
+        status=dbschema.PackagePublishingStatus.PENDING,
+        pocket=dbschema.PackagePublishingPocket.RELEASE,
+        embargo=False
+        binpkg.publish(priority, status, pocket, embargo)
+        
         self.logger.debug("Absorbed binary package %s" % filename)
         
     def updateBuild(self, queueItem, librarian):
@@ -389,8 +378,8 @@ class BuilderGroup:
         # build the slave build job id key
         buildid = "%s-%s" % (queueItem.build.id, queueItem.id)
 
-        # retrieve slave xmlrpc instance correspondent to this build
-        slave = queueItem.builder.slave
+        # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
+        slave = removeSecurityProxy(queueItem.builder.slave)
 
         try:
             res = slave.status()
@@ -609,8 +598,9 @@ class BuilderGroup:
                                       "MANUAL MODE." % builder.url)
                     continue
 
-                # ensure communication works
-                slave = builder.slave
+                # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
+                slave = removeSecurityProxy(builder.slave)
+
                 try:
                     slavestatus = slave.status()
                 except Exception, e:
@@ -633,7 +623,10 @@ class BuilderGroup:
             if builder.builderok:
                 if builder.manual:
                     continue
-                slave = builder.slave
+
+                # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
+                slave = removeSecurityProxy(builder.slave)
+
                 try:
                     slavestatus = slave.status()
                 except Exception, e:
@@ -661,14 +654,11 @@ class BuilddMaster:
     # associate the extended builderGroup reference to a given
     # DistroArchRelease
     self._archreleases[DAR]['builders'] = buildersByProcessor
-
-        
     """
-
     def __init__(self, logger, tm):
         self._logger = logger
         self._tm = tm
-        self.librarian = LibrarianClient()
+        self.librarian = getUtility(ILibrarianClient)
         self._archreleases = {}
         self._logger.info("Buildd Master has been initialised")
         
@@ -682,7 +672,7 @@ class BuilddMaster:
         """Setting up a workable DistroArchRelease for this session."""
         # ensure we have a pocket
         if not pocket:
-            pocket = PackagePublishingPocket.RELEASE
+            pocket = dbschema.PackagePublishingPocket.RELEASE
 
         self._logger.info("Adding DistroArchRelease %s/%s/%s/%s"
                           % (archrelease.distrorelease.distribution.name,
@@ -712,48 +702,42 @@ class BuilddMaster:
         builders = self._archreleases[archrelease].get("builders")
 
         # if annotation for builders was already done, return 
-        if builders is None:
+        if builders:
+            return
 
-            # query the global annotation registry and verify if
-            # we have already done the builder checks for the
-            # processor family in question. if it's already done
-            # simply refer to that information in the _archreleases
-            # attribute.
-            if 'builders' not in notes[archrelease.processorfamily]:
+        # query the global annotation registry and verify if
+        # we have already done the builder checks for the
+        # processor family in question. if it's already done
+        # simply refer to that information in the _archreleases
+        # attribute.
+        if 'builders' not in notes[archrelease.processorfamily]:
+            
+            # setup a BuilderGroup object
+            info = "builders.%s" % archrelease.processorfamily.name
+            builderGroup = BuilderGroup(self.getLogger(info), self._tm)
+            
+            # check the available slaves for this archrelease
+            builderGroup.checkAvailableSlaves(archrelease)
+            
+            # annotate the group of builders for the
+            # DistroArchRelease.processorfamily in question and the
+            # label 'builders'
+            notes[archrelease.processorfamily]["builders"] = builderGroup
+            
+        # consolidate the annotation for the architecture release
+        # in the private attribute _archreleases
+        builders = notes[archrelease.processorfamily]["builders"]
+        self._archreleases[archrelease]["builders"] = builders
 
-                # setup a BuilderGroup object
-                info = "builders.%s" % archrelease.processorfamily.name
-                builderGroup = BuilderGroup(self.getLogger(info), self._tm)
-
-                # check the available slaves for this archrelease
-                archFamilyId = archrelease.processorfamily.id
-                archTag = archrelease.architecturetag
-                builderGroup.checkAvailableSlaves(archFamilyId, archTag)
-                
-                # annotate the group of builders for the
-                # DistroArchRelease.processorfamily in question and the
-                # label 'builders'
-                notes[archrelease.processorfamily]["builders"] = builderGroup
-
-            # consolidate the annotation for the architecture release
-            # in the private attribute _archreleases
-            builders = notes[archrelease.processorfamily]["builders"]
-            self._archreleases[archrelease]["builders"] = builders
-
-                                                         
     def createMissingBuilds(self, distrorelease):
         """Iterate over published package and ensure we have a proper
         build entry for it.
         """
         # 1. get all sourcepackagereleases published or pending in this
-        # distrorelease
-        pending = PackagePublishingStatus.PENDING.value
-        published = PackagePublishingStatus.PUBLISHED.value
-        
-        spp = SourcePackagePublishing.select('distrorelease=%d AND '
-                                             '(status=%d OR status=%d)'
-                                             % (distrorelease.id,
-                                                pending, published))
+        # distrorelease        
+        spp = distrorelease.getAllReleasesByStatus(
+            dbschema.PackagePublishingStatus.PUBLISHED
+            )
         
         self._logger.info("Scanning publishing records for %s/%s...",
                           distrorelease.distribution.title,
@@ -804,7 +788,7 @@ class BuilddMaster:
             if release.architecturehintlist == "all":
 
                 # it's already there, skip to next package
-                if Build.selectBy(sourcepackagereleaseID=release.id).count():
+                if release.builds:
                     self._logger.debug(header + "SKIPPING ALL")
                     continue
                 
@@ -812,10 +796,10 @@ class BuilddMaster:
                 # architecture independent.  Therefore we only need
                 # to build on one architecture, the distrorelease.
                 # nominatedarchindep
-                Build(processor=1,
-                      distroarchreleaseID=distrorelease.nominatedarchindep.id,
-                      buildstate=dbschema.BuildStatus.NEEDSBUILD,
-                      sourcepackagerelease=release.id)
+                processor = distrorelease.nominatedarchindep.default_processor
+                release.createBuild(
+                    distroarchrelease=distrorelease.nominatedarchindep,
+                    processor=processor)
                 self._logger.debug(header + "CREATING ALL")
                 continue
 
@@ -824,7 +808,6 @@ class BuilddMaster:
             # it should be cross-combined with the current supported
             # architetures in this distrorelease.
             for arch in archs:
-
                 # if the sourcepackagerelease doesn't build in ANY
                 # architecture and the current architecture is not
                 # mentioned in the list, continues 
@@ -836,23 +819,15 @@ class BuilddMaster:
                     continue
                 
                 # verify is isn't already present for this distroarchrelease
-                if Build.selectBy(sourcepackagereleaseID=release.id,
-                                  distroarchreleaseID=arch.id).count() == 0:
+                if not release.getBuildByArch(arch):
                     # XXX cprov 20050831
                     # I could possibily be better designed, let's think about
                     # it in the future. Pick the first processor we found for
                     # this distroarchrelease.processorfamily. The data model
                     # should change to have a default processor for a
                     # processorfamily 
-                    processor = Processor.selectBy(
-                        familyID=arch.processorfamily.id,
-                        orderBy='id')[0]
-                    
-                    Build(processor=processor.id,
-                          distroarchreleaseID=arch.id,
-                          buildstate=dbschema.BuildStatus.NEEDSBUILD,
-                          sourcepackagereleaseID=release.id,
-                          )
+                    release.createBuild(distroarchrelease=arch,
+                                        processor=arch.default_processor)
 
                     self._logger.debug(header + "CREATING %s" %
                                        arch.architecturetag)
@@ -864,35 +839,30 @@ class BuilddMaster:
     def addMissingBuildQueueEntries(self):
         """Create missed Buiild Jobs. """
         self._logger.debug("Scanning for build queue entries that are missing")
-        # 1. Get all builds in NEEDSBUILD which are for a distroarchrelease
+        # Get all builds in NEEDSBUILD which are for a distroarchrelease
         # that we build...
-        # XXX cprov 20050629
-        # use sqlbuilder to improve the clarity of the query
-        # not reached at all.
-        archreleases = [d.id for d in self._archreleases]
-        if len(archreleases) == 0:
-            archreleases = [0]
-            
-        builds = Build.select(
-            AND(Build.q.buildstate==dbschema.BuildStatus.NEEDSBUILD,
-                IN(Build.q.distroarchreleaseID, archreleases))
-                )                                  
+        if not self._archreleases:
+            self._logger.debug("No DistroArchrelease Initialized")
+            return
         
+        buildset = getUtility(IBuildSet)
+        builds = buildset.getPendingBuildsForArchSet(self._archreleases)
+                
         for build in builds:
-            if BuildQueue.selectBy(buildID=build.id).count() == 0:
+            if not build.buildqueue_record:
                 name = build.sourcepackagerelease.name
                 version = build.sourcepackagerelease.version
                 tag = build.distroarchrelease.architecturetag
                 self._logger.debug("Creating buildqueue record for %s (%s) "
                                    " on %s" % (name, version, tag))
-                BuildQueue(build=build.id)
+                build.createBuildQueueEntry()
 
         self.commit()
 
     def scanActiveBuilders(self):
         """Collect informations/results of current build jobs."""
-        # Find a list of all BuildQueue items which indicate they're active
-        queueItems = BuildQueue.select("BuildQueue.Builder IS NOT NULL")
+
+        queueItems = getUtility(IBuildQueueSet).getActiveBuildJobs()
 
         self.getLogger().debug("scanActiveBuilders() found %d active "
                                "build(s) to check" % queueItems.count())
@@ -905,39 +875,12 @@ class BuilddMaster:
                 continue
             builders.updateBuild(job, self.librarian)
 
-        self.commit()
-
     def getLogger(self, subname=None):
         """Return the logger instance with specific prefix"""
         if subname is None:
             return self._logger
         
         return logging.getLogger("%s.%s" % (self._logger.name, subname))
-
-    def calculateCandidates(self):
-        """Return the candidates for building
-        
-        The result is a unsorted list of buildqueue items.
-        """
-        # 1. determine all buildqueue items which needsbuild
-        tries = ["build.distroarchrelease=%d" % d.id for d in
-                 self._archreleases]
-
-        clause = " OR ".join(tries)
-
-        if clause == '':
-            clause = "false";
-
-        state = dbschema.BuildStatus.NEEDSBUILD.value
-        candidates = BuildQueue.select("buildqueue.build = build.id AND "
-                                       "build.buildstate = %d AND "
-                                       "buildqueue.builder IS NULL AND (%s)"
-                                       % (state, clause),
-                                       clauseTables=['Build'])
-        
-        self._logger.debug("Found %d NEEDSBUILD" % candidates.count())
-
-        return candidates
 
     def scoreBuildQueueEntry(self, job):
         """Score Build Job according several fields
@@ -946,6 +889,7 @@ class BuilddMaster:
         * distribution release component
         * sourcepackagerelease urgency
         """        
+        score = 0
         score_componentname = {
             'multiverse': 0,
             'universe': 250,
@@ -994,10 +938,6 @@ class BuilddMaster:
         # parse package builde dependencies using apt_pkg
         parsed_deps = apt_pkg.ParseDepends(job.builddependsindep)
 
-        # XXX cprov 20051017
-        # use getUtility() but depends of loding ZCML info
-        published_set = PublishedPackageSet()
-
         # apt_pkg requires InitSystem to get VersionCompare working properly
         apt_pkg.InitSystem()
 
@@ -1027,14 +967,13 @@ class BuilddMaster:
             except ValueError:
                 # XXX cprov 20051018:
                 # We should remove the job if we could not parse it's
-                # dependency, but AFAICS, the integrity chacks in uploader
+                # dependency, but AFAICS, the integrity checks in uploader
                 # component will be in charge of this. In few words i'm
                 # confident this piece of code are never going to be executed
                 self._logger.critical("DEP FORMAT ERROR: '%s'" % token[0])
                 continue
             
-            dep_candidate = published_set.findDepCandidate(
-                name=name, distroarchrelease=job.archrelease)
+            dep_candidate = job.archrelease.findDepCandidateByName(name)
             
             if dep_candidate:
                 # use apt_pkg function to compare versions
@@ -1060,19 +999,21 @@ class BuilddMaster:
             
         # store current score value
         job.lastscore = score
-
         self._logger.debug(msg + " = %d" % job.lastscore)
 
     def sanitiseAndScoreCandidates(self):
         """Iter over the buildqueue entries sanitising it."""
         # Get the current build job candidates
-        candidates = self.calculateCandidates()
+        state = dbschema.BuildStatus.NEEDSBUILD
+        bqset = getUtility(IBuildQueueSet)
+        candidates = bqset.calculateCandidates(self._archreleases, state)
+        self._logger.debug("Found %d NEEDSBUILD" % candidates.count())
 
         # 1. Remove any for which there are no files (shouldn't happen but
         # worth checking for)
         jobs = []
         for job in candidates:
-            if len(job.files) > 0:
+            if job.files:
                 jobs.append(job)
                 self.scoreBuildQueueEntry(job)
             else:
@@ -1101,7 +1042,11 @@ class BuilddMaster:
         """Split out each build by the processor it is to be built for then
         order each sublist by its score. Get the current build job candidates
         """
-        candidates = self.calculateCandidates()
+        state = dbschema.BuildStatus.NEEDSBUILD
+        bqset = getUtility(IBuildQueueSet)
+        candidates = bqset.calculateCandidates(self._archreleases, state)
+        self._logger.debug("Found %d NEEDSBUILD" % candidates.count())
+
 
         result = {}
 
@@ -1118,7 +1063,7 @@ class BuilddMaster:
         """Dispach Jobs according specific procesor and pocket """
         # ensure we have a pocket
         if not pocket:
-            pocket = PackagePublishingPocket.RELEASE
+            pocket = dbschema.PackagePublishingPocket.RELEASE
         
         self.getLogger().debug("dispatchByProcessor(%s, %d queueItem(s), %s)"
                                % (proc.name, len(queueItems), pocket.title))
@@ -1148,7 +1093,7 @@ class BuilddMaster:
         except Exception, e:
             self._logger.warn("Disabling builder: %s" % builder.url,
                               exc_info=1)
-            builders.failBuilder(builder, ("Exception %s passing a chroot"
+            builders.failBuilder(builder, ("Exception %s passing a chroot "
                                            "to the builder" % e))
         else:
             filemap = {}

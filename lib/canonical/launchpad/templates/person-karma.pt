@@ -27,7 +27,7 @@
         <li>
           <span tal:replace="actionCategory/title" />
 
-          <table class="listing data">
+          <table class="listing">
             <thead>
               <tr>
                 <th>Action</th>

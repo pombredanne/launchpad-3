@@ -5,7 +5,9 @@
 
   <body>
 
-    <!-- This page uses the launchpad-addform.pt METAL -->
+  <tal:comment condition="nothing">
+    This page uses the launchpad-addform.pt METAL.
+  </tal:comment>
 
     <div metal:fill-slot="main">
 

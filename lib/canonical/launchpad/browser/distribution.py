@@ -7,13 +7,10 @@ __all__ = [
     'DistributionSetNavigation',
     'DistributionFacets',
     'DistributionView',
-    'DistributionBugsView',
-    'DistributionFileBugView',
     'DistributionSetView',
     'DistributionSetAddView',
     ]
 
-from zope.interface import implements
 from zope.component import getUtility
 from zope.app.form.browser.add import AddView
 from zope.event import notify
@@ -21,16 +18,13 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSet, IPerson, IBugTaskSearchListingView,
-    IBugSet, IPublishedPackageSet, ISourcePackageNameSet, NotFoundError)
-from canonical.launchpad.browser.addview import SQLObjectAddView
-from canonical.launchpad.browser import BugTaskSearchListingView
+    IDistribution, IDistributionSet, IPerson, IPublishedPackageSet,
+    NotFoundError)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
-from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
-    enabled_with_permission, GetitemNavigation, stepthrough, stepto)
+    StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
+    GetitemNavigation, stepthrough, stepto)
 
 
 class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -167,14 +161,18 @@ class DistributionSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'specifications'
-    links = ['roadmap', 'new']
+    links = ['roadmap', 'table', 'new']
 
     def roadmap(self):
         text = 'Roadmap'
         return Link('+specplan', text, icon='info')
 
+    def table(self):
+        text = 'Assignments Table'
+        return Link('+specstable', text, icon='info')
+
     def new(self):
-        text = 'Register New Specification'
+        text = 'New Specification'
         return Link('+addspec', text, icon='add')
 
 
@@ -208,7 +206,7 @@ class DistributionTranslationsMenu(ApplicationMenu):
 
 class DistributionView(BuildRecordsView):
     """Default Distribution view class."""
-    
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -219,7 +217,7 @@ class DistributionView(BuildRecordsView):
         self._results = None
 
         self.searchrequested = False
-        if self.text is not None and self.text <> '':
+        if self.text is not None and self.text != '':
             self.searchrequested = True
 
     def searchresults(self):
@@ -233,53 +231,6 @@ class DistributionView(BuildRecordsView):
         if self.matches > 5:
             self.detailed = False
         return self._results
-
-
-class DistributionBugsView(BugTaskSearchListingView):
-
-    implements(IBugTaskSearchListingView)
-
-    def __init__(self, context, request):
-        BugTaskSearchListingView.__init__(self, context, request)
-        self.milestone_widget = None
-
-    def task_columns(self):
-        """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
-        return [
-            "select", "id", "title", "package", "status", "submittedby",
-            "assignedto"]
-
-
-class DistributionFileBugView(SQLObjectAddView):
-
-    __used_for__ = IDistribution
-
-    def __init__(self, context, request):
-        self.request = request
-        self.context = context
-        AddView.__init__(self, context, request)
-
-    def createAndAdd(self, data):
-        # add the owner information for the bug
-        owner = IPerson(self.request.principal, None)
-        if not owner:
-            raise Unauthorized(
-                "Need an authenticated user in order to file a"
-                " bug on a distribution.")
-        bug = getUtility(IBugSet).createBug(
-            distribution=self.context,
-            sourcepackagename=data['sourcepackagename'],
-            title=data['title'],
-            comment=data['comment'],
-            private=data['private'],
-            owner=data['owner'])
-        notify(SQLObjectCreatedEvent(bug))
-        self.addedBug = bug
-        return bug
-
-    def nextURL(self):
-        task = self.addedBug.bugtasks[0]
-        return canonical_url(task)
 
 
 class DistributionSetView:
