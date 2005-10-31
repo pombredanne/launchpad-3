@@ -53,7 +53,7 @@ class ISpecification(IHasOwner):
         default=SpecificationStatus.BRAINDUMP)
     priority = Choice(
         title=_('Priority'), vocabulary='SpecificationPriority',
-        default=None, required=False)
+        default=SpecificationPriority.PROPOSED, required=True)
     assignee = Choice(title=_('Assignee'), required=False,
         description=_("The person responsible for implementing the feature."),
         vocabulary='ValidPersonOrTeam')

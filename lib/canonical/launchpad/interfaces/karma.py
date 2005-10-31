@@ -74,9 +74,9 @@ class IKarmaSet(Interface):
 class IKarmaAction(Interface):
     """The Action that gives karma to a Person."""
 
-    #id = Int(title=_("Database ID"), required=True, readonly=True)
+    id = Int(title=_("Database ID"), required=True, readonly=True)
     name = TextLine(
-        title=_("Name"), required=True, readonly=True)
+        title=_("Name"), required=True, readonly=False)
     category = Choice(
         title=_("Category"), required=True, readonly=False,
         vocabulary='KarmaCategory')
@@ -92,6 +92,9 @@ class IKarmaActionSet(IAddFormCustomization):
     """The set of actions that gives karma to a Person."""
 
     title = Attribute('Title')
+
+    def __iter__():
+        """Iterate over all Karma Actions."""
 
     def getByName(name, default=None):
         """Return the KarmaAction with the given name.
@@ -161,4 +164,5 @@ class IKarmaCategory(Interface):
     title = Attribute("The title of the karma category.")
     summary = Attribute("A brief summary of this karma category.")
 
+    karmaactions = Attribute("All the karma actions in this category.")
 

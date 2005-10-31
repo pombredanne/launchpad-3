@@ -73,6 +73,7 @@ __all__ = (
 'SourcePackageRelationships',
 'SourcePackageUrgency',
 'SpecificationPriority',
+'SpecificationSort',
 'SpecificationStatus',
 'SprintSpecificationStatus',
 'SSHKeyType',
@@ -1170,6 +1171,29 @@ class SpecificationPriority(DBSchema):
         The specification is essential for the next release, and should be
         the focus of current development. Use this state only for the most
         important of all features.
+        """)
+
+
+class SpecificationSort(DBSchema):
+    """A preferred sorting scheme for the results of a query about
+    specifications.
+
+    This is usually used in interfaces which ask for a filtered list of
+    specifications, so that you can tell which specifications you would
+    expect to see first.
+    """
+    DATE = Item(10, """
+        Date
+
+        This indicates a preferred sort order of date of creation, newest
+        first.
+        """)
+
+    PRIORITY = Item(20, """
+        Priority
+
+        This indicates a preferred sort order of priority (highest first)
+        followed by status.
         """)
 
 

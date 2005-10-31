@@ -17,8 +17,11 @@ from sqlobject import (
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+
 from canonical.lp.dbschema import (
-    EnumCol, TranslationPermission, BugTaskSeverity, BugTaskStatus)
+    EnumCol, TranslationPermission, BugTaskSeverity, BugTaskStatus,
+    SpecificationSort)
+
 from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productbounty import ProductBounty
@@ -80,9 +83,6 @@ class Product(SQLBase):
 
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
-
-    specifications = MultipleJoin('Specification', joinColumn='product',
-        orderBy=['-priority', '-datecreated', 'id'])
 
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
@@ -251,8 +251,17 @@ class Product(SQLBase):
         # a better way.
         return max(perms)
 
+    def specifications(self, sort=None, quantity=None):
+        """See IHasSpecifications."""
+        if sort is None or sort == SpecificationSort.DATE:
+            order = ['-datecreated', 'id']
+        elif sort == SpecificationSort.PRIORITY:
+            order = ['-priority', 'status', 'name']
+        return Specification.selectBy(productID=self.id,
+            orderBy=order)[:quantity]
+
     def getSpecification(self, name):
-        """See IProduct."""
+        """See ISpecificationTarget."""
         return Specification.selectOneBy(productID=self.id, name=name)
 
     def getSeries(self, name):

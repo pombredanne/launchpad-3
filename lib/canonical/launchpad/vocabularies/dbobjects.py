@@ -757,7 +757,7 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
             target = distribution
 
         if target is not None:
-            for spec in target.specifications:
+            for spec in target.specifications():
                 # we will not show the current specification in the
                 # launchbag
                 if spec == launchbag.specification:

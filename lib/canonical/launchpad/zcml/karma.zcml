@@ -23,11 +23,17 @@
         <allow interface="canonical.launchpad.interfaces.IKarmaSet" />
     </securedutility>
 
+    <browser:url
+        for="canonical.launchpad.interfaces.IKarmaActionSet"
+        path_expression="string:karmaaction"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        />
+
     <!-- KarmaCache -->
     <content class="canonical.launchpad.database.KarmaCache">
         <allow interface="canonical.launchpad.interfaces.IKarmaCache" />
         <require 
-            permission="launchpad.AnyPerson"
+            permission="zope.Public"
             set_schema="canonical.launchpad.interfaces.IKarmaCache" />
     </content>
 
@@ -54,6 +60,12 @@
             set_schema="canonical.launchpad.interfaces.IKarmaAction" />
     </content>
 
+    <browser:url
+        for="canonical.launchpad.interfaces.IKarmaAction"
+        path_expression="name"
+        parent_utility="canonical.launchpad.interfaces.IKarmaActionSet"
+        />
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IKarmaAction"
         name="+index" />
@@ -63,7 +75,7 @@
         for="canonical.launchpad.interfaces.IKarmaAction"
         class="canonical.launchpad.browser.editview.SQLObjectEditView"
         schema="canonical.launchpad.interfaces.IKarmaAction"
-        fields="category points"
+        fields="name category points title summary"
         label="Edit KarmaAction Information"
         permission="launchpad.Admin"
         template="../templates/karmaaction-edit.pt"
@@ -96,5 +108,6 @@
         permission="launchpad.Admin" 
         template="../templates/karmaaction-index.pt"
         lp:url="karmaaction/$action/+index" />
+
 </facet>
 </configure>

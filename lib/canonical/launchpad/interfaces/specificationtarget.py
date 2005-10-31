@@ -17,12 +17,13 @@ _ = MessageIDFactory('launchpad')
 class IHasSpecifications(Interface):
     """An object that has specifications attached to it.
     
-    For example, people, products and distributions have specificaitons
+    For example, people, products and distributions have specifications
     associated with them, and you can use this interface to query those.
     """
 
-    def specifications(quantity=None):
-        """All the specifications for this target, sorted newest first.
+    def specifications(quantity=None, sort=None):
+        """Specifications for this target, sorting based on the given
+        indicator (a dbschema).
 
         If there is a quantity, then limit it to that number.
         """

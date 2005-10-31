@@ -23,26 +23,34 @@
   <table class="listing sortable" tal:condition="view/specs" id="work">
     <thead>
       <tr>
+        <th>Prio.</th>
+        <th>Stat.</th>
         <th>Name</th>
-        <th>Assignee</th>
-        <th>Drafter</th>
-        <th>Approver</th>
+        <th>Assign</th>
+        <th>Draft</th>
+        <th>Approve</th>
       </tr>
     </thead>
     <tbody>
       <tr tal:repeat="spec view/specs" class="lesser">
-        <td><a tal:content="spec/name/fmt:shorten/25"
+        <td tal:content="spec/priority/title"
+            tal:attributes="
+                class string:specpriority${spec/priority/name}">High</td>
+        <td tal:content="spec/priority/title"
+            tal:attributes="
+                class string:specstatus${spec/status/name}">Approved</td>
+        <td><a tal:content="spec/name/fmt:shorten/35"
                tal:attributes="
                  href spec/fmt:url;
                  title spec/title">foo-bar-baz</a></td>
         <td><a tal:condition="spec/assignee"
-               tal:content="spec/assignee/browsername"
+               tal:content="spec/assignee/name"
                tal:attributes="href spec/assignee/fmt:url">Assignee Bar</a></td>
         <td><a tal:condition="spec/drafter"
-               tal:content="spec/drafter/browsername"
+               tal:content="spec/drafter/name"
                tal:attributes="href spec/drafter/fmt:url">Drafter Baz</a></td>
         <td><a tal:condition="spec/approver"
-               tal:content="spec/approver/browsername"
+               tal:content="spec/approver/name"
                tal:attributes="href spec/approver/fmt:url">Approver Foo</a></td>
       </tr>
     </tbody>

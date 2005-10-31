@@ -8,7 +8,9 @@ __all__ = [
     'SpecificationTargetView',
     ]
 
-from canonical.lp.dbschema import SpecificationStatus, SpecificationPriority
+from canonical.lp.dbschema import (
+    SpecificationStatus, SpecificationPriority, SpecificationSort)
+
 from canonical.launchpad.interfaces import ISpecificationTarget, IPerson
 
 class SpecificationTargetView:
@@ -18,6 +20,7 @@ class SpecificationTargetView:
         self.request = request
         self._plan = None
         self._dangling = None
+        self._workload = None
         self._categories = None
         self._count = None
         self._specs = None
@@ -44,7 +47,7 @@ class SpecificationTargetView:
         if self._specs is not None:
             return self._specs
         if not IPerson.providedBy(self.context):
-            specs = self.context.specifications
+            specs = self.context.specifications()
         else:
             # for a person, we need to figure out which set of specs to be
             # showing.
@@ -64,7 +67,7 @@ class SpecificationTargetView:
             elif '+subscribedspecs' in url:
                 specs = self.context.subscribed_specs
             else:
-                specs = self.context.specifications
+                specs = self.context.specifications()
         self._specs = specs
         # update listing style
         self._count = len(specs)
@@ -85,7 +88,7 @@ class SpecificationTargetView:
         which does have a IPerson.specifications. In this case, it will also
         detect which set of specifications you want to see. The options are:
 
-         - all specs (self.context.specifications)
+         - all specs (self.context.specifications())
          - created by this person (self.context.created_specs)
          - assigned to this person (self.context.assigned_specs)
          - for review by this person (self.context.review_specs)
@@ -123,7 +126,8 @@ class SpecificationTargetView:
         """Return <quantity> latest specs created for this target. This
         is used by the +portlet-latestspecs view.
         """
-        return self.context.specifications[:quantity]
+        return self.context.specifications(sort=SpecificationSort.DATE,
+            quantity=quantity)
 
     def specPlan(self):
         """Return the current sequence of recommended spec implementations,
@@ -150,7 +154,7 @@ class SpecificationTargetView:
         self._plan, and put any dangling specs in self._dangling.
         """
         plan = []
-        specs = set(self.context.specifications)
+        specs = set(self.context.specifications())
         # filter out the ones that are already complete
         specs = [spec for spec in specs if not spec.is_complete]
         # sort the specs first by priority (most important first) then by
@@ -183,5 +187,81 @@ class SpecificationTargetView:
                 dangling.append(spec)
         self._plan = plan
         self._dangling = dangling
+
+    def workload(self):
+        """This code is copied in large part from browser/sprint.py. It may
+        be worthwhile refactoring this to use a common code base.
+        
+        Return a structure that lists people, and for each person, the
+        specs at on this target that for which they are the approver, the
+        assignee or the drafter."""
+
+        if self._workload is not None:
+            return self._workload
+
+        class MySpec:
+            def __init__(self, spec, user):
+                self.spec = spec
+                self.assignee = False
+                self.drafter = False
+                self.approver = False
+                if spec.assignee == user:
+                    self.assignee = True
+                if spec.drafter == user:
+                    self.drafter = True
+                if spec.approver == user:
+                    self.approver = True
+
+        class Group:
+            def __init__(self, person):
+                self.person = person
+                self.specs = set()
+
+            def by_priority(self):
+                return sorted(self.specs, key=lambda a: a.spec.priority,
+                    reverse=True)
+
+            def add_spec(self, spec):
+                for curr_spec in self.specs:
+                    if curr_spec.spec == spec:
+                        return
+                self.specs.add(MySpec(spec, self.person))
+
+        class Report:
+            def __init__(self):
+                self.contents = {}
+
+            def _getGroup(self, person):
+                group = self.contents.get(person.browsername, None)
+                if group is not None:
+                    return group
+                group = Group(person)
+                self.contents[person.browsername] = group
+                return group
+
+            def process(self, spec):
+                """Make sure that this Report.contents has a Group for each
+                person related to the spec, and that Group has the spec in
+                the relevant list.
+                """
+                if spec.assignee is not None:
+                    group = self._getGroup(spec.assignee)
+                    group.add_spec(spec)
+                if spec.drafter is not None:
+                    self._getGroup(spec.drafter).add_spec(spec)
+                if spec.approver is not None:
+                    self._getGroup(spec.approver).add_spec(spec)
+
+            def results(self):
+                return [self.contents[key]
+                    for key in sorted(self.contents.keys())]
+
+        report = Report()
+        for spec in self.specs:
+            report.process(spec)
+
+        self._workload = report.results()
+        return self._workload
+
 
 

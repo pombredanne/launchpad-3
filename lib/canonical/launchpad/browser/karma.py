@@ -2,12 +2,16 @@
 
 __metaclass__ = type
 
-__all__ = ['KarmaActionSetNavigation']
+__all__ = [
+    'KarmaActionEditView',
+    'KarmaActionSetNavigation',
+    ]
 
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import IKarmaActionSet
-from canonical.launchpad.webapp import Navigation
+from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.webapp import Navigation, canonical_url
 
 
 class KarmaActionSetNavigation(Navigation):
@@ -16,4 +20,11 @@ class KarmaActionSetNavigation(Navigation):
 
     def traverse(self, name):
         return self.context.getByName(name)
+
+
+class KarmaActionEditView(SQLObjectEditView):
+
+    def changed(self):
+        self.request.response.redirect(canonical_url(self.context))
+
 

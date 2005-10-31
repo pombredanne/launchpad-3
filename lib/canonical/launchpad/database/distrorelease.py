@@ -18,9 +18,10 @@ from sqlobject import (
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
+
 from canonical.lp.dbschema import (
     PackagePublishingStatus, BugTaskStatus, EnumCol, DistributionReleaseStatus,
-    DistroReleaseQueueStatus, PackagePublishingPocket)
+    DistroReleaseQueueStatus, PackagePublishingPocket, SpecificationSort)
 
 from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
@@ -54,6 +55,7 @@ from canonical.launchpad.database.component import Component
 from canonical.launchpad.database.section import Section
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
+from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.queue import DistroReleaseQueue
 from canonical.launchpad.helpers import shortlist
 
@@ -98,8 +100,6 @@ class DistroRelease(SQLBase):
     architectures = MultipleJoin(
         'DistroArchRelease', joinColumn='distrorelease',
         orderBy='architecturetag')
-    specifications = MultipleJoin('Specification',
-        joinColumn='distrorelease', orderBy='-datecreated')
     binary_package_caches = MultipleJoin('DistroReleasePackageCache',
         joinColumn='distrorelease', orderBy='name')
 
@@ -236,6 +236,15 @@ class DistroRelease(SQLBase):
         """See canonical.launchpad.interfaces.IBugTarget."""
         search_params.setDistributionRelease(self)
         return BugTaskSet().search(search_params)
+
+    def specifications(self, sort=None, quantity=None):
+        """See IHasSpecifications."""
+        if sort is None or sort == SpecificationSort.DATE:
+            order = ['-datecreated', 'id']
+        elif sort == SpecificationSort.PRIORITY:
+            order = ['-priority', 'status', 'name']
+        return Specification.selectBy(distroreleaseID=self.id,
+            orderBy=order)[:quantity]
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""

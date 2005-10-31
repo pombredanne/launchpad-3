@@ -52,7 +52,7 @@ Create a bug:
     ...     distribution=getUtility(IDistributionSet).getByName('debian'),
     ...     comment=u"Give me some karma!", title=u"New Bug", owner=foo_bar)
     >>> bug_added = SQLObjectCreatedEvent(bug)
-    >>> make_sure_karma_is_added('BUGCREATED', bug_added, 10)
+    >>> make_sure_karma_is_added('bugcreated', bug_added, 10)
     True
 
 Change the title of a bug:
@@ -62,7 +62,7 @@ Change the title of a bug:
     >>> old_bug = Snapshot(bug, providing=IBug)
     >>> bug.title = "Better Title"
     >>> event = SQLObjectModifiedEvent(bug, old_bug, ['title'])
-    >>> make_sure_karma_is_added('BUGTITLECHANGED', event, 1)
+    >>> make_sure_karma_is_added('bugtitlechanged', event, 1)
     True
 
 Change the summary of a bug:
@@ -70,7 +70,7 @@ Change the summary of a bug:
     >>> old_bug = Snapshot(bug, providing=IBug)
     >>> bug.summary = "Summary of bug"
     >>> event = SQLObjectModifiedEvent(bug, old_bug, ['summary'])
-    >>> make_sure_karma_is_added('BUGSUMMARYCHANGED', event, 2)
+    >>> make_sure_karma_is_added('bugsummarychanged', event, 2)
     True
 
 Change the description of a bug:
@@ -78,7 +78,7 @@ Change the description of a bug:
     >>> old_bug = Snapshot(bug, providing=IBug)
     >>> bug.description = "Description of bug"
     >>> event = SQLObjectModifiedEvent(bug, old_bug, ['description'])
-    >>> make_sure_karma_is_added('BUGDESCRIPTIONCHANGED', event, 3)
+    >>> make_sure_karma_is_added('bugdescriptionchanged', event, 3)
     True
 
 Add a web link to a bug:
@@ -87,7 +87,7 @@ Add a web link to a bug:
     >>> link = getUtility(IBugExternalRefSet).createBugExternalRef(
     ...     bug, "http://www.com/", "Some link", foo_bar)
     >>> event = SQLObjectCreatedEvent(link)
-    >>> make_sure_karma_is_added('BUGEXTREFADDED', event, 10)
+    >>> make_sure_karma_is_added('bugextrefadded', event, 10)
     True
 
 Add a CVE reference to a bug:
@@ -99,7 +99,7 @@ Add a CVE reference to a bug:
     ...     status=CveStatus.CANDIDATE)
     >>> bugcve = BugCve(cve=cve, bug=bug)
     >>> event = SQLObjectCreatedEvent(bugcve)
-    >>> make_sure_karma_is_added('BUGCVEREFADDED', event, 15)
+    >>> make_sure_karma_is_added('bugcverefadded', event, 15)
     True
 
 Add watch for external bug to the bug:
@@ -110,7 +110,7 @@ Add watch for external bug to the bug:
     >>> bugwatch = BugWatch(
     ...     bug=bug,bugtracker=debbugs, remotebug=42, owner=foo_bar)
     >>> event = SQLObjectCreatedEvent(bugwatch)
-    >>> make_sure_karma_is_added('BUGWATCHADDED', event, 10)
+    >>> make_sure_karma_is_added('bugwatchadded', event, 10)
     True
 
 Mark a bug task as fixed:
@@ -121,7 +121,7 @@ Mark a bug task as fixed:
     >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
     >>> bugtask.status = BugTaskStatus.FIXED
     >>> event = SQLObjectModifiedEvent(bugtask, old_bugtask, ['status'])
-    >>> make_sure_karma_is_added('BUGFIXED', event, 10)
+    >>> make_sure_karma_is_added('bugfixed', event, 10)
     True
 
 Reject a bug task:
@@ -129,7 +129,7 @@ Reject a bug task:
     >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
     >>> bugtask.status = BugTaskStatus.REJECTED
     >>> event = SQLObjectModifiedEvent(bugtask, old_bugtask, ['status'])
-    >>> make_sure_karma_is_added('BUGREJECTED', event, 3)
+    >>> make_sure_karma_is_added('bugrejected', event, 3)
     True
 
 Accept a bug task:
@@ -137,7 +137,7 @@ Accept a bug task:
     >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
     >>> bugtask.status = BugTaskStatus.ACCEPTED
     >>> event = SQLObjectModifiedEvent(bugtask, old_bugtask, ['status'])
-    >>> make_sure_karma_is_added('BUGACCEPTED', event, 5)
+    >>> make_sure_karma_is_added('bugaccepted', event, 5)
     True
 
 Change a bug task's severity:
@@ -148,7 +148,7 @@ Change a bug task's severity:
     ...     bugtask.severity = severity
     ...     event = SQLObjectModifiedEvent(bugtask, old_bugtask, ['severity'])
     ...     print severity.name, make_sure_karma_is_added(
-    ...         'BUGTASKSEVERITYCHANGED', event, 1)
+    ...         'bugtaskseveritychanged', event, 1)
     WISHLIST True
     MINOR True
     NORMAL True
@@ -163,7 +163,7 @@ Change a bug task's priority:
     ...     bugtask.priority = priority
     ...     event = SQLObjectModifiedEvent(bugtask, old_bugtask, ['priority'])
     ...     print priority.name, make_sure_karma_is_added(
-    ...         'BUGTASKPRIORITYCHANGED', event, 1)
+    ...         'bugtaskprioritychanged', event, 1)
     WONTFIX True
     LOW True
     MEDIUM True
@@ -176,7 +176,7 @@ Create a new bug task:
     >>> evolution_task = getUtility(IBugTaskSet).createTask(
     ...     bug, product=evolution, owner=foo_bar)
     >>> event = SQLObjectCreatedEvent(evolution_task)
-    >>> make_sure_karma_is_added('BUGTASKCREATED', event, 10)
+    >>> make_sure_karma_is_added('bugtaskcreated', event, 10)
     True
 
 Mark a bug as a duplicate:
@@ -185,7 +185,7 @@ Mark a bug as a duplicate:
     >>> old_bug = Snapshot(bug, providing=IBug)
     >>> bug.duplicateof = bug_one
     >>> event = SQLObjectModifiedEvent(bug, old_bug, ['duplicateof'])
-    >>> make_sure_karma_is_added('BUGMARKEDASDUPLICATE', event, 5)
+    >>> make_sure_karma_is_added('bugmarkedasduplicate', event, 5)
     True
 
 Adding a comment generates a karma event, bug gives no points:
@@ -194,14 +194,14 @@ Adding a comment generates a karma event, bug gives no points:
     >>> comment = getUtility(IBugMessageSet).createMessage(
     ...     subject="foo", bug=bug, owner=foo_bar, content="bar")
     >>> event = SQLObjectCreatedEvent(comment)
-    >>> make_sure_karma_is_added('BUGCOMMENTADDED', event, 0)
+    >>> make_sure_karma_is_added('bugcommentadded', event, 0)
     True
 
 Now, let's ensure that we've covered every of Malone's karma actions:
 
-    >>> from canonical.lp.dbschema import KarmaActionCategory
-    >>> bugs_karma_actions = getUtility(IKarmaActionSet).selectByCategory(
-    ...     KarmaActionCategory.BUGS)
+    >>> from canonical.launchpad.database import KarmaCategory
+    >>> bugs_category = KarmaCategory.byName('bugs')
+    >>> bugs_karma_actions = bugs_category.karmaactions
     >>> added_karma_actions == set(bugs_karma_actions)
     True
 

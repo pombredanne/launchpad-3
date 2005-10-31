@@ -20,7 +20,8 @@ from zope.interface import implements
 
 # SQLObject imports
 from sqlobject import (
-    DateTimeCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound)
+    DateTimeCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound,
+    MultipleJoin)
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -67,7 +68,8 @@ class KarmaSet:
         now = datetime.now(pytz.timezone('UTC'))
         catfilter = ''
         if category is not None:
-            catfilter = ' AND KarmaAction.category = %s' % sqlvalues(category)
+            catfilter = ' AND KarmaAction.category = %s' % sqlvalues(
+                category.id)
 
         begin = now - timedelta(30)
         q = ('Karma.action = KarmaAction.id AND Karma.person = %s '
@@ -123,6 +125,9 @@ class KarmaActionSet:
     """See IKarmaActionSet."""
     implements(IKarmaActionSet)
 
+    def __iter__(self):
+        return iter(KarmaAction.select())
+
     def getByName(self, name, default=None):
         """See IKarmaActionSet."""
         try:
@@ -132,7 +137,7 @@ class KarmaActionSet:
 
     def selectByCategory(self, category):
         """See IKarmaActionSet."""
-        return KarmaAction.selectBy(category=category)
+        return KarmaAction.selectBy(categoryID=category.id)
 
     def selectByCategoryAndPerson(self, category, person, orderBy=None):
         """See IKarmaActionSet."""
@@ -140,7 +145,7 @@ class KarmaActionSet:
             orderBy = KarmaAction.sortingColumns
         query = ('KarmaAction.category = %s '
                  'AND Karma.action = KarmaAction.id '
-                 'AND Karma.person = %s' % sqlvalues(category, person.id))
+                 'AND Karma.person = %s' % sqlvalues(category.id, person.id))
         return KarmaAction.select(
                 query, clauseTables=['Karma'], distinct=True, orderBy=orderBy)
 
@@ -164,11 +169,13 @@ class KarmaCacheSet:
     def new(self, person, category, karmavalue):
         """See IKarmaCacheSet."""
         return KarmaCache(
-                personID=person.id, category=category, karmavalue=karmavalue)
+                personID=person.id, categoryID=category.id,
+                karmavalue=karmavalue)
 
     def getByPersonAndCategory(self, person, category, default=None):
         """See IKarmaCacheSet."""
-        cache = KarmaCache.selectOneBy(personID=person.id, category=category)
+        cache = KarmaCache.selectOneBy(
+            personID=person.id, categoryID=category.id)
         if cache is None:
             cache = default
         return cache
@@ -181,4 +188,7 @@ class KarmaCategory(SQLBase):
     name = StringCol(notNull=True, alternateID=True)
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
+
+    karmaactions = MultipleJoin('KarmaAction', joinColumn='category',
+        orderBy='name')
 

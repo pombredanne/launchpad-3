@@ -39,7 +39,7 @@ class Specification(SQLBase):
 
     implements(ISpecification)
 
-    _defaultOrder = ['status', '-priority']
+    _defaultOrder = ['-priority', 'status', 'name', 'id']
 
     # db field names
     name = StringCol(unique=True, notNull=True)
@@ -47,8 +47,8 @@ class Specification(SQLBase):
     summary = StringCol(notNull=True)
     status = EnumCol(schema=SpecificationStatus, notNull=True,
         default=SpecificationStatus.BRAINDUMP)
-    priority = EnumCol(schema=SpecificationPriority, notNull=False,
-        default=None)
+    priority = EnumCol(schema=SpecificationPriority, notNull=True,
+        default=SpecificationPriority.PROPOSED)
     assignee = ForeignKey(dbName='assignee', notNull=False,
         foreignKey='Person')
     drafter = ForeignKey(dbName='drafter', notNull=False,
@@ -314,7 +314,8 @@ class SpecificationSet:
 
     def new(self, name, title, specurl, summary, status,
         owner, approver=None, product=None, distribution=None, assignee=None,
-        drafter=None, whiteboard=None, priority=None):
+        drafter=None, whiteboard=None,
+        priority=SpecificationPriority.PROPOSED):
         """See ISpecificationSet."""
         return Specification(name=name, title=title, specurl=specurl,
             summary=summary, priority=priority, status=status,

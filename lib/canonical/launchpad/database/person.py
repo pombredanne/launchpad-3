@@ -51,7 +51,8 @@ from canonical.launchpad.database.shipit import ShippingRequest
 
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
-    TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType)
+    TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType,
+    SpecificationSort)
 
 from canonical.foaf import nickname
 
@@ -254,16 +255,23 @@ class Person(SQLBase):
         else:
             return self.name
 
-    @property
-    def specifications(self):
+    def specifications(self, quantity=None, sort=None):
         ret = set(self.created_specs)
         ret = ret.union(self.approver_specs)
         ret = ret.union(self.assigned_specs)
         ret = ret.union(self.drafted_specs)
         ret = ret.union(self.review_specs)
         ret = ret.union(self.subscribed_specs)
-        ret = sorted(ret, reverse=True, key=lambda a: a.datecreated)
-        return ret
+        if sort is None or sort == SpecificationSort.DATE:
+            sortkey = lambda a: a.datecreated
+            reverse = True
+        elif sort == SpecificationSort.PRIORITY:
+            sortkey = lambda a: a.priority
+            reverse = False
+        else:
+            raise AssertionError('Unknown sort %s' % sort)
+        ret = sorted(ret, reverse=reverse, key=sortkey)
+        return ret[:quantity]
 
     def tickets(self, quantity=None):
         ret = set(self.created_tickets)
@@ -272,9 +280,7 @@ class Person(SQLBase):
         ret = ret.union(self.subscribed_tickets)
         ret = sorted(ret, key=lambda a: a.datecreated)
         ret.reverse()
-        if quantity is not None:
-            return ret[:quantity]
-        return ret
+        return ret[:quantity]
 
     def isTeam(self):
         """See IPerson."""

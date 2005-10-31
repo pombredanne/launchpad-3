@@ -808,6 +808,8 @@ specificationtarget_specs = ContextTitle('Specifications for %s')
 
 specificationtarget_specplan = ContextTitle('Project Plan for %s')
 
+specificationtarget_workload = ContextTitle('Feature work load in %s')
+
 sprint_attend = ContextTitle('Register your Attendance at %s')
 
 sprint_edit = ContextTitle('Edit Meeting Details: %s')
