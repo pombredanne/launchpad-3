@@ -180,10 +180,9 @@ class TranslationImportQueueSet:
     def getEntries(self, include_ignored=False):
         """See ITranslationImportQueueSet."""
         if include_ignored == True:
-            query = ''
+            res = TranslationImportQueue.select()
         else:
-            query = 'ignore = FALSE'
-        res = TranslationImportQueue.select(query)
+            res = TranslationImportQueue.select('ignore = FALSE')
         for entry in res:
             yield entry
 

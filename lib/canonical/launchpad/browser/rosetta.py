@@ -17,7 +17,7 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     ILanguageSet, ILaunchBag, IRequestPreferredLanguages, ICountry,
     ILaunchpadCelebrities, IRosettaApplication, ITranslationGroupSet,
-    IProjectSet, IProductSet)
+    IProjectSet, IProductSet, ITranslationImportQueueSet)
 from canonical.launchpad import helpers
 import canonical.launchpad.layers
 from canonical.launchpad.webapp import Navigation, stepto
