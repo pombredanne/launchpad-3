@@ -113,3 +113,35 @@ other things) the uploader for validating incoming uploads.
    editors
 
 [1] https://wiki.launchpad.canonical.com/DerivationOverview
+
+DistroReleases can be initialised from their parents
+----------------------------------------------------
+
+When a distrorelease is derived from another distrorelease (be it a
+derivative distribution, or simply the next release in a sequence from
+Ubuntu) we need to initialise the new release with quite a lot of
+information. Not least of which is the section and component
+selections and the publishing information for the distrorelease.
+
+DistroRelease provides us with a method for doing this which carefully
+goes behind the back of sqlobject to copy potentially tens of
+thousands of rows around in order to set up a distrorelease.
+
+IDistroRelease lists a series of preconditions for performing an
+initialisation. In particular the initialiser won't overwrite
+publishing records etc. Essentially this is a "Do not push this button
+again" type set of assertions.
+
+   >>> login("foo.bar@canonical.com")
+   >>> humpy = distroreleaseset.new(ubuntu, 'humpy', 'Humpy Hippo',
+   ...                              'The Humpy Hippo', 'Fat', 'Yo Momma',
+   ...                              '99.2', hoary.components,
+   ...                              hoary.sections, hoary, hoary.owner)
+   >>> humpy_i386 = humpy.newArch('i386', hoary['i386'].processorfamily, 
+   ...                            True, humpy.owner)
+   >>> humpy.nominatedarchindep = humpy_i386
+   >>> humpy.initialiseFromParent()
+   >>> len(humpy.getPublishedReleases(SourcePackageName.byName('pmount')))
+   1
+   >>> len(humpy_i386.getReleasedPackages('pmount'))
+   1

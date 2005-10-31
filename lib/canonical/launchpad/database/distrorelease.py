@@ -16,7 +16,8 @@ from sqlobject import (
     StringCol, ForeignKey, MultipleJoin, IntCol, SQLObjectNotFound,
     RelatedJoin)
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase, sqlvalues, flush_database_updates, cursor, flush_database_caches)
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
     PackagePublishingStatus, BugTaskStatus, EnumCol, DistributionReleaseStatus,
@@ -27,7 +28,7 @@ from canonical.launchpad.interfaces import (
     IPublishedPackageSet, IHasBuildRecords, NotFoundError,
     IBinaryPackageName)
 
-from canonical.database.constants import DEFAULT
+from canonical.database.constants import DEFAULT, UTC_NOW
 
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
@@ -36,7 +37,8 @@ from canonical.launchpad.database.distroreleasebinarypackage import (
 from canonical.launchpad.database.distroreleasepackagecache import (
     DistroReleasePackageCache)
 from canonical.launchpad.database.publishing import (
-    BinaryPackagePublishing, SourcePackagePublishing)
+    BinaryPackagePublishing, SourcePackagePublishing,
+    BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.language import Language
@@ -577,6 +579,131 @@ class DistroRelease(SQLBase):
 
         return DistroReleaseQueue.selectBy(distroreleaseID=self.id,
                                            status=status)
+
+    def initialiseFromParent(self):
+        """See IDistroRelease."""
+        # Parent release is present
+        assert self.parentrelease is not None
+        # Source publishing is empty
+        assert SourcePackagePublishingHistory.selectBy(
+            distroreleaseID=self.id).count() == 0
+        for arch in self.architectures:
+            # binary publishing is empty
+            assert BinaryPackagePublishingHistory.selectBy(
+                distroarchreleaseID=arch.id).count() == 0
+            try:
+                # our parent has a matching distroarchrelease
+                parent_arch = self.parentrelease[arch.architecturetag]
+                # The parent processor family matches
+                assert parent_arch.processorfamily == arch.processorfamily
+            except KeyError:
+                raise AssertionError("Parent release lacks %s" % (
+                    arch.architecturetag))
+        # We have a nominated independant architecture
+        assert self.nominatedarchindep is not None
+        # Component selections are empty
+        assert len(self.real_components) == 0
+        # Section selections are empty
+        assert len(self.real_sections) == 0
+
+        # MAINTAINER: dsilvers: 20051031
+        # Here we go underneath the SQLObject caching layers in order to
+        # generate what will potentially be tens of thousands of rows
+        # in various tables. Thus we flush pending updates from the SQLObject
+        # layer, perform our work directly in the transaction and then throw
+        # the rest of the SQLObject cache away to make sure it hasn't cached
+        # anything which is no longer true.
+        
+        # Prepare for everything by flushing updates to the database.
+        flush_database_updates()
+        cur = cursor()
+
+        # Perform the copies
+        self._copy_component_and_section_selections(cur)
+        self._copy_source_publishing_records(cur)
+        for arch in self.architectures:
+            parent_arch = self.parentrelease[arch.architecturetag]
+            self._copy_binary_publishing_records(cur, arch, parent_arch)
+        self._copy_lucille_config(cur)
+        
+        # Finally, flush the caches because we've altered stuff behind the
+        # back of sqlobject.
+        flush_database_caches()
+
+    def _copy_lucille_config(self, cur):
+        """Copy all lucille related configuration from our parent release."""
+        cur.execute('''
+            UPDATE DistroRelease SET lucilleconfig=(
+                SELECT pdr.lucilleconfig FROM DistroRelease AS pdr
+                WHERE pdr.id = %d)
+            WHERE id = %d
+            ''' % (self.parentrelease.id, self.id))
+
+    def _copy_binary_publishing_records(self, cur, arch, parent_arch):
+        """Copy the binary publishing records from the parent arch release
+        to the given arch release in ourselves.
+
+        We copy all PENDING and PUBLISHED records as PENDING into our own
+        publishing records.
+
+        We only copy the RELEASE pocket.
+        """
+        cur.execute('''
+            INSERT INTO SecureBinaryPackagePublishingHistory (
+                binarypackagerelease, distroarchrelease, status,
+                component, section, priority, datecreated, pocket, embargo)
+            SELECT bpp.binarypackagerelease, %d as distroarchrelease,
+                   bpp.status, bpp.component, bpp.section, bpp.priority,
+                   %s as datecreated, %d as pocket, false as embargo
+            FROM BinaryPackagePublishing AS bpp
+            WHERE bpp.distroarchrelease = %d AND bpp.status in (%d, %d) AND
+                  bpp.pocket = %d
+            ''' % (arch.id, UTC_NOW, PackagePublishingPocket.RELEASE.value,
+                   parent_arch.id,
+                   PackagePublishingStatus.PENDING.value,
+                   PackagePublishingStatus.PUBLISHED.value,
+                   PackagePublishingPocket.RELEASE.value))
+
+    def _copy_source_publishing_records(self, cur):
+        """Copy the source publishing records from our parent distro release.
+
+        We copy all PENDING and PUBLISHED records as PENDING into our own
+        publishing records.
+
+        We only copy the RELEASE pocket.
+        """
+        cur.execute('''
+            INSERT INTO SecureSourcePackagePublishingHistory (
+                sourcepackagerelease, distrorelease, status, component,
+                section, datecreated, pocket, embargo)
+            SELECT spp.sourcepackagerelease, %d as distrorelease,
+                   spp.status, spp.component, spp.section, %s as datecreated,
+                   %d as pocket, false as embargo
+            FROM SourcePackagePublishing AS spp
+            WHERE spp.distrorelease = %d AND spp.status in (%d, %d) AND
+                  spp.pocket = %d
+            ''' % (self.id, UTC_NOW, PackagePublishingPocket.RELEASE.value,
+                   self.parentrelease.id,
+                   PackagePublishingStatus.PENDING.value,
+                   PackagePublishingStatus.PUBLISHED.value,
+                   PackagePublishingPocket.RELEASE.value))
+
+    def _copy_component_and_section_selections(self, cur):
+        """Copy the section and component selections from the parent distro
+        release into this one.
+        """
+        # Copy the component selections
+        cur.execute('''
+            INSERT INTO ComponentSelection (distrorelease, component)
+            SELECT %d AS distrorelease, cs.component AS component
+            FROM ComponentSelection AS cs WHERE cs.distrorelease = %d
+            ''' % (self.id, self.parentrelease.id))
+        # Copy the section selections
+        cur.execute('''
+            INSERT INTO SectionSelection (distrorelease, section)
+            SELECT %d as distrorelease, ss.section AS section
+            FROM SectionSelection AS ss WHERE ss.distrorelease = %d
+            ''' % (self.id, self.parentrelease.id))
 
 
 class DistroReleaseSet:
