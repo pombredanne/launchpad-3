@@ -144,6 +144,8 @@ INSERT INTO revisionauthor (id, name) VALUES (7, 'scott.james.remnant');
 INSERT INTO revisionauthor (id, name) VALUES (8, 'andrew.bennetts');
 INSERT INTO revisionauthor (id, name) VALUES (9, 'dave.miller');
 INSERT INTO revisionauthor (id, name) VALUES (10, 'jeff.waugh');
+INSERT INTO revisionauthor (id, name) VALUES (11, 'Sample Committer <test@canonical.com>');
+INSERT INTO revisionauthor (id, name) VALUES (12, 'foo <foo@localhost>');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'revisionauthor'::pg_catalog.regclass;
@@ -699,6 +701,13 @@ INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_p
 INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, starred, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, mirror_status, last_mirrored, last_mirror_attempt, mirror_failures, cache_url, started_at) VALUES (12, 'Mozilla Firefox 0.9', 'text', 1, 4, NULL, 'mozilla@arch.ubuntu.com_mozilla--release--0.9', NULL, false, NULL, NULL, false, 'http://bazaar.ubuntu.com/mozilla@arch.ubuntu.com/mozilla--release--0.9', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, 0, NULL, 3);
 INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, starred, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, mirror_status, last_mirrored, last_mirror_attempt, mirror_failures, cache_url, started_at) VALUES (13, 'Mozilla Firefox 0.8', 'text', 1, 4, NULL, 'mozilla@arch.ubuntu.com_mozilla--release--0.8', NULL, false, NULL, NULL, false, 'http://bazaar.ubuntu.com/mozilla@arch.ubuntu.com/mozilla--release--0.8', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, 0, NULL, NULL);
 INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, starred, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, mirror_status, last_mirrored, last_mirror_attempt, mirror_failures, cache_url, started_at) VALUES (14, 'Evolution HEAD', 'text', 1, 5, NULL, 'gnome@arch.ubuntu.com_evolution--MAIN--0', NULL, false, NULL, NULL, false, 'http://bazaar.ubuntu.com/gnome@arch.ubuntu.com/evolution--MAIN--0', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, 0, NULL, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, starred, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, mirror_status, last_mirrored, last_mirror_attempt, mirror_failures, cache_url, started_at) VALUES (15, 'GNOME Terminal Mainline', 'Main branch of development for GNOME Terminal. Stable branches are based on that one.', 12, 6, NULL, 'main', NULL, false, 'http://example.com/gnome-terminal', NULL, false, 'http://example.com/gnome-terminal/main', 1, NULL, 30, NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, 0, NULL, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, starred, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, mirror_status, last_mirrored, last_mirror_attempt, mirror_failures, cache_url, started_at) VALUES (16, 'GNOME Terminal 2.6 Releases', 'Release branch of GNOME Terminal for the GNOME 2.6 environment.', 12, 6, NULL, '2.6', NULL, false, 'http://example.com/gnome-terminal/', NULL, false, 'http://example.com/gnome-terminal/2.6', 1, NULL, 50, NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, 0, NULL, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, starred, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, mirror_status, last_mirrored, last_mirror_attempt, mirror_failures, cache_url, started_at) VALUES (17, 'GNOME Terminal 2.4 Releases', 'Obsolete branch for GNOME 2.4 releases of GNOME Terminal.', 12, 6, NULL, '2.4', NULL, false, NULL, NULL, false, 'http://example.com/gnome-terminal/2.4', 1, NULL, 80, NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, 0, NULL, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, starred, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, mirror_status, last_mirrored, last_mirror_attempt, mirror_failures, cache_url, started_at) VALUES (18, 'Klingon support in GNOME Terminal', 'Experimental feature branch for developping and testing Klingon support in GNOME Terminal.', 12, 6, 12, 'klingon', NULL, false, 'http://trekkies.example.com/k12n', NULL, false, 'http://trekkies.example.com/gnome-terminal/klingon', 1, NULL, 10, NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, 0, NULL, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, starred, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, mirror_status, last_mirrored, last_mirror_attempt, mirror_failures, cache_url, started_at) VALUES (19, 'Slowing GNOME Terminal scrolling', 'Feature branch for slowing down the scrolling of text in GNOME Terminal.', 12, 6, 12, 'slowness', NULL, false, NULL, NULL, false, 'http://users.example.com/gnome-terminal/slowness', 1, NULL, 70, NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, 0, NULL, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, starred, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, mirror_status, last_mirrored, last_mirror_attempt, mirror_failures, cache_url, started_at) VALUES (20, 'Ubuntu Junk Code', 'Sample junk branch.', 12, NULL, 17, 'junk.dev', NULL, false, NULL, NULL, false, 'http://localhost:8000/a', 1, NULL, 10, NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, 0, NULL, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, starred, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, mirror_status, last_mirrored, last_mirror_attempt, mirror_failures, cache_url, started_at) VALUES (21, 'Junk Code Contributions', 'Contribute code to the junk branch.', 12, NULL, 12, 'junk.contrib', NULL, false, NULL, NULL, false, 'http://localhost:8000/b', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, 1, NULL, NULL, 0, NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'branch'::pg_catalog.regclass;
@@ -709,6 +718,14 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'revision'::pg_catalo
 INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (1, '2005-03-09 15:45:00', 'Import of Mozilla Firefox 0.9.2', 1, NULL, 1, 'mozilla@arch.ubuntu.com/mozilla--release--0.9.2--base-0', '2005-03-09 15:40:00');
 INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (2, '2005-03-09 15:50:00', 'Import of Mozilla Firefox 0.9.1', 1, NULL, 1, 'mozilla@arch.ubuntu.com/mozilla--release--0.9.1--base-0', '2005-03-09 15:45:00');
 INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (3, '2005-03-09 15:55:00', 'Import of Mozilla Firefox 0.9', 1, NULL, 1, 'mozilla@arch.ubuntu.com/mozilla--release--0.9--base-0', '2005-03-09 15:50:00');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (4, '2005-10-31 17:21:47.38177', 'initial import (empty)', 11, NULL, 25, 'test@canonical.com-20051031165248-6f1bb97973c2b4f4', '2005-10-31 11:52:48.37692');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (5, '2005-10-31 17:21:47.66327', 'add foo', 11, NULL, 25, 'test@canonical.com-20051031165338-5f2f3d6b10bb3bf0', '2005-10-31 11:53:38.324658');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (6, '2005-10-31 17:21:47.701102', 'fix a bug', 11, NULL, 25, 'test@canonical.com-20051031165532-3113df343e494daa', '2005-10-31 11:55:32.559368');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (7, '2005-10-31 17:21:47.745231', 'merge new feature', 11, NULL, 25, 'test@canonical.com-20051031165901-43b9644ec2eacc4e', '2005-10-31 11:59:01.742211');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (8, '2005-10-31 17:21:47.786347', 'resolve criss-cross', 12, NULL, 25, 'foo@localhost-20051031170239-5fce7d6bd3f01efc', '2005-10-31 12:02:39.750015');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (9, '2005-10-31 17:21:47.82293', 'fix bug in bar', 12, NULL, 25, 'foo@localhost-20051031170357-1301ad6d387feb23', '2005-10-31 12:03:57.157495');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (10, '2005-10-31 17:21:47.917914', 'add a new feature', 12, NULL, 25, 'foo@localhost-20051031165758-48acedf2b6a2e898', '2005-10-31 11:57:58.936419');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (11, '2005-10-31 17:21:47.954856', 'merge foo bugfix', 12, NULL, 25, 'foo@localhost-20051031170008-098959758bf79803', '2005-10-31 12:00:08.648379');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'revision'::pg_catalog.regclass;
@@ -7953,6 +7970,16 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'revisionparent'::pg_catalog.regclass;
 
+INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (1, 0, 5, 'test@canonical.com-20051031165248-6f1bb97973c2b4f4');
+INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (2, 0, 6, 'test@canonical.com-20051031165338-5f2f3d6b10bb3bf0');
+INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (3, 0, 7, 'test@canonical.com-20051031165532-3113df343e494daa');
+INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (4, 1, 7, 'foo@localhost-20051031165758-48acedf2b6a2e898');
+INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (5, 0, 8, 'foo@localhost-20051031170008-098959758bf79803');
+INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (6, 1, 8, 'test@canonical.com-20051031165901-43b9644ec2eacc4e');
+INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (7, 0, 9, 'foo@localhost-20051031170239-5fce7d6bd3f01efc');
+INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (8, 0, 10, 'test@canonical.com-20051031165338-5f2f3d6b10bb3bf0');
+INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (9, 0, 11, 'foo@localhost-20051031165758-48acedf2b6a2e898');
+INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (10, 1, 11, 'test@canonical.com-20051031165532-3113df343e494daa');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'revisionparent'::pg_catalog.regclass;
@@ -7963,6 +7990,18 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'revisionnumber'::pg_
 INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (1, 1, 10, 1);
 INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (2, 1, 11, 2);
 INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (3, 1, 12, 3);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (4, 1, 20, 4);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (5, 2, 20, 5);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (6, 3, 20, 6);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (7, 4, 20, 7);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (8, 5, 20, 8);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (9, 6, 20, 9);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (10, 1, 21, 4);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (11, 2, 21, 5);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (12, 3, 21, 10);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (13, 4, 21, 11);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (14, 5, 21, 8);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (15, 6, 21, 9);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'revisionnumber'::pg_catalog.regclass;
@@ -7970,6 +8009,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'branchsubscription'::pg_catalog.regclass;
 
+INSERT INTO branchsubscription (id, person, branch) VALUES (1, 12, 20);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'branchsubscription'::pg_catalog.regclass;
