@@ -229,7 +229,7 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         """Create a queue item attached to this distrorelease and the given
         pocket. If status is not supplied, then default to an ACCEPTED item.
         """
-    
+
     def newArch(architecturetag, processorfamily, official, owner):
         """Create a new port or DistroArchRelease for this DistroRelease."""
 

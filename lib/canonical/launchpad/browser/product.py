@@ -18,14 +18,12 @@ __all__ = [
     'ProductView',
     'ProductEditView',
     'ProductSeriesAddView',
-    'ProductFileBugView',
     'ProductRdfView',
     'ProductSetView',
     'ProductAddView'
     ]
 
 from warnings import warn
-from urllib import quote as urlquote
 
 import zope.security.interfaces
 from zope.component import getUtility
@@ -36,14 +34,12 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
     IPerson, IProduct, IProductSet, IProductSeries, ISourcePackage,
-    ICountry, IBugSet, ICalendarOwner, NotFoundError)
+    ICountry, ICalendarOwner, NotFoundError)
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
-from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, structured, GetitemNavigation, Navigation,
@@ -474,39 +470,6 @@ class ProductSeriesAddView(AddView):
     def nextURL(self):
         assert self.series
         return '+series/%s' % self.series.name
-
-
-class ProductFileBugView(SQLObjectAddView):
-
-    __used_for__ = IProduct
-
-    def __init__(self, context, request):
-        self.request = request
-        self.context = context
-        SQLObjectAddView.__init__(self, context, request)
-
-    def createAndAdd(self, data):
-        # add the owner information for the bug
-        owner = IPerson(self.request.principal, None)
-        if not owner:
-            raise zope.security.interfaces.Unauthorized(
-                "Need an authenticated bug owner")
-        kw = {}
-        for key, value in data.items():
-            kw[str(key)] = value
-        kw['product'] = self.context
-        # create the bug
-        # XXX cprov 20050112
-        # Try to avoid passing **kw, it is unreadable
-        # Pass the keyword explicitly ...
-        bug = getUtility(IBugSet).createBug(**kw)
-        notify(SQLObjectCreatedEvent(bug))
-        self.addedBug = bug
-        return bug
-
-    def nextURL(self):
-        bugtask = self.addedBug.bugtasks[0]
-        return canonical_url(bugtask)
 
 
 class ProductRdfView(object):

@@ -241,17 +241,14 @@
         name="+filebug"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IBugAddForm"
-        fields="title comment private owner"
-        class="canonical.launchpad.browser.ProductFileBugView"
+        fields="title comment private"
+        class="canonical.launchpad.browser.FileBugView"
         facet="bugs"
         arguments=""
-        keyword_arguments="title comment private owner"
+        keyword_arguments="title comment private"
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
         lp:url="/products/$Product.name/+filebug">
-        <browser:widget
-            field="owner"
-            class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"

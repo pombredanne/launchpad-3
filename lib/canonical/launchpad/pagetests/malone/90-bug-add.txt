@@ -46,7 +46,7 @@ redirected to the bug page.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+bug/8
+  Location: http://localhost:9000/distros/ubuntu/+source/mozilla-firefox/+bug/9
   ...
   
 
