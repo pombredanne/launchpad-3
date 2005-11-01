@@ -1,0 +1,323 @@
+Editing Branches
+================
+
+We are not happy with the title of the branch for Klingon support in GNOME
+Terminal, and want to associate it to its true author, which recently created
+an account on Launchpad.
+
+Editing branch details
+----------------------
+
+First, check that the edit link is visible on the branch page.
+
+  >>> print http(r"""
+  ... GET /people/name12/+branch/gnome-terminal/klingon HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...<a href="http://localhost:9000/people/name12/+branch/gnome-terminal/klingon/+edit">Edit Branch Details</a>...
+
+Then we click on that link and load the +edit page for the branch.
+
+  >>> print http(r"""
+  ... GET /people/name12/+branch/gnome-terminal/klingon/+edit HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+Then, post the changes to the title and author. We should be redirected to the
+branch page.
+
+  >>> print http(r"""
+  ... POST /people/name12/+branch/gnome-terminal/klingon/+edit HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1086
+  ... Content-Type: multipart/form-data; boundary=---------------------------1106159639116752221293615818
+  ... 
+  ... -----------------------------1106159639116752221293615818
+  ... Content-Disposition: form-data; name="field.author"
+  ... 
+  ... name18
+  ... -----------------------------1106159639116752221293615818
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Klingon support in GNOME Terminal
+  ... -----------------------------1106159639116752221293615818
+  ... Content-Disposition: form-data; name="field.url"
+  ... 
+  ... http://trekkies.example.com/gnome-terminal/klingon
+  ... -----------------------------1106159639116752221293615818
+  ... Content-Disposition: form-data; name="field.home_page"
+  ... 
+  ... http://trekkies.example.com/k12n
+  ... -----------------------------1106159639116752221293615818
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... Warriors' branch for developping and testing Klingon support in GNOME Terminal.
+  ... 
+  ... -----------------------------1106159639116752221293615818
+  ... Content-Disposition: form-data; name="field.whiteboard"
+  ... 
+  ... 
+  ... -----------------------------1106159639116752221293615818
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------1106159639116752221293615818--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/people/name12/+branch/gnome-terminal/klingon
+  ...
+
+
+Finally, set the author back to its previous value.
+
+  >>> print http(r"""
+  ... POST /people/name12/+branch/gnome-terminal/klingon/+edit HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------1106159639116752221293615818
+  ... 
+  ... -----------------------------1106159639116752221293615818
+  ... Content-Disposition: form-data; name="field.author"
+  ... 
+  ... name12
+  ... -----------------------------1106159639116752221293615818
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Klingon support in GNOME Terminal
+  ... -----------------------------1106159639116752221293615818
+  ... Content-Disposition: form-data; name="field.url"
+  ... 
+  ... http://trekkies.example.com/gnome-terminal/klingon
+  ... -----------------------------1106159639116752221293615818
+  ... Content-Disposition: form-data; name="field.home_page"
+  ... 
+  ... http://trekkies.example.com/k12n
+  ... -----------------------------1106159639116752221293615818
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... Experimental development branch for developping and testing Klingon support in GNOME Terminal.
+  ... 
+  ... -----------------------------1106159639116752221293615818
+  ... Content-Disposition: form-data; name="field.whiteboard"
+  ... 
+  ... 
+  ... -----------------------------1106159639116752221293615818
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------1106159639116752221293615818--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/people/name12/+branch/gnome-terminal/klingon
+  ...
+
+Editing the Lifecycle Status
+----------------------------
+
+We want to update the lifecycle status of the branch and add a joyful
+whiteboard message. We use the +lifecycle page for that.
+
+First check the page lifecycle page is linked from the branch page.
+
+  >>> print http(r"""
+  ... GET /people/name12/+branch/gnome-terminal/klingon HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...<a href="http://localhost:9000/people/name12/+branch/gnome-terminal/klingon/+lifecycle">Set Branch Status</a>...
+
+Then click on the link and load the +lifecycle page.
+
+  >>> print http(r"""
+  ... GET /people/name12/+branch/gnome-terminal/klingon/+lifecycle HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+Post the +lifecycle that sets the branch status and whiteboard message.
+
+  >>> print http(r"""
+  ... POST /people/name12/+branch/gnome-terminal/klingon/+lifecycle HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------5143029969841501371191119783
+  ... 
+  ... -----------------------------5143029969841501371191119783
+  ... Content-Disposition: form-data; name="field.lifecycle_status"
+  ... 
+  ... Merged
+  ... -----------------------------5143029969841501371191119783
+  ... Content-Disposition: form-data; name="field.lifecycle_status-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------5143029969841501371191119783
+  ... Content-Disposition: form-data; name="field.whiteboard"
+  ... 
+  ... The brave shall prevail. Ka'plah!
+  ... -----------------------------5143029969841501371191119783
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------5143029969841501371191119783--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/people/name12/+branch/gnome-terminal/klingon
+  ...
+
+Load the redirection target and presence of the new status and whiteboard.
+
+  >>> print http(r"""
+  ... GET /people/name12/+branch/gnome-terminal/klingon HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Status:...
+  ...Merged...
+  ...Whiteboard:...
+  ...The brave shall prevail. Ka'plah!...
+
+Set the branch status back to its initial state.
+
+  >>> print http(r"""
+  ... POST /people/name12/+branch/gnome-terminal/klingon/+lifecycle HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------48234340612238207421310801252
+  ... 
+  ... -----------------------------48234340612238207421310801252
+  ... Content-Disposition: form-data; name="field.lifecycle_status"
+  ... 
+  ... Experimental
+  ... -----------------------------48234340612238207421310801252
+  ... Content-Disposition: form-data; name="field.lifecycle_status-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------48234340612238207421310801252
+  ... Content-Disposition: form-data; name="field.whiteboard"
+  ... 
+  ... 
+  ... -----------------------------48234340612238207421310801252
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------48234340612238207421310801252--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/people/name12/+branch/gnome-terminal/klingon
+  ...
+
+Editing Administrative properties
+---------------------------------
+
+The administrative form allows changing the registrant, product and name of a
+branch. Let's check that we can attach a junk branch to a product, and make it
+junk again.
+
+The +admin link must be visible on the branch page when logged in as an admin.
+
+  >>> print http(r"""
+  ... GET /people/name12/+branch/+junk/junk.dev HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...<a href="http://localhost:9000/people/name12/+branch/+junk/junk.dev/+admin">Administer</a>...
+
+Clicking on this link loads the +admin form page.
+
+  >>> print http(r"""
+  ... GET /people/name12/+branch/+junk/junk.dev/+admin HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+Then we post the form with changes to attach the branch to a product. We should
+be redirected to the new address of the branch.
+
+  >>> print http(r"""
+  ... POST /people/name12/+branch/+junk/junk.dev/+admin HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 670
+  ... Content-Type: multipart/form-data; boundary=---------------------------51737679497013199958403864
+  ... 
+  ... -----------------------------51737679497013199958403864
+  ... Content-Disposition: form-data; name="field.owner"
+  ... 
+  ... test@canonical.com
+  ... -----------------------------51737679497013199958403864
+  ... Content-Disposition: form-data; name="field.product"
+  ... 
+  ... ubuntu
+  ... -----------------------------51737679497013199958403864
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... junk.dev
+  ... -----------------------------51737679497013199958403864
+  ... Content-Disposition: form-data; name="field.whiteboard"
+  ... 
+  ... 
+  ... -----------------------------51737679497013199958403864
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------51737679497013199958403864--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/people/name12/+branch/ubuntu/junk.dev
+  ...
+
+Check that we can load the redirection target, which is a new URL since
+changing the product assocatied to a branch changed the branch's canonical URL
+
+  >>> print http(r"""
+  ... GET /people/name12/+branch/ubuntu/junk.dev HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+We can also detach the branch from its product to make it a junk branch again.
+
+  >>> print http(r"""
+  ... POST /people/name12/+branch/ubuntu/junk.dev/+admin HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 670
+  ... Content-Type: multipart/form-data; boundary=---------------------------928524421110038503751686411
+  ... 
+  ... -----------------------------928524421110038503751686411
+  ... Content-Disposition: form-data; name="field.owner"
+  ... 
+  ... test@canonical.com
+  ... -----------------------------928524421110038503751686411
+  ... Content-Disposition: form-data; name="field.product"
+  ... 
+  ... 
+  ... -----------------------------928524421110038503751686411
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... junk.dev
+  ... -----------------------------928524421110038503751686411
+  ... Content-Disposition: form-data; name="field.whiteboard"
+  ... 
+  ... 
+  ... -----------------------------928524421110038503751686411
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------928524421110038503751686411--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/people/name12/+branch/+junk/junk.dev
+  ...
+
+Finally, we load the redirection URL, that checks that the branch was moved
+back to its original location.
+
+  >>> print http(r"""
+  ... GET /people/name12/+branch/+junk/junk.dev HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...

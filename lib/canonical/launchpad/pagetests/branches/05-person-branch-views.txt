@@ -1,0 +1,91 @@
+Person Views of Branch Lists
+============================
+
+There are several views of the branches related to a person.
+
+Related Branches
+----------------
+
+First, get the code facet (related branches) for an user which has branches in
+each lifecycle.
+
+  >>> print http(r"""
+  ... GET /people/name12/+branches HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...<h2>New</h2>...
+  ...<h2>Experimental</h2>...
+  ...<h2>Development</h2>...
+  ...<h2>Mature</h2>...
+  ...<h2>Merged</h2>...
+  ...<h2>Abandoned</h2>...
+
+
+If a person does not have any related branches, we should print an informative message.
+
+  >>> print http(r"""
+  ... GET /people/ddaa/+branches HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...There are no branches currently registered for
+  ...David Allouche
+  ...at present...
+
+Authored Branches
+-----------------
+
+There should be a link in the branch context menu for person which points to
+the authored branches page.
+
+  >>> print http(r"""
+  ... GET /people/name12/+branches HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...<a href="http://localhost:9000/people/name12/+authoredbranches">Show Authored Branches</a>...
+
+And we can load the authored branches page.
+
+  >>> print http(r"""
+  ... GET /people/name12/+authoredbranches HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+Registered Branches
+-------------------
+
+There should also be a link which points to the registered branches page.
+
+There should be a link in the branch context menu for person which points to
+the authored branches page.
+
+  >>> print http(r"""
+  ... GET /people/name12/+branches HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...<a href="http://localhost:9000/people/name12/+registeredbranches">Show Registered Branches</a>...
+
+And we can load the authored branches page.
+
+  >>> print http(r"""
+  ... GET /people/name12/+registeredbranches HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+Subscribed branches
+-------------------
+
+  >>> print http(r"""
+  ... GET /people/name12/+branches HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...<a href="http://localhost:9000/people/name12/+subscribedbranches">Show Subscribed Branches</a>...
+
+And we can load the authored branches page.
+
+  >>> print http(r"""
+  ... GET /people/name12/+subscribedbranches HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
