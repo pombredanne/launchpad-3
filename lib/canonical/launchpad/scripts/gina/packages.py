@@ -77,7 +77,7 @@ def get_dsc_path(name, version, component, archive_root):
     pool_dir = poolify(name, component)
     fullpath = os.path.join(pool_root, pool_dir, filename)
     if os.path.exists(fullpath):
-        return filename, fullpath
+        return filename, fullpath, component
 
     # Do a second pass, scrubbing through all components in the pool.
     for component in os.listdir(pool_root):
@@ -86,15 +86,15 @@ def get_dsc_path(name, version, component, archive_root):
         pool_dir = poolify(name, component)
         fullpath = os.path.join(pool_root, pool_dir, filename)
         if os.path.exists(fullpath):
-            return filename, fullpath
+            return filename, fullpath, component
 
     # Couldn't find the file anywhere -- too bad.
     raise PoolFileNotFound("File %s not in archive" % filename)
 
 
 def unpack_dsc(package, version, component, archive_root):
-    dsc_name, dsc_path = get_dsc_path(package, version,
-                                      component, archive_root)
+    dsc_name, dsc_path, component = get_dsc_path(package, version,
+                                                 component, archive_root)
     call("dpkg-source -sn -x %s" % dsc_path)
 
     version = re.sub("^\d+:", "", version)

@@ -153,6 +153,7 @@ Check STDERR for the errors we expected:
      -> http://...dsc not in archive)
     ERROR   Error processing package files for python-sqlite
      -> http://...deb not found)
+    WARNING No source package ubuntu-meta (0.80) listed for ubuntu-base (0.80), scrubbing archive...
     <BLANKLINE>
 
 The exit status must be 0, for success:

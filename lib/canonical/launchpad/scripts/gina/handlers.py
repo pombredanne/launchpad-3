@@ -265,6 +265,12 @@ class ImporterHandler:
         if not sourcepackage:
             # We couldn't find a sourcepackagerelease in the database.
             # Perhaps we can opportunistically pick one out of the archive.
+            log.warn("No source package %s (%s) listed for %s (%s), "
+                     "scrubbing archive..." %
+                (binarypackagedata.source,
+                 binarypackagedata.source_version,
+                 binarypackagedata.package,
+                 binarypackagedata.version))
             sourcepackage = self.sphandler.findAndImportUnlistedSourcePackage(
                 binarypackagedata, distrorelease)
 
@@ -410,18 +416,14 @@ class SourcePackageReleaseHandler:
     def _getSourcePackageDataFromDSC(self, sp_name, sp_version,
                                      sp_component, sp_section):
         try:
-            dsc_name, dsc_path = get_dsc_path(sp_name, sp_version,
-                                              sp_component, self.archive_root)
+            dsc_name, dsc_path, sp_component = get_dsc_path(sp_name,
+                sp_version, sp_component, self.archive_root)
         except PoolFileNotFound:
             # Aah well, no source package in archive either.
             return None
 
-        # XXX: if get_dsc_path found the package in /another/ component,
-        # we need to update:
-        #   - sp_component (directory will be changed updated)
-        #   - files need to be changed to the other component
-        # XXX: 
-
+        log.debug("Found a source package for %s (%s) in %s" % (sp_name,
+            sp_version, sp_component))
         dsc_contents = parse_tagfile(dsc_path, allow_unsigned=True)
 
         # Since the dsc doesn't know, we add in the directory, package
