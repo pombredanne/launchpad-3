@@ -260,7 +260,7 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
           duplicated as will any permission-related structures.
 
         Note:
-          This method will *ASSERT* its preconditions where possible.
+          This method will assert all of its preconditions where possible.
           After this is run, you still need to construct chroots for building,
           you need to add anything missing wrt. ports etc. This method is
           only meant to give you a basic copy of a parent release in order

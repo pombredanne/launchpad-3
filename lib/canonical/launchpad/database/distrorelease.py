@@ -595,29 +595,27 @@ class DistroRelease(SQLBase):
 
     def initialiseFromParent(self):
         """See IDistroRelease."""
-        # Parent release is present
-        assert self.parentrelease is not None
-        # Source publishing is empty
+        assert self.parentrelease is not None, "Parent release must be present"
         assert SourcePackagePublishingHistory.selectBy(
-            distroreleaseID=self.id).count() == 0
+            distroreleaseID=self.id).count() == 0, \
+            "Source Publishing must be empty"
         for arch in self.architectures:
-            # binary publishing is empty
             assert BinaryPackagePublishingHistory.selectBy(
-                distroarchreleaseID=arch.id).count() == 0
+                distroarchreleaseID=arch.id).count() == 0, \
+                "Binary Publishing must be empty"
             try:
-                # our parent has a matching distroarchrelease
                 parent_arch = self.parentrelease[arch.architecturetag]
-                # The parent processor family matches
-                assert parent_arch.processorfamily == arch.processorfamily
+                assert parent_arch.processorfamily == arch.processorfamily, \
+                       "The arch tags must match the processor families."
             except KeyError:
                 raise AssertionError("Parent release lacks %s" % (
                     arch.architecturetag))
-        # We have a nominated independant architecture
-        assert self.nominatedarchindep is not None
-        # Component selections are empty
-        assert len(self.real_components) == 0
-        # Section selections are empty
-        assert len(self.real_sections) == 0
+        assert self.nominatedarchindep is not None, \
+               "Must have a nominated archindep architecture."
+        assert len(self.real_components) == 0, \
+               "Component selections must be empty."
+        assert len(self.real_sections) == 0, \
+               "Section selections must be empty."
 
         # MAINTAINER: dsilvers: 20051031
         # Here we go underneath the SQLObject caching layers in order to
@@ -625,7 +623,7 @@ class DistroRelease(SQLBase):
         # in various tables. Thus we flush pending updates from the SQLObject
         # layer, perform our work directly in the transaction and then throw
         # the rest of the SQLObject cache away to make sure it hasn't cached
-        # anything which is no longer true.
+        # anything that is no longer true.
         
         # Prepare for everything by flushing updates to the database.
         flush_database_updates()
@@ -648,9 +646,9 @@ class DistroRelease(SQLBase):
         cur.execute('''
             UPDATE DistroRelease SET lucilleconfig=(
                 SELECT pdr.lucilleconfig FROM DistroRelease AS pdr
-                WHERE pdr.id = %d)
-            WHERE id = %d
-            ''' % (self.parentrelease.id, self.id))
+                WHERE pdr.id = %s)
+            WHERE id = %s
+            ''' % sqlvalues(self.parentrelease.id, self.id))
 
     def _copy_binary_publishing_records(self, cur, arch, parent_arch):
         """Copy the binary publishing records from the parent arch release
@@ -659,23 +657,24 @@ class DistroRelease(SQLBase):
         We copy all PENDING and PUBLISHED records as PENDING into our own
         publishing records.
 
-        We only copy the RELEASE pocket.
+        We copy only the RELEASE pocket.
         """
         cur.execute('''
             INSERT INTO SecureBinaryPackagePublishingHistory (
                 binarypackagerelease, distroarchrelease, status,
                 component, section, priority, datecreated, pocket, embargo)
-            SELECT bpp.binarypackagerelease, %d as distroarchrelease,
+            SELECT bpp.binarypackagerelease, %s as distroarchrelease,
                    bpp.status, bpp.component, bpp.section, bpp.priority,
-                   %s as datecreated, %d as pocket, false as embargo
+                   %s as datecreated, %s as pocket, false as embargo
             FROM BinaryPackagePublishing AS bpp
-            WHERE bpp.distroarchrelease = %d AND bpp.status in (%d, %d) AND
-                  bpp.pocket = %d
-            ''' % (arch.id, UTC_NOW, PackagePublishingPocket.RELEASE.value,
-                   parent_arch.id,
-                   PackagePublishingStatus.PENDING.value,
-                   PackagePublishingStatus.PUBLISHED.value,
-                   PackagePublishingPocket.RELEASE.value))
+            WHERE bpp.distroarchrelease = %s AND bpp.status in (%s, %s) AND
+                  bpp.pocket = %s
+            ''' % sqlvalues(arch.id, UTC_NOW,
+                            PackagePublishingPocket.RELEASE.value,
+                            parent_arch.id,
+                            PackagePublishingStatus.PENDING.value,
+                            PackagePublishingStatus.PUBLISHED.value,
+                            PackagePublishingPocket.RELEASE.value))
 
     def _copy_source_publishing_records(self, cur):
         """Copy the source publishing records from our parent distro release.
@@ -683,23 +682,24 @@ class DistroRelease(SQLBase):
         We copy all PENDING and PUBLISHED records as PENDING into our own
         publishing records.
 
-        We only copy the RELEASE pocket.
+        We copy only the RELEASE pocket.
         """
         cur.execute('''
             INSERT INTO SecureSourcePackagePublishingHistory (
                 sourcepackagerelease, distrorelease, status, component,
                 section, datecreated, pocket, embargo)
-            SELECT spp.sourcepackagerelease, %d as distrorelease,
+            SELECT spp.sourcepackagerelease, %s as distrorelease,
                    spp.status, spp.component, spp.section, %s as datecreated,
-                   %d as pocket, false as embargo
+                   %s as pocket, false as embargo
             FROM SourcePackagePublishing AS spp
-            WHERE spp.distrorelease = %d AND spp.status in (%d, %d) AND
-                  spp.pocket = %d
-            ''' % (self.id, UTC_NOW, PackagePublishingPocket.RELEASE.value,
-                   self.parentrelease.id,
-                   PackagePublishingStatus.PENDING.value,
-                   PackagePublishingStatus.PUBLISHED.value,
-                   PackagePublishingPocket.RELEASE.value))
+            WHERE spp.distrorelease = %s AND spp.status in (%s, %s) AND
+                  spp.pocket = %s
+            ''' % sqlvalues(self.id, UTC_NOW,
+                            PackagePublishingPocket.RELEASE.value,
+                            self.parentrelease.id,
+                            PackagePublishingStatus.PENDING.value,
+                            PackagePublishingStatus.PUBLISHED.value,
+                            PackagePublishingPocket.RELEASE.value))
 
     def _copy_component_and_section_selections(self, cur):
         """Copy the section and component selections from the parent distro
@@ -708,15 +708,15 @@ class DistroRelease(SQLBase):
         # Copy the component selections
         cur.execute('''
             INSERT INTO ComponentSelection (distrorelease, component)
-            SELECT %d AS distrorelease, cs.component AS component
-            FROM ComponentSelection AS cs WHERE cs.distrorelease = %d
-            ''' % (self.id, self.parentrelease.id))
+            SELECT %s AS distrorelease, cs.component AS component
+            FROM ComponentSelection AS cs WHERE cs.distrorelease = %s
+            ''' % sqlvalues(self.id, self.parentrelease.id))
         # Copy the section selections
         cur.execute('''
             INSERT INTO SectionSelection (distrorelease, section)
-            SELECT %d as distrorelease, ss.section AS section
-            FROM SectionSelection AS ss WHERE ss.distrorelease = %d
-            ''' % (self.id, self.parentrelease.id))
+            SELECT %s as distrorelease, ss.section AS section
+            FROM SectionSelection AS ss WHERE ss.distrorelease = %s
+            ''' % sqlvalues(self.id, self.parentrelease.id))
 
 
 class DistroReleaseSet:
