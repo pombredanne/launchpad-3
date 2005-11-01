@@ -184,7 +184,8 @@ class DistroArchRelease(SQLBase):
     def findDepCandidateByName(self, name):
         """See IPublishedSet."""
         return PublishedPackage.selectOneBy(
-            binarypackagename=name, distroarchreleaseID=self.id
+            binarypackagename=name, distroarchreleaseID=self.id,
+            packagepublishingstatus=dbschema.PackagePublishingStatus.PUBLISHED
             )
 
 

@@ -119,14 +119,14 @@ class Build(SQLBase):
         
         """See IBuild."""
         
-        return BinaryPackageRelease(build=self.id,
-                                    binarypackagename=binarypackagename,
+        return BinaryPackageRelease(buildID=self.id,
+                                    binarypackagenameID=binarypackagename.id,
                                     version=version,
                                     summary=summary,
                                     description=description,
                                     binpackageformat=binpackageformat,
-                                    component=component,
-                                    section=section,
+                                    componentID=component.id,
+                                    sectionID=section.id,
                                     priority=priority,
                                     shlibdeps=shlibdeps,
                                     depends=depends,
