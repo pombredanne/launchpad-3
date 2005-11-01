@@ -51,4 +51,4 @@ ALTER TABLE KarmaAction ALTER COLUMN summary SET NOT NULL;
 /* and finally, lets add some new karma actions for the spec system and
    support systems */
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (25,78,0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (25,50,0);

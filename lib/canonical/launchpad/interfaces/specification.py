@@ -105,7 +105,7 @@ class ISpecification(IHasOwner):
     is_complete = Attribute('Is True if this spec is already completely '
         'implemented. Note that it is True for informational specs, since '
         'they describe general funcitonality rather than specific '
-        'code to be written. It is also true of obsolete and superceded '
+        'code to be written. It is also true of obsolete and superseded '
         'specs, since there is no longer any need to schedule work for '
         'them.')
     is_incomplete = Attribute('Is True if this work still needs to '

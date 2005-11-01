@@ -89,4 +89,4 @@ INSERT INTO KarmaAction (category, name, points, title, summary) VALUES (6, 'spe
 INSERT INTO KarmaAction (category, name, points, title, summary) VALUES (6, 'specbugadded', 10, 'Linked Bug to Specification', 'The user has indicated that a particular bug is related to a specification.');
 INSERT INTO KarmaAction (category, name, points, title, summary) VALUES (6, 'specbugremoved', 10, 'Removed Bug from Specification', 'The user has indicated that a particular bug is not related to a specification.');
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (25,78,0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (25,50,0);

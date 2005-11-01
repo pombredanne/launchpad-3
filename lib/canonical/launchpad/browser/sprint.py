@@ -75,7 +75,7 @@ class SprintContextMenu(ContextMenu):
         return Link('./?show=deferred', text, icon='info')
 
     def submitted(self):
-        text = 'Show newly submitted'
+        text = 'Show new'
         return Link('./?show=submitted', text, icon='info')
 
 

@@ -1181,6 +1181,10 @@ class SpecificationSort(DBSchema):
     This is usually used in interfaces which ask for a filtered list of
     specifications, so that you can tell which specifications you would
     expect to see first.
+
+    NB: this is not really a "dbschema" in that is doesn't map to an int
+    that is stored in the db. In future, we will likely have a different way
+    of defining such enums.
     """
     DATE = Item(10, """
         Date
