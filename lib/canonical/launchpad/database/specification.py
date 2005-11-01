@@ -8,7 +8,8 @@ import datetime
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, IntervalCol, MultipleJoin, RelatedJoin)
+    ForeignKey, IntCol, StringCol, IntervalCol, MultipleJoin, RelatedJoin,
+    BoolCol)
 
 from canonical.launchpad.interfaces import (
     ISpecification, ISpecificationSet)
@@ -69,6 +70,8 @@ class Specification(SQLBase):
         foreignKey='Milestone', notNull=False, default=None)
     specurl = StringCol(notNull=True)
     whiteboard = StringCol(notNull=False, default=None)
+    needs_discussion = BoolCol(notNull=True, default=True)
+    direction_approved = BoolCol(notNull=True, default=False)
 
     # useful joins
     subscriptions = MultipleJoin('SpecificationSubscription',

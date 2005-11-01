@@ -14,7 +14,7 @@ from zope.i18nmessageid import MessageIDFactory
 
 from zope.interface import Interface, Attribute
 
-from zope.schema import Datetime, Int, Choice, Text, TextLine, Float
+from zope.schema import Datetime, Int, Choice, Text, TextLine, Float, Bool
 
 from canonical.launchpad.fields import Summary, Title, TimeInterval
 from canonical.launchpad.validators.name import valid_name
@@ -85,6 +85,15 @@ class ISpecification(IHasOwner):
         description=_(
             "Any notes on the status of this spec you would like to make. "
             "Your changes will override the current text."))
+    needs_discussion = Bool(title=_('Needs further discussion?'),
+        required=False, description=_("Check this to indicate that the "
+        "specification needs further group discussion as well as drafting"
+        "."), default=True)
+    direction_approved = Bool(title=_('Basic direction approved?'),
+        required=False, default=False, description=_("Check this to "
+        "indicate that the drafter and assignee have satisfied the "
+        "approver that they are headed in the right basic direction "
+        "with this specification."))
     # other attributes
     product = Choice(title=_('Product'), required=False,
         vocabulary='Product')
