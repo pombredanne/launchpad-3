@@ -299,9 +299,14 @@ class POFileView:
         else:
             published = False
 
+        if self.context.path is None:
+            # The POFile is a dummy one, we use the filename as the path.
+            path = filename
+        else:
+            path = self.context.path
         # Add it to the queue.
         translation_import_queue_set.addOrUpdateEntry(
-            self.context.path, content, published, self.user,
+            path, content, published, self.user,
             sourcepackagename=self.context.potemplate.sourcepackagename,
             distrorelease=self.context.potemplate.distrorelease,
             productseries=self.context.potemplate.productseries)
