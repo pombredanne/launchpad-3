@@ -286,6 +286,14 @@ class Person(SQLBase):
         """See IPerson."""
         return self.teamowner is not None
 
+    def shippedShipItRequests(self):
+        """See IPerson."""
+        query = '''
+            ShippingRequest.recipient = %s AND
+            ShippingRequest.id IN (SELECT request FROM Shipment)
+            ''' % sqlvalues(self.id)
+        return ShippingRequest.select(query)
+
     def pastShipItRequests(self):
         """See IPerson."""
         query = '''

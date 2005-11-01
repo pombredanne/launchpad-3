@@ -347,4 +347,5 @@ an arbitrary constant that seemed appropriate).
     Reflow problems with c... 0.72
     Blackhole Trash folder    0.70
     Bug Title Test            0.70
+    Printing doesn't work     0.70
 

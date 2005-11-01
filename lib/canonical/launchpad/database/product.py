@@ -155,10 +155,11 @@ class Product(SQLBase):
             name = %s
             """ % sqlvalues(self.id, name))
 
-    def newBug(self, owner, title, description):
+    def createBug(self, owner, title, comment, private=False):
         """See IBugTarget."""
         return BugSet().createBug(
-            product=self, comment=description, title=title, owner=owner)
+            product=self, comment=comment, title=title, owner=owner,
+            private=private)
 
     def tickets(self, quantity=None):
         """See ITicketTarget."""
