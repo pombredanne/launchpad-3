@@ -64,6 +64,9 @@ class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
         admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.obj.target.owner) or 
                 user.inTeam(self.obj.owner) or 
+                user.inTeam(self.obj.drafter) or 
+                user.inTeam(self.obj.assignee) or 
+                user.inTeam(self.obj.approver) or 
                 user.inTeam(admins))
 
 

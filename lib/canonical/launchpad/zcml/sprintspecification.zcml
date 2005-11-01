@@ -14,7 +14,7 @@
       />
     <require
       permission="launchpad.Admin"
-      set_attributes="status"
+      set_attributes="status whiteboard"
       />
   </content>
 
@@ -34,17 +34,21 @@
     label="Does spec require further discussion?"
     fields="needs_discussion"
     permission="launchpad.Edit"
-    template="../templates/sprintspecification-edit.pt"
-  />
+    template="../templates/sprintspecification-edit.pt">
+  </browser:editform>
 
   <browser:editform
     name="+admin"
     schema="canonical.launchpad.interfaces.ISprintSpecification"
     class="canonical.launchpad.browser.SprintSpecificationEditView"
     label="Approve spec for meeting agenda?"
-    fields="status"
+    fields="status whiteboard"
     permission="launchpad.Admin"
-    template="../templates/sprintspecification-edit.pt"
-  />
+    template="../templates/sprintspecification-edit.pt">
+    <browser:widget
+      field="whiteboard"
+      class="zope.app.form.browser.TextAreaWidget"
+      height="5" />
+  </browser:editform>
 
 </configure>

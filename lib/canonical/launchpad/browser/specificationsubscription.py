@@ -5,16 +5,13 @@
 __metaclass__ = type
 __all__ = ['SpecificationSubscriptionAddView']
 
-from canonical.launchpad.browser.form import FormView
-from canonical.launchpad.webapp import canonical_url
+
+from canonical.launchpad.webapp import (
+    canonical_url, GeneralFormView)
 from canonical.launchpad.interfaces import ISpecificationSubscription
 
 
-class SpecificationSubscriptionAddView(FormView):
-
-    schema = ISpecificationSubscription
-    fieldNames = ['person']
-    _arguments = ['person']
+class SpecificationSubscriptionAddView(GeneralFormView):
 
     def process(self, person):
         self._nextURL = canonical_url(self.context)

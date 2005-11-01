@@ -34,6 +34,16 @@
     path_expression="string:+spec/${name}"
     attribute_to_parent="target" />
 
+  <subscriber
+    for="canonical.launchpad.interfaces.ISpecification
+         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+    factory="canonical.launchpad.subscribers.karma.spec_created" />
+
+  <subscriber
+    for="canonical.launchpad.interfaces.ISpecification
+         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+    factory="canonical.launchpad.subscribers.karma.spec_modified" />
+
   <browser:pages
     for="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationView"
@@ -82,12 +92,26 @@
       template="../templates/specification-doreview.pt" />
   </browser:pages>
 
-  <browser:page
+  <browser:generalform
     name="+addsubscriber"
     for="canonical.launchpad.interfaces.ISpecification"
+    schema="canonical.launchpad.interfaces.ISpecificationSubscription"
     class="canonical.launchpad.browser.SpecificationSubscriptionAddView"
+    fields="person"
+    arguments="person"
     permission="launchpad.AnyPerson"
     template="../templates/specification-addsubscriber.pt"
+    />
+
+  <browser:generalform
+    name="+retarget"
+    for="canonical.launchpad.interfaces.ISpecification"
+    schema="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationRetargetingView"
+    fields="product distribution"
+    keyword_arguments="product distribution"
+    permission="launchpad.Edit"
+    template="../templates/specification-retargeting.pt"
     />
 
   <browser:editform
@@ -319,6 +343,11 @@
       name="+portlet-sprints"
       template="../templates/specifications-portlet-sprints.pt" />
   </browser:pages>
+
+  <!-- SpecificationDelta -->
+  <content class="canonical.launchpad.components.specification.SpecificationDelta">
+    <allow interface="canonical.launchpad.interfaces.ISpecificationDelta" />
+  </content>
 
 </facet>
 

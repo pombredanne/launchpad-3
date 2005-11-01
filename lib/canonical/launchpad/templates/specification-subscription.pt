@@ -14,37 +14,53 @@
 
 <div metal:fill-slot="main">
 
-  <h1 tal:condition="not: view/subscription">Subscribe to Specification</h1>
-  <h1 tal:condition="view/subscription">Unsubscribe From Specification</h1>
+  <tal:subscribed condition="view/subscription">
 
-  <p class="documentDescription">
-    If you subscribe to a specification it will show up on your
-    personal pages.
-  </p>
+    <h1>Unsubscribe From Specification</h1>
 
-  <p>
-    Choose "Subscribe" to become a subscriber to this spec, or "Cancel" to
-    return to the specification page.
-  </p>
+    <p>
+      Choose "Unsubscribe" to remove your subscription to this spec, or
+      "Cancel" to return to the specification page.
+    </p>
 
-  <form action="." method="POST">
+    <form action="." method="POST">
 
-    <div>
-    </div>
-    <div class="actions">
-      <input type="submit"
-             name="cancel"
-             value="Cancel" />
-      <input tal:condition="not: view/subscription"
-             type="submit"
-             name="subscribe"
-             value="Subscribe" />
-      <input tal:condition="view/subscription"
-             type="submit"
-             name="subscribe"
-             value="Unsubscribe" />
-    </div>
-  </form>
+      <div>
+      </div>
+      <div class="actions">
+        <input type="submit"
+               name="cancel"
+               value="Cancel" />
+        <input type="submit"
+               name="subscribe"
+               value="Unsubscribe" />
+      </div>
+    </form>
+
+  </tal:subscribed>
+
+  <tal:not_subscribed condition="not: view/subscription">
+
+    <h1>Subscribe to Specification</h1>
+
+    <p>
+      Choose "Subscribe" to become a subscriber to this spec, or "Cancel" to
+      return to the specification page.
+    </p>
+  
+    <form action="." method="POST">
+  
+      <div class="actions">
+        <input type="submit"
+               name="cancel"
+               value="Cancel" />
+        <input type="submit"
+               name="subscribe"
+               value="Subscribe" />
+      </div>
+    </form>
+
+  </tal:not_subscribed>
 
 </div>
 

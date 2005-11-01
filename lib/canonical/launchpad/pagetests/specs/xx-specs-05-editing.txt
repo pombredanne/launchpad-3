@@ -92,13 +92,13 @@ etc) of the specification.
   >>> print http(r"""
   ... POST /products/firefox/+spec/extension-manager-upgrades/+status HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Content-Length: 821
+  ... Content-Length: 824
   ... Content-Type: multipart/form-data; boundary=---------------------------39919133514734389772038868621
   ... 
   ... -----------------------------39919133514734389772038868621
   ... Content-Disposition: form-data; name="field.status"
   ... 
-  ... Draft
+  ... Drafting
   ... -----------------------------39919133514734389772038868621
   ... Content-Disposition: form-data; name="field.status-empty-marker"
   ... 

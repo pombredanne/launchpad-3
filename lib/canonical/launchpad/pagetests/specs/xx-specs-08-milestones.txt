@@ -51,7 +51,7 @@ milestone.
   ... GET /products/firefox/+spec/canvas HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...Mozilla Firefox...Milestone 1.0...
+  ...products/firefox/+milestone/1.0...
 
 Now, we should see the spec on the Mozilla Milestone 1.0 page.
 
