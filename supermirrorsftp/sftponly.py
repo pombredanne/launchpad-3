@@ -1,7 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-from canonical.authserver.client.twistedclient import TwistedAuthServer
-
 from twisted.conch import avatar, unix
 from twisted.conch.ssh import session, filetransfer
 from twisted.conch.ssh import factory, userauth, connection
@@ -36,7 +34,7 @@ class SubsystemOnlySession(session.SSHSession, object):
 
 
 class SFTPOnlyAvatar(avatar.ConchUser):
-    def __init__(self, avatarId, homeDirsRoot, productMapFilename, authserver):
+    def __init__(self, avatarId, homeDirsRoot, productMapFilename, userDict):
         # Double-check that we don't get unicode -- directory names on the file
         # system are a sequence of bytes as far as we're concerned.  We don't
         # want any tricky login names turning into a security problem.
@@ -56,7 +54,6 @@ class SFTPOnlyAvatar(avatar.ConchUser):
         self.productMapFilename = productMapFilename
 
         # Fetch user details from the authserver
-        userDict = authserver.getUser(self.avatarId)
         self.lpid = userDict['id']
         self.lpname = userDict['name']
         self.teams = userDict['teams']
@@ -213,9 +210,11 @@ class Realm:
         self.authserver = authserver
 
     def requestAvatar(self, avatarId, mind, *interfaces):
-        avatar = SFTPOnlyAvatar(avatarId, self.homeDirsRoot,
-                                self.productMapFilename, self.authserver)
-        return interfaces[0], avatar, lambda: None
+        def gotUserDict(userDict):
+            avatar = SFTPOnlyAvatar(avatarId, self.homeDirsRoot,
+                                    self.productMapFilename, userDict)
+            return interfaces[0], avatar, lambda: None
+        return self.authserver.getUser(avatarId).addCallback(gotUserDict)
 
 
 class Factory(factory.SSHFactory):

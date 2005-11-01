@@ -4,13 +4,17 @@
 #     twistd -noy sftp.tac
 # or similar.  Refer to the twistd(1) man page for details.
 
-from supermirrorsftp import sftponly
+import os
+
 from twisted.cred import portal
 from twisted.conch.ssh import keys
 from twisted.application import service, internet
-import os
 
-authserverURL = 'http://localhost:8999/'
+from canonical.authserver.client.twistedclient import TwistedAuthServer
+
+from supermirrorsftp import sftponly
+
+authserverURL = 'http://localhost:8999/v2/'
 keydir = os.environ.get('SUPERMIRROR_KEYDIR', os.path.join(os.getcwd(),'keys'))
 hostPublicKey = keys.getPublicKeyString(
     data=open(os.path.join(keydir, 'ssh_host_key_rsa.pub'), 'rb').read()

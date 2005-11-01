@@ -81,7 +81,7 @@ class SFTPServerUserDir(osfs.OSDirectory):
                     "after a product name registered in Launchpad "
                     "<https://launchpad.net>")
                 if self.junkAllowed:
-                    msg += ", or named '+junk'".
+                    msg += ", or named '+junk'."
                 else:
                     msg += "."
                 raise PermissionError(msg)
