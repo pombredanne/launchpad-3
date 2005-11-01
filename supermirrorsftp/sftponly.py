@@ -10,6 +10,8 @@ from twisted.cred.checkers import ICredentialsChecker
 from twisted.cred.portal import IRealm
 from twisted.python import components
 from twisted.python.filepath import FilePath, InsecurePath
+from twisted.vfs.pathutils import FileSystem
+from supermirrorsftp.bazaarfs import SFTPServerRoot
 
 from zope.interface import implements
 import binascii
@@ -34,8 +36,7 @@ class SubsystemOnlySession(session.SSHSession, object):
 
 
 class SFTPOnlyAvatar(avatar.ConchUser):
-    def __init__(self, avatarId, homeDirsRoot, personMapFilename,
-                 productMapFilename):
+    def __init__(self, avatarId, homeDirsRoot, productMapFilename, authserver):
         # Double-check that we don't get unicode -- directory names on the file
         # system are a sequence of bytes as far as we're concerned.  We don't
         # want any tricky login names turning into a security problem.
@@ -52,13 +53,14 @@ class SFTPOnlyAvatar(avatar.ConchUser):
 
         self.avatarId = avatarId
         self.homeDirsRoot = homeDirsRoot
-        # XXX: need to get the list of teams this user is a member of from the
-        # authserver somehow.
-        # XXX: don't need person map -- the authserver gives us this info in the
-        # teams dict.  (the person map is only needed for mod_rewrite).
-        #self.personMapFilename = personMapFilename
         self.productMapFilename = productMapFilename
-        self.teams = XXX_authserver.getUser(XXX_person_id)['teams']
+
+        # Fetch user details from the authserver
+        userDict = authserver.getUser(self.avatarId)
+        self.lpid = userDict['id']
+        self.lpname = userDict['name']
+        self.teams = userDict['teams']
+        self.filesystem = FileSystem(SFTPServerRoot(self))
 
         # Set the only channel as a session that only allows requests for
         # subsystems...
@@ -197,21 +199,22 @@ class SFTPServerForPushMirrorUser:
         return '.' + path.path[len(self.homedir.path):]
 
 
-components.registerAdapter(SFTPServerForPushMirrorUser, SFTPOnlyAvatar,
-                           filetransfer.ISFTPServer)
+# XXX: shouldn't need this anymore with vfs...
+#components.registerAdapter(SFTPServerForPushMirrorUser, SFTPOnlyAvatar,
+#                           filetransfer.ISFTPServer)
 
 
 class Realm:
     implements(IRealm)
 
-    def __init__(self, homeDirsRoot, personMapFilename, productMapFilename):
+    def __init__(self, homeDirsRoot, productMapFilename, authserver):
         self.homeDirsRoot = homeDirsRoot
-        self.personMapFilename = personMapFilename
         self.productMapFilename = productMapFilename
+        self.authserver = authserver
 
     def requestAvatar(self, avatarId, mind, *interfaces):
         avatar = SFTPOnlyAvatar(avatarId, self.homeDirsRoot,
-                                self.personMapFilename, self.productMapFilename)
+                                self.productMapFilename, self.authserver)
         return interfaces[0], avatar, lambda: None
 
 
@@ -242,8 +245,8 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
     """
     implements(ICredentialsChecker)
 
-    def __init__(self, authserverURL):
-        self.authserver = TwistedAuthServer(authserverURL)
+    def __init__(self, authserver):
+        self.authserver = authserver
 
     def _unmungeUsername(username):
         """Unmunge usernames, because baz doesn't work with @ in usernames.
@@ -260,6 +263,8 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
 
         Anything without an underscore is also not munged, and so unaffected
         (even though they aren't valid usernames).
+        XXX: Actually, they're valid for logging into the bzr part of the
+        supermirror...
 
             >>> unmunge('foo-bar')
             'foo-bar'

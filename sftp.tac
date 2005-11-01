@@ -21,11 +21,10 @@ hostPrivateKey = keys.getPrivateKeyObject(
 
 # Configure the authentication
 homedirs = os.environ.get('SUPERMIRROR_HOMEDIRS', '/tmp')
-personMapFilename = './person_mapping.txt'
 productMapFilename = './product_mapping.txt'
-portal = portal.Portal(sftponly.Realm(homedirs, personMapFilename,
-                                      productMapFilename))
-portal.registerChecker(sftponly.PublicKeyFromLaunchpadChecker(authserverURL))
+authserver = TwistedAuthServer(authserverURL)
+portal = portal.Portal(sftponly.Realm(homedirs, productMapFilename, authserver))
+portal.registerChecker(sftponly.PublicKeyFromLaunchpadChecker(authserver))
 sftpfactory = sftponly.Factory(hostPublicKey, hostPrivateKey)
 sftpfactory.portal = portal
 
