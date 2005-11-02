@@ -15,6 +15,7 @@ from sqlos.interfaces import IConnectionName
 
 from canonical.database.sqlbase import SQLBase, ZopelessTransactionManager
 from canonical.lp import initZopeless
+from canonical.launchpad.ftests import login, ANONYMOUS
 
 import sqlos
 from sqlos.connection import connCache
@@ -116,6 +117,16 @@ class LaunchpadTestCase(unittest.TestCase):
 
 
 class LaunchpadFunctionalTestCase(unittest.TestCase):
+
+    def login(self, user=None):
+        """Login the current zope request as user.
+        
+        If no user is provided, ANONYMOUS is used.
+        """
+        if user is None:
+            user = ANONYMOUS
+        login(user)
+
     def setUp(self):
         unittest.TestCase.setUp(self)
         LaunchpadFunctionalTestSetup().setUp()
