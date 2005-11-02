@@ -82,7 +82,13 @@
 <owl:Class rdf:about="http://xmlns.com/foaf/0.1/Agent">
 </owl:Class>
 
-<owl:Class rdf:about="http://xmlns.com/foaf/0.1/Person">
+<owl:Class rdf:about="https://launchpad.net/rdf/launchpad#Person">
+    <rdfs:subClassOf>
+        <owl:Class rdf:about="http://xmlns.com/foaf/0.1/Person">
+        </owl:Class>
+    </rdfs:subClassOf>
+    <rdfs:label>Person</rdfs:label>
+    <rdfs:comment>A person.</rdfs:comment>
 </owl:Class>
 
 <owl:Class rdf:about="http://xmlns.com/foaf/0.1/Project">
@@ -627,4 +633,16 @@
     </rdfs:subPropertyOf>
 </owl:ObjectProperty>
 
+<owl:ObjectProperty rdf:about="https://launchpad.net/rdf/launchpad#gpg_fingerprint">
+    <rdfs:domain>
+        <owl:Class rdf:about="https://launchpad.net/rdf/launchpad#Person">
+        </owl:Class>
+    </rdfs:domain>
+    <rdfs:range>
+        <owl:Class rdf:about="http://www.w3.org/2000/01/rdf-schema#Literal">
+        </owl:Class>
+    </rdfs:range>
+    <rdfs:comment>GPG fingerprint of GPG key owned by a person.</rdfs:comment>
+    <rdfs:label>GPG fingerprint</rdfs:label>
+</owl:ObjectProperty>
 </rdf:RDF>

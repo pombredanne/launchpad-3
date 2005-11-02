@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
          xmlns:foaf="http://xmlns.com/foaf/0.1/"
+         xmlns:lp="https://launchpad.net/rdf/launchpad#"
          xmlns:tal="http://xml.zope.org/namespaces/tal">
-    <foaf:Person tal:condition="not:context/isTeam">
+    <lp:Person tal:condition="not:context/isTeam">
         <foaf:name tal:content="context/displayname">Display Name</foaf:name>
         <foaf:nick tal:content="context/name">Nick name</foaf:nick>
         <foaf:img tal:condition="context/hackergotchi"
@@ -11,7 +12,11 @@
             tal:condition="context/preferredemail"
             tal:content="context/preferredemail_sha1"
             >0BEEC7B5EA3f0FDBC95D0DD47F3C5BC275DA8A33</foaf:mbox_sha1sum>
-    </foaf:Person>
+        <tal:block tal:repeat="gpgkey context/gpgkeys">
+        <lp:gpg_fingerprint
+            tal:content="gpgkey/fingerprint">ABCDEFFFFFFFFF</lp:gpg_fingerprint>
+        </tal:block>
+    </lp:Person>
     <foaf:Group tal:condition="context/isTeam">
         <foaf:name tal:content="context/displayname">
             Team Display Name
@@ -20,7 +25,7 @@
         <foaf:img tal:condition="context/emblem"
                   tal:attributes="rdf:resource context/emblem/url" />
         <foaf:member tal:repeat="member context/allmembers">
-            <foaf:Person>
+            <lp:Person>
                 <foaf:name tal:content="member/displayname">
                     Display Name
                 </foaf:name>
@@ -29,7 +34,12 @@
                     tal:content="member/preferredemail_sha1"
                     >0BEEC7B5EA3f0FDBC95D0DD47F3C5BC275DA8A33
                 </foaf:mbox_sha1sum>
-            </foaf:Person>
+                <tal:block tal:repeat="gpgkey member/gpgkeys">
+                <lp:gpg_fingerprint
+                    tal:content="gpgkey/fingerprint"
+                    >ABCDEFFFFFFFFF</lp:gpg_fingerprint>
+                </tal:block>
+            </lp:Person>
         </foaf:member>
     </foaf:Group>
 </rdf:RDF>
