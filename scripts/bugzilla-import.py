@@ -41,7 +41,7 @@ def main(argv):
                       help='Only import bugs with the given status',
                       type='string', dest='status',
                       default='UNCONFIRMED,NEW,ASSIGNED,REOPENED,NEEDINFO,'
-                              'PENDINGUPLOAD')
+                              'UPSTREAM,PENDINGUPLOAD')
 
     # MySQL connection details
     parser.add_option('-d', '--dbname', metavar='DB', action='store',
