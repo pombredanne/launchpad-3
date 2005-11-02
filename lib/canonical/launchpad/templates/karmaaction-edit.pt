@@ -9,27 +9,6 @@
 
     <div metal:use-macro="context/@@launchpad_editform/editform">
     
-      <div metal:fill-slot="extra_top">
-        <br />
-        <div class="row">
-          <div class="field">
-            <label>Name</label>
-            <div class="value">
-              <p tal:content="context/name/title">The Action's Name</p>
-            </div>
-          </div>
-        </div>
-
-        <div class="row">
-          <div class="field">
-            <label>Description</label>
-            <div class="value">
-              <p tal:content="context/name/description">The Action's
-              Description</p>
-            </div>
-          </div>
-        </div>
-      </div>
 
     </div>
     

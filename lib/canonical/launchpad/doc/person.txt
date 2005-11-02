@@ -7,7 +7,6 @@ privileges to do what we're going to demonstrate.
 
 >>> from zope.component import getUtility
 >>> from zope.interface.verify import verifyObject
->>> from canonical.lp.dbschema import KarmaActionName
 >>> from canonical.database.sqlbase import sqlvalues, flush_database_updates
 >>> from canonical.launchpad.interfaces import (
 ...     IPersonSet, IPerson, IEmailAddressSet)
@@ -161,7 +160,7 @@ Must login as 'sabdfl' cause he's the owner of the Ubuntu Team.
 >>> ubuntu_translators = personset.getByName('ubuntu-translators')
 >>> ubuntu_translators.addMember(empty)
 >>> ubuntu_team.teamowner = empty
->>> empty.assignKarma(KarmaActionName.BUGFIXED)
+>>> foo = empty.assignKarma('bugfixed')
 >>> empty.updateKarmaCache()
 >>> sample.updateKarmaCache()
 >>> flush_database_updates()
@@ -176,7 +175,7 @@ True
 >>> empty.karma
 10
 >>> sample.karma
-91
+101
 
 >>> personset.merge(empty, sample)
 
@@ -187,7 +186,7 @@ True
 >>> empty.karma
 0
 >>> sample.karma
-101
+111
 
 >>> from canonical.launchpad.database import Person
 >>> cur = Person._connection._connection.cursor()
@@ -233,8 +232,7 @@ preferred email address.
 >>> empty.karma = 10000
 >>> flush_database_updates()
 >>> [(person.name, person.karma) for person in personset.topPeople()]
-[(u'name12', 101), (u'jordi', 0), (u'marilize', 0), (u'no-priv', 0),
-(u'kreutzm', 0)]
+[(u'name12', 111), (u'name16', 40), (u'jordi', 0), (u'marilize', 0), (u'no-priv', 0)]
 
 
 People can have karma in Launchpad
@@ -247,7 +245,7 @@ Launchpad.
 Salgado wrote the karma framework. Let's give him some karma points.
 
 >>> salgado = personset.getByName('salgado')
->>> salgado.assignKarma(KarmaActionName.BUGFIXED)
+>>> foo = salgado.assignKarma('bugfixed')
 >>> salgado.karma
 0
 

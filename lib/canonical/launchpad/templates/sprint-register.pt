@@ -1,0 +1,34 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xml:lang="en"
+  lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-attendees" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_generalform/generalform">
+
+    <h1 metal:fill-slot="heading">Register Someone Else</h1>
+
+    <div metal:fill-slot="extra_info" class="documentDescription">
+      Use this form to register someone else to attend the meeting.
+    </div>
+
+  </div>
+
+</div>
+    
+</body>
+</html>
+

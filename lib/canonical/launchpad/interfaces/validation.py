@@ -81,7 +81,7 @@ def non_duplicate_bug(value):
     from canonical.launchpad.interfaces.bug import IBugSet
     bugset = getUtility(IBugSet)
     duplicate = getUtility(ILaunchBag).bug
-    dup_target = bugset.get(value)
+    dup_target = value
     current_bug_has_dup_refs = bugset.searchAsUser(
         user=getUtility(ILaunchBag).user,
         duplicateof=duplicate).count()

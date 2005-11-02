@@ -14,14 +14,14 @@ INSERT INTO person (id, displayname, givenname, familyname, "password", teamowne
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (5, 'Scott James Remnant', 'Scott James', 'Remnant', NULL, NULL, NULL, 'keybuk', NULL, '''jame'':3B,6C ''scott'':2B,5C ''keybuk'':1A ''remnant'':4B,7C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.608802', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (6, 'Jeff Waugh', 'Jeff', 'Waugh', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'jdub', NULL, '''jdub'':1A ''jeff'':2B,4C ''waugh'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.600523', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (7, 'Andrew Bennetts', 'Andrew', 'Bennetts', NULL, NULL, NULL, 'spiv', NULL, '''spiv'':1A ''andrew'':2B,4C ''bennett'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.551196', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (8, 'James Blackwell', 'James', 'Blackwell', NULL, NULL, NULL, 'jblack', NULL, '''jame'':2B,4C ''jblack'':1A ''blackwel'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.601584', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (8, 'James Blackwell', 'James', 'Blackwell', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'jblack', NULL, '''jame'':2B,4C ''jblack'':1A ''blackwel'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.601584', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (9, 'Christian Reis', 'Christian', 'Reis', NULL, NULL, NULL, 'kiko', NULL, '''rei'':3B,5C ''kiko'':1A ''christian'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.594941', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (10, 'Alexander Limi', 'Alexander', 'Limi', NULL, NULL, NULL, 'limi', NULL, '''limi'':1A,3B,5C ''alexand'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.619713', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (11, 'Steve Alexander', 'Steve', 'Alexander', NULL, NULL, NULL, 'stevea', NULL, '''steve'':2B,4C ''stevea'':1A ''alexand'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.599234', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (12, 'Sample Person', 'Sample', 'Person', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'name12', NULL, '''sampl'':2B,4C ''name12'':1A ''person'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.612277', 1, 'Australia/Perth', 91, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (13, 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín', 'MdB+BoAdbza3BA6mIkMm6bFo1kv9hR2PKZ3U', NULL, NULL, 'carlos', NULL, '''carlo'':1A,2B,5C ''marín'':4B,7C ''perelló'':3B,6C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.615543', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (14, 'Dafydd Harries', 'Dafydd', 'Harries', 'EvSuSe4k4tkRHSp6p+g91vyQIwL5VJ3iTbRZ', NULL, NULL, 'daf', NULL, '''daf'':1A ''harri'':3B,5C ''dafydd'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.616666', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (16, 'Foo Bar', 'Foo', 'Bar', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'name16', NULL, '''bar'':3B,5C ''foo'':2B,4C ''name16'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', 2, 'Africa/Johannesburg', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (16, 'Foo Bar', 'Foo', 'Bar', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'name16', NULL, '''bar'':3B,5C ''foo'':2B,4C ''name16'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', 2, 'Africa/Johannesburg', 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (17, 'Ubuntu Team', NULL, NULL, NULL, 1, 'This Team is responsible for the Ubuntu Distribution', 'name17', NULL, '''team'':3B ''name17'':1A ''ubuntu'':2B', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.60576', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (18, 'Ubuntu Gnome Team', NULL, NULL, NULL, 1, 'This Team is responsible for the GNOME releases Issues on whole Ubuntu Distribution', 'name18', NULL, '''team'':4B ''gnome'':3B ''name18'':1A ''ubuntu'':2B', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.607744', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (19, 'Warty Gnome Team', NULL, NULL, NULL, 1, 'This Team is responsible for GNOME release Issues on Warty Distribution Release', 'name19', NULL, '''team'':4B ''gnome'':3B ''warti'':2B ''name19'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.602661', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
@@ -42,7 +42,7 @@ INSERT INTO person (id, displayname, givenname, familyname, "password", teamowne
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (34, 'Jordi Vilalta', 'Jordi', 'Vilalta', 'gsTz0TyTUL7xrkoAH4Yz2WE6/w6WoYG5LjaO8p/xA1FDdSM6qkWiYA==', NULL, NULL, 'jvprat', NULL, '''jordi'':2B,4C ''jvprat'':1A ''vilalta'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.622908', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (35, 'Sigurd Gartmann', 'Sigurd', 'Gartmann', 'FvPq9d4L5onnmcRA9wCzQ5lnPPYIzvW5rJA7GGnnsJuQqz8M8naZkQ==', NULL, NULL, 'sigurd-ubuntu', NULL, '''sigurd'':2A,4B,6C ''ubuntu'':3A ''gartmann'':5B,7C ''sigurd-ubuntu'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.623962', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (36, 'Vlastimil Skacel', 'Vlastimil', 'Skacel', 'lyA9CgUH9lHmTiaiWGP2vzkmytufiHBAnc9c8WCX1g5pYyBd6QgL3A==', NULL, NULL, 'skacel', NULL, '''skacel'':1A,3B,5C ''vlastimil'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.5244', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (37, 'Daniel Aguayo', 'Daniel', 'Aguayo', 'bpLapC1tQHUedQBP447krtcmaRPd3hrncPusTlNUKXh5ymfO5yVhhQ==', NULL, NULL, 'danner', NULL, '''aguayo'':3B,5C ''daniel'':2B,4C ''danner'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.549651', NULL, 'UTC', 10000, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (37, 'Daniel Aguayo', 'Daniel', 'Aguayo', 'bpLapC1tQHUedQBP447krtcmaRPd3hrncPusTlNUKXh5ymfO5yVhhQ==', NULL, NULL, 'danner', NULL, '''aguayo'':3B,5C ''daniel'':2B,4C ''danner'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.549651', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (38, 'Martin Pitt', 'Martin', 'Pitt', 'iNbxn63pi1VFuZ0byz76vhFtdMXQAj2L+Cn/1UpsbmOhjUZs+Z6Naw==', NULL, NULL, 'martin-pitt', NULL, '''pitt'':3A,5B,7C ''martin'':2A,4B,6C ''martin-pitt'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.555051', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (39, 'Nicolas Velin', 'Nicolas', 'Velin', 'U2QzusrIFlQZKb3hWzcLpfhFcB3WZ0fa0E+OwcV8q/WOtsQCjarzzA==', NULL, NULL, 'nsv', NULL, '''nsv'':1A ''velin'':3B,5C ''nicola'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.556132', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (40, 'Francesco Accattapà', 'Francesco', 'Accattapà', 'mSKDc1EKoi8a5L0zd+oueU33nuSEuFWy+JHIHxOukBVJt9LPW47RVg==', NULL, NULL, 'callipeo', NULL, '''callipeo'':1A ''francesco'':2B,4C ''accattapà'':3B,5C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.558429', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
@@ -1135,46 +1135,42 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'libraryfilecontent'::pg_catalog.regclass;
 
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (1, '2005-04-07 16:46:05.265391', NULL, 178859, '378b3498ead213d35a82033a6e9196014a5ef25c');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (2, '2005-04-07 16:46:05.266763', NULL, 9922560, 'a57faa6287aee2c58e115673a119c6083d31d1b9');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (3, '2005-04-07 16:46:05.26727', NULL, 309386, 'b218ca7b52fa813550e3f14cdcf3ba68606e4446');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (4, '2005-04-07 16:46:05.267803', NULL, 162927750, 'cfbd3ee1f510c66d49be465b900a3334e8488184');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (5, '2005-05-18 08:03:28.021862', NULL, 4381, '9b1f78faa39fb09a9fd955d744002c2d8f32d88d');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (6, '2005-05-18 08:03:28.021862', NULL, 7910, 'afdf21d698587a6601e2ffed0f44292b7ad5dd07');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (7, '2005-05-18 08:03:28.021862', NULL, 10826, '502828e7591277535abe9015ffbc6918dbba8ef4');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (8, '2005-05-18 08:03:28.021862', NULL, 10826, '502828e7591277535abe9015ffbc6918dbba8ef4');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (9, '2005-05-18 08:03:28.021862', NULL, 2655, 'ca3b107af84c05eaf98ba073376153986566ec28');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (10, '2005-05-18 08:03:28.021862', NULL, 13110, 'bc7bebca1e3c5c166838b19f0eeb7f171e51805d');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (11, '2005-05-18 08:03:28.021862', NULL, 13499, '78a26efee75a54f113063b78783b2d4612fee409');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (12, '2005-05-18 08:03:28.021862', NULL, 12695, '8812d04c170ca90bb1423e188ce9706869aa03d7');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (13, '2005-05-18 08:03:28.021862', NULL, 13133, 'db1b50cbde7142d344bd8ef9b2e1fe3b3116f77c');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (14, '2005-05-18 08:03:28.021862', NULL, 13641, 'e19cc1446e3004f10475c37b2cd363f75b8ae89a');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (15, '2005-05-18 08:03:28.021862', NULL, 13269, 'fc8cab1cb1e5fb1efa3c3c475b8f7c8dc5038d50');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (16, '2005-05-18 08:03:28.021862', NULL, 13983, 'e17ee3031bd29dcd1e5905c0fd17945600a91ccf');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (17, '2005-05-18 08:03:28.021862', NULL, 12652, '07b01d1e6fe9a729f911e72dfe674a5e0abdc4ee');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (18, '2005-05-18 08:03:28.021862', NULL, 13240, '801dc911c2bd67e17eff087516fdc63a2ac322ce');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (19, '2005-05-18 08:03:28.021862', NULL, 4165, 'fca78a2292e4034b8dfbb2de6f69e17ebeecaaa1');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (20, '2005-05-18 08:03:28.021862', NULL, 4093, 'fc67a1770f78c45c396b4724195aeb10683aa2fd');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (21, '2005-05-18 08:03:28.021862', NULL, 3635, '4ab2ca308dafe152789640942488e23a33e4f46c');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (22, '2005-05-18 08:03:28.021862', NULL, 3553, '20815563ee33368d51e3213354f97c05b4685968');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (23, '2005-05-18 08:03:28.021862', NULL, 3778, '965968d3e6668f39ebc64bc11a3f1a5cd07c213b');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (24, '2005-05-18 08:03:28.021862', NULL, 3666, 'cca8fb78e05a34481e07683cea8c3a47f01c609e');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (25, '2005-05-18 08:03:28.021862', NULL, 3793, '28a7accfb491a2b4895b49b810ca7cda0badc787');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (26, '2005-05-18 08:03:28.021862', NULL, 4773, '03efb176f04f3897de7d5e6484864b0559fd6cd6');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (27, '2005-05-18 08:03:28.021862', NULL, 2961, '4468039e1d2cbdfc78d2e53477e5fe0537bae302');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (28, '2005-05-18 08:03:28.021862', NULL, 3558, 'd6c2ddacdab7618ce2a555c20a4a730fcdb42600');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (29, '2005-05-18 08:03:28.021862', NULL, 3561, '9eb09455e6a568605c1bbab4cdf1936eee92222d');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (30, '2005-05-18 08:03:28.021862', NULL, 3305, 'b45b170da29f9b22650315657505124766c93720');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (31, '2005-05-18 08:03:28.021862', NULL, 3987, '9668ba9f0a59f9e6e6bc73fc5dc9f116b202bceb');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (32, '2005-05-18 08:03:28.021862', NULL, 4908, '874a6ef9cd1aaef17653c6c12f4b83ef9487c1c3');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (33, '2005-05-18 08:03:28.021862', NULL, 4908, '874a6ef9cd1aaef17653c6c12f4b83ef9487c1c3');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (34, '2005-08-10 09:31:29.606407', NULL, 2, '71853c6197a6a7f222db0f1978c7cb232b87c5ee');
-INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1) VALUES (35, '2005-08-01 09:31:29.606407', NULL, 2, '71853c6197a6a7f222db0f1978c7cb232b87c5ee');
-
-
-INSERT INTO LibraryFileContent (id, filesize, sha1, deleted) VALUES (
-    36, 3, sha1('foo'), true
-    );
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (1, '2005-04-07 16:46:05.265391', NULL, 178859, '378b3498ead213d35a82033a6e9196014a5ef25c', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (2, '2005-04-07 16:46:05.266763', NULL, 9922560, 'a57faa6287aee2c58e115673a119c6083d31d1b9', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (3, '2005-04-07 16:46:05.26727', NULL, 309386, 'b218ca7b52fa813550e3f14cdcf3ba68606e4446', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (4, '2005-04-07 16:46:05.267803', NULL, 162927750, 'cfbd3ee1f510c66d49be465b900a3334e8488184', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (5, '2005-05-18 08:03:28.021862', NULL, 4381, '9b1f78faa39fb09a9fd955d744002c2d8f32d88d', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (6, '2005-05-18 08:03:28.021862', NULL, 7910, 'afdf21d698587a6601e2ffed0f44292b7ad5dd07', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (7, '2005-05-18 08:03:28.021862', NULL, 10826, '502828e7591277535abe9015ffbc6918dbba8ef4', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (8, '2005-05-18 08:03:28.021862', NULL, 10826, '502828e7591277535abe9015ffbc6918dbba8ef4', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (9, '2005-05-18 08:03:28.021862', NULL, 2655, 'ca3b107af84c05eaf98ba073376153986566ec28', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (10, '2005-05-18 08:03:28.021862', NULL, 13110, 'bc7bebca1e3c5c166838b19f0eeb7f171e51805d', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (11, '2005-05-18 08:03:28.021862', NULL, 13499, '78a26efee75a54f113063b78783b2d4612fee409', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (12, '2005-05-18 08:03:28.021862', NULL, 12695, '8812d04c170ca90bb1423e188ce9706869aa03d7', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (13, '2005-05-18 08:03:28.021862', NULL, 13133, 'db1b50cbde7142d344bd8ef9b2e1fe3b3116f77c', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (14, '2005-05-18 08:03:28.021862', NULL, 13641, 'e19cc1446e3004f10475c37b2cd363f75b8ae89a', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (15, '2005-05-18 08:03:28.021862', NULL, 13269, 'fc8cab1cb1e5fb1efa3c3c475b8f7c8dc5038d50', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (16, '2005-05-18 08:03:28.021862', NULL, 13983, 'e17ee3031bd29dcd1e5905c0fd17945600a91ccf', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (17, '2005-05-18 08:03:28.021862', NULL, 12652, '07b01d1e6fe9a729f911e72dfe674a5e0abdc4ee', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (18, '2005-05-18 08:03:28.021862', NULL, 13240, '801dc911c2bd67e17eff087516fdc63a2ac322ce', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (19, '2005-05-18 08:03:28.021862', NULL, 4165, 'fca78a2292e4034b8dfbb2de6f69e17ebeecaaa1', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (20, '2005-05-18 08:03:28.021862', NULL, 4093, 'fc67a1770f78c45c396b4724195aeb10683aa2fd', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (21, '2005-05-18 08:03:28.021862', NULL, 3635, '4ab2ca308dafe152789640942488e23a33e4f46c', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (22, '2005-05-18 08:03:28.021862', NULL, 3553, '20815563ee33368d51e3213354f97c05b4685968', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (23, '2005-05-18 08:03:28.021862', NULL, 3778, '965968d3e6668f39ebc64bc11a3f1a5cd07c213b', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (24, '2005-05-18 08:03:28.021862', NULL, 3666, 'cca8fb78e05a34481e07683cea8c3a47f01c609e', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (25, '2005-05-18 08:03:28.021862', NULL, 3793, '28a7accfb491a2b4895b49b810ca7cda0badc787', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (26, '2005-05-18 08:03:28.021862', NULL, 4773, '03efb176f04f3897de7d5e6484864b0559fd6cd6', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (27, '2005-05-18 08:03:28.021862', NULL, 2961, '4468039e1d2cbdfc78d2e53477e5fe0537bae302', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (28, '2005-05-18 08:03:28.021862', NULL, 3558, 'd6c2ddacdab7618ce2a555c20a4a730fcdb42600', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (29, '2005-05-18 08:03:28.021862', NULL, 3561, '9eb09455e6a568605c1bbab4cdf1936eee92222d', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (30, '2005-05-18 08:03:28.021862', NULL, 3305, 'b45b170da29f9b22650315657505124766c93720', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (31, '2005-05-18 08:03:28.021862', NULL, 3987, '9668ba9f0a59f9e6e6bc73fc5dc9f116b202bceb', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (32, '2005-05-18 08:03:28.021862', NULL, 4908, '874a6ef9cd1aaef17653c6c12f4b83ef9487c1c3', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (33, '2005-05-18 08:03:28.021862', NULL, 4908, '874a6ef9cd1aaef17653c6c12f4b83ef9487c1c3', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (34, '2005-08-10 09:31:29.606407', NULL, 2, '71853c6197a6a7f222db0f1978c7cb232b87c5ee', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (35, '2005-08-01 09:31:29.606407', NULL, 2, '71853c6197a6a7f222db0f1978c7cb232b87c5ee', false);
+INSERT INTO libraryfilecontent (id, datecreated, datemirrored, filesize, sha1, deleted) VALUES (36, '2005-10-30 18:00:27.899028', NULL, 3, '0beec7b5ea3f0fdbc95d0dd47f3c5bc275da8a33', true);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'libraryfilecontent'::pg_catalog.regclass;
@@ -1182,46 +1178,42 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'libraryfilealias'::pg_catalog.regclass;
 
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (1, 1, 'netapplet-1.0.0.tar.gz', 'application/x-gtar', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (2, 1, 'netapplet_1.0.0.orig.tar.gz', 'application/x-gtar', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (3, 2, 'firefox-0.9.2.tar.gz', 'application/x-gtar', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (4, 3, 'evolution-1.0.tar.gz', 'application/x-gtar', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (5, 5, 'netapplet.pot', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (6, 6, 'pmount.pot', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (7, 7, 'evolution-2.2.pot', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (8, 8, 'evolution-2.2.pot', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (9, 9, 'pkgconf-mozilla.pot', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (10, 10, 'hr.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (11, 11, 'ca.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (12, 12, 'nb.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (13, 13, 'cs.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (14, 14, 'es_ES.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (15, 15, 'de.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (16, 16, 'fr.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (17, 17, 'it_IT.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (18, 18, 'es.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (19, 19, 'fr.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (20, 20, 'pt_BR.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (21, 21, 'ja.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (22, 22, 'es.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (23, 23, 'nl.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (24, 24, 'cs.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (25, 25, 'da.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (26, 26, 'fi.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (27, 27, 'gl.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (28, 28, 'lt.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (29, 29, 'it.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (30, 30, 'tr.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (31, 31, 'de.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (32, 32, 'es.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (33, 33, 'es.po', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (34, 34, 'evolution-2.2-test.pot', 'application/x-po', NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires) VALUES (35, 35, 'Ubuntu-High-Pri-2005-08-01.csv', 'text/plain', NULL);
-
-
-INSERT INTO LibraryFileAlias (id, content, filename, mimetype) VALUES (
-    36, 36, 'foo.txt', 'text/plain'
-    );
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (1, 1, 'netapplet-1.0.0.tar.gz', 'application/x-gtar', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (2, 1, 'netapplet_1.0.0.orig.tar.gz', 'application/x-gtar', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (3, 2, 'firefox-0.9.2.tar.gz', 'application/x-gtar', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (4, 3, 'evolution-1.0.tar.gz', 'application/x-gtar', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (5, 5, 'netapplet.pot', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (6, 6, 'pmount.pot', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (7, 7, 'evolution-2.2.pot', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (8, 8, 'evolution-2.2.pot', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (9, 9, 'pkgconf-mozilla.pot', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (10, 10, 'hr.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (11, 11, 'ca.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (12, 12, 'nb.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (13, 13, 'cs.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (14, 14, 'es_ES.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (15, 15, 'de.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (16, 16, 'fr.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (17, 17, 'it_IT.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (18, 18, 'es.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (19, 19, 'fr.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (20, 20, 'pt_BR.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (21, 21, 'ja.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (22, 22, 'es.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (23, 23, 'nl.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (24, 24, 'cs.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (25, 25, 'da.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (26, 26, 'fi.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (27, 27, 'gl.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (28, 28, 'lt.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (29, 29, 'it.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (30, 30, 'tr.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (31, 31, 'de.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (32, 32, 'es.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (33, 33, 'es.po', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (34, 34, 'evolution-2.2-test.pot', 'application/x-po', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (35, 35, 'Ubuntu-High-Pri-2005-08-01.csv', 'text/plain', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (36, 36, 'foo.txt', 'text/plain', NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'libraryfilealias'::pg_catalog.regclass;
@@ -5664,6 +5656,7 @@ Crash!
 Expected Results:  
 Not crashed.', 12, 5, 0, '2005-01-14 17:35:39.548665', 0, '2005-01-14 17:35:39.548665', 0, '2005-01-14 17:35:39.548665', NULL, '''1'':67 ''2'':72 ''4'':83 ''5'':86 ''6'':109 ''7'':116 ''8'':126 ''u'':20 ''en'':24 ''ok'':85,96 ''rv'':26 ''us'':25 ''1.6'':27 ''bug'':107 ''two'':101 ''use'':56 ''x11'':19 ''back'':88 ''caus'':52 ''i686'':22 ''open'':58,78,91 ''save'':4B,32,102 ''step'':64 ''user'':14 ''58777'':108 ''agent'':15 ''alway'':63 ''build'':16 ''click'':73 ''close'':12B,44,110,117,127 ''crash'':2B,47,135,139 ''en-us'':23 ''exist'':39 ''first'':129 ''linux'':21 ''press'':84,95 ''start'':122 ''visit'':68 ''actual'':133 ''appear'':82 ''cancel'':115,132 ''dialog'':6B,34,42,61,80,93,104,113,130 ''expect'':136 ''happen'':55 ''result'':134,137 ''second'':112 ''switch'':87 ''window'':10B,38,120 ''browser'':119 ''firefox'':1B,45 ''possibl'':50 ''user-ag'':13 ''download'':75 ''identifi'':17 ''nonexist'':9B,37 ''reproduc'':62,66 ''with/save'':59,79,92 ''firefox/0.8'':29 ''mozilla/5.0'':18 ''gecko/20040207'':28 ''www.mozilla.org'':70 ''/products/firefox/'':71 ''www.mozilla.org/products/firefox/'':69', false);
 INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, summary, fti, private) VALUES (7, '2005-10-14 15:12:29.602117', NULL, 'A test bug', 'A test description', 16, NULL, 0, '2005-10-14 15:12:29.602117', 0, '2005-10-14 15:12:29.602117', 0, '2005-10-14 15:12:29.602117', NULL, '''bug'':3B ''test'':2B,5 ''descript'':6', false);
+INSERT INTO bug (id, datecreated, name, title, description, "owner", duplicateof, communityscore, communitytimestamp, activityscore, activitytimestamp, hits, hitstimestamp, summary, fti, private) VALUES (8, '2005-10-28 09:10:17.13237', NULL, 'Printing doesn''t work', 'When I press print in Firefox, nothing happens, not even a print dialog comes up.', 12, NULL, 0, '2005-10-28 09:10:17.13237', 0, '2005-10-28 09:10:17.13237', 0, '2005-10-28 09:10:17.13237', NULL, '''come'':18 ''even'':14 ''noth'':11 ''work'':4B ''doesn'':2B ''press'':7 ''print'':1B,8,16 ''dialog'':17 ''happen'':12 ''firefox'':10', false);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bug'::pg_catalog.regclass;
@@ -5675,6 +5668,7 @@ INSERT INTO bugsubscription (id, person, bug) VALUES (1, 11, 1);
 INSERT INTO bugsubscription (id, person, bug) VALUES (4, 12, 1);
 INSERT INTO bugsubscription (id, person, bug) VALUES (5, 11, 2);
 INSERT INTO bugsubscription (id, person, bug) VALUES (6, 16, 7);
+INSERT INTO bugsubscription (id, person, bug) VALUES (7, 12, 8);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bugsubscription'::pg_catalog.regclass;
@@ -5695,6 +5689,10 @@ INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, ne
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (11, 3, '2005-08-10 16:30:47.448639', 12, 'bug', NULL, NULL, 'assigned to source package mozilla-firefox');
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (12, 7, '2005-10-14 15:12:29.602117', 16, 'bug', NULL, NULL, 'added bug');
 INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (13, 7, '2005-10-14 15:12:49.943257', 16, 'evolution: assignee', NULL, 'name16', 'XXX: not yet implemented');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (14, 8, '2005-10-28 09:10:17.13237', 12, 'bug', NULL, NULL, 'added bug');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (15, 8, '2005-10-28 09:10:47.344393', 16, 'mozilla-firefox: status', 'New', 'Accepted', 'XXX: not yet implemented');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (16, 8, '2005-10-28 09:10:47.344393', 16, 'mozilla-firefox: assignee', NULL, 'name16', 'XXX: not yet implemented');
+INSERT INTO bugactivity (id, bug, datechanged, person, whatchanged, oldvalue, newvalue, message) VALUES (17, 8, '2005-10-28 09:11:07.93721', 16, 'mozilla-firefox: status', 'Accepted', 'Fixed', 'XXX: not yet implemented');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bugactivity'::pg_catalog.regclass;
@@ -5764,6 +5762,7 @@ INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rf
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (11, '2005-10-14 15:12:29.602117', 'A test bug', 16, NULL, NULL, '<20051014151229.28962.1536.malonedeb@localhost.localdomain>', '''bug'':3B ''test'':2B', NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (12, '2005-10-14 12:25:21.508923', 'Re: Newly installed plug-in doesn''t seem to be used', 16, NULL, NULL, '<20051014122521.14276.39260.lptickets@localhost.localdomain>', '''re'':1B ''use'':12B ''plug'':5B ''seem'':9B ''doesn'':7B ''newli'':2B ''instal'':3B ''plug-in'':4B', NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (13, '2005-10-14 13:28:11.554476', 'Re: Slow system', 12, NULL, NULL, '<20051014132811.14276.65873.lptickets@localhost.localdomain>', '''re'':1B ''slow'':2B ''system'':3B', NULL);
+INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (14, '2005-10-28 09:10:17.13237', 'Printing doesn''t work', 12, NULL, 3, '<20051028091017.6690.9505.malonedeb@localhost.localdomain>', '''work'':4B ''doesn'':2B ''print'':1B', NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'message'::pg_catalog.regclass;
@@ -6085,6 +6084,7 @@ INSERT INTO bugmessage (id, bug, message) VALUES (7, 5, 8);
 INSERT INTO bugmessage (id, bug, message) VALUES (8, 6, 9);
 INSERT INTO bugmessage (id, bug, message) VALUES (9, 3, 10);
 INSERT INTO bugmessage (id, bug, message) VALUES (10, 7, 11);
+INSERT INTO bugmessage (id, bug, message) VALUES (11, 8, 14);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bugmessage'::pg_catalog.regclass;
@@ -6117,6 +6117,9 @@ INSERT INTO karma (id, datecreated, person, "action") VALUES (13, '2025-08-10 16
 INSERT INTO karma (id, datecreated, person, "action") VALUES (14, '2025-08-10 16:30:47.448639', 12, 9);
 INSERT INTO karma (id, datecreated, person, "action") VALUES (15, '2025-10-14 15:12:29.602117', 16, 1);
 INSERT INTO karma (id, datecreated, person, "action") VALUES (16, '2025-10-14 15:12:29.602117', 16, 1);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (17, '2005-10-28 09:10:17.13237', 12, 1);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (18, '2005-10-28 09:10:47.344393', 16, 17);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (19, '2005-10-28 09:11:07.93721', 16, 8);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'karma'::pg_catalog.regclass;
@@ -6147,6 +6150,7 @@ INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackag
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (19, 3, NULL, NULL, 7, 1, NULL, 10, 30, 30, NULL, '2005-08-10 16:30:47.448639', '2005-08-10 16:30:47.448639', 12, NULL, NULL, NULL, '');
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (20, 2, NULL, NULL, 6, 1, NULL, 10, 30, 30, NULL, '2005-08-22 13:54:57.840344', '2005-08-22 13:54:57.840344', 12, NULL, NULL, NULL, '');
 INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (21, 7, 5, NULL, NULL, NULL, NULL, 10, NULL, 30, 16, '2005-10-14 15:12:29.602117', '2005-10-14 15:12:29.602117', 16, NULL, NULL, NULL, '');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti) VALUES (22, 8, NULL, 3, NULL, 1, NULL, 30, NULL, 30, 16, '2005-10-28 09:10:17.13237', '2005-10-28 09:10:17.13237', 12, NULL, NULL, NULL, '');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bugtask'::pg_catalog.regclass;
@@ -6301,6 +6305,7 @@ INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (9
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (10, 11, 1, 'A test description', NULL, '''test'':2C ''descript'':3C');
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (11, 12, 1, 'After you''ve installed a new plugin, you need to restart the browser. Does it work if you restart Firefox?', NULL, '''ve'':3C ''new'':6C ''need'':9C ''work'':16C ''instal'':4C ''plugin'':7C ''browser'':13C ''firefox'':20C ''restart'':11C,19C');
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (12, 13, 1, 'Maybe DMA isn''t enabled?', NULL, '''dma'':2C ''isn'':3C ''mayb'':1C ''enabl'':5C');
+INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (13, 14, 1, 'When I press print in Firefox, nothing happens, not even a print dialog comes up.', NULL, '''come'':14C ''even'':10C ''noth'':7C ''press'':3C ''print'':4C,12C ''dialog'':13C ''happen'':8C ''firefox'':6C');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'messagechunk'::pg_catalog.regclass;
@@ -7755,27 +7760,40 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'karmaaction'::pg_catalog.regclass;
 
-INSERT INTO karmaaction (id, name, category, points) VALUES (1, 1, 2, 10);
-INSERT INTO karmaaction (id, name, category, points) VALUES (2, 2, 2, 0);
-INSERT INTO karmaaction (id, name, category, points) VALUES (3, 3, 2, 1);
-INSERT INTO karmaaction (id, name, category, points) VALUES (4, 4, 2, 2);
-INSERT INTO karmaaction (id, name, category, points) VALUES (5, 5, 2, 3);
-INSERT INTO karmaaction (id, name, category, points) VALUES (6, 6, 2, 10);
-INSERT INTO karmaaction (id, name, category, points) VALUES (7, 7, 2, 15);
-INSERT INTO karmaaction (id, name, category, points) VALUES (8, 8, 2, 10);
-INSERT INTO karmaaction (id, name, category, points) VALUES (9, 9, 2, 10);
-INSERT INTO karmaaction (id, name, category, points) VALUES (10, 10, 3, 10);
-INSERT INTO karmaaction (id, name, category, points) VALUES (11, 11, 3, 30);
-INSERT INTO karmaaction (id, name, category, points) VALUES (12, 12, 3, 5);
-INSERT INTO karmaaction (id, name, category, points) VALUES (13, 13, 3, 1);
-INSERT INTO karmaaction (id, name, category, points) VALUES (14, 14, 3, 1);
-INSERT INTO karmaaction (id, name, category, points) VALUES (15, 15, 3, 1);
-INSERT INTO karmaaction (id, name, category, points) VALUES (16, 16, 2, 3);
-INSERT INTO karmaaction (id, name, category, points) VALUES (17, 17, 2, 5);
-INSERT INTO karmaaction (id, name, category, points) VALUES (18, 18, 2, 1);
-INSERT INTO karmaaction (id, name, category, points) VALUES (19, 19, 2, 1);
-INSERT INTO karmaaction (id, name, category, points) VALUES (20, 20, 2, 5);
-INSERT INTO karmaaction (id, name, category, points) VALUES (21, 21, 2, 10);
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (1, 2, 10, 'bugcreated', 'New Bug Filed', 'The user filed a new bug report. This is distinct from creating a new "task" for an existing bug, on, say, an upstream product.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (2, 2, 0, 'bugcommentadded', 'Bug Comment Added', 'The user commented on an existing bug in Malone.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (3, 2, 1, 'bugtitlechanged', 'Edited Bug Title', 'The user edited the title of the bug to provide a clearer idea of the core issue.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (4, 2, 2, 'bugsummarychanged', 'Edited Bug Summary', 'The user edited the bug summary. This will specifically help users searching for existing bugs in Malone.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (5, 2, 3, 'bugdescriptionchanged', 'Edited Bug Description', 'The user edited the bug description to describe more clearly the specific symptoms and expected outcomes for the bug. This will also improve the ability of other users to find this bug report and avoid creating duplicates.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (6, 2, 10, 'bugextrefadded', 'Bug External Reference Added', 'The user provided a URL to information which is relevant to this bug, for example, to a mailing list archive where it is discussed, or to a detailed problem report.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (7, 2, 15, 'bugcverefadded', 'Bug CVE Link Added', 'The user has linked a bug report to a specific entry in the CVE database.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (8, 2, 10, 'bugfixed', 'Bug Marked as Fixed', 'The user marked a bug as fixed.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (9, 2, 10, 'bugtaskcreated', 'Bug Task Created', 'The user has created a new task on a bug. This means that they have indicated that the same bug exists in another place (for example, upstream) and have reported that in Malone.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (10, 3, 10, 'translationtemplateimport', 'Import of Translation Template', 'The user updated a translation template, providing a newer version to be imported in Rosetta.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (11, 3, 30, 'translationimportupstream', 'Upstream Translation Imported', 'The user imported a set of upstream translations into Rosetta');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (12, 3, 5, 'translationtemplatedescriptionchanged', 'Edited Translation Template Description', 'The user updated the description of a specific translation template.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (13, 3, 1, 'translationsuggestionadded', 'Translation Suggestion', 'The user contributed a new suggested translation. That may not yet have been accepted, but is valued nonetheless.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (14, 3, 1, 'translationsuggestionapproved', 'Translation Suggestion Approved', 'The user approved a translation suggestion that was previously contributed by someone else.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (15, 3, 1, 'translationreview', 'Translation Review', 'The user has completed a review of suggested translations.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (16, 2, 3, 'bugrejected', 'Bug Rejected', 'The user has rejected a bug.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (17, 2, 5, 'bugaccepted', 'Bug Accepted', 'The user has marked a bug as accepted.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (18, 2, 1, 'bugtaskseveritychanged', 'Bug Severity Changed', 'The user has updated the severity of a bug task. Note that the severity of a bug can vary depending on where the code is being used, so each bug task has its own severity.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (19, 2, 1, 'bugtaskprioritychanged', 'Bug Priority Changed', 'The user has updated the priority of a particular bug task. Note that bug task has a distinct priority, because each of them will likely have a different developer responsible for them.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (20, 2, 5, 'bugmarkedasduplicate', 'Bug Marked as Duplicate', 'The user has marked a bug as a duplicate of another bug. This greatly reduces the amount of time developers need to spend reviewing existing bug lists.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (21, 2, 10, 'bugwatchadded', 'Bug Watch Added', 'The user has linked an existing bug in Launchpad to an external bug tracker, to indicate that the bug is being tracked in that bug tracker too.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (22, 6, 30, 'addspec', 'Registered Specification', 'The user has registered a new specification in the Launchpad spec tracker.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (23, 6, 5, 'specpriority', 'Updated Specification Priority', 'The user has changed the priority of a specification to match the requirements of the project.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (24, 6, 2, 'spectitlechanged', 'Edited Specification Title', 'The user edited the title of a specification.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (25, 6, 2, 'specsummarychanged', 'Edited Specification Summary', 'The user edited the summary of a specification.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (26, 6, 5, 'specseries', 'Targeted Specification to Series', 'The user has targetted a specification to a particular series.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (27, 6, 5, 'specrelease', 'Targeted Specification to Release', 'The user has targetted a specification to a particular distribution release.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (28, 6, 5, 'specmilestone', 'Targeted Specification to Milestone', 'The user has targetted a specification to a particular milestone.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (29, 6, 3, 'specdraft', 'Specification Drafting', 'The user has changed the status of the specification to indicate that drafting has begun.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (30, 6, 15, 'specpendingapproval', 'Specification is Pending Approval', 'The user has set the status of the spec to PendingApproval');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (31, 6, 10, 'specreviewed', 'Specification Review', 'The user has completed a review of a specification.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (32, 6, 10, 'specbugadded', 'Linked Bug to Specification', 'The user has indicated that a particular bug is related to a specification.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (33, 6, 10, 'specbugremoved', 'Removed Bug from Specification', 'The user has indicated that a particular bug is not related to a specification.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (34, 6, 2, 'specurlchanged', 'Specification URL Updated', 'The user edited the URL of a specification.');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'karmaaction'::pg_catalog.regclass;
@@ -7783,8 +7801,398 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'karmacache'::pg_catalog.regclass;
 
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (1, 1, 2, 33);
-INSERT INTO karmacache (id, person, category, karmavalue) VALUES (2, 1, 3, 33);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (1, 1, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (2, 1, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (393, 10, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (394, 10, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (395, 10, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (396, 10, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (397, 10, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (398, 10, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (399, 10, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (400, 41, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (401, 41, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (402, 41, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (403, 41, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (404, 41, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (405, 41, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (406, 41, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (407, 7, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (408, 7, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (409, 7, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (410, 7, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (411, 7, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (412, 7, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (413, 7, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (414, 43, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (415, 43, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (416, 43, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (417, 43, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (418, 43, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (419, 43, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (420, 43, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (421, 24, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (422, 24, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (423, 24, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (424, 24, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (425, 24, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (426, 24, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (427, 24, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (428, 13, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (429, 13, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (430, 13, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (431, 13, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (432, 13, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (433, 13, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (434, 13, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (435, 44, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (436, 44, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (437, 44, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (438, 44, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (439, 44, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (440, 44, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (441, 44, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (442, 28, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (443, 28, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (444, 28, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (445, 28, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (446, 28, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (447, 28, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (448, 28, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (449, 9, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (450, 9, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (451, 9, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (452, 9, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (453, 9, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (454, 9, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (455, 9, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (456, 4, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (457, 4, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (458, 4, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (459, 4, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (460, 4, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (461, 4, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (462, 4, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (463, 14, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (464, 14, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (465, 14, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (466, 14, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (467, 14, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (468, 14, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (469, 14, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (470, 37, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (471, 37, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (472, 37, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (473, 37, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (474, 37, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (475, 37, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (476, 37, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (477, 27, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (478, 27, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (479, 27, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (480, 27, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (481, 27, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (482, 27, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (483, 27, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (484, 26, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (485, 26, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (486, 26, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (487, 26, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (488, 26, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (489, 26, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (490, 26, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (491, 3, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (492, 3, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (493, 3, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (494, 3, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (495, 3, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (496, 3, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (497, 3, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (498, 23, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (499, 23, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (500, 23, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (501, 23, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (502, 23, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (503, 23, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (504, 23, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (505, 42, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (506, 42, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (507, 42, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (508, 42, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (509, 42, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (510, 42, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (511, 42, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (512, 33, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (513, 33, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (514, 33, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (515, 33, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (516, 33, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (517, 33, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (518, 33, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (519, 16, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (520, 16, 2, 40);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (521, 16, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (522, 16, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (523, 16, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (524, 16, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (525, 16, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (526, 40, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (527, 40, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (528, 40, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (529, 40, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (530, 40, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (531, 40, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (532, 40, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (533, 32, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (534, 32, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (535, 32, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (536, 32, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (537, 32, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (538, 32, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (539, 32, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (540, 29, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (541, 29, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (542, 29, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (543, 29, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (544, 29, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (545, 29, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (546, 29, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (547, 51, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (548, 51, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (549, 51, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (550, 51, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (551, 51, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (552, 51, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (553, 51, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (554, 21, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (555, 21, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (556, 21, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (557, 21, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (558, 21, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (559, 21, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (560, 21, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (561, 8, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (562, 8, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (563, 8, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (564, 8, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (565, 8, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (566, 8, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (567, 8, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (568, 6, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (569, 6, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (570, 6, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (571, 6, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (572, 6, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (573, 6, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (574, 6, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (575, 56, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (576, 56, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (577, 56, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (578, 56, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (579, 56, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (580, 56, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (581, 56, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (582, 34, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (583, 34, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (584, 34, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (585, 34, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (586, 34, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (587, 34, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (588, 34, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (589, 49, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (590, 49, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (591, 49, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (592, 49, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (593, 49, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (594, 49, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (595, 49, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (596, 25, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (597, 25, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (598, 25, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (599, 25, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (600, 25, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (601, 25, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (602, 25, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (603, 57, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (604, 57, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (605, 57, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (606, 57, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (607, 57, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (608, 57, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (609, 57, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (610, 45, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (611, 45, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (612, 45, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (613, 45, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (614, 45, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (615, 45, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (616, 45, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (617, 55, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (618, 55, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (619, 55, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (620, 55, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (621, 55, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (622, 55, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (623, 55, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (624, 1, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (625, 1, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (626, 1, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (627, 1, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (628, 1, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (629, 38, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (630, 38, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (631, 38, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (632, 38, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (633, 38, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (634, 38, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (635, 38, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (636, 48, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (637, 48, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (638, 48, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (639, 48, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (640, 48, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (641, 48, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (642, 48, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (643, 46, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (644, 46, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (645, 46, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (646, 46, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (647, 46, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (648, 46, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (649, 46, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (650, 47, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (651, 47, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (652, 47, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (653, 47, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (654, 47, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (655, 47, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (656, 47, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (657, 39, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (658, 39, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (659, 39, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (660, 39, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (661, 39, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (662, 39, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (663, 39, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (664, 52, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (665, 52, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (666, 52, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (667, 52, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (668, 52, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (669, 52, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (670, 52, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (671, 2, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (672, 2, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (673, 2, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (674, 2, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (675, 2, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (676, 2, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (677, 2, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (678, 30, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (679, 30, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (680, 30, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (681, 30, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (682, 30, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (683, 30, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (684, 30, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (685, 12, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (686, 12, 2, 91);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (687, 12, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (688, 12, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (689, 12, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (690, 12, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (691, 12, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (692, 5, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (693, 5, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (694, 5, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (695, 5, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (696, 5, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (697, 5, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (698, 5, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (699, 54, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (700, 54, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (701, 54, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (702, 54, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (703, 54, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (704, 54, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (705, 54, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (706, 35, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (707, 35, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (708, 35, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (709, 35, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (710, 35, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (711, 35, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (712, 35, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (713, 11, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (714, 11, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (715, 11, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (716, 11, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (717, 11, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (718, 11, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (719, 11, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (720, 22, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (721, 22, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (722, 22, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (723, 22, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (724, 22, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (725, 22, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (726, 22, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (727, 18, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (728, 18, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (729, 18, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (730, 18, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (731, 18, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (732, 18, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (733, 18, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (734, 17, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (735, 17, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (736, 17, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (737, 17, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (738, 17, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (739, 17, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (740, 17, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (741, 31, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (742, 31, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (743, 31, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (744, 31, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (745, 31, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (746, 31, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (747, 31, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (748, 50, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (749, 50, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (750, 50, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (751, 50, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (752, 50, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (753, 50, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (754, 50, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (755, 36, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (756, 36, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (757, 36, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (758, 36, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (759, 36, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (760, 36, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (761, 36, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (762, 19, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (763, 19, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (764, 19, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (765, 19, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (766, 19, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (767, 19, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (768, 19, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (769, 20, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (770, 20, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (771, 20, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (772, 20, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (773, 20, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (774, 20, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (775, 20, 7, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (776, 53, 1, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (777, 53, 2, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (778, 53, 3, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (779, 53, 4, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (780, 53, 5, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (781, 53, 6, 0);
+INSERT INTO karmacache (id, person, category, karmavalue) VALUES (782, 53, 7, 0);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'karmacache'::pg_catalog.regclass;
@@ -7954,11 +8362,11 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'specification'::pg_catalog.regclass;
 
-INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (1, 'extension-manager-upgrades', 'Extension Manager Upgrades', 'Simplify the way extensions are installed and registered so that: 1. third party applications can easily register and deregister extensions that live with their code. 2. developers can easily register extensions that they are developing out of a location apart from their build (e.g. their home directory), and  3. developers can easily install extensions for testing.', 16, 13, NULL, 1, '2005-08-24 16:03:46.479655', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://wiki.mozilla.org/Firefox:1.1_Product_Team', NULL);
-INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (2, 'canvas', 'Support <canvas> Objects', 'With the Firefox 1.1 Developer Preview Release, Firefox includes a new HTML element for programmable graphics. <canvas> is based on the WhatWG canvas specification (http://www.whatwg.org/specs/web-apps/current-work/#graphics), which itself is based on Apple''s <canvas> implemented in Safari. It can be used for rendering graphs, UI elements, and other custom graphics on the client.', 16, NULL, NULL, NULL, '2005-08-24 16:05:03.406307', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://developer.mozilla.org/en/docs/Drawing_Graphics_with_Canvas', NULL);
-INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (3, 'svg-support', 'Support Native SVG Objects', 'Scalable Vector Graphics (SVG) is an XML markup language for describing two-dimensional vector graphics. Mozilla should natively support embedded SVG images in HTML documents, or SVG served directly, much as PNG or JPEG images can be served.', 16, 13, 2, NULL, '2005-08-24 16:10:05.078543', 4, NULL, NULL, NULL, NULL, 10, 70, 'http://developer.mozilla.org/en/docs/SVG', NULL);
-INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (4, 'e4x', 'Support E4X in EcmaScript', 'E4X adds native XML datatypes to the ECMAScript language, extends the semantics of familiar ECMAScript operators for manipulating XML objects and adds a small set of new operators for common XML operations, such as searching and filtering. It also adds support for XML literals, namespaces, qualified names and other mechanisms to facilitate XML processing.', 16, 14, 28, NULL, '2005-08-24 16:11:37.431981', 4, NULL, NULL, NULL, 1, 20, 0, 'http://www.ecma-international.org/publications/standards/Ecma-357.htm', 'This is the status whiteboard. Dig it?');
-INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard) VALUES (5, 'mergewin', 'Merge Open Browser Windows with "Consolidate Windows"', 'It should be possible to merge multiple open browser windows with a "Consolidate Windows" menu option.', 16, NULL, NULL, NULL, '2005-10-19 18:03:59.900723', 4, NULL, NULL, NULL, NULL, 40, 50, NULL, NULL);
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, needs_discussion, direction_approved) VALUES (1, 'extension-manager-upgrades', 'Extension Manager Upgrades', 'Simplify the way extensions are installed and registered so that: 1. third party applications can easily register and deregister extensions that live with their code. 2. developers can easily register extensions that they are developing out of a location apart from their build (e.g. their home directory), and  3. developers can easily install extensions for testing.', 16, 13, NULL, 1, '2005-08-24 16:03:46.479655', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://wiki.mozilla.org/Firefox:1.1_Product_Team', NULL, NULL, true, false);
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, needs_discussion, direction_approved) VALUES (2, 'canvas', 'Support <canvas> Objects', 'With the Firefox 1.1 Developer Preview Release, Firefox includes a new HTML element for programmable graphics. <canvas> is based on the WhatWG canvas specification (http://www.whatwg.org/specs/web-apps/current-work/#graphics), which itself is based on Apple''s <canvas> implemented in Safari. It can be used for rendering graphs, UI elements, and other custom graphics on the client.', 16, NULL, NULL, NULL, '2005-08-24 16:05:03.406307', 4, NULL, NULL, NULL, NULL, 40, 50, 'http://developer.mozilla.org/en/docs/Drawing_Graphics_with_Canvas', NULL, NULL, true, false);
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, needs_discussion, direction_approved) VALUES (3, 'svg-support', 'Support Native SVG Objects', 'Scalable Vector Graphics (SVG) is an XML markup language for describing two-dimensional vector graphics. Mozilla should natively support embedded SVG images in HTML documents, or SVG served directly, much as PNG or JPEG images can be served.', 16, 13, 2, NULL, '2005-08-24 16:10:05.078543', 4, NULL, NULL, NULL, NULL, 10, 70, 'http://developer.mozilla.org/en/docs/SVG', NULL, NULL, true, true);
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, needs_discussion, direction_approved) VALUES (4, 'e4x', 'Support E4X in EcmaScript', 'E4X adds native XML datatypes to the ECMAScript language, extends the semantics of familiar ECMAScript operators for manipulating XML objects and adds a small set of new operators for common XML operations, such as searching and filtering. It also adds support for XML literals, namespaces, qualified names and other mechanisms to facilitate XML processing.', 16, 14, 28, NULL, '2005-08-24 16:11:37.431981', 4, NULL, NULL, NULL, 1, 20, 0, 'http://www.ecma-international.org/publications/standards/Ecma-357.htm', 'This is the status whiteboard. Dig it?', NULL, true, false);
+INSERT INTO specification (id, name, title, summary, "owner", assignee, drafter, approver, datecreated, product, productseries, distribution, distrorelease, milestone, status, priority, specurl, whiteboard, superseded_by, needs_discussion, direction_approved) VALUES (5, 'mergewin', 'Merge Open Browser Windows with "Consolidate Windows"', 'It should be possible to merge multiple open browser windows with a "Consolidate Windows" menu option.', 16, NULL, NULL, NULL, '2005-10-19 18:03:59.900723', 4, NULL, NULL, NULL, NULL, 40, 50, NULL, NULL, NULL, true, false);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'specification'::pg_catalog.regclass;
@@ -8260,9 +8668,9 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sprintspecification'::pg_catalog.regclass;
 
-INSERT INTO sprintspecification (id, sprint, specification, status, needs_discussion) VALUES (1, 1, 3, 10, true);
-INSERT INTO sprintspecification (id, sprint, specification, status, needs_discussion) VALUES (2, 1, 1, 10, true);
-INSERT INTO sprintspecification (id, sprint, specification, status, needs_discussion) VALUES (3, 1, 4, 10, true);
+INSERT INTO sprintspecification (id, sprint, specification, status, whiteboard) VALUES (1, 1, 3, 10, NULL);
+INSERT INTO sprintspecification (id, sprint, specification, status, whiteboard) VALUES (2, 1, 1, 10, NULL);
+INSERT INTO sprintspecification (id, sprint, specification, status, whiteboard) VALUES (3, 1, 4, 10, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sprintspecification'::pg_catalog.regclass;
@@ -8303,6 +8711,23 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distroreleasequeuecu
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distroreleasequeuecustom'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'karmacategory'::pg_catalog.regclass;
+
+INSERT INTO karmacategory (id, name, title, summary) VALUES (1, 'misc', 'Miscellaneous', 'This category is a catch-all that is used for karma events that do not fit neatly into any other obvious category.');
+INSERT INTO karmacategory (id, name, title, summary) VALUES (2, 'bugs', 'Bug Management', 'This karma category covers work in the Malone bug tracking system, such as filing, closing and otherwise working with bugs.');
+INSERT INTO karmacategory (id, name, title, summary) VALUES (3, 'translations', 'Translations in Rosetta', 'This categor covers all actions related to translation using the Rosetta web translation portal. Creating new translation projects, submitting new translations and editing existing translations will all earn karma.');
+INSERT INTO karmacategory (id, name, title, summary) VALUES (4, 'bounties', 'Bounty Tracking', 'This covers all karma associated with the bounty system. Registering bounties, or closing them, will earn you karma.');
+INSERT INTO karmacategory (id, name, title, summary) VALUES (5, 'registry', 'The Registry', 'This category covers all work with product, projects and the general registry which Launchpad maintains of the open source world.');
+INSERT INTO karmacategory (id, name, title, summary) VALUES (6, 'specs', 'Specification Tracking', 'This category includes all karma associated with the Launchpad specification tracking system.');
+INSERT INTO karmacategory (id, name, title, summary) VALUES (7, 'support', 'Support Tracker', 'This is the category for all karma associated with technical support, and the ticket tracker in Launchpad. Help solve users problems to earn this karma.');
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'karmacategory'::pg_catalog.regclass;
+
+
+
 
 
 

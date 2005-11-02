@@ -6,7 +6,7 @@ __all__ = ['SprintSpecification']
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, BoolCol
+from sqlobject import ForeignKey, BoolCol, StringCol
 
 from canonical.launchpad.interfaces import ISprintSpecification
 
@@ -28,5 +28,5 @@ class SprintSpecification(SQLBase):
         foreignKey='Specification', notNull=True)
     status = EnumCol(schema=SprintSpecificationStatus, notNull=True,
         default=SprintSpecificationStatus.SUBMITTED)
-    needs_discussion = BoolCol(notNull=True, default=True)
+    whiteboard = StringCol(notNull=False, default=None)
 

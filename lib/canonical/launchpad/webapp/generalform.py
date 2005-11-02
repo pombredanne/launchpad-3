@@ -6,7 +6,8 @@
 __docformat__ = 'restructuredtext'
 
 __all__ = [
-    'FormView',
+    'GeneralFormView',
+    'GeneralFormViewFactory',
     ]
 
 from transaction import get_transaction
@@ -27,7 +28,7 @@ from zope.app.publisher.browser import BrowserView
 from zope.app.form.utility import setUpWidgets, getWidgetsData
 
 
-class FormView(BrowserView):
+class GeneralFormView(BrowserView):
     """Simple Generalised Form Base Class
 
     Subclasses should provide a `schema` attribute defining the schema
@@ -50,13 +51,6 @@ class FormView(BrowserView):
     # Fall-back template
     generated_form = ViewPageTemplateFile('../templates/launchpad-generalform.pt')
 
-    def __init__(self, context, request):
-        super(FormView, self).__init__(context, request)
-        self._setUpWidgets()
-
-    def _setUpWidgets(self):
-        setUpWidgets(self, self.schema, IInputWidget, names=self.fieldNames)
-
     # methods that should be overridden
     def process(self, *args, **kw):
         """Override this method in your own browser class, to process the
@@ -71,7 +65,15 @@ class FormView(BrowserView):
         """
         return self._nextURL
 
+
     # internal methods, should not be overridden
+    def __init__(self, context, request):
+        super(GeneralFormView, self).__init__(context, request)
+        self._setUpWidgets()
+
+    def _setUpWidgets(self):
+        setUpWidgets(self, self.schema, IInputWidget, names=self.fieldNames)
+
     def setPrefix(self, prefix):
         for widget in self.widgets():
             widget.setPrefix(prefix)
@@ -128,32 +130,32 @@ class FormView(BrowserView):
         return self.process_status
 
 
-# XXX sabdfl 15/09/05 commented out because we aren't using it, preserved
-# because we might want to in future, have a ZCML for <browser:form />
+def GeneralFormViewFactory(name, schema, label, permission, layer,
+                    template, default_template, bases, for_, fields,
+                    arguments, keyword_arguments, fulledit_path=None,
+                    fulledit_label=None, menu=u''):
+    class_ = SimpleViewClass(template, used_for=schema, bases=bases)
+    class_.schema = schema
+    class_.label = label
+    class_.fieldNames = fields
+    class_._arguments = arguments
+    class_._keyword_arguments = keyword_arguments
 
-#def FormViewFactory(name, schema, label, permission, layer,
-#                    template, default_template, bases, for_, fields,
-#                    fulledit_path=None, fulledit_label=None, menu=u''):
-#    class_ = SimpleViewClass(template, used_for=schema, bases=bases)
-#    class_.schema = schema
-#    class_.label = label
-#    class_.fieldNames = fields
-#
-#    class_.fulledit_path = fulledit_path
-#    if fulledit_path and (fulledit_label is None):
-#        fulledit_label = "Full edit"
-#
-#    class_.fulledit_label = fulledit_label
-#
-#    class_.generated_form = ViewPageTemplateFile(default_template)
-#
-#    defineChecker(class_,
-#                  NamesChecker(("__call__", "__getitem__",
-#                                "browserDefault", "publishTraverse"),
-#                               permission))
-#    if layer is None:
-#        layer = IBrowserRequest
-#
-#    s = zapi.getGlobalService(zapi.servicenames.Adapters)
-#    s.register((for_, layer), Interface, name, class_)
-#
+    class_.fulledit_path = fulledit_path
+    if fulledit_path and (fulledit_label is None):
+        fulledit_label = "Full edit"
+
+    class_.fulledit_label = fulledit_label
+
+    class_.generated_form = ViewPageTemplateFile(default_template)
+
+    defineChecker(class_,
+                  NamesChecker(("__call__", "__getitem__",
+                                "browserDefault", "publishTraverse"),
+                               permission))
+    if layer is None:
+        layer = IBrowserRequest
+
+    s = zapi.getGlobalService(zapi.servicenames.Adapters)
+    s.register((for_, layer), Interface, name, class_)
+
