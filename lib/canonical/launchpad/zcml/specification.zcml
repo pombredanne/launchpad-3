@@ -11,8 +11,14 @@
   <content class="canonical.launchpad.database.Specification">
     <allow interface="canonical.launchpad.interfaces.ISpecification" />
     <require
-      permission="launchpad.AnyPerson"
-      set_schema="canonical.launchpad.interfaces.ISpecification" />
+      permission="launchpad.Edit"
+      set_attributes="title summary status specurl needs_discussion
+                      superseded_by milestone productseries distrorelease
+                      product distribution approver assignee drafter
+                      whiteboard" />
+    <require
+      permission="launchpad.Admin"
+      set_attributes="priority direction_approved name" />
   </content>
 
   <browser:menus
@@ -33,6 +39,16 @@
     for="canonical.launchpad.interfaces.ISpecification"
     path_expression="string:+spec/${name}"
     attribute_to_parent="target" />
+
+  <subscriber
+    for="canonical.launchpad.interfaces.ISpecification
+         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+    factory="canonical.launchpad.subscribers.karma.spec_created" />
+
+  <subscriber
+    for="canonical.launchpad.interfaces.ISpecification
+         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+    factory="canonical.launchpad.subscribers.karma.spec_modified" />
 
   <browser:pages
     for="canonical.launchpad.interfaces.ISpecification"
@@ -82,12 +98,26 @@
       template="../templates/specification-doreview.pt" />
   </browser:pages>
 
-  <browser:page
+  <browser:generalform
     name="+addsubscriber"
     for="canonical.launchpad.interfaces.ISpecification"
+    schema="canonical.launchpad.interfaces.ISpecificationSubscription"
     class="canonical.launchpad.browser.SpecificationSubscriptionAddView"
+    fields="person"
+    arguments="person"
     permission="launchpad.AnyPerson"
     template="../templates/specification-addsubscriber.pt"
+    />
+
+  <browser:generalform
+    name="+retarget"
+    for="canonical.launchpad.interfaces.ISpecification"
+    schema="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationRetargetingView"
+    fields="product distribution"
+    keyword_arguments="product distribution"
+    permission="launchpad.Edit"
+    template="../templates/specification-retargeting.pt"
     />
 
   <browser:editform
@@ -155,7 +185,7 @@
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
     label="Change Priority"
-    fields="priority whiteboard"
+    fields="priority direction_approved whiteboard"
     permission="launchpad.Admin"
     template="../templates/specification-priority.pt">
     <browser:widget
@@ -169,7 +199,7 @@
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
     label="Change Status"
-    fields="status whiteboard"
+    fields="status needs_discussion whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-status.pt">
     <browser:widget
@@ -245,7 +275,7 @@
     template="../templates/specification-removebug.pt">
   </browser:addform>
 
-  <browser:addform
+  <browser:generalform
     name="+linkdependency"
     for="canonical.launchpad.interfaces.ISpecification"
     schema="canonical.launchpad.interfaces.ISpecificationDependency"
@@ -255,9 +285,9 @@
     keyword_arguments="dependency"
     permission="launchpad.AnyPerson"
     template="../templates/specification-dependency.pt">
-  </browser:addform>
+  </browser:generalform>
 
-  <browser:addform
+  <browser:generalform
     name="+removedependency"
     for="canonical.launchpad.interfaces.ISpecification"
     schema="canonical.launchpad.interfaces.ISpecificationDependencyRemoval"
@@ -267,7 +297,7 @@
     keyword_arguments="dependency"
     permission="launchpad.AnyPerson"
     template="../templates/specification-removedep.pt">
-  </browser:addform>
+  </browser:generalform>
 
   <browser:addform
     name="+linksprint"
@@ -319,6 +349,11 @@
       name="+portlet-sprints"
       template="../templates/specifications-portlet-sprints.pt" />
   </browser:pages>
+
+  <!-- SpecificationDelta -->
+  <content class="canonical.launchpad.components.specification.SpecificationDelta">
+    <allow interface="canonical.launchpad.interfaces.ISpecificationDelta" />
+  </content>
 
 </facet>
 

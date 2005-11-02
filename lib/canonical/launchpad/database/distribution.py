@@ -35,8 +35,11 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.build import Build
+
 from canonical.lp.dbschema import (
-    EnumCol, BugTaskStatus, DistributionReleaseStatus, TranslationPermission)
+    EnumCol, BugTaskStatus, DistributionReleaseStatus,
+    TranslationPermission, SpecificationSort)
+
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IDistroPackageFinder, NotFoundError,
     IHasBuildRecords, ISourcePackageName)
@@ -74,8 +77,6 @@ class Distribution(SQLBase):
         intermediateTable='DistributionBounty')
     bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
     milestones = MultipleJoin('Milestone', joinColumn='distribution')
-    specifications = MultipleJoin('Specification', joinColumn='distribution',
-        orderBy=['-priority', '-datecreated', 'id'])
     uploaders = MultipleJoin('DistroComponentUploader',
         joinColumn='distribution')
     source_package_caches = MultipleJoin('DistributionSourcePackageCache',
@@ -214,6 +215,15 @@ class Distribution(SQLBase):
             except SQLObjectNotFound:
                 return None
         return DistributionSourcePackage(self, sourcepackagename)
+
+    def specifications(self, sort=None, quantity=None):
+        """See IHasSpecifications."""
+        if sort is None or sort == SpecificationSort.DATE:
+            order = ['-datecreated', 'id']
+        elif sort == SpecificationSort.PRIORITY:
+            order = ['-priority', 'status', 'name']
+        return Specification.selectBy(distributionID=self.id,
+            orderBy=order)[:quantity]
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""

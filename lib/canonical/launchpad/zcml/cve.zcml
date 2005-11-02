@@ -47,25 +47,29 @@
       template="../templates/cve-portlet-references.pt" />
   </browser:pages>
 
-  <browser:addform
+  <browser:generalform
     name="+linkbug"
     for="canonical.launchpad.interfaces.ICve"
     schema="canonical.launchpad.interfaces.IBugCve"
     class="canonical.launchpad.browser.BugLinkView"
     label="Link CVE and Bug"
     fields="bug"
-    keyword_arguments="bug"
+    arguments="bug"
     permission="launchpad.AnyPerson"
     template="../templates/cve-bug.pt">
-  </browser:addform>
+  </browser:generalform>
 
-  <browser:page
+  <browser:generalform
     name="+unlinkbug"
     for="canonical.launchpad.interfaces.ICve"
+    schema="canonical.launchpad.interfaces.IBugCve"
+    label="Remove Link to Bug"
     class="canonical.launchpad.browser.BugUnlinkView"
+    fields="bug"
+    arguments="bug"
     permission="launchpad.AnyPerson"
     template="../templates/cve-removebug.pt">
-  </browser:page>
+  </browser:generalform>
 
 
   <!-- CveSet -->

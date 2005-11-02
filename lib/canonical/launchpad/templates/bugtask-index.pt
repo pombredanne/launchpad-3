@@ -74,8 +74,7 @@
   <div tal:replace="structure context/@@+headline-tasks" />
 
     <tal:description
-      content="structure context/bug/description/fmt:text-to-html"
-    >
+      content="structure context/bug/description/fmt:text-to-html">
       $Bug.description
     </tal:description>
 
@@ -94,6 +93,7 @@
         <tal:block condition="message/bugattachments">
         - with attachments:
           <tal:block repeat="attachment message/bugattachments">
+            <img src="/++resource++file" />
             <a tal:attributes="href attachment/libraryfile/url"
                tal:content="attachment/libraryfile/filename">foo.txt</a>
           </tal:block>

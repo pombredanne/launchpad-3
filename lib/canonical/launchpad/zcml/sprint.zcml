@@ -38,9 +38,6 @@
       name="+specstable"
       template="../templates/sprint-table.pt" />
     <browser:page
-      name="+workload"
-      template="../templates/sprint-workload.pt" />
-    <browser:page
       name="+listing-detailed"
       template="../templates/sprint-listing-detailed.pt" />
     <browser:page
@@ -70,12 +67,34 @@
       height="3" />
   </browser:editform>
 
-  <browser:page
+  <browser:generalform
     name="+attend"
     for="canonical.launchpad.interfaces.ISprint"
+    schema="canonical.launchpad.interfaces.ISprintAttendance"
+    fields="attendee time_starts time_ends"
+    arguments="attendee time_starts time_ends"
     class="canonical.launchpad.browser.SprintAttendanceAddView"
-    permission="launchpad.Edit"
+    permission="launchpad.AnyPerson"
     template="../templates/sprint-attend.pt"
+    >
+    <browser:widget
+      field="attendee"
+      class="canonical.widgets.HiddenUserWidget" />
+  </browser:generalform>
+
+  <browser:generalform
+    name="+register"
+    for="canonical.launchpad.interfaces.ISprint"
+    schema="canonical.launchpad.interfaces.ISprintAttendance"
+    class="canonical.launchpad.browser.SprintAttendanceAddView"
+    fields="attendee time_starts time_ends"
+    arguments="attendee time_starts time_ends"
+    title="Register Someone Else"
+    description="Register someone for attendance at the conference. Note
+                 that anybody can register anybody else as being an
+                 attendee."
+    permission="launchpad.AnyPerson"
+    template="../templates/sprint-register.pt"
     />
 
   <!-- SprintSet -->

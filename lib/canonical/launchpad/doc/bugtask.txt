@@ -334,7 +334,7 @@ It's also possible to iterate over all the bug tasks:
 
     >>> bugtasks = [bugtask for bugtasks in bugtaskset]
     >>> len(bugtasks)
-    18
+    19
 
 Bug Task Maintainers
 --------------------
