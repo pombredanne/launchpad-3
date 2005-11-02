@@ -5,6 +5,15 @@
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
     
+    <!-- Supermirror branch list -->
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.BranchPullListing"
+        attribute="__call__"
+        name="supermirror-pull-list.txt"
+        />
+    
     <!-- Branch -->
     <content class="canonical.launchpad.database.Branch">
         <allow interface="canonical.launchpad.interfaces.IBranch" />

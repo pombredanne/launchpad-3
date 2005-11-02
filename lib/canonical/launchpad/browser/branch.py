@@ -17,10 +17,11 @@ from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission, LaunchpadView)
 
 __all__ = [
-    'BranchContextMenu',
-    'BranchView',
-    'BranchEditView',
     'BranchAddView',
+    'BranchContextMenu',
+    'BranchEditView',
+    'BranchPullListing',
+    'BranchView',
     ]
 
 
@@ -125,3 +126,36 @@ class BranchAddView(SQLObjectAddView):
     def nextURL(self):
         assert self._nextURL
         return self._nextURL
+
+        
+class BranchPullListing(LaunchpadView):
+    """A listing of all the branches in the system that are pending-pull."""
+
+    def branch_line(self, branch):
+        """Return the line in the listing for a single branch.
+        
+        XXX: The product name mangling should be hooked into Navigation by
+             Steve Alexander when working on that.
+        """
+        if branch.product is None:
+            productname = "+junk"
+        else:
+            productname = branch.product.name
+        return "%s %s %s %s" % (branch.url, branch.author.name, productname,
+                                branch.name)
+
+    def branches_page(self, branches):
+        """Return the full page for the supplied list of branches."""
+        lines = [self.branch_line(branch)+ "\n" for branch in branches]
+        return "".join(lines)
+
+    def branches_to_pull(self):
+        """What branches need to be pulled at this point?."""
+        branch_set = getUtility(IBranchSet)
+        return branch_set.get_supermirror_pull_queue()
+
+    def render(self):
+        """See LaunchpadView.render."""
+        self.request.response.setHeader('Content-type', 'text/plain')
+        branches = self.branches_to_pull()
+        return self.branches_page(branches)

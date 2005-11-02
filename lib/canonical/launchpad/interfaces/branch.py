@@ -28,6 +28,7 @@ _ = MessageIDFactory('launchpad')
 class IBranch(IHasOwner):
     """A Bazaar branch."""
 
+    id = Int(title=_('ID'), readonly=True, required=True)
     name = TextLine(
         title=_('Name'), required=True, description=_("Keep this name very "
         "short, unique, and descriptive, because it will be used in URLs. "
@@ -156,3 +157,6 @@ class IBranchSet(Interface):
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, home_page=None):
         """Create a new branch."""
+
+    def get_supermirror_pull_queue():
+        """Get a list of branches the supermirror should pull now."""
