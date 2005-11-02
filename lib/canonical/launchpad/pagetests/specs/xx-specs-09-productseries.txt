@@ -23,32 +23,40 @@ series candidates, the "milestones" and the "1.0" series.
 Now, we POST the form and expect to be redirected to the spec home page.
 
   >>> print http(r"""
-  ... POST /products/firefox/+spec/e4x/+setseries HTTP/1.1
+  ... POST /products/firefox/+spec/svg-support/+setseries HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 608
-  ... Content-Type: multipart/form-data; boundary=---------------------------10512056311316262101214336576
+  ... Content-Length: 857
+  ... Content-Type: multipart/form-data; boundary=---------------------------351566716164150030996771236
   ... 
-  ... -----------------------------10512056311316262101214336576
+  ... -----------------------------351566716164150030996771236
   ... Content-Disposition: form-data; name="field.productseries"
   ... 
   ... 2
-  ... -----------------------------10512056311316262101214336576
+  ... -----------------------------351566716164150030996771236
   ... Content-Disposition: form-data; name="field.productseries-empty-marker"
   ... 
   ... 1
-  ... -----------------------------10512056311316262101214336576
+  ... -----------------------------351566716164150030996771236
+  ... Content-Disposition: form-data; name="field.delivery"
+  ... 
+  ... Unlikely
+  ... -----------------------------351566716164150030996771236
+  ... Content-Disposition: form-data; name="field.delivery-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------351566716164150030996771236
   ... Content-Disposition: form-data; name="field.whiteboard"
   ... 
-  ... This is the status whiteboard. Dig it?
-  ... -----------------------------10512056311316262101214336576
+  ... would be great to have, but has high risk
+  ... -----------------------------351566716164150030996771236
   ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
   ... 
   ... Change
-  ... -----------------------------10512056311316262101214336576--
+  ... -----------------------------351566716164150030996771236--
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://.../products/firefox/+spec/e4x
+  Location: http://.../products/firefox/+spec/svg-support
   ...
 
 
@@ -56,7 +64,7 @@ When we view that page, we see the targeted product series listed in the
 header.
 
   >>> print http(r"""
-  ... GET /products/firefox/+spec/e4x HTTP/1.1
+  ... GET /products/firefox/+spec/svg-support HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...products/firefox/+series/1.0...
@@ -68,6 +76,6 @@ And now it should show on the "+specs" page for that product series.
   ... GET /products/firefox/+series/1.0/+specs HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...Support E4X in EcmaScript...
+  ...Support Native SVG Objects...
 
 

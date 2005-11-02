@@ -97,44 +97,51 @@ target the newly created spec to a distribution.
   ...<h1>Target to a Distribution Release</h1>...
   ...
   
-We'll fill the form, targeting the specification to the Grumpy
-distrorelease.
+We are able to target a specification to a distrorelease.
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/+spec/testspec/+setdistrorelease HTTP/1.1
+  ... POST /distros/ubuntu/+spec/media-integrity-check/+setdistrorelease HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 600
-  ... Content-Type: multipart/form-data; boundary=---------------------------13150465521855597243975128072
+  ... Content-Length: 841
+  ... Content-Type: multipart/form-data; boundary=---------------------------117456295555762087296338191
   ... 
-  ... -----------------------------13150465521855597243975128072
+  ... -----------------------------117456295555762087296338191
   ... Content-Disposition: form-data; name="field.distrorelease"
   ... 
-  ... 5
-  ... -----------------------------13150465521855597243975128072
+  ... 3
+  ... -----------------------------117456295555762087296338191
   ... Content-Disposition: form-data; name="field.distrorelease-empty-marker"
   ... 
   ... 1
-  ... -----------------------------13150465521855597243975128072
+  ... -----------------------------117456295555762087296338191
+  ... Content-Disposition: form-data; name="field.delivery"
+  ... 
+  ... Certain
+  ... -----------------------------117456295555762087296338191
+  ... Content-Disposition: form-data; name="field.delivery-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------117456295555762087296338191
   ... Content-Disposition: form-data; name="field.whiteboard"
   ... 
-  ... target to grumpy distrorelease
-  ... -----------------------------13150465521855597243975128072
+  ... mostly implemented already
+  ... -----------------------------117456295555762087296338191
   ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
   ... 
   ... Change
-  ... -----------------------------13150465521855597243975128072--
+  ... -----------------------------117456295555762087296338191--
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://.../distros/ubuntu/+spec/testspec
+  Location: http://.../distros/ubuntu/+spec/media-integrity-check
   ...
 
-After the POST we are redirected to the specification page.
+After the POST we should see the release goal on the specification page.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/+spec/testspec HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... GET /distros/ubuntu/+spec/media-integrity-check HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...
+  ...Release Goal...
+  ...hoary...Certain...
 
