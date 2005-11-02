@@ -1,0 +1,27 @@
+Branches Overview
+=================
+
+We should be able to see a list of branches on any product in Launchpad.
+
+  >>> print http(r"""
+  ... GET /products/gnome-terminal HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...<a href="http://localhost:9000/people/name12/+branch/gnome-terminal/main">GNOME Terminal Mainline</a>...
+
+We should be able to display a list of branches for a product at +branches.
+
+  >>> print http(r"""
+  ... GET /products/gnome-terminal/+branches HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...<a href="http://localhost:9000/people/name12/+branch/gnome-terminal/main">GNOME Terminal Mainline</a>...
+
+If there are no branches, we should a message stating that there is no branch
+registered for this product.
+
+  >>> print http(r"""
+  ... GET /products/applets/+branches HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...There are no branches currently registered for...

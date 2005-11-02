@@ -97,13 +97,13 @@
   </browser:editform>
 
   <browser:editform
-    name="+admin"
+    name="+lifecycle"
     schema="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchEditView"
     facet="code"
-    label="Branch Administration"
-    fields="owner product name whiteboard"
-    permission="launchpad.Admin"
+    label="Set Branch Status"
+    fields="lifecycle_status whiteboard"
+    permission="launchpad.Edit"
     template="../templates/branch-edit.pt">
     <browser:widget
       field="whiteboard"
@@ -112,13 +112,13 @@
   </browser:editform>
 
   <browser:editform
-    name="+lifecycle"
+    name="+admin"
     schema="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchEditView"
     facet="code"
     label="Branch Administration"
-    fields="lifecycle_status whiteboard"
-    permission="launchpad.Edit"
+    fields="owner product name whiteboard"
+    permission="launchpad.Admin"
     template="../templates/branch-edit.pt">
     <browser:widget
       field="whiteboard"

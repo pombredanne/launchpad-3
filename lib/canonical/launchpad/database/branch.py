@@ -65,7 +65,7 @@ class Branch(SQLBase):
     cache_url = StringCol(default=None)
 
     revision_history = MultipleJoin('RevisionNumber', joinColumn='branch',
-        orderBy='-rev_no')
+        orderBy='-sequence')
 
     subjectRelations = MultipleJoin('BranchRelationship', joinColumn='subject')
     objectRelations = MultipleJoin('BranchRelationship', joinColumn='object')
@@ -90,12 +90,13 @@ class Branch(SQLBase):
             branchID=self.id, orderBy='-sequence').limit(quantity)
 
     def revisions_since(self, timestamp):
-        return Revision.select('Revision.id=RevisionNumber.revision AND '
-                               'RevisionNumber.branch = %d AND '
-                               'Revision.revision_date > %s' %
-                               (self.id, quote(timestamp)),
-                               orderBy='-RevisionNumber.sequence',
-                               clauseTables=['RevisionNumber'])
+        return RevisionNumber.select(
+            'Revision.id=RevisionNumber.revision AND '
+            'RevisionNumber.branch = %d AND '
+            'Revision.revision_date > %s' %
+            (self.id, quote(timestamp)),
+            orderBy='-sequence',
+            clauseTables=['Revision'])
 
     def createRelationship(self, branch, relationship):
         BranchRelationship(subject=self, object=branch, label=relationship)

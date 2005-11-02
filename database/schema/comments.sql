@@ -513,12 +513,6 @@ COMMENT ON COLUMN DistroRelease.nominatedarchindep IS 'This is the DistroArchRel
 COMMENT ON COLUMN DistroRelease.binarycount IS 'A cache of the number of distinct binary package names published in this distro release.';
 COMMENT ON COLUMN DistroRelease.sourcecount IS 'A cache of the number of distinct source package names published in this distro release.';
 
-/* ArchArchive */
-
-COMMENT ON COLUMN ArchArchive.name IS 'The archive name, usually in the format of an email address';
-
-
-
 -- DistroReleaseQueue
 COMMENT ON TABLE DistroReleaseQueue IS 'An upload queue item. This table stores information pertaining to in-progress package uploads to a given DistroRelease.';
 

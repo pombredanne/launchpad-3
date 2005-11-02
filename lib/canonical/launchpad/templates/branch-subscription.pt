@@ -45,13 +45,9 @@
              name="cancel"
              value="Cancel" />
       <input tal:condition="not: view/subscription"
-             type="submit"
-             name="subscribe"
-             value="Subscribe" />
+             type="submit" name="subscribe" value="Subscribe" />
       <input tal:condition="view/subscription"
-             type="submit"
-             name="subscribe"
-             value="Unsubscribe" />
+             type="submit" name="subscribe" value="Unsubscribe" />
     </div>
   </form>
 

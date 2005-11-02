@@ -100,6 +100,10 @@ class BranchView(LaunchpadView):
         timestamp = datetime.now(pytz.UTC) - timedelta(days=days)
         return self.context.revisions_since(timestamp).count()
 
+    def author_is_owner(self):
+        """Whether the branch author is set and is equal to the registrant."""
+        return self.context.author == self.context.owner
+
 
 class BranchEditView(SQLObjectEditView):
 

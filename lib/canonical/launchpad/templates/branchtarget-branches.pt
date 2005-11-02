@@ -40,8 +40,8 @@
 
   <p tal:condition="not:context/branches">
     <i>There are no branches currently registered for
-    <span tal:replace="context/displayname">Steve Alexander</span> at
-    present.</i>
+    <span tal:replace="context/displayname">Steve Alexander</span>
+    at present.</i>
   </p>
 
   <tal:block repeat="category view/categories"
