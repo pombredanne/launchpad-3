@@ -145,16 +145,16 @@ class TestBranchesToPullSample(LaunchpadFunctionalTestCase):
         mock_request.response = MockResponse()
         view = browser.BranchPullListing(None, mock_request)
         self.assertEqual(set([
-            'http://not.launchpad.server.com/ spiv +junk feature,'
-            'http://trekkies.example.com/gnome-terminal/klingon name12 gnome-terminal klingon',
-            'http://localhost:8000/b name12 +junk junk.contrib',
-            'http://example.com/gnome-terminal/2.6 name12 gnome-terminal 2.6',
-            'http://localhost:8000/a name12 +junk junk.dev',
-            'http://example.com/gnome-terminal/2.4 name12 gnome-terminal 2.4',
-            'http://users.example.com/gnome-terminal/slowness name12 gnome-terminal slowness',
-            'http://example.com/gnome-terminal/main name12 gnome-terminal main',
-            'http://whynot.launchpad.server.com/ spiv +junk feature2',
-            '']),
+            u'http://trekkies.example.com/gnome-terminal/klingon name12 gnome-terminal klingon',
+            u'http://example.com/gnome-terminal/2.4 name12 gnome-terminal 2.4',
+            u'http://localhost:8000/b name12 +junk junk.contrib',
+            u'http://not.launchpad.server.com/ spiv +junk feature',
+            u'http://example.com/gnome-terminal/2.6 name12 gnome-terminal 2.6',
+            u'http://users.example.com/gnome-terminal/slowness name12 gnome-terminal slowness',
+            u'http://whynot.launchpad.server.com/ spiv +junk feature2',
+            u'http://example.com/gnome-terminal/main name12 gnome-terminal main',
+            u'http://localhost:8000/a name12 +junk junk.dev',
+            u'']),
             set(view.render().split('\n')))
         
     def test_sets_mime_type(self):
