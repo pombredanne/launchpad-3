@@ -7,23 +7,23 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import IPersonSet
 from canonical.launchpad.mailnotification import get_bug_delta, get_task_delta
-from canonical.lp.dbschema import (BugTaskStatus, KarmaActionName,
+from canonical.lp.dbschema import (BugTaskStatus,
      RosettaImportStatus, RosettaTranslationOrigin)
 
 
 def bug_created(bug, event):
     """Assign karma to the user which created <bug>."""
-    bug.owner.assignKarma(KarmaActionName.BUGCREATED)
+    bug.owner.assignKarma('bugcreated')
 
 
 def bugtask_created(bug, event):
     """Assign karma to the user which created <bugtask>."""
-    bug.owner.assignKarma(KarmaActionName.BUGTASKCREATED)
+    bug.owner.assignKarma('bugtaskcreated')
 
 
 def bug_comment_added(bugmessage, event):
     """Assign karma to the user which added <bugmessage>."""
-    bugmessage.message.owner.assignKarma(KarmaActionName.BUGCOMMENTADDED)
+    bugmessage.message.owner.assignKarma('bugcommentadded')
 
 
 def bug_modified(bug, event):
@@ -34,11 +34,11 @@ def bug_modified(bug, event):
 
     assert bug_delta is not None
 
-    attrs_actionnames = {'title': KarmaActionName.BUGTITLECHANGED,
-                         'summary': KarmaActionName.BUGSUMMARYCHANGED,
-                         'description': KarmaActionName.BUGDESCRIPTIONCHANGED,
-                         'duplicateof': KarmaActionName.BUGMARKEDASDUPLICATE}
-    
+    attrs_actionnames = {'title': 'bugtitlechanged',
+                         'summary': 'bugsummarychanged',
+                         'description': 'bugdescriptionchanged',
+                         'duplicateof': 'bugmarkedasduplicate'}
+
     for attr, actionname in attrs_actionnames.items():
         if getattr(bug_delta, attr) is not None:
             user.assignKarma(actionname)
@@ -46,17 +46,17 @@ def bug_modified(bug, event):
 
 def bugwatch_added(bugwatch, event):
     """Assign karma to the user which added :bugwatch:."""
-    event.user.assignKarma(KarmaActionName.BUGWATCHADDED)
+    event.user.assignKarma('bugwatchadded')
 
 
 def cve_added(cve, event):
     """Assign karma to the user which added :cve:."""
-    event.user.assignKarma(KarmaActionName.BUGCVEREFADDED)
+    event.user.assignKarma('bugcverefadded')
 
 
 def extref_added(extref, event):
     """Assign karma to the user which added :extref:."""
-    event.user.assignKarma(KarmaActionName.BUGEXTREFADDED)
+    event.user.assignKarma('bugextrefadded')
 
 
 def bugtask_modified(bugtask, event):
@@ -69,17 +69,17 @@ def bugtask_modified(bugtask, event):
     if task_delta.status:
         new_status = task_delta.status['new']
         if new_status == BugTaskStatus.FIXED:
-            user.assignKarma(KarmaActionName.BUGFIXED)
+            user.assignKarma('bugfixed')
         elif new_status == BugTaskStatus.REJECTED:
-            user.assignKarma(KarmaActionName.BUGREJECTED)
+            user.assignKarma('bugrejected')
         elif new_status == BugTaskStatus.ACCEPTED:
-            user.assignKarma(KarmaActionName.BUGACCEPTED)
+            user.assignKarma('bugaccepted')
 
     if task_delta.severity is not None:
-        event.user.assignKarma(KarmaActionName.BUGTASKSEVERITYCHANGED)
+        event.user.assignKarma('bugtaskseveritychanged')
 
     if task_delta.priority is not None:
-        event.user.assignKarma(KarmaActionName.BUGTASKPRIORITYCHANGED)
+        event.user.assignKarma('bugtaskprioritychanged')
 
 def potemplate_modified(template, event):
     """Check changes made to <template> and assign karma to user if needed."""
@@ -88,15 +88,13 @@ def potemplate_modified(template, event):
     new = event.object
 
     if old.description != new.description:
-        user.assignKarma(
-            KarmaActionName.TRANSLATIONTEMPLATEDESCRIPTIONCHANGED)
+        user.assignKarma('translationtemplatedescriptionchanged')
 
     if (old.rawimportstatus != new.rawimportstatus and
         new.rawimportstatus == RosettaImportStatus.IMPORTED):
         # A new .pot file has been imported. The karma goes to the one that
         # attached the file.
-        new.rawimporter.assignKarma(
-            KarmaActionName.TRANSLATIONTEMPLATEIMPORT)
+        new.rawimporter.assignKarma('translationtemplateimport')
 
 def pofile_modified(pofile, event):
     """Check changes made to <pofile> and assign karma to user if needed."""
@@ -109,8 +107,7 @@ def pofile_modified(pofile, event):
         new.rawfilepublished):
         # A new .po file from upstream has been imported. The karma goes to
         # the one that attached the file.
-        new.rawimporter.assignKarma(
-            KarmaActionName.TRANSLATIONIMPORTUPSTREAM)
+        new.rawimporter.assignKarma('translationimportupstream')
 
 def posubmission_created(submission, event):
     """Assign karma to the user which created <submission> if it comes from
@@ -118,8 +115,7 @@ def posubmission_created(submission, event):
     """
     if (submission.person is not None and
         submission.origin == RosettaTranslationOrigin.ROSETTAWEB):
-        submission.person.assignKarma(
-            KarmaActionName.TRANSLATIONSUGGESTIONADDED)
+        submission.person.assignKarma('translationsuggestionadded')
 
 
 def poselection_created(selection, event):
@@ -137,8 +133,8 @@ def poselection_created(selection, event):
         active.person is not None and
         reviewer != active.person):
         # Only add Karma when you are not reviewing your own translations.
-        active.person.assignKarma(KarmaActionName.TRANSLATIONSUGGESTIONAPPROVED)
-        reviewer.assignKarma(KarmaActionName.TRANSLATIONREVIEW)
+        active.person.assignKarma('translationsuggestionapproved')
+        reviewer.assignKarma('translationreview')
 
 
 def poselection_modified(selection, event):
@@ -152,7 +148,34 @@ def poselection_modified(selection, event):
         new.activesubmission.person is not None and
         reviewer != new.activesubmission.person):
         # Only add Karma when you are not reviewing your own translations.
-        new.activesubmission.person.assignKarma(
-            KarmaActionName.TRANSLATIONSUGGESTIONAPPROVED)
+        new.activesubmission.person.assignKarma('translationsuggestionapproved')
         if reviewer is not None:
-            reviewer.assignKarma(KarmaActionName.TRANSLATIONREVIEW)
+            reviewer.assignKarma('translationreview')
+
+def spec_created(spec, event):
+    """Assign karma to the user who created the spec."""
+    spec.owner.assignKarma('addspec')
+
+def spec_modified(spec, event):
+    """Check changes made to the spec and assign karma if needed."""
+    user = event.user
+    spec_delta = event.object.getDelta(event.object_before_modification, user)
+    if spec_delta is None:
+        return
+
+    # easy 1-1 mappings from attribute changing to karma
+    attrs_actionnames = {
+        'title': 'spectitlechanged',
+        'summary': 'specsummarychanged',
+        'specurl': 'specurlchanged',
+        'priority': 'specpriority',
+        'productseries': 'specseries',
+        'distrorelease': 'specrelease',
+        'milestone': 'specmilestone',
+        }
+
+    for attr, actionname in attrs_actionnames.items():
+        if getattr(spec_delta, attr, None) is not None:
+            user.assignKarma(actionname)
+
+

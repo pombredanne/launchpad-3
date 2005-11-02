@@ -446,21 +446,27 @@
       permission="launchpad.AnyPerson"
       template="../templates/bug-subscription.pt" />
 
-    <browser:page
+    <browser:generalform
       name="+linkcve"
       for="canonical.launchpad.interfaces.IBugTask"
+      schema="canonical.launchpad.interfaces.ICve"
       class="canonical.launchpad.browser.CveLinkView"
+      fields="sequence"
+      arguments="sequence"
       permission="launchpad.AnyPerson"
       template="../templates/bug-cve.pt">
-    </browser:page>
+    </browser:generalform>
 
-    <browser:page
+    <browser:generalform
       name="+unlinkcve"
       for="canonical.launchpad.interfaces.IBugTask"
+      schema="canonical.launchpad.interfaces.ICve"
       class="canonical.launchpad.browser.CveUnlinkView"
+      fields="sequence"
+      arguments="sequence"
       permission="launchpad.AnyPerson"
       template="../templates/bug-removecve.pt">
-    </browser:page>
+    </browser:generalform>
 
     <browser:addform
       name="+addsubscriber"

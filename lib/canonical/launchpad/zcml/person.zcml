@@ -86,23 +86,29 @@
           height="30" />
   </browser:editform>
 
-  <browser:page
+  <browser:generalform
     name="+editemblem"
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonEmblemView"
+    schema="canonical.launchpad.interfaces.IPerson"
+    fields="emblem"
+    keyword_arguments="emblem"
     permission="launchpad.Edit"
     template="../templates/person-images.pt"
     >
-  </browser:page>
+  </browser:generalform>
 
-  <browser:page
+  <browser:generalform
     name="+edithackergotchi"
     for="canonical.launchpad.interfaces.IPerson"
     class="canonical.launchpad.browser.PersonHackergotchiView"
+    schema="canonical.launchpad.interfaces.IPerson"
+    fields="hackergotchi"
+    keyword_arguments="hackergotchi"
     permission="launchpad.Edit"
     template="../templates/person-images.pt"
     >
-  </browser:page>
+  </browser:generalform>
 
   <browser:pages
       for="canonical.launchpad.interfaces.IPerson"
