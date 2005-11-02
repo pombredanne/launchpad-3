@@ -514,6 +514,7 @@ class BuilderGroup:
             aliasid = self.getFileFromSlave(slave, result, filemap[result],
                                             librarian)
             if result.endswith(".deb"):
+                self.logger.debug("Found a DEB: '%s'" % result)
                 # Process a binary package
                 # XXX cprov 20051102: comment it out to avoid troubles
                 # and inconsistent actions. The result should only be visible
@@ -597,7 +598,8 @@ class BuilderGroup:
         Return the number of not failed, accessible and IDLE slave.
         Do not count failed and MANUAL MODE slaves.
         """
-        count = 0        for builder in self.builders:
+        count = 0
+        for builder in self.builders:
             if builder.builderok:
                 # refuse builders in MANUAL MODE
                 if builder.manual:
