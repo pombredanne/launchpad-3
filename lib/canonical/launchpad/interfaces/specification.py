@@ -122,6 +122,11 @@ class ISpecification(IHasOwner):
     is_blocked = Attribute('Is True if this spec depends on another spec '
         'which is still incomplete.')
 
+    def retarget(product=None, distribution=None):
+        """Retarget the spec to a new product or distribution. One of
+        product or distribution must be None (but not both).
+        """
+
     def getSprintSpecification(sprintname):
         """Get the record that links this spec to the named sprint."""
 
