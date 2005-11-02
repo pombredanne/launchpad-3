@@ -515,7 +515,10 @@ class BuilderGroup:
                                             librarian)
             if result.endswith(".deb"):
                 # Process a binary package
-                self.processBinaryPackage(queueItem.build, aliasid, result)
+                # XXX cprov 20051102: comment it out to avoid troubles
+                # and inconsistent actions. The result should only be visible
+                # through +builds facets
+                # self.processBinaryPackage(queueItem.build, aliasid, result)
 
         self.logger.debug("Gathered build of %s completely"
                           % queueItem.name)
