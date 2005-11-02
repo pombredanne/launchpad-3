@@ -940,8 +940,11 @@ class BuilddMaster:
                 break
 
         # parse package builde dependencies using apt_pkg
-        parsed_deps = apt_pkg.ParseDepends(job.builddependsindep)
-
+        try:
+            parsed_deps = apt_pkg.ParseDepends(job.builddependsindep)
+        except ValueError:
+            parsed_deps = []
+            
         # apt_pkg requires InitSystem to get VersionCompare working properly
         apt_pkg.InitSystem()
 
