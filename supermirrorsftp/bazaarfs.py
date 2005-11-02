@@ -9,13 +9,9 @@ Currently assumes twisted.vfs as of SVN revision 14976.
 __metaclass__ = type
 
 from twisted.vfs.backends import adhoc, osfs
-from twisted.vfs.ivfs import VFSError
+from twisted.vfs.ivfs import VFSError, PermissionError
 
 import os
-
-# XXX: this belongs in twisted.vfs.
-class PermissionError(VFSError):
-    """The user does not have permission to perform the requested operation."""
 
 
 class SFTPServerRoot(adhoc.AdhocDirectory):  # was SFTPServerForPushMirrorUser
