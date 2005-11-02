@@ -24,10 +24,12 @@
 
       <h2 tal:content="group/person/browsername">Foo Bar</h2>
 
-      <table class="listing sortable">
+      <table class="listing sortable"
+             tal:attributes="id string:work${group/person/name}">
         <thead>
           <tr>
             <th>Priority</th>
+            <th>Status</th>
             <th>Spec</th>
             <th>Ass.</th>
             <th>Draft</th>
@@ -35,16 +37,20 @@
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="spec group/by_priority">
+          <tr tal:repeat="spec group/by_priority" class="lesser">
             <td width="80"
                 tal:attributes="
                     class string:specpriority${spec/spec/priority/name}"
                 tal:content="spec/spec/priority/title">
             </td>
+            <td width="80"
+                tal:attributes="
+                    class string:specstatus${spec/spec/status/name}"
+                tal:content="spec/spec/status/title">
+            </td>
             <td>
               <a tal:content="spec/spec/name"
                  tal:attributes="href spec/spec/fmt:url">foo-bar</a>
-              (<span tal:content="spec/spec/status/title">Approved</span>)
             </td>
             <td width="40">
               <tal:assignee condition="spec/assignee">X</tal:assignee>

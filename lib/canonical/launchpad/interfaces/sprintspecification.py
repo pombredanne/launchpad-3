@@ -24,10 +24,6 @@ class ISprintSpecification(Interface):
         readonly=True)
     status = Choice(title=_('Agenda Status'), required=True,
         vocabulary='SprintSpecificationStatus')
-    needs_discussion = Bool(title=_('Needs further discussion'),
-        required=True, description=_("Check this to indicate that the "
-        "specification needs further group discussion before drafting "
-        "can continue."))
     whiteboard = Text(title=_('Whiteboard'), required=False,
         description=_(
             "Any reasoning or rationale for the status you set here."

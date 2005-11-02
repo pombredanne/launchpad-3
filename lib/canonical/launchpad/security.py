@@ -70,28 +70,22 @@ class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
                 user.inTeam(admins))
 
 
-class EditSprintSpecification(AuthorizationBase):
-    """Anyone connected with this specification can say whether it still
-    requires further discussion at this sprint.
-    """
-    permission = 'launchpad.Edit'
-    usedfor = ISprintSpecification
+class AdminSpecification(AuthorizationBase):
+    permission = 'launchpad.Admin'
+    usedfor = ISpecification
 
     def checkAuthenticated(self, user):
+        assert self.obj.target
         admins = getUtility(ILaunchpadCelebrities).admin
-        return (user.inTeam(self.obj.specification.owner) or
-                user.inTeam(self.obj.specification.assignee) or
-                user.inTeam(self.obj.specification.drafter) or
-                user.inTeam(self.obj.specification.approver) or
-                user.inTeam(self.obj.sprint.owner) or
+        return (user.inTeam(self.obj.target.owner) or 
                 user.inTeam(admins))
 
 
-class AdministerSprintSpecification(AuthorizationBase):
-    """The owner of the sprint can say which specifications will be approved
-    for the sprint agenda, and which not.
+class EditSprintSpecification(AuthorizationBase):
+    """The sprint owner can say what makes it onto the agenda for the
+    sprint.
     """
-    permission = 'launchpad.Admin'
+    permission = 'launchpad.Edit'
     usedfor = ISprintSpecification
 
     def checkAuthenticated(self, user):
