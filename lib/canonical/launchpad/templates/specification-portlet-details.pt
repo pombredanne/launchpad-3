@@ -26,6 +26,9 @@
     <b>Status:</b>
     <span tal:replace="context/status/title">Approved</span>
     <br />
+    <i tal:condition="context/needs_discussion">Needs discussion.<br /></i>
+    <i tal:condition="not: context/direction_approved">Needs guidance.<br /></i>
+    <i tal:condition="context/is_blocked">Blocked.<br /></i>
 
     <b>Registrant:</b><br />
     <img src="/++resource++user.gif" />

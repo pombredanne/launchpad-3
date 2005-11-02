@@ -741,7 +741,7 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
     """
 
     _table = Specification
-    _orderBy = 'name'
+    _orderBy = 'title'
 
     def _toTerm(self, obj):
         return SimpleTerm(obj, obj.name, obj.name)
@@ -757,7 +757,7 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
             target = distribution
 
         if target is not None:
-            for spec in target.specifications():
+            for spec in sorted(target.specifications(), key=lambda a: a.title):
                 # we will not show the current specification in the
                 # launchbag
                 if spec == launchbag.specification:
@@ -776,17 +776,17 @@ class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
     """List specifications on which the current specification depends."""
 
     _table = Specification
-    _orderBy = 'name'
+    _orderBy = 'title'
 
     def _toTerm(self, obj):
-        return SimpleTerm(obj, obj.name, obj.name)
+        return SimpleTerm(obj, obj.name, obj.title)
 
     def __iter__(self):
         launchbag = getUtility(ILaunchBag)
         curr_spec = launchbag.specification
 
         if curr_spec is not None:
-            for spec in curr_spec.dependencies:
+            for spec in sorted(curr_spec.dependencies, key=lambda a: a.title):
                 yield SimpleTerm(spec, spec.name, spec.title)
 
 

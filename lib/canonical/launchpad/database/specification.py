@@ -8,10 +8,11 @@ import datetime
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, IntervalCol, MultipleJoin, RelatedJoin)
+    ForeignKey, IntCol, StringCol, IntervalCol, MultipleJoin, RelatedJoin,
+    BoolCol)
 
 from canonical.launchpad.interfaces import (
-    ISpecification, ISpecificationSet)
+    ISpecification, ISpecificationSet, NameNotAvailable)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
@@ -69,6 +70,8 @@ class Specification(SQLBase):
         foreignKey='Milestone', notNull=False, default=None)
     specurl = StringCol(notNull=True)
     whiteboard = StringCol(notNull=False, default=None)
+    needs_discussion = BoolCol(notNull=True, default=True)
+    direction_approved = BoolCol(notNull=True, default=False)
 
     # useful joins
     subscriptions = MultipleJoin('SpecificationSubscription',
@@ -104,6 +107,24 @@ class Specification(SQLBase):
         if self.product:
             return self.product
         return self.distribution
+
+    def retarget(self, product=None, distribution=None):
+        """See ISpecification."""
+        assert not (product and distribution)
+        assert (product or distribution)
+
+        # we need to ensure that there is not already a spec with this name
+        # for this new target
+        if product:
+            assert product.getSpecification(self.name) is None
+        elif distribution:
+            assert distribution.getSpecification(self.name) is None
+
+        self.productseries = None
+        self.distrorelease = None
+        self.milestone = None
+        self.product = product
+        self.distribution = distribution
 
     def getSprintSpecification(self, sprintname):
         """See ISpecification."""

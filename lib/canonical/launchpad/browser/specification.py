@@ -7,7 +7,8 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IProduct, IDistribution, ILaunchBag, ISpecification, ISpecificationSet)
+    IProduct, IDistribution, ILaunchBag, ISpecification, ISpecificationSet,
+    NameNotAvailable)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 
@@ -267,11 +268,7 @@ class SpecificationRetargetingView(GeneralFormView):
             if distribution.getSpecification(self.context.name) is not None:
                 return '%s already has a spec called %s' % (
                     distribution.name, self.context.name)
-        self.context.product = product
-        self.context.distribution = distribution
-        self.context.productseries = None
-        self.context.distrorelease = None
-        self.context.milestone = None
+        self.context.retarget(product=product, distribution=distribution)
         self._nextURL = canonical_url(self.context)
         return 'Done.'
 
