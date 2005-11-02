@@ -49,10 +49,12 @@
   </tal:block>
   <tal:sprints condition="context/sprints">
   <br />
-  Sprints:
-    <a tal:repeat="sprint context/sprints"
-       tal:content="sprint/name"
-       tal:attributes="href sprint/fmt:url">ubz</a>
+  <b>Sprints</b>:
+    <tal:sprint_link repeat="sprint_link context/sprint_links">
+       <a tal:condition="sprint_link/is_confirmed"
+          tal:content="sprint_link/sprint/name"
+          tal:attributes="href sprint_link/sprint/fmt:url">ubz</a>
+    </tal:sprint_link>
   </tal:sprints>
   
       </td>

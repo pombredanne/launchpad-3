@@ -15,7 +15,7 @@
       set_attributes="title summary status specurl needs_discussion
                       superseded_by milestone productseries distrorelease
                       product distribution approver assignee drafter
-                      whiteboard" />
+                      whiteboard man_days delivery" />
     <require
       permission="launchpad.Admin"
       set_attributes="priority direction_approved name" />
@@ -157,7 +157,7 @@
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
     label="Target to a Distribution Release"
-    fields="distrorelease whiteboard"
+    fields="distrorelease delivery whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-distrorelease.pt">
     <browser:widget
@@ -171,7 +171,7 @@
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
     label="Target to a Series"
-    fields="productseries whiteboard"
+    fields="productseries delivery whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-productseries.pt">
     <browser:widget
@@ -199,7 +199,7 @@
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
     label="Change Status"
-    fields="status needs_discussion whiteboard"
+    fields="status needs_discussion man_days whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-status.pt">
     <browser:widget

@@ -17,22 +17,23 @@ from canonical.launchpad.interfaces import (
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.database.specificationdependency import \
-    SpecificationDependency
-from canonical.launchpad.database.specificationbug import \
-    SpecificationBug
-from canonical.launchpad.database.specificationreview import \
-    SpecificationReview
-from canonical.launchpad.database.specificationsubscription import \
-    SpecificationSubscription
-from canonical.launchpad.database.sprintspecification import \
-    SprintSpecification
+from canonical.launchpad.database.specificationdependency import (
+    SpecificationDependency)
+from canonical.launchpad.database.specificationbug import (
+    SpecificationBug)
+from canonical.launchpad.database.specificationreview import (
+    SpecificationReview)
+from canonical.launchpad.database.specificationsubscription import (
+    SpecificationSubscription)
+from canonical.launchpad.database.sprintspecification import (
+    SprintSpecification)
 from canonical.launchpad.database.sprint import Sprint
 
 from canonical.launchpad.components.specification import SpecificationDelta
 
 from canonical.lp.dbschema import (
-    EnumCol, SpecificationStatus, SpecificationPriority)
+    EnumCol, SpecificationStatus, SpecificationPriority,
+    SpecificationDelivery)
 
 
 class Specification(SQLBase):
@@ -72,6 +73,9 @@ class Specification(SQLBase):
     whiteboard = StringCol(notNull=False, default=None)
     needs_discussion = BoolCol(notNull=True, default=True)
     direction_approved = BoolCol(notNull=True, default=False)
+    man_days = IntCol(notNull=False, default=None)
+    delivery = EnumCol(schema=SpecificationDelivery, notNull=True,
+        default=SpecificationDelivery.UNKNOWN)
 
     # useful joins
     subscriptions = MultipleJoin('SpecificationSubscription',
@@ -125,6 +129,7 @@ class Specification(SQLBase):
         self.milestone = None
         self.product = product
         self.distribution = distribution
+        self.delivery = SpecificationDelivery.UNKNOWN
 
     def getSprintSpecification(self, sprintname):
         """See ISpecification."""
@@ -137,17 +142,17 @@ class Specification(SQLBase):
     @property
     def is_incomplete(self):
         """See ISpecification."""
-        return self.status not in [
+        return not self.is_complete
+
+    @property
+    def is_complete(self):
+        """See ISpecification."""
+        return self.status in [
             SpecificationStatus.IMPLEMENTED,
             SpecificationStatus.INFORMATIONAL,
             SpecificationStatus.OBSOLETE,
             SpecificationStatus.SUPERSEDED,
             ]
-
-    @property
-    def is_complete(self):
-        """See ISpecification."""
-        return not self.is_incomplete
 
     @property
     def is_blocked(self):
@@ -156,6 +161,14 @@ class Specification(SQLBase):
             if spec.is_incomplete:
                 return True
         return False
+
+    @property
+    def has_release_goal(self):
+        """See ISpecification."""
+        if self.distrorelease is not None:
+            return True
+        if self.productseries is not None:
+            return True
 
     def getDelta(self, old_spec, user):
         """See ISpecification."""

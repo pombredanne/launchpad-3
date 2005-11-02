@@ -45,7 +45,7 @@ class SpecificationContextMenu(ContextMenu):
              'dependencytree', 'linksprint', 'retarget', 'administer']
 
     def edit(self):
-        text = 'Edit Summary and Title'
+        text = 'Edit Details'
         return Link('+edit', text, icon='edit')
 
     def people(self):

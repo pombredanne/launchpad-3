@@ -20,7 +20,9 @@ from canonical.launchpad.fields import Summary, Title, TimeInterval
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.validation import valid_webref
-from canonical.lp.dbschema import SpecificationStatus, SpecificationPriority
+
+from canonical.lp.dbschema import (
+    SpecificationStatus, SpecificationPriority, SpecificationDelivery)
 
 
 _ = MessageIDFactory('launchpad')
@@ -94,6 +96,16 @@ class ISpecification(IHasOwner):
         "indicate that the drafter and assignee have satisfied the "
         "approver that they are headed in the right basic direction "
         "with this specification."))
+    man_days = Int(title=_("Estimated Developer Days"),
+        required=False, default=None, description=_("An estimate of the "
+        "number of developer days it will take to implement this feature. "
+        "Please only provide an estimate if you are relatively confident "
+        "in the number."))
+    delivery = Choice(title=_("Expectation of Delivery"),
+        required=True, default=SpecificationDelivery.UNKNOWN,
+        vocabulary='SpecificationDelivery', description=_("An estimate "
+        "of the likelyhood that this feature will be delivered in the "
+        "targeted release or series."))
     # other attributes
     product = Choice(title=_('Product'), required=False,
         vocabulary='Product')
@@ -121,6 +133,9 @@ class ISpecification(IHasOwner):
         'be done. Is in fact always the opposite of is_complete.')
     is_blocked = Attribute('Is True if this spec depends on another spec '
         'which is still incomplete.')
+
+    has_release_goal = Attribute('Is true if this specification has been '
+        'targetted to a specific distro release or product series.')
 
     def retarget(product=None, distribution=None):
         """Retarget the spec to a new product or distribution. One of
