@@ -1,5 +1,6 @@
 """Tests for canonical.launchpad.hctapi."""
 
+import unittest
 from hct.scaffold import Scaffold, register
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 
@@ -1411,4 +1412,7 @@ class PutManifest(DatabaseScaffold):
                           "lp:///distros/ubuntu", manifest)
 
 
-register(__name__)
+#register(__name__)
+def test_suite():
+    # disabled
+    return unittest.TestSuite()
