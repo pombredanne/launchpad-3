@@ -219,6 +219,8 @@ class Bug:
     def mapStatus(self, bugtask):
         if self.bug_status == 'ASSIGNED':
             bugtask.status = BugTaskStatus.ACCEPTED
+        elif self.bug_status == 'NEEDINFO':
+            bugtask.status = BugTaskStatus.NEEDINFO
         elif self.bug_status == 'PENDINGUPLOAD':
             bugtask.status = BugTaskStatus.PENDINGUPLOAD
         elif self.bug_status in ['RESOLVED', 'VERIFIED', 'CLOSED']:
