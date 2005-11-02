@@ -11,6 +11,8 @@ __metaclass__ = type
 from twisted.vfs.backends import adhoc, osfs
 from twisted.vfs.ivfs import VFSError
 
+import os
+
 # XXX: this belongs in twisted.vfs.
 class PermissionError(VFSError):
     """The user does not have permission to perform the requested operation."""
@@ -22,16 +24,16 @@ class SFTPServerRoot(adhoc.AdhocDirectory):  # was SFTPServerForPushMirrorUser
     Shows ~username and ~teamname directories for the user.
     """
     def __init__(self, avatar):
-        adhoc.AdhocDirectory(self, name='/')
+        adhoc.AdhocDirectory.__init__(self, name='/')
         self.avatar = avatar
         # Create the ~username directory
         self.putChild('~' + avatar.lpname,
-                      SFTPServerUserDir(avatar, avatar.lpid))
+                      SFTPServerUserDir(avatar, avatar.lpid, avatar.lpname))
 
         # Create the ~teamname directory
         for team in avatar.teams:
             self.putChild('~' + team['name'], 
-                          SFTPServerUserDir(avatar, team['id'],
+                          SFTPServerUserDir(avatar, team['id'], team['name'],
                                             junkAllowed=False))
 
     
@@ -46,16 +48,17 @@ class SFTPServerUserDir(osfs.OSDirectory):
     product, so that the contents will still be available if the product is
     renamed in the database.
     """
-    def __init__(self, avatar, junkAllowed=True):
+    def __init__(self, avatar, lpid, lpname, junkAllowed=True):
         osfs.OSDirectory.__init__(
-            self, os.path.join(avatar.homeDirsRoot, avatar.lpid),
-            name='~' + avatar.lpname)
+            self, os.path.join(avatar.homeDirsRoot, str(lpid)),
+            name='~' + lpname)
         
         # Make this user/team's directory if it doesn't already exist.
         if not os.path.exists(self.realPath):
             self.create()
             
         self.avatar = avatar
+        self.junkAllowed = junkAllowed
         
     def rename(self, newName):
         raise PermissionError(
@@ -85,10 +88,25 @@ class SFTPServerUserDir(osfs.OSDirectory):
                 else:
                     msg += "."
                 raise PermissionError(msg)
+            productID = str(productID)
 
         # Ok, we have a productID.  Create a directory for it.
-        return osfs.createDirectory(self, productID)
-                
+        return osfs.OSDirectory.createDirectory(self, productID)
+
+    def child(self, childName):
+        # Translate product names to product ids
+        return osfs.OSDirectory.child(
+            self, str(self.avatar.productIDs.get(childName)))
+
+    def children(self):
+        # Like osfs.OSDirectory's children method, except it translates from
+        # on-disk product ids to external product names.
+        def getName(productID):
+            return self.avatar.productNames.get(productID)
+        return ([('.', self), ('..', self.parent)] +
+                [(getName(childName), self.child(getName(childName)))
+                 for childName in os.listdir(self.realPath)])
+               
     def remove(self):
         raise PermissionError(
             "removing user directory %r is not allowed." % self.name)
