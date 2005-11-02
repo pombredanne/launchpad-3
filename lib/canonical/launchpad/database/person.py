@@ -281,7 +281,6 @@ class Person(SQLBase):
         ret = ret.union(self.registered_branches)
         ret = ret.union(self.subscribed_branches)
         ret = sorted(ret, key=lambda a: -a.id)
-        ret.reverse()
         return ret
 
     @property

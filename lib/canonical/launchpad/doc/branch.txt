@@ -29,6 +29,9 @@ Bazaar model does not forbid users from replacing the history of a branch.
 Actually, the conceptual model of Bazaar does not really have an identifiable
 concept of a branch. Branch describes a Launchpad concept.
 
+Creating branches
+-----------------
+
 Branches can be created with IBranchSet.new. IBranchSet can be accessed as an
 utility.
 
@@ -38,28 +41,28 @@ utility.
 
 >>> from canonical.launchpad.interfaces import IProductSet
 >>> productset = getUtility(IProductSet)
->>> firefox_product = productset.get(4)
+>>> gterm_product = productset.get(6)
 
 >>> from canonical.launchpad.interfaces import IPersonSet
 >>> personset = getUtility(IPersonSet)
 >>> ddaa = personset.getByName('ddaa')
 
->>> url = 'http://example.com/~ddaa/firefox.dev'
->>> title = "David Allouche's Main Firefox Branch"
->>> summary = "Main line of development for David Allouche on Firefox."
+>>> url = 'http://example.com/~ddaa/gterm.dev'
+>>> title = "David Allouche's Main GNOME Terminal Branch"
+>>> summary = "Main line of development for David Allouche on GNOME Terminal."
 >>> home_page = "http://example.com/~ddaa/"
->>> firefox_dev = branchset.new('dev', ddaa, firefox_product, url,
+>>> gterm_dev = branchset.new('dev', ddaa, gterm_product, url,
 ...     title, summary=summary, home_page=home_page)
->>> firefox_dev.name
+>>> gterm_dev.name
 u'dev'
->>> firefox_dev.product == firefox_product
+>>> gterm_dev.product == gterm_product
 True
 
 Branches must implement the IBranch interface.
 
 >>> from zope.interface.verify import verifyObject
 >>> from canonical.launchpad.interfaces import IBranch
->>> verifyObject(IBranch, firefox_dev)
+>>> verifyObject(IBranch, gterm_dev)
 True
 
 Branch may or may not be associated to a product, and may have no home_page
@@ -74,17 +77,51 @@ True
 >>> junkcode.home_page is None
 True
 
+Branches and products
+---------------------
+
 Branch not associated to a product are called "junk" branch and treated for
 navigation purposes as if they were associated to a magic product named
 "+junk".
 
 >>> junkcode.product_name
 '+junk'
->>> firefox_dev.product_name
-u'firefox'
+>>> gterm_dev.product_name
+u'gnome-terminal'
 
-    TODO: test Person.registered_branches, Person.authored_branches and
-    Person.related_branches -- DavidAllouche 2005-10-21
+Branches registered and authored
+--------------------------------
+
+You can get the list of branches for a given Launchpad owner. These are called
+the "registered branches", because the owner is initially set to the current
+user by the branch creation forms.
+
+>>> def getName(branch):
+...     return branch.name
+>>> sorted(ddaa.registered_branches, key=getName) == [gterm_dev, junkcode]
+True
+
+Branches are associated to an "author" user, which may be different from the
+registrant. You can get the branch authored by a given person. Junk branches
+should generally have at least an author, but that is not enforced.
+
+>>> from canonical.database.sqlbase import flush_database_caches
+>>> list(ddaa.authored_branches)
+[]
+>>> junkcode.author = ddaa
+>>> flush_database_caches()
+>>> list(ddaa.authored_branches) == [junkcode]
+True
+
+The list of registered branches does not include branches whose registrant is
+also the author. That avoids duplicating the same branch in the registered and
+authored branch listings for a person.
+
+>>> list(ddaa.registered_branches) == [gterm_dev]
+True
+
+Branch subscriptions
+--------------------
 
 Branches can be subscribed to and unsubscribed from by a Person.
 
@@ -92,37 +129,134 @@ Branches can be subscribed to and unsubscribed from by a Person.
 >>> sabdfl = personset.getByName('sabdfl')
 >>> sabdfl.subscribed_branches
 []
->>> subscription = firefox_dev.subscribe(sabdfl)
+>>> subscription = gterm_dev.subscribe(sabdfl)
 >>> verifyObject(IBranchSubscription, subscription)
 True
->>> subscription.branch == firefox_dev and subscription.person == sabdfl
+>>> subscription.branch == gterm_dev and subscription.person == sabdfl
 True
->>> firefox_dev.subscriptions == [subscription]
+>>> gterm_dev.subscriptions == [subscription]
 True
->>> firefox_dev.subscribers == [sabdfl]
+>>> gterm_dev.subscribers == [sabdfl]
 True
->>> sabdfl.subscribed_branches == [firefox_dev]
+>>> sabdfl.subscribed_branches == [gterm_dev]
 True
->>> firefox_dev.unsubscribe(sabdfl)
->>> firefox_dev.subscribers
+>>> gterm_dev.unsubscribe(sabdfl)
+>>> gterm_dev.subscribers
 []
 
+Branches related to a person
+----------------------------
+
+Finally, you can get the list of related branches for a person, that includes
+the branches registered, authored and subscribed to by this person.
+
+>>> lifeless = personset.getByName('lifeless')
+>>> lifeless.branches
+[]
+>>> url = 'http://example.com/~lifeless/mesh-merge'
+>>> title = "Experimental mesh merging algorithm."
+>>> meshmerge = branchset.new('mesh-merge', lifeless, None, url,
+...     title, summary=title)
+>>> junkcode.author = lifeless
+>>> unused = gterm_dev.subscribe(lifeless)
+>>> flush_database_caches()
+>>> sorted(lifeless.branches, key=getName) == [gterm_dev, junkcode, meshmerge]
+True
+
+Branches and revisions
+----------------------
+
 See revision.txt for a doctest covering the creation of revisions and related
-objects. Revision data is loaded in the database by Taxi, Launchpad code is
-only concened with using this data.
+objects. Revision data is loaded in the database by a batch job using a
+different user, Launchpad code is only concened with using this data.
 
-    TODO: test Branch.revision_history, Branch.revision_count, and
-    Branch.latest_revisions from sampledata. Cannot populate the tables from
-    here because only the importd user is allowed to do that, and importd works
-    in a zopeless environment. -- DavidAllouche 2005-10-21
+Let's get a branch with some revisions in it.
 
-    TODO: There should be tests for registered_branches, authored_branches and
-    related_branches properties of Person. -- DavidAllouche 2005-10-25
+>>> sample_person = personset[12]
+>>> junk = sample_person.getBranch(None, 'junk.dev')
 
-    TODO: There should be tests for Revision, RevisionNumber and RevisionParent
-    as well. -- DavidAllouche 2005-10-25
+Revision history of Branch
+--------------------------
 
-    TODO: Test Revision.parents and demonstrate usage.
-    -- DavidAllouche 2005-10-25
+Branch.revision_history gives the sequence of revisions in this branch's
+history, latest revisions first. All revision history items must implement the
+IRevisionNumber interface. The Branch.revision_count() method gives the length
+of the revision_history attribute but without building the list.
 
-    TODO: Test Branch.revisions_since
+>>> from canonical.launchpad.interfaces import IRevisionNumber
+>>> count = junk.revision_count()
+>>> count
+6
+>>> [verifyObject(IRevisionNumber, a) for a in junk.revision_history]
+[True, True, True, True, True, True]
+>>> [revno.sequence for revno in junk.revision_history]
+[6, 5, 4, 3, 2, 1]
+
+There are two methods for getting only the the latest items of the revision
+history.
+
+Branch.latest_revisions give a specific count of RevisionNumbers at the end of
+the history.
+
+>>> three_latest = list(junk.revision_history)[:3]
+>>> list(junk.latest_revisions(3)) == three_latest
+True
+
+Branch.revisions_since gives all the RevisionNumbers for revisions comitted
+since a given timestamp. It may give suprising results if some committers had a
+skewed clock.
+
+>>> from datetime import datetime
+>>> timestamp = datetime(2005, 10, 31, 12, 00, 00)
+>>> two_latest = list(junk.revision_history)[:2]
+>>> list(junk.revisions_since(timestamp)) == two_latest
+True
+
+Ancestry of Revision
+--------------------
+
+The revision-history of a given branch, is only one possible ancestry path in
+the ancestry graph. It is also possible to examine the ancestry graph directly.
+
+A Bazaar branch may contains references (by revision_id) to revisions for which
+no data is available. Such revisions are called "ghosts".
+
+Initial commits (after a "bzr init") revisions have no parent.
+
+>>> history = list(junk.revision_history)
+>>> initial = history[-1].revision
+>>> initial.parent_ids
+[]
+
+Normal commits (as opposed to merges) have exactly one parent. The first parent
+of a revision is always the revision that was current when committing.
+
+>>> commit = history[-2].revision
+>>> [type(a) for a in commit.parent_ids] == [unicode]
+True
+
+Merges usually have two parents, but they may have more. Though the bzr user
+interface discourage such complex merges.
+
+>>> merge = history[-4].revision
+>>> len(merge.parent_ids)
+2
+
+Parent revisions are identified by their globally unique id, and not by a
+foreign key, so existing parents and ghosts can be modelled in the same way.
+
+To try and retrieve a Revision given its globally unique id, you can use the
+RevisionSet utility.
+
+>>> from canonical.launchpad.interfaces import IRevisionSet
+>>> revisionset = getUtility(IRevisionSet)
+>>> [parent_id] = commit.parent_ids
+>>> parent = revisionset.getByRevisionId(parent_id)
+>>> parent == initial
+True
+
+If the parent was a ghost at import time and is not currently available in the
+database. getByRevisionId returns None.
+
+>>> revisionset.getByRevisionId('missing-revision-id') is None
+True

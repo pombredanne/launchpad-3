@@ -101,6 +101,10 @@ class BranchView(LaunchpadView):
         timestamp = datetime.now(pytz.UTC) - timedelta(days=days)
         return self.context.revisions_since(timestamp).count()
 
+    def author_is_owner(self):
+        """Whether the branch author is set and is equal to the registrant."""
+        return self.context.author == self.context.owner
+
 
 class BranchEditView(SQLObjectEditView):
 
@@ -141,7 +145,7 @@ class BranchPullListing(LaunchpadView):
             productname = "+junk"
         else:
             productname = branch.product.name
-        return "%s %s %s %s" % (branch.url, branch.author.name, productname,
+        return "%s %s %s %s" % (branch.url, branch.owner.name, productname,
                                 branch.name)
 
     def branches_page(self, branches):
