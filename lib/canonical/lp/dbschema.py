@@ -2090,6 +2090,15 @@ class BugTaskStatus(DBSchema):
         of this product or source package.
         """)
 
+    NEEDINFO = Item(15, """
+        NeedInfo
+
+        More info is required before making further progress on this
+        bug, likely from the reporter. E.g. the exact error message
+        the user saw, the URL the user was visiting when the bug
+        occurred, etc.
+        """)
+
     ACCEPTED = Item(20, """
         Accepted
 
