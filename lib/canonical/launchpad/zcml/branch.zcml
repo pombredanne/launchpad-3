@@ -12,6 +12,7 @@
         class="canonical.launchpad.browser.BranchPullListing"
         attribute="__call__"
         name="supermirror-pull-list.txt"
+        layer="canonical.launchpad.layers.InternalHTTPLayer"
         />
     
     <!-- Branch -->

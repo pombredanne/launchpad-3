@@ -195,6 +195,18 @@ class PMDBHTTPServer(PublisherHTTPServer):
             raise
 
 
+class InternalHTTPLayerRequestFactory(HTTPPublicationRequestFactory):
+    """RequestFactory that sets the InternalHTTPLayer on a request."""
+
+    def __call__(self, input_stream, output_steam, env):
+        """See zope.app.publication.interfaces.IPublicationRequestFactory"""
+        request = HTTPPublicationRequestFactory.__call__(
+            self, input_stream, output_steam, env)
+        canonical.launchpad.layers.setFirstLayer(
+            request, canonical.launchpad.layers.InternalHTTPLayer)
+        return request
+
+
 http = ServerType(
     PublisherHTTPServer,
     HTTPPublicationRequestFactory,
@@ -216,3 +228,9 @@ debughttp = ServerType(
     8082,
     True)
 
+internalhttp = ServerType(
+    PublisherHTTPServer,
+    InternalHTTPLayerRequestFactory,
+    CommonAccessLogger,
+    8083,
+    True)
