@@ -117,11 +117,13 @@ class LaunchpadTestCase(unittest.TestCase):
 
 class LaunchpadFunctionalTestCase(unittest.TestCase):
     def setUp(self):
+        unittest.TestCase.setUp(self)
         LaunchpadFunctionalTestSetup().setUp()
         self.zodb_db = FunctionalTestSetup().db
 
     def tearDown(self):
         LaunchpadFunctionalTestSetup().tearDown()
+        unittest.TestCase.tearDown(self)
 
     def connect(self):
         return LaunchpadFunctionalTestSetup().connect()
