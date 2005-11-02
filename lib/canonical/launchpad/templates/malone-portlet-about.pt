@@ -6,13 +6,9 @@
     tracker for the open source world, and how you can share information
     about bugs in distributions and upstream.
 
-    <br /><br />
-    <span style="background: red; color: yellow; padding: 1px; font-weight: bold">NEW!</span>
-    Learn about the
-    <a href="https://wiki.launchpad.canonical.com/MaloneEmailInterfaceUserDoc"
-       title="Malone Email Interface Documentation">
-      Malone email interface.
-    </a>
+    <ul class="info">
+      <li> <a href="http://wiki.launchpad.canonical.com/MaloneEmailInterfaceUserDoc">Email Interface Docs</a></li>
+    </ul>
   </div>
 </div>
 

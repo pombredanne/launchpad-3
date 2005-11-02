@@ -34,7 +34,7 @@ dependency.
   >>> print http(r"""
   ... POST /products/firefox/+spec/canvas/+linkdependency HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 465
+  ... Content-Length: 468
   ... Content-Type: multipart/form-data; boundary=---------------------------14076136604849835101350748509
   ... 
   ... -----------------------------14076136604849835101350748509
@@ -46,9 +46,9 @@ dependency.
   ... 
   ... 1
   ... -----------------------------14076136604849835101350748509
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="FORM_SUBMIT"
   ... 
-  ... Add
+  ... Continue
   ... -----------------------------14076136604849835101350748509--
   ... """)
   HTTP/1.1 303 See Other
@@ -83,7 +83,7 @@ expect to be redirected to the spec home page.
   >>> print http(r"""
   ... POST /products/firefox/+spec/canvas/+removedependency HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 445
+  ... Content-Length: 448
   ... Content-Type: multipart/form-data; boundary=---------------------------910619684974131307920910
   ... 
   ... -----------------------------910619684974131307920910
@@ -95,9 +95,9 @@ expect to be redirected to the spec home page.
   ... 
   ... 1
   ... -----------------------------910619684974131307920910
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="FORM_SUBMIT"
   ... 
-  ... Add
+  ... Continue
   ... -----------------------------910619684974131307920910--
   ... """)
   HTTP/1.1 303 See Other

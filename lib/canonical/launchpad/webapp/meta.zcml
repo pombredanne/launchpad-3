@@ -58,4 +58,16 @@
      handler="canonical.launchpad.webapp.metazcml.GroupingFacet"
      />
 
+  <complexDirective
+    namespace="http://namespaces.zope.org/browser"
+    name="generalform"
+    schema="canonical.launchpad.webapp.metazcml.IGeneralFormDirective"
+    handler="canonical.launchpad.webapp.metazcml.GeneralFormDirective"
+    >
+    <subdirective
+      name="widget"
+      schema="zope.app.form.browser.metadirectives.IWidgetSubdirective"
+      />
+  </complexDirective>
+
 </configure>

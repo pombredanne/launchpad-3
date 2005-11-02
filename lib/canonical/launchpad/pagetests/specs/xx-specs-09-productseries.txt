@@ -17,7 +17,6 @@ series candidates, the "milestones" and the "1.0" series.
   ...
   <option value="">(no value)</option>
   <option value="2">firefox 1.0</option>
-  <option value="9">firefox 1.1</option>
   <option value="1">firefox milestones</option>
   ...
 
@@ -60,7 +59,7 @@ header.
   ... GET /products/firefox/+spec/e4x HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...Must Deliver For:.../products/firefox/+series/1.0...
+  ...products/firefox/+series/1.0...
 
 
 And now it should show on the "+specs" page for that product series.
