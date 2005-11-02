@@ -11,12 +11,13 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Welcome to The Bazaar!</h1>
+    <h1>Welcome to the Bazaar</h1>
 
-    <p class="documentDescription">The Bazaar is a Launchpad application
-    to keep track of all the upstream and distribution code that is
-    registered with the Launchpad and published using the Gnu Arch protocol,
-    interoperable with the Bazaar revision control system.</p>
+    <p>
+      The Launchpad Bazaar tracks
+      all the upstream and distribution code registered with Launchpad,
+      publishing it in a format usable by the Bazaar revision control system.
+    </p>
 
     <ul>
         <li><a href="series">Manage Upstream Bazaar Imports</a></li>

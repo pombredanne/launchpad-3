@@ -1,7 +1,7 @@
 <div class="portlet">
   <h4>Latest Bugs in <span tal:replace="context/displayname" />:</h4>
   <div class="portletBody">
-    <div class="portletContent even">
+    <div class="portletContent">
       <ul class="bug">
         <li tal:repeat="bugtask view/latestBugTasks">
           <a href="#"

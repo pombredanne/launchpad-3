@@ -76,9 +76,8 @@
 
       <div tal:condition="not:view/assignedBugs" tal:omit-tag>
       <h2>No bugs are currently assigned to <span
-      tal:replace="view/user/browsername">Person</span>.</h2>
+      tal:replace="view/user/browsername">Person</span></h2>
 
-        <hr>
         <p> You can assign a bug by visiting its bug page, choosing a
         specific package or product it needs to be fixed in, and then
         assigning it to a specific person for action.</p>

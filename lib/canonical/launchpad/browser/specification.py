@@ -7,28 +7,42 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IProduct, IDistribution, ILaunchBag, ISpecification, ISpecificationSet)
+    IProduct, IDistribution, ILaunchBag, ISpecification, ISpecificationSet,
+    NameNotAvailable)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, enabled_with_permission, LaunchpadView)
+    canonical_url, ContextMenu, Link, enabled_with_permission,
+    LaunchpadView, Navigation, GeneralFormView)
 
 __all__ = [
     'SpecificationContextMenu',
+    'SpecificationNavigation',
     'SpecificationView',
     'SpecificationAddView',
     'SpecificationEditView',
+    'SpecificationRetargetingView',
     ]
+
+
+class SpecificationNavigation(Navigation):
+
+    usedfor = ISpecification
+
+    def traverse(self, sprintname):
+        return self.context.getSprintSpecification(sprintname)
 
 
 class SpecificationContextMenu(ContextMenu):
 
     usedfor = ISpecification
-    links = ['edit', 'people', 'status', 'setseries', 'setdistrorelease',
+    links = ['edit', 'people', 'status', 'priority', 'setseries',
+             'setdistrorelease',
              'milestone', 'requestreview', 'doreview', 'subscription',
+             'subscribeanother',
              'linkbug', 'unlinkbug', 'adddependency', 'removedependency',
-             'dependencytree', 'linksprint', 'administer']
+             'dependencytree', 'linksprint', 'retarget', 'administer']
 
     def edit(self):
         text = 'Edit Summary and Title'
@@ -41,6 +55,10 @@ class SpecificationContextMenu(ContextMenu):
     def status(self):
         text = 'Change Status'
         return Link('+status', text, icon='edit')
+
+    def priority(self):
+        text = 'Change Priority'
+        return Link('+priority', text, icon='edit')
 
     def setseries(self):
         text = 'Target to Series'
@@ -69,10 +87,14 @@ class SpecificationContextMenu(ContextMenu):
     def subscription(self):
         user = self.user
         if user is not None and has_spec_subscription(user, self.context):
-            text = 'Unsubscribe from Spec'
+            text = 'Unsubscribe Yourself'
         else:
-            text = 'Subscribe to Spec'
+            text = 'Subscribe Yourself'
         return Link('+subscribe', text, icon='edit')
+
+    def subscribeanother(self):
+        text = 'Subscribe Someone'
+        return Link('+addsubscriber', text, icon='add')
 
     def linkbug(self):
         text = 'Link to Bug'
@@ -93,7 +115,7 @@ class SpecificationContextMenu(ContextMenu):
         return Link('+removedependency', text, icon='add', enabled=enabled)
 
     def dependencytree(self):
-        text = 'Show Dependency Tree'
+        text = 'Show Dependencies'
         enabled = (
             bool(self.context.dependencies) or bool(self.context.blocked_specs)
             )
@@ -102,6 +124,11 @@ class SpecificationContextMenu(ContextMenu):
     def linksprint(self):
         text = 'Add to Meeting'
         return Link('+linksprint', text, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def retarget(self):
+        text = 'Retarget'
+        return Link('+retarget', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def administer(self):
@@ -188,7 +215,7 @@ class SpecificationAddView(SQLObjectAddView):
         self._nextURL = '.'
         SQLObjectAddView.__init__(self, context, request)
 
-    def create(self, name, title, specurl, summary, priority, status,
+    def create(self, name, title, specurl, summary, status,
         owner, assignee=None, drafter=None, approver=None):
         """Create a new Specification."""
         #Inject the relevant product or distribution into the kw args.
@@ -201,10 +228,12 @@ class SpecificationAddView(SQLObjectAddView):
         # clean up name
         name = name.strip().lower()
         spec = getUtility(ISpecificationSet).new(name, title, specurl,
-            summary, priority, status, owner, product=product,
+            summary, status, owner, product=product,
             distribution=distribution, assignee=assignee, drafter=drafter,
             approver=approver)
         self._nextURL = canonical_url(spec)
+        # give karma where it is due
+        owner.assignKarma('addspec')
         return spec
 
     def add(self, content):
@@ -220,4 +249,26 @@ class SpecificationEditView(SQLObjectEditView):
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.context))
+
+
+class SpecificationRetargetingView(GeneralFormView):
+
+    def process(self, product=None, distribution=None):
+        if product and distribution:
+            return 'Please choose a product OR a distribution, not both.'
+        if not (product or distribution):
+            return 'Please choose a product or distribution for this spec.'
+        # we need to ensure that there is not already a spec with this name
+        # for this new target
+        if product:
+            if product.getSpecification(self.context.name) is not None:
+                return '%s already has a spec called %s' % (
+                    product.name, self.context.name)
+        elif distribution:
+            if distribution.getSpecification(self.context.name) is not None:
+                return '%s already has a spec called %s' % (
+                    distribution.name, self.context.name)
+        self.context.retarget(product=product, distribution=distribution)
+        self._nextURL = canonical_url(self.context)
+        return 'Done.'
 

@@ -30,6 +30,8 @@ from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.interfaces.specificationtarget import (
+    IHasSpecifications)
 from canonical.launchpad.interfaces.validation import (
     valid_emblem, valid_hackergotchi)
 
@@ -71,7 +73,7 @@ class PersonNameField(TextLine):
                 "The name %s is already in use." % value))
 
 
-class IPerson(Interface):
+class IPerson(IHasSpecifications):
     """A Person."""
 
     id = Int(
@@ -108,7 +110,7 @@ class IPerson(Interface):
             )
     karma = Int(
             title=_('Karma'), readonly=False,
-            description=_('The cached karma for this person.')
+            description=_('The cached total karma for this person.')
             )
     homepage_content = Text(title=_("Homepage Content"), required=False,
         description=_("The content of your home page. Edit this and it "
@@ -183,6 +185,8 @@ class IPerson(Interface):
             vocabulary='TimezoneName')
 
     # Properties of the Person object.
+    karma_category_caches = Attribute('The caches of karma scores, by '
+        'karma category.')
     ubuntite = Attribute("Ubuntite Flag")
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
@@ -219,6 +223,8 @@ class IPerson(Interface):
     activemembers = Attribute("List of members with ADMIN or APPROVED status")
     active_member_count = Attribute("The number of real people who are "
         "members of this team.")
+    all_member_count = Attribute("The total number of real people who are "
+        "members of this team, including subteams.")
     administrators = Attribute("List of members with ADMIN status")
     expiredmembers = Attribute("List of members with EXPIRED status")
     approvedmembers = Attribute("List of members with APPROVED status")
@@ -334,6 +340,10 @@ class IPerson(Interface):
         KarmaCache table for this person.
         """
 
+    def latestKarma(quantity=25):
+        """Return the latest karma actions for this person, up to the number
+        given as quantity."""
+
     def inTeam(team):
         """Return True if this person is a member or the owner of <team>.
 
@@ -348,6 +358,11 @@ class IPerson(Interface):
         
         Any request that is cancelled, denied or sent for shipping can't be
         changed.
+        """
+
+    def shippedShipItRequests():
+        """Return all requests placed by this person that were sent to the
+        shipping company already.
         """
 
     def currentShipItRequest():

@@ -334,7 +334,7 @@ It's also possible to iterate over all the bug tasks:
 
     >>> bugtasks = [bugtask for bugtasks in bugtaskset]
     >>> len(bugtasks)
-    18
+    19
 
 Bug Task Maintainers
 --------------------
@@ -488,7 +488,7 @@ like these, use the NullBugTask object.
     >>> null_bugtask.statusdisplayhtml
     u'Not reported in netapplet (upstream)'
     >>> null_bugtask.statuselsewhere
-    'Fixed in 2 of 7 places'
+    'fixed in 2 of 7 places'
 
 The astute reader will have noticed that NullBugTask automatically
 "marked" itself as providing the correct IBugTask interface. Let's see

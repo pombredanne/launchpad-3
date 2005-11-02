@@ -11,13 +11,24 @@
   <content class="canonical.launchpad.database.Specification">
     <allow interface="canonical.launchpad.interfaces.ISpecification" />
     <require
-      permission="launchpad.AnyPerson"
-      set_schema="canonical.launchpad.interfaces.ISpecification" />
+      permission="launchpad.Edit"
+      set_attributes="title summary status specurl needs_discussion
+                      superseded_by milestone productseries distrorelease
+                      product distribution approver assignee drafter
+                      whiteboard" />
+    <require
+      permission="launchpad.Admin"
+      set_attributes="priority direction_approved name" />
   </content>
 
   <browser:menus
     module="canonical.launchpad.browser"
     classes="SpecificationContextMenu"
+    />
+
+  <browser:navigation
+    module="canonical.launchpad.browser"
+    classes="SpecificationNavigation"
     />
 
   <browser:defaultView
@@ -28,6 +39,16 @@
     for="canonical.launchpad.interfaces.ISpecification"
     path_expression="string:+spec/${name}"
     attribute_to_parent="target" />
+
+  <subscriber
+    for="canonical.launchpad.interfaces.ISpecification
+         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+    factory="canonical.launchpad.subscribers.karma.spec_created" />
+
+  <subscriber
+    for="canonical.launchpad.interfaces.ISpecification
+         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+    factory="canonical.launchpad.subscribers.karma.spec_modified" />
 
   <browser:pages
     for="canonical.launchpad.interfaces.ISpecification"
@@ -42,6 +63,9 @@
     <browser:page
       name="+listing-detailed"
       template="../templates/specification-listing-detailed.pt" />
+    <browser:page
+      name="+listing-compact"
+      template="../templates/specification-listing-compact.pt" />
     <browser:page
       name="+portlet-details"
       template="../templates/specification-portlet-details.pt" />
@@ -74,6 +98,28 @@
       template="../templates/specification-doreview.pt" />
   </browser:pages>
 
+  <browser:generalform
+    name="+addsubscriber"
+    for="canonical.launchpad.interfaces.ISpecification"
+    schema="canonical.launchpad.interfaces.ISpecificationSubscription"
+    class="canonical.launchpad.browser.SpecificationSubscriptionAddView"
+    fields="person"
+    arguments="person"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-addsubscriber.pt"
+    />
+
+  <browser:generalform
+    name="+retarget"
+    for="canonical.launchpad.interfaces.ISpecification"
+    schema="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationRetargetingView"
+    fields="product distribution"
+    keyword_arguments="product distribution"
+    permission="launchpad.Edit"
+    template="../templates/specification-retargeting.pt"
+    />
+
   <browser:editform
     name="+edit"
     schema="canonical.launchpad.interfaces.ISpecification"
@@ -96,7 +142,7 @@
     name="+people"
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
-    label="Change People"
+    label="Change the People Involved"
     fields="assignee drafter approver whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-people.pt">
@@ -110,7 +156,7 @@
     name="+setdistrorelease"
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
-    label="Target Specific DistroRelease"
+    label="Target to a Distribution Release"
     fields="distrorelease whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-distrorelease.pt">
@@ -124,10 +170,24 @@
     name="+setseries"
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
-    label="Target Specific Series"
+    label="Target to a Series"
     fields="productseries whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-productseries.pt">
+    <browser:widget
+      field="whiteboard"
+      class="zope.app.form.browser.TextAreaWidget"
+      height="5" />
+  </browser:editform>
+
+  <browser:editform
+    name="+priority"
+    schema="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationEditView"
+    label="Change Priority"
+    fields="priority direction_approved whiteboard"
+    permission="launchpad.Admin"
+    template="../templates/specification-priority.pt">
     <browser:widget
       field="whiteboard"
       class="zope.app.form.browser.TextAreaWidget"
@@ -139,7 +199,7 @@
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
     label="Change Status"
-    fields="status priority whiteboard"
+    fields="status needs_discussion whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-status.pt">
     <browser:widget
@@ -152,7 +212,7 @@
     name="+milestone"
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
-    label="Target to Milestone"
+    label="Target to a Milestone"
     fields="milestone whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-milestone.pt">
@@ -167,7 +227,7 @@
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
     label="Administer Specification"
-    fields="name"
+    fields="name priority"
     permission="launchpad.Admin"
     template="../templates/specification-edit.pt"
   />
@@ -177,7 +237,7 @@
     for="canonical.launchpad.interfaces.ISpecification"
     schema="canonical.launchpad.interfaces.ISpecificationReview"
     class="canonical.launchpad.browser.SpecificationReviewAddView"
-    label="Request Review of Specification"
+    label="Request Specification Review"
     fields="reviewer requestor queuemsg"
     keyword_arguments="reviewer requestor queuemsg"
     permission="launchpad.AnyPerson"
@@ -196,7 +256,7 @@
     for="canonical.launchpad.interfaces.ISpecification"
     schema="canonical.launchpad.interfaces.ISpecificationBug"
     class="canonical.launchpad.browser.SpecificationBugAddView"
-    label="Link specification to bug report"
+    label="Link specification to a bug report"
     fields="bug"
     keyword_arguments="bug"
     permission="launchpad.AnyPerson"
@@ -208,14 +268,14 @@
     for="canonical.launchpad.interfaces.ISpecification"
     schema="canonical.launchpad.interfaces.ISpecificationBug"
     class="canonical.launchpad.browser.SpecificationBugRemoveView"
-    label="Remove Link between Specification and Bug"
+    label="Remove Link With Bug Report"
     fields="bug"
     keyword_arguments="bug"
     permission="launchpad.AnyPerson"
     template="../templates/specification-removebug.pt">
   </browser:addform>
 
-  <browser:addform
+  <browser:generalform
     name="+linkdependency"
     for="canonical.launchpad.interfaces.ISpecification"
     schema="canonical.launchpad.interfaces.ISpecificationDependency"
@@ -225,9 +285,9 @@
     keyword_arguments="dependency"
     permission="launchpad.AnyPerson"
     template="../templates/specification-dependency.pt">
-  </browser:addform>
+  </browser:generalform>
 
-  <browser:addform
+  <browser:generalform
     name="+removedependency"
     for="canonical.launchpad.interfaces.ISpecification"
     schema="canonical.launchpad.interfaces.ISpecificationDependencyRemoval"
@@ -237,14 +297,14 @@
     keyword_arguments="dependency"
     permission="launchpad.AnyPerson"
     template="../templates/specification-removedep.pt">
-  </browser:addform>
+  </browser:generalform>
 
   <browser:addform
     name="+linksprint"
     for="canonical.launchpad.interfaces.ISpecification"
     schema="canonical.launchpad.interfaces.ISprintSpecification"
     class="canonical.launchpad.browser.SprintSpecificationAddView"
-    label="Add Spec to Sprint Topic List"
+    label="Register Specification For a Meeting"
     fields="sprint"
     keyword_arguments="sprint"
     permission="launchpad.AnyPerson"
@@ -289,6 +349,11 @@
       name="+portlet-sprints"
       template="../templates/specifications-portlet-sprints.pt" />
   </browser:pages>
+
+  <!-- SpecificationDelta -->
+  <content class="canonical.launchpad.components.specification.SpecificationDelta">
+    <allow interface="canonical.launchpad.interfaces.ISpecificationDelta" />
+  </content>
 
 </facet>
 

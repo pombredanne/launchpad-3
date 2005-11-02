@@ -11,16 +11,15 @@
 
       <div metal:use-macro="context/@@launchpad_addform/addform">
 
-        <h3 tal:condition="view/label"
+        <h1 tal:condition="view/label"
             tal:content="view/label"
-            metal:fill-slot="heading">Heading from ZCML label="xxx"</h3>
+            metal:fill-slot="heading">Heading from ZCML label="xxx"</h1>
 
-        <div metal:fill-slot="extra_info" class="documentDescription">
-            Fill in the form below to register the upstream product with The
-            Launchpad. Your product will be immediately accessible and you
-            will be able to use Malone (the bugtracker) and Rosetta (for
-            translations) for this product immediately.
-        </div>
+        <p metal:fill-slot="extra_info">
+          When you enter the details of the product, it will immediately be
+          available for use with Malone (the bug tracker) and Rosetta (the
+          translations system).
+        </p>
 
       </div>
 

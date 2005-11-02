@@ -1,0 +1,18 @@
+<div class="portlet">
+
+  <h4>Standard Views:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul class="info">
+      <li><a href="#">All</a></li>
+      <li>DEFAULT</li>
+      <li><a href="#">Current</a></li>
+      <li><a href="#">Wishlist</a></li>
+      <li><a href="#">Obsolete</a></li>
+      <li><a href="#">Need priority</a></li>
+    </ul>
+
+  </div>
+
+</div>

@@ -14,17 +14,14 @@
 
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_addform/addform">
+  <div metal:use-macro="context/@@launchpad_generalform/generalform">
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Use this form to create a dependency for this spec on the
-      specification you select in the form below.
-    </div>
+    <p metal:fill-slot="extra_info">
+      If &#8220;<tal:spec replace="context/title" />&#8221;
+      depends on another specification, specify that here
+      so Launchpad knows about the dependency.
+    </p>
 
-  </div>
-
-  <div>
-    Thank you!
   </div>
 
 </div>

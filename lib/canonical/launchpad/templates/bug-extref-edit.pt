@@ -26,11 +26,9 @@
               metal:fill-slot="heading"
               >Form Label will come from ZCML label="xxx"</h1>
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Arbitrary external web links can be associated to bugs. If you
-      think you've got a link that might be of interest to other
-      people involved with this bug, you can add it below.
-    </div>
+    <p metal:fill-slot="extra_info">
+      Arbitrary external Web links can be associated with bugs.
+    </p>
   </div>
 
 </div>

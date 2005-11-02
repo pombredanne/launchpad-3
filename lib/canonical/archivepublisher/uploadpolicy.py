@@ -228,3 +228,18 @@ class AutoSyncUploadPolicy(AbstractUploadPolicy):
 
 AbstractUploadPolicy._registerPolicy(AutoSyncUploadPolicy)
 
+class AnythingGoesUploadPolicy(AbstractUploadPolicy):
+    """The anything goes upload policy is invoked when processing uploads
+    from the test process.
+
+    We require a signed changes file but that's it.
+    """
+
+    def __init__(self):
+        AbstractUploadPolicy.__init__(self)
+        self.name = "anything"
+        # We require the changes to be signed but not the dsc
+        self.unsigned_dsc_ok = True
+
+AbstractUploadPolicy._registerPolicy(AnythingGoesUploadPolicy)
+

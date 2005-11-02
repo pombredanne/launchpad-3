@@ -63,7 +63,7 @@ PYLINTOPTS_TRAVERSERS="$PYLINTOPTS,W0613,R0911"
 export PYTHONPATH=lib:$PYTHONPATH
 
 if [ -z "$1" ]; then
-    files=`baz status | grep '^ ' | cut -c5-`
+    files=`bzr status | grep '^ ' | cut -c3-`
 else
     # Add newlines so grep filters out pyfiles correctly later
     files=`echo $* | tr " " "\n"`

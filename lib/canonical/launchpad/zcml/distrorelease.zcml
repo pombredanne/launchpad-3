@@ -11,7 +11,8 @@
     <require
         permission="launchpad.Edit"
         set_attributes="displayname title summary description version
-                        owner datelastlangpack"
+                        releasestatus owner datelastlangpack 
+                        nominatedarchindep"
         />
   </content>
 
@@ -141,9 +142,37 @@
     name="+edit"
     schema="canonical.launchpad.interfaces.IDistroRelease"
     facet="overview"
-    fields="displayname title summary description version"
+    fields="displayname title summary description"
     template="../templates/launchpad-editform.pt"
     lp:url="/distros/$Distribution.name/$DistroRelease.name/+edit"
     />
+
+  <browser:editform
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    permission="launchpad.Admin"
+    name="+admin"
+    schema="canonical.launchpad.interfaces.IDistroRelease"
+    facet="overview"
+    fields="name releasestatus version"
+    template="../templates/launchpad-editform.pt"
+    lp:url="/distros/$Distribution.name/$DistroRelease.name/+admin"
+    />
+
+  <browser:addform
+    name="+addport"
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    schema="canonical.launchpad.interfaces.IDistroArchRelease"
+    label="Create New Port"
+    fields="architecturetag processorfamily official owner"
+    arguments="architecturetag processorfamily official owner"
+    class="canonical.launchpad.browser.DistroArchReleaseAddView"
+    facet="overview"
+    permission="launchpad.Admin"
+    template="../templates/distrorelease-addport.pt"
+    >
+    <browser:widget
+      field="owner"
+      class="canonical.widgets.HiddenUserWidget" />
+  </browser:addform>
 
 </configure>

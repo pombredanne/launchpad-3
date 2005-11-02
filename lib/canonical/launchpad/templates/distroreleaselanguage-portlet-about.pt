@@ -8,7 +8,7 @@
     <span tal:replace="context/distrorelease/displayname">hoary</span>
     release of
     <span tal:replace="context/distrorelease/distribution/displayname">Ubuntu
-    </span>. Select a template and start translating!
+    </span>. Select a template to start translating.
   </div>
 </div>
 

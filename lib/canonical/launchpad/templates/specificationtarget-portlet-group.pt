@@ -1,0 +1,31 @@
+<div class="portlet">
+
+  <h4>Grouping and Sorting:</h4>
+
+  <div class="portletBody portletContent">
+
+    <table class="listing">
+      <tr>
+        <th>Grouping</th>
+        <th>Sorting</th>
+      </tr>
+      <tr>
+        <td>
+          <ul>
+            <li><a href="#">Assignee</a></li>
+            <li><a href="#">Drafter</a></li>
+            <li><a href="#">Registrant</a></li>
+            <li><a href="#">Approver</a></li>
+            <li><a href="#"><i>None</i></a></li>
+          </ul>
+        </td>
+        <td>
+          <ul>
+            <li><a href="#">Status</a></li>
+            <li><a href="#">Priority</a></li>
+          </ul>
+        </td>
+      </tr>
+  </div>
+
+</div>

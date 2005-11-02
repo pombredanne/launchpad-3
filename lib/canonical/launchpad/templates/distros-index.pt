@@ -26,11 +26,9 @@
 
     <div class="portletBody portletContent">
       <img src="/++resource++info_icon.gif" />
-      Note that some of these distributions are "read-only", we monitor
-      those distributions and present package information for them in
-      Launchpad, but they cannot be altered or managed through the
-      Launchpad. The Launchpad representations of those distributions might
-      be out of date.
+      Some of these distributions are read-only.
+      They can be browsed in Launchpad, but not altered or managed,
+      and their information might be out of date.
     </div>
   </div>
 </metal:rightportlets>

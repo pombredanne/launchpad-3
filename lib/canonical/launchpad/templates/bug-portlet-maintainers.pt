@@ -2,7 +2,7 @@
     <h4>Related People:</h4>
 
     <div class="portletBody">
-        <div class="portletContent even"
+        <div class="portletContent"
              tal:define="bugtasks context/bugtasks">
 
             <b>First reported by:</b><br />

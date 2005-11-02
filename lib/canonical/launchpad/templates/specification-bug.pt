@@ -14,17 +14,7 @@
 
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_addform/addform">
-
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Use this form to link the spec with a given bug number.
-    </div>
-
-  </div>
-
-  <div>
-    Thank you!
-  </div>
+  <div metal:use-macro="context/@@launchpad_addform/addform" />
 
 </div>
     

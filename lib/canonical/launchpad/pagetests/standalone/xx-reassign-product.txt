@@ -30,6 +30,20 @@
   ...Change to:...
   ...
 
+  
+  Trying to change the owner to a new team with an invalid name is not
+  allowed.
+
+  >>> print http(r"""
+  ... POST /projects/mozilla/firefox/+reassign HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... 
+  ... field.owner=foo+bar&existing=new&CHANGE_OWNER=Change+Owner""")
+  HTTP/1.1 200 Ok
+  ... 
+  ...'foo bar' is not a valid name for a team. Please make sure...
+  ...
+
 
   Here he changes the owner to himself.
 

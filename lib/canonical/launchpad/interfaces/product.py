@@ -234,7 +234,8 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
         """Creates a new ProductSeries for this series."""
 
     def getSeries(name):
-        """Returns the series for this product that has the name given."""
+        """Returns the series for this product that has the name given, or
+        None."""
 
     def getRelease(version):
         """Returns the release for this product that has the version

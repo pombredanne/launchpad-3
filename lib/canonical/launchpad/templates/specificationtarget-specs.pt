@@ -9,45 +9,46 @@
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
 <div metal:fill-slot="main">
 
-  <h1>
-    Specifications for
-    <span tal:replace="context/displayname">Ubuntu 5.04</span>
-  </h1>
-
-      <p tal:replace="nothing"><!--
+  <p tal:replace="nothing">
     This page uses a view class that organises the tasks into a set of
-    categories (by status). it determines the sequence of the categories,
-    and the sequence of the specs in each category.
+    categories. it determines the sequence of the categories, and the
+    sequence of the specs in each category.
 
-       view/categories => the list of spec statuses to be displayed
-       category/status => the category SpecificationStatus
-       category/specs => the list of specs
-       spec => an ISpecification
-      --></p>
+      view/categories => the list of spec categories to be displayed
+      category/title => the category title
+      category/contents => the list of specs
+      spec => an ISpecification
+  </p>
 
-      <p tal:condition="not:context/specifications">
-        There are no specifications registered for
-        <span tal:replace="context/displayname">Ubuntu 5.04</span> at the moment.
-      </p>
-      <tal:specifications condition="context/specifications">
-        <p>
-          Each specification describes a feature for
-          <span tal:replace="context/displayname" />.
-        </p>
-        <tal:block repeat="category view/categories">
-          <h2 tal:content="category/status/title">Approved</h2>
-          <div
-            tal:repeat="spec category/specs"
-            tal:replace="structure spec/@@+listing-detailed"
-          />
-        </tal:block>
-      </tal:specifications>
-      <ul tal:condition="nothing">
-      <!-- XXX mpt 20050926 Restore this once this page isn't 3-column -->
-        <li class="add"><a href="+addspec">Add Specification&hellip;</a></li>
-      </ul>
-    </div>
-  </body>
+  <h1 tal:condition="view/view_title"
+      tal:content="view/view_title">Specs for Approval</h1>
+
+  <p tal:condition="not: view/count">
+    <img src="/++resource++alert" />
+    <i>There are no specifications in this category for
+    <span tal:replace="context/displayname">Ubuntu 5.04</span> at the
+    moment.</i>
+  </p>
+
+  <p tal:condition="view/count">
+    <b><span tal:replace="view/count">5</span> specifications to list:</b>
+  </p>
+
+  <tal:specifications condition="view/categories">
+    <tal:block repeat="category view/categories">
+      <h2 tal:content="category/status/title">Approved</h2>
+      <div
+        tal:repeat="spec category/specs"
+        tal:replace="structure spec/@@+listing-detailed"
+      />
+    </tal:block>
+  </tal:specifications>
+
+</div>
+</body>
 </html>

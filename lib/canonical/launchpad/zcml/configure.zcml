@@ -40,6 +40,7 @@
     <include file="datetime.zcml" />
     <include file="distribution.zcml" />
     <include file="distributionsourcepackage.zcml" />
+    <include file="distributionsourcepackagecache.zcml" />
     <include file="distributionsourcepackagerelease.zcml" />
     <include file="distrocomponentuploader.zcml" />
     <include file="distrorelease.zcml" />
@@ -51,7 +52,6 @@
     <include file="distroarchreleasebinarypackagerelease.zcml" />
     <include file="emailaddress.zcml" />
     <include file="files.zcml" />
-    <include file="foaf.zcml" />
     <include file="gpgkey.zcml" />
     <include file="ircid.zcml" />
     <include file="jabberid.zcml" />
@@ -89,6 +89,7 @@
     <include file="publishedpackage.zcml" />
     <include file="queue.zcml" />
     <include file="registry.zcml" />
+    <include file="schema.zcml" />
     <include file="sourcepackage.zcml" />
     <include file="sourcepackagename.zcml" />
     <include file="sourcepackagepublishing.zcml" />
@@ -100,6 +101,8 @@
     <include file="specificationsubscription.zcml" />
     <include file="specificationtarget.zcml" />
     <include file="sprint.zcml" />
+    <include file="sprintattendance.zcml" />
+    <include file="sprintspecification.zcml" />
     <include file="ticket.zcml" />
     <include file="ticketreopening.zcml" />
     <include file="ticketsubscription.zcml" />
@@ -124,7 +127,6 @@
     <include file="rosetta.zcml" />
     <include file="malone.zcml" />
     <include file="registry.zcml" />
-    <include file="foaf.zcml" />
     <include file="bazaar.zcml" />
 
     <!-- Event configuration -->

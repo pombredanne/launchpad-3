@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces import (
     IBugTracker, IBugAttachment, IPoll, IPollSubset, IPollOption,
     IProductRelease, IShippingRequest, IShippingRequestSet, IRequestedCDs,
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
-    IShippingRun, ISpecification)
+    IShippingRun, ISpecification, ISprintSpecification)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -64,6 +64,33 @@ class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
         admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.obj.target.owner) or 
                 user.inTeam(self.obj.owner) or 
+                user.inTeam(self.obj.drafter) or 
+                user.inTeam(self.obj.assignee) or 
+                user.inTeam(self.obj.approver) or 
+                user.inTeam(admins))
+
+
+class AdminSpecification(AuthorizationBase):
+    permission = 'launchpad.Admin'
+    usedfor = ISpecification
+
+    def checkAuthenticated(self, user):
+        assert self.obj.target
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.target.owner) or 
+                user.inTeam(admins))
+
+
+class EditSprintSpecification(AuthorizationBase):
+    """The sprint owner can say what makes it onto the agenda for the
+    sprint.
+    """
+    permission = 'launchpad.Edit'
+    usedfor = ISprintSpecification
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.sprint.owner) or
                 user.inTeam(admins))
 
 

@@ -50,7 +50,7 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
-    KarmaActionCategory, TeamSubscriptionPolicy, BugTaskStatus)
+    TeamSubscriptionPolicy, BugTaskStatus)
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
@@ -64,17 +64,17 @@ from canonical.launchpad.interfaces import (
     IPollSet)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.form import FormView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.helpers import (
         obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
 from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
-    redirection)
+    redirection, GeneralFormView)
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
@@ -112,6 +112,10 @@ class PersonSetNavigation(Navigation):
 
     def breadcrumb(self):
         return 'People'
+
+    @stepto('+me')
+    def me(self):
+        return getUtility(ILaunchBag).user
 
     def traverse(self, name):
         return self.context.getByName(name)
@@ -242,26 +246,31 @@ class PersonSpecsMenu(ApplicationMenu):
 
     facet = 'specifications'
 
-    links = ['created', 'assigned', 'drafted', 'review', 'subscribed']
+    links = ['created', 'assigned', 'drafted', 'review', 'approver',
+             'subscribed']
 
     def created(self):
-        text = 'Specifications Created'
+        text = 'Show Specs Created'
         return Link('+createdspecs', text, icon='spec')
 
+    def approver(self):
+        text = 'Show Specs for Approval'
+        return Link('+approverspecs', text, icon='spec')
+
     def assigned(self):
-        text = 'Specifications Assigned'
+        text = 'Show Assigned Specs'
         return Link('+assignedspecs', text, icon='spec')
 
     def drafted(self):
-        text = 'Specifications Drafted'
+        text = 'Show Drafted Specs'
         return Link('+draftedspecs', text, icon='spec')
 
     def review(self):
-        text = 'Specifications To Review'
+        text = 'Show Feedback Requests'
         return Link('+reviewspecs', text, icon='spec')
 
     def subscribed(self):
-        text = 'Subscribed Specifications'
+        text = 'Show Subscribed Specs'
         return Link('+subscribedspecs', text, icon='spec')
 
 
@@ -322,8 +331,9 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = IPerson
     facet = 'overview'
-    links = ['common_edit', 'common_edithomepage', 'common_edithackergotchi',
-             'common_editemblem', 'karma', 'editsshkeys', 'editgpgkeys',
+    links = ['karma', 'common_edit', 'common_edithomepage',
+             'common_edithackergotchi',
+             'common_editemblem', 'editsshkeys', 'editgpgkeys',
              'codesofconduct', 'administer', 'common_packages']
 
     def karma(self):
@@ -555,6 +565,7 @@ class PersonView:
         self.request = request
         self.message = None
         self.user = getUtility(ILaunchBag).user
+        self._karma_categories = None
         if context.isTeam():
             # These methods are called here because their return values are
             # going to be used in some other places (including
@@ -650,20 +661,6 @@ class PersonView:
         """Return True if this is not a restricted team."""
         restricted = TeamSubscriptionPolicy.RESTRICTED
         return self.context.subscriptionpolicy != restricted
-
-    def actionCategories(self):
-        return KarmaActionCategory.items
-
-    def actions(self, actionCategory):
-        """Return a list of actions of the given category performed by
-        this person."""
-        kas = getUtility(IKarmaActionSet)
-        return kas.selectByCategoryAndPerson(actionCategory, self.context)
-
-    def actionsCount(self, action):
-        """Return the number of times this person performed this action."""
-        karmaset = getUtility(IKarmaSet)
-        return len(karmaset.selectByPersonAndAction(self.context, action))
 
     def reportedBugTasks(self):
         """Return up to 30 bug tasks reported recently by this person."""
@@ -959,6 +956,31 @@ class PersonView:
                 <blockquote>%s</blockquote>
                 Try again later or cancel your request.""" % key)
 
+        # revoked and expired keys can not be imported.
+        if key.revoked:
+            return (
+                "The key %s cannot be validated because it has been "
+                "publicly revoked. You will need to generate a new key "
+                "(using <kbd>gpg --genkey</kbd>) and repeat the previous "
+                "process to find and import the new key." % key.keyid)
+
+        if key.expired:
+            return (
+                "The key %s cannot be validated because it has expired. "
+                "You will need to generate a new key "
+                "(using <kbd>gpg --genkey</kbd>) and repeat the previous "
+                "process to find and import the new key." % key.keyid)
+
+        # XXX: jamesh 20051012
+        # This code will change once we have support for validating
+        # sign-only keys.
+        if not key.can_encrypt:
+            return (
+                "Launchpad does not currently support validation of "
+                "sign-only GPG keys.  If you add an encryption subkey "
+                "(using <kbd>gpg --edit-key</kbd>) and upload your key "
+                "again, you should be able to import the key.")
+
         self._validateGPG(key)
 
         return ('A message has been sent to <code>%s</code>, encrypted with '
@@ -1132,13 +1154,9 @@ class PersonEditView(SQLObjectEditView):
         self.request.response.redirect(canonical_url(self.context))
 
 
-class PersonEmblemView(FormView):
+class PersonEmblemView(GeneralFormView):
 
-    schema = IPerson
-    fieldNames = ['emblem',]
-    _arguments = ['emblem',]
-
-    def process(self, emblem):
+    def process(self, emblem=None):
         # XXX use Bjorn's nice file upload widget when he writes it
         if emblem is not None:
             filename = self.request.get('field.emblem').filename
@@ -1147,19 +1165,13 @@ class PersonEmblemView(FormView):
             self.context.emblem = getUtility(ILibraryFileAliasSet).create(
                 name=filename, size=len(emblem), file=StringIO(emblem),
                 contentType=content_type)
+        self._nextURL = canonical_url(self.context)
         return 'Success'
 
-    def nextURL(self):
-        return canonical_url(self.context)
 
+class PersonHackergotchiView(GeneralFormView):
 
-class PersonHackergotchiView(FormView):
-
-    schema = IPerson
-    fieldNames = ['hackergotchi',]
-    _arguments = ['hackergotchi',]
-
-    def process(self, hackergotchi):
+    def process(self, hackergotchi=None):
         # XXX use Bjorn's nice file upload widget when he writes it
         if hackergotchi is not None:
             filename = self.request.get('field.hackergotchi').filename
@@ -1616,6 +1628,13 @@ class ObjectReassignmentView:
                     "Launchpad. Please choose a different name or select "
                     "the option to make that person/team the new owner, "
                     "if that's what you want." % owner_name)
+                return None
+
+            if not valid_name(owner_name):
+                self.errormessage = (
+                    "'%s' is not a valid name for a team. Please make sure "
+                    "it contains only the allowed characters and no spaces."
+                    % owner_name)
                 return None
 
             owner = personset.newTeam(

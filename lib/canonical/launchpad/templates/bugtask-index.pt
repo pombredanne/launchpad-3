@@ -74,12 +74,11 @@
   <div tal:replace="structure context/@@+headline-tasks" />
 
     <tal:description
-      content="structure context/bug/description/fmt:text-to-html"
-    >
+      content="structure context/bug/description/fmt:text-to-html">
       $Bug.description
     </tal:description>
 
-  <tal:block repeat="message context/bug/messages">
+  <tal:message repeat="message context/bug/messages">
     <div class="boardComment"
          tal:condition="python:context.bug.description != message.contents">
 
@@ -94,6 +93,7 @@
         <tal:block condition="message/bugattachments">
         - with attachments:
           <tal:block repeat="attachment message/bugattachments">
+            <img src="/++resource++file" />
             <a tal:attributes="href attachment/libraryfile/url"
                tal:content="attachment/libraryfile/filename">foo.txt</a>
           </tal:block>
@@ -109,7 +109,7 @@
       </div>
 
     </div>
-  </tal:block> <!-- repeating over message -->
+  </tal:message>
 
   <tal:logged-in condition="request/lp:person">
     <fieldset class="collapsible collapsed">

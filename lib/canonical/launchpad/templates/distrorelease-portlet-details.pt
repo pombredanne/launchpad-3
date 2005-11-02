@@ -1,51 +1,53 @@
 <div class="portlet">
 
-    <h4><span tal:replace="context/displayname">Warty
-        </span> Release Details:</h4>
+  <h4><span tal:replace="context/displayname">Warty
+      </span> Release Details:</h4>
 
-    <div class="portletBody">
-        <div class="portletContent even">
+  <div class="portletBody portletContent">
 
-            <b>Distribution:</b><br />
-            <a tal:attributes="href context/distribution/fmt:url">
-            <span tal:replace="context/distribution/displayname" /></a><br />
+    <b>Distribution:</b><br />
+    <a tal:attributes="href context/distribution/fmt:url">
+    <span tal:replace="context/distribution/displayname" /></a><br />
 
-            <b>Admin:</b><br />
-            <img src="/++resource++user.gif">
-            <a tal:attributes="href context/owner/fmt:url"
-               tal:content="context/owner/browsername">owner name</a><br />
+    <b>Admin:</b><br />
+    <img src="/++resource++user.gif">
+    <a tal:attributes="href context/owner/fmt:url"
+       tal:content="context/owner/browsername">owner name</a><br />
 
-            <b>Status:</b><br />
-            <span tal:replace="context/releasestatus/title">Status</span><br />
+    <b>Status:</b><br />
+    <span tal:replace="context/releasestatus/title">Status</span><br />
 
-            <b>Release Date:</b><br />
-            <span
-                tal:condition="context/datereleased"
-                tal:replace="context/datereleased/fmt:date">release date</span>
-            <span
-                tal:condition="not: context/datereleased">When it's
-                done.</span>
-            <br />
+    <b>Release Date:</b><br />
+    <span
+        tal:condition="context/datereleased"
+        tal:replace="context/datereleased/fmt:date">release date</span>
+    <span
+        tal:condition="not: context/datereleased">When it's
+        done.</span>
+    <br />
 
-            <span tal:condition="context/parentrelease" tal:omit-tag>
-              <b>Derives from:</b><br />
-              <a tal:attributes="href context/parentrelease/fmt:url">
-              <span tal:replace="context/parentrelease/distribution/name" />
-              <span tal:replace="context/parentrelease/name" /></a>
-            </span>
-            <br />
+    <b>Package counts:</b><br />
+    <span tal:replace="context/sourcecount" /> source<br />
+    <span tal:replace="context/binarycount" /> binary<br />
 
-            <span tal:condition="context/architectures" tal:omit-tag>
-              <b>Architectures:</b><br />
-                <ul>
-                  <li tal:repeat="arch context/architectures"
-                    class="architecture"
-                  ><a tal:content="arch/architecturetag"
-                    tal:attributes="href arch/fmt:url"
-                  /></li>
-                </ul>
-            </span>
-           
-        </div>
-    </div>
+    <span tal:condition="context/parentrelease" tal:omit-tag>
+      <b>Derives from:</b><br />
+      <a tal:attributes="href context/parentrelease/fmt:url">
+      <span tal:replace="context/parentrelease/distribution/name" />
+      <span tal:replace="context/parentrelease/name" /></a>
+    </span>
+    <br />
+
+    <span tal:condition="context/architectures" tal:omit-tag>
+      <b>Architectures:</b><br />
+        <ul>
+          <li tal:repeat="arch context/architectures"
+            class="architecture"
+          ><a tal:content="arch/architecturetag"
+            tal:attributes="href arch/fmt:url"
+          /></li>
+        </ul>
+    </span>
+   
+  </div>
 </div>

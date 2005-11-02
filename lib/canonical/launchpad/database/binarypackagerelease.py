@@ -17,6 +17,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.database.publishing import BinaryPackagePublishing
+from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.files import BinaryPackageFile
 from canonical.launchpad.helpers import shortlist
 
@@ -161,6 +162,23 @@ class BinaryPackageRelease(SQLBase):
         return BinaryPackageFile(binarypackagerelease=self.id,
                                  filetype=determined_filetype,
                                  libraryfile=file.id)
+
+    def publish(self, priority, status, pocket, embargo,
+                distroarchrelease=None):
+        """See IBinaryPackageRelease."""
+        if not distroarchrelease:
+            distroarchrelease = self.build.distroarchrelease
+
+        return SecureBinaryPackagePublishingHistory(
+            binarypackagereleaseID=self.id,
+            distroarchreleaseID=distroarchrelease.id,
+            componentID=self.build.sourcepackagerelease.component,
+            sectionID=build.sourcepackagerelease.section,
+            priority=priority,
+            status=status,
+            pocket=pocket,
+            embargo=embargo,
+            )
 
 
 class BinaryPackageReleaseSet:
@@ -326,4 +344,3 @@ class BinaryPackageReleaseSet:
 #             distrorelease is None and text is None):
 #             raise ValueError('must give something to the query.')
 #         clauseTables = Set(['BinaryPackageRelease'])
-

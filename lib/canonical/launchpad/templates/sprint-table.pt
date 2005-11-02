@@ -1,0 +1,67 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Table of Specs</h1>
+
+  <p class="portalMessage" tal:condition="not: view/specs">
+    No specifications to display.
+  </p>
+
+  <table class="listing sortable" tal:condition="view/specs" id="work">
+    <thead>
+      <tr>
+        <th>Prio.</th>
+        <th>Stat.</th>
+        <th>Name</th>
+        <th>Assign</th>
+        <th>Draft</th>
+        <th>Approve</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="spec view/specs" class="lesser">
+        <td tal:content="spec/priority/title"
+            tal:attributes="
+                class string:specpriority${spec/priority/name}">High</td>
+        <td tal:content="spec/status/title"
+            tal:attributes="
+                class string:specstatus${spec/status/name}">Approved</td>
+        <td><a tal:content="spec/name/fmt:shorten/35"
+               tal:attributes="
+                 href spec/fmt:url;
+                 title spec/title">foo-bar-baz</a></td>
+        <td><a tal:condition="spec/assignee"
+               tal:content="spec/assignee/name"
+               tal:attributes="href spec/assignee/fmt:url">Assignee Bar</a></td>
+        <td><a tal:condition="spec/drafter"
+               tal:content="spec/drafter/name"
+               tal:attributes="href spec/drafter/fmt:url">Drafter Baz</a></td>
+        <td><a tal:condition="spec/approver"
+               tal:content="spec/approver/name"
+               tal:attributes="href spec/approver/fmt:url">Approver Foo</a></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="discreet">
+    This table is sorted by priority, highest first, by default. Click a
+    column heading to sort by that column. Point your mouse at a
+    specification name to see the title.
+  </p>
+
+</div>
+</body>
+</html>

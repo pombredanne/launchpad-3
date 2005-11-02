@@ -23,8 +23,7 @@
             <tr>
               <th>Bazaar Branch Names</th>
             </tr>
-            <tr tal:repeat="branch prod/branches"
-                class="rowNavigation">
+            <tr tal:repeat="branch prod/branches">
                 <td tal:content="branch/title">x
                 </td>
             </tr>
@@ -34,8 +33,7 @@
             <tr>
               <th>Primary Release Branches</th>
             </tr>
-            <tr tal:repeat="series prod/serieslist"
-                class="rowNavigation">
+            <tr tal:repeat="series prod/serieslist">
                 <td tal:content="series/title">x
                 </td>
             </tr>

@@ -14,8 +14,16 @@
 
   <h1>Meeting Overview</h1>
 
-  <p class="highlight" tal:content="context/summary">
-    Sprint Summary Goes Here
+  <p class="highlighted">
+    <span tal:replace="context/summary">
+      Sprint Summary Goes Here
+    </span>
+    <tal:has_homepage condition="context/home_page">
+      <img src="/++resource++sprint" />
+      <a tal:attributes="href context/home_page">
+        View the Meeting Home Page
+      </a>
+    </tal:has_homepage>
   </p>
 
   <p class="portalMessage" tal:condition="not:context/specifications">
@@ -24,22 +32,27 @@
     at the moment.
   </p>
 
-  <tal:has_homepage condition="context/home_page">
-    <img src="/++resource++sprint" />
-    <a tal:attributes="href context/home_page">
-      View the Meeting Home Page
-    </a>
-  </tal:has_homepage>
+  <p class="lesser">
+    <b><span tal:replace="view/count">5</span> matching specifications.</b>
+  </p>
 
-  <tal:specifications condition="context/specifications">
-    <tal:block repeat="category view/categories">
-      <h2 tal:content="category/status/title">Approved</h2>
-      <div
-        tal:repeat="spec category/specs"
-        tal:replace="structure spec/@@+listing-detailed"
+  <tal:spec_links repeat="spec_link view/spec_links">
+    <div tal:replace="structure spec_link/specification/@@+listing-detailed"
       />
-    </tal:block>
-  </tal:specifications>
+    <div class="lesser">
+      <b>Agenda status:</b>
+      <a tal:condition="spec_link/required:launchpad.Admin"
+         tal:content="spec_link/status/title"
+         tal:attributes="href string:${spec_link/fmt:url}/+admin"
+         >approved</a><span
+            tal:condition="not: spec_link/required:launchpad.Admin"
+            tal:replace="spec_link/status/title">Approved</span><tal:wb
+            condition="spec_link/whiteboard"> <i>(<span
+            tal:replace="spec_link/whiteboard" />)</i></tal:wb>.
+    </div>
+    <hr />
+  </tal:spec_links>
+
 </div>
 </body>
 </html>

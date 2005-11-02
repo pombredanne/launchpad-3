@@ -5,7 +5,7 @@
   <h4>Bug Attachments:</h4>
 
   <div class="portletBody">
-    <div class="portletContent even">
+    <div class="portletContent">
       <ul>
         <li class="download"
             tal:repeat="attachment context/attachments">

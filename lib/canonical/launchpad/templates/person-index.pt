@@ -33,7 +33,7 @@
          style="float: left; margin: 0 5px 5px 0" />
     <p tal:condition="not: context/homepage_content">
       <span tal:replace="context/browsername">Foo Bar</span> has not
-      created a homepage. The home page is like a wiki page - you can use
+      created a homepage. The text here is editable - you can use
       it to keep people up to date on your activities, interests, etc. It
       is a free-form space, you can put anything here.
       [<a href="+edithomepage">Edit</a>]
@@ -44,6 +44,12 @@
        The home page content goes here.
     </tal:homepage>
     <br style="clear: both" />
+    <tal:block condition="context/teamdescription">
+      <b>Team Description:</b>
+      <span tal:replace="context/teamdescription">DESCRIPTION</span>
+      <br />
+    </tal:block>
+               
   </div>
 
 
@@ -103,14 +109,19 @@
 
   </table>
 
-  <!-- Members of this team -->
-  <tal:block condition="context/isTeam">
+  <tal:members condition="context/isTeam">
+
     <h2>Team members</h2>
+
     <p>
       There are <span tal:replace="context/active_member_count">15</span>
       direct members of the 
-      "<span tal:replace="context/browsername">Ubuntu Members</span>" team.
+      "<span tal:replace="context/browsername">Ubuntu Members</span>" team,
+      and <span tal:replace="context/all_member_count">23</span> people are
+      members in total, directly and indirectly through other team
+      memberships.
     </p>
+
     <ul>
       <tal:block repeat="membership context/activememberships">
         <li tal:condition="not: membership/person/isTeam">
@@ -154,7 +165,7 @@
       </tal:block>
       <p tal:condition="python: subteams and not superteams">
         &#8220;<span tal:replace="context/browsername"/>&#8221;
-        is not a member of any other team.
+        itself is not a member of any other team.
       </p>
       <tal:block condition="superteams">
         <p>
@@ -169,11 +180,10 @@
         </ul>
       </tal:block>
     </tal:block>
-  </tal:block>
+  </tal:members>
 
 
-  <!-- Teams of which I'm a member -->
-  <tal:block condition="not: context/isTeam">
+  <tal:memberships condition="not: context/isTeam">
     <tal:block condition="context/myactivememberships">
       <h2>Team Memberships</h2>
 
@@ -194,7 +204,7 @@
       <span tal:replace="context/browsername">Foo Bar</span> is not an
       active member of any Launchpad teams.
     </p>
-  </tal:block>
+  </tal:memberships>
 
   <tal:block condition="context/isTeam">
     <h2>Your involvement</h2>

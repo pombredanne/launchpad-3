@@ -20,9 +20,9 @@ from canonical.launchpad.interfaces import (
 
 _ = MessageIDFactory('launchpad')
 
+
 class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
     ITicketTarget):
-
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -129,9 +129,6 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         """Return the source package release with the name or version
         given.
         """
-
-    def getSourcePackage(self, name):
-        """Return the source package with the name given."""
 
     def getMilestone(name):
         """Return a milestone with the given name for this distribution, or

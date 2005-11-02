@@ -6,8 +6,18 @@ listing to show just those bugs.
   ... GET /distros/debian/+bugs HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...href="http://localhost:9000/distros/debian/+bugs?search=Search"...All open bugs...(3)...
-  ...Bugs assigned to me...(requires...login...)...
-  ...href="http://localhost:9000/distros/debian/+bugs?field.status%3Alist=New&amp;field.status%3Alist=Accepted&amp;field.severity%3Alist=Critical&amp;search=Search"...Critical...(0)...
-  ...href="http://localhost:9000/distros/debian/+bugs?field.status%3Alist=New&amp;search=Search"...Untriaged...(1)...
-  ...href="http://localhost:9000/distros/debian/+bugs?field.status%3Alist=New&amp;field.status%3Alist=Accepted&amp;field.status-empty-marker=1&amp;field.severity-empty-marker=1&amp;field.assignee=&amp;field.unassigned.used=&amp;field.unassigned=on&amp;search=Search"...Unassigned...(2)...
+  ...href="http://localhost:9000/distros/debian/+bugs-open">All open bugs</a>
+      (3)
+  ...href="http://localhost:9000/distros/debian/+bugs-assigned-to">Assigned to me</a>
+     ...login...
+  ...href="http://localhost:9000/distros/debian/+bugs-critical">Critical</a>
+      (0)
+  ...href="http://localhost:9000/distros/debian/+bugs-untriaged">Untriaged</a>
+      (1)
+  ...href="http://localhost:9000/distros/debian/+bugs-unassigned">Unassigned</a>
+      (2)
+  ...href="http://localhost:9000/distros/debian/+bugs-all">All bugs ever reported</a>
+      (4)
+  ...href="http://localhost:9000/distros/debian/+bugs-advanced">Advanced search</a>
+      (3)
+  ...

@@ -16,6 +16,8 @@ from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import (
     IHasOwner, IBugTarget, ISpecificationTarget)
 
+from canonical.lp.dbschema import DistroReleaseQueueStatus
+
 from canonical.launchpad import _
 
 class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
@@ -61,13 +63,13 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
     # Bug 3256
     real_components = Attribute("The release's components.")
     real_sections = Attribute("The release's sections.")
-    releasestatus = Attribute(
-        "The release's status, such as FROZEN or DEVELOPMENT, as "
-        "specified in the DistributionReleaseStatus enum.")
+    releasestatus = Choice(
+        title=_("Release Status"), required=True,
+        vocabulary='DistributionReleaseStatus')
     datereleased = Attribute("The datereleased.")
     parentrelease = Choice(
         title=_("Parent Release"),
-        description=_("The Parente Distribution Release."), required=True,
+        description=_("The Parent Distribution Release."), required=True,
         vocabulary='DistroRelease')
     owner = Attribute("Owner")
     state = Attribute("DistroRelease Status")
@@ -101,6 +103,9 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
     specifications = Attribute("The specifications targeted to this "
         "product series.")
 
+    binary_package_caches = Attribute("All of the cached binary package "
+        "records for this distrorelease.")
+
     # other properties
     previous_releases = Attribute("Previous distroreleases from the same "
         "distribution.")
@@ -125,6 +130,10 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
 
     def updateStatistics(self):
         """Update all the Rosetta stats for this distro release."""
+
+    def updatePackageCount(self):
+        """Update the binary and source package counts for this distro
+        release."""
 
     def findSourcesByName(name):
         """Return an iterator over source packages with a name that matches
@@ -152,6 +161,11 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         published SourcePackageReleases as SourcePackagePublishing records.
 
         If pocket is not specified, we look in all pockets.
+        """
+
+    def getAllReleasesByStatus(status):
+        """Return all sourcepackages in a given published_status for this
+        DistroRelease.
         """
 
     def publishedBinaryPackages(component=None):
@@ -211,11 +225,48 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         DistroReleaseBinaryPackage objects that match the given text.
         """
 
-    def createQueueEntry(pocket):
+    def createQueueEntry(pocket, status=DistroReleaseQueueStatus.ACCEPTED):
         """Create a queue item attached to this distrorelease and the given
-        pocket.
+        pocket. If status is not supplied, then default to an ACCEPTED item.
         """
 
+    def newArch(architecturetag, processorfamily, official, owner):
+        """Create a new port or DistroArchRelease for this DistroRelease."""
+
+    def getQueueItems(status=DistroReleaseQueueStatus):
+        """Get the queue items for this distrorelease that are in the given
+        queue state. If status is not supplied, default to the ACCEPTED items
+        in the queue.
+        """
+
+    def initialiseFromParent():
+        """Copy in all of the parent distrorelease's configuration. This
+        includes all configuration for distrorelease and distroarchrelease
+        publishing and all publishing records for sources and binaries.
+
+        Preconditions:
+          The distrorelease must have been set up with its distroarchreleases
+          as needed. It should have its nominated arch-indep set up along
+          with all other basic requirements for the structure of the
+          distrorelease. This distrorelease and all its distroarchreleases
+          must have empty publishing sets. Section and component selections
+          must be empty.
+
+        Outcome:
+          The publishing structure will be copied from the parent. All
+          PUBLISHED and PENDING packages in the parent will be created in
+          this distrorelease and its distroarchreleases. The lucille config
+          will be copied in, all component and section selections will be
+          duplicated as will any permission-related structures.
+
+        Note:
+          This method will assert all of its preconditions where possible.
+          After this is run, you still need to construct chroots for building,
+          you need to add anything missing wrt. ports etc. This method is
+          only meant to give you a basic copy of a parent release in order
+          to assist you in preparing a new release of a distribution or
+          in the initialisation of a derivative.
+        """
 
 class IDistroReleaseSet(Interface):
     """The set of distro releases."""

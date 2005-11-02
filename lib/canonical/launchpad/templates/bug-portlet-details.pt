@@ -29,7 +29,8 @@
 
     <b>Secrecy:</b>
     <tal:block condition="context/private">
-      <span class="explain" title="Secret bugs can only be seen by the bug subscribers explicitly listed.">Private</span>
+      Private
+      <div>(can be seen only by the bug subscribers)</div>
     </tal:block>
     <tal:block condition="not:context/private">
       Public

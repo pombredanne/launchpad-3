@@ -70,8 +70,22 @@
       </td>
     </tr>
     <tr>
-      <td></td>
+      <td align="right"><label>sorted by:</label></td>
       <td>
+        <select name="orderby" tal:define="orderby python: request.get('orderby')">
+          <option value="daterequested" 
+            tal:attributes="selected python: orderby == 'daterequested'">
+            oldest first</option>
+          <option value="-daterequested" 
+            tal:attributes="selected python: orderby == '-daterequested'">
+            newest first</option>
+          <option value="highpriority"
+            tal:attributes="selected python: orderby == '-highpriority'">
+            priority</option>
+          <option value="recipientdisplayname"
+            tal:attributes="selected python: orderby == 'recipientdisplayname'">
+            recipient</option>
+        </select>
         <input type="submit" value="Show" name="show" />
       </td>
     </tr>
@@ -90,7 +104,7 @@
     </p>
 
     <tal:block condition="bn/currentBatch">
-      <table width="80%" class="listing data" id="results">
+      <table width="80%" class="listing" id="results" style="border-left: none">
         <thead>
           <tr>
             <th>id</th>

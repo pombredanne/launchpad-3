@@ -7,7 +7,7 @@
 
   <!-- BugCve -->
   <content class="canonical.launchpad.database.BugCve">
-      <allow interface="canonical.launchpad.interfaces.IBugCve" />
+    <allow interface="canonical.launchpad.interfaces.IBugCve" />
   </content>
 
 </configure>

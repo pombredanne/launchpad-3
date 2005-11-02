@@ -8,10 +8,11 @@ import datetime
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, IntervalCol, MultipleJoin, RelatedJoin)
+    ForeignKey, IntCol, StringCol, IntervalCol, MultipleJoin, RelatedJoin,
+    BoolCol)
 
 from canonical.launchpad.interfaces import (
-    ISpecification, ISpecificationSet)
+    ISpecification, ISpecificationSet, NameNotAvailable)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
@@ -28,6 +29,8 @@ from canonical.launchpad.database.sprintspecification import \
     SprintSpecification
 from canonical.launchpad.database.sprint import Sprint
 
+from canonical.launchpad.components.specification import SpecificationDelta
+
 from canonical.lp.dbschema import (
     EnumCol, SpecificationStatus, SpecificationPriority)
 
@@ -37,7 +40,7 @@ class Specification(SQLBase):
 
     implements(ISpecification)
 
-    _defaultOrder = ['status', '-priority']
+    _defaultOrder = ['-priority', 'status', 'name', 'id']
 
     # db field names
     name = StringCol(unique=True, notNull=True)
@@ -46,7 +49,7 @@ class Specification(SQLBase):
     status = EnumCol(schema=SpecificationStatus, notNull=True,
         default=SpecificationStatus.BRAINDUMP)
     priority = EnumCol(schema=SpecificationPriority, notNull=True,
-        default=SpecificationPriority.MEDIUM)
+        default=SpecificationPriority.PROPOSED)
     assignee = ForeignKey(dbName='assignee', notNull=False,
         foreignKey='Person')
     drafter = ForeignKey(dbName='drafter', notNull=False,
@@ -67,6 +70,8 @@ class Specification(SQLBase):
         foreignKey='Milestone', notNull=False, default=None)
     specurl = StringCol(notNull=True)
     whiteboard = StringCol(notNull=False, default=None)
+    needs_discussion = BoolCol(notNull=True, default=True)
+    direction_approved = BoolCol(notNull=True, default=False)
 
     # useful joins
     subscriptions = MultipleJoin('SpecificationSubscription',
@@ -102,6 +107,97 @@ class Specification(SQLBase):
         if self.product:
             return self.product
         return self.distribution
+
+    def retarget(self, product=None, distribution=None):
+        """See ISpecification."""
+        assert not (product and distribution)
+        assert (product or distribution)
+
+        # we need to ensure that there is not already a spec with this name
+        # for this new target
+        if product:
+            assert product.getSpecification(self.name) is None
+        elif distribution:
+            assert distribution.getSpecification(self.name) is None
+
+        self.productseries = None
+        self.distrorelease = None
+        self.milestone = None
+        self.product = product
+        self.distribution = distribution
+
+    def getSprintSpecification(self, sprintname):
+        """See ISpecification."""
+        for sprintspecification in self.sprint_links:
+            if sprintspecification.sprint.name == sprintname:
+                return sprintspecification
+        return None
+
+    # emergent properties
+    @property
+    def is_incomplete(self):
+        """See ISpecification."""
+        return self.status not in [
+            SpecificationStatus.IMPLEMENTED,
+            SpecificationStatus.INFORMATIONAL,
+            SpecificationStatus.OBSOLETE,
+            SpecificationStatus.SUPERSEDED,
+            ]
+
+    @property
+    def is_complete(self):
+        """See ISpecification."""
+        return not self.is_incomplete
+
+    @property
+    def is_blocked(self):
+        """See ISpecification."""
+        for spec in self.dependencies:
+            if spec.is_incomplete:
+                return True
+        return False
+
+    def getDelta(self, old_spec, user):
+        """See ISpecification."""
+        changes = {}
+        for field_name in ("title", "summary", "specurl", "productseries",
+            "distrorelease", "milestone"):
+            # fields for which we simply show the new value when they
+            # change
+            old_val = getattr(old_spec, field_name)
+            new_val = getattr(self, field_name)
+            if old_val != new_val:
+                changes[field_name] = new_val
+
+        for field_name in ("name", "priority", "status", "target"):
+            # fields for which we show old => new when their values change
+            old_val = getattr(self, field_name)
+            new_val = getattr(old_spec, field_name)
+            if old_val != new_val:
+                changes[field_name] = {}
+                changes[field_name]["old"] = old_val
+                changes[field_name]["new"] = new_val
+
+        old_bugs = self.bugs
+        new_bugs = old_spec.bugs
+        for bug in old_bugs:
+            if bug not in new_bugs:
+                if not changes.has_attr('bugs_unlinked'):
+                    changes['bugs_unlinked'] = []
+                changes['bugs_unlinked'].append(bug)
+        for bug in new_bugs:
+            if bug not in old_bugs:
+                if not changes.has_attr('bugs_linked'):
+                    changes['bugs_linked'] = []
+                changes['bugs_linked'].append(bug)
+
+        if changes:
+            changes["specification"] = self
+            changes["user"] = user
+
+            return SpecificationDelta(**changes)
+        else:
+            return None
 
     # subscriptions
     def subscribe(self, person):
@@ -237,9 +333,10 @@ class SpecificationSet:
         return Sprint.select("time_starts > 'NOW'", orderBy='-time_starts',
             limit=5)
 
-    def new(self, name, title, specurl, summary, priority, status,
+    def new(self, name, title, specurl, summary, status,
         owner, approver=None, product=None, distribution=None, assignee=None,
-        drafter=None, whiteboard=None):
+        drafter=None, whiteboard=None,
+        priority=SpecificationPriority.PROPOSED):
         """See ISpecificationSet."""
         return Specification(name=name, title=title, specurl=specurl,
             summary=summary, priority=priority, status=status,

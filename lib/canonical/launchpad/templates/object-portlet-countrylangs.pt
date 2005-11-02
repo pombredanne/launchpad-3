@@ -16,10 +16,10 @@
     </ul>
 
     <tal:block condition="not: country/languages">
-      No languages currently registered as spoken in <span
-      tal:replace="country/name">country</span>. Please contact the
-      Rosetta Admins on #launchpad to make sure we correct this.
-      Thank you!
+      No languages are currently registered as being spoken in <span
+      tal:replace="country/name">country</span>. Please
+      <a href="mailto:rosetta-users@lists.ubuntu.com">contact the Rosetta
+      admins</a> to correct this.
     </tal:block>
 
   </div>

@@ -8,11 +8,9 @@ __all__ = [
     'DistroReleaseNavigation',
     'DistroReleaseFacets',
     'DistroReleaseView',
-    'DistroReleaseBugsView',
     'DistroReleaseAddView',
     ]
 
-from zope.interface import implements
 from zope.component import getUtility
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
@@ -24,12 +22,10 @@ from canonical.launchpad.webapp import (
     enabled_with_permission, GetitemNavigation, stepthrough, stepto)
 
 from canonical.launchpad.interfaces import (
-    IDistroReleaseLanguageSet, IBugTaskSearchListingView, IDistroRelease,
-    ICountry, IDistroReleaseSet, ILaunchBag, ILanguageSet,NotFoundError,
-    IPublishedPackageSet)
+    IDistroReleaseLanguageSet, IDistroRelease, ICountry, IDistroReleaseSet,
+    ILaunchBag, ILanguageSet, NotFoundError, IPublishedPackageSet)
 
 from canonical.launchpad.browser.potemplate import POTemplateView
-from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 
@@ -82,7 +78,8 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
 
     usedfor = IDistroRelease
     facet = 'overview'
-    links = ['search', 'support', 'packaging', 'edit', 'reassign', ]
+    links = ['search', 'support', 'packaging', 'edit', 'reassign',
+             'addport', 'admin']
 
     def edit(self):
         text = 'Edit Details'
@@ -106,6 +103,16 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
         text = 'Search Packages'
         return Link('+search', text, icon='search')
 
+    @enabled_with_permission('launchpad.Admin')
+    def addport(self):
+        text = 'Add Port'
+        return Link('+addport', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def admin(self):
+        text = 'Administer'
+        return Link('+admin', text, icon='edit')
+
 
 class DistroReleaseBugsMenu(ApplicationMenu):
 
@@ -124,11 +131,15 @@ class DistroReleaseSpecificationsMenu(ApplicationMenu):
 
     usedfor = IDistroRelease
     facet = 'specifications'
-    links = ['new', 'roadmap']
+    links = ['roadmap', 'table', 'new']
 
     def new(self):
-        text = 'Register a New Specification'
+        text = 'New Specification'
         return Link('+addspec', text, icon='add')
+
+    def table(self):
+        text = 'Assignments Table'
+        return Link('+specstable', text, icon='info')
 
     def roadmap(self):
         text = 'Roadmap'
@@ -224,21 +235,6 @@ class DistroReleaseView(BuildRecordsView):
         """
         distro_url = canonical_url(self.context.distribution)
         return self.request.response.redirect(distro_url + "/+filebug")
-
-
-class DistroReleaseBugsView(BugTaskSearchListingView):
-
-    implements(IBugTaskSearchListingView)
-
-    def __init__(self, context, request):
-        BugTaskSearchListingView.__init__(self, context, request)
-        self.milestone_widget = None
-        self.status_message = None
-
-    def task_columns(self):
-        """See canonical.launchpad.interfaces.IBugTaskSearchListingView."""
-        return [
-            "id", "package", "title", "status", "submittedby", "assignedto"]
 
 
 class DistroReleaseAddView(AddView):

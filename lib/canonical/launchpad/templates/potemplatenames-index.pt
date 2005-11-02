@@ -59,7 +59,7 @@
     <div tal:condition="view/searchrequested">
 
       <tal:block tal:define="results view/searchresults">
-        <table class="data">
+        <table class="listing">
           <thead>
             <tr class="results">
               <td colspan="0">

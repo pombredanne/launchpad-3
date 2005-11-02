@@ -45,12 +45,14 @@ from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFile
-from canonical.launchpad.database.karma import KarmaAction, Karma
+from canonical.launchpad.database.karma import (
+    KarmaAction, Karma, KarmaCategory)
 from canonical.launchpad.database.shipit import ShippingRequest
 
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
-    TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType, KarmaActionCategory)
+    TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType,
+    SpecificationSort)
 
 from canonical.foaf import nickname
 
@@ -118,6 +120,8 @@ class Person(SQLBase):
     subscribedBounties = RelatedJoin('Bounty', joinColumn='person',
         otherColumn='bounty', intermediateTable='BountySubscription',
         orderBy='id')
+    karma_category_caches = MultipleJoin('KarmaCache', joinColumn='person',
+        orderBy='category')
     signedcocs = MultipleJoin('SignedCodeOfConduct', joinColumn='owner')
     ircnicknames = MultipleJoin('IrcID', joinColumn='person')
     jabberids = MultipleJoin('JabberID', joinColumn='person')
@@ -251,16 +255,23 @@ class Person(SQLBase):
         else:
             return self.name
 
-    @property
-    def specifications(self):
+    def specifications(self, quantity=None, sort=None):
         ret = set(self.created_specs)
         ret = ret.union(self.approver_specs)
         ret = ret.union(self.assigned_specs)
         ret = ret.union(self.drafted_specs)
         ret = ret.union(self.review_specs)
         ret = ret.union(self.subscribed_specs)
-        ret = sorted(ret, reverse=True, key=lambda a: a.datecreated)
-        return ret
+        if sort is None or sort == SpecificationSort.DATE:
+            sortkey = lambda a: a.datecreated
+            reverse = True
+        elif sort == SpecificationSort.PRIORITY:
+            sortkey = lambda a: a.priority
+            reverse = False
+        else:
+            raise AssertionError('Unknown sort %s' % sort)
+        ret = sorted(ret, reverse=reverse, key=sortkey)
+        return ret[:quantity]
 
     def tickets(self, quantity=None):
         ret = set(self.created_tickets)
@@ -269,13 +280,19 @@ class Person(SQLBase):
         ret = ret.union(self.subscribed_tickets)
         ret = sorted(ret, key=lambda a: a.datecreated)
         ret.reverse()
-        if quantity is not None:
-            return ret[:quantity]
-        return ret
+        return ret[:quantity]
 
     def isTeam(self):
         """See IPerson."""
         return self.teamowner is not None
+
+    def shippedShipItRequests(self):
+        """See IPerson."""
+        query = '''
+            ShippingRequest.recipient = %s AND
+            ShippingRequest.id IN (SELECT request FROM Shipment)
+            ''' % sqlvalues(self.id)
+        return ShippingRequest.select(query)
 
     def pastShipItRequests(self):
         """See IPerson."""
@@ -305,14 +322,14 @@ class Person(SQLBase):
         except SQLObjectNotFound:
             raise ValueError(
                 "No KarmaAction found with name '%s'." % action_name)
-        Karma(person=self, action=action)
+        return Karma(person=self, action=action)
 
     def updateKarmaCache(self):
         """See IPerson."""
         cacheset = getUtility(IKarmaCacheSet)
         karmaset = getUtility(IKarmaSet)
         totalkarma = 0
-        for cat in KarmaActionCategory.items:
+        for cat in KarmaCategory.select():
             karmavalue = karmaset.getSumByPersonAndCategory(self, cat)
             totalkarma += karmavalue
             cache = cacheset.getByPersonAndCategory(self, cat)
@@ -322,8 +339,15 @@ class Person(SQLBase):
                 cache.karmavalue = karmavalue
         self.karma = totalkarma
 
+    def latestKarma(self, quantity=25):
+        """See IPerson."""
+        return Karma.selectBy(personID=self.id,
+            orderBy='-datecreated')[:quantity]
+
     def inTeam(self, team):
         """See IPerson."""
+        if team is None:
+            return False
         tp = TeamParticipation.selectOneBy(teamID=team.id, personID=self.id)
         if tp is not None or self.id == team.teamownerID:
             return True
@@ -523,6 +547,11 @@ class Person(SQLBase):
     def allmembers(self):
         """See IPerson."""
         return _getAllMembers(self)
+
+    @property
+    def all_member_count(self):
+        """See IPerson."""
+        return len(self.allmembers)
 
     @property
     def deactivatedmembers(self):
@@ -782,7 +811,11 @@ class PersonSet:
 
     def topPeople(self):
         """See IPersonSet."""
-        return self.getAllValidPersons(orderBy=['-karma', 'name'])[:5]
+        # The odd ordering here is to ensure we hit the PostgreSQL
+        # indexes. Ideally we want to order by karma DESC, name but
+        # that will not use the indexes (at least under PostgreSQL 7.4)
+        # and be really slow.
+        return self.getAllValidPersons(orderBy=['-karma', '-id'])[:5]
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,

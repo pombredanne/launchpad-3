@@ -22,7 +22,7 @@ from canonical.lp import dbschema
 from canonical.database.constants import UTC_NOW
 
 from canonical.launchpad.interfaces import (
-    IPerson, IBuilderSet, IBuilder
+    IPerson, IBuilderSet, IBuilder, IBuildSet
     )
 
 from canonical.launchpad.webapp import (
@@ -88,7 +88,8 @@ class BuilderView:
         """Wrap up the IBuilderSet.lastBuilds method."""
         # XXX cprov 20050823
         # recover the number of items from the UI
-        return self.context.lastBuilds()
+        return getUtility(IBuildSet).getBuildsForBuilder(self.context)
+
 
 class BuilderSetAddView(AddView):
     """Builder add view

@@ -14,10 +14,10 @@
 
         <div metal:define-macro="formbody">
 
-          <h3 tal:condition="view/label"
+          <h1 tal:condition="view/label"
               tal:content="view/label"
               metal:define-slot="heading"
-              >Edit something</h3>
+              >Edit something</h1>
 
           <p tal:define="status view/update"
              tal:condition="status"
@@ -40,7 +40,7 @@
 
           <div class="row"
                metal:define-slot="extra_top" tal:replace="nothing">
-            <div class="label">Extra top</div>
+            <div>Extra top</div>
             <div class="field"><input type="text" style="width:100%" /></div>
           </div>
         
@@ -50,7 +50,7 @@
         
           <div class="row"
                metal:define-slot="extra_bottom" tal:replace="nothing">
-            <div class="label">Extra bottom</div>
+            <div>Extra bottom</div>
             <div class="field"><input type="text" style="width:100%" /></div>
           </div>
           <div class="separator"></div>

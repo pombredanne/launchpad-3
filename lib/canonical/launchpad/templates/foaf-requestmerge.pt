@@ -7,14 +7,6 @@
 
   <div metal:fill-slot="main">
 
-  <div tal:condition="nothing">
-    This file is a modified version of zope/app/form/browser/add.pt for use
-    in the Launchpad system. You should not edit this file, but rather use
-    it as the default_template attribute of your addform. You create your
-    own template for the specific addform, called table-add.pt for example,
-    which is the template which uses this one.
-  </div>
-
   <div metal:define-macro="addform">
 
     <form action="." tal:attributes="action request/URL" method="post"
@@ -27,14 +19,13 @@
             metal:define-slot="heading"
             >Add Something</h1>
 
-        <div class="documentDescription">
-          Here you can merge two Launchpad user accounts into a single one. To
-          be able to do this, you must be logged in and must have access to the
-          email address registered in the duplicated account. After finishing
-          this process, the email address of the duplicated account will be
-          assigned to you, together with everything that is owned by the
-          duplicated account.
-        </div>
+        <p>
+          To merge two Launchpad accounts, you must be logged in
+          with access to the e-mail address registered in the
+          duplicated account. Once you&rsquo;ve finished,
+          the e-mail address of the duplicated account will be assigned to you,
+          along with everything else owned by the duplicated account.
+        </p>
 
         <p tal:define="status view/update"
            tal:condition="status"
@@ -45,49 +36,15 @@
                             i18n:name="num_errors">6</strong> input errors.
         </p>
 
-        <div class="row" metal:define-slot="extra_top" tal:replace="nothing">
-            <div class="label">Extra top</div>
-            <div class="label"><input type="text" style="width:100%" /></div>
-        </div>
-
-        <fieldset>
-
-        <legend>Dupe Account</legend>
-        <div>
-          To finish this request, just select the duplicated account and
-          submit this form. After this we'll send you an email message with 
-          further instructions on how to complete the merge.
-        </div>
-        <br />
-
         <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
 
-        </fieldset>
-
-        <div class="separator"></div>
-
-        <div class="row"
-            metal:define-slot="extra_bottom" tal:replace="nothing">
-          <div class="label">Extra bottom</div>
-          <div class="field"><input type="text" style="width:100%" /></div>
-        </div>
-
-        <div class="separator"></div>
-
       </div>
-      <br/><br/>
-      <div class="row">
-        <div class="controls"><hr />
+      <div class="actions">
           <input type='submit' value='Submit'
-            name='UPDATE_SUBMIT' style="float: right;"
+            name='UPDATE_SUBMIT'
             i18n:attributes='value add-button' />
-        </div>
       </div>
 
-      <div class="row" metal:define-slot="extra_buttons" tal:replace="nothing">
-      </div>
-
-      <div class="separator"></div>
     </form>
   </div>
 
@@ -95,4 +52,3 @@
   </body>
 
 </html>
-

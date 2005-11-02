@@ -2,7 +2,7 @@
     <h4 tal:content="context/title">product title</h4>
 
     <div class="portletBody">
-        <div class="portletContent even">
+        <div class="portletContent">
 
         <div tal:condition="context/homepageurl" tal:omit-tag>
             <b>External links:</b><br />
@@ -30,22 +30,16 @@
         <tal:block condition="not: context/translationgroup">
         <i>Not assigned</i><br />
         </tal:block>
-        <b>Translation Perms:</b><br />
-        <span
-          tal:content="context/translationpermission/title"
-          tal:attributes="title context/translationpermission/description">
-          Open</span>
-        <br />
+        <b>Translation permissions:</b><br />
+        <span tal:replace="context/translationpermission/title">Open</span><br />
 
-        <tal:does_not_use_rosetta condition="not: context/official_rosetta">
-          <img src="/++resource++alert" />
-          <i>Rosetta Not Official</i><br />
-        </tal:does_not_use_rosetta>
+        <div tal:condition="not: context/official_rosetta">
+          <i>Doesn&rsquo;t use Rosetta</i>
+        </div>
 
-        <tal:does_not_use_malone condition="not: context/official_malone">
-          <img src="/++resource++alert" />
-          <i>Malone Not Official</i><br />
-        </tal:does_not_use_malone>
+        <div tal:condition="not: context/official_malone">
+          <i>Doesn&rsquo;t use Malone</i>
+        </div>
 
         <b>Product Status:</b><br />
         <span tal:condition="context/reviewed"

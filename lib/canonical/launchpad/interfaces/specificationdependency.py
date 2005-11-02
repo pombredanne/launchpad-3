@@ -27,10 +27,7 @@ class ISpecificationDependency(Interface):
 
     specification = Int(title=_('Specification ID'), required=True,
         readonly=True)
-    dependency = Choice(title=_('Dependency'), required=True, readonly=True,
-        description=_("Please select the specification on which this spec "
-        "depends. You are saying that the current specification can only "
-        "be implemented after this spec has been implemented."),
+    dependency = Choice(title=_('Depends On'), required=True, readonly=True,
         vocabulary='Specification')
 
 
