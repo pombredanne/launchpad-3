@@ -110,7 +110,7 @@ class IPerson(IHasSpecifications):
             )
     karma = Int(
             title=_('Karma'), readonly=False,
-            description=_('The cached karma for this person.')
+            description=_('The cached total karma for this person.')
             )
     homepage_content = Text(title=_("Homepage Content"), required=False,
         description=_("The content of your home page. Edit this and it "
@@ -185,6 +185,8 @@ class IPerson(IHasSpecifications):
             vocabulary='TimezoneName')
 
     # Properties of the Person object.
+    karma_category_caches = Attribute('The caches of karma scores, by '
+        'karma category.')
     ubuntite = Attribute("Ubuntite Flag")
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
@@ -351,6 +353,10 @@ class IPerson(IHasSpecifications):
         KarmaCache table for this person.
         """
 
+    def latestKarma(quantity=25):
+        """Return the latest karma actions for this person, up to the number
+        given as quantity."""
+
     def inTeam(team):
         """Return True if this person is a member or the owner of <team>.
 
@@ -365,6 +371,11 @@ class IPerson(IHasSpecifications):
         
         Any request that is cancelled, denied or sent for shipping can't be
         changed.
+        """
+
+    def shippedShipItRequests():
+        """Return all requests placed by this person that were sent to the
+        shipping company already.
         """
 
     def currentShipItRequest():

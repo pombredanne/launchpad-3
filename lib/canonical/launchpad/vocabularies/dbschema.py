@@ -23,7 +23,6 @@ __all__ = [
     'DistributionReleaseStatusVocabulary',
     'GPGKeyAlgorithmVocabulary',
     'InfestationStatusVocabulary',
-    'KarmaActionCategoryVocabulary',
     'PackagingTypeVocabulary',
     'PollAlgorithmVocabulary',
     'PollSecrecyVocabulary',
@@ -78,7 +77,6 @@ CveStatusVocabulary = vocab_factory(dbschema.CveStatus)
 DistributionReleaseStatusVocabulary = vocab_factory(dbschema.DistributionReleaseStatus)
 GPGKeyAlgorithmVocabulary = vocab_factory(dbschema.GPGKeyAlgorithm)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
-KarmaActionCategoryVocabulary = vocab_factory(dbschema.KarmaActionCategory)
 PackagingTypeVocabulary = vocab_factory(dbschema.PackagingType)
 PollAlgorithmVocabulary = vocab_factory(dbschema.PollAlgorithm)
 PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)

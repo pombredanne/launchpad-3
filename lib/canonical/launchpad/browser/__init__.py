@@ -20,6 +20,7 @@ from canonical.launchpad.browser.buginfestation import *
 from canonical.launchpad.browser.bugmessage import *
 from canonical.launchpad.browser.bugpackageinfestation import *
 from canonical.launchpad.browser.bugsubscription import *
+from canonical.launchpad.browser.bugtarget import *
 from canonical.launchpad.browser.bugtask import *
 from canonical.launchpad.browser.bugtracker import *
 from canonical.launchpad.browser.bugwatch import *

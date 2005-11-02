@@ -126,8 +126,8 @@
     />
 
   <vocabulary
-    name="KarmaActionCategory"
-    factory="canonical.launchpad.vocabularies.KarmaActionCategoryVocabulary"
+    name="KarmaCategory"
+    factory="canonical.launchpad.vocabularies.KarmaCategoryVocabulary"
     />
 
   <vocabulary

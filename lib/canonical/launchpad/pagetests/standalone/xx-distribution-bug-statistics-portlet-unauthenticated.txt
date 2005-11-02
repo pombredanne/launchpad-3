@@ -17,7 +17,7 @@ listing to show just those bugs.
   ...href="http://localhost:9000/distros/debian/+bugs-unassigned">Unassigned</a>
       (2)
   ...href="http://localhost:9000/distros/debian/+bugs-all">All bugs ever reported</a>
-      (3)
+      (4)
   ...href="http://localhost:9000/distros/debian/+bugs-advanced">Advanced search</a>
       (3)
   ...

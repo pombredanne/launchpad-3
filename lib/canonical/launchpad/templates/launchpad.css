@@ -622,19 +622,22 @@ tr.highlight {
 
 /* Spec status and priority */
 
-.specstatusIMPLEMENTED   { color: Green; }
-.specstatusAPPROVED      { color: Black; }
-.specstatusPENDING       { color: Yellow; }
-.specstatusDRAFT         { color: Orange; }
-.specstatusBRAINDUMP     { color: Red; }
-.specstatusSUPERSEDED    { color: Gray; }
-.specstatusOBSOLETE      { color: Gray; }
+.specstatusIMPLEMENTED     { color: Green; }
+.specstatusINFORMATIONAL   { color: Green; }
+.specstatusAPPROVED        { color: Black; }
+.specstatusPENDINGAPPROVAL { color: Yellow; }
+.specstatusPENDINGREVIEW   { color: Yellow; }
+.specstatusDRAFT           { color: Orange; }
+.specstatusBRAINDUMP       { color: Red; }
+.specstatusSUPERSEDED      { color: Gray; }
+.specstatusOBSOLETE        { color: Gray; }
 
-.specpriorityWISHLIST   { color: Gray; }
-.specpriorityLOW        { color: Black; }
-.specpriorityMEDIUM     { color: Orange; }
-.specpriorityHIGH       { color: Red; }
-.specpriorityEMERGENCY  { color: Red; }
+.specpriorityNOTFORUS      { color: Gray; }
+.specpriorityPROPOSED      { color: Gray; }
+.specpriorityLOW           { color: Black; }
+.specpriorityMEDIUM        { color: Orange; }
+.specpriorityHIGH          { color: Red; }
+.specpriorityESSENTIAL     { color: Red; }
 
 /* Board-like comment CSS */
 

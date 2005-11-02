@@ -24,6 +24,9 @@ from canonical.launchpad.database.sprintattendance import SprintAttendance
 from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 
+from canonical.lp.dbschema import (
+    SpecificationSort, SprintSpecificationStatus)
+
 
 class Sprint(SQLBase):
     """See ISprint."""
@@ -48,10 +51,21 @@ class Sprint(SQLBase):
     attendees = RelatedJoin('Person',
         joinColumn='sprint', otherColumn='attendee',
         intermediateTable='SprintAttendance', orderBy='name')
-    specifications = RelatedJoin('Specification',
-        joinColumn='sprint', otherColumn='specification',
-        intermediateTable='SprintSpecification',
-        orderBy=['name', 'title', 'id'])
+
+    # IHasSpecifications (with twist)
+    def specifications(self, quantity=None):
+        # import here to avoid circular deps
+        from canonical.launchpad.database.specification import Specification
+        specs = Specification.select("""
+            Specification.id = SprintSpecification.specification AND
+            SprintSpecification.status = %s AND
+            SprintSpecification.sprint = %s
+            """ % sqlvalues(
+                SprintSpecificationStatus.CONFIRMED,
+                self.id),
+            clauseTables=['SprintSpecification'],
+            orderBy=['-priority', 'status', 'name', 'id'])
+        return [spec for spec in specs if spec.is_incomplete]
 
     @property
     def attendances(self):

@@ -83,7 +83,6 @@ We're redirected to the Specification page
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...<h1>Test Specification</h1>...
   ...
 
 Now we try to open the setdistrorelease page, where there is a form to
@@ -137,6 +136,5 @@ After the POST we are redirected to the specification page.
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...<h1>Test Specification</h1>...
   ...
 

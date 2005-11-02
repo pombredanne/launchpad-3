@@ -6,14 +6,12 @@ __all__ = ['Packaging', 'PackagingUtil']
 from zope.interface import implements
 
 from sqlobject import ForeignKey
-from canonical.database.sqlbase import SQLBase
 
+from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import IPackaging, IPackagingUtil
-from canonical.lp.dbschema import EnumCol
-from canonical.lp.dbschema import PackagingType
+from canonical.lp.dbschema import EnumCol, PackagingType
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-
 
 class Packaging(SQLBase):
     """A Packaging relating a SourcePackageName in DistroRelease and a Product.
@@ -42,11 +40,6 @@ class Packaging(SQLBase):
         from canonical.launchpad.database.sourcepackage import SourcePackage
         return SourcePackage(distrorelease=self.distrorelease,
             sourcepackagename=self.sourcepackagename)
-
-    def searchTasks(self, search_params):
-        """See canonical.launchpad.interfaces.IBugTarget."""
-        search_params.setDistributionRelease(self.distrorelease)
-        return BugTaskSet().search(search_params)
 
 
 class PackagingUtil:

@@ -24,7 +24,8 @@
             tal:content="context/priority/title"
             tal:attributes="class string:specpriority${context/priority/name}"
             >High</span>
-      <i tal:condition="not: context/priority">No priority</i>
+      <i tal:condition="context/needs_discussion">Needs discussion.</i>
+      <i tal:condition="not: context/direction_approved">Needs guidance.</i>
       <tal:block condition="context/assignee">
         <img src="/++resource++user.gif" />&nbsp;<a
              tal:attributes="href context/assignee/fmt:url"
@@ -39,12 +40,5 @@
     </td>
     <td>
     </td>
-  </tr>
-  <tr class="lesser">
-    <td> </td>
-    <td>
-      <i tal:content="context/summary/fmt:shorten/120" />
-    </td>
-    <td> </td>
   </tr>
 </table>
