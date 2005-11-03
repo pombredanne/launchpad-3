@@ -6,7 +6,6 @@
 import sys, re, time
 import os, os.path, errno
 import tabnanny
-import checkarchtag
 from StringIO import StringIO
 import psycopg
 from subprocess import Popen, PIPE
@@ -27,9 +26,6 @@ def main():
     Otherwise, print output and exit(1).
     """
     here = os.path.dirname(os.path.realpath(__file__))
-
-    if not checkarchtag.is_tree_good():
-        return 1
 
     # Tabnanny
     org_stdout = sys.stdout

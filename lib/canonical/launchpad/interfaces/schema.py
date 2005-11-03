@@ -25,6 +25,8 @@ class ISchemaSet(Interface):
 class ISchema(Interface):
     """A Schema."""
 
+    id = Attribute("The id of this schema.")
+
     owner = Attribute("The Person who owns this schema.")
 
     name = Attribute("The name of this schema.")

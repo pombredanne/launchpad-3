@@ -229,7 +229,7 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         """Create a queue item attached to this distrorelease and the given
         pocket. If status is not supplied, then default to an ACCEPTED item.
         """
-    
+
     def newArch(architecturetag, processorfamily, official, owner):
         """Create a new port or DistroArchRelease for this DistroRelease."""
 
@@ -239,6 +239,34 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         in the queue.
         """
 
+    def initialiseFromParent():
+        """Copy in all of the parent distrorelease's configuration. This
+        includes all configuration for distrorelease and distroarchrelease
+        publishing and all publishing records for sources and binaries.
+
+        Preconditions:
+          The distrorelease must have been set up with its distroarchreleases
+          as needed. It should have its nominated arch-indep set up along
+          with all other basic requirements for the structure of the
+          distrorelease. This distrorelease and all its distroarchreleases
+          must have empty publishing sets. Section and component selections
+          must be empty.
+
+        Outcome:
+          The publishing structure will be copied from the parent. All
+          PUBLISHED and PENDING packages in the parent will be created in
+          this distrorelease and its distroarchreleases. The lucille config
+          will be copied in, all component and section selections will be
+          duplicated as will any permission-related structures.
+
+        Note:
+          This method will assert all of its preconditions where possible.
+          After this is run, you still need to construct chroots for building,
+          you need to add anything missing wrt. ports etc. This method is
+          only meant to give you a basic copy of a parent release in order
+          to assist you in preparing a new release of a distribution or
+          in the initialisation of a derivative.
+        """
 
 class IDistroReleaseSet(Interface):
     """The set of distro releases."""

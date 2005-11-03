@@ -33,7 +33,7 @@
          style="float: left; margin: 0 5px 5px 0" />
     <p tal:condition="not: context/homepage_content">
       <span tal:replace="context/browsername">Foo Bar</span> has not
-      created a homepage. The home page is like a wiki page - you can use
+      created a homepage. The text here is editable - you can use
       it to keep people up to date on your activities, interests, etc. It
       is a free-form space, you can put anything here.
       [<a href="+edithomepage">Edit</a>]

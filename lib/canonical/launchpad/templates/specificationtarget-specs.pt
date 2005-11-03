@@ -43,14 +43,8 @@
     <tal:block repeat="category view/categories">
       <h2 tal:content="category/status/title">Approved</h2>
       <div
-        tal:condition="view/listing_detailed"
         tal:repeat="spec category/specs"
         tal:replace="structure spec/@@+listing-detailed"
-      />
-      <div
-        tal:condition="view/listing_compact"
-        tal:repeat="spec category/specs"
-        tal:replace="structure spec/@@+listing-compact"
       />
     </tal:block>
   </tal:specifications>

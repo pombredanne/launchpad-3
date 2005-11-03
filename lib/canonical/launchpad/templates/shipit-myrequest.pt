@@ -41,7 +41,7 @@
 
       <tal:block condition="view/hasErrorMessages">
         <br />
-        <p class="portalErrorMessage">There were errors in your request.</p>
+        <p class="portalError">There were errors in your request.</p>
       </tal:block>
 
     <tal:block condition="view/shouldShowOrderDetails">
@@ -191,6 +191,12 @@
                   </option>
                 </tal:block>
               </select>
+              <div tal:condition="view/userMustProvideReasonForStandardOrder">
+                <strong>Reason for new request, in English:</strong>
+                <span class="formHelp">(required)</span>
+                <textarea name="reasonforstandardrequest" rows="4"
+                          tal:content="view/reason|nothing" />
+              </div>
             </div>
                       
           </td>

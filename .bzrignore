@@ -1,3 +1,7 @@
+launchpad.log
+launchpad-access.log
+configs/+config-overrides.zcml
++*
 sourcecode/buildbot
 sourcecode/bzr
 sourcecode/cscvs
