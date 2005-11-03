@@ -67,9 +67,11 @@ def stripseq(seq):
     return [s.strip() for s in seq]
 
 
+epoch_re = re.compile(r"^\d+:")
+binnmu_re = re.compile(r"^(.+)\.0\.\d+$")
 def get_dsc_path(name, version, component, archive_root):
     pool_root = os.path.join(archive_root, "pool")
-    version = re.sub("^\d+:", "", version)
+    version = epoch_re.sub("", version)
     filename = "%s_%s.dsc" % (name, version)
     # We do a first attempt using the obvious directory name, composed
     # with the component. However, this may fail if a binary is being
@@ -80,13 +82,22 @@ def get_dsc_path(name, version, component, archive_root):
         return filename, fullpath, component
 
     # Do a second pass, scrubbing through all components in the pool.
-    for component in os.listdir(pool_root):
-        if not os.path.isdir(os.path.join(pool_root, component)):
+    for alt_component in os.listdir(pool_root):
+        if not os.path.isdir(os.path.join(pool_root, alt_component)):
             continue
-        pool_dir = poolify(name, component)
+        pool_dir = poolify(name, alt_component)
         fullpath = os.path.join(pool_root, pool_dir, filename)
         if os.path.exists(fullpath):
-            return filename, fullpath, component
+            return filename, fullpath, alt_component
+
+    # DEB is jikes-sablevm_1.1.5-1.0.1_all.deb
+    #   bin version is 1.1.5-1.0.1
+    # DSC is sablevm_1.1.5-1.dsc
+    #   src version is 1.1.5-1
+    is_binnmu = binnmu_re.match(version)
+    if is_binnmu:
+        version = is_binnmu.group(1)
+        return get_dsc_path(name, version, component, archive_root)
 
     # Couldn't find the file anywhere -- too bad.
     raise PoolFileNotFound("File %s not in archive" % filename)
@@ -114,8 +125,8 @@ def read_dsc(package, version, component, archive_root):
         changelog = parse_changelog(clfile)
         clfile.close()
     else:
-        log.warn("No changelog file found for %s in %s" % (package,
-        source_dir))
+        log.warn("No changelog file found for %s in %s" % 
+                 (package, source_dir))
         changelog = None
 
     dsc = open(dsc_path).read().strip()

@@ -506,7 +506,7 @@ class SourcePackageReleaseHandler:
             # XXX: untested
             raise MultiplePackageReleaseError("Found more than one "
                     "entry for %s (%s) published into %s" %
-                    (sourcepackagename.name, sourcepackagename.version,
+                    (sourcepackagename.name, version,
                      distrorelease.distribution.name))
         return spr
 
