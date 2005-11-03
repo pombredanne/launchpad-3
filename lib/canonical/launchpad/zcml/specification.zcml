@@ -95,11 +95,10 @@
       template="../templates/specification-subscription.pt" />
   </browser:pages>
 
-  <browser:generalform
+  <browser:page
     for="canonical.launchpad.interfaces.ISpecification"
     name="+givefeedback"
     class="canonical.launchpad.browser.SpecificationFeedbackClearingView"
-    schema="canonical.launchpad.interfaces.ISpecificationFeedback"
     permission="launchpad.AnyPerson"
     template="../templates/specification-givefeedback.pt"
     />

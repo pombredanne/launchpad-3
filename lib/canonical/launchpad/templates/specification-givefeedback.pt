@@ -20,11 +20,43 @@
   <h1>Give Feedback on Specification</h1>
 
   <p class="documentDescription">
-    Use this form to indicate which feedback requests you have completed.
     Select the requests which you wish to remove from your queue.
   </p>
 
-  <form action="." method="POST">
+  <p class="portalMessage"
+     tal:define="status view/process_form"
+     tal:condition="status"
+     tal:content="status" />
+
+  <form tal:attributes="action request/URL" method="POST">
+
+    <table>
+      <tbody>
+        <tr tal:repeat="fbreq view/feedbackrequests">
+          <td>
+            <input type="checkbox" name="feedbackrequest"
+                   tal:attributes="
+                     value fbreq/requestor/name;
+                     id string:req_${fbreq/requestor/name}" />
+          </td>
+          <td>
+            <label tal:content="fbreq/requestor/browsername"
+                   tal:attributes="
+                     for string:req_${fbreq/requestor/name}">Foo
+                     Bar</label>
+            <div tal:condition="fbreq/queuemsg"
+                 tal:content="fbreq/queuemsg"
+                 class="lesser" />
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="discreet">
+      Select the items that you have addressed in this specification, and
+      click "Continue" to clear those feedback requests from your queue.
+    </div>
+
 
     <div class="actions">
       <input type="submit"
@@ -32,8 +64,8 @@
              value="Cancel" />
       <input tal:condition="view/feedbackrequests"
              type="submit"
-             name="feedback"
-             value="Feedback Completed" />
+             name="FORM_SUBMIT"
+             value="Continue" />
     </div>
 
   </form>

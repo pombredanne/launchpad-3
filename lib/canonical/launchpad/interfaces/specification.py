@@ -167,12 +167,14 @@ class ISpecification(IHasOwner):
         """Remove the person's subscription to this spec."""
 
     # queue-related methods
-    def queue(person, queuemsg=None):
+    def queue(provider, requestor, queuemsg=None):
         """Put this specification into the feedback queue of the given person,
         with an optional message."""
         
-    def unqueue(person):
-        """Remove the spec from this person's feedback queue."""
+    def unqueue(provider, requestor):
+        """Remove the feedback request by the requestor for this spec, from
+        the provider's feedback queue.
+        """
 
     # bug linking
     def linkBug(bug_number):

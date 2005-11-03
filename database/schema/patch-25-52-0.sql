@@ -15,4 +15,14 @@ ALTER TABLE Specification ALTER COLUMN delivery
     SET DEFAULT 0;
 ALTER TABLE Specification ALTER COLUMN delivery SET NOT NULL;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (25,51,0);
+/* allow multiple people to request feedback from someone about the same
+ * spec */
+
+ALTER TABLE SpecificationReview
+    DROP CONSTRAINT specificationreview_spec_reviewer_uniq;
+ALTER TABLE SpecificationReview
+    ADD CONSTRAINT unique_spec_requestor_provider
+    UNIQUE (specification, requestor, reviewer);
+
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (25,52,0);
