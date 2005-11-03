@@ -22,6 +22,7 @@ from canonical.launchpad.interfaces import ILoginTokenSet, IPersonSet
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.lp.dbschema import LoginTokenType
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from canonical.launchpad.webapp.notification import NOTIFICATION_PARAMETER
 
 class UnauthorizedView(SystemErrorView):
 
@@ -49,7 +50,7 @@ class UnauthorizedView(SystemErrorView):
                 return ('Application error.  Unauthenticated user POSTing to '
                         'page that requires authentication.')
             # If we got any query parameters, then preserve them in the
-            # new URL.
+            # new URL. Except for the BrowserNotifications
             query_string = self.request.get('QUERY_STRING', '')
             if query_string:
                 query_string = '?' + query_string
@@ -238,8 +239,9 @@ class LoginOrRegister:
         """Returns zero or more hidden inputs that preserve the URL's query."""
         L = []
         for name, value in self.iter_form_items():
-            L.append('<input type="hidden" name="%s" value="%s" />' %
-                    (name, cgi.escape(value, quote=True)))
+            if name != NOTIFICATION_PARAMETER:
+                L.append('<input type="hidden" name="%s" value="%s" />' %
+                        (name, cgi.escape(value, quote=True)))
         return '\n'.join(L)
 
 def logInPerson(request, principal, email):
