@@ -1130,8 +1130,9 @@ class PersonSet:
             ''' % vars())
         skip.append(('ticketsubscription', 'person'))
 
-        # Update the SpecificationReview entries that will not conflict
+        # Update the SpecificationFeedback entries that will not conflict
         # and trash the rest
+        # first the reviewer
         cur.execute('''
             UPDATE SpecificationReview
             SET reviewer=%(to_id)d
@@ -1146,6 +1147,22 @@ class PersonSet:
             DELETE FROM SpecificationReview WHERE reviewer=%(from_id)d
             ''' % vars())
         skip.append(('specificationreview', 'reviewer'))
+
+        # and now the requestor
+        cur.execute('''
+            UPDATE SpecificationReview
+            SET requestor=%(to_id)d
+            WHERE requestor=%(from_id)d AND specification NOT IN
+                (
+                SELECT specification
+                FROM SpecificationReview
+                WHERE requestor = %(to_id)d
+                )
+            ''' % vars())
+        cur.execute('''
+            DELETE FROM SpecificationReview WHERE requestor=%(from_id)d
+            ''' % vars())
+        skip.append(('specificationreview', 'requestor'))
 
         # Update the SpecificationSubscription entries that will not conflict
         # and trash the rest
