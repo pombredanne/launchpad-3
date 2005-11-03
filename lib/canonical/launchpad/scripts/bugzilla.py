@@ -30,9 +30,10 @@ import urlparse
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    IPersonSet, IDistributionSet, IBugSet, IBugTrackerSet,
-    IBugExternalRefSet, IBugAttachmentSet, IMessageSet,
-    ILibraryFileAliasSet, ICveSet, NotFoundError)
+    IPersonSet, IDistributionSet, IBugSet, IBugTaskSet,
+    IBugTrackerSet, IBugExternalRefSet, IBugAttachmentSet,
+    IMessageSet, ILibraryFileAliasSet, ICveSet, IBugWatchSet,
+    NotFoundError)
 from canonical.lp.dbschema import (
     BugTaskSeverity, BugTaskStatus, BugTaskPriority, BugAttachmentType)
 
@@ -262,6 +263,8 @@ class Bugzilla:
             self.backend = None
         self.bugtracker = getUtility(IBugTrackerSet)[self.bugtracker_name]
         self.bugset = getUtility(IBugSet)
+        self.bugtaskset = getUtility(IBugTaskSet)
+        self.bugwatchset = getUtility(IBugWatchSet)
         self.cveset = getUtility(ICveSet)
         self.extrefset = getUtility(IBugExternalRefSet)
         self.personset = getUtility(IPersonSet)
@@ -299,7 +302,8 @@ class Bugzilla:
         to the given bugzilla bug.
         """
         # we currently only support mapping Ubuntu bugs ...
-        assert bug.product == 'Ubuntu', 'product != Ubuntu'
+        if bug.product != 'Ubuntu':
+            return ValueError('product must be Ubuntu')
         
         ubuntu = getUtility(IDistributionSet)['ubuntu']
         try:
@@ -316,6 +320,31 @@ class Bugzilla:
             'binarypackagename': binpkg
             }
 
+    def getLaunchpadUpstreamProduct(self, bug):
+        # we currently only support mapping Ubuntu bugs ...
+        if bug.product != 'Ubuntu':
+            return ValueError('product must be Ubuntu')
+        
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
+        try:
+            srcpkgname, binpkgname = ubuntu.getPackageNames(
+                bug.component.encode('ASCII'))
+        except ValueError:
+            logger.warning('could not find package name for "%s"',
+                           bug.component.encode('ASCII'), exc_info=True)
+            return None
+
+        # find a product series
+        series = None
+        for release in ubuntu.releases:
+            srcpkg = release.getSourcePackage(srcpkgname)
+            if srcpkg:
+                series = srcpkg.productseries
+                if series:
+                    return series.product
+        else:
+            return None
+        
     _bug_re = re.compile('bug\s*#?\s*(?P<id>\d+)', re.IGNORECASE)
     def replaceBugRef(self, match):
         # XXX: 20051024 jamesh
@@ -396,6 +425,24 @@ class Bugzilla:
         bug.mapSeverity(task)
         bug.mapPriority(task)
         bug.mapStatus(task)
+
+        # for UPSTREAM bugs, try to find whether the URL field contains
+        # a bug reference.
+        if bug.bug_status == 'UPSTREAM':
+            # see if the URL field contains a bug tracker reference
+            watches = self.bugwatchset.fromText(bug.bug_file_loc,
+                                                lp_bug, lp_bug.owner)
+            # find the upstream product for this bug
+            product = self.getLaunchpadUpstreamProduct(bug)
+
+            # if we created a watch, and there is an upstream product,
+            # create a new task and link it to the watch.
+            if len(watches) > 0 and product:
+                upstreamtask = self.bugtaskset.createTask(lp_bug,
+                                                          product=product,
+                                                          owner=lp_bug.owner)
+                upstreamtask.datecreated = bug.creation_ts
+                upstreamtask.bugwatch = watches[0]
 
         # XXX: translate milestone linkage
 

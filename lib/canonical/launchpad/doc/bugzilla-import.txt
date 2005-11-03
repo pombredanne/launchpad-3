@@ -464,7 +464,7 @@ then the bug is filed directly against the distribution.
   >>> showMapping('not-Ubuntu', 'general')
   Traceback (most recent call last):
     ...
-  AssertionError: product != Ubuntu
+  ValueError: product must be Ubuntu
 
 
 Cleanup:
