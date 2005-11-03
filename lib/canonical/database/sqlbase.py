@@ -334,7 +334,7 @@ def _clearCache():
     #        - Andrew Bennetts, 2005-02-01
 
     # Don't break if _connection is a FakeZopelessConnectionDescriptor
-    if hasattr(SQLBase._connection.cache, "allSubCaches"):
+    if getattr(SQLBase._connection, 'cache', None) is not None:
         for c in SQLBase._connection.cache.allSubCaches():
             c.clear()
 
