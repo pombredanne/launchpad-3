@@ -22,7 +22,7 @@ from canonical.lp import dbschema
 from canonical.database.constants import UTC_NOW
 
 from canonical.launchpad.interfaces import (
-    IPerson, IBuilderSet, IBuilder, IBuildSet
+    IPerson, IBuilderSet, IBuilder, IBuildSet, IBuildSet
     )
 
 from canonical.launchpad.webapp import (
@@ -40,7 +40,7 @@ class BuilderSetNavigation(GetitemNavigation):
         except ValueError:
             return None
         try:
-            return self.context.getBuild(build_id)
+            return getUtility(IBuildSet).getByBuildID(build_id)
         except SQLObjectNotFound:
             return None
 
