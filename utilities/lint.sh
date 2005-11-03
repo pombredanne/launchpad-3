@@ -30,7 +30,8 @@ else
     # R0913 (Too many arguments)
     # R0914 (Too many local variables)
     # R0915 (Too many statements)
-    PYLINTOFF="$PYLINTOFF,W0131,R0912,R0913,R0914,R0915"
+    # W0221 (Arguments number differs from overriden method)
+    PYLINTOFF="$PYLINTOFF,W0131,R0912,R0913,R0914,R0915,W0221"
     # W0511 (XXX and TODO listings)
     # W0302 (Too many lines in module)
     # R0902 (Too many instance attributes)
