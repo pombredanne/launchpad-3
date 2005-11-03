@@ -15,4 +15,4 @@ ALTER TABLE Specification ALTER COLUMN delivery
     SET DEFAULT 0;
 ALTER TABLE Specification ALTER COLUMN delivery SET NOT NULL;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (25,88,0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (25,51,0);

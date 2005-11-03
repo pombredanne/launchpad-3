@@ -21,8 +21,8 @@ from canonical.launchpad.database.specificationdependency import (
     SpecificationDependency)
 from canonical.launchpad.database.specificationbug import (
     SpecificationBug)
-from canonical.launchpad.database.specificationreview import (
-    SpecificationReview)
+from canonical.launchpad.database.specificationfeedback import (
+    SpecificationFeedback)
 from canonical.launchpad.database.specificationsubscription import (
     SpecificationSubscription)
 from canonical.launchpad.database.sprintspecification import (
@@ -83,7 +83,7 @@ class Specification(SQLBase):
     subscribers = RelatedJoin('Person',
         joinColumn='specification', otherColumn='person',
         intermediateTable='SpecificationSubscription', orderBy='name')
-    reviews = MultipleJoin('SpecificationReview',
+    feedbackrequests = MultipleJoin('SpecificationFeedback',
         joinColumn='specification', orderBy='id')
     sprint_links = MultipleJoin('SprintSpecification', orderBy='id',
         joinColumn='specification')
@@ -137,6 +137,14 @@ class Specification(SQLBase):
             if sprintspecification.sprint.name == sprintname:
                 return sprintspecification
         return None
+
+    def getFeedbackRequests(self, person):
+        """See ISpecification."""
+        reqlist = []
+        for fbreq in self.feedbackrequests:
+            if fbreq.reviewer.id == person.id:
+                reqlist.append(fbreq)
+        return reqlist
 
     # emergent properties
     @property
@@ -234,13 +242,13 @@ class Specification(SQLBase):
     def queue(self, reviewer, requestor, queuemsg=None):
         """See ISpecification."""
         # first see if a relevant queue entry exists, and if so, update it
-        for review in self.reviews:
-            if review.reviewer.id == reviewer.id:
-                review.requestor = requestor
-                review.queuemsg = queuemsg
-                return review
+        for fbreq in self.feedbackrequests:
+            if fbreq.reviewer.id == reviewer.id:
+                fbreq.requestor = requestor
+                fbreq.queuemsg = queuemsg
+                return fbreq
         # since no previous review existed for this person, create a new one
-        return SpecificationReview(
+        return SpecificationFeedback(
             specification=self,
             reviewer=reviewer,
             requestor=requestor,
@@ -249,9 +257,9 @@ class Specification(SQLBase):
     def unqueue(self, reviewer):
         """See ISpecification."""
         # see if a relevant queue entry exists, and if so, delete it
-        for review in self.reviews:
-            if review.reviewer.id == reviewer.id:
-                SpecificationReview.delete(review.id)
+        for fbreq in self.feedbackrequests:
+            if fbreq.reviewer.id == reviewer.id:
+                SpecificationFeedback.delete(fbreq.id)
                 return
 
     # linking to bugs

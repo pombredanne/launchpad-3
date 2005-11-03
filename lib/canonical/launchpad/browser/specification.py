@@ -39,7 +39,7 @@ class SpecificationContextMenu(ContextMenu):
     usedfor = ISpecification
     links = ['edit', 'people', 'status', 'priority', 'setseries',
              'setdistrorelease',
-             'milestone', 'requestreview', 'doreview', 'subscription',
+             'milestone', 'requestfeedback', 'givefeedback', 'subscription',
              'subscribeanother',
              'linkbug', 'unlinkbug', 'adddependency', 'removedependency',
              'dependencytree', 'linksprint', 'retarget', 'administer']
@@ -74,15 +74,15 @@ class SpecificationContextMenu(ContextMenu):
         text = 'Target to Milestone'
         return Link('+milestone', text, icon='edit')
 
-    def requestreview(self):
-        text = 'Request Review'
-        return Link('+requestreview', text, icon='edit')
+    def requestfeedback(self):
+        text = 'Request Feedback'
+        return Link('+requestfeedback', text, icon='edit')
 
-    def doreview(self):
-        text = 'Conduct Review'
+    def givefeedback(self):
+        text = 'Give Feedback'
         enabled = (self.user is not None and
-                   get_review_requested(self.user, self.context) is not None)
-        return Link('+doreview', text, icon='edit', enabled=enabled)
+                   self.context.getFeedbackRequests(self.user))
+        return Link('+givefeedback', text, icon='edit', enabled=enabled)
 
     def subscription(self):
         user = self.user
@@ -149,19 +149,6 @@ def has_spec_subscription(person, spec):
     return False
 
 
-def get_review_requested(person, spec):
-    """Return the review that this person requested, or None if there is not
-    one.
-
-    XXX: Refactor this to a method on ISpecification.
-         SteveAlexander, 2005-09-26
-    """
-    assert person is not None
-    for review in spec.reviews:
-        if review.reviewer.id == person.id:
-            return review
-
-
 class SpecificationView(LaunchpadView):
 
     __used_for__ = ISpecification
@@ -182,21 +169,12 @@ class SpecificationView(LaunchpadView):
                 self.context.unsubscribe(self.user)
                 self.notices.append("You have unsubscribed from this spec.")
 
-        # see if we are clearing a review
-        formreview = request.form.get('review', None)
-        if (formreview == 'Review Complete' and self.user and
-            request.method == 'POST'):
-            self.context.unqueue(self.user)
-            self.notices.append('Thank you for your review.')
-
         if self.user is not None:
             # establish if this user has a review queued on this spec
-            self.review = get_review_requested(self.user, self.context)
-            if self.review is not None:
-                msg = "Your review was requested by %s"
-                msg %= self.review.requestor.browsername
-                if self.review.queuemsg:
-                    msg = msg + ': ' + self.review.queuemsg
+            self.feedbackrequests = self.context.getFeedbackRequests(self.user)
+            if self.feedbackrequests:
+                msg = "You have %d feedback request(s) on this specification."
+                msg %= len(self.feedbackrequests)
                 self.notices.append(msg)
 
     @property

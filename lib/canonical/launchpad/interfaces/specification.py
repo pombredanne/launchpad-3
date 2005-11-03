@@ -117,7 +117,7 @@ class ISpecification(IHasOwner):
     subscriptions = Attribute('The set of subscriptions to this spec.')
     sprints = Attribute('The sprints at which this spec is discussed.')
     sprint_links = Attribute('The entries that link this spec to sprints.')
-    reviews = Attribute('The set of reviews queued.')
+    feedbackrequests = Attribute('The set of feedback requests queued.')
     bugs = Attribute('Bugs related to this spec')
     dependencies = Attribute('Specs on which this spec depends.')
     blocked_specs = Attribute('Specs for which this spec is a dependency.')
@@ -145,6 +145,11 @@ class ISpecification(IHasOwner):
     def getSprintSpecification(sprintname):
         """Get the record that links this spec to the named sprint."""
 
+    def getFeedbackRequests(person):
+        """Return the requests for feedback for a given person on this
+        specification.
+        """
+
     # event-related methods
     def getDelta(new_spec, user):
         """Return a dictionary of things that changed between this spec and
@@ -163,11 +168,11 @@ class ISpecification(IHasOwner):
 
     # queue-related methods
     def queue(person, queuemsg=None):
-        """Put this specification into the review queue of the given person,
+        """Put this specification into the feedback queue of the given person,
         with an optional message."""
         
     def unqueue(person):
-        """Remove the spec from this person's review queue."""
+        """Remove the spec from this person's feedback queue."""
 
     # bug linking
     def linkBug(bug_number):

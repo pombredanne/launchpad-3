@@ -2,21 +2,21 @@
 
 __metaclass__ = type
 
-__all__ = ['SpecificationReview']
+__all__ = ['SpecificationFeedback']
 
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol
 
-from canonical.launchpad.interfaces import ISpecificationReview
+from canonical.launchpad.interfaces import ISpecificationFeedback
 
 from canonical.database.sqlbase import SQLBase
 
 
-class SpecificationReview(SQLBase):
+class SpecificationFeedback(SQLBase):
     """A subscription for person to a spec."""
 
-    implements(ISpecificationReview)
+    implements(ISpecificationFeedback)
 
     _table='SpecificationReview'
     specification = ForeignKey(dbName='specification',

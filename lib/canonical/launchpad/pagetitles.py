@@ -786,9 +786,9 @@ specification_productseries = 'Target Feature Specification at Series'
 
 specification_removedep = 'Remove a Dependency'
 
-specification_doreview = 'Conduct Specification Review'
+specification_givefeedback = 'Clear Feedback Requests'
 
-specification_requestreview = 'Request a Review of This Specification'
+specification_requestfeedback = 'Request Feedback on This Specification'
 
 specification_edit = 'Edit Specification Details'
 

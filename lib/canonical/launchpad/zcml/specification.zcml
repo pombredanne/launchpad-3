@@ -82,8 +82,8 @@
       name="+portlet-bugs"
       template="../templates/specification-portlet-bugs.pt" />
     <browser:page
-      name="+portlet-reviewqueue"
-      template="../templates/specification-portlet-reviewqueue.pt" />
+      name="+portlet-feedbackqueue"
+      template="../templates/specification-portlet-feedbackqueue.pt" />
   </browser:pages>
 
   <browser:pages
@@ -93,10 +93,16 @@
     <browser:page
       name="+subscribe"
       template="../templates/specification-subscription.pt" />
-    <browser:page
-      name="+doreview"
-      template="../templates/specification-doreview.pt" />
   </browser:pages>
+
+  <browser:generalform
+    for="canonical.launchpad.interfaces.ISpecification"
+    name="+givefeedback"
+    class="canonical.launchpad.browser.SpecificationFeedbackClearingView"
+    schema="canonical.launchpad.interfaces.ISpecificationFeedback"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-givefeedback.pt"
+    />
 
   <browser:generalform
     name="+addsubscriber"
@@ -233,15 +239,15 @@
   />
 
   <browser:addform
-    name="+requestreview"
+    name="+requestfeedback"
     for="canonical.launchpad.interfaces.ISpecification"
-    schema="canonical.launchpad.interfaces.ISpecificationReview"
-    class="canonical.launchpad.browser.SpecificationReviewAddView"
-    label="Request Specification Review"
+    schema="canonical.launchpad.interfaces.ISpecificationFeedback"
+    class="canonical.launchpad.browser.SpecificationFeedbackAddView"
+    label="Request Feedback on Specification"
     fields="reviewer requestor queuemsg"
     keyword_arguments="reviewer requestor queuemsg"
     permission="launchpad.AnyPerson"
-    template="../templates/specification-requestreview.pt">
+    template="../templates/specification-requestfeedback.pt">
     <browser:widget
       field="requestor"
       class="canonical.widgets.HiddenUserWidget" />
