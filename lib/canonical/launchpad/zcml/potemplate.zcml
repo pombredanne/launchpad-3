@@ -133,6 +133,7 @@
         for="canonical.launchpad.interfaces.IPOTemplateSubset"
         urldata="canonical.launchpad.browser.POTemplateSubsetURL"
         />
+
     <browser:url
         for="canonical.launchpad.interfaces.IPOTemplate"
         urldata="canonical.launchpad.browser.POTemplateURL"

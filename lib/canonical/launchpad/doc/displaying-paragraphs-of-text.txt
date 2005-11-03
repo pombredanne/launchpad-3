@@ -16,7 +16,7 @@ more.
     >>> text = ('This is a line.\n'
     ...         'This is another line.')
     >>> test_tales('foo/fmt:text-to-html', foo=text)
-    '<div>This is a line.</div>\n<div>This is another line.</div>'
+    '<p>This is a line.<br />\nThis is another line.</p>'
 
     >>> text = (
     ...     'This is a paragraph that has been hard-wrapped by an e-mail'
@@ -28,9 +28,11 @@ more.
     ...     '* Asa'
     ...     )
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <p>This is a paragraph that has been hard-wrapped by an e-mail application. When copied and pasted into Launchpad, it should nevertheless still display as a single paragraph. This helps these people:</p>
-    <div>* Fabio</div>
-    <div>* Asa</div>
+    <p>This is a paragraph that has been hard-wrapped by an e-mail application.
+    When copied and pasted into Launchpad, it should nevertheless still display
+    as a single paragraph. This helps these people:<br />
+    * Fabio<br />
+    * Asa</p>
 
     >>> text = (
     ...     " 1. And here's an opposite example\n"
@@ -47,10 +49,14 @@ more.
     ...     'because it was followed by two newlines.'
     ...     )
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <div>&nbsp;1. And here's an opposite example</div>
-    <div>&nbsp;2. where a list is followed by a paragraph.</div>
-    <p>&nbsp;&nbsp;&nbsp;Leading spaces in a line or paragraph are presented, which means converting them to &amp;nbsp;. Trailing spaces are passed through as-is, which means browsers will ignore them, but that's fine, they're not important anyway.</p>
-    <p>&nbsp;&nbsp;&nbsp;That last line was between 60 and 80 characters long, but it was still treated as a paragraph because it was followed by two newlines.</p>
+    <p>&nbsp;1. And here's an opposite example<br />
+    &nbsp;2. where a list is followed by a paragraph.<br />
+    &nbsp;&nbsp;&nbsp;Leading spaces in a line or paragraph are presented, which means converting
+    them to &amp;nbsp;. Trailing spaces are passed through as-is, which means
+    browsers will ignore them, but that's fine, they're not important anyway.</p>
+    <p>&nbsp;&nbsp;&nbsp;That last line was between 60 and 80 characters
+    long, but it was still treated as a paragraph
+    because it was followed by two newlines.</p>
 
     >>> text = (
     ...     'This is a little paragraph all by itself. How cute!'
@@ -71,6 +77,30 @@ newline.
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
     <p>Here are two paragraphs with lots of whitespace between them.</p>
     <p>But they're still just two paragraphs.</p>
+
+If a line begins with whitespace, it will not be merged with the
+previous line, even if that line was between 60 and 80 characters
+long.  This aids in the display of code samples:
+
+    >>> text = (
+    ...     'This line is 69 characters.  Next is a code sample '
+    ...     'written in Python.\n'
+    ...     '    def messageCount(self):\n'
+    ...     '        """See IRosettaStats."""\n'
+    ...     '        return self.potemplate.messageCount()\n'
+    ...     '\n'
+    ...     '    def currentCount(self, language=None):\n'
+    ...     '        """See IRosettaStats."""\n'
+    ...     '        return self.currentCount\n')
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p>This line is 69 characters.  Next is a code sample written in Python.<br />
+    &nbsp;&nbsp;&nbsp;&nbsp;def messageCount(self):<br />
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"""See IRosettaStats."""<br />
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return self.potemplate.messageCount()</p>
+    <p>&nbsp;&nbsp;&nbsp;&nbsp;def currentCount(self, language=None):<br />
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"""See IRosettaStats."""<br />
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return self.currentCount</p>
+
 
 fmt:text-to-html knows how to linkify URLs:
 
@@ -99,29 +129,29 @@ fmt:text-to-html knows how to linkify URLs:
     ...     'http://localhost/bar/baz/foo.bar.html?a=b&b=a;\n'
     ...     'http://localhost/bar/baz/foo.bar.html?a=b&b=a:\n')
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <div><a rel="nofollow" href="http://localhost:8086/bar/baz/foo.html">http://localhost:8086/bar/baz/foo.html</a></div>
-    <div><a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a></div>
-    <div><a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>.</div>
-    <div><a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>;</div>
-    <div><a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>:</div>
-    <div><a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>?</div>
-    <div><a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>,</div>
-    <div>&lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;</div>
-    <div>&lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;,</div>
-    <div>&lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;.</div>
-    <div>&lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;;</div>
-    <div>&lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;:</div>
-    <div>&lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;?</div>
-    <div>(<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>)</div>
-    <div>(<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>),</div>
-    <div>(<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>).</div>
-    <div>(<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>);</div>
-    <div>(<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>):</div>
-    <div><a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a></div>
-    <div><a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>.</div>
-    <div><a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>,</div>
-    <div><a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>;</div>
-    <div><a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>:</div>
+    <p><a rel="nofollow" href="http://localhost:8086/bar/baz/foo.html">http://localhost:8086/bar/baz/foo.html</a><br />
+    <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a><br />
+    <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>.<br />
+    <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>;<br />
+    <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>:<br />
+    <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>?<br />
+    <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>,<br />
+    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;<br />
+    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;,<br />
+    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;.<br />
+    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;;<br />
+    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;:<br />
+    &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;?<br />
+    (<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>)<br />
+    (<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>),<br />
+    (<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>).<br />
+    (<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>);<br />
+    (<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>):<br />
+    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a><br />
+    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>.<br />
+    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>,<br />
+    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>;<br />
+    <a rel="nofollow" href="http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a">http://localhost/bar/baz/foo.bar.html?a=b&amp;b=a</a>:</p>
 
 fmt:text-to-html is also smart enough to convert bug references into
 links:
@@ -138,30 +168,30 @@ links:
     ...     'bug no. 123\n'
     ...     'bug#123\n')
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <div><a href="/malone/bugs/123" title="No such bug">bug 123</a></div>
-    <div><a href="/malone/bugs/123" title="No such bug">bug    123</a></div>
-    <div><a href="/malone/bugs/123" title="No such bug">bug #123</a></div>
-    <div><a href="/malone/bugs/123" title="No such bug">bug number 123</a></div>
-    <div><a href="/malone/bugs/123" title="No such bug">bug number. 123</a></div>
-    <div><a href="/malone/bugs/123" title="No such bug">bug num 123</a></div>
-    <div><a href="/malone/bugs/123" title="No such bug">bug num. 123</a></div>
-    <div><a href="/malone/bugs/123" title="No such bug">bug no 123</a></div>
-    <div><a href="/malone/bugs/123" title="No such bug">bug no. 123</a></div>
-    <div><a href="/malone/bugs/123" title="No such bug">bug#123</a></div>
+    <p><a href="/malone/bugs/123" title="No such bug">bug 123</a><br />
+    <a href="/malone/bugs/123" title="No such bug">bug    123</a><br />
+    <a href="/malone/bugs/123" title="No such bug">bug #123</a><br />
+    <a href="/malone/bugs/123" title="No such bug">bug number 123</a><br />
+    <a href="/malone/bugs/123" title="No such bug">bug number. 123</a><br />
+    <a href="/malone/bugs/123" title="No such bug">bug num 123</a><br />
+    <a href="/malone/bugs/123" title="No such bug">bug num. 123</a><br />
+    <a href="/malone/bugs/123" title="No such bug">bug no 123</a><br />
+    <a href="/malone/bugs/123" title="No such bug">bug no. 123</a><br />
+    <a href="/malone/bugs/123" title="No such bug">bug#123</a></p>
 
     >>> text = (
     ...     'bug 123\n'
     ...     'bug 123\n')
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <div><a href="/malone/bugs/123" title="No such bug">bug 123</a></div>
-    <div><a href="/malone/bugs/123" title="No such bug">bug 123</a></div>
+    <p><a href="/malone/bugs/123" title="No such bug">bug 123</a><br />
+    <a href="/malone/bugs/123" title="No such bug">bug 123</a></p>
 
     >>> text = (
     ...     'bug 1234\n'
     ...     'bug 123\n')
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <div><a href="/malone/bugs/1234" title="No such bug">bug 1234</a></div>
-    <div><a href="/malone/bugs/123" title="No such bug">bug 123</a></div>
+    <p><a href="/malone/bugs/1234" title="No such bug">bug 1234</a><br />
+    <a href="/malone/bugs/123" title="No such bug">bug 123</a></p>
 
     >>> text = 'bug 0123\n'
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
@@ -199,12 +229,12 @@ Testing a bunch of URL links.
     ...     'I have a Jabber account (jabber:foo@jabber.example.com)\n'
     ...     'Foo Bar <mailto:foo.bar@example.net>')
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
-    <div><a rel="nofollow" href="https://launchpad.net/">https://launchpad.net/</a> is the new Launchpad site</div>
-    <div><a rel="nofollow" href="http://example.com/something?foo=bar&amp;hum=baz">http://example.com/something?foo=bar&amp;hum=baz</a></div>
-    <div>You can check the PPC md5sums at <a rel="nofollow" href="ftp://ftp.ubuntu.com/ubuntu/dists/breezy/main/installer-powerpc/current/images/MD5SUMS">ftp://ftp.ubuntu.com/ubuntu/dists/breezy/main/installer-powerpc/current/images/MD5SUMS</a></div>
-    <p><a rel="nofollow" href="irc://irc.freenode.net/#launchpad">irc://irc.freenode.net/#launchpad</a></p>
-    <p>I have a Jabber account (<a rel="nofollow" href="jabber:foo@jabber.example.com">jabber:foo@jabber.example.com</a>)</p>
-    <div>Foo Bar &lt;<a rel="nofollow" href="mailto:foo.bar@example.net">mailto:foo.bar@example.net</a>&gt;</div>
+    <p><a rel="nofollow" href="https://launchpad.net/">https://launchpad.net/</a> is the new Launchpad site<br />
+    <a rel="nofollow" href="http://example.com/something?foo=bar&amp;hum=baz">http://example.com/something?foo=bar&amp;hum=baz</a><br />
+    You can check the PPC md5sums at <a rel="nofollow" href="ftp://ftp.ubuntu.com/ubuntu/dists/breezy/main/installer-powerpc/current/images/MD5SUMS">ftp://ftp.ubuntu.com/ubuntu/dists/breezy/main/installer-powerpc/current/images/MD5SUMS</a><br />
+    <a rel="nofollow" href="irc://irc.freenode.net/#launchpad">irc://irc.freenode.net/#launchpad</a></p>
+    <p>I have a Jabber account (<a rel="nofollow" href="jabber:foo@jabber.example.com">jabber:foo@jabber.example.com</a>)<br />
+    Foo Bar &lt;<a rel="nofollow" href="mailto:foo.bar@example.net">mailto:foo.bar@example.net</a>&gt;</p>
 
 regex helper functions
 ----------------------

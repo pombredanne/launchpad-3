@@ -50,8 +50,6 @@ __all__ = (
 'GPGKeyAlgorithm',
 'ImportTestStatus',
 'ImportStatus',
-'KarmaActionCategory',
-'KarmaActionName',
 'LoginTokenType',
 'ManifestEntryType',
 'ManifestEntryHint',
@@ -77,7 +75,9 @@ __all__ = (
 'SourcePackageRelationships',
 'SourcePackageUrgency',
 'SpecificationPriority',
+'SpecificationSort',
 'SpecificationStatus',
+'SprintSpecificationStatus',
 'SSHKeyType',
 'TextDirection',
 'TicketPriority',
@@ -88,6 +88,7 @@ __all__ = (
 'TranslationPermission',
 'TranslationValidationStatus',
 'DistroReleaseQueueStatus',
+'DistroReleaseQueueCustomFormat',
 'UpstreamFileType',
 'UpstreamReleaseVersionStyle',
 )
@@ -139,7 +140,7 @@ class DBSchemaValidator(validators.Validator):
         >>> validator.fromPython(ImportTestStatus.NEW, None)
         Traceback (most recent call last):
         ...
-        TypeError: DBSchema Item from wrong class
+        TypeError: DBSchema Item from wrong class, <class 'canonical.lp.dbschema.ImportTestStatus'> != <class 'canonical.lp.dbschema.BugTaskStatus'>
         >>>
 
         """
@@ -154,9 +155,15 @@ class DBSchemaValidator(validators.Validator):
         if value is DEFAULT:
             return value
         if value.__class__ != Item:
-            raise TypeError('Not a DBSchema Item: %r' % value)
-        if value.schema is not self.schema:
-            raise TypeError('DBSchema Item from wrong class')
+            # We use repr(value) because if it's a tuple (yes, it has been
+            # seen in some cases) then the interpolation would swallow that
+            # fact, confusing poor programmers like Daniel.
+            raise TypeError('Not a DBSchema Item: %s' % repr(value))
+        # Using != rather than 'is not' in order to cope with Security Proxy
+        # proxied items and their schemas.
+        if value.schema != self.schema:
+            raise TypeError('DBSchema Item from wrong class, %r != %r' % (
+                value.schema, self.schema))
         return value.value
 
     def toPython(self, value, state):
@@ -1114,12 +1121,23 @@ class SpecificationPriority(DBSchema):
     This enum is used to prioritise work.
     """
 
-    WISHLIST = Item(0, """
-        Wishlist
+    NOTFORUS = Item(0, """
+        Not for us
 
-        This specification is on the "nice to have" list, but is unlikely to
-        be implemented as part of a specific release unless somebody
-        develops an irresistable itch to do so, on their own initiative.
+        This feature has been proposed but the project leaders have decided
+        that it is not appropriate for inclusion in the mainline codebase.
+        See the status whiteboard or the
+        specification itself for the rationale for this decision. Of course,
+        you are welcome to implement it in any event and publish that work
+        for consideration by the community and end users, but it is unlikely
+        to be accepted by the mainline developers.
+        """)
+
+    PROPOSED = Item(5, """
+        Proposed
+
+        This feature has recently been proposed and has not yet been
+        evaluated and prioritised by the project leaders.
         """)
 
     LOW = Item(10, """
@@ -1127,31 +1145,61 @@ class SpecificationPriority(DBSchema):
 
         The specification is low priority. We would like to have it in the
         code, but it's not on any critical path and is likely to get bumped
-        in favour of higher-priority work.
+        in favour of higher-priority work. The idea behind the specification
+        is sound and the project leaders would incorporate this
+        functionality if the work was done. In general, "low" priority
+        specifications will not get core resources assigned to them.
         """)
 
     MEDIUM = Item(50, """
         Medium
 
-        The specification is of a medium, or normal priority. We will
-        definitely get to this feature but perhaps not in the next month or
-        two.
+        The specification is of a medium, or normal priority. The project
+        developers will definitely get to this feature but perhaps not in
+        the next major release or two.
         """)
 
     HIGH = Item(70, """
         High
 
-        The specification is definitely desired for the next major release,
-        and should be the focal point of developer attention right now.
+        This specification is strongly desired for the next major release,
+        and we have every reason to believe that it can be delivered in that
+        timeframe.
         """)
 
-    EMERGENCY = Item(90, """
-        Emergency
+    ESSENTIAL = Item(90, """
+        Essential
 
-        The specification is required immediately, and should be implemented
-        in such a way that it can be moved to production as soon as it is
-        ready, perhaps by publishing a new stable product release rather
-        than waiting for a new major release.
+        The specification is essential for the next release, and should be
+        the focus of current development. Use this state only for the most
+        important of all features.
+        """)
+
+
+class SpecificationSort(DBSchema):
+    """A preferred sorting scheme for the results of a query about
+    specifications.
+
+    This is usually used in interfaces which ask for a filtered list of
+    specifications, so that you can tell which specifications you would
+    expect to see first.
+
+    NB: this is not really a "dbschema" in that is doesn't map to an int
+    that is stored in the db. In future, we will likely have a different way
+    of defining such enums.
+    """
+    DATE = Item(10, """
+        Date
+
+        This indicates a preferred sort order of date of creation, newest
+        first.
+        """)
+
+    PRIORITY = Item(20, """
+        Priority
+
+        This indicates a preferred sort order of priority (highest first)
+        followed by status.
         """)
 
 
@@ -1168,29 +1216,42 @@ class SpecificationStatus(DBSchema):
         Approved
 
         This specification has been approved. The project team believe that
-        is ready to be implemented.
+        it is ready to be implemented without substantial further issues being
+        encountered.
         """)
 
-    PENDING = Item(20, """
+    PENDINGAPPROVAL = Item(15, """
         Pending Approval
 
+        This spec has been reviewed, and is considered to be ready for final
+        approval. The reviewer believes that the specification is clearly
+        written and adequately addresses all the important issues that will
+        be raised during implementation.
+        """)
+
+    PENDINGREVIEW = Item(20, """
+        Pending Review
+
         This spec has been put in a reviewers queue. The reviewer will
-        either move it to "approved" or bump it back to "draft", making
-        review comments for consideration at the bottom.
+        assess the clarity and comprehensiveness of the spec, and decide
+        whether further work is needed before the spec can be considered for
+        actual approval.
         """)
 
     DRAFT = Item(30, """
-        Draft
+        Drafting
 
-        The specification is in Draft status. The drafter has made a start
-        on reviewing the document.
+        The specification is actively being drafted. The spec should only be
+        in this state if it has a drafter in place, and the spec is under
+        regular revision. Please do not park specs in the "drafting" state
+        indefinitely.
         """)
 
     BRAINDUMP = Item(40, """
         Braindump
 
-        The specification is just a thought, or collection of thoughts, with
-        no attention paid to implementation strategy, dependencies or
+        The specification is a thought, or collection of thoughts, with
+        no attention yet given to implementation strategy, dependencies or
         presentation/UI issues.
         """)
 
@@ -1201,10 +1262,18 @@ class SpecificationStatus(DBSchema):
         codebase to which it was targeted.
         """)
 
-    SUPERCEDED = Item(60, """
-        Superceded
+    INFORMATIONAL = Item(55, """
+        Informational
 
-        This specification is still interesting, but has been superceded by
+        This specification does not need to be implemented. It is an
+        overview, or documentation spec, that describes high level behaviour
+        and links to actual specifications for implementation.
+        """)
+
+    SUPERSEDED = Item(60, """
+        Superseded
+
+        This specification is still interesting, but has been superseded by
         a newer spec, or set of specs, that clarify or describe a newer way
         to implement the desired feature(s). Please use the newer specs and
         not this one.
@@ -1216,6 +1285,37 @@ class SpecificationStatus(DBSchema):
         This specification has been obsoleted. Probably, we decided not to
         implement it for some reason. It should not be displayed, and people
         should not put any effort into implementing it.
+        """)
+
+
+class SprintSpecificationStatus(DBSchema):
+    """The current approval status of the spec on this sprints agenda.
+    
+    This enum allows us to know whether or not the meeting admin team has
+    agreed to discuss an item.
+    """
+
+    CONFIRMED = Item(10, """
+        confirmed
+
+        The meeting organisers have confirmed this topic for the meeting
+        agenda.
+        """)
+
+    DEFERRED = Item(20, """
+        deferred
+
+        This spec has been deferred from the meeting agenda 
+        because of a lack of available resources, or uncertainty over
+        the specific requirements or outcome desired.
+        """)
+
+    SUBMITTED = Item(30, """
+        submitted
+
+        This spec has been submitted for consideration by the meeting
+        organisers. It has not yet been approved or declined for the meeting
+        agenda.
         """)
 
 
@@ -1479,12 +1579,25 @@ class TranslationPermission(DBSchema):
         logged-in user can add or edit translations in any language, without
         any review.""")
 
+    STRUCTURED = Item(20, """
+        Structured
+
+        This group has designated translators for certain languages. In
+        those languages, people who are not designated translators can only
+        make suggestions. However, in languages which do not yet have a
+        designated translator, anybody can edit the translations directly,
+        with no further review.""")
+
     CLOSED = Item(100, """
         Closed
 
         This group allows only designated translators to edit the
-        translations of its files. No other contributions will be considered
-        or allowed.""")
+        translations of its files. You can become a designated translator
+        either by joining an existing language translation team for this
+        project, or by getting permission to start a new team for a new
+        language. People who are not designated translators can still make
+        suggestions for new translations, but those suggestions need to be
+        reviewed before being accepted by the designated translator.""")
 
 class DistroReleaseQueueStatus(DBSchema):
     """Distro Release Queue Status
@@ -1495,14 +1608,7 @@ class DistroReleaseQueueStatus(DBSchema):
     DistroRelease) the effects are published via the PackagePublishing and
     SourcePackagePublishing tables.  """
 
-    UNCHECKED = Item(1, """
-        Unchecked
-
-        This upload has been checked enough to get it into the database but
-        has yet to be checked for new binary packages, mismatched overrides
-        or similar.  """)
-
-    NEW = Item(2, """
+    NEW = Item(0, """
         New
 
         This upload is either a brand-new source package or contains a
@@ -1512,7 +1618,7 @@ class DistroReleaseQueueStatus(DBSchema):
         then entries will be made in the overrides tables and further
         uploads will bypass this state """)
 
-    UNAPPROVED = Item(3, """
+    UNAPPROVED = Item(1, """
         Unapproved
 
         If a DistroRelease is frozen or locked out of ordinary updates then
@@ -1522,21 +1628,13 @@ class DistroReleaseQueueStatus(DBSchema):
         releases where you want the security team of a DistroRelease to
         approve uploads.  """)
 
-    BYHAND = Item(4, """
-        ByHand
-
-        If an upload contains files which are not stored directly into the
-        pool tree (I.E. not .orig.tar.gz .tar.gz .diff.gz .dsc .deb or
-        .udeb) then the package must be processed by hand. This may involve
-        unpacking a tarball somewhere special or similar.  """)
-
-    ACCEPTED = Item(5, """
+    ACCEPTED = Item(2, """
         Accepted
 
         An upload in this state has passed all the checks required of it and
         is ready to have its publishing records created.  """)
 
-    DONE = Item(7, """
+    DONE = Item(3, """
         Done
 
         An upload in this state has had its publishing records created if it
@@ -1545,7 +1643,7 @@ class DistroReleaseQueueStatus(DBSchema):
         uploads and create entries in a journal or similar before removing
         the queue item.  """)
 
-    REJECTED = Item(6, """
+    REJECTED = Item(4, """
         Rejected
 
         An upload which reaches this state has, for some reason or another
@@ -1554,6 +1652,30 @@ class DistroReleaseQueueStatus(DBSchema):
         is present to allow logging tools to record the rejection and then
         clean up any subsequently unnecessary records.  """)
 
+# If you change this (add items, change the meaning, whatever) search for
+# the token ##CUSTOMFORMAT## e.g. database/queue.py or nascentupload.py and
+# update the stuff marked with it.
+class DistroReleaseQueueCustomFormat(DBSchema):
+    """Custom formats valid for the upload queue
+
+    An upload has various files potentially associated with it, from source
+    package releases, through binary builds, to specialist upload forms such
+    as a debian-installer tarball or a set of translations.
+    """
+
+    DEBIAN_INSTALLER = Item(0, """
+        raw-installer
+
+        A raw-installer file is a tarball. This is processed as a version
+        of the debian-installer to be unpacked into the archive root.
+        """)
+
+    ROSETTA_TRANSLATIONS = Item(1, """
+        raw-translations
+
+        A raw-translations file is a tarball. This is passed to the rosetta
+        import queue to be incorporated into that package's translations.
+        """)
 
 class PackagePublishingStatus(DBSchema):
     """Package Publishing Status
@@ -1850,6 +1972,13 @@ class BinaryPackageFileType(DBSchema):
         similar operating systems.
         """)
 
+    UDEB = Item(3, """
+        UDEB Format
+
+        This format is the standard package format used on Ubuntu and other
+        similar operating systems for the installation system.
+        """)
+
     RPM = Item(2, """
         RPM Format
 
@@ -2068,6 +2197,15 @@ class BugTaskStatus(DBSchema):
 
         This is a new bug and has not yet been accepted by the maintainer
         of this product or source package.
+        """)
+
+    NEEDINFO = Item(15, """
+        NeedInfo
+
+        More info is required before making further progress on this
+        bug, likely from the reporter. E.g. the exact error message
+        the user saw, the URL the user was visiting when the bug
+        occurred, etc.
         """)
 
     ACCEPTED = Item(20, """
@@ -2366,155 +2504,6 @@ class RosettaImportStatus(DBSchema):
         """)
 
 
-class KarmaActionName(DBSchema):
-    """The name of an action that gives karma to a user."""
-
-    BUGCREATED = Item(1, """
-        New Bug Created
-
-        """)
-
-    BUGCOMMENTADDED = Item(2, """
-        New Comment
-
-        """)
-
-    BUGTITLECHANGED = Item(3, """
-        Bug Title Changed
-
-        """)
-
-    BUGSUMMARYCHANGED = Item(4, """
-        Bug Summary Changed
-
-        """)
-
-    BUGDESCRIPTIONCHANGED = Item(5, """
-        Bug Description Changed
-
-        """)
-
-    BUGEXTREFADDED = Item(6, """
-        Bug External Reference Added
-
-        """)
-
-    BUGCVEREFADDED = Item(7, """
-        Bug CVE Reference Added
-
-        """)
-
-    BUGFIXED = Item(8, """
-        Bug Status Changed to FIXED
-
-        """)
-
-    BUGTASKCREATED = Item(9, """
-        New Bug Task Created
-
-        """)
-
-    TRANSLATIONTEMPLATEIMPORT = Item(10, """
-        Translation Template Import
-
-        """)
-
-    TRANSLATIONIMPORTUPSTREAM = Item(11, """
-        Import Upstream Translation
-
-        """)
-
-    TRANSLATIONTEMPLATEDESCRIPTIONCHANGED = Item(12, """
-        Translation Template Description Changed
-
-        """)
-
-    TRANSLATIONSUGGESTIONADDED = Item(13, """
-        Translation Suggestion Added
-
-        """)
-
-    TRANSLATIONSUGGESTIONAPPROVED = Item(14, """
-        Translation Suggestion Approved
-
-        """)
-
-    TRANSLATIONREVIEW = Item(15, """
-        Translation Review
-
-        """)
-
-    BUGREJECTED = Item(16, """
-        Bug Status Changed to REJECTED
-
-        """)
-
-    BUGACCEPTED = Item(17, """
-        Bug Status Changed to ACCEPTED
-
-        """)
-
-    BUGTASKSEVERITYCHANGED = Item(18, """
-        Change the Severity of a Bug Task
-
-        """)
-
-    BUGTASKPRIORITYCHANGED = Item(19, """
-        Change the Priority of a Bug Task
-
-        """)
-
-    BUGMARKEDASDUPLICATE = Item(20, """
-        Mark a Bug as a Duplicate
-
-        """)
-
-    BUGWATCHADDED = Item(21, """
-        New Bug Watch Added
-
-        """)
-
-
-class KarmaActionCategory(DBSchema):
-    """The class of an action that gives karma to a user.
-
-    This schema documents the different classes of actions that can result
-    in Karma assigned to a person. A person have a list of assigned Karmas,
-    each of these Karma entries have a KarmaAction and each of these actions
-    have a Class, which is represented by one of the following items.
-    """
-
-    MISC = Item(1, """
-        Miscellaneous
-
-        Any action that doesn't fit into any other class.
-    """)
-
-    BUGS = Item(2, """
-        Bugs
-
-        All actions related to bugs.
-    """)
-
-    TRANSLATIONS = Item(3, """
-        Translations
-
-        All actions related to translations.
-    """)
-
-    BOUNTIES = Item(4, """
-        Bounties
-
-        All actions related to bounties.
-    """)
-
-    HATCHERY = Item(5, """
-        Hatchery
-
-        All actions related to the Hatchery.
-    """)
-
-
 class SSHKeyType(DBSchema):
     """SSH key type
 
@@ -2636,6 +2625,7 @@ class BuildStatus(DBSchema):
         reset all relevant CHROOTWAIT builds to NEEDSBUILD after the chroot
         has been fixed.
         """)
+
 
 class MirrorFreshness(DBSchema):
     """ Mirror Freshness

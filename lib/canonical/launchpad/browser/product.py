@@ -19,14 +19,12 @@ __all__ = [
     'ProductView',
     'ProductEditView',
     'ProductSeriesAddView',
-    'ProductFileBugView',
     'ProductRdfView',
     'ProductSetView',
     'ProductAddView'
     ]
 
 from warnings import warn
-from urllib import quote as urlquote
 
 import zope.security.interfaces
 from zope.component import getUtility
@@ -37,34 +35,33 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
     IPerson, IProduct, IProductSet, IProductSeries, ISourcePackage,
-    ICountry, IBugSet, ICalendarOwner, NotFoundError)
+    ICountry, ICalendarOwner, NotFoundError)
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
-from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, structured, GetitemNavigation, Navigation,
     stepthrough, stepto)
 
-# XXX: this import has to go!  SteveAlexander, 2005-10-07
-from canonical.launchpad.database import ProductSeriesSet
 
 class ProductNavigation(
     Navigation, BugTargetTraversalMixin, CalendarTraversalMixin):
 
     usedfor = IProduct
 
+    def breadcrumb(self):
+        return self.context.displayname
+
     @stepthrough('+spec')
     def traverse_spec(self, name):
         return self.context.getSpecification(name)
 
-    @stepto('+series')
-    def series(self):
-        return ProductSeriesSet(product=self.context)
+    @stepthrough('+series')
+    def traverse_series(self, name):
+        return self.context.getSeries(name)
 
     @stepthrough('+milestone')
     def traverse_milestone(self, name):
@@ -87,11 +84,18 @@ class ProductSetNavigation(GetitemNavigation):
 
     usedfor = IProductSet
 
+    def breadcrumb(self):
+        return 'Products'
+
 
 class ProductFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProduct."""
 
     usedfor = IProduct
+
+    enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
+                   'translations', 'calendar', 'code']
+
     links = StandardLaunchpadFacets.links + ['code']
 
     def overview(self):
@@ -224,14 +228,22 @@ class ProductSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'specifications'
-    links = ['roadmap', 'new']
+    links = ['roadmap', 'table', 'workload', 'new']
 
     def roadmap(self):
-        text = 'Roadmap'
+        text = 'Show Roadmap'
         return Link('+specplan', text, icon='info')
 
+    def table(self):
+        text = 'Show Assignments'
+        return Link('+specstable', text, icon='info')
+
+    def workload(self):
+        text = 'Show Workload'
+        return Link('+workload', text, icon='info')
+
     def new(self):
-        text = 'Register New Specification'
+        text = 'New Specification'
         return Link('+addspec', text, icon='add')
 
 
@@ -459,8 +471,12 @@ class ProductEditView(ProductView, SQLObjectEditView):
         SQLObjectEditView.__init__(self, context, request)
 
     def changed(self):
-        # If the name changed then the URL changed, so redirect
-        self.request.response.redirect(canonical_url(self.context))
+        # If the name changed then the URL will have changed
+        if self.context.active:
+            self.request.response.redirect(canonical_url(self.context))
+        else:
+            productset = getUtility(IProductSet)
+            self.request.response.redirect(canonical_url(productset))
 
 
 class ProductSeriesAddView(AddView):
@@ -483,39 +499,6 @@ class ProductSeriesAddView(AddView):
     def nextURL(self):
         assert self.series
         return '+series/%s' % self.series.name
-
-
-class ProductFileBugView(SQLObjectAddView):
-
-    __used_for__ = IProduct
-
-    def __init__(self, context, request):
-        self.request = request
-        self.context = context
-        SQLObjectAddView.__init__(self, context, request)
-
-    def createAndAdd(self, data):
-        # add the owner information for the bug
-        owner = IPerson(self.request.principal, None)
-        if not owner:
-            raise zope.security.interfaces.Unauthorized(
-                "Need an authenticated bug owner")
-        kw = {}
-        for key, value in data.items():
-            kw[str(key)] = value
-        kw['product'] = self.context
-        # create the bug
-        # XXX cprov 20050112
-        # Try to avoid passing **kw, it is unreadable
-        # Pass the keyword explicitly ...
-        bug = getUtility(IBugSet).createBug(**kw)
-        notify(SQLObjectCreatedEvent(bug))
-        self.addedBug = bug
-        return bug
-
-    def nextURL(self):
-        bugtask = self.addedBug.bugtasks[0]
-        return canonical_url(bugtask)
 
 
 class ProductRdfView(object):

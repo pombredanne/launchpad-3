@@ -5,17 +5,28 @@
       i18n:domain="launchpad">
 <body>
 
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:replace="structure context/team/@@+portlet-details" />
-  </metal:leftportlets>
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/team/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-options" />
+</metal:rightportlets>
 
   <div metal:fill-slot="main">
 
-    <h1 tal:content="context/proposition" />
+    <h1>Condorcet Poll</h1>
 
+    <tal:can-vote condition="view/userCanVote">
     <p class="portalMessage" tal:condition="view/feedback"
        tal:content="view/feedback" />
+
+    <div class="highlighted" style="font-size: 80%;">
+      <tal:proposition replace="structure context/proposition/fmt:text-to-html">
+         The proposition goes here.
+      </tal:proposition>
+    </div>
 
     <form action="" method="POST">
 
@@ -23,7 +34,8 @@
       <tal:block condition="view/isSecret">
         <h2>You must enter your vote key</h2>
 
-        <p>This is a secret poll: your vote is identified only by the key you
+        <p>This is a secret poll &mdash;
+        your vote is identified only by the key you
         were given when you voted. To view or change your vote you must enter
         your key:</p>
 
@@ -37,7 +49,7 @@
     <table cols="2">
       <tr>
         <td>
-          <h3>Your current vote</h3>
+          <h2>Your Current Vote</h2>
           <tal:block condition="not: view/userVoted">
             <p>You have not yet voted in this poll.</p>
           </tal:block>
@@ -62,7 +74,7 @@
 
             <tal:block condition="not: view/gotTokenAndVotes">
               <p>You have voted in this poll. Launchpad can display your vote
-              using the vote key you entered above.</p>
+              once you have entered your vote key.</p>
 
               <input type="submit" value="Show My Vote" name="showvote" />
             </tal:block>
@@ -70,11 +82,11 @@
         </td>
         <td>
           <tal:block condition="not: view/userVoted">
-            <h3>Rank options in order of preference</h3>
+            <h2>Rank Options in Order of Preference</h2>
           </tal:block>
 
           <tal:block condition="view/userVoted">
-            <h3>Change your vote</h3>
+            <h2>Change Your Vote</h2>
           </tal:block>
 
           <p>Enter 1 next to your most preferred option, 2 next to your second
@@ -100,6 +112,12 @@
       </tr>
     </table>
     </form>
+    </tal:can-vote>
+
+    <tal:cannot-vote condition="not: view/userCanVote">
+      <p class="portalMessage">You cannot vote in this poll because you're not
+      a member of <span tal:replace="context/team/browsername" />.</p>
+    </tal:cannot-vote>
 
   </div>
 

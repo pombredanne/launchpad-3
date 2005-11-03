@@ -3,16 +3,24 @@
 
 __metaclass__ = type
 
-from zope.interface import implements
+from zope.publisher.browser import BrowserRequest, BrowserResponse
+from zope.app.session.interfaces import ISession
+from zope.interface import Interface, implements
 from zope.app.publication.interfaces import IPublicationRequestFactory
-import canonical.launchpad.layers
 from zope.server.http.publisherhttpserver import PublisherHTTPServer
 from zope.app.server.servertype import ServerType
 from zope.server.http.commonaccesslogger import CommonAccessLogger
+import zope.publisher.publish
+
+import canonical.launchpad.layers
 from canonical.publication import LaunchpadBrowserPublication
 from zope.publisher.browser import BrowserRequest
 #from zope.publisher.http import HTTPRequest
 import zope.publisher.publish
+from canonical.launchpad.interfaces import ILaunchpadBrowserApplicationRequest
+from canonical.launchpad.webapp.notification import (
+        NotificationRequest, NotificationResponse
+        )
 
 
 class StepsToGo:
@@ -92,11 +100,41 @@ class StepsToGo:
         return bool(self._stack)
 
 
-class LaunchpadBrowserRequest(BrowserRequest):
+class LaunchpadBrowserRequest(BrowserRequest, NotificationRequest):
+
+    implements(ILaunchpadBrowserApplicationRequest)
+
+    def __init__(self, body_instream, outstream, environ, response=None):
+        self.breadcrumbs = []
+        super(LaunchpadBrowserRequest, self).__init__(
+            body_instream, outstream, environ, response)
 
     @property
     def stepstogo(self):
         return StepsToGo(self)
+
+    def _createResponse(self, outstream):
+        """As per zope.publisher.browser.BrowserRequest._createResponse"""
+        return LaunchpadBrowserResponse(outstream)
+
+
+class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
+
+    # Note that NotificationResponse defines a 'redirect' method which
+    # needs to override the 'redirect' method in BrowserResponse
+    def __init__(self, outstream, header_output=None, http_transaction=None):
+        super(LaunchpadBrowserResponse, self).__init__(
+                outstream, header_output, http_transaction
+                )
+
+
+def adaptResponseToSession(response):
+    """Adapt LaunchpadBrowserResponse to ISession"""
+    return ISession(response._request)
+
+def adaptRequestToResponse(request):
+    """Adapt LaunchpadBrowserRequest to LaunchpadBrowserResponse"""
+    return request.response
 
 
 class HTTPPublicationRequestFactory:
@@ -157,6 +195,18 @@ class PMDBHTTPServer(PublisherHTTPServer):
             raise
 
 
+class InternalHTTPLayerRequestFactory(HTTPPublicationRequestFactory):
+    """RequestFactory that sets the InternalHTTPLayer on a request."""
+
+    def __call__(self, input_stream, output_steam, env):
+        """See zope.app.publication.interfaces.IPublicationRequestFactory"""
+        request = HTTPPublicationRequestFactory.__call__(
+            self, input_stream, output_steam, env)
+        canonical.launchpad.layers.setFirstLayer(
+            request, canonical.launchpad.layers.InternalHTTPLayer)
+        return request
+
+
 http = ServerType(
     PublisherHTTPServer,
     HTTPPublicationRequestFactory,
@@ -178,3 +228,9 @@ debughttp = ServerType(
     8082,
     True)
 
+internalhttp = ServerType(
+    PublisherHTTPServer,
+    InternalHTTPLayerRequestFactory,
+    CommonAccessLogger,
+    8083,
+    True)

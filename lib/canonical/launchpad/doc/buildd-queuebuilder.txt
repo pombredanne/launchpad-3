@@ -89,7 +89,7 @@ added by the current sample data and so on)
   ...                                  uploaddistrorelease=1,
   ...                                  sourcepackagename=name.id,
   ...                                  architecturehintlist="all",
-  ...                                  builddependsindep=None,
+  ...                                  builddependsindep='foo (<< 1.0)',
   ...                                  builddepends=None, dsc=None,
   ...                                  changelog=None, manifest=1,
   ...                                  dscsigningkey=None)
@@ -157,6 +157,8 @@ After sanitising the jobs, only the ones containing
 sourcepackagerelease files should remain:
 
   >>> new_jobs = bm.sanitiseAndScoreCandidates()
+  WARNING:root:MISSED DEP: [('foo', '1.0', '<<')] in warty i386
+
   >>> len(new_jobs)
   1
  
@@ -168,12 +170,12 @@ And we grant some score depending on: time pending on the buildqueue,
 component the package belongs to, and the urgency of the upload.
 There is still some work to do here, for further information see the
 launchpad/scripts/builddmaster.py code. The job presented should won
-exactly ** 101 ** points last turn (1 for the default urgency 'LOW' and 
-100 for the 'Main' component, further tests for scoring are in
-buildd-scoring.txt)
+exactly ** 995 ** points last turn (5 for the default urgency 'LOW' 
+1000 for the 'Main' component and minus 10 for unsatisfied dependency, 
+further tests for scoring are in buildd-scoring.txt)
 
   >>> job.lastscore
-  101
+  995
    
 
 

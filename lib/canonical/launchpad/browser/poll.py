@@ -8,12 +8,16 @@ __all__ = ['PollContextMenu',
            'PollView',
            'PollVoteView',
            'PollAddView',
-           'PollOptionAddView']
+           'PollOptionAddView',
+           'PollOptionEditView',
+           ]
 
 from zope.event import notify
 from zope.component import getUtility
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
+
+from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, Navigation, stepthrough)
@@ -28,7 +32,7 @@ class PollContextMenu(ContextMenu):
     links = ['showall', 'addnew']
 
     def showall(self):
-        text = 'Show All Options'
+        text = 'Show Option Details'
         return Link('+options', text, icon='info')
 
     def addnew(self):
@@ -42,7 +46,7 @@ class PollNavigation(Navigation):
 
     @stepthrough('+option')
     def traverse_option(self, name):
-        return getUtility(IPollOptionSet).getByPollAndId(poll, name)
+        return getUtility(IPollOptionSet).getByPollAndId(self.context, name)
 
 
 class BasePollView:
@@ -82,7 +86,7 @@ class BasePollView:
 
     def setUpTokenAndVotesForSecretPolls(self):
         """Get the votes with the token provided in the form.
-        
+
         Set the votes, together with the token in instance variables. Also
         set self.gotTokenAndVotes to True, so the templates know they can
         display the vote.
@@ -173,10 +177,10 @@ class PollView(BasePollView):
         pairwise_matrix = list(self.context.getPairwiseMatrix())
         headers = [None]
         for idx, option in enumerate(self.context.getAllOptions()):
-            headers.append(option.shortname)
+            headers.append(option.title)
             # Get a mutable row.
             row = list(pairwise_matrix[idx])
-            row.insert(0, option.shortname)
+            row.insert(0, option.title)
             pairwise_matrix[idx] = row
         pairwise_matrix.insert(0, headers)
         return pairwise_matrix
@@ -202,11 +206,11 @@ class PollVoteView(BasePollView):
             if not self.setUpTokenAndVotesForSecretPolls():
                 # Not possible to get the votes. Probably the token was wrong.
                 return
-            
+
         if 'showvote' in self.request.form:
             # The user only wants to see the vote.
             return
-        
+
         if not self.context.isOpen():
             self.feedback = "This poll is not open. You can't vote anymore."
 
@@ -307,6 +311,12 @@ class PollAddView(AddView):
         notify(ObjectCreatedEvent(poll))
 
 
+class PollOptionEditView(SQLObjectEditView):
+
+    def changed(self):
+        self.request.response.redirect(canonical_url(self.context.poll))
+
+
 class PollOptionAddView(AddView):
     """The view class to create a new option in a given poll."""
 
@@ -316,7 +326,7 @@ class PollOptionAddView(AddView):
         return self._nextURL
 
     def createAndAdd(self, data):
-        polloption = self.context.newOption(data['name'], data['shortname'])
+        polloption = self.context.newOption(data['name'], data['title'])
         self._nextURL = canonical_url(self.context)
         notify(ObjectCreatedEvent(polloption))
 

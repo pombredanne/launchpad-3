@@ -6,7 +6,7 @@ __metaclass__ = type
 
 import re, sys
 
-first_re = re.compile(r"^[a-z][a-z0-9\\+\\.\\-]+ ")
+first_re = re.compile(r"^[a-z0-9][a-z0-9\\+\\.\\-]+ ")
 prio_re = re.compile(r'(?:urgency|priority)=([^ ]+)')
 
 from sourcerer.deb.version import Version
@@ -16,7 +16,7 @@ def parse_first_line(line):
     if not first_re.match(line):
         raise ValueError, line
     srcpkg = line[:line.find(" ")]
-    version = line[line.find("(")+1:line.find(")")]
+    version = line[line.find("(") + 1:line.find(")")]
     priority = "low"
     if prio_re.match(line):
         priority = prio_re.group(0).lower()
@@ -27,8 +27,8 @@ def parse_first_line(line):
 def parse_last_line(line):
     maint = line[:line.find(">")+1].strip()
     date = line[line.find(">")+1:].strip()
-    return (maint,date)
-    
+    return (maint, date)
+
 
 def parse_changelog_stanza(firstline, stanza, lastline):
     srcpkg, version, priority = parse_first_line(firstline)
@@ -50,15 +50,16 @@ def parse_changelog(changelines):
     firstline = ""
     stanza = []
     rets = []
-   
+
     for line in changelines:
         #print line[:-1]
         if state == 0:
-            if line.startswith(" ") or line.startswith("\t") or not line.rstrip():
+            if (line.startswith(" ") or line.startswith("\t") or 
+                not line.rstrip()):
                 #print "State0 skip"
                 continue
             try:
-                (p,ver,pp) = parse_first_line(line.strip())
+                (p, ver, pp) = parse_first_line(line.strip())
                 Version(ver)
             except:
                 stanza.append(line)
@@ -75,7 +76,9 @@ def parse_changelog(changelines):
             if line.startswith(" --") and "@" in line:
                 #print "state1 accept"
                 # Last line of stanza
-                rets.append(parse_changelog_stanza(firstline,stanza,line.strip()[3:]))
+                rets.append(parse_changelog_stanza(firstline,
+                                                   stanza,
+                                                   line.strip()[3:]))
                 state = 0
 
     # leftovers with no close line
@@ -89,5 +92,5 @@ def parse_changelog(changelines):
 
 if __name__ == '__main__':
     import pprint
-    pprint.pprint(parse_changelog(file(sys.argv[1],"r")))
-    
+    pprint.pprint(parse_changelog(file(sys.argv[1], "r")))
+

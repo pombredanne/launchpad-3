@@ -4,22 +4,16 @@ __metaclass__ = type
 
 __all__ = [
     'SourcePackageNavigation',
-    'DistroSourcePackageNavigation',
-    'SourcePackageSetNavigation',
     'SourcePackageFacets',
-    'SourcePackageReleasePublishingView',
-    'SourcePackageInDistroSetView',
     'SourcePackageView',
-    'SourcePackageBugsView',
-    'SourcePackageSetView',
-    'SourcePackageFilebugView']
+    'SourcePackageBugsView']
 
 # Python standard library imports
 import cgi
 import re
 import sets
 
-from zope.component import getUtility, queryView
+from zope.component import getUtility
 from zope.app.form.interfaces import IInputWidget
 from zope.app import zapi
 
@@ -28,25 +22,28 @@ from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import PackagePublishingPocket
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    IPOTemplateSet, IPackaging, ILaunchBag, ICountry, IBugTaskSet,
-    ISourcePackage, IBugSet, ISourcePackageSet, IDistroSourcePackage)
+    IPOTemplateSet, IPackaging, ILaunchBag, ICountry, ISourcePackage)
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.soyuz.generalapp import builddepsSet
-from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from canonical.launchpad.browser.build import BuildRecordsView
 
 from canonical.launchpad.webapp import (
-    canonical_url, StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu,
-    enabled_with_permission, structured, Navigation, stepto)
+    StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
+    structured, GetitemNavigation, stepto, redirection)
 
 from apt_pkg import ParseSrcDepends
 
 BATCH_SIZE = 40
 
 
-class SourcePackageNavigation(Navigation, BugTargetTraversalMixin):
+class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
     usedfor = ISourcePackage
+
+    def breadcrumb(self):
+        return self.context.name
 
     @stepto('+pots')
     def pots(self):
@@ -55,32 +52,14 @@ class SourcePackageNavigation(Navigation, BugTargetTraversalMixin):
                    distrorelease=self.context.distrorelease,
                    sourcepackagename=self.context.sourcepackagename)
 
+    @stepto('+filebug')
+    def filebug(self):
+        """Redirect to the IDistributionSourcePackage +filebug page."""
+        sourcepackage = self.context
+        distro_sourcepackage = sourcepackage.distribution.getSourcePackage(
+            sourcepackage.name)
 
-class DistroSourcePackageNavigation(Navigation, BugTargetTraversalMixin):
-    usedfor = IDistroSourcePackage
-
-
-class SourcePackageSetNavigation(Navigation):
-
-    usedfor = ISourcePackageSet
-
-    def traverse(self, name):
-        try:
-            return self.context[name]
-        except KeyError:
-            traversalstack = self.request.getTraversalStack()
-            if traversalstack:
-                nextstep = traversalstack[-1]
-                # If the page is one of those from ubuntu-launchpad
-                # integration, eat the rest of traversal, but make it
-                # traverse +comingsoon.
-                # This gives users of launchpad integration meus a nicer
-                # experience than getting 404 errors.
-                if nextstep == '+gethelp' or nextstep == '+translate':
-                    self.request._traversed_names.append('+comingsoon')
-                    self.request.setTraversalStack([])
-                    return queryView(self.context, "+comingsoon", self.request)
-            return None
+        return redirection(canonical_url(distro_sourcepackage) + "/+filebug")
 
 
 def linkify_changelog(changelog, sourcepkgnametxt):
@@ -172,140 +151,7 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
         return Link('+potemplatenames', 'Edit Template Names', icon='edit')
 
 
-class SourcePackageFilebugView(SQLObjectAddView):
-    """View for filing a bug on a source package."""
-
-    def create(self, **kw):
-        """Create a new bug on the source package."""
-        # Because distribution and sourcepackagename are things
-        # inferred from the context rather than data entered on the
-        # filebug form, we have to manually add these values to the
-        # keyword arguments.
-        assert 'distribution' not in kw
-        assert 'sourcepackagename' not in kw
-
-        sourcepackage = self.context
-        if sourcepackage.distribution:
-            kw['distribution'] = sourcepackage.distribution
-        else:
-            kw['distribution'] = sourcepackage.distrorelease.distribution
-
-        kw['sourcepackagename'] = sourcepackage.sourcepackagename
-
-        # Store the added bug so that it can be accessed easily in any
-        # other method on this class (e.g. nextURL)
-        self.addedBug = getUtility(IBugSet).createBug(**kw)
-
-        return self.addedBug
-
-    def nextURL(self):
-        """Return the bug page URL of the bug that was just filed.
-
-        Effectively, this is the canonical URL of the first task that
-        has just been created.
-        """
-        bugtask = self.addedBug.bugtasks[0]
-        return canonical_url(bugtask)
-
-
-class SourcePackageReleasePublishingView:
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def builddepends(self):
-        if not self.context.builddepends:
-            return []
-
-        builddepends = []
-
-        depends = ParseSrcDepends(self.context.builddepends)
-        for dep in depends:
-            builddepends.append(builddepsSet(*dep[0]))
-        return builddepends
-
-    def builddependsindep(self):
-        if not self.context.builddependsindep:
-            return []
-        builddependsindep = []
-
-        depends = ParseSrcDepends(self.context.builddependsindep)
-
-        for dep in depends:
-            builddependsindep.append(builddepsSet(*dep[0]))
-        return builddependsindep
-
-    def linkified_changelog(self):
-        sourcepkgname = self.context.sourcepackage.sourcepackagename.name
-        changelog = self.context.changelog
-        return linkify_changelog(changelog, sourcepkgname)
-
-    def lastversions(self):
-        """latest ten versions"""
-        return list(self.context.sourcepackage.lastversions)[-10:]
-
-    def currentversion(self):
-        """Current SourcePackageRelease of a SourcePackage"""
-        return self.context.sourcepackage.currentrelease.version
-
-    def binaries(self):
-        """Format binary packages into binarypackagename and archtags"""
-
-        all_arch = [] # all archtag in this distrorelease
-        for arch in self.context.distrorelease.architectures:
-            all_arch.append(arch.architecturetag)
-        all_arch.sort()
-
-        bins = self.context.binaries
-
-        results = {}
-
-        for bin in bins:
-            if bin.name not in results.keys():
-                if not bin.architecturespecific:
-                    results[bin.name] = all_arch
-                else:
-                    results[bin.name] = \
-                             [bin.build.distroarchrelease.architecturetag]
-            else:
-                if bin.architecturespecific:
-                    results[bin.name].append(\
-                                bin.build.distroarchrelease.architecturetag)
-                    results[bin.name].sort()
-
-        return results
-
-
-class SourcePackageInDistroSetView:
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.fti = self.request.get("fti", "")
-
-    def sourcePackagesBatchNavigator(self):
-        name = self.request.get("name", "")
-
-        if not name:
-            source_packages = []
-            # XXX: Daniel Debonzi 20050104
-            # Returns all sourcepackages available.
-            # Do not work with more than 8000 binarypackage
-            # (Actual dogfood db)
-            ## source_packages = list(self.context)
-        else:
-            source_packages = list(self.context.findPackagesByName(name))
-
-        start = int(self.request.get('batch_start', 0))
-        end = int(self.request.get('batch_end', BATCH_SIZE))
-        batch_size = BATCH_SIZE
-
-        batch = Batch(list=source_packages, start=start, size=batch_size)
-        return BatchNavigator(batch=batch, request=self.request)
-
-
-class SourcePackageView:
+class SourcePackageView(BuildRecordsView):
 
     def __init__(self, context, request):
         self.context = context
@@ -399,6 +245,10 @@ class SourcePackageView:
             builddependsindep.append(builddepsSet(*dep[0]))
         return builddependsindep
 
+    def has_build_depends(self):
+        return self.context.currentrelease.builddependsindep or \
+            self.context.currentrelease.builddepends
+
     def linkified_changelog(self):
         return linkify_changelog(
             self.context.changelog, self.context.sourcepackagename.name)
@@ -425,10 +275,6 @@ class SourcePackageView:
 
         return sorted(potemplatenames, key=lambda item: item.name)
 
-    def getBuilt(self):
-        """Return the last build records for a SourcePackage."""
-        return self.context.getWorkedBuildRecords()
-
 
 class SourcePackageBugsView:
 
@@ -446,25 +292,3 @@ class SourcePackageBugsView:
         return [
             "id", "title", "status", "priority", "severity",
             "submittedon", "submittedby", "assignedto", "actions"]
-
-
-class SourcePackageSetView:
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.text = request.get('text', None)
-
-    def batchNavigator(self):
-        if not self.text:
-            source_packages = []
-        else:
-            source_packages = list(self.context.query(self.text))
-
-        start = int(self.request.get('batch_start', 0))
-        end = int(self.request.get('batch_end', BATCH_SIZE))
-        batch_size = BATCH_SIZE
-
-        batch = Batch(list=source_packages, start=start, size=batch_size)
-        return BatchNavigator(batch=batch, request=self.request)
-

@@ -6,9 +6,6 @@ __metaclass__ = type
 
 __all__ = [
     'ISourcePackage',
-    'ISourcePackageSet',
-    'IDistroSourcePackage',
-    'IDistroSourcePackageSet'
     ]
 
 from zope.interface import Interface, Attribute
@@ -64,22 +61,14 @@ class ISourcePackage(IBugTarget, ITicketTarget):
                     "packaging information for this specific distrorelease "
                     "then try parent releases and previous ubuntu releases.")
 
-    pendingrelease = Attribute("The latest source package release with "
-                "a Publishing status of PENDING, if one exists for "
-                "this distrorelease, else None.")
+    releases = Attribute("The full set of source package releases that "
+        "have been published in this distrorelease under this source "
+        "package name. The list should be sorted by version number.")
 
     currentrelease = Attribute("""The latest published SourcePackageRelease
         of a source package with this name in the distribution or
         distrorelease, or None if no source package with that name is
         published in this distrorelease.""")
-
-    publishedreleases = Attribute("The complete set of source package "
-        "releases currently published in this distrorelease. This does "
-        "not include proposed releases, only those actually published. ")
-
-    releases = Attribute("The full set of source package releases that "
-        "have been published in this distrorelease under this source "
-        "package name. The list should be sorted by version number.")
 
     releasehistory = Attribute("A list of all the source packages ever "
         "published in this Distribution (across all distroreleases) with "
@@ -103,12 +92,16 @@ class ISourcePackage(IBugTarget, ITicketTarget):
         "as a key, and a list of source package releases as the value.")
 
     potemplates = Attribute(
-        _("Return an iterator over this distrorelease/sourcepackagename's"
-          " PO templates."))
+        _("Return an iterator over this distrorelease/sourcepackagename's "
+          "PO templates."))
 
     currentpotemplates = Attribute(
-        _("Return an iterator over this distrorelease/sourcepackagename's"
-          " PO templates that have the 'iscurrent' flag set'."))
+        _("Return an iterator over this distrorelease/sourcepackagename's "
+          "PO templates that have the 'iscurrent' flag set'."))
+
+    def __getitem__(version):
+        """Return the source package release with the given version in this
+        distro release, or None."""
 
     def __eq__(other):
         """Sourcepackage comparison method.
@@ -138,115 +131,20 @@ class ISourcePackage(IBugTarget, ITicketTarget):
     def getVersion(version):
         """Returns the SourcePackageRelease that had the name of this
         SourcePackage and the given version, and was published in this
-        distribution. NB:
+        distribution.
 
-          1. Currently, we have no PublishingMorgue, so this will only find
-             SourcePackageReleases that are *still* published (even if they
-             have been superceded, as long as they have not yet been
-             deleted).
+        Note that it will look across the entire distribution, not just in
+        the current distrorelease. In Ubuntu and RedHat, and similar
+        distributions, a sourcepackagerelease name+version is UNIQUE across
+        all distroreleases. This may turn out not to be true in other types
+        of distribution, such as Gentoo.
 
-          2. It will look across the entire distribution, not just in the
-          current distrorelease. In Ubuntu and RedHat, and similar
-          distributions, a sourcepackagerelease name+version is UNIQUE
-          across all distroreleases. This may turn out not to be true in
-          other types of distribution, such as Gentoo.
+        The result is a DistributionSourcePackageRelease.
         """
 
     shouldimport = Attribute("""Whether we should import this or not.
-        By "import" we mean sourcerer analysis resulting in a manifest and a
+        By 'import' we mean sourcerer analysis resulting in a manifest and a
         set of Bazaar branches which describe the source package release.
         The attribute is True or False.""")
 
 
-class IDistroSourcePackage(IBugTarget):
-    """A distribution sourcepackage.
-
-    This object knows nothing about a specific distrorelease. This
-    object is particularly useful for, say, Malone, where most
-    distribution bugs are filed on the distribution as a whole, and
-    not a specific release.
-    """
-
-    name = Attribute("The name of the source package.")
-    displayname = Attribute("A displayname for this package")
-    title = Attribute("A title for this package")
-    distribution = Attribute("The IDistribution for this package")
-    sourcepackagename = Attribute("The ISourcePackageName of this package")
-    currentrelease = Attribute("""The latest published SourcePackageRelease
-        of a source package with this name in the distribution or
-        distrorelease, or None if no source package with that name is
-        published in this distrorelease.""")
-
-    def __eq__(other):
-        """IDistroSourcePackage comparison method.
-
-        Distro sourcepackages compare equal only if their distribution and
-        sourcepackagename compare equal.
-        """
-
-    def __ne__(other):
-        """IDistroSourcePackage comparison method.
-
-        Distro sourcepackages compare not equal if either of their distribution
-        or sourcepackagename compare not equal.
-        """
-
-
-class ISourcePackageSet(Interface):
-    """A set for ISourcePackage objects."""
-
-    title = Attribute('Title')
-
-    distribution = Attribute('Distribution')
-
-    distrorelease = Attribute('DistroRelease')
-
-    def __getitem__(key):
-        """Get an ISourcePackage by name"""
-
-    def __iter__():
-        """Iterate through SourcePackages."""
-
-    def query(text=None):
-        """Return an interator over source packages that match the required
-        text in this distrorelease / distribution."""
-
-    def withBugs():
-        """Return a sequence of SourcePackage, that have bugs assigned to them
-        (i.e. tasks.) In future, we might pass qualifiers to further limit the
-        list that is returned, such as a name filter, or a bug task status
-        filter."""
-
-    def getSourcePackages(distroreleaseID):
-        """Returns a set of SourcePackage in a DistroRelease"""
-
-    def findByNameInDistroRelease(distroreleaseID, pattern):
-        """Returns a set of sourcepackages that matchs pattern
-        inside a distrorelease.
-        """
-
-    def getByNameInDistroRelease(distroreleaseID, name):
-        """Returns a SourcePackage by its name"""
-
-    def getSourcePackageRelease(sourcepackageid, version):
-        """Get a specific SourcePackageRelease by
-        sourcepackageID and Version.
-        """
-
-    def getPackageNames(pkgname):
-        """Find the actual source and binary package names to use when all
-        we have it a name, that could be either a source or a binary package
-        name. Returns a tuple of (sourcepackagename, binarypackagename)
-        based on the current publishing status of these binary / source
-        packages.
-        """
-
-class IDistroSourcePackageSet(Interface):
-    """The set of all IDistroSourcePackages in Launchpad."""
-
-    def getPackage(distribution, sourcepackagename):
-        """Return the appropriate IDistroSourcePackage.
-
-        :distribution: The IDistribution of the package.
-        :sourcepackagename: The ISourcePackageName of the package.
-        """

@@ -13,7 +13,7 @@
       </li>
     </ul>
     <p tal:condition="not: context/bugs">
-      No related bugs.
+      <i>No related bugs.</i>
     </p>
 	
   </div>

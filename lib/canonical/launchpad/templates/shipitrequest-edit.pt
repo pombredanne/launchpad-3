@@ -29,21 +29,28 @@
     <tr>
     <td width="80%">
 
+    <p tal:define="shipped_requests context/recipient/shippedShipItRequests"
+       tal:condition="shipped_requests" class="portalMessage">
+      This person already has
+      <span tal:replace="shipped_requests/count:len" />
+      requests sent to the shipping company.
+    </p>
+
     <tal:block condition="view/contextCancelledOrShipped">
       <p tal:condition="context/cancelled" 
          class="portalMessage">This request was cancelled by 
         <span tal:replace="context/whocancelled/displayname" />.
       </p>
       <p tal:condition="context/shipment" 
-         class="portalMessage">This request was already shipped.
+         class="portalMessage">This request is being processed by the shipping
+         company.
       </p>
     </tal:block>
 
     <tal:block condition="not: view/contextCancelledOrShipped">
       <tal:block condition="context/isApproved">
         <br />
-        <p class="portalMessage">This request is currently approved. The
-        approved quantities are shown below.</p>
+        <p class="portalMessage">This request is currently approved.</p>
       </tal:block>
       <tal:block condition="context/isAwaitingApproval">
         <br />
@@ -145,19 +152,12 @@
     <table>
       <tr>
         <td align="right"><strong>Recipient:</strong></td>
-        <td tal:condition="not: context/recipientdisplayname">
-          <tal:XXX condition="nothing">
-          Okay, so we hardcoded the URL. Blame canonical_url and bug 2119!
-          </tal:XXX>
-          <a tal:attributes="href string:https://launchpad.net/people/${context/recipient/name}">
-            <span tal:replace="context/recipient/displayname" /></a>
-            (<a tal:attributes="href 
-              string:mailto:${context/recipient/preferredemail/email}"
-              ><span tal:replace="context/recipient/preferredemail/email" 
-              /></a>)
-        </td>
         <td tal:condition="context/recipientdisplayname">
           <span tal:replace="context/recipientdisplayname" />
+          (<a tal:attributes="href 
+            string:mailto:${context/recipient/preferredemail/email}"
+            ><span tal:replace="context/recipient/preferredemail/email" 
+            /></a>)
         </td>
       </tr>
       <tr tal:condition="context/organization">

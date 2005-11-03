@@ -13,7 +13,7 @@
         These are the sourcepackages for which we have assigned bugs.
     </div>
 
-    <table class="listing rowNavigation">
+    <table class="listing">
         <tr>
             <th>Source Package</th>
             <th>Title</th>

@@ -22,7 +22,7 @@ None
     >>> print d.getTicket(3242343)
     None
     >>> s = spnset.get(1)
-    >>> sp = SourcePackage(sourcepackagename=s, distribution=d)
+    >>> sp = d.getSourcePackage(s)
     >>> print sp.getTicket(3234353453)
     None
 

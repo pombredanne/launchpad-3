@@ -14,9 +14,5 @@ class Component(SQLBase):
     """Component table SQLObject """
     implements(IComponent)
 
-    _table = 'Component'
-
-    _columns = [
-        StringCol('name', dbName='name', notNull=True),
-        ]
+    name = StringCol(notNull=True, alternateID=True)
 

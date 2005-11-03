@@ -26,7 +26,7 @@
     </p>
   </div>
 </div>
-<tal:block condition="not:view/calendar">
+<tal:nocalendar condition="not:view/calendar">
   <!-- No calendar -->
   <div class="portlet" tal:condition="context/required:launchpad.Edit">
     <h4>Calendar</h4>
@@ -36,4 +36,4 @@
       </form>
     </div>
   </div>
-</tal:block>
+</tal:nocalendar>

@@ -43,9 +43,13 @@ Mock Builder, a class to emulate the Builder behaviour:
   ...     def __init__(self, name, slave):
   ...         self.slave = slave 
   ...         self.builderok = True
+  ...         self.manual = False
   ...         self.url = 'http://fake:0000'
   ...         slave.urlbase = self.url
   ...         self.name = name
+  ...     def failbuilder(self, reason):
+  ...         self.builderok = False
+  ...         self.failnotes = reason
 
 Let's play with a BuilderGroup method designed to rescue build slaves
 that are processing unknown jobs. In real conditions, this situation
@@ -327,6 +331,9 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
   >>> bqItem6 = MockBuildQueue(1, builder6, MockBuild())
   >>> buildergroup.updateBuild(bqItem6, librarian)
   WARNING:root:***** I am out of order has failed *****
+  >>> builder6.failnotes
+  'Builder returned BUILDERFAIL when asked for its status'
+
   >>> assert bqItem6.builder is None
   >>> bqItem6.build.buildstate.title
   'Needs building'
@@ -373,7 +380,52 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
   'Fully built'
 
 
-Now, goes throught BuilddMaster class itself.
+The buildlog is collected and compressed locally using gzip algorithm,
+let's see how this method works:
+
+  >>> logfile_alias = buildergroup.getLogFromSlave(builder10.slave, 
+  ...                                              "1-1", librarian)
+  
+  >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+
+  >>> logfile = getUtility(ILibraryFileAliasSet)[logfile_alias]
+
+  >>> logfile.filename, logfile.mimetype
+  (u'log-for-1-1.txt.gz', u'application/octet-stream')
+
+  Force Librarian to write down the stuff
+  XXX cprov 20051010: is this a bug on librarian_client API ?
+  >>> transaction.commit()
+ 
+Since LibrarianFileAlias does not implement required attributes for
+gzip.open() (like tell() or seek()) we are obligated to read it again
+in our filesystem.
+
+  >>> import gzip, tempfile, os
+  >>> fd, fname = tempfile.mkstemp()
+  >>> tmp = open(fname, 'wb')
+  >>> tmp.write(logfile.read())
+  >>> tmp.close()
+  >>> assert gzip.open(fname).read() == builder10.slave.getFile('buildlog').read()
+
+The happens with urllib instance, we need to download it to the
+filesystem before uncompress.
+
+  >>> import urllib
+  >>> from_web = urllib.urlopen(logfile.url)
+  >>> tmp = open(fname, 'wb')
+  >>> tmp.write(from_web.read())
+  >>> tmp.close()
+  >>> assert gzip.open(fname).read() == builder10.slave.getFile('buildlog').read()
+
+  Both access methods work as expected.
+
+  Remove the temporary file used here.
+
+  >>> os.remove(fname)
+
+
+BuilddMaster class:
 
   >>> bm = BuilddMaster(logging.getLogger(), transaction)
   

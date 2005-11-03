@@ -2,10 +2,11 @@
     <h4 tal:content="context/title">bugtracker title</h4>
 
     <div class="portletBody">
-        <div class="portletContent even">
+        <div class="portletContent">
 
         <b>Base URL:</b><br />
-        <a class="link-external"
+        <img alt="" src="/@@/link_icon.gif">
+        <a
            tal:attributes="href context/baseurl"
            tal:content="context/baseurl">http://test.mozilla.org</a><br />
 

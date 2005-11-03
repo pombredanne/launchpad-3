@@ -9,15 +9,15 @@ Simple searching is possible on the distro source package bug view page.
   >>> from zope.component import getView, getUtility
   >>> from zope.publisher.browser import TestRequest
   >>> from canonical.launchpad.interfaces import (
-  ...     IDistroSourcePackageSet, IDistributionSet, ISourcePackageNameSet)
+  ...     IDistributionSet, ISourcePackageNameSet)
 
   >>> debian = getUtility(IDistributionSet).get(3)
   >>> mozilla_firefox = getUtility(ISourcePackageNameSet).get(1)
-  >>> debian_mozilla_firefox = getUtility(IDistroSourcePackageSet).getPackage(
-  ...     distribution=debian, sourcepackagename=mozilla_firefox)
+  >>> debian_mozilla_firefox = debian.getSourcePackage(mozilla_firefox)
   >>> request = TestRequest(
   ...     form={'field.searchtext': 'svg', 'search': 'Search'})
   >>> dsp_bugs_view = getView(debian_mozilla_firefox, '+bugs', request)
+  >>> dsp_bugs_view.initialize()
 
-  >>> [task.bug.id for task in dsp_bugs_view.open_bugs]
+  >>> [task.bug.id for task in dsp_bugs_view.search().batch]
   [1]

@@ -28,7 +28,7 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.ISourcePackage"
-        path_expression="string:+sources/${name}"
+        path_expression="string:+source/${name}"
         attribute_to_parent="distrorelease"
         />
 
@@ -144,7 +144,7 @@
         class="canonical.launchpad.browser.packages.SourcePackageBugsView"
         template="../templates/sourcepackage-bugs.pt"
         permission="zope.Public"
-        lp:url="distros/$distro.name/$distrorelease.name/+sources/$SourcePackage.name/+bugs" />
+        />
 
     <browser:pages
         for="canonical.launchpad.interfaces.ISourcePackage"
@@ -156,150 +156,5 @@
             template="../templates/sourcepackage-packaging.pt"
             lp:url="/distros/ubuntu/hoary/+sources/apache2/+packaging" />
     </browser:pages>
-
-    <browser:addform
-        name="+filebug"
-        for="canonical.launchpad.interfaces.ISourcePackage"
-        facet="bugs"
-        schema="canonical.launchpad.interfaces.IBugAddForm"
-        class="canonical.launchpad.browser.sourcepackage.SourcePackageFilebugView"
-        permission="launchpad.AnyPerson"
-        fields="title comment private owner"
-        keyword_arguments="title comment private owner"
-        template="../templates/sourcepackage-filebug.pt"
-        lp:url="/distros/ubuntu/hoary/+sources/apache2/+filebug">
-        <browser:widget
-           field="owner"
-           class="canonical.widgets.HiddenUserWidget" />
-        <browser:widget
-           field="title"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="55" />
-        <browser:widget
-           field="comment"
-           class="zope.app.form.browser.TextAreaWidget"
-           width="62" />
-    </browser:addform>
-
-    <!-- DistroSourcePackage -->
-    <content class="canonical.launchpad.database.DistroSourcePackage">
-        <allow interface="canonical.launchpad.interfaces.IDistroSourcePackage" />
-    </content>
-
-    <browser:navigation
-        module="canonical.launchpad.browser"
-        classes="DistroSourcePackageNavigation"
-        />
-
-    <browser:url
-        for="canonical.launchpad.interfaces.IDistroSourcePackage"
-        path_expression="string:+sources/${name}"
-        attribute_to_parent="distribution"
-        />
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IDistroSourcePackage"
-        permission="zope.Public">
-        <!-- DistroSourcePackage Portlets -->
-        <browser:page
-            name="+portlet-details"
-            facet="overview"
-            template="../templates/sourcepackage-portlet-details.pt"
-            lp:url="/distros/ubuntu/+sources/evolution/+portlet-details" />
-    </browser:pages>
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IDistroSourcePackage"
-        name="+bugs"
-        facet="bugs"
-        class="canonical.launchpad.browser.packages.DistroSourcePackageBugsView"
-        template="../templates/distrosourcepackage-bugs.pt"
-        permission="zope.Public"
-        lp:url="distros/$distro.name/+sources/$SourcePackage.name/+bugs" />
-
-    <browser:addform
-        name="+filebug"
-        for="canonical.launchpad.interfaces.IDistroSourcePackage"
-        facet="bugs"
-        schema="canonical.launchpad.interfaces.IBugAddForm"
-        label="Report a bug about a distribution source package"
-        class="canonical.launchpad.browser.sourcepackage.SourcePackageFilebugView"
-        permission="launchpad.AnyPerson"
-        fields="title comment private owner"
-        keyword_arguments="title comment private owner"
-        template="../templates/sourcepackage-filebug.pt"
-        lp:url="/distros/ubuntu/+sources/apache2/+filebug">
-        <browser:widget
-           field="owner"
-           class="canonical.widgets.HiddenUserWidget" />
-        <browser:widget
-           field="title"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="55" />
-        <browser:widget
-           field="comment"
-           class="zope.app.form.browser.TextAreaWidget"
-           width="62" />
-    </browser:addform>
-
-    <!-- SourcePackageSet -->
-    <content class="canonical.launchpad.database.SourcePackageSet">
-        <allow
-            interface="canonical.launchpad.interfaces.ISourcePackageSet"
-            />
-    </content>
-
-    <securedutility
-        class="canonical.launchpad.database.SourcePackageSet"
-        provides="canonical.launchpad.interfaces.ISourcePackageSet">
-        <allow interface="canonical.launchpad.interfaces.ISourcePackageSet" />
-    </securedutility>
-
-    <browser:url
-        for="canonical.launchpad.interfaces.ISourcePackageSet"
-        path_expression="string:+sources"
-        attribute_to_parent="distrorelease"
-        />
-
-    <browser:navigation
-        module="canonical.launchpad.browser"
-        classes="SourcePackageSetNavigation"
-        />
-
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.ISourcePackageSet"
-        name="+index" />
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.ISourcePackageSet"
-        class="canonical.launchpad.browser.sourcepackage.SourcePackageSetView"
-        permission="zope.Public">
-        <browser:page
-            name="+index"
-            facet="overview"
-            template="../templates/sourcepackages.pt"
-            lp:url="/distros/$Distro.name/$DistroRelease.name/+sources/+index" />
-        <browser:page
-            name="+malone-index"
-            facet="bugs"
-            template="../templates/packages-bugs.pt"
-            lp:url="/distros/$Distro.name/$DistroRelease.name/+sources/+malone-index" />
-        <browser:page
-            name="+comingsoon"
-            template="../templates/sourcepackages-comingsoon.pt"
-            />
-    </browser:pages>
-
-    <!-- IDistroSourcePackageSet -->
-    <content class="canonical.launchpad.database.DistroSourcePackageSet">
-        <allow
-            interface="canonical.launchpad.interfaces.IDistroSourcePackageSet" />
-    </content>
-
-    <securedutility
-        class="canonical.launchpad.database.DistroSourcePackageSet"
-        provides="canonical.launchpad.interfaces.IDistroSourcePackageSet">
-        <allow interface="canonical.launchpad.interfaces.IDistroSourcePackageSet" />
-    </securedutility>
 
 </configure>

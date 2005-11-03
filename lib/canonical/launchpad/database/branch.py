@@ -7,6 +7,7 @@ from zope.interface import implements
 
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin)
+from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -134,6 +135,13 @@ class BranchSet:
             name=name, owner=owner, author=author, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
             home_page=home_page)
+
+    def get_supermirror_pull_queue(self):
+        """See IBranchSet.get_supermirror_pull_queue."""
+        return set(Branch.select("(last_mirror_attempt is NULL "
+                                 "or (%s - last_mirror_attempt "
+                                 "> '1 day')) and NOT ("
+                                 "url ILIKE 'http://bazaar.ubuntu.com/%%')" % UTC_NOW))
 
 
 class BranchRelationship(SQLBase):

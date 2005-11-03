@@ -10,7 +10,6 @@ __all__ = [
     'IBugTaskSearch',
     'IUpstreamBugTaskSearch',
     'IDistroBugTaskSearch',
-    'IBugTaskSearchListingView',
     'IBugTaskDelta',
     'IUpstreamBugTask',
     'IDistroBugTask',
@@ -21,7 +20,6 @@ __all__ = [
     'BugTaskSearchParams',
     'UNRESOLVED_BUGTASK_STATUSES']
 
-from zope.component.interfaces import IView
 from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import (
@@ -99,7 +97,7 @@ class IBugTask(IHasDateCreated):
     related_tasks = Attribute("IBugTasks related to this one, namely other "
                               "IBugTasks on the same IBug.")
     statusdisplayhtml = Attribute(
-        "A HTML representation of the status. This field produces"
+        "A HTML representation of the status. This field produces "
         "its value from the status, assignee and milestone values.")
     statuselsewhere = Attribute(
         "A human-readable representation of the status of this IBugTask's bug "
@@ -141,24 +139,24 @@ class IBugTaskSearch(Interface):
     for status to be a List field on a search form, where more than
     one value can be selected.)
     """
-    searchtext = TextLine(title=_("Bug ID or Keywords"), required=False)
+    searchtext = TextLine(title=_("Bug ID or text:"), required=False)
     status = List(
-        title=_('Bug Status'),
+        title=_('Status:'),
         value_type=IBugTask['status'],
         default=[dbschema.BugTaskStatus.NEW, dbschema.BugTaskStatus.ACCEPTED],
         required=False)
     severity = List(
-        title=_('Severity'),
+        title=_('Severity:'),
         value_type=IBugTask['severity'],
         required=False)
     assignee = Choice(
-        title=_('Assignee'), vocabulary='ValidAssignee', required=False)
-    unassigned = Bool(title=_('show only unassigned bugs'), required=False)
-    include_dupes = Bool(title=_('include duplicate bugs'), required=False)
+        title=_('Assignee:'), vocabulary='ValidAssignee', required=False)
+    unassigned = Bool(title=_('Unassigned bugs only'), required=False)
+    include_dupes = Bool(title=_('Include duplicate bugs'), required=False)
     statusexplanation = TextLine(
-        title=_("Status notes"), required=False)
+        title=_("Status notes:"), required=False)
     attachmenttype = List(
-        title=_('Attachment'),
+        title=_('Attachment:'),
         value_type=IBugAttachment['type'],
         required=False)
 
@@ -168,63 +166,12 @@ class IUpstreamBugTaskSearch(IBugTaskSearch):
     milestone_assignment = Choice(
         title=_('Target'), vocabulary="Milestone", required=False)
     milestone = List(
-        title=_('Target'), value_type=IBugTask['milestone'], required=False)
+        title=_('Target:'), value_type=IBugTask['milestone'], required=False)
 
 
 class IDistroBugTaskSearch(IBugTaskSearch):
     """The schema used by the bug task search form of a distribution or
     distribution release."""
-
-
-class IBugTaskSearchListingView(IView):
-    """A view that can be used with a bugtask search listing."""
-
-    search_form_schema = Attribute("""The schema used for the search form.""")
-
-    searchtext_widget = Attribute("""The widget for entering a free-form text
-                                     query on bug task details.""")
-
-    status_widget = Attribute("""The widget for selecting task statuses to
-                                 filter on. None if the widget is not to be
-                                 shown.""")
-
-    severity_widget = Attribute("""The widget for selecting task severities to
-                                   filter on. None is the widget is not to be
-                                   shown.""")
-
-    assignee_widget = Attribute("""The widget for selecting task assignees
-                                   to filter on. None if the widget is not to be
-                                   shown.""")
-
-    milestone_widget = Attribute("""The widget for selecting task targets to
-                                    filter on. None if the widget is not to be
-                                    shown.""")
-
-    statusexplanation_widget = Attribute("""The widget for searching in status
-                                     notes. None if the widget is not to
-                                     be shown.""")
-
-    attachmenttype_widget = Attribute("""The widget for searching
-                                         selecting attachment types to filter
-                                         on. None if the widget is not to be
-                                         shown.""")
-
-    def task_columns():
-        """Returns a sequence of column names to be shown in the listing.
-
-        This list may be calculated on the fly, e.g. in the case of a
-        listing that allows the user to choose which columns to show
-        in the listing.
-        """
-
-    def search():
-        """Return an IBatchNavigator for the POSTed search criteria."""
-
-    def shouldShowPackageName():
-        """Should the source package name be displayed in the list results?
-
-        This is mainly useful for the listview.
-        """
 
 
 class IBugTaskDelta(Interface):
@@ -302,10 +249,8 @@ class IDistroBugTask(IBugTask):
     """A description of a bug needing fixing in a particular package."""
     sourcepackagename = Choice(
         title=_("Source Package Name"), required=False,
-        description=_("The specific source package in which the bug "
-        "occurs, and which needs to be fixed. This is generally optional, "
-        "leave it blank if you are unsure, and the distro QA team will "
-        "attempt to figure it out."),
+        description=_("The source package in which the bug occurs. "
+        "Leave blank if you are not sure."),
         vocabulary='SourcePackageName')
     binarypackagename = Choice(
         title=_('Binary PackageName'), required=False,

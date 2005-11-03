@@ -28,11 +28,15 @@ Test 'status' property:
 
  >>> builder.failnotes = 'Could not open Socket'
  >>> builder.status
- u'NOT OK : Could not open Socket'
+ u'NOT OK : Could not open Socket (AUTO)'
 
  >>> builder.builderok = True
  >>> builder.status
- u'BUILDING mozilla-firefox-0.9'
+ u'BUILDING i386 build of mozilla-firefox 0.9 in ubuntu warty (2004-09-27) (AUTO)'
+
+ >>> builder.manual = True
+ >>> builder.status
+ u'BUILDING i386 build of mozilla-firefox 0.9 in ubuntu warty (2004-09-27) (MANUAL)'
 
 Confirm we can get the slave xmlrpc interface
 
@@ -49,11 +53,6 @@ Check if the instace corresponds to the declared interface:
  >>> verifyObject(IBuilder, builder)
  True
 
-lastBuilds() method returns the build history, atm there is no data 
-available in the database, we can just test if the call doesn't fail.
-
- >>> builder.lastBuilds().count()
- 3
 
 Now perform the tests for the Builder ContentSet class, BuilderSet.
 

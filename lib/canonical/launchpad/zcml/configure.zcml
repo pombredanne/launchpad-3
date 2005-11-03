@@ -6,8 +6,11 @@
 
     <!-- Content class configuration -->
     <include file="batchnavigator.zcml" />
+    <include file="binarypackagepublishing.zcml" />
+    <include file="binarypackagepublishinghistory.zcml" />
     <include file="binarypackagerelease.zcml" />
     <include file="binarypackagename.zcml" />
+    <include file="binarypackagepublishing.zcml" />
     <include file="bountysubscription.zcml" />
     <include file="bounty.zcml" />
     <include file="branch.zcml" />
@@ -36,13 +39,19 @@
     <include file="cvereference.zcml" />
     <include file="datetime.zcml" />
     <include file="distribution.zcml" />
+    <include file="distributionsourcepackage.zcml" />
+    <include file="distributionsourcepackagecache.zcml" />
+    <include file="distributionsourcepackagerelease.zcml" />
     <include file="distrocomponentuploader.zcml" />
     <include file="distrorelease.zcml" />
+    <include file="distroreleasebinarypackage.zcml" />
+    <include file="distroreleasesourcepackagerelease.zcml" />
     <include file="distroreleaselanguage.zcml" />
     <include file="distroarchrelease.zcml" />
+    <include file="distroarchreleasebinarypackage.zcml" />
+    <include file="distroarchreleasebinarypackagerelease.zcml" />
     <include file="emailaddress.zcml" />
     <include file="files.zcml" />
-    <include file="foaf.zcml" />
     <include file="gpgkey.zcml" />
     <include file="ircid.zcml" />
     <include file="jabberid.zcml" />
@@ -78,23 +87,27 @@
     <include file="product.zcml" />
     <include file="project.zcml" />
     <include file="publishedpackage.zcml" />
+    <include file="queue.zcml" />
     <include file="registry.zcml" />
     <include file="revision.zcml" />
+    <include file="schema.zcml" />
     <include file="sourcepackage.zcml" />
     <include file="sourcepackagename.zcml" />
+    <include file="sourcepackagepublishing.zcml" />
+    <include file="sourcepackagepublishinghistory.zcml" />
     <include file="sourcepackagerelease.zcml" />
-    <include file="sourcepackagereleaseindistro.zcml" />
     <include file="specification.zcml" />
     <include file="specificationdependency.zcml" />
     <include file="specificationreview.zcml" />
     <include file="specificationsubscription.zcml" />
     <include file="specificationtarget.zcml" />
     <include file="sprint.zcml" />
+    <include file="sprintattendance.zcml" />
+    <include file="sprintspecification.zcml" />
     <include file="ticket.zcml" />
     <include file="ticketreopening.zcml" />
     <include file="ticketsubscription.zcml" />
     <include file="tickettarget.zcml" />
-    <include file="vsourcepackagereleasepublishing.zcml" />
     <include file="shipit.zcml" />
     <include file="sshkey.zcml" />
     <include file="teammembership.zcml" />
@@ -115,7 +128,6 @@
     <include file="rosetta.zcml" />
     <include file="malone.zcml" />
     <include file="registry.zcml" />
-    <include file="foaf.zcml" />
     <include file="bazaar.zcml" />
 
     <!-- Event configuration -->

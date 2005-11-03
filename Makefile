@@ -37,7 +37,7 @@ check_merge: build importdcheck
 
 importdcheck:
 	cd database/schema; make test PYTHON=${PYTHON}
-	PYTHONPATH=lib:lib/canonical/sourcerer/util lib/importd/test_all.py
+	PYTHONPATH=lib lib/importd/test_all.py
 
 check: build
 	# Run all tests. test_on_merge.py takes care of setting up the

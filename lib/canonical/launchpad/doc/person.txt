@@ -160,6 +160,9 @@ Must login as 'sabdfl' cause he's the owner of the Ubuntu Team.
 >>> ubuntu_translators = personset.getByName('ubuntu-translators')
 >>> ubuntu_translators.addMember(empty)
 >>> ubuntu_team.teamowner = empty
+>>> foo = empty.assignKarma('bugfixed')
+>>> empty.updateKarmaCache()
+>>> sample.updateKarmaCache()
 >>> flush_database_updates()
 
 'Sample Person' is a deactivated member of the 'Ubuntu Translators' team,
@@ -169,22 +172,31 @@ active member of that team.
 True
 >>> empty in ubuntu_translators.activemembers
 True
+>>> empty.karma
+10
+>>> sample.karma
+101
+
 >>> personset.merge(empty, sample)
 
 >>> sample in ubuntu_translators.activemembers
 True
 >>> sample.inTeam(ubuntu_translators)
 True
+>>> empty.karma
+0
+>>> sample.karma
+111
 
 >>> from canonical.launchpad.database import Person
 >>> cur = Person._connection._connection.cursor()
 
 A merged account gets a -merged suffix on its name.
 >>> empty.id
-58L
+59L
 >>> cur.execute("SELECT id FROM Person WHERE name='empty-merged'")
 >>> cur.fetchone()[0]
-58
+59
 
 
 >>> cur.execute("select person, team, status from teammembership where "
@@ -212,6 +224,16 @@ merged accounts from lists etc.
 >>> cur.fetchone()[0] is None
 True
 
+After the merging we could test the topPeople() method of the PersonSet
+class. This methods returns a sliced list of 5 valid person accounts,
+ordered by karma. A valid person account is any non-merged person with a
+preferred email address.
+
+>>> empty.karma = 10000
+>>> flush_database_updates()
+>>> [(person.name, person.karma) for person in personset.topPeople()]
+[(u'name12', 111), (u'name16', 40), (u'jordi', 0), (u'marilize', 0), (u'no-priv', 0)]
+
 
 People can have karma in Launchpad
 ----------------------------------
@@ -222,18 +244,18 @@ Launchpad.
 
 Salgado wrote the karma framework. Let's give him some karma points.
 
->>> from canonical.lp.dbschema import KarmaActionName
 >>> salgado = personset.getByName('salgado')
->>> salgado.assignKarma(KarmaActionName.BUGFIXED)
+>>> foo = salgado.assignKarma('bugfixed')
 >>> salgado.karma
 0
 
 The value that you get through IPerson.karma is a cached value that's
 calculated daily. That's why it still 0. To calculate the karma of a given
-person at runtime we have to use IKarmaSet:
+person at runtime we can use the updateKarmaCache method of IPerson.
 
 >>> from canonical.launchpad.interfaces import IKarmaSet
->>> getUtility(IKarmaSet).getSumByPerson(salgado)
+>>> salgado.updateKarmaCache()
+>>> salgado.karma
 10
 
 

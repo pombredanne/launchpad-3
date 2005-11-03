@@ -66,10 +66,10 @@ class IGPGKeySet(Interface):
 
         Returns the modified key or None if the key wasn't found.
         """
-        
+
     def getGPGKeys(ownerid=None, active=True):
         """Return GPG keys ordered by id.
 
         Optionally for a given owner and or a given status.
-        """ 
+        """
 

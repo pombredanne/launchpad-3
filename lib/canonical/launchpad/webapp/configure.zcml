@@ -9,7 +9,7 @@
     <content class="canonical.launchpad.webapp.LaunchpadBrowserRequest">
       <allow
         interface="
-          zope.publisher.interfaces.browser.IBrowserApplicationRequest"
+          canonical.launchpad.interfaces.ILaunchpadBrowserApplicationRequest"
         attributes="response locale __str__"
         />
       <allow
@@ -22,33 +22,33 @@
 
     <!-- links -->
     <content class="canonical.launchpad.webapp.menu.LinkData">
-      <allow interface="canonical.launchpad.interfaces.ILinkData" />
+        <allow interface="canonical.launchpad.interfaces.ILinkData" />
     </content>
 
     <adapter
-      for="canonical.launchpad.interfaces.ILinkData"
-      provides="canonical.launchpad.interfaces.ILink"
-      factory="canonical.launchpad.webapp.menu.MenuLink"
-      />
+        for="canonical.launchpad.interfaces.ILinkData"
+        provides="canonical.launchpad.interfaces.ILink"
+        factory="canonical.launchpad.webapp.menu.MenuLink"
+        />
 
     <content class="canonical.launchpad.webapp.menu.MenuLink">
-      <require
-        permission="zope.Public"
-        interface="canonical.launchpad.interfaces.ILink"
-        />
+        <require
+            permission="zope.Public"
+            interface="canonical.launchpad.interfaces.ILink"
+            />
     </content>
 
     <adapter
-      for="canonical.launchpad.interfaces.ILinkData"
-      provides="canonical.launchpad.interfaces.IFacetLink"
-      factory="canonical.launchpad.webapp.menu.FacetLink"
-      />
+        for="canonical.launchpad.interfaces.ILinkData"
+        provides="canonical.launchpad.interfaces.IFacetLink"
+        factory="canonical.launchpad.webapp.menu.FacetLink"
+        />
 
     <content class="canonical.launchpad.webapp.menu.FacetLink">
-      <require
-        permission="zope.Public"
-        interface="canonical.launchpad.interfaces.IFacetLink"
-        />
+        <require
+            permission="zope.Public"
+            interface="canonical.launchpad.interfaces.IFacetLink"
+            />
     </content>
 
     <!-- Launchpad root object -->
@@ -132,12 +132,6 @@
         />
 
     <!-- TALES fmt: namespace -->
-    <adapter
-        for="zope.publisher.interfaces.browser.IBrowserApplicationRequest"
-        provides="zope.app.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.RequestFormatterAPI"
-        name="fmt"
-        />
 
     <!-- The next directive is registered for all dicts, but we really only
          want it to apply to the page template's CONTEXTS dict.
@@ -333,4 +327,53 @@
         template="../templates/rdf-macros.pt"
         />
 
+    <!-- LaunchpadBrowserResponse needs to be able to find the session -->
+    <adapter
+        for="canonical.launchpad.webapp.LaunchpadBrowserResponse"
+        provides="zope.app.session.interfaces.ISession"
+        factory="canonical.launchpad.webapp.servers.adaptResponseToSession"
+        />
+
+    <!-- LaunchpadBrowserRequest needs to be able to find the response.
+    We don't just use the response attribute, as this makes our tests harder
+    to write -->
+    <adapter
+        for="canonical.launchpad.webapp.LaunchpadBrowserRequest"
+        provides="canonical.launchpad.webapp.interfaces.INotificationResponse"
+        factory="canonical.launchpad.webapp.servers.adaptRequestToResponse"
+        />
+
+    <!--These pages are used for testing BrowserNotificationMessages
+        They are protected with admin privileges rather than being installed
+        on the debug port because we use them in page tests and as an easy way
+        to view and adjust the visual rendering of the notifications.
+    -->
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        name="+notificationtest1"
+        template="../templates/root-index.pt"
+        permission="launchpad.Admin"
+        class="canonical.launchpad.webapp.notification.NotificationTestView1"
+        />
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        name="+notificationtest2"
+        template="../templates/root-index.pt"
+        permission="launchpad.Admin"
+        class="canonical.launchpad.webapp.notification.NotificationTestView2"
+        />
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        name="+notificationtest3"
+        template="../templates/root-index.pt"
+        permission="launchpad.Admin"
+        class="canonical.launchpad.webapp.notification.NotificationTestView3"
+        />
+    <browser:page
+        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        name="+notificationtest4"
+        template="../templates/root-index.pt"
+        permission="launchpad.Admin"
+        class="canonical.launchpad.webapp.notification.NotificationTestView4"
+        />
 </configure>

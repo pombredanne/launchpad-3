@@ -136,17 +136,17 @@ We have twelve custom requests. Two of them are cancelled.
 
   >>> [r.recipient.name 
   ...  for r in requestset.search(request_type='custom', omit_cancelled=False)]
-  [u'lifeless', u'cprov', u'ddaa', u'debonzi', u'kurem', u'carlos', u'daf', u'tsukimi', u'jdub', u'marilize', u'no-priv', u'name16']
+  [u'lifeless', u'cprov', u'ddaa', u'debonzi', u'kurem', u'carlos', u'daf', u'tsukimi', u'jdub', u'marilize', u'jblack', u'no-priv', u'name16']
 
   >>> [r.recipient.name for r in requestset.search(request_type='custom')]
-  [u'lifeless', u'ddaa', u'debonzi', u'kurem', u'carlos', u'daf', u'tsukimi', u'jdub', u'marilize', u'no-priv']
+  [u'lifeless', u'ddaa', u'debonzi', u'kurem', u'carlos', u'daf', u'tsukimi', u'jdub', u'marilize', u'jblack', u'no-priv']
 
 From the ten non-cancelled, one is approved.
 
   >>> approved = status=ShippingRequestStatus.APPROVED
   >>> [r.recipient.name 
   ...  for r in requestset.search(request_type='custom', status=approved)]
-  [u'no-priv']
+  [u'jblack', u'no-priv']
 
 We have also two non-cancelled standard requests:
 

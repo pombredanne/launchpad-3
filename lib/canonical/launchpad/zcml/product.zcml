@@ -181,7 +181,7 @@
         facet="overview"
         schema="canonical.launchpad.interfaces.IProduct"
         class="canonical.launchpad.browser.ProductEditView"
-        label="Edit Upstream Product Details:"
+        label="Edit Upstream Product Details"
         fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl screenshotsurl
                 downloadurl programminglang"
@@ -212,7 +212,7 @@
         facet="overview"
         schema="canonical.launchpad.interfaces.IProduct"
         class="canonical.launchpad.browser.ProductEditView"
-        label="Administer upstream product details"
+        label="Administer Upstream Product Details"
         fields="name project owner active autoupdate reviewed "
         permission="launchpad.Admin"
         template="../templates/launchpad-editform.pt"
@@ -227,7 +227,7 @@
         class="canonical.launchpad.browser.ProductEditView"
         fields="translationgroup translationpermission"
         permission="launchpad.Edit"
-        label="Select A New Translation Group"
+        label="Select a New Translation Group"
         template="../templates/launchpad-editform.pt"
         lp:url="/products/$Product.name/+changetranslators" />
 
@@ -246,17 +246,14 @@
         name="+filebug"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IBugAddForm"
-        fields="title comment private owner"
-        class="canonical.launchpad.browser.ProductFileBugView"
+        fields="title comment private"
+        class="canonical.launchpad.browser.FileBugView"
         facet="bugs"
         arguments=""
-        keyword_arguments="title comment private owner"
+        keyword_arguments="title comment private"
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
         lp:url="/products/$Product.name/+filebug">
-        <browser:widget
-            field="owner"
-            class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
@@ -293,7 +290,7 @@
       schema="canonical.launchpad.interfaces.IProductBounty"
       class="canonical.launchpad.browser.bounty.BountyLinkView"
       facet="bounties"
-      label="Link Existing Bounty"
+      label="Link an Existing Bounty"
       fields="product bounty"
       keyword_arguments="product bounty"
       permission="launchpad.AnyPerson"
@@ -308,7 +305,7 @@
       name="+addbounty"
       for="canonical.launchpad.interfaces.IProduct"
       schema="canonical.launchpad.interfaces.IBounty"
-      label="Register A New Bounty"
+      label="Register a New Bounty"
       fields="name title summary usdvalue difficulty description"
       class="canonical.launchpad.browser.BountyAddView"
       facet="bounties"
@@ -434,7 +431,7 @@
         name="+new"
         for="canonical.launchpad.interfaces.IProductSet"
         schema="canonical.launchpad.interfaces.IProduct"
-        label="Register an upstream open source product"
+        label="Register an Upstream Open Source Product"
         fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl screenshotsurl
                 downloadurl programminglang"

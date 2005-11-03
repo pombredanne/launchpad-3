@@ -5,7 +5,7 @@ To access /malone/assigned we have to be logged in.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/malone/assigned/+login
+  Location: http://localhost:9000/malone/assigned/+login?...
   <BLANKLINE>
 
 

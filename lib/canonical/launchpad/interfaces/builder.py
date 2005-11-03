@@ -71,7 +71,13 @@ class IBuilder(IHasOwner):
 
     trusted = Bool(title=_('Trusted'), required=True,
                    description=_('Whether not the builder is trusted to '
-                                'build packages under security embargo.')
+                                 'build packages under security embargo.')
+                   )
+
+    manual = Bool(title=_('Manual Mode'), required=False,
+                   description=_('Whether not the builder is MANUAL MODE. '
+                                 'Auto Build System does not dispach jobs '
+                                 'automatically for slaves in that state')
                    )
 
     builderok = Attribute("Whether or not the builder is ok")
@@ -80,13 +86,9 @@ class IBuilder(IHasOwner):
     currentjob = Attribute("Build Job being processed")
     status = Attribute("Generated status information")
 
-    def lastBuilds(limit=10):
-        """Last Build Jobs finished
-
-        Returns the SQLResult ordered by descend datebuild, default 'limit'
-        is 10.
-        """
-
+    def failbuilder(reason):
+        """Mark builder as failed for a given reason."""
+    
 
 class IBuilderSet(Interface):
     """Collections of builders.
@@ -118,6 +120,9 @@ class IBuilderSet(Interface):
     def getBuilders():
         """Return all configured builders."""
 
+    def getBuildersByArch(arch):
+        """Return all configured builders for a given DistroArchRelease."""
+
 
 class IBuildQueue(Interface):
     """A launchpad Auto Build queue entry"""
@@ -128,6 +133,7 @@ class IBuildQueue(Interface):
     created = Attribute("The datetime that the queue entry waw created")
     buildstart = Attribute("The datetime of the last build attempt")
     logtail = Attribute("The current tail of the log of the build")
+    lastscore = Attribute("Last score to be computed for this job")
     archrelease = Attribute("the build DistroArchRelease")
     urgency = Attribute("SourcePackageRelease Urgency")
     component_name = Attribute("Component name where the job got published")
@@ -135,6 +141,7 @@ class IBuildQueue(Interface):
     name = Attribute("SourcePackageRelease name")
     version = Attribute("SourcePackageRelease version")
     files = Attribute("SourcePackageRelease files")
+    builddependsindep = Attribute("SourcePackageRelease builddependsindep")
     buildduration = Attribute("The duration of the build in progress")
 
     def destroySelf():
@@ -159,4 +166,11 @@ class IBuildQueueSet(Interface):
 
     def getActiveBuildJobs():
         """Return All active Build Jobs."""
-    
+
+    def calculateCandidates(archreleases, state):
+        """Return the candidates for building
+        
+        The result is a unsorted list of buildqueue items in a given state
+        within a given distroarchrelease group.
+        """
+

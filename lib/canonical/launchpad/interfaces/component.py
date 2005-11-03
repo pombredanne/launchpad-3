@@ -11,5 +11,6 @@ __all__ = [
 from zope.interface import Interface, Attribute
 
 class IComponent(Interface):
+    id = Attribute("The ID")
     name = Attribute("The Component Name")
 

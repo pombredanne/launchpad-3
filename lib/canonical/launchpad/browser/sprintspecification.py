@@ -8,11 +8,14 @@ from zope.app.form.browser.add import AddView
 
 from canonical.launchpad.interfaces import ISprintSpecification
 
+from canonical.launchpad.browser.editview import SQLObjectEditView
+
 from canonical.launchpad.webapp import canonical_url
 
 
 __all__ = [
     'SprintSpecificationAddView',
+    'SprintSpecificationEditView',
     'SprintSpecificationRemoveView',
     ]
 
@@ -48,5 +51,11 @@ class SprintSpecificationRemoveView(AddView):
 
     def nextURL(self):
         return canonical_url(self.context)
+
+
+class SprintSpecificationEditView(SQLObjectEditView):
+
+    def changed(self):
+        self.request.response.redirect(canonical_url(self.context.sprint))
 
 

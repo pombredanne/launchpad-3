@@ -78,17 +78,17 @@ COMMENT ON COLUMN BugTracker.baseurl IS 'The base URL for this bug tracker. Usin
 COMMENT ON COLUMN BugTracker.owner IS 'The person who created this bugtracker entry and who thus has permission to modify it. Ideally we would like this to be the person who coordinates the running of the actual bug tracker upstream.';
 
 
+/* BugCve */
+
+COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone bug number, and a CVE entry.';
+
+
 /* CVE */
 
 COMMENT ON TABLE CVE IS 'A CVE Entry. The formal database of CVE entries is available at http://cve.mitre.org/ and we sync that database into Launchpad on a regular basis.';
 COMMENT ON COLUMN CVE.sequence IS 'The official CVE entry number. It takes the form XXXX-XXXX where the first four digits are a year indicator, like 2004, and the latter four are the sequence number of the vulnerability in that year.';
 COMMENT ON COLUMN CVE.status IS 'The current status of the CVE. The values are documented in dbschema.CVEState, and are Entry, Candidate, and Deprecated.';
 COMMENT ON COLUMN CVE.datemodified IS 'The last time this CVE entry changed in some way - including addition or modification of references.';
-
-
-/* BugCve */
-
-COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone bug number, and a CVE entry.';
 
 
 /* CveReference */
@@ -107,59 +107,51 @@ COMMENT ON COLUMN CVERefObsolete.cvestate IS 'This is a dbschema enum which tell
 COMMENT ON COLUMN CVERefObsolete.owner IS 'This refers to the person who created the entry.';
 
 
--- LaunchpadStatistic
-COMMENT ON TABLE LaunchpadStatistic IS 'A store of system-wide statistics
-or other integer values, keyed by names. The names are unique and the values
-can be any integer. Each field has a place to store the timestampt when it
-was last updated, so it is possible to know how far out of date any given
-statistic is.';
-
-
 -- DevelopmentManifest
 COMMENT ON TABLE DevelopmentManifest IS 'A table that keeps track of the "intermediate commits" during the development of a source package. A developer using HCT will make regular commits (stored locally, as Bazaar revisions). On occasion, the developer will "publish" the current state of the package. This results in the Bazaar branches being made available on a public server, and a DevelopmentManifest being created. Other people will then see the existence of the Development Manifest and know that the person is currently working on a variation of the package. When the developer believes that the page is actually ready to build, they can "release" the package. This results in a SourcePackageRelease being assembled, based on the existing development manifest.';
 COMMENT ON COLUMN DevelopmentManifest.distrorelease IS 'The distribution release for which this source package is being developed. Note that the source package may very well be built and published in other releases as well - this information is purely a starting point indicator.';
 COMMENT ON COLUMN DevelopmentManifest.sourcepackagename IS 'Again, this is just an indicator of the place the developer is primarily targeting the work. This same package may actually be uploaded under a different name somewhere else eventually.';
 
--- Project
-COMMENT ON TABLE Project IS 'Project: A DOAP Project. This table is the core of the DOAP section of the Launchpad database. It contains details of a single open source Project and is the anchor point for products, potemplates, and translationefforts.';
-COMMENT ON COLUMN Project.owner IS 'The owner of the project will initially be the person who creates this Project in the system. We will encourage upstream project leaders to take on this role. The Project owner is able to edit the project.';
-COMMENT ON COLUMN Project.summary IS 'A brief summary of this project. This
-will be displayed in bold text just above the description and below the
-title. It should be a single paragraph of not more than 80 words.';
-COMMENT ON COLUMN Project.description IS 'A detailed description of this
-project. This should primarily be focused on the organisational aspects of
-the project, such as the people involved and the structures that the project
-uses to govern itself. It might refer to the primary products of the project
-but the detailed descriptions of those products should be in the
-Product.description field, not here. So, for example, useful information
-such as the dates the project was started and the way the project
-coordinates itself are suitable here.';
-COMMENT ON COLUMN Project.homepageurl IS 'The home page URL of this project. Note that this could well be the home page of the main product of this project as well, if the project is too small to have a separate home page for project and product.';
-COMMENT ON COLUMN Project.wikiurl IS 'This is the URL of a wiki that includes information about the project. It might be a page in a bigger wiki, or it might be the top page of a wiki devoted to this project.';
-COMMENT ON COLUMN Project.lastdoap IS 'This column stores a cached copy of the last DOAP description we saw for this project. We cache the last DOAP fragment for this project because there may be some aspects of it which we are unable to represent in the database (such as multiple homepageurl\'s instead of just a single homepageurl) and storing the DOAP file allows us to re-parse it later and recover this information when our database model has been updated appropriately.';
-COMMENT ON COLUMN Project.name IS 'A short lowercase name uniquely identifying the product. Use cases include being used as a key in URL traversal.';
-COMMENT ON COLUMN Project.sourceforgeproject IS 'The SourceForge project name for this project. This is not unique as SourceForge doesn\'t use the same project/product structure as DOAP.';
-COMMENT ON COLUMN Project.freshmeatproject IS 'The FreshMeat project name for this project. This is not unique as FreshMeat does not have the same project/product structure as DOAP';
-COMMENT ON COLUMN Project.reviewed IS 'Whether or not someone at Canonical has reviewed this project.';
-COMMENT ON COLUMN Project.active IS 'Whether or not this project should be considered active.';
-COMMENT ON COLUMN Project.translationgroup IS 'The translation group that has permission to edit translations across all products in this project. Note that individual products may have their own translationgroup, in which case those translators will also have permission to edit translations for that product.';
-COMMENT ON COLUMN Project.translationpermission IS 'The level of openness of
-this project\'s translation process. The enum lists different approaches to
-translation, from the very open (anybody can edit any translation in any
-language) to the completely closed (only designated translators can make any
-changes at all).';
-COMMENT ON COLUMN Project.calendar IS 'The calendar associated with this project.';
+
+/* DistributionSourcePackageCache */
+
+COMMENT ON TABLE DistributionSourcePackageCache IS 'A cache of the text associated with binary and source packages in the distribution. This table allows for fast queries to find a source packagename that matches a given text.';
+COMMENT ON COLUMN DistributionSourcePackageCache.distribution IS 'The distribution in which we are checking.';
+COMMENT ON COLUMN DistributionSourcePackageCache.sourcepackagename IS 'The source package name for which we are caching details.';
+COMMENT ON COLUMN DistributionSourcePackageCache.name IS 'The source package name itself. This is just a copy of the value of sourcepackagename.name. We have it here so it can be part of the full text index.';
+COMMENT ON COLUMN DistributionSourcePackageCache.binpkgnames IS 'The binary package names of binary packages generated from these source packages across all architectures.';
+COMMENT ON COLUMN DistributionSourcePackageCache.binpkgsummaries IS 'The aggregated summaries of all the binary packages generated from these source packages in this distribution.';
+COMMENT ON COLUMN DistributionSourcePackageCache.binpkgdescriptions IS 'The aggregated description of all the binary packages generated from these source packages in this distribution.';
 
 
--- ProjectRelationship
-COMMENT ON TABLE ProjectRelationship IS 'Project Relationships. This table stores information about the way projects are related to one another in the open source world. The actual nature of the relationship is stored in the \'label\' field, and possible values are given by the ProjectRelationship enum in dbschema.py. Examples are AGGREGATES ("the Gnome Project AGGREGATES EOG and Evolution and Gnumeric and AbiWord") and SIMILAR ("the Evolution project is SIMILAR to the Mutt project").';
-COMMENT ON COLUMN ProjectRelationship.subject IS 'The subject of the relationship. Relationships are generally unidirectional - A AGGREGATES B is not the same as B AGGREGATES A. In the example "Gnome AGGREGATES Evolution", Gnome is the subject.';
-COMMENT ON COLUMN ProjectRelationship.object IS 'The object of the relationship. In the example "Gnome AGGREGATES Evolution", Evolution is the object.';
-COMMENT ON COLUMN ProjectRelationship.label IS 'The nature of the relationship. This integer takes one of the values enumerated in dbschema.py ProjectRelationship';
+/* DistroReleasePackageCache */
+
+COMMENT ON TABLE DistroReleasePackageCache IS 'A cache of the text associated with binary packages in the distrorelease. This table allows for fast queries to find a binary packagename that matches a given text.';
+COMMENT ON COLUMN DistroReleasePackageCache.distrorelease IS 'The distrorelease in which we are checking.';
+COMMENT ON COLUMN DistroReleasePackageCache.binarypackagename IS 'The binary package name for which we are caching details.';
+COMMENT ON COLUMN DistroReleasePackageCache.name IS 'The binary package name itself. This is just a copy of the value of binarypackagename.name. We have it here so it can be part of the full text index.';
+COMMENT ON COLUMN DistroReleasePackageCache.summary IS 'A single summary for one of the binary packages of this name in this distrorelease. We could potentially have binary packages in different architectures with the same name and different summaries, so this is a way of collapsing to one arbitrarily-chosen one, for display purposes. The chances of actually having different summaries and descriptions is pretty small. It could happen, though, because of the way package superseding works when a package does not build on a specific architecture.';
+COMMENT ON COLUMN DistroReleasePackageCache.summaries IS 'The aggregated summaries of all the binary packages with this name in this distrorelease.';
+COMMENT ON COLUMN DistroReleasePackageCache.descriptions IS 'The aggregated description of all the binary packages with this name in this distrorelease.';
+
 
 -- EmailAddress
+
 COMMENT ON COLUMN EmailAddress.email IS 'An email address used by a Person. The email address is stored in a casesensitive way, but must be case insensitivly unique.';
 COMMENT ON INDEX emailaddress_person_key IS 'Ensures that a person only has one preferred email address';
+
+
+-- KarmaCategory
+
+COMMENT ON TABLE KarmaCategory IS 'A category of karma. This allows us to
+present an overall picture of the different areas where a user has been
+active.';
+
+
+-- LaunchpadStatistic
+
+COMMENT ON TABLE LaunchpadStatistic IS 'A store of system-wide statistics or other integer values, keyed by names. The names are unique and the values can be any integer. Each field has a place to store the timestamp when it was last updated, so it is possible to know how far out of date any given statistic is.';
+
 
 -- Product
 COMMENT ON TABLE Product IS 'Product: a DOAP Product. This table stores core information about an open source product. In Launchpad, anything that can be shipped as a tarball would be a product, and in some cases there might be products for things that never actually ship, depending on the project. For example, most projects will have a \'website\' product, because that allows you to file a Malone bug against the project website. Note that these are not actual product releases, which are stored in the ProductRelease table.';
@@ -182,9 +174,20 @@ COMMENT ON COLUMN Product.calendar IS 'The calendar associated with this product
 COMMENT ON COLUMN Product.official_rosetta IS 'Whether or not this product upstream uses Rosetta for its official translation team and coordination. This is a useful indicator in terms of whether translations in Rosetta for this upstream will quickly move upstream.';
 COMMENT ON COLUMN Product.official_malone IS 'Whether or not this product upstream uses Malone for an official bug tracker. This is useful to help indicate whether or not people are likely to pick up on bugs registered in Malone.';
 
+
 /* ProductLabel */
 
 COMMENT ON TABLE ProductLabel IS 'The Product label table. We have not yet clearly defined the nature of product labels, so please do not refer to this table yet. If you have a need for tags or labels on Products, please contact Mark.';
+
+
+-- ProductRelease
+
+COMMENT ON TABLE ProductRelease IS 'A Product Release. This is table stores information about a specific \'upstream\' software release, like Apache 2.0.49 or Evolution 1.5.4.';
+COMMENT ON COLUMN ProductRelease.version IS 'This is a text field containing the version string for this release, such as \'1.2.4\' or \'2.0.38\' or \'7.4.3\'.';
+COMMENT ON COLUMN ProductRelease.title IS 'This is the GSV Name of this release, like \'The Warty Warthog Release\' or \'All your base-0 are belong to us\'. Many upstream projects are assigning fun names to their releases - these go in this field.';
+COMMENT ON COLUMN ProductRelease.summary IS 'A summary of this ProductRelease. This should be a very brief overview of changes and highlights, just a short paragraph of text. The summary is usually displayed in bold at the top of a page for this product release, above the more detailed description or changelog.';
+COMMENT ON COLUMN ProductRelease.productseries IS 'A pointer to the Product Series this release forms part of. Using a Product Series allows us to distinguish between releases on stable and development branches of a product even if they are interspersed in time.';
+
 
 -- ProductSeries
 COMMENT ON TABLE ProductSeries IS 'A ProductSeries is a set of product releases that are related to a specific version of the product. Typically, each major release of the product starts a new ProductSeries. These often map to a branch in the revision control system of the project, such as "2_0_STABLE". A few conventional Series names are "head" for releases of the HEAD branch, "1.0" for releases with version numbers like "1.0.0" and "1.0.1".';
@@ -259,14 +262,42 @@ completed an import test or sync of this upstream repository. If this is
 NULL and datestarted is NOT NULL, then there is a sync in progress.';
 
 
+-- Project
+COMMENT ON TABLE Project IS 'Project: A DOAP Project. This table is the core of the DOAP section of the Launchpad database. It contains details of a single open source Project and is the anchor point for products, potemplates, and translationefforts.';
+COMMENT ON COLUMN Project.owner IS 'The owner of the project will initially be the person who creates this Project in the system. We will encourage upstream project leaders to take on this role. The Project owner is able to edit the project.';
+COMMENT ON COLUMN Project.summary IS 'A brief summary of this project. This
+will be displayed in bold text just above the description and below the
+title. It should be a single paragraph of not more than 80 words.';
+COMMENT ON COLUMN Project.description IS 'A detailed description of this
+project. This should primarily be focused on the organisational aspects of
+the project, such as the people involved and the structures that the project
+uses to govern itself. It might refer to the primary products of the project
+but the detailed descriptions of those products should be in the
+Product.description field, not here. So, for example, useful information
+such as the dates the project was started and the way the project
+coordinates itself are suitable here.';
+COMMENT ON COLUMN Project.homepageurl IS 'The home page URL of this project. Note that this could well be the home page of the main product of this project as well, if the project is too small to have a separate home page for project and product.';
+COMMENT ON COLUMN Project.wikiurl IS 'This is the URL of a wiki that includes information about the project. It might be a page in a bigger wiki, or it might be the top page of a wiki devoted to this project.';
+COMMENT ON COLUMN Project.lastdoap IS 'This column stores a cached copy of the last DOAP description we saw for this project. We cache the last DOAP fragment for this project because there may be some aspects of it which we are unable to represent in the database (such as multiple homepageurl\'s instead of just a single homepageurl) and storing the DOAP file allows us to re-parse it later and recover this information when our database model has been updated appropriately.';
+COMMENT ON COLUMN Project.name IS 'A short lowercase name uniquely identifying the product. Use cases include being used as a key in URL traversal.';
+COMMENT ON COLUMN Project.sourceforgeproject IS 'The SourceForge project name for this project. This is not unique as SourceForge doesn\'t use the same project/product structure as DOAP.';
+COMMENT ON COLUMN Project.freshmeatproject IS 'The FreshMeat project name for this project. This is not unique as FreshMeat does not have the same project/product structure as DOAP';
+COMMENT ON COLUMN Project.reviewed IS 'Whether or not someone at Canonical has reviewed this project.';
+COMMENT ON COLUMN Project.active IS 'Whether or not this project should be considered active.';
+COMMENT ON COLUMN Project.translationgroup IS 'The translation group that has permission to edit translations across all products in this project. Note that individual products may have their own translationgroup, in which case those translators will also have permission to edit translations for that product.';
+COMMENT ON COLUMN Project.translationpermission IS 'The level of openness of
+this project\'s translation process. The enum lists different approaches to
+translation, from the very open (anybody can edit any translation in any
+language) to the completely closed (only designated translators can make any
+changes at all).';
+COMMENT ON COLUMN Project.calendar IS 'The calendar associated with this project.';
 
 
--- ProductRelease
-COMMENT ON TABLE ProductRelease IS 'A Product Release. This is table stores information about a specific \'upstream\' software release, like Apache 2.0.49 or Evolution 1.5.4.';
-COMMENT ON COLUMN ProductRelease.version IS 'This is a text field containing the version string for this release, such as \'1.2.4\' or \'2.0.38\' or \'7.4.3\'.';
-COMMENT ON COLUMN ProductRelease.title IS 'This is the GSV Name of this release, like \'The Warty Warthog Release\' or \'All your base-0 are belong to us\'. Many upstream projects are assigning fun names to their releases - these go in this field.';
-COMMENT ON COLUMN ProductRelease.summary IS 'A summary of this ProductRelease. This should be a very brief overview of changes and highlights, just a short paragraph of text. The summary is usually displayed in bold at the top of a page for this product release, above the more detailed description or changelog.';
-COMMENT ON COLUMN ProductRelease.productseries IS 'A pointer to the Product Series this release forms part of. Using a Product Series allows us to distinguish between releases on stable and development branches of a product even if they are interspersed in time.';
+-- ProjectRelationship
+COMMENT ON TABLE ProjectRelationship IS 'Project Relationships. This table stores information about the way projects are related to one another in the open source world. The actual nature of the relationship is stored in the \'label\' field, and possible values are given by the ProjectRelationship enum in dbschema.py. Examples are AGGREGATES ("the Gnome Project AGGREGATES EOG and Evolution and Gnumeric and AbiWord") and SIMILAR ("the Evolution project is SIMILAR to the Mutt project").';
+COMMENT ON COLUMN ProjectRelationship.subject IS 'The subject of the relationship. Relationships are generally unidirectional - A AGGREGATES B is not the same as B AGGREGATES A. In the example "Gnome AGGREGATES Evolution", Gnome is the subject.';
+COMMENT ON COLUMN ProjectRelationship.object IS 'The object of the relationship. In the example "Gnome AGGREGATES Evolution", Evolution is the object.';
+COMMENT ON COLUMN ProjectRelationship.label IS 'The nature of the relationship. This integer takes one of the values enumerated in dbschema.py ProjectRelationship';
 
 
 -- POTMsgSet
@@ -377,7 +408,8 @@ COMMENT ON COLUMN SprintAttendance.time_ends IS 'The time of departure from the 
 
 /* SprintSpecification */
 COMMENT ON TABLE SprintSpecification IS 'The link between a sprint and a specification, so that we know which specs are going to be discussed at which sprint.';
-
+COMMENT ON COLUMN SprintSpecification.status IS 'Whether or not the spec has been approved on the agenda for this sprint.';
+COMMENT ON COLUMN SprintSpecification.whiteboard IS 'A place to store comments specifically related to this spec being on the agenda of this meeting.';
 
 /* Ticket */
 COMMENT ON TABLE Ticket IS 'A trouble ticket, or support request, for a distribution or for an application. Such tickets are created by end users who need support on a particular feature or package or product.';
@@ -486,27 +518,40 @@ update packs for this release will only include translations added after that
 date.';
 COMMENT ON COLUMN DistroRelease.messagecount IS 'This is a cached value and may be a few hours out of sync with reality. It should, however, be in sync with the values in DistroReleaseLanguage, and should never be updated separately. The total number of translation messages in this distro release, as per IRosettaStats.';
 COMMENT ON COLUMN DistroRelease.nominatedarchindep IS 'This is the DistroArchRelease nominated to build architecture independent packages within this DistroRelase, it is mandatory for buildable distroreleases, i.e., Auto Build System will avoid to create build jobs for a DistroRelease with no nominatedarchindep, but the database model allow us to do it (for non-buildable DistroReleases). See further info in NominatedArchIndep specification.';
+COMMENT ON COLUMN DistroRelease.binarycount IS 'A cache of the number of distinct binary package names published in this distro release.';
+COMMENT ON COLUMN DistroRelease.sourcecount IS 'A cache of the number of distinct source package names published in this distro release.';
 
--- DistroQueue
+-- DistroReleaseQueue
 COMMENT ON TABLE DistroReleaseQueue IS 'An upload queue item. This table stores information pertaining to in-progress package uploads to a given DistroRelease.';
 
 COMMENT ON COLUMN DistroReleaseQueue.status IS 'This is an integer field containing the current queue status of the queue item. Possible values are given by the DistroQueueStatus class in dbschema.py';
 
-COMMENT ON COLUMN DistroReleaseQueue.distrorelease IS 'This integer field refers to the DistroRelease to which this upload is targetted';
+COMMENT ON COLUMN DistroReleaseQueue.distrorelease IS 'This integer field refers to the DistroRelease to which this upload is targeted';
 
--- DistroQueueSource
+COMMENT ON COLUMN DistroReleaseQueue.pocket IS 'This is the pocket the upload is targeted at.';
+
+-- DistroReleaseQueueSource
 COMMENT ON TABLE DistroReleaseQueueSource IS 'An upload queue source package. This table stores information pertaining to the source files in an in-progress package upload.';
 
 COMMENT ON COLUMN DistroReleaseQueueSource.distroreleasequeue IS 'This integer field refers to the DistroQueue row that this source belongs to.';
 
 COMMENT ON COLUMN DistroReleaseQueueSource.sourcepackagerelease IS 'This integer field refers to the SourcePackageRelease record related to this upload.';
 
--- DistroQueueBuild
+-- DistroReleaseQueueBuild
 COMMENT ON TABLE DistroReleaseQueueBuild IS 'An upload queue binary build. This table stores information pertaining to the builds in an in-progress package upload.';
 
 COMMENT ON COLUMN DistroReleaseQueueBuild.distroreleasequeue IS 'This integer field refers to the DistroQueue row that this source belongs to.';
 
 COMMENT ON COLUMN DistroReleaseQueueBuild.build IS 'This integer field refers to the Build record related to this upload.';
+
+-- DistroReleaseQueueCustom
+COMMENT ON TABLE DIstroReleaseQueueCustom IS 'An upload queue custom format upload. This table stores information pertaining to the custom upload formats in an in-progress package upload.';
+
+COMMENT ON COLUMN DistroReleaseQueueCustom.distroreleasequeue IS 'The queue item this refers to.';
+
+COMMENT ON COLUMN DistroReleaseQueueCustom.customformat IS 'The format of this particular custom uploaded file.';
+
+COMMENT ON COLUMN DistroReleaseQueueCustom.libraryfilealias IS 'The actual file as a librarian alias.';
 
 -- SourcePackageName
 COMMENT ON COLUMN SourcePackageName.name IS
@@ -554,10 +599,6 @@ COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.embargo IS 'The publishin
 COMMENT ON COLUMN SecureBinaryPackagePublishingHistory.embargolifted IS 'The date and time when we lifted the embargo on this publishing record. I.E. when embargo was set to FALSE having previously been set to TRUE.';
 COMMENT ON VIEW BinaryPackagePublishingHistory IS 'View on SecureBinaryPackagePublishingHistory that restricts access to embargoed entries';
 
--- soyuz views
-COMMENT ON VIEW VSourcePackageInDistro IS 'This view allows us to answer the question: what source packages have releases in a certain distribution. This is an interesting case of where a view can actually solve a problem that SQLObject can''t -- there is no way of doing this query (that I see at least) in regular sqlos because there is no DISTINCT and no way to filter things without iterating in
-Python (which generates N queries and we don''t want to go down that route).';
-COMMENT ON VIEW VSourcePackageReleasePublishing IS 'This view simplifies a lot of queries relating to publishing and is for use as a replacement for SourcePackageRelease (I actually intend to move it to a subclass of SourcePackageRelease, because using a View in place of a real table is bizarre).';
 COMMENT ON VIEW PublishedPackageView IS
     'A very large view that brings together all the information about
     packages that are currently being published within a distribution. This
@@ -581,6 +622,8 @@ COMMENT ON COLUMN Processor.family IS 'The ProcessorFamily for this Processor.';
 
 COMMENT ON COLUMN DistroArchRelease.processorfamily IS 'A link to the ProcessorFamily table, giving the architecture of this DistroArchRelease.';
 COMMENT ON COLUMN DistroArchRelease.architecturetag IS 'The name of this architecture in the context of this specific distro release. For example, some distributions might label amd64 as amd64, others might call is x86_64. This information is used, for example, in determining the names of the actual package files... such as the "amd64" part of "apache2_2.0.56-1_amd64.deb"';
+COMMENT ON COLUMN DistroArchRelease.official IS 'Whether or not this architecture or "port" is an official release. If it is not official then you may not be able to install it or get all the packages for it.';
+COMMENT ON COLUMN DistroArchRelease.package_count IS 'A cache of the number of binary packages published in this distro arch release. The count only includes packages published in the release pocket.';
 
 -- LauncpadDatabaseRevision
 COMMENT ON TABLE LaunchpadDatabaseRevision IS 'This table has a single row which specifies the most recently applied patch number.';
@@ -642,7 +685,7 @@ COMMENT ON COLUMN BountySubscription.person IS 'The person being subscribed to t
 
 COMMENT ON TABLE ProductBounty IS 'This table records a simple link between a bounty and a product. This bounty will be listed on the product web page, and the product will be mentioned on the bounty web page.';
 
-COMMENT ON TABLE DistroBounty IS 'This table records a simple link between a bounty and a distribution. This bounty will be listed on the distribution web page, and the distribution will be mentioned on the bounty web page.';
+COMMENT ON TABLE DistributionBounty IS 'This table records a simple link between a bounty and a distribution. This bounty will be listed on the distribution web page, and the distribution will be mentioned on the bounty web page.';
 
 COMMENT ON TABLE ProjectBounty IS 'This table records a simple link between a bounty and a project. This bounty will be listed on the project web page, and the project will be mentioned on the bounty web page.';
 
@@ -754,6 +797,8 @@ COMMENT ON COLUMN Specification.status IS 'An enum called SpecificationStatus th
 COMMENT ON COLUMN Specification.priority IS 'An enum that gives the implementation priority (low, medium, high, emergency) of the feature defined in this specification.';
 COMMENT ON COLUMN Specification.specurl IS 'The URL where the specification itself can be found. This is usually a wiki page somewhere.';
 COMMENT ON COLUMN Specification.whiteboard IS 'As long as the specification is somewhere else (i.e. not in Launchpad) it will be useful to have a place to hold some arbitrary message or status flags that have meaning to the project, not Launchpad. This whiteboard is just the place for it.';
+COMMENT ON COLUMN Specification.superseded_by IS 'The specification which replaced this specification.';
+COMMENT ON COLUMN Specification.needs_discussion IS 'Whether or not this specification requires further discussion at this sprint. This is used as part of the scheduling algorithm.';
 
 -- SpecificationReview
 COMMENT ON TABLE SpecificationReview IS 'A table representing a review request of a specification, from one user to another, with an optional message.';
@@ -835,10 +880,12 @@ COMMENT ON COLUMN DistroRelease.parentrelease IS 'The parent release on which th
 COMMENT ON COLUMN DistroRelease.owner IS 'The ultimate owner of this distrorelease.';
 COMMENT ON COLUMN DistroRelease.changeslist IS 'The email address (name name) of the changes announcement list for this distrorelease. If NULL, no announcement mail will be sent.';
 
+
 -- DistroArchRelease
 
 COMMENT ON TABLE DistroArchRelease IS 'DistroArchRelease: A soyuz distribution release for a given architecture. A distrorelease runs on various architectures. The distroarchrelease groups that architecture-specific stuff.';
 COMMENT ON COLUMN DistroArchRelease.distrorelease IS 'The distribution which this distroarchrelease is part of.';
+
 
 -- DistroComponentUploader
 
@@ -846,6 +893,7 @@ COMMENT ON TABLE DistroComponentUploader IS 'DistroComponentUploader: A record o
 COMMENT ON COLUMN DistroComponentUploader.distribution IS 'The distribution to which this upload permission applies.';
 COMMENT ON COLUMN DistroComponentUploader.component IS 'The component to which this upload permission applies.';
 COMMENT ON COLUMN DIstroComponentUploader.uploader IS 'The uploader(s) permitted to upload to the given component in the given distribution. This is commonly a team but may be a single person in the case of a simple distribution.';
+
 
 -- LibraryFileContent
 
@@ -912,12 +960,15 @@ COMMENT ON COLUMN PushMirrorAccess.name IS 'Name of an arch archive on the push 
 COMMENT ON COLUMN PushMirrorAccess.person IS 'A person that has access to update the named archive';
 
 -- Builder
+COMMENT ON TABLE Builder IS 'Builder: This table stores the build-slave registry and status information as: name, url, trusted, builderok, builderaction, failnotes.';
 COMMENT ON COLUMN Builder.builderok IS 'Should a builder fail for any reason, from out-of-disk-space to not responding to the buildd master, the builderok flag is set to false and the failnotes column is filled with a reason.';
 COMMENT ON COLUMN Builder.failnotes IS 'This column gets filled out with a textual description of how/why a builder has failed. If the builderok column is true then the value in this column is irrelevant and should be treated as NULL or empty.';
 COMMENT ON COLUMN Builder.trusted IS 'Whether or not the builder is cleared to do SECURITY pocket builds. Such a builder will have firewall access to the embargo archives etc.';
 COMMENT ON COLUMN Builder.url IS 'The url to the build slave. There may be more than one build slave on a given host so this url includes the port number to use. The default port number for a build slave is 8221';
+COMMENT ON COLUMN Builder.manual IS 'Whether or not builder was manual mode, i.e., collect any result from the it, but do not dispach anything to it automatically.';
 
 
+-- BuildQueue
 COMMENT ON TABLE BuildQueue IS 'BuildQueue: The queue of builds in progress/scheduled to run. This table is the core of the build daemon master. It lists all builds in progress or scheduled to start.';
 COMMENT ON COLUMN BuildQueue.build IS 'The build for which this queue item exists. This is how the buildd master will find all the files it needs to perform the build';
 COMMENT ON COLUMN BuildQueue.builder IS 'The builder assigned to this build. Some builds will have a builder assigned to queue them up; some will be building on the specified builder already; others will not have a builder yet (NULL) and will be waiting to be assigned into a builder''s queue';
@@ -1052,7 +1103,7 @@ COMMENT ON COLUMN Poll.secrecy IS 'If people votes are SECRET (no one can see), 
 COMMENT ON TABLE PollOption IS 'The options belonging to polls.';
 COMMENT ON COLUMN PollOption.poll IS 'The poll this options belongs to.';
 COMMENT ON COLUMN PollOption.name IS 'The name of this option.';
-COMMENT ON COLUMN PollOption.shortname IS 'A short name for this option.';
+COMMENT ON COLUMN PollOption.title IS 'A short title for this option.';
 COMMENT ON COLUMN PollOption.active IS 'If TRUE, people will be able to vote on this option. Otherwise they don\'t.';
 
 -- Vote

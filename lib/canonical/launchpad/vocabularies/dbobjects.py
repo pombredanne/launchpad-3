@@ -23,12 +23,14 @@ __all__ = [
     'DistroReleaseVocabulary',
     'FilteredDistroReleaseVocabulary',
     'FilteredProductSeriesVocabulary',
+    'KarmaCategoryVocabulary',
     'LanguageVocabulary',
     'MilestoneVocabulary',
     'PackageReleaseVocabulary',
     'PersonAccountToMergeVocabulary',
     'POTemplateNameVocabulary',
     'ProcessorVocabulary',
+    'ProcessorFamilyVocabulary',
     'ProductReleaseVocabulary',
     'ProductSeriesVocabulary',
     'ProductVocabulary',
@@ -59,7 +61,8 @@ from canonical.launchpad.database import (
     SourcePackageName, BinaryPackageRelease, BugWatch, Sprint,
     BinaryPackageName, Language, Milestone, Product, Project, ProductRelease,
     ProductSeries, TranslationGroup, BugTracker, POTemplateName, Schema,
-    Bounty, Country, Specification, Bug, Processor, PersonSet)
+    Bounty, Country, Specification, Bug, Processor, ProcessorFamily,
+    KarmaCategory)
 from canonical.launchpad.interfaces import (
     ILaunchBag, ITeam, ITeamMembershipSubset, IPersonSet, IEmailAddressSet)
 
@@ -184,6 +187,43 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
                 yield self._toTerm(o)
 
 
+class BasePersonVocabulary:
+    """This is a base class to be used by all different Person Vocabularies."""
+    _table = Person
+
+    def _toTerm(self, obj):
+        """Return the term for this object.
+
+        Preference is given to email-based terms, falling back on
+        name-based terms when no preferred email exists for the IPerson.
+        """
+        if obj.preferredemail is not None:
+            return SimpleTerm(obj, obj.preferredemail.email, obj.browsername)
+        else:
+            return SimpleTerm(obj, obj.name, obj.browsername)
+
+    def getTermByToken(self, token):
+        """Return the term for the given token.
+
+        If the token contains an '@', treat it like an email. Otherwise,
+        treat it like a name.
+        """
+        if "@" in token:
+            # This looks like an email token, so let's do an object
+            # lookup based on that.
+            email = getUtility(IEmailAddressSet).getByEmail(token)
+            if email is None:
+                raise LookupError(token)
+            return self._toTerm(email.person)
+        else:
+            # This doesn't look like an email, so let's simply treat
+            # it like a name.
+            person = getUtility(IPersonSet).getByName(token)
+            if person is None:
+                raise LookupError(token)
+            return self._toTerm(person)
+
+
 class CountryNameVocabulary(SQLObjectVocabularyBase):
     """A vocabulary for country names."""
 
@@ -204,6 +244,49 @@ class BinaryPackageNameVocabulary(NamedSQLObjectVocabulary):
 class BugVocabulary(SQLObjectVocabularyBase):
     _table = Bug
     _orderBy = 'id'
+
+
+# We cannot refer to a BinaryPackage unambiguously by a name, as
+# we have no assurace that a generated name using $BinaryPackageName.name
+# and $BinaryPackage.version will be unique
+# TODO: The edit ibugtask form does not default its
+# binary package field
+class BinaryPackageVocabulary(SQLObjectVocabularyBase):
+    # XXX: 2004/10/06 Brad Bollenbach -- may be broken, but there's
+    # no test data for me to check yet. This'll be fixed by the end
+    # of the week (2004/10/08) as we get Malone into usable shape.
+    _table = BinaryPackageRelease
+    _orderBy = 'id'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj.id, str(obj.id), obj.title)
+
+    def getTermByToken(self, token):
+        return self.getTerm(token)
+
+
+class BountyVocabulary(SQLObjectVocabularyBase):
+    _table = Bounty
+
+
+class BugTrackerVocabulary(SQLObjectVocabularyBase):
+    # XXX: 2004/10/06 Brad Bollenbach -- may be broken, but there's
+    # no test data for me to check yet. This'll be fixed by the end
+    # of the week (2004/10/08) as we get Malone into usable shape.
+    _table = BugTracker
+
+
+class LanguageVocabulary(SQLObjectVocabularyBase):
+    _table = Language
+    _orderBy = 'englishname'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.id, obj.displayname)
+
+
+class KarmaCategoryVocabulary(NamedSQLObjectVocabulary):
+    _table = KarmaCategory
+    _orderBy = 'name'
 
 
 class ProductVocabulary(SQLObjectVocabularyBase):
@@ -303,44 +386,6 @@ class ProjectVocabulary(SQLObjectVocabularyBase):
         return []
 
 
-# We cannot refer to a BinaryPackage unambiguously by a name, as
-# we have no assurace that a generated name using $BinaryPackageName.name
-# and $BinaryPackage.version will be unique
-# TODO: The edit ibugtask form does not default its
-# binary package field
-class BinaryPackageVocabulary(SQLObjectVocabularyBase):
-    # XXX: 2004/10/06 Brad Bollenbach -- may be broken, but there's
-    # no test data for me to check yet. This'll be fixed by the end
-    # of the week (2004/10/08) as we get Malone into usable shape.
-    _table = BinaryPackageRelease
-    _orderBy = 'id'
-
-    def _toTerm(self, obj):
-        return SimpleTerm(obj.id, str(obj.id), obj.title)
-
-    def getTermByToken(self, token):
-        return self.getTerm(token)
-
-
-class BountyVocabulary(SQLObjectVocabularyBase):
-    _table = Bounty
-
-
-class BugTrackerVocabulary(SQLObjectVocabularyBase):
-    # XXX: 2004/10/06 Brad Bollenbach -- may be broken, but there's
-    # no test data for me to check yet. This'll be fixed by the end
-    # of the week (2004/10/08) as we get Malone into usable shape.
-    _table = BugTracker
-
-
-class LanguageVocabulary(SQLObjectVocabularyBase):
-    _table = Language
-    _orderBy = 'englishname'
-
-    def _toTerm(self, obj):
-        return SimpleTerm(obj, obj.id, obj.displayname)
-
-
 class TranslationGroupVocabulary(NamedSQLObjectVocabulary):
     _table = TranslationGroup
 
@@ -348,49 +393,10 @@ class TranslationGroupVocabulary(NamedSQLObjectVocabulary):
         return SimpleTerm(obj, obj.name, obj.title)
 
 
-class BasePersonVocabulary:
-    """This is a base class to be used by all different Person Vocabularies."""
-    _table = Person
-
-    def _toTerm(self, obj):
-        """Return the term for this object.
-
-        Preference is given to email-based terms, falling back on
-        name-based terms when no preferred email exists for the IPerson.
-        """
-        if obj.preferredemail is not None:
-            return SimpleTerm(obj, obj.preferredemail.email, obj.browsername)
-        else:
-            return SimpleTerm(obj, obj.name, obj.browsername)
-
-    def getTermByToken(self, token):
-        """Return the term for the given token.
-
-        If the token contains an '@', treat it like an email. Otherwise,
-        treat it like a name.
-        """
-        if "@" in token:
-            # This looks like an email token, so let's do an object
-            # lookup based on that.
-            email = getUtility(IEmailAddressSet).getByEmail(token)
-            if email is None:
-                raise LookupError(token)
-            return self._toTerm(email.person)
-        else:
-            # This doesn't look like an email, so let's simply treat
-            # it like a name.
-            person = getUtility(IPersonSet).getByName(token)
-            if person is None:
-                raise LookupError(token)
-            return self._toTerm(person)
-
-
 class PersonAccountToMergeVocabulary(
         BasePersonVocabulary, SQLObjectVocabularyBase):
     """The set of all non-merged people with at least one email address.
 
-    The logged in user is never part of this vocabulary, because it doesn't
-    make sense to merge the user that is logged in into himself.
     This vocabulary is a very specialized one, meant to be used only to choose
     accounts to merge. You *don't* want to use it.
     """
@@ -406,9 +412,7 @@ class PersonAccountToMergeVocabulary(
         return obj in self._select()
 
     def _select(self, text=""):
-        logged_in_user = Person.select(
-            Person.q.id==getUtility(ILaunchBag).user.id)
-        return PersonSet().findPerson(text).except_(logged_in_user)
+        return getUtility(IPersonSet).findPerson(text)
 
     def search(self, text):
         """Return people whose fti or email address match :text."""
@@ -737,7 +741,7 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
     """
 
     _table = Specification
-    _orderBy = 'name'
+    _orderBy = 'title'
 
     def _toTerm(self, obj):
         return SimpleTerm(obj, obj.name, obj.name)
@@ -753,7 +757,7 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
             target = distribution
 
         if target is not None:
-            for spec in target.specifications:
+            for spec in sorted(target.specifications(), key=lambda a: a.title):
                 # we will not show the current specification in the
                 # launchbag
                 if spec == launchbag.specification:
@@ -772,17 +776,17 @@ class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
     """List specifications on which the current specification depends."""
 
     _table = Specification
-    _orderBy = 'name'
+    _orderBy = 'title'
 
     def _toTerm(self, obj):
-        return SimpleTerm(obj, obj.name, obj.name)
+        return SimpleTerm(obj, obj.name, obj.title)
 
     def __iter__(self):
         launchbag = getUtility(ILaunchBag)
         curr_spec = launchbag.specification
 
         if curr_spec is not None:
-            for spec in curr_spec.dependencies:
+            for spec in sorted(curr_spec.dependencies, key=lambda a: a.title):
                 yield SimpleTerm(spec, spec.name, spec.title)
 
 
@@ -845,6 +849,16 @@ class DistributionVocabulary(NamedSQLObjectVocabulary):
     _table = Distribution
     _orderBy = 'name'
 
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.title)
+
+    def getTermByToken(self, token):
+        obj = Distribution.selectOne("name=%s" % sqlvalues(token))
+        if obj is None:
+            raise LookupError(token)
+        else:
+            return self._toTerm(obj)
+
     def search(self, query):
         """Return terms where query is a substring of the name"""
         if query:
@@ -876,7 +890,7 @@ class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
             yield self._toTerm(obj)
 
     def _toTerm(self, obj):
-        # NB: We use '/' as the seperater because '-' is valid in
+        # NB: We use '/' as the separator because '-' is valid in
         # a distribution.name
         token = '%s/%s' % (obj.distribution.name, obj.name)
         return SimpleTerm(obj.id, token, obj.title)
@@ -947,6 +961,14 @@ class ProcessorVocabulary(NamedSQLObjectVocabulary):
                 )
             for processor in processors:
                 yield self._toTerm(processor)
+
+
+class ProcessorFamilyVocabulary(NamedSQLObjectVocabulary):
+    _table = ProcessorFamily
+    _orderBy = 'name'
+
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.title)
 
 
 class SchemaVocabulary(NamedSQLObjectVocabulary):

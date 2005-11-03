@@ -4,7 +4,7 @@
 
     <div class="portletBody"
          tal:define="other_occurrences view/alsoReportedIn;">
-      <div class="portletContent odd">
+      <div class="portletContent">
 
         <tal:block condition="not:other_occurrences">
             <i>No other known occurrences.</i>

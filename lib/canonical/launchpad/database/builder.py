@@ -1,8 +1,12 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Builder', 'BuilderSet', 'BuildQueue',
-           'BuildQueueSet']
+__all__ = [
+    'Builder',
+    'BuilderSet',
+    'BuildQueue',
+    'BuildQueueSet'
+    ]
 
 from datetime import datetime
 import xmlrpclib
@@ -19,10 +23,10 @@ from sqlobject import (
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.database.build import Build
 
 from canonical.launchpad.interfaces import (
-    IBuilder, IBuilderSet, IBuildQueue, IBuildQueueSet, NotFoundError)
+    IBuilder, IBuilderSet, IBuildQueue, IBuildQueueSet, NotFoundError
+    )
 
 from canonical.lp.dbschema import EnumCol, BuildStatus
 
@@ -56,6 +60,7 @@ class Builder(SQLBase):
     failnotes = StringCol(dbName='failnotes', default=None)
     trusted = BoolCol(dbName='trusted', default=False, notNull=True)
     speedindex = IntCol(dbName='speedindex', default=0)
+    manual = BoolCol(dbName='manual', default=False)
     
     @property
     def currentjob(self):
@@ -65,21 +70,29 @@ class Builder(SQLBase):
     @property
     def slave(self):
         """See IBuilder"""
-        return BuilderSlave(self.url,allow_none=1)
+        return BuilderSlave(self.url, allow_none=True)
 
     @property
     def status(self):
         """See IBuilder"""
+        if self.manual:
+            mode = 'MANUAL'
+        else:
+            mode = 'AUTO'
+            
         if not self.builderok:
-            return 'NOT OK : %s' % self.failnotes
-        if self.currentjob:
-            return 'BUILDING %s' % self.currentjob.build.title
-        return 'IDLE'
+            return 'NOT OK : %s (%s)' % (self.failnotes, mode)
 
-    def lastBuilds(self, limit=10):
+        if self.currentjob:
+            return 'BUILDING %s (%s)' % (self.currentjob.build.title,
+                                         mode)
+
+        return 'IDLE (%s)' % mode
+
+    def failbuilder(self, reason):
         """See IBuilder"""
-        return Build.select("builder=%s" % sqlvalues(self.id), limit=limit,
-                            orderBy="-datebuilt")
+        self.builderok = False
+        self.failnotes = reason
 
 
 class BuilderSet(object):
@@ -117,6 +130,13 @@ class BuilderSet(object):
         """See IBuilderSet."""
         return Builder.select()
 
+    def getBuildersByArch(self, arch):
+        """See IBuilderSet."""
+        return Builder.select('builder.processor = processor.id '
+                              'AND processor.family = %d'
+                              % arch.processorfamily.id,
+                              clauseTables=("Processor",))
+
 
 class BuildQueue(SQLBase):
     implements(IBuildQueue)
@@ -131,31 +151,43 @@ class BuildQueue(SQLBase):
 
     @property
     def archrelease(self):
+        """See IBuildQueue"""
         return self.build.distroarchrelease
 
     @property
     def urgency(self):
+        """See IBuildQueue"""
         return self.build.sourcepackagerelease.urgency
     
     @property
     def component_name(self):
+        """See IBuildQueue"""
         return self.build.sourcepackagerelease.component.name
 
     @property
     def archhintlist(self):
+        """See IBuildQueue"""
         return self.build.sourcepackagerelease.archhintlist
     
     @property
     def name(self):
+        """See IBuildQueue"""
         return self.build.sourcepackagerelease.name
 
     @property
     def version(self):
+        """See IBuildQueue"""
         return self.build.sourcepackagerelease.version
 
     @property
     def files(self):
+        """See IBuildQueue"""        
         return self.build.sourcepackagerelease.files
+
+    @property
+    def builddependsindep(self):
+        """See IBuildQueue"""
+        return self.build.sourcepackagerelease.builddependsindep
 
     @property
     def buildduration(self):
@@ -195,3 +227,18 @@ class BuildQueueSet(object):
         """See IBuildQueueSet."""
         return BuildQueue.select('buildstart is not null')
     
+    def calculateCandidates(self, archreleases, state):
+        """See IBuildQueueSet."""
+        alternatives = ["build.distroarchrelease=%d"
+                        % d.id for d in archreleases]
+
+        clause = " OR ".join(alternatives)
+
+        if clause == '':
+            clause = "1=1";
+
+        return BuildQueue.select("buildqueue.build = build.id AND "
+                                 "build.buildstate = %d AND "
+                                 "buildqueue.builder IS NULL AND (%s)"
+                                 % (state.value, clause),
+                                 clauseTables=['Build'])

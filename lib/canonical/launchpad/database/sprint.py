@@ -15,11 +15,17 @@ from sqlobject import (
 
 from canonical.launchpad.interfaces import ISprint, ISprintSet, NotFoundError
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.validators.name import valid_name
+
 from canonical.launchpad.database.sprintattendance import SprintAttendance
+from canonical.launchpad.database.sprintspecification import (
+    SprintSpecification)
+
+from canonical.lp.dbschema import (
+    SpecificationSort, SprintSpecificationStatus)
 
 
 class Sprint(SQLBase):
@@ -42,15 +48,38 @@ class Sprint(SQLBase):
     time_ends = UtcDateTimeCol(notNull=True)
 
     # useful joins
-    attendances = MultipleJoin('SprintAttendance',
-        joinColumn='sprint', orderBy='id')
     attendees = RelatedJoin('Person',
         joinColumn='sprint', otherColumn='attendee',
         intermediateTable='SprintAttendance', orderBy='name')
-    specifications = RelatedJoin('Specification',
-        joinColumn='sprint', otherColumn='specification',
-        intermediateTable='SprintSpecification',
-        orderBy=['name', 'title', 'id'])
+
+    # IHasSpecifications (with twist)
+    def specifications(self, quantity=None):
+        # import here to avoid circular deps
+        from canonical.launchpad.database.specification import Specification
+        specs = Specification.select("""
+            Specification.id = SprintSpecification.specification AND
+            SprintSpecification.status = %s AND
+            SprintSpecification.sprint = %s
+            """ % sqlvalues(
+                SprintSpecificationStatus.CONFIRMED,
+                self.id),
+            clauseTables=['SprintSpecification'],
+            orderBy=['-priority', 'status', 'name', 'id'])
+        return [spec for spec in specs if spec.is_incomplete]
+
+    @property
+    def attendances(self):
+        ret = SprintAttendance.selectBy(sprintID=self.id)
+        return sorted(ret, key=lambda a: a.attendee.name)
+
+    def specificationLinks(self, status=None):
+        """See ISprint."""
+        query = 'sprint=%s' % sqlvalues(self.id)
+        if status is not None:
+            query += ' AND status=%s' % sqlvalues(status)
+        sprintspecs = SprintSpecification.select(query)
+        return sorted(sprintspecs, key=lambda a: a.specification.priority,
+            reverse=True)
 
     # attendance
     def attend(self, person, time_starts, time_ends):
@@ -58,6 +87,8 @@ class Sprint(SQLBase):
         # first see if a relevant attendance exists, and if so, update it
         for attendance in self.attendances:
             if attendance.attendee.id == person.id:
+                attendance.time_starts = time_starts
+                attendance.time_ends = time_ends
                 return attendance
         # since no previous attendance existed, create a new one
         return SprintAttendance(sprint=self, attendee=person,
@@ -93,7 +124,7 @@ class SprintSet:
 
     def __init__(self):
         """See ISprintSet."""
-        self.title = 'Launchpad Sprints and Meetings Registry'
+        self.title = 'Sprints and Meetings'
 
     def __getitem__(self, name):
         """See ISprintSet."""

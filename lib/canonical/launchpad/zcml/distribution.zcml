@@ -56,34 +56,53 @@
             name="+index"
             facet="overview"
             template="../templates/distribution-index.pt"
-            lp:url="/distros/$Distribution.name/" />
+            lp:url="/distros/$Distribution.name/"
+            />
+        <browser:page
+            name="+search"
+            facet="overview"
+            template="../templates/distribution-search.pt"
+            lp:url="/distros/$Distribution.name/+search"
+            />
+        <browser:page
+            name="+allpackages"
+            facet="overview"
+            template="../templates/distribution-allpackages.pt"
+            lp:url="/distros/$Distribution.name/+allpackages"
+            />
         <browser:page
             name="+bounties"
             facet="bounties"
             template="../templates/related-bounties.pt"
-            lp:url="/distros/$Distribution.name/+bounties" />
+            lp:url="/distros/$Distribution.name/+bounties"
+            />
         <browser:page
             name="+members"
             facet="overview"
             template="../templates/distribution-members.pt"
-            lp:url="/distros/$Distribution.name/+members" />
+            lp:url="/distros/$Distribution.name/+members"
+            />
         <browser:page
             name="+cve"
             facet="bugs"
             template="../templates/distribution-cvereport.pt"
-            lp:url="/distros/$Distribution.name/+cve" />
+            lp:url="/distros/$Distribution.name/+cve"
+            />
         <browser:page
             name="+translations"
             facet="translations"
-            template="../templates/distribution-translations.pt" />
+            template="../templates/distribution-translations.pt"
+            />
         <browser:page
             name="+builds"
             template="../templates/distribution-builds.pt"
-            lp:url="/distros/$distribution/+builds"/>
+            lp:url="/distros/$distribution/+builds"
+            />
         <browser:page
             name="+builds-list"
             template="../templates/builds-list.pt"
-            lp:url="/distros/$distribution/+builds-list"/>
+            lp:url="/distros/$distribution/+builds-list"
+            />
     </browser:pages>
     
     <browser:pages
@@ -91,27 +110,26 @@
         permission="zope.Public" >
         <browser:page
             name="+portlet-details"
-            facet="overview"
             template="../templates/distribution-portlet-details.pt"
             lp:url="/distros/$Distribution.name/+portlet-details" />
         <browser:page
             name="+portlet-releases"
-            facet="overview"
             template="../templates/distribution-portlet-releases.pt"
             lp:url="/distros/$Distribution.name/+portlet-releases" />
         <browser:page
             name="+portlet-milestones"
-            facet="overview"
             template="../templates/object-portlet-milestones.pt"
             lp:url="/distros/$Distribution.name/+portlet-milestones" />
         <browser:page
+            name="+portlet-uploaders"
+            template="../templates/distribution-portlet-uploaders.pt"
+            lp:url="/distros/$Distribution.name/+portlet-uploaders" />
+        <browser:page
             name="+portlet-bounties"
-            facet="bounties"
             template="../templates/object-portlet-bounties.pt"
             lp:url="/distros/$Distribution.name/+portlet-bounties" />
         <browser:page
             name="+portlet-aboutcve"
-            facet="bugs"
             template="../templates/distribution-portlet-aboutcve.pt"
             lp:url="/distros/$Distribution.name/+portlet-aboutcve" />
     </browser:pages>
@@ -128,10 +146,10 @@
     </browser:pages>
 
     <browser:addform
-        name="+add"
+        name="+addrelease"
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IDistroRelease"
-        label="Create a New Distribution Release in Soyuz"
+        label="Register a New Distribution Release"
         fields="name displayname title summary description version
         parentrelease components sections"
         content_factory="canonical.launchpad.database.DistroRelease"
@@ -163,17 +181,14 @@
         name="+filebug"
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IBugAddForm"
-        label="Report Bug in a Linux Distribution"
-        fields="sourcepackagename title comment private owner"
-        class="canonical.launchpad.browser.DistributionFileBugView"
+        label="Report a Bug in a Linux Distribution"
+        fields="sourcepackagename title comment private"
+        class="canonical.launchpad.browser.FileBugView"
         facet="bugs"
-        keyword_arguments="sourcepackagename title comment private owner"
+        keyword_arguments="sourcepackagename title comment private"
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
         lp:url="/distros/$Distribution.name/+filebug">
-        <browser:widget
-           field="owner"
-           class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
@@ -200,7 +215,7 @@
         schema="canonical.launchpad.interfaces.IDistribution"
         facet="overview"
         fields="members"
-        label="Select A New Distribution Members Team"
+        label="Select a New Distribution Members Team"
         permission="launchpad.Edit"
         template="../templates/distribution-memberteam.pt"
         lp:url="/distros/$Distribution.name/+selectmemberteam" />
@@ -212,7 +227,7 @@
         facet="translations"
         fields="translationgroup translationpermission"
         permission="launchpad.Edit"
-        label="Select A New Translation Group"
+        label="Select a New Translation Group"
         template="../templates/distribution-translators.pt"
         lp:url="/distros/$Distribution.name/+changetranslators" />
 
@@ -222,7 +237,7 @@
       schema="canonical.launchpad.interfaces.IDistributionBounty"
       class="canonical.launchpad.browser.bounty.BountyLinkView"
       facet="bounties"
-      label="Link Existing Bounty"
+      label="Link an Existing Bounty"
       fields="distribution bounty"
       keyword_arguments="distribution bounty"
       permission="launchpad.AnyPerson"
@@ -237,7 +252,7 @@
       name="+addbounty"
       for="canonical.launchpad.interfaces.IDistribution"
       schema="canonical.launchpad.interfaces.IBounty"
-      label="Register A New Bounty"
+      label="Register a New Bounty"
       fields="name title summary usdvalue difficulty description"
       class="canonical.launchpad.browser.BountyAddView"
       facet="bounties"
@@ -298,16 +313,6 @@
         facet="overview"
         class="canonical.launchpad.browser.DistributionSetView">
     </browser:pages>
-
-    <browser:page
-        for="canonical.launchpad.interfaces.IDistributionSet"
-        permission="zope.Public"
-            class="canonical.launchpad.browser.DistributionSetSearchView"
-            facet="overview"
-            template="../templates/distribution-search.pt"
-            lp:url="Soyuz/distros/+search"
-            name="+search"
-        />
 
     <browser:addform
         name="+add"

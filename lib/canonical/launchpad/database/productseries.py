@@ -1,7 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['ProductSeries', 'ProductSeriesSet']
+__all__ = ['ProductSeries', 'ProductSeriesSet', 'ProductSeriesSourceSet']
 
 import datetime
 import sets
@@ -16,14 +16,17 @@ from canonical.database.datetimecol import UtcDateTimeCol
 # canonical imports
 from canonical.launchpad.interfaces import (
     IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin,
-    IProductSeriesSet, NotFoundError)
+    IProductSeriesSet, IProductSeriesSourceSet, NotFoundError)
+
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.specification import Specification
 from canonical.database.sqlbase import (
-    SQLBase, quote, flush_database_updates, sqlvalues)
-from canonical.database.constants import UTC_NOW
+    SQLBase, quote, sqlvalues)
+
 from canonical.lp.dbschema import (
-    EnumCol, ImportStatus, PackagingType, RevisionControlSystems)
+    EnumCol, ImportStatus, PackagingType, RevisionControlSystems,
+    SpecificationSort)
 
 
 class ProductSeries(SQLBase):
@@ -71,9 +74,6 @@ class ProductSeries(SQLBase):
                              orderBy=['version'])
     packagings = MultipleJoin('Packaging', joinColumn='productseries',
                               orderBy=['-id'])
-    specifications = MultipleJoin('Specification',
-        joinColumn='productseries', orderBy='-datecreated')
-
 
     @property
     def potemplates(self):
@@ -119,13 +119,22 @@ class ProductSeries(SQLBase):
         ret.sort(key=lambda a: a.distribution.name + a.sourcepackagename.name)
         return ret
 
+    def specifications(self, sort=None, quantity=None):
+        """See IHasSpecifications."""
+        if sort is None or sort == SpecificationSort.DATE:
+            order = ['-datecreated', 'id']
+        elif sort == SpecificationSort.PRIORITY:
+            order = ['-priority', 'status', 'name']
+        return Specification.selectBy(productseriesID=self.id,
+            orderBy=order)[:quantity]
+
     def getSpecification(self, name):
         """See ISpecificationTarget."""
         return self.product.getSpecification(name)
 
     def getRelease(self, version):
         for release in self.releases:
-            if release.version==version:
+            if release.version == version:
                 return release
         return None
 
@@ -195,7 +204,7 @@ class ProductSeries(SQLBase):
 
 
 class ProductSeriesSet:
-
+    # XXX: this is in fact a subset of product series
     implements(IProductSeriesSet)
 
     def __init__(self, product=None):
@@ -216,10 +225,33 @@ class ProductSeriesSet:
             raise NotFoundError(name)
         return series
 
+
+class ProductSeriesSourceSet:
+    """See IProductSeriesSourceSet"""
+    implements(IProductSeriesSourceSet)
+    def search(self, ready=None, text=None, forimport=None, importstatus=None,
+               start=None, length=None):
+        query, clauseTables = self._querystr(
+            ready, text, forimport, importstatus)
+        return ProductSeries.select(query, distinct=True,
+                   clauseTables=clauseTables)[start:length]
+
+    def importcount(self, status=None):
+        return self.search(forimport=True, importstatus=status).count()
+
     def _querystr(self, ready=None, text=None,
                   forimport=None, importstatus=None):
         """Return a querystring and clauseTables for use in a search or a
-        get or a query.
+        get or a query. Arguments:
+          ready - boolean indicator of whether or not to limit the search
+                  to products and projects that have been reviewed and are
+                  active.
+          text - text to search for in the product and project titles and
+                 descriptions
+          forimport - whether or not to limit the search to series which
+                      have RCS data on file
+          importstatus - limit the list to series which have the given
+                         import status.
         """
         query = '1=1'
         clauseTables = sets.Set()
@@ -256,14 +288,4 @@ class ProductSeriesSet:
                 query += ' AND '
             query += 'ProductSeries.importstatus = %d' % importstatus
         return query, clauseTables
-
-    def search(self, ready=None, text=None, forimport=None, importstatus=None,
-               start=None, length=None):
-        query, clauseTables = self._querystr(
-            ready, text, forimport, importstatus)
-        return ProductSeries.select(query, distinct=True,
-                   clauseTables=clauseTables)[start:length]
-
-    def importcount(self, status=None):
-        return self.search(forimport=True, importstatus=status).count()
 

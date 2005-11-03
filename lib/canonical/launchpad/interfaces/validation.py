@@ -81,7 +81,7 @@ def non_duplicate_bug(value):
     from canonical.launchpad.interfaces.bug import IBugSet
     bugset = getUtility(IBugSet)
     duplicate = getUtility(ILaunchBag).bug
-    dup_target = bugset.get(value)
+    dup_target = value
     current_bug_has_dup_refs = bugset.searchAsUser(
         user=getUtility(ILaunchBag).user,
         duplicateof=duplicate).count()
@@ -133,10 +133,9 @@ def _valid_image(image, max_size, max_dimensions):
             pixels.""")))
     return True
 
-
 def valid_emblem(emblem):
-    return _valid_image(emblem, 6000, (16,16))
-
+    return _valid_image(emblem, 9000, (16,16))
 
 def valid_hackergotchi(hackergotchi):
-    return _valid_image(hackergotchi, 16000, (96,96))
+    return _valid_image(hackergotchi, 54000, (150,150))
+

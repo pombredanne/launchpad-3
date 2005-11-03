@@ -5,7 +5,7 @@
 # related to the domination of old source and binary releases inside
 # the publishing tables.
 
-from canonical.sourcerer.deb.version import (
+from sourcerer.deb.version import (
     Version as DebianVersion, BadUpstreamError)
 
 from canonical.lp.dbschema import PackagePublishingStatus
@@ -16,7 +16,18 @@ from canonical.launchpad.database import (
      BinaryPackagePublishing, SecureSourcePackagePublishingHistory,
      SecureBinaryPackagePublishingHistory)
 
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import (
+    sqlvalues, flush_database_updates, _clearCache)
+
+import gc
+
+def clear_cache():
+    """Flush SQLObject updates and clear the cache."""
+    # Flush them anyway, should basically be a noop thanks to not doing
+    # lazyUpdate.
+    flush_database_updates()
+    _clearCache()
+    gc.collect()
 
 PENDING = PackagePublishingStatus.PENDING
 PUBLISHED = PackagePublishingStatus.PUBLISHED
@@ -270,7 +281,7 @@ class Dominator(object):
                 pub_record.datemadepending = UTC_NOW
 
 
-    def judgeAndDominate(self, dr, pocket, config):
+    def judgeAndDominate(self, dr, pocket, config, do_clear_cache=True):
         """Perform the domination and superseding calculations across the
         distrorelease and pocket specified."""
         
@@ -288,6 +299,10 @@ class Dominator(object):
 
         self._dominateSource(self._sortPackages(sources))
 
+        if do_clear_cache:
+            self.debug("Flushing SQLObject cache.")
+            clear_cache()
+
         for distroarchrelease in dr.architectures:
             self.debug("Performing domination across %s/%s (%s)" % (
                 dr.name, pocket.title, distroarchrelease.architecturetag))
@@ -298,6 +313,9 @@ class Dominator(object):
                 status=PackagePublishingStatus.PUBLISHED)
             
             self._dominateBinary(self._sortPackages(binaries, False))
+            if do_clear_cache:
+                self.debug("Flushing SQLObject cache.")
+                clear_cache()
         
         sources = SecureSourcePackagePublishingHistory.selectBy(
             distroreleaseID=dr.id, pocket=pocket,

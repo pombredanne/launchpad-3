@@ -88,10 +88,10 @@ class IPoll(Interface):
         """Return a timedelta object of the interval between now and the date
         when this poll opens."""
 
-    def newOption(name, shortname=None, active=True):
+    def newOption(name, title=None, active=True):
         """Create a new PollOption for this poll.
-        
-        If shortname is None it'll be the same as name.
+
+        If title is None it'll be the same as name.
         """
 
     def getActiveOptions():
@@ -259,18 +259,18 @@ class IPollOption(Interface):
         readonly=True)
 
     name = TextLine(
-        title=_('The name of this option.'), required=True, readonly=False)
+        title=_('Option name.'), required=True, readonly=False)
 
-    shortname = TextLine(
-        title=_('The short name of this option. If not specified, this will '
-                'be the same as the name'),
+    title = TextLine(
+        title=_('Title'),
+        description=_('The title of this option. A single brief sentence that '
+        'summarises the outcome for which people are voting if '
+        'they select this option.'),
         required=False, readonly=False)
 
     active = Bool(
         title=_('Is this option active?'), required=True, readonly=False,
         default=True)
-
-    title = Attribute('Poll Option Page Title')
 
     def destroySelf():
         """Remove this option from the database."""
@@ -279,7 +279,7 @@ class IPollOption(Interface):
 class IPollOptionSet(Interface):
     """The set of PollOption objects."""
 
-    def new(poll, name, shortname, active=True):
+    def new(poll, name, title, active=True):
         """Create a new PollOption."""
 
     def selectByPoll(poll, only_active=False):

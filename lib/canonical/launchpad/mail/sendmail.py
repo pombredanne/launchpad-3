@@ -88,6 +88,7 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
     msg['Subject'] = subject
     return sendmail(msg)
 
+
 def sendmail(message):
     """Send an email.Message.Message
 
@@ -96,7 +97,7 @@ def sendmail(message):
     will need to use this method.
 
     From:, To: and Subject: headers should already be set.
-    Message-Id:, Date:, and Reply-To: headers will be set if they are 
+    Message-Id:, Date:, and Reply-To: headers will be set if they are
     not already. Errors-To: and Return-Path: headers will always be set.
     The more we look valid, the less we look like spam.
 
@@ -152,15 +153,21 @@ def sendmail(message):
             # as it emulates the Z3 API which doesn't report this either
             # (because actual delivery is done later).
             smtp = SMTP(config.zopeless.smtp_host, config.zopeless.smtp_port)
-            smtp.sendmail(from_addr, to_addrs, raw_message)
+
+            # The "MAIL FROM" is set to the bounce address, to behave in a way
+            # similar to mailing list software.
+            smtp.sendmail(config.bounce_address, to_addrs, raw_message)
             smtp.quit()
         return message['message-id']
     else:
-        return raw_sendmail(from_addr, to_addrs, raw_message)
+        # The "MAIL FROM" is set to the bounce address, to behave in a way
+        # similar to mailing list software.
+        return raw_sendmail(config.bounce_address, to_addrs, raw_message)
+
 
 def raw_sendmail(from_addr, to_addrs, raw_message):
-    """Send a raw RFC8222 email message. 
-    
+    """Send a raw RFC8222 email message.
+
     All headers and encoding should already be done, as the message is
     spooled out verbatim to the delivery agent.
 
@@ -175,6 +182,7 @@ def raw_sendmail(from_addr, to_addrs, raw_message):
     assert raw_message.decode('ascii'), 'Not ASCII - badly encoded message'
     mailer = zapi.getUtility(IMailDelivery, 'Mail')
     return mailer.send(from_addr, to_addrs, raw_message)
+
 
 if __name__ == '__main__':
     from canonical.lp import initZopeless

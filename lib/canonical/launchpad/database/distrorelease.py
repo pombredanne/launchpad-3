@@ -12,34 +12,52 @@ __all__ = [
 from zope.interface import implements
 from zope.component import getUtility
 
-from sqlobject import StringCol, ForeignKey, MultipleJoin, IntCol
+from sqlobject import (
+    StringCol, ForeignKey, MultipleJoin, IntCol, SQLObjectNotFound,
+    RelatedJoin)
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase, sqlvalues, flush_database_updates, cursor, flush_database_caches)
 from canonical.database.datetimecol import UtcDateTimeCol
+
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, BugTaskStatus, EnumCol, DistributionReleaseStatus)
+    PackagePublishingStatus, BugTaskStatus, EnumCol, DistributionReleaseStatus,
+    DistroReleaseQueueStatus, PackagePublishingPocket, SpecificationSort)
 
 from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
-    IPublishedPackageSet, IHasBuildRecords, NotFoundError)
+    IPublishedPackageSet, IHasBuildRecords, NotFoundError,
+    IBinaryPackageName)
 
-from canonical.launchpad.database.sourcepackageindistro import (
-    SourcePackageInDistro)
+from canonical.database.constants import DEFAULT, UTC_NOW
+
+from canonical.launchpad.database.binarypackagename import (
+    BinaryPackageName)
+from canonical.launchpad.database.distroreleasebinarypackage import (
+    DistroReleaseBinaryPackage)
+from canonical.launchpad.database.distroreleasepackagecache import (
+    DistroReleasePackageCache)
 from canonical.launchpad.database.publishing import (
-    BinaryPackagePublishing, SourcePackagePublishing)
+    BinaryPackagePublishing, SourcePackagePublishing,
+    BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.distroreleaselanguage import (
     DistroReleaseLanguage, DummyDistroReleaseLanguage)
 from canonical.launchpad.database.sourcepackage import SourcePackage
-from canonical.launchpad.database.sourcepackagename import (
-    SourcePackageName, SourcePackageNameSet)
+from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.bugtask import BugTaskSet, BugTask
 from canonical.launchpad.database.binarypackagerelease import (
         BinaryPackageRelease)
+from canonical.launchpad.database.component import Component
+from canonical.launchpad.database.section import Section
+from canonical.launchpad.database.sourcepackagerelease import (
+    SourcePackageRelease)
+from canonical.launchpad.database.specification import Specification
+from canonical.launchpad.database.queue import DistroReleaseQueue
 from canonical.launchpad.helpers import shortlist
 
 
@@ -71,17 +89,38 @@ class DistroRelease(SQLBase):
         dbName='owner', foreignKey='Person', notNull=True)
     lucilleconfig = StringCol(notNull=False, default=None)
     changeslist = StringCol(notNull=False, default=None)
-    architectures = MultipleJoin(
-        'DistroArchRelease', joinColumn='distrorelease',
-        orderBy='architecturetag')
     nominatedarchindep = ForeignKey(
         dbName='nominatedarchindep',foreignKey='DistroArchRelease',
         notNull=False, default=None)
-    specifications = MultipleJoin('Specification',
-        joinColumn='distrorelease', orderBy='-datecreated')
     datelastlangpack = UtcDateTimeCol(dbName='datelastlangpack', notNull=False,
-                                   default=None)
+        default=None)
     messagecount = IntCol(notNull=True, default=0)
+    binarycount = IntCol(notNull=True, default=DEFAULT)
+    sourcecount = IntCol(notNull=True, default=DEFAULT)
+
+    architectures = MultipleJoin(
+        'DistroArchRelease', joinColumn='distrorelease',
+        orderBy='architecturetag')
+    binary_package_caches = MultipleJoin('DistroReleasePackageCache',
+        joinColumn='distrorelease', orderBy='name')
+
+    # XXX: dsilvers: 20051013: At some point, get rid of components/sections
+    # from above and rename these and fix up the uploader and queue stuff.
+    real_components = RelatedJoin(
+        'Component', joinColumn='distrorelease', otherColumn='component',
+        intermediateTable='ComponentSelection')
+    real_sections = RelatedJoin(
+        'Section', joinColumn='distrorelease', otherColumn='section',
+        intermediateTable='SectionSelection')
+
+    # XXX: dsilvers: 20051013: At some point, get rid of components/sections
+    # from above and rename these and fix up the uploader and queue stuff.
+    real_components = RelatedJoin(
+        'Component', joinColumn='distrorelease', otherColumn='component',
+        intermediateTable='ComponentSelection')
+    real_sections = RelatedJoin(
+        'Section', joinColumn='distrorelease', otherColumn='section',
+        intermediateTable='SectionSelection')
 
     @property
     def packagings(self):
@@ -114,7 +153,7 @@ class DistroRelease(SQLBase):
         if not datereleased:
             datereleased = 'NOW'
         return DistroRelease.select('''
-                distribution = %s AND 
+                distribution = %s AND
                 datereleased < %s
                 ''' % sqlvalues(self.distribution.id, datereleased),
                 orderBy=['-datereleased'])
@@ -130,24 +169,47 @@ class DistroRelease(SQLBase):
     def status(self):
         return self.releasestatus.title
 
-    @property
-    def sourcecount(self):
-        query = ('SourcePackagePublishing.status = %s '
-                 'AND SourcePackagePublishing.distrorelease = %s'
-                 % sqlvalues(PackagePublishingStatus.PUBLISHED, self.id))
-        return SourcePackagePublishing.select(query).count()
-
-    @property
-    def binarycount(self):
+    def updatePackageCount(self):
         """See IDistroRelease."""
-        clauseTables = ['DistroArchRelease']
-        query = ('BinaryPackagePublishing.status = %s '
-                 'AND BinaryPackagePublishing.distroarchrelease = '
-                 'DistroArchRelease.id '
-                 'AND DistroArchRelease.distrorelease = %s'
-                 % sqlvalues(PackagePublishingStatus.PUBLISHED, self.id))
-        return BinaryPackagePublishing.select(
-            query, clauseTables=clauseTables).count()
+
+        # first update the source package count
+        query = """
+            SourcePackagePublishing.distrorelease = %s AND
+            SourcePackagePublishing.status = %s AND
+            SourcePackagePublishing.pocket = %s AND
+            SourcePackagePublishing.sourcepackagerelease = 
+                SourcePackageRelease.id AND
+            SourcePackageRelease.sourcepackagename =
+                SourcePackageName.id
+            """ % sqlvalues(
+                self.id,
+                PackagePublishingStatus.PUBLISHED,
+                PackagePublishingPocket.RELEASE)
+        self.sourcecount = SourcePackageName.select(query,
+            distinct=True,
+            clauseTables=['SourcePackageRelease',
+                'SourcePackagePublishing']).count()
+
+        # next update the binary count
+        clauseTables = ['DistroArchRelease', 'BinaryPackagePublishing',
+                        'BinaryPackageRelease']
+        query = """
+            BinaryPackagePublishing.binarypackagerelease = 
+                BinaryPackageRelease.id AND
+            BinaryPackageRelease.binarypackagename =
+                BinaryPackageName.id AND
+            BinaryPackagePublishing.status = %s AND
+            BinaryPackagePublishing.pocket = %s AND
+            BinaryPackagePublishing.distroarchrelease = 
+                DistroArchRelease.id AND
+            DistroArchRelease.distrorelease = %s
+            """ % sqlvalues(
+                PackagePublishingStatus.PUBLISHED,
+                PackagePublishingPocket.RELEASE,
+                self.id)
+        ret = BinaryPackageName.select(
+            query, distinct=True, clauseTables=clauseTables).count()
+        self.binarycount = ret
 
     @property
     def architecturecount(self):
@@ -176,21 +238,18 @@ class DistroRelease(SQLBase):
         search_params.setDistributionRelease(self)
         return BugTaskSet().search(search_params)
 
+    def specifications(self, sort=None, quantity=None):
+        """See IHasSpecifications."""
+        if sort is None or sort == SpecificationSort.DATE:
+            order = ['-datecreated', 'id']
+        elif sort == SpecificationSort.PRIORITY:
+            order = ['-priority', 'status', 'name']
+        return Specification.selectBy(distroreleaseID=self.id,
+            orderBy=order)[:quantity]
+
     def getSpecification(self, name):
         """See ISpecificationTarget."""
         return self.distribution.getSpecification(name)
-
-    def getBugSourcePackages(self):
-        """See IDistroRelease."""
-        query = ("VSourcePackageInDistro.distrorelease = %i AND "
-                 "VSourcePackageInDistro.distro = BugTask.distribution AND "
-                 "VSourcePackageInDistro.name = BugTask.sourcepackagename AND "
-                 "(BugTask.status != %i OR BugTask.status != %i)"
-                 % sqlvalues(
-                    self.id, BugTaskStatus.FIXED, BugTaskStatus.REJECTED))
-
-        return SourcePackageInDistro.select(
-            query, clauseTables=["BugTask"], distinct=True)
 
     @property
     def open_cve_bugtasks(self):
@@ -273,41 +332,43 @@ class DistroRelease(SQLBase):
         self.messagecount = messagecount
         ztm.commit()
 
-
-    def findSourcesByName(self, pattern):
-        """Get SourcePackages in a DistroRelease"""        
-        # XXX: Daniel Debonzi 20050711
-        # Implement it as soon as SourcePackageSet issue are sorted out.
-        raise NotImplemented
-
-    def getSourcePackageByName(self, name):
+    def getSourcePackage(self, name):
         """See IDistroRelease."""
         if not ISourcePackageName.providedBy(name):
-            name_set = SourcePackageNameSet()
-
             try:
-                name = name_set[name]
-            except IndexError:
-                raise ValueError('No such source package name %r' % name)
-
+                name = SourcePackageName.byName(name)
+            except SQLObjectNotFound:
+                return None
         return SourcePackage(sourcepackagename=name, distrorelease=self)
 
-    def __getitem__(self, arch):
-        """Get SourcePackages in a DistroRelease with BugTask"""
+    def getBinaryPackage(self, name):
+        """See IDistroRelease."""
+        if not IBinaryPackageName.providedBy(name):
+            try:
+                name = BinaryPackageName.byName(name)
+            except SQLObjectNotFound:
+                return None
+        return DistroReleaseBinaryPackage(self, name)
+
+    def __getitem__(self, archtag):
+        """See IDistroRelease."""
         item = DistroArchRelease.selectOneBy(
-            distroreleaseID=self.id, architecturetag=arch)
+            distroreleaseID=self.id, architecturetag=archtag)
         if item is None:
             raise NotFoundError('Unknown architecture %s for %s %s' % (
-                arch, self.distribution.name, self.name))
+                archtag, self.distribution.name, self.name))
         return item
 
-    def getPublishedReleases(self, sourcepackage_or_name):
+    def getPublishedReleases(self, sourcepackage_or_name, pocket=None):
         """See IDistroRelease."""
         if ISourcePackageName.providedBy(sourcepackage_or_name):
             sourcepackage = sourcepackage_or_name
         else:
             sourcepackage = sourcepackage_or_name.name
-        published = SourcePackagePublishing.select(
+        pocketclause = ""
+        if pocket is not None:
+            pocketclause = "AND pocket=%s" % sqlvalues(pocket.value)
+        published = SourcePackagePublishing.select((
             """
             distrorelease = %s AND
             status = %s AND
@@ -315,9 +376,14 @@ class DistroRelease(SQLBase):
             sourcepackagerelease.sourcepackagename = %s
             """ % sqlvalues(self.id,
                             PackagePublishingStatus.PUBLISHED,
-                            sourcepackage.id),
+                            sourcepackage.id))+pocketclause,
             clauseTables = ['SourcePackageRelease'])
         return shortlist(published)
+
+    def getAllReleasesByStatus(self, status):
+        """See IDistroRelease."""
+        return SourcePackagePublishing.selectBy(distroreleaseID=self.id,
+                                                status=status)
 
     def publishedBinaryPackages(self, component=None):
         """See IDistroRelease."""
@@ -328,7 +394,7 @@ class DistroRelease(SQLBase):
         return [BinaryPackageRelease.get(pubrecord.binarypackagerelease)
                 for pubrecord in result]
 
-    def getWorkedBuildRecords(self, status=None, limit=10):
+    def getBuildRecords(self, status=None, limit=10):
         """See IHasBuildRecords"""
         # find out the distroarchrelease in question
         arch_ids = ','.join(
@@ -338,7 +404,7 @@ class DistroRelease(SQLBase):
         if not arch_ids:
             return None
 
-        # specific status or simply worked 
+        # specific status or simply worked
         if status:
             status_clause = "buildstate=%s" % sqlvalues(status)
         else:
@@ -347,6 +413,320 @@ class DistroRelease(SQLBase):
         return Build.select(
             "distroarchrelease IN (%s) AND %s" % (arch_ids, status_clause),
             limit=limit, orderBy="-datebuilt")
+
+    def createUploadedSourcePackageRelease(self, sourcepackagename,
+            version, maintainer, dateuploaded, builddepends,
+            builddependsindep, architecturehintlist, component,
+            creator, urgency, changelog, dsc, dscsigningkey, section,
+            manifest):
+        """See IDistroRelease."""
+        return SourcePackageRelease(uploaddistrorelease=self.id,
+                                    sourcepackagename=sourcepackagename,
+                                    version=version,
+                                    maintainer=maintainer,
+                                    dateuploaded=dateuploaded,
+                                    builddepends=builddepends,
+                                    builddependsindep=builddependsindep,
+                                    architecturehintlist=architecturehintlist,
+                                    component=component,
+                                    creator=creator,
+                                    urgency=urgency,
+                                    changelog=changelog,
+                                    dsc=dsc,
+                                    dscsigningkey=dscsigningkey,
+                                    section=section,
+                                    manifest=manifest)
+
+    def getComponentByName(self, name):
+        """See IDistroRelease."""
+        comp = Component.byName(name)
+        if comp is None:
+            raise NotFoundError(name)
+        permitted = set(self.real_components)
+        if comp in permitted:
+            return comp
+        raise NotFoundError(name)
+
+    def getSectionByName(self, name):
+        """See IDistroRelease."""
+        section = Section.byName(name)
+        if section is None:
+            raise NotFoundError(name)
+        permitted = set(self.real_sections)
+        if section in permitted:
+            return section
+        raise NotFoundError(name)
+
+    def removeOldCacheItems(self):
+        """See IDistroRelease."""
+
+        # get the set of package names that should be there
+        bpns = set(BinaryPackageName.select("""
+            BinaryPackagePublishing.distroarchrelease =
+                DistroArchRelease.id AND
+            DistroArchRelease.distrorelease = %s AND
+            BinaryPackagePublishing.binarypackagerelease =
+                BinaryPackageRelease.id AND
+            BinaryPackageRelease.binarypackagename =
+                BinaryPackageName.id
+            """ % sqlvalues(self.id),
+            distinct=True,
+            clauseTables=['BinaryPackagePublishing', 'DistroArchRelease',
+                'BinaryPackageRelease']))
+
+        # remove the cache entries for binary packages we no longer want
+        for cache in self.binary_package_caches:
+            if cache.binarypackagename not in bpns:
+                cache.destroySelf()
+
+    def updateCompletePackageCache(self, ztm=None):
+        """See IDistroRelease."""
+
+        # get the set of package names to deal with
+        bpns = list(BinaryPackageName.select("""
+            BinaryPackagePublishing.distroarchrelease =
+                DistroArchRelease.id AND
+            DistroArchRelease.distrorelease = %s AND
+            BinaryPackagePublishing.binarypackagerelease =
+                BinaryPackageRelease.id AND
+            BinaryPackageRelease.binarypackagename =
+                BinaryPackageName.id
+            """ % sqlvalues(self.id),
+            distinct=True,
+            clauseTables=['BinaryPackagePublishing', 'DistroArchRelease',
+                'BinaryPackageRelease']))
+
+        # now ask each of them to update themselves. commit every 100
+        # packages
+        counter = 0
+        for bpn in bpns:
+            self.updatePackageCache(bpn)
+            counter += 1
+            if counter > 99:
+                counter = 0
+                if ztm is not None:
+                    ztm.commit()
+
+
+    def updatePackageCache(self, binarypackagename):
+        """See IDistroRelease."""
+
+        # get the set of published binarypackagereleases
+        bprs = BinaryPackageRelease.select("""
+            BinaryPackageRelease.binarypackagename = %s AND
+            BinaryPackageRelease.id =
+                BinaryPackagePublishing.binarypackagerelease AND
+            BinaryPackagePublishing.distroarchrelease =
+                DistroArchRelease.id AND
+            DistroArchRelease.distrorelease = %s
+            """ % sqlvalues(binarypackagename.id, self.id),
+            orderBy='-datecreated',
+            clauseTables=['BinaryPackagePublishing', 'DistroArchRelease'],
+            distinct=True)
+        if len(bprs) == 0:
+            return
+
+        # find or create the cache entry
+        cache = DistroReleasePackageCache.selectOne("""
+            distrorelease = %s AND
+            binarypackagename = %s
+            """ % sqlvalues(self.id, binarypackagename.id))
+        if cache is None:
+            cache = DistroReleasePackageCache(
+                distrorelease=self,
+                binarypackagename=binarypackagename)
+
+        # make sure the cached name, summary and description are correct
+        cache.name = binarypackagename.name
+        cache.summary = bprs[0].summary
+        cache.description = bprs[0].description
+
+        # get the sets of binary package summaries, descriptions. there is
+        # likely only one, but just in case...
+
+        summaries = set()
+        descriptions = set()
+        for bpr in bprs:
+            summaries.add(bpr.summary)
+            descriptions.add(bpr.description)
+
+        # and update the caches
+        cache.summaries = ' '.join(sorted(summaries))
+        cache.descriptions = ' '.join(sorted(descriptions))
+
+    def searchPackages(self, text):
+        """See IDistroRelease."""
+        drpcaches = DistroReleasePackageCache.select("""
+            distrorelease = %s AND
+            fti @@ ftq(%s)
+            """ % sqlvalues(self.id, text),
+            selectAlso='rank(fti, ftq(%s)) AS rank' % sqlvalues(text),
+            orderBy=['-rank'],
+            distinct=True)
+        return [DistroReleaseBinaryPackage(
+            distrorelease=self,
+            binarypackagename=drpc.binarypackagename) for drpc in drpcaches]
+
+    def newArch(self, architecturetag, processorfamily, official, owner):
+        """See IDistroRelease."""
+        dar = DistroArchRelease(architecturetag=architecturetag,
+            processorfamily=processorfamily, official=official,
+            distrorelease=self, owner=owner)
+        return dar
+
+    def createQueueEntry(self, pocket,
+                         status=DistroReleaseQueueStatus.ACCEPTED):
+        """See IDistroRelease."""
+
+        return DistroReleaseQueue(distrorelease=self.id,
+                                  pocket=pocket,
+                                  status=status)
+
+    def getQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED):
+        """See IDistroRelease."""
+
+        return DistroReleaseQueue.selectBy(distroreleaseID=self.id,
+                                           status=status)
+
+    def createBug(self, owner, title, comment, private=False):
+        """See canonical.launchpad.interfaces.IBugTarget."""
+        # We don't currently support opening a new bug on an IDistroRelease,
+        # because internally bugs are reported against IDistroRelease only when
+        # targetted to be fixed in that release, which is rarely the case for a
+        # brand new bug report.
+        raise NotImplementedError(
+            "A new bug cannot be filed directly on a distribution release, "
+            "because releases are meant for \"targeting\" a fix to a specific "
+            "release. It's possible that we may change this behaviour to "
+            "allow filing a bug on a distribution release in the "
+            "not-too-distant future. For now, you probably meant to file "
+            "the bug on the distribution instead.")
+
+    def initialiseFromParent(self):
+        """See IDistroRelease."""
+        assert self.parentrelease is not None, "Parent release must be present"
+        assert SourcePackagePublishingHistory.selectBy(
+            distroreleaseID=self.id).count() == 0, \
+            "Source Publishing must be empty"
+        for arch in self.architectures:
+            assert BinaryPackagePublishingHistory.selectBy(
+                distroarchreleaseID=arch.id).count() == 0, \
+                "Binary Publishing must be empty"
+            try:
+                parent_arch = self.parentrelease[arch.architecturetag]
+                assert parent_arch.processorfamily == arch.processorfamily, \
+                       "The arch tags must match the processor families."
+            except KeyError:
+                raise AssertionError("Parent release lacks %s" % (
+                    arch.architecturetag))
+        assert self.nominatedarchindep is not None, \
+               "Must have a nominated archindep architecture."
+        assert len(self.real_components) == 0, \
+               "Component selections must be empty."
+        assert len(self.real_sections) == 0, \
+               "Section selections must be empty."
+
+        # MAINTAINER: dsilvers: 20051031
+        # Here we go underneath the SQLObject caching layers in order to
+        # generate what will potentially be tens of thousands of rows
+        # in various tables. Thus we flush pending updates from the SQLObject
+        # layer, perform our work directly in the transaction and then throw
+        # the rest of the SQLObject cache away to make sure it hasn't cached
+        # anything that is no longer true.
+        
+        # Prepare for everything by flushing updates to the database.
+        flush_database_updates()
+        cur = cursor()
+
+        # Perform the copies
+        self._copy_component_and_section_selections(cur)
+        self._copy_source_publishing_records(cur)
+        for arch in self.architectures:
+            parent_arch = self.parentrelease[arch.architecturetag]
+            self._copy_binary_publishing_records(cur, arch, parent_arch)
+        self._copy_lucille_config(cur)
+        
+        # Finally, flush the caches because we've altered stuff behind the
+        # back of sqlobject.
+        flush_database_caches()
+
+    def _copy_lucille_config(self, cur):
+        """Copy all lucille related configuration from our parent release."""
+        cur.execute('''
+            UPDATE DistroRelease SET lucilleconfig=(
+                SELECT pdr.lucilleconfig FROM DistroRelease AS pdr
+                WHERE pdr.id = %s)
+            WHERE id = %s
+            ''' % sqlvalues(self.parentrelease.id, self.id))
+
+    def _copy_binary_publishing_records(self, cur, arch, parent_arch):
+        """Copy the binary publishing records from the parent arch release
+        to the given arch release in ourselves.
+
+        We copy all PENDING and PUBLISHED records as PENDING into our own
+        publishing records.
+
+        We copy only the RELEASE pocket.
+        """
+        cur.execute('''
+            INSERT INTO SecureBinaryPackagePublishingHistory (
+                binarypackagerelease, distroarchrelease, status,
+                component, section, priority, datecreated, pocket, embargo)
+            SELECT bpp.binarypackagerelease, %s as distroarchrelease,
+                   bpp.status, bpp.component, bpp.section, bpp.priority,
+                   %s as datecreated, %s as pocket, false as embargo
+            FROM BinaryPackagePublishing AS bpp
+            WHERE bpp.distroarchrelease = %s AND bpp.status in (%s, %s) AND
+                  bpp.pocket = %s
+            ''' % sqlvalues(arch.id, UTC_NOW,
+                            PackagePublishingPocket.RELEASE.value,
+                            parent_arch.id,
+                            PackagePublishingStatus.PENDING.value,
+                            PackagePublishingStatus.PUBLISHED.value,
+                            PackagePublishingPocket.RELEASE.value))
+
+    def _copy_source_publishing_records(self, cur):
+        """Copy the source publishing records from our parent distro release.
+
+        We copy all PENDING and PUBLISHED records as PENDING into our own
+        publishing records.
+
+        We copy only the RELEASE pocket.
+        """
+        cur.execute('''
+            INSERT INTO SecureSourcePackagePublishingHistory (
+                sourcepackagerelease, distrorelease, status, component,
+                section, datecreated, pocket, embargo)
+            SELECT spp.sourcepackagerelease, %s as distrorelease,
+                   spp.status, spp.component, spp.section, %s as datecreated,
+                   %s as pocket, false as embargo
+            FROM SourcePackagePublishing AS spp
+            WHERE spp.distrorelease = %s AND spp.status in (%s, %s) AND
+                  spp.pocket = %s
+            ''' % sqlvalues(self.id, UTC_NOW,
+                            PackagePublishingPocket.RELEASE.value,
+                            self.parentrelease.id,
+                            PackagePublishingStatus.PENDING.value,
+                            PackagePublishingStatus.PUBLISHED.value,
+                            PackagePublishingPocket.RELEASE.value))
+
+    def _copy_component_and_section_selections(self, cur):
+        """Copy the section and component selections from the parent distro
+        release into this one.
+        """
+        # Copy the component selections
+        cur.execute('''
+            INSERT INTO ComponentSelection (distrorelease, component)
+            SELECT %s AS distrorelease, cs.component AS component
+            FROM ComponentSelection AS cs WHERE cs.distrorelease = %s
+            ''' % sqlvalues(self.id, self.parentrelease.id))
+        # Copy the section selections
+        cur.execute('''
+            INSERT INTO SectionSelection (distrorelease, section)
+            SELECT %s as distrorelease, ss.section AS section
+            FROM SectionSelection AS ss WHERE ss.distrorelease = %s
+            ''' % sqlvalues(self.id, self.parentrelease.id))
+
 
 class DistroReleaseSet:
     implements(IDistroReleaseSet)
@@ -403,9 +783,9 @@ class DistroReleaseSet:
         """See IDistroReleaseSet."""
         return DistroRelease(
             distribution = distribution,
-            name = name, 
-            displayname = displayname, 
-            title = title, 
+            name = name,
+            displayname = displayname,
+            title = title,
             summary = summary,
             description = description,
             version = version,

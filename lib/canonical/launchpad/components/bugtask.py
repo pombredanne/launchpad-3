@@ -15,7 +15,7 @@ from zope.interface import implements, directlyProvides, directlyProvidedBy
 
 from canonical.launchpad.interfaces import (
     IBugTaskDelta, IMaintainershipSet, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, IDistroSourcePackageSet,
+    IDistroBugTask, IDistroReleaseBugTask, 
     INullBugTask)
 from canonical.lp.dbschema import BugTaskStatus
 
@@ -127,14 +127,13 @@ class BugTaskMixin:
             return self.product
         elif IDistroBugTask.providedBy(self):
             if self.sourcepackagename:
-                return getUtility(IDistroSourcePackageSet).getPackage(
-                    distribution=self.distribution,
-                    sourcepackagename=self.sourcepackagename)
+                return self.distribution.getSourcePackage(
+                    self.sourcepackagename)
             else:
                 return self.distribution
         elif IDistroReleaseBugTask.providedBy(self):
             if self.sourcepackagename:
-                return self.distrorelease.getSourcePackageByName(
+                return self.distrorelease.getSourcePackage(
                     self.sourcepackagename)
             else:
                 return self.distrorelease
@@ -158,15 +157,15 @@ class BugTaskMixin:
                 [task for task in related_tasks
                  if task.status == BugTaskStatus.FIXED])
             if fixes_found:
-                return "Fixed in %d of %d places" % (
+                return "fixed in %d of %d places" % (
                     fixes_found, len(self.bug.bugtasks))
             else:
                 if len(related_tasks) == 1:
-                    return "Filed in 1 other place"
+                    return "filed in 1 other place"
                 else:
-                    return "Filed in %d other places" % len(related_tasks)
+                    return "filed in %d other places" % len(related_tasks)
         else:
-            return "Not filed elsewhere"
+            return "not filed elsewhere"
 
 
 class NullBugTask(BugTaskMixin):

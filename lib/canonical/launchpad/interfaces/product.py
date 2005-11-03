@@ -196,18 +196,18 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
     bounties = Attribute(_("The bounties that are related to this product."))
 
     translatable_packages = Attribute(
-        "A list of the source packages for this product that can be"
-        " translated sorted by distrorelease.name and sourcepackage.name.")
+        "A list of the source packages for this product that can be "
+        "translated sorted by distrorelease.name and sourcepackage.name.")
 
     translatable_series = Attribute(
-        "A list of the series of this product for which we have translation"
-        " templates.")
+        "A list of the series of this product for which we have translation "
+        "templates.")
 
     primary_translatable = Attribute(
-        "The best guess we have for what new translators will want to"
-        " translate for a given product. First, tries the current development"
-        " Ubuntu package. Then tries the latest series for which we have"
-        " potemplates.")
+        "The best guess we have for what new translators will want to "
+        "translate for a given product. First, tries the current development "
+        "Ubuntu package. Then tries the latest series for which we have "
+        "potemplates.")
 
     translationgroups = Attribute("The list of applicable translation "
         "groups for a product. There can be several: one from the product, "
@@ -234,7 +234,8 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
         """Creates a new ProductSeries for this product."""
 
     def getSeries(name):
-        """Returns the series for this product that has the name given."""
+        """Returns the series for this product that has the name given, or
+        None."""
 
     def getRelease(version):
         """Returns the release for this product that has the version

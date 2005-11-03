@@ -30,6 +30,8 @@ from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.interfaces.specificationtarget import (
+    IHasSpecifications)
 from canonical.launchpad.interfaces.validation import (
     valid_emblem, valid_hackergotchi)
 
@@ -71,7 +73,7 @@ class PersonNameField(TextLine):
                 "The name %s is already in use." % value))
 
 
-class IPerson(Interface):
+class IPerson(IHasSpecifications):
     """A Person."""
 
     id = Int(
@@ -108,7 +110,7 @@ class IPerson(Interface):
             )
     karma = Int(
             title=_('Karma'), readonly=False,
-            description=_('The cached karma for this person.')
+            description=_('The cached total karma for this person.')
             )
     homepage_content = Text(title=_("Homepage Content"), required=False,
         description=_("The content of your home page. Edit this and it "
@@ -116,11 +118,13 @@ class IPerson(Interface):
         "so you cannot undo changes."))
     emblem = Bytes(
         title=_("Emblem"), required=False, description=_("A small image, "
-        "max 16x16 pixels, that can be used to refer to this team of person."),
+        "max 16x16 pixels and 8k in file size, that can be used to refer "
+        "to this team of person."),
         constraint=valid_emblem)
     hackergotchi = Bytes(
         title=_("Hackergotchi"), required=False, description=_("An image, "
-        "max 96x96 pixels, that will be displayed on your home page. "
+        "maximum 150x150 pixels, that will be displayed on your home page. "
+        "It should be no bigger than 50k in size. "
         "Traditionally this is a great big grinning image of your mug. "
         "Make the most of it."),
         constraint=valid_hackergotchi)
@@ -181,6 +185,8 @@ class IPerson(Interface):
             vocabulary='TimezoneName')
 
     # Properties of the Person object.
+    karma_category_caches = Attribute('The caches of karma scores, by '
+        'karma category.')
     ubuntite = Attribute("Ubuntite Flag")
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
@@ -222,6 +228,10 @@ class IPerson(Interface):
         "want a method to check if a given person is a member of a team, "
         "you should probably look at IPerson.inTeam().")
     activemembers = Attribute("List of members with ADMIN or APPROVED status")
+    active_member_count = Attribute("The number of real people who are "
+        "members of this team.")
+    all_member_count = Attribute("The total number of real people who are "
+        "members of this team, including subteams.")
     administrators = Attribute("List of members with ADMIN status")
     expiredmembers = Attribute("List of members with EXPIRED status")
     approvedmembers = Attribute("List of members with APPROVED status")
@@ -267,8 +277,8 @@ class IPerson(Interface):
 
     preferredemail_sha1 = TextLine(title=_("SHA-1 Hash of Preferred Email"),
             description=_("The SHA-1 hash of the preferred email address as "
-                "a hexadecimal string. This is used as a key by FOAF RDF spec"
-                ), readonly=True)
+                "a hexadecimal string. This is used as a key by FOAF RDF "
+                "spec"), readonly=True)
 
     defaultmembershipperiod = Int(
             title=_('Number of days a subscription lasts'), required=False,
@@ -302,19 +312,19 @@ class IPerson(Interface):
             required=True, vocabulary='TeamSubscriptionPolicy',
             default=TeamSubscriptionPolicy.MODERATED,
             description=_(
-                '"Moderated" means all subscriptions must be '
-                'approved. "Open" means any user can join '
-                'without approval. "Restricted" means new '
-                'members can be added only by a team '
-                'administrator.')
+                "'Moderated' means all subscriptions must be "
+                "approved. 'Open' means any user can join "
+                "without approval. 'Restricted' means new "
+                "members can be added only by a team "
+                "administrator.")
             )
 
     merged = Int(title=_('Merged Into'), required=False, readonly=True,
             description=_(
-                'When a Person is merged into another Person, this attribute '
-                'is set on the Person referencing the destination Person. If '
-                'this is set to None, then this Person has not been merged '
-                'into another and is still valid')
+                "When a Person is merged into another Person, this attribute "
+                "is set on the Person referencing the destination Person. If "
+                "this is set to None, then this Person has not been merged "
+                "into another and is still valid")
                 )
 
     touched_pofiles = Attribute("The set of pofiles which the person has "
@@ -338,9 +348,14 @@ class IPerson(Interface):
     def assignKarma(action_name):
         """Assign karma for the action named <action_name> to this person."""
 
-    def getKarmaPointsByCategory(category):
-        """Return the cached karma of this person for all actions of the given
-        category s(he) performed."""
+    def updateKarmaCache():
+        """Update this person's karma attribute and all entries in the
+        KarmaCache table for this person.
+        """
+
+    def latestKarma(quantity=25):
+        """Return the latest karma actions for this person, up to the number
+        given as quantity."""
 
     def inTeam(team):
         """Return True if this person is a member or the owner of <team>.
@@ -356,6 +371,11 @@ class IPerson(Interface):
         
         Any request that is cancelled, denied or sent for shipping can't be
         changed.
+        """
+
+    def shippedShipItRequests():
+        """Return all requests placed by this person that were sent to the
+        shipping company already.
         """
 
     def currentShipItRequest():
@@ -401,7 +421,7 @@ class IPerson(Interface):
         <team> or False if that wasn't possible.
 
         Teams cannot call this method because they're not allowed to
-        login and thus can't "join" another team. Instead, they're added
+        login and thus can't 'join' another team. Instead, they're added
         as a member (using the addMember() method) by a team administrator.
         """
 
@@ -413,7 +433,7 @@ class IPerson(Interface):
         DEACTIVATED and remove the relevant entries in teamparticipation.
 
         Teams cannot call this method because they're not allowed to
-        login and thus can't "leave" another team. Instead, they have their
+        login and thus can't 'leave' another team. Instead, they have their
         subscription deactivated (using the setMembershipStatus() method) by
         a team administrator.
         """
@@ -451,8 +471,8 @@ class IPerson(Interface):
             Rosetta pt Translators
                 Rosetta pt_BR Translators
 
-        In this case, both "Rosetta pt Translators" and "Rosetta pt_BR
-        Translators" are subteams of the "Rosetta Translators" team, and all
+        In this case, both 'Rosetta pt Translators' and 'Rosetta pt_BR
+        Translators' are subteams of the 'Rosetta Translators' team, and all
         members of both subteams are considered members of "Rosetta
         Translators".
         """
@@ -468,8 +488,8 @@ class IPerson(Interface):
             Rosetta pt Translators
                 Rosetta pt_BR Translators
 
-        In this case, we will return both "Rosetta pt Translators" and
-        "Rosetta Translators", because we are member of both of them.
+        In this case, we will return both 'Rosetta pt Translators' and
+        'Rosetta Translators', because we are member of both of them.
         """
 
     def addLanguage(language):
@@ -715,6 +735,7 @@ class ITeamMembership(Interface):
 
     # Properties
     statusname = Attribute("Status Name")
+    is_admin = Attribute("True if the person is an admin of the team.")
 
     def isExpired():
         """Return True if this membership's status is EXPIRED."""

@@ -55,11 +55,13 @@ class POTemplateFacets(StandardLaunchpadFacets):
 
     defaultlink = 'translations'
 
+    enable_only = ['overview', 'translations']
+
     def _parent_url(self):
         """Return the URL of the thing this PO template is attached to."""
 
         if self.context.distrorelease:
-            source_package = self.context.distrorelease.getSourcePackageByName(
+            source_package = self.context.distrorelease.getSourcePackage(
                 self.context.sourcepackagename)
             return canonical_url(source_package)
         else:
@@ -74,12 +76,6 @@ class POTemplateFacets(StandardLaunchpadFacets):
         target = ''
         text = 'Translations'
         return Link(target, text)
-
-    def bugs(self):
-        return Link("", "Bugs", enabled=False)
-
-    def calendar(self):
-        return Link("", "Calendar", enabled=False)
 
 
 class POTemplateAppMenus(POFileAppMenus):
@@ -425,7 +421,7 @@ class POTemplateSubsetURL:
         if potemplatesubset.distrorelease is not None:
             assert potemplatesubset.productseries is None
             assert potemplatesubset.sourcepackagename is not None
-            return '+sources/%s/+pots' % (
+            return '+source/%s/+pots' % (
                 potemplatesubset.sourcepackagename.name)
         else:
             assert potemplatesubset.productseries is not None

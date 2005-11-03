@@ -21,7 +21,7 @@ page.
 Check to be sure that an admin can reach the POTemplate admin page.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+admin HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+admin HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
@@ -31,11 +31,11 @@ Check to be sure that an admin can reach the POTemplate admin page.
 And that we are able to POST it.
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+admin HTTP/1.1
+  ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+admin HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... Content-Length: 2420
   ... Content-Type: multipart/form-data; boundary=---------------------------80986468519315900241075667433
-  ... Referer: http://localhost:9000/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/+admin
+  ... Referer: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+admin
   ... 
   ... -----------------------------80986468519315900241075667433
   ... Content-Disposition: form-data; name="field.potemplatename"

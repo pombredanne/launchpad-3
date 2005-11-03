@@ -9,7 +9,7 @@ import zope.component.servicenames
 from zope.component.interfaces import IDefaultViewName
 from zope.schema import TextLine
 from zope.configuration.fields import (
-    GlobalObject, PythonIdentifier, Path, Tokens)
+    MessageID, GlobalObject, PythonIdentifier, Path, Tokens)
 
 from zope.security.checker import CheckerPublic, Checker
 from zope.security.proxy import ProxyFactory
@@ -24,6 +24,7 @@ from zope.app.pagetemplate.engine import Engine
 from zope.app.component.fields import LayerField
 from zope.app.file.image import Image
 import zope.app.publisher.browser.metadirectives
+from zope.app.publisher.browser.menu import menuItemDirective
 import zope.app.form.browser.metaconfigure
 from zope.app.publisher.browser.viewmeta import (
     pages as original_pages,
@@ -32,9 +33,12 @@ from zope.app.publisher.browser.viewmeta import (
 from zope.app.publisher.browser.metaconfigure import (
     defaultView as original_defaultView)
 
+from canonical.launchpad.webapp.generalform import (
+    GeneralFormView, GeneralFormViewFactory)
+
 from canonical.launchpad.interfaces import (
     IAuthorization, ICanonicalUrlData, IFacetMenu, IApplicationMenu,
-    IContextMenu)
+    IContextMenu, IBreadcrumb)
 
 try:
     from zope.publisher.interfaces.browser import IDefaultBrowserLayer
@@ -208,6 +212,107 @@ class IFaviconDirective(Interface):
         )
 
 
+class IGeneralFormDirective(
+    zope.app.form.browser.metadirectives.ICommonFormInformation):
+    """
+    Define a general form
+
+    The standard Zope addform and editform make many assumptions about the
+    type of data you are expecting, and the sorts of results you want (in
+    particular, they conflate the "interface" of the schema you are using
+    for the rendered form with the interface of any resulting object).
+
+    The Launchpad GeneralForm is simpler - it provides the same ability to
+    render a form automatically but then it allows you to process the
+    user input and do whatever you want with it.
+    """
+
+    description = MessageID(
+        title=u"A longer description of the form.",
+        description=u"""
+        A UI may display this with the item or display it when the
+        user requests more assistance.""",
+        required=False
+        )
+
+    arguments = Tokens(
+        title=u"Arguments",
+        description=u"""
+        A list of field names to supply as positional arguments to the
+        factory.""",
+        required=False,
+        value_type=PythonIdentifier()
+        )
+
+    keyword_arguments = Tokens(
+        title=u"Keyword arguments",
+        description=u"""
+        A list of field names to supply as keyword arguments to the
+        factory.""",
+        required=False,
+        value_type=PythonIdentifier()
+        )
+
+
+class GeneralFormDirective(
+    zope.app.form.browser.metaconfigure.BaseFormDirective):
+
+    view = GeneralFormView
+    default_template = '../templates/template-generalform.pt'
+
+    # default form information
+    description = None
+    arguments = None
+    keyword_arguments = None
+
+    def _handle_menu(self):
+        if self.menu or self.title:
+            menuItemDirective(
+                self._context, self.menu, self.for_, '@@' + self.name,
+                self.title, permission=self.permission,
+                description=self.description)
+
+    def _handle_arguments(self, leftover=None):
+        schema = self.schema
+        fields = self.fields
+        arguments = self.arguments
+        keyword_arguments = self.keyword_arguments
+
+        if leftover is None:
+            leftover = fields
+
+        if arguments:
+            missing = [n for n in arguments if n not in fields]
+            if missing:
+                raise ValueError("Some arguments are not included in the form",
+                                 missing)
+            optional = [n for n in arguments if not schema[n].required]
+            if optional:
+                raise ValueError("Some arguments are optional, use"
+                                 " keyword_arguments for them",
+                                 optional)
+            leftover = [n for n in leftover if n not in arguments]
+
+        if keyword_arguments:
+            missing = [n for n in keyword_arguments if n not in fields]
+            if missing:
+                raise ValueError(
+                    "Some keyword_arguments are not included in the form",
+                    missing)
+            leftover = [n for n in leftover if n not in keyword_arguments]
+
+    def __call__(self):
+        self._processWidgets()
+        #self._handle_menu()
+        self._handle_arguments()
+        self._context.action(
+            discriminator=self._discriminator(),
+            callable=GeneralFormViewFactory,
+            args=self._args()+(self.arguments, self.keyword_arguments),
+            kw={'menu': self.menu},
+            )
+
+
 def menus(_context, module, classes):
     """Handler for the IMenusDirective."""
     if not inspect.ismodule(module):
@@ -250,12 +355,15 @@ def navigation(_context, module, classes):
     for navclassname in classes:
         navclass = getattr(module, navclassname)
 
+        # These are used for the various ways we register a navigation
+        # component.
         factory = [navclass]
+        for_ = [navclass.usedfor]
+
+        # Register the navigation as the traversal component.
         layer = IDefaultBrowserLayer
         provides = IBrowserPublisher
         name = ''
-        for_ = [navclass.usedfor]
-
         view(_context, factory, layer, name, for_, permission=PublicPermission,
              provides=provides)
 

@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'IHasTickets',
     'ITicketTarget',
     ]
 
@@ -13,14 +14,22 @@ from zope.i18nmessageid import MessageIDFactory
 
 _ = MessageIDFactory('launchpad')
 
-class ITicketTarget(Interface):
+class IHasTickets(Interface):
     """An object that has tickets attached to it.
     
-    Initially, only Products and Distributions can have tickets.
+    Thus far, this is true of people, distros, products.
     """
 
-    tickets = Attribute("All the tickets for this "
-        "target, sorted newest first.")
+    def tickets(quantity=None):
+        """Support tickets for this source package, sorted newest first.
+
+        If needed, you can limit the number of tickets returned by passing a
+        number to the "quantity" parameter.
+        """
+
+
+class ITicketTarget(IHasTickets):
+    """An object that can have a new ticket created for  it."""
 
     def newTicket(owner, title, description):
         """Create a new support request, or trouble ticket, for the

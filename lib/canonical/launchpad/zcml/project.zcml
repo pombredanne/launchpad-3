@@ -134,7 +134,7 @@
         name="+new"
         for="canonical.launchpad.interfaces.IProjectSet"
         schema="canonical.launchpad.interfaces.IProject"
-        label="Register a project with Launchpad"
+        label="Register a Project With Launchpad"
         fields="name displayname title summary description homepageurl"
         content_factory="canonical.launchpad.database.Project"
         class="canonical.launchpad.browser.ProjectAddView"
@@ -157,7 +157,7 @@
         name="+edit"
         for="canonical.launchpad.interfaces.IProject"
         schema="canonical.launchpad.interfaces.IProject"
-        label="Edit project details"
+        label="Edit Project Details"
         fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl"
         class="canonical.launchpad.browser.ProjectEditView"
@@ -171,8 +171,9 @@
         name="+review"
         for="canonical.launchpad.interfaces.IProject"
         schema="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.ProjectEditView"
         facet="overview"
-        label="Review Upstream Project Details:"
+        label="Review Upstream Project Details"
         fields="name displayname title summary description homepageurl
                 wikiurl sourceforgeproject freshmeatproject owner active
                 reviewed"
@@ -188,7 +189,7 @@
         schema="canonical.launchpad.interfaces.IProject"
         fields="translationgroup translationpermission"
         permission="launchpad.Edit"
-        label="Select A New Translation Group"
+        label="Select a New Translation Group"
         template="../templates/launchpad-editform.pt"
         lp:url="/projects/$Project.name/+changetranslators" />
 
@@ -197,7 +198,7 @@
         for="canonical.launchpad.interfaces.IProject"
         facet="overview"
         schema="canonical.launchpad.interfaces.IProduct"
-        label="Add a Product to this Project"
+        label="Add a Product to This Project"
         fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl screenshotsurl
                 downloadurl programminglang owner"
@@ -230,7 +231,7 @@
       facet="bounties"
       schema="canonical.launchpad.interfaces.IProjectBounty"
       class="canonical.launchpad.browser.bounty.BountyLinkView"
-      label="Link Existing Bounty"
+      label="Link an Existing Bounty"
       fields="project bounty"
       keyword_arguments="project bounty"
       permission="launchpad.AnyPerson"
@@ -246,7 +247,7 @@
       for="canonical.launchpad.interfaces.IProject"
       facet="bounties"
       schema="canonical.launchpad.interfaces.IBounty"
-      label="Register A New Bounty"
+      label="Register a New Bounty"
       fields="name title summary usdvalue difficulty description"
       class="canonical.launchpad.browser.BountyAddView"
       permission="launchpad.AnyPerson"

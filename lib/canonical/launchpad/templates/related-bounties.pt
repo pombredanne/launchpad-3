@@ -7,11 +7,11 @@
 
 <body>
 
-<div tal:replace="nothing">
+<tal:x replace="nothing">
 <!-- NB maintainer, this page is used to show bounties that are related to
 project, products *and* distributions. Make sure that your changes will work
 with all of these context objects.-->
-</div>
+</tal:x>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />

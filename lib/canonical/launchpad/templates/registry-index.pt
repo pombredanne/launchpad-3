@@ -8,7 +8,7 @@
   </metal:block>
   <div metal:fill-slot="main">
 
-    <h1>Welcome to the Launchpad Registry!</h1>
+    <h1>The Launchpad Registry</h1>
 
     <p>This is where we catalogue
     all the open source projects registered in The Launchpad.
@@ -43,19 +43,18 @@
     Project publishes several open source products, such as Thunderbird and
     Firefox and Sunbird, not to mention Gecko and other libraries. A Project
     is a distinct group of people who work together on a set of (usually
-    related) products. You can find open source projects or register yours
-    using the links below:</p>
+    related) products.</p>
 
     <ul>
    
-      <li><a href="/projects/">Find Project</a>: find your open source
-      project if it has been registered in The Launchpad.</li>
+      <li><a href="/projects/">Find your project</a> if it has been
+      registered in Launchpad already.</li>
 
-      <li><a href="/projects/+new">Register Project</a>: register an open
-      source project with The Launchpad.</li>
+      <li><a href="/projects/+new">Register an open source project</a>
+      in Launchpad.</li>
 
-      <li><a href="/projects/+all">All Projects</a>: see a complete list
-      of all open source projects registered with The Launchpad.</li>
+      <li><a href="/projects/+all">Show all projects</a> currently registered
+      in Launchpad.</li>
 
     </ul>
 

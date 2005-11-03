@@ -19,7 +19,7 @@
 
   <h1>Template name details</h1>
 
-    <table class="data">
+    <table class="listing">
       <tbody>
         <tr>
           <td>
@@ -43,7 +43,7 @@
 
     <h2>PO Templates using this PO Template Name</h2>
 
-    <table class="data">
+    <table class="listing">
       <tbody>
         <tr tal:repeat="potemplate view/potemplates">
           <td>

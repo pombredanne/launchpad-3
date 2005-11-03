@@ -3,8 +3,6 @@
 
 __metaclass__ = type
 
-import sqlobject
-
 from twisted.web import resource, static, error, util, server, proxy
 from twisted.internet.threads import deferToThread
 
@@ -33,33 +31,39 @@ class LibraryFileResource(resource.Resource):
             # Root resource
             return defaultResource
         try:
-            fileID = int(name)
-        except ValueError:
-            return fourOhFour
-            
-        return LibraryFileAliasResource(self.storage, fileID, self.upstreamHost,
-                self.upstreamPort)
-
-
-class LibraryFileAliasResource(resource.Resource):
-    def __init__(self, storage, fileID, upstreamHost, upstreamPort):
-        resource.Resource.__init__(self)
-        self.storage = storage
-        self.fileID = fileID
-        self.upstreamHost = upstreamHost
-        self.upstreamPort = upstreamPort
-
-    def getChild(self, name, request):
-        try:
             aliasID = int(name)
         except ValueError:
             return fourOhFour
-        if len(request.postpath) != 1:
-            return fourOhFour
-        filename = request.postpath[0]
+            
+        return LibraryFileAliasResource(self.storage, aliasID,
+                self.upstreamHost, self.upstreamPort)
 
-        deferred = deferToThread(self._getFileAlias, aliasID)
-        deferred.addCallback(self._cb_getFileAlias, aliasID, filename, request)
+
+class LibraryFileAliasResource(resource.Resource):
+    def __init__(self, storage, aliasID, upstreamHost, upstreamPort):
+        resource.Resource.__init__(self)
+        self.storage = storage
+        self.aliasID = aliasID
+        self.upstreamHost = upstreamHost
+        self.upstreamPort = upstreamPort
+
+    def getChild(self, filename, request):
+
+        # If we still have another component of the path, then we have
+        # an old URL that encodes the content ID. We want to keep supporting
+        # these, so we just ignore the content id that is currently in
+        # self.aliasID and extract the real one from the URL.
+        if len(request.postpath) == 1:
+            try:
+                self.aliasID = int(filename)
+            except ValueError:
+                return fourOhFour
+            filename = request.postpath[0]
+
+        deferred = deferToThread(self._getFileAlias, self.aliasID)
+        deferred.addCallback(
+                self._cb_getFileAlias, filename, request
+                )
         deferred.addErrback(self._eb_getFileAlias)
         return util.DeferredResource(deferred)
 
@@ -80,20 +84,16 @@ class LibraryFileAliasResource(resource.Resource):
         
     def _cb_getFileAlias(
             self, (dbcontentID, dbfilename, mimetype),
-            aliasID, filename, request
+            filename, request
             ):
         # Return a 404 if the filename in the URL is incorrect. This offers
         # a crude form of access control (stuff we care about can have
-        # unguessable names effectivly using the filename as a secret).
+        # unguessable names effectively using the filename as a secret).
         if dbfilename.encode('utf-8') != filename:
             return fourOhFour
-        # Return a 404 if the contentid in the URL is incorrect. This doesn't
-        # gain us much I guess.
-        if dbcontentID != self.fileID:
-            return fourOhFour
-        if self.storage.hasFile(self.fileID) or self.upstreamHost is None:
+        if self.storage.hasFile(dbcontentID) or self.upstreamHost is None:
             return File(mimetype.encode('ascii'),
-                        self.storage._fileLocation(self.fileID))
+                        self.storage._fileLocation(dbcontentID))
         else:
             return proxy.ReverseProxyResource(self.upstreamHost,
                                               self.upstreamPort, request.path)
@@ -129,7 +129,7 @@ class DigestSearchResource(resource.Resource):
         begin()
         try:
             library = self.storage.library
-            matches = ['%s/%s/%s' % (fID, aID, quote(aName))
+            matches = ['%s/%s' % (aID, quote(aName))
                        for fID in library.lookupBySHA1(digest)
                        for aID, aName, aType in library.getAliases(fID)]
             return matches
@@ -142,6 +142,13 @@ class DigestSearchResource(resource.Resource):
                                'text/plain; charset=utf-8').render(request)
         request.write(response)
         request.finish()
+
+
+# Ask robots not to index or archive anything in the librarian.
+robotsTxt = static.Data("""
+User-agent: *
+Disallow: /
+""", type='text/plain')
 
 
 def _eb(failure, request):

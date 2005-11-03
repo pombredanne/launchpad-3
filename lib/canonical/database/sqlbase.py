@@ -334,7 +334,7 @@ def _clearCache():
     #        - Andrew Bennetts, 2005-02-01
 
     # Don't break if _connection is a FakeZopelessConnectionDescriptor
-    if hasattr(SQLBase._connection.cache, "allSubCaches"):
+    if getattr(SQLBase._connection, 'cache', None) is not None:
         for c in SQLBase._connection.cache.allSubCaches():
             c.clear()
 
@@ -355,6 +355,13 @@ def quote(x):
     "'\\'hello\\''"
     >>> quote(r"\'hello")
     "'\\\\\\'hello'"
+
+    Note that we need to receive a Unicode string back, because our
+    query will be a Unicode string (the entire query will be encoded
+    before sending across the wire to the database).
+
+    >>> quote(u"\N{TRADE MARK SIGN}")
+    u"'\u2122'"
 
     Timezone handling is not implemented, since all timestamps should
     be UTC anyway.

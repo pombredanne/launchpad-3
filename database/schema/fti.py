@@ -47,13 +47,26 @@ ALL_FTI = [
             ]),
 
     ('binarypackagerelease', [
-            ('summary', C),
-            ('description', D),
+            ('summary', B),
+            ('description', C),
             ]),
 
     ('cve', [
             ('sequence', A),
             ('description', B),
+            ]),
+
+    ('distributionsourcepackagecache', [
+            ('name', A),
+            ('binpkgnames', B),
+            ('binpkgsummaries', C),
+            ('binpkgdescriptions', D),
+            ]),
+
+    ('distroreleasepackagecache', [
+            ('name', A),
+            ('summaries', B),
+            ('descriptions', C),
             ]),
 
     ('message', [
@@ -158,11 +171,6 @@ def fti(con, table, columns, configuration=DEFAULT_CONFIG):
         con.rollback()
         execute(con, "ALTER TABLE %s ADD COLUMN fti tsvector" % table)
 
-    # Create the fti index
-    execute(con, "CREATE INDEX %s ON %s USING gist(fti)" % (
-        index, table
-        ))
-
     # Create the trigger
     columns_and_weights = []
     for column, weight in columns:
@@ -177,6 +185,11 @@ def fti(con, table, columns, configuration=DEFAULT_CONFIG):
     # Rebuild the fti column, as the information it contains may be out
     # of date with recent configuration updates.
     execute(con, r"""UPDATE %s SET fti=NULL""" % table)
+
+    # Create the fti index
+    execute(con, "CREATE INDEX %s ON %s USING gist(fti)" % (
+        index, table
+        ))
 
     con.commit()
 
@@ -390,7 +403,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
     #
     # Set the default schema search path so this stuff can be found
     #execute(con, 'ALTER DATABASE %s SET search_path = public,ts2;' % dbname)
-    #con.commit()
+    con.commit()
 
 
 def main():

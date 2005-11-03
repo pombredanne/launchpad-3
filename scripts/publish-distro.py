@@ -1,10 +1,11 @@
 #!/usr/bin/python
 
 import logging
+import gc
 
 logging.basicConfig()
 logging.getLogger().setLevel(logging.DEBUG)
-logging.getLogger().debug("Publisher importing modules initialising...")
+logging.getLogger().debug("Publisher importing modules initialising.")
 
 from canonical.lp import initZopeless
 from canonical.archivepublisher import \
@@ -22,11 +23,20 @@ from canonical.lp.dbschema import \
      PackagePublishingStatus, PackagePublishingPocket
 
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import sqlvalues, SQLBase
+from canonical.database.sqlbase import (
+    sqlvalues, SQLBase, flush_database_updates, _clearCache)
 
 # We do this for more accurate exceptions. It doesn't slow us down very
 # much so it's not worth making it an option.
 SQLBase._lazyUpdate = False
+
+def clear_cache():
+    """Flush SQLObject updates and clear the cache."""
+    # Flush them anyway, should basically be a noop thanks to not doing
+    # lazyUpdate.
+    flush_database_updates()
+    _clearCache()
+    gc.collect()
 
 careful = False
 if sys.argv[1] == "--careful":
@@ -34,7 +44,7 @@ if sys.argv[1] == "--careful":
     # XXX: dsilvers: 20050921: Replace all this with an option parser
     # but for now, and just for SteveA:
     # "lookee here, altering sys.argv"
-    sys.argv.remove(1)
+    sys.argv.remove("--careful")
     
 
 distroname = sys.argv[1]
@@ -47,20 +57,20 @@ debug = logging.getLogger().debug
 
 info("Beginning publication process for %s" % distroname)
 
-debug("Initialising zopeless...")
+debug("Initialising zopeless.")
 
-txn = initZopeless( dbuser='lucille' ) # Change this when we fix up db security
+txn = initZopeless(dbuser='lucille') # Change this when we fix up db security
 
-debug("Finding distribution and distrorelease objects...")
+debug("Finding distribution and distrorelease objects.")
 
 distro = Distribution.byName(distroname)
 drs = DistroRelease.selectBy(distributionID=distro.id)
 
-debug("Finding configuration...")
+debug("Finding configuration.")
 
 pubconf = Config(distro, drs)
 
-debug("Making directories as needed...")
+debug("Making directories as needed.")
 
 dirs = [
     pubconf.distroroot,
@@ -77,7 +87,7 @@ for d in dirs:
         os.makedirs(d)
 
 
-debug("Preparing on-disk pool representation...")
+debug("Preparing on-disk pool representation.")
 
 dp = DiskPool(Poolifier(POOL_DEBIAN),
               pubconf.poolroot, logging.getLogger("DiskPool"))
@@ -85,23 +95,26 @@ dp = DiskPool(Poolifier(POOL_DEBIAN),
 dp.logger.setLevel(20)
 dp.scan()
 
-debug("Preparing publisher...")
+debug("Preparing publisher.")
 
-pub = Publisher(logging.getLogger("Publisher"), pubconf, dp)
+pub = Publisher(logging.getLogger("Publisher"), pubconf, dp, distro)
 
 try:
     # main publishing section
-    debug("Attempting to publish pending sources...")
+    debug("Attempting to publish pending sources.")
     clause = "distribution = %s" % sqlvalues(distro.id)
     if not careful:
         clause = clause + (" AND publishingstatus = %s" %
                            sqlvalues(PackagePublishingStatus.PENDING))
     spps = SourcePackageFilePublishing.select(clause)
     pub.publish(spps, isSource=True)
-    debug("Attempting to publish pending binaries...")
+    debug("Attempting to publish pending binaries.")
     pps = BinaryPackageFilePublishing.select(clause)
     pub.publish(pps, isSource=False)
-        
+    debug("Committing.")
+    txn.commit()
+    debug("Flushing caches.")
+    clear_cache()
 except:
     logging.getLogger().exception("Bad muju while publishing")
     txn.abort()
@@ -110,10 +123,14 @@ except:
 judgejudy = Dominator(logging.getLogger("Dominator"))
 
 try:
-    debug("Attempting to perform domination...")
+    debug("Attempting to perform domination.")
     for distrorelease in drs:
         for pocket in PackagePublishingPocket.items:
             judgejudy.judgeAndDominate(distrorelease, pocket, pubconf)
+            debug("Flushing caches.")
+            clear_cache()
+    debug("Committing.")
+    txn.commit()
 except:
     logging.getLogger().exception("Bad muju while dominating")
     txn.abort()
@@ -121,7 +138,7 @@ except:
 
 try:
     # Now we generate overrides
-    debug("Generating overrides for the distro...")
+    debug("Generating overrides for the distro.")
     spps = SourcePackagePublishingView.select(
         AND(SourcePackagePublishingView.q.distribution == distro.id,
             SourcePackagePublishingView.q.publishingstatus == 
@@ -132,6 +149,8 @@ try:
                 PackagePublishingStatus.PUBLISHED ))
 
     pub.publishOverrides(spps, pps)
+    debug("Flushing caches.")
+    clear_cache()
 except:
     logging.getLogger().exception("Bad muju while generating overrides")
     txn.abort()
@@ -139,7 +158,7 @@ except:
 
 try:
     # Now we generate lists
-    debug("Generating file lists...")
+    debug("Generating file lists.")
     spps = SourcePackageFilePublishing.select(
         AND(SourcePackageFilePublishing.q.distribution == distro.id,
             SourcePackageFilePublishing.q.publishingstatus ==
@@ -150,24 +169,21 @@ try:
                 PackagePublishingStatus.PUBLISHED ))
 
     pub.publishFileLists(spps, pps)
+    debug("Committing.")
+    txn.commit()
+    debug("Flushing caches.")
+    clear_cache()
 except:
     logging.getLogger().exception("Bad muju while generating file lists")
     txn.abort()
     sys.exit(1)
 
-# In order to allow the build system, upload system etc all
-# to continue without being deadlocked on this transaction, we commit now.
-# This isn't the best thing to do because apt-ftparchive *could* fail
-# but if it does, we're screwwed anyway. We thusly commit so that
-# we unblock other transactions.
-txn.commit()
-
 try:
-    # Generate apt-ftparchive config and run...
-    debug("Doing apt-ftparchive work...")
+    # Generate apt-ftparchive config and run.
+    debug("Doing apt-ftparchive work.")
     fn = os.tmpnam()
     f = file(fn,"w")
-    f.write(pub.generateAptFTPConfig())
+    f.write(pub.generateAptFTPConfig(fullpublish=careful))
     f.close()
     print fn
 
@@ -180,9 +196,9 @@ except:
     sys.exit(1)
 
 try:
-    # Generate the Release files...
-    debug("Generating Release files...")
-    pub.writeReleaseFiles(distro)
+    # Generate the Release files.
+    debug("Generating Release files.")
+    pub.writeReleaseFiles()
     
 except:
     logging.getLogger().exception("Bad muju while doing release files")
@@ -191,7 +207,7 @@ except:
 
 try:
     # Unpublish death row
-    debug("Unpublishing death row...")
+    debug("Unpublishing death row.")
 
     consrc = SourcePackageFilePublishing.select("""
         publishingstatus = %s AND

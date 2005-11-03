@@ -40,7 +40,7 @@ class SystemErrorView:
             self.debugging = True
         user = getUtility(ILaunchBag).user
         if user is not None:
-            if user.inTeam(getUtility(ILaunchpadCelebrities).admin):
+            if user.inTeam(getUtility(ILaunchpadCelebrities).launchpad_developers):
                 self.specialuser = True
 
     def computeDebugOutput(self):

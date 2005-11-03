@@ -55,13 +55,13 @@ This is the new header.
 ... Content-Type: text/plain; charset=UTF-8
 ... Content-Transfer-Encoding: 8bit
 ... Report-Msgid-Bugs-To: serrador@hispalinux.es
-... X-Generator: Rosetta (http://launchpad.ubuntu.com/rosetta/)
+... X-Generator: Rosetta (https://launchpad.net/rosetta/)
 ... Plural-Forms: nplurals=2; plural=n != 1;'''
 
 Now, get a POHeader object with that information.
 
 >>> new_header = POHeader(commentText=comment, msgstr=msgstr)
->>> new_header.finish()
+>>> new_header.updateDict()
 
 We check that the plural forms expression is correctly parsed:
 
@@ -125,7 +125,7 @@ trying to parse the number and type of plural forms it has.
 ... X-Generator: Rosetta (http://launchpad.ubuntu.com/rosetta/)
 ... Plural-Forms: n != 1'''
 >>> new_header = POHeader(msgstr=msgstr)
->>> new_header.finish()
+>>> new_header.updateDict()
 WARNING:root:The plural form header has an unknown error. Using the default value...
 >>> new_header.getPluralFormExpression() == None
 True
@@ -155,7 +155,7 @@ were losing translations because we were ignoring those imports too.
 First, we check with the same date.
 
     >>> header = POHeader(msgstr=u'PO-Revision-Date: 2005-08-18 13:22+0000')
-    >>> header.finish()
+    >>> header.updateDict()
     WARNING:root:PO file header entry has no content-type field
     >>> pofile.isPORevisionDateOlder(header)
     False
@@ -163,7 +163,7 @@ First, we check with the same date.
 Now, we check with a date that is in the past.
 
     >>> header = POHeader(msgstr=u'PO-Revision-Date: 2005-08-18 13:21+0000')
-    >>> header.finish()
+    >>> header.updateDict()
     WARNING:root:PO file header entry has no content-type field
     >>> pofile.isPORevisionDateOlder(header)
     True

@@ -22,14 +22,19 @@ class IPOFileOutput(Interface):
 class IPOTemplateExporter(Interface):
     """Export PO files for a PO template."""
 
-    def export_pofile(language, variant=None):
+    def export_pofile(language, variant=None, include_obsolete=True):
         """Export a single PO file.
 
-        Returns the contents of the PO file as a string.
+        Return the contents of the PO file as a string.
+        If include_obsolete is False, the obsolete entries are not exported.
         """
 
-    def export_pofile_to_file(filehandle, language, variant=None):
-        """Export a single PO file to a file handle."""
+    def export_pofile_to_file(filehandle, language, variant=None,
+                              included_obsolete=True):
+        """Export a single PO file to a file handle.
+
+        If included_obsolete is False, the obsolete entries are not exported.
+        """
 
     def export_tarball():
         """Export all translations in a tarball.

@@ -73,7 +73,7 @@ class ISignedCodeOfConduct(Interface):
         )
 
     active = Bool(title=_("Active"),
-                  description=_("Whether or not this Signed CoC"
+                  description=_("Whether or not this Signed CoC "
                                 "is considered active.")
                   )
 
@@ -81,7 +81,7 @@ class ISignedCodeOfConduct(Interface):
     displayname = Attribute("Fancy Title for CoC.")
 
     def sendAdvertisementEmail(subject, content):
-        """ Send Advertisement email to signature owner preferred address
+        """Send Advertisement email to signature owner preferred address
         containing arbitrary content and subject.
         """
 

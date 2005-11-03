@@ -15,15 +15,12 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.lp.dbschema import TicketStatus
-
-from canonical.launchpad.interfaces import (
-    IProduct, IDistribution, ILaunchBag, ITicket, ITicketSet)
+from canonical.launchpad.interfaces import ILaunchBag, ITicket, ITicketSet
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ContextMenu, Link, canonical_url,
-    enabled_with_permission, GetitemNavigation)
+    ContextMenu, Link, canonical_url, enabled_with_permission,
+    GetitemNavigation)
 
 
 class TicketSetNavigation(GetitemNavigation):
@@ -79,8 +76,8 @@ class TicketView:
                 self.notices.append('You cannot create a bug report from '
                     'a support request that already has bugs linked to it.')
             else:
-                bug = self.context.target.newBug(self.user,
-                    self.context.title, self.context.description)
+                bug = self.context.target.createBug(
+                    self.user, self.context.title, self.context.description)
                 self.context.linkBug(bug)
                 bug.subscribe(self.context.owner)
                 self.notices.append('Thank you! Bug #%d created.' % bug.id)

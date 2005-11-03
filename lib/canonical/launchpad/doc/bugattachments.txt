@@ -160,8 +160,17 @@ Now let's make the bug private instead:
 
     >>> bug_one.private = True
 
-Since Foo Bar isn't explicitly subscribed to the bug, he can't access
-or set the attachment's attributes:
+Foo Bar isn't explicitly subscribed to the bug, BUT he is an admin, so he can
+access and set the attachment's attributes:
+
+    >>> attachment.title
+    u'Even Better Title'
+    >>> attachment.title = 'Even Better Title'
+
+Mr. No Privs, who is not subscribed to bug_one, cannot access or set the
+attachments attributes:
+
+    >>> login("no-priv@canonical.com")
 
     >>> attachment.title
     Traceback (most recent call last):

@@ -51,7 +51,7 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
-    KarmaActionCategory, TeamSubscriptionPolicy, BugTaskStatus)
+    TeamSubscriptionPolicy, BugTaskStatus)
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
@@ -65,23 +65,30 @@ from canonical.launchpad.interfaces import (
     IPollSet, NotFoundError)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.form import FormView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.helpers import (
         obfuscateEmail, convertToHtmlCode, sanitiseFingerprint)
 from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.event.team import JoinTeamRequestEvent
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
-    enabled_with_permission, Navigation, stepto, stepthrough)
+    enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
+    redirection, GeneralFormView)
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 
 class PersonNavigation(Navigation, CalendarTraversalMixin):
+
     usedfor = IPerson
+
+    redirection("+bugs", "+assignedbugs")
+
+    def breadcrumb(self):
+        return self.context.displayname
 
     @stepto('+branch')
     def traverse_branch(self):
@@ -100,6 +107,9 @@ class TeamNavigation(Navigation, CalendarTraversalMixin):
 
     usedfor = ITeam
 
+    def breadcrumb(self):
+        return smartquote('"%s" team') % self.context.displayname
+
     @stepto('+members')
     def members(self):
         return ITeamMembershipSubset(self.context)
@@ -112,6 +122,13 @@ class TeamNavigation(Navigation, CalendarTraversalMixin):
 class PersonSetNavigation(Navigation):
 
     usedfor = IPersonSet
+
+    def breadcrumb(self):
+        return 'People'
+
+    @stepto('+me')
+    def me(self):
+        return getUtility(ILaunchBag).user
 
     def traverse(self, name):
         return self.context.getByName(name)
@@ -145,6 +162,9 @@ class PersonFacets(StandardLaunchpadFacets):
 
     usedfor = IPerson
 
+    enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
+                   'translations', 'calendar', 'code']
+
     links = StandardLaunchpadFacets.links + ['code']
 
     def overview(self):
@@ -169,8 +189,7 @@ class PersonFacets(StandardLaunchpadFacets):
         text = 'Support'
         summary = (
             'Support requests that %s is involved with' %
-            self.context.browsername
-        )
+            self.context.browsername)
         return Link(target, text, summary)
 
     def specifications(self):
@@ -178,8 +197,7 @@ class PersonFacets(StandardLaunchpadFacets):
         text = 'Specifications'
         summary = (
             'Feature specifications that %s is involved with' %
-            self.context.browsername
-        )
+            self.context.browsername)
         return Link(target, text, summary)
 
     def bounties(self):
@@ -187,7 +205,7 @@ class PersonFacets(StandardLaunchpadFacets):
         text = 'Bounties'
         summary = (
             'Bounty offers that %s is involved with' % self.context.browsername
-        )
+            )
         return Link(target, text, summary)
 
     def code(self):
@@ -201,8 +219,7 @@ class PersonFacets(StandardLaunchpadFacets):
         text = 'Translations'
         summary = (
             'Software that %s is involved in translating' %
-            self.context.browsername
-        )
+            self.context.browsername)
         return Link(target, text, summary)
 
     def code(self):
@@ -216,8 +233,7 @@ class PersonFacets(StandardLaunchpadFacets):
         text = 'Calendar'
         summary = (
             u'%s\N{right single quotation mark}s scheduled events' %
-            self.context.browsername
-        )
+            self.context.browsername)
         # only link to the calendar if it has been created
         enabled = ICalendarOwner(self.context).calendar is not None
         return Link(target, text, summary, enabled=enabled)
@@ -251,26 +267,31 @@ class PersonSpecsMenu(ApplicationMenu):
 
     facet = 'specifications'
 
-    links = ['created', 'assigned', 'drafted', 'review', 'subscribed']
+    links = ['created', 'assigned', 'drafted', 'review', 'approver',
+             'subscribed']
 
     def created(self):
-        text = 'Specifications Created'
+        text = 'Show Specs Created'
         return Link('+createdspecs', text, icon='spec')
 
+    def approver(self):
+        text = 'Show Specs for Approval'
+        return Link('+approverspecs', text, icon='spec')
+
     def assigned(self):
-        text = 'Specifications Assigned'
+        text = 'Show Assigned Specs'
         return Link('+assignedspecs', text, icon='spec')
 
     def drafted(self):
-        text = 'Specifications Drafted'
+        text = 'Show Drafted Specs'
         return Link('+draftedspecs', text, icon='spec')
 
     def review(self):
-        text = 'Specifications To Review'
+        text = 'Show Feedback Requests'
         return Link('+reviewspecs', text, icon='spec')
 
     def subscribed(self):
-        text = 'Subscribed Specifications'
+        text = 'Show Subscribed Specs'
         return Link('+subscribedspecs', text, icon='spec')
 
 
@@ -354,8 +375,9 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = IPerson
     facet = 'overview'
-    links = ['common_edit', 'common_edithomepage', 'common_edithackergotchi',
-             'common_editemblem', 'karma', 'editsshkeys', 'editgpgkeys',
+    links = ['karma', 'common_edit', 'common_edithomepage',
+             'common_edithackergotchi',
+             'common_editemblem', 'editsshkeys', 'editgpgkeys',
              'codesofconduct', 'administer', 'common_packages']
 
     def karma(self):
@@ -430,8 +452,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Team Hierarchy'
         summary = (
             'Which teams are members of %s, and which teams %s is a member of'
-            % (self.context.browsername, self.context.browsername)
-        )
+            % (self.context.browsername, self.context.browsername))
         return Link(target, text, summary, icon='people')
 
     @enabled_with_permission('launchpad.Edit')
@@ -440,8 +461,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Edit Contact Address'
         summary = (
             'The address Launchpad uses to contact %s' %
-            self.context.browsername
-        )
+            self.context.browsername)
         return Link(target, text, summary, icon='mail')
 
     def joinleave(self):
@@ -589,6 +609,7 @@ class PersonView:
         self.request = request
         self.message = None
         self.user = getUtility(ILaunchBag).user
+        self._karma_categories = None
         if context.isTeam():
             # These methods are called here because their return values are
             # going to be used in some other places (including
@@ -608,11 +629,6 @@ class PersonView:
             self.context.reviewerBounties or
             self.context.subscribedBounties or
             self.context.claimedBounties)
-
-    def redirectToAssignedBugs(self):
-        """Redirect to the +assignedbugs report."""
-        self.request.response.redirect(
-            canonical_url(self.context) + "/+assignedbugs")
 
     def activeMembersCount(self):
         return len(self.context.activemembers)
@@ -641,7 +657,8 @@ class PersonView:
             'members of this team.')
 
         description = tm.status.description
-        if tm.status == TeamMembershipStatus.DEACTIVATED and tm.reviewercomment:
+        if (tm.status == TeamMembershipStatus.DEACTIVATED and
+            tm.reviewercomment):
             description += ("The reason for the deactivation is: '%s'"
                             % tm.reviewercomment)
         return description
@@ -660,7 +677,8 @@ class PersonView:
         asked to join this team, if he already asked and the subscription
         status is DECLINED.
         """
-        if self.context.subscriptionpolicy == TeamSubscriptionPolicy.RESTRICTED:
+        if (self.context.subscriptionpolicy ==
+            TeamSubscriptionPolicy.RESTRICTED):
             return False
 
         tm = self._getMembershipForUser()
@@ -687,20 +705,6 @@ class PersonView:
         """Return True if this is not a restricted team."""
         restricted = TeamSubscriptionPolicy.RESTRICTED
         return self.context.subscriptionpolicy != restricted
-
-    def actionCategories(self):
-        return KarmaActionCategory.items
-
-    def actions(self, actionCategory):
-        """Return a list of actions of the given category performed by
-        this person."""
-        kas = getUtility(IKarmaActionSet)
-        return kas.selectByCategoryAndPerson(actionCategory, self.context)
-
-    def actionsCount(self, action):
-        """Return the number of times this person performed this action."""
-        karmaset = getUtility(IKarmaSet)
-        return len(karmaset.selectByPersonAndAction(self.context, action))
 
     def reportedBugTasks(self):
         """Return up to 30 bug tasks reported recently by this person."""
@@ -977,15 +981,49 @@ class PersonView:
         result, key = gpghandler.retrieveKey(fingerprint)
 
         if not result:
-            # use the content ok 'key' for debug proposes
+            # use the content of 'key' for debug proposes; place it in a
+            # blockquote because it often comes out empty.
             return (
-                "Launchpad could not import GPG key, the reason was:"
-                "<code>%s</code>."
-                "Check if you published it correctly in the global key ring "
-                "(using <kbd>gpg --send-keys KEY</kbd>) and that you add "
-                "entered the fingerprint correctly (as produced by <kbd>"
-                "gpg --fingerprint YOU</kdb>). Try later or cancel your "
-                "request." % (key))
+                """Launchpad could not import your GPG key.
+                <ul>
+                  <li>Did you enter your complete fingerprint correctly,
+                  as produced by <kbd>gpg --fingerprint</kdb>?</li>
+                  <li>Have you published your key to a public key
+                  server, using <kbd>gpg --send-keys</kbd>?</li>
+                  <li>If you have just published your key to the
+                  keyserver, note that the keys take a while to be
+                  synchronized to our internal keyserver.<br>Please wait at
+                  least 30 minutes before attempting to import your
+                  key.</li>
+                </ul>
+                <p>
+                <blockquote>%s</blockquote>
+                Try again later or cancel your request.""" % key)
+
+        # revoked and expired keys can not be imported.
+        if key.revoked:
+            return (
+                "The key %s cannot be validated because it has been "
+                "publicly revoked. You will need to generate a new key "
+                "(using <kbd>gpg --genkey</kbd>) and repeat the previous "
+                "process to find and import the new key." % key.keyid)
+
+        if key.expired:
+            return (
+                "The key %s cannot be validated because it has expired. "
+                "You will need to generate a new key "
+                "(using <kbd>gpg --genkey</kbd>) and repeat the previous "
+                "process to find and import the new key." % key.keyid)
+
+        # XXX: jamesh 20051012
+        # This code will change once we have support for validating
+        # sign-only keys.
+        if not key.can_encrypt:
+            return (
+                "Launchpad does not currently support validation of "
+                "sign-only GPG keys.  If you add an encryption subkey "
+                "(using <kbd>gpg --edit-key</kbd>) and upload your key "
+                "again, you should be able to import the key.")
 
         self._validateGPG(key)
 
@@ -1160,13 +1198,9 @@ class PersonEditView(SQLObjectEditView):
         self.request.response.redirect(canonical_url(self.context))
 
 
-class PersonEmblemView(FormView):
+class PersonEmblemView(GeneralFormView):
 
-    schema = IPerson
-    fieldNames = ['emblem',]
-    _arguments = ['emblem',]
-
-    def process(self, emblem):
+    def process(self, emblem=None):
         # XXX use Bjorn's nice file upload widget when he writes it
         if emblem is not None:
             filename = self.request.get('field.emblem').filename
@@ -1175,19 +1209,13 @@ class PersonEmblemView(FormView):
             self.context.emblem = getUtility(ILibraryFileAliasSet).create(
                 name=filename, size=len(emblem), file=StringIO(emblem),
                 contentType=content_type)
+        self._nextURL = canonical_url(self.context)
         return 'Success'
 
-    def nextURL(self):
-        return canonical_url(self.context)
 
+class PersonHackergotchiView(GeneralFormView):
 
-class PersonHackergotchiView(FormView):
-
-    schema = IPerson
-    fieldNames = ['hackergotchi',]
-    _arguments = ['hackergotchi',]
-
-    def process(self, hackergotchi):
+    def process(self, hackergotchi=None):
         # XXX use Bjorn's nice file upload widget when he writes it
         if hackergotchi is not None:
             filename = self.request.get('field.hackergotchi').filename
@@ -1247,7 +1275,8 @@ class PersonEditEmailsView:
     def unvalidatedAndGuessedEmails(self):
         """Return a Set containing all unvalidated and guessed emails."""
         emailset = sets.Set()
-        emailset = emailset.union([e.email for e in self.context.guessedemails])
+        emailset = emailset.union(
+            [e.email for e in self.context.guessedemails])
         emailset = emailset.union([e for e in self.context.unvalidatedemails])
         return emailset
 
@@ -1401,9 +1430,9 @@ class PersonEditEmailsView:
         email = self.request.form.get("VALIDATED_SELECTED")
         if email is None:
             self.message = (
-                    "To set your contact address you have to choose an address "
-                    "from the list of confirmed addresses and click on Set as "
-                    "Contact Address.")
+                "To set your contact address you have to choose an address "
+                "from the list of confirmed addresses and click on Set as "
+                "Contact Address.")
             return
         elif isinstance(email, list):
             self.message = (
@@ -1465,7 +1494,8 @@ class RequestPeopleMergeView(AddView):
         token = logintokenset.new(user, login, email.email,
                                   LoginTokenType.ACCOUNTMERGE)
         dupename = dupeaccount.name
-        sendMergeRequestEmail(token, dupename, self.request.getApplicationURL())
+        sendMergeRequestEmail(
+            token, dupename, self.request.getApplicationURL())
         self._nextURL = './+mergerequest-sent?dupe=%d' % dupeaccount.id
 
 
@@ -1642,6 +1672,13 @@ class ObjectReassignmentView:
                     "Launchpad. Please choose a different name or select "
                     "the option to make that person/team the new owner, "
                     "if that's what you want." % owner_name)
+                return None
+
+            if not valid_name(owner_name):
+                self.errormessage = (
+                    "'%s' is not a valid name for a team. Please make sure "
+                    "it contains only the allowed characters and no spaces."
+                    % owner_name)
                 return None
 
             owner = personset.newTeam(
