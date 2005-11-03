@@ -38,7 +38,7 @@
     <browser:url
         for="canonical.launchpad.interfaces.IProductRelease"
         path_expression="version"
-        attribute_to_parent="product"
+        attribute_to_parent="productseries"
         />
 
     <browser:defaultView

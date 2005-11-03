@@ -161,7 +161,7 @@ class TicketContextMenu(ContextMenu):
 
     def editpriority(self):
         text = 'Edit Priority & Assignee'
-        return Link('+editpriority', text, icon='edit',
+        return Link('+priority', text, icon='edit',
                     enabled=self.is_not_resolved)
 
     def reject(self):
