@@ -7,13 +7,14 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IProduct, IDistribution, ILaunchBag, ISpecification, ISpecificationSet)
+    IProduct, IDistribution, ILaunchBag, ISpecification, ISpecificationSet,
+    NameNotAvailable)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
 
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
-    LaunchpadView, Navigation)
+    LaunchpadView, Navigation, GeneralFormView)
 
 __all__ = [
     'SpecificationContextMenu',
@@ -21,6 +22,7 @@ __all__ = [
     'SpecificationView',
     'SpecificationAddView',
     'SpecificationEditView',
+    'SpecificationRetargetingView',
     ]
 
 
@@ -40,7 +42,7 @@ class SpecificationContextMenu(ContextMenu):
              'milestone', 'requestreview', 'doreview', 'subscription',
              'subscribeanother',
              'linkbug', 'unlinkbug', 'adddependency', 'removedependency',
-             'dependencytree', 'linksprint', 'administer']
+             'dependencytree', 'linksprint', 'retarget', 'administer']
 
     def edit(self):
         text = 'Edit Summary and Title'
@@ -122,6 +124,11 @@ class SpecificationContextMenu(ContextMenu):
     def linksprint(self):
         text = 'Add to Meeting'
         return Link('+linksprint', text, icon='add')
+
+    @enabled_with_permission('launchpad.Edit')
+    def retarget(self):
+        text = 'Retarget'
+        return Link('+retarget', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def administer(self):
@@ -225,6 +232,8 @@ class SpecificationAddView(SQLObjectAddView):
             distribution=distribution, assignee=assignee, drafter=drafter,
             approver=approver)
         self._nextURL = canonical_url(spec)
+        # give karma where it is due
+        owner.assignKarma('addspec')
         return spec
 
     def add(self, content):
@@ -240,4 +249,26 @@ class SpecificationEditView(SQLObjectEditView):
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.context))
+
+
+class SpecificationRetargetingView(GeneralFormView):
+
+    def process(self, product=None, distribution=None):
+        if product and distribution:
+            return 'Please choose a product OR a distribution, not both.'
+        if not (product or distribution):
+            return 'Please choose a product or distribution for this spec.'
+        # we need to ensure that there is not already a spec with this name
+        # for this new target
+        if product:
+            if product.getSpecification(self.context.name) is not None:
+                return '%s already has a spec called %s' % (
+                    product.name, self.context.name)
+        elif distribution:
+            if distribution.getSpecification(self.context.name) is not None:
+                return '%s already has a spec called %s' % (
+                    distribution.name, self.context.name)
+        self.context.retarget(product=product, distribution=distribution)
+        self._nextURL = canonical_url(self.context)
+        return 'Done.'
 

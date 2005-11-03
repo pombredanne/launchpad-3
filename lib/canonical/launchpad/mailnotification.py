@@ -225,9 +225,19 @@ def generate_bug_edit_email(bug_delta):
     # figure out what's been changed; add that information to the
     # email as appropriate
     if bug_delta.duplicateof is not None:
-        body += (
-            u"*** This bug has been marked a duplicate of %d ***\n\n" %
-            bug_delta.duplicateof.id)
+        new_bug_dupe = bug_delta.duplicateof['new']
+        old_bug_dupe = bug_delta.duplicateof['old']
+        assert new_bug_dupe is not None or old_bug_dupe is not None
+        assert new_bug_dupe != old_bug_dupe
+        if old_bug_dupe is not None:
+            body += (
+                u"*** This bug is no longer a duplicate of bug %d ***\n\n" %
+                old_bug_dupe.id)
+        if new_bug_dupe is not None: 
+            body += (
+                u"*** This bug has been marked a duplicate of bug %d ***\n\n" %
+                new_bug_dupe.id)
+    
 
     if bug_delta.title is not None:
         body += u"Title changed to:\n"
@@ -522,6 +532,8 @@ def send_bug_duplicate_notification(duplicate_bug, user):
     None.
     """
     bug = duplicate_bug.duplicateof
+    if bug is None:
+        return
     subject = u"[Bug %d] %s" % (bug.id, bug.title)
 
     body = u"""\
@@ -581,7 +593,7 @@ def get_bug_delta(old_bug, new_bug, user):
     IBugDelta if there are changes, or None if there were no changes.
     """
     changes = {}
-    for field_name in ("title", "summary", "description", "duplicateof"):
+    for field_name in ("title", "summary", "description"):
         # fields for which we simply show the new value when they
         # change
         old_val = getattr(old_bug, field_name)
@@ -589,7 +601,7 @@ def get_bug_delta(old_bug, new_bug, user):
         if old_val != new_val:
             changes[field_name] = new_val
 
-    for field_name in ("name", "private"):
+    for field_name in ("name", "private", "duplicateof"):
         # fields for which we show old => new when their values change
         old_val = getattr(old_bug, field_name)
         new_val = getattr(new_bug, field_name)
@@ -684,6 +696,8 @@ def notify_bug_modified(modified_bug, event):
     bug_delta = get_bug_delta(
         old_bug=event.object_before_modification,
         new_bug=event.object, user=event.user)
+
+    assert bug_delta is not None
 
     send_bug_edit_notification(bug_delta)
 

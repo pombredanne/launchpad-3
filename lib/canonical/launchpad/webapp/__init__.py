@@ -12,11 +12,15 @@ __all__ = ['Link', 'FacetMenu', 'ApplicationMenu', 'ContextMenu',
            'StandardLaunchpadFacets', 'enabled_with_permission',
            'LaunchpadView', 'Navigation', 'stepthrough', 'redirection',
            'stepto', 'GetitemNavigation', 'smartquote',
+           'GeneralFormView', 'GeneralFormViewFactory',
            'LaunchpadBrowserRequest', 'LaunchpadBrowserResponse']
 
 import re
 from zope.component import getUtility
 
+from canonical.launchpad.webapp.generalform import (
+    GeneralFormView, GeneralFormViewFactory
+    )
 from canonical.launchpad.webapp.menu import (
     Link, FacetMenu, ApplicationMenu, ContextMenu, nearest_menu, structured,
     enabled_with_permission

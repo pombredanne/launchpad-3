@@ -21,7 +21,7 @@ from zope.app.form.browser.interfaces import IAddFormCustomization
 from canonical.launchpad.interfaces import (
     non_duplicate_bug, IMessageTarget)
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.fields import Title, Summary
+from canonical.launchpad.fields import Title, Summary, BugField
 
 _ = MessageIDFactory('launchpad')
 
@@ -60,7 +60,7 @@ class IBug(IMessageTarget):
         including the steps required to reproduce it."""))
     ownerID = Int(title=_('Owner'), required=True, readonly=True)
     owner = Attribute("The owner's IPerson")
-    duplicateof = Int(
+    duplicateof = BugField(
         title=_('Duplicate Of'), required=False, constraint=non_duplicate_bug)
     communityscore = Int(
         title=_('Community Score'), required=True, readonly=True, default=0)
@@ -165,9 +165,12 @@ class IBugTarget(Interface):
         except IProduct.
         """
 
-    def newBug(owner, title, description):
-        """Create a new bug on this target, with the given title,
-        description and owner.
+    def createBug(owner, title, comment, private=False):
+        """Create a new bug on this target.
+
+        :title: The title of the bug, as a string.
+        :comment: The initial comment/default description.
+        :private: Is this a private bug? A boolean value.
         """
 
     bugtasks = Attribute("A list of BugTasks for this target.")
@@ -207,7 +210,8 @@ class IBugDelta(Interface):
     private = Attribute("A dict with two keys, 'old' and 'new', or None.")
     name = Attribute("A dict with two keys, 'old' and 'new', or None.")
     duplicateof = Attribute(
-        "The ID of which this bug report is a duplicate, or None.")
+        "A dict with two keys, 'old' and 'new', or None. Key values are "
+        "IBug's")
 
     # other things linked to the bug
     external_reference = Attribute(

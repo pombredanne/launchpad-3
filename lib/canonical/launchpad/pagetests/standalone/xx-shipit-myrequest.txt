@@ -214,3 +214,48 @@
   HTTP/1.1 200 Ok
   ...
   ...<h1>This order was cancelled</h1>...
+
+
+  If an user already has an order sent to the shipping company, he'll have to
+  enter a reason in any new order he places (even the standard ones), 
+
+  >>> print http(r"""
+  ... POST /shipit/++vh++http:shipit.async.com.br:80/++/myrequest HTTP/1.1
+  ... Authorization: Basic amFtZXMuYmxhY2t3ZWxsQHVidW50dWxpbnV4LmNvbTp0ZXN0
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... ordertype=standard&standardrequest=3&recipientdisplayname=James+Blackwell&organization=&addressline1=Somewhere&addressline2=anywhere&city=New+Jersey&province=&postcode=1234546&field.country=226&field.country-empty-marker=1&phone=&order=&newrequest=Request+CDs""")
+  HTTP/1.1 200 Ok
+  ...
+  ...<h2>Request Details</h2>...
+  ...You already have one or more requests sent to the shipping company...
+  ...This means you have to provide a reason...
+  ...
+
+
+  Also, if an user already has an order sent to the shipping company, any new
+  order he places won't be automatically approved.
+
+  >>> print http(r"""
+  ... POST /shipit/++vh++http:shipit.async.com.br:80/++/myrequest HTTP/1.1
+  ... Authorization: Basic amFtZXMuYmxhY2t3ZWxsQHVidW50dWxpbnV4LmNvbTp0ZXN0
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... ordertype=standard&standardrequest=3&reasonforstandardrequest=foo+bar&recipientdisplayname=James+Blackwell&organization=&addressline1=Somewhere&addressline2=anywhere&city=New+Jersey&province=&postcode=1234546&field.country=226&field.country-empty-marker=1&phone=&order=&newrequest=Request+CDs""")
+  HTTP/1.1 200 Ok
+  ...
+  ...<h1>Your current ShipIt request</h1>...
+  ...<th>Status:</th>...
+  ...Waiting for approval...
+  ...
+
+
+  As the request placed by James wasn't approved, and email was sent to the
+  shipit admins notifying them.
+
+  >>> import email, re
+  >>> from canonical.launchpad.mail import stub
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> to_addrs
+  ['info@shipit.ubuntu.com']
+

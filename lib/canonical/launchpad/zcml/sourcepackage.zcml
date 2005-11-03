@@ -157,28 +157,4 @@
             lp:url="/distros/ubuntu/hoary/+sources/apache2/+packaging" />
     </browser:pages>
 
-    <browser:addform
-        name="+filebug"
-        for="canonical.launchpad.interfaces.ISourcePackage"
-        facet="bugs"
-        schema="canonical.launchpad.interfaces.IBugAddForm"
-        class="canonical.launchpad.browser.sourcepackage.SourcePackageFilebugView"
-        permission="launchpad.AnyPerson"
-        fields="title comment private owner"
-        keyword_arguments="title comment private owner"
-        template="../templates/sourcepackage-filebug.pt"
-        lp:url="/distros/ubuntu/hoary/+sources/apache2/+filebug">
-        <browser:widget
-           field="owner"
-           class="canonical.widgets.HiddenUserWidget" />
-        <browser:widget
-           field="title"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="55" />
-        <browser:widget
-           field="comment"
-           class="zope.app.form.browser.TextAreaWidget"
-           width="62" />
-    </browser:addform>
-
 </configure>

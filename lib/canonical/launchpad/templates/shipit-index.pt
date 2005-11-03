@@ -23,10 +23,6 @@
           <p>ShipIt lets you order Ubuntu 5.10 (Breezy Badger) CDs that will
           be posted to you free of charge.</p>
 
-          <p><strong>Please note that orders placed now will not ship until
-          approximately one week after the release of Version
-          5.10.</strong></p>
-
           <p class="portalMessage" tal:condition="view/announcement|nothing"
              tal:content="view/announcement" />
 
