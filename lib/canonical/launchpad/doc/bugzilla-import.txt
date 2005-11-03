@@ -54,9 +54,15 @@ it to return:
   ...          datetime(2005, 4, 4, tzinfo=UTC), 'Test bug 4',
   ...          'Linux', 'P1', 'Ubuntu', 'i386', 1, '--', 'mozilla-firefox',
   ...          'FIXED', '--', 0, '', '', ''),
+  ...         # An UPSTREAM bug
+  ...         (5, 1, 'http://bugzilla.gnome.org/show_bug.cgi?id=273041',
+  ...          'blocker', 'UPSTREAM',
+  ...          datetime(2005, 4, 4, tzinfo=UTC), 'Test bug 5',
+  ...          'Linux', 'P1', 'Ubuntu', 'i386', 1, '--', 'evolution',
+  ...          '', '--', 0, '', '', ''),
   ...     ]
 
-  >>> ccs = [[], [3], [], []]
+  >>> ccs = [[], [3], [], [], []]
 
   >>> comments = [
   ...     [(1, datetime(2005, 4, 1, tzinfo=UTC), 'First comment'),
@@ -68,14 +74,15 @@ it to return:
   ...       'This is related to CVE-2005-1234'),
   ...      (2, datetime(2005, 4, 3, 2, tzinfo=UTC),
   ...       'Created an attachment (id=1)')],
-  ...     [(1, datetime(2005, 4, 4, tzinfo=UTC), 'First comment')]
+  ...     [(1, datetime(2005, 4, 4, tzinfo=UTC), 'First comment')],
+  ...     [(1, datetime(2005, 4, 5, tzinfo=UTC), 'First comment')],
   ...     ]
 
   >>> attachments = [
   ...     [], [],
   ...     [(1, datetime(2005, 4, 3, 2, tzinfo=UTC), 'An attachment',
   ...       'text/x-patch', True, 'foo.patch', 'the data', 2)],
-  ...     []
+  ...     [], []
   ...     ]
 
   >>> class FakeBackend:
@@ -328,6 +335,41 @@ Next we import a fixed bug:
       Subject: Test bug 4
       First comment
   <BLANKLINE>
+
+
+The Ubuntu bugzilla uses the UPSTREAM state to categorise bugs that
+have been forwarded on to the upstream developers.  Usually the
+upstream bug tracker URL is included in the URL field of the bug.
+
+The Malone equivalent of this is to create a second task on the bug,
+and attach a watch to the upstream bug tracker:
+
+  >>> bug = bz.handleBug(5)
+  >>> bugInfo(bug)
+  Title: Test bug 5
+  Reporter: Sample Person
+  Created: 2005-04-04 00:00:00+00:00
+  Subscribers:
+      Sample Person
+  Task: evolution (upstream)
+      Status: NEW
+      Product: evolution
+      Severity: NORMAL
+  Task: evolution (ubuntu)
+      Status: NEW
+      Distro: ubuntu
+      Source package: evolution
+      Assignee: Sample Person
+      Priority: HIGH
+      Severity: CRITICAL
+      Explanation: Bugzilla status=UPSTREAM, product=Ubuntu, component=evolution
+  Messages:
+      Author: Sample Person
+      Date: 2005-04-05 00:00:00+00:00
+      Subject: Test bug 5
+      First comment
+  <BLANKLINE>
+
 
 
 

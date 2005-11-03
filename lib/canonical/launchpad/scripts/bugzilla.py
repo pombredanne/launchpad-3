@@ -303,7 +303,7 @@ class Bugzilla:
         """
         # we currently only support mapping Ubuntu bugs ...
         if bug.product != 'Ubuntu':
-            return ValueError('product must be Ubuntu')
+            raise ValueError('product must be Ubuntu')
         
         ubuntu = getUtility(IDistributionSet)['ubuntu']
         try:
@@ -323,7 +323,7 @@ class Bugzilla:
     def getLaunchpadUpstreamProduct(self, bug):
         # we currently only support mapping Ubuntu bugs ...
         if bug.product != 'Ubuntu':
-            return ValueError('product must be Ubuntu')
+            raise ValueError('product must be Ubuntu')
         
         ubuntu = getUtility(IDistributionSet)['ubuntu']
         try:
