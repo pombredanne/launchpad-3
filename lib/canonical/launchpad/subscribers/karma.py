@@ -32,6 +32,8 @@ def bug_modified(bug, event):
     bug_delta = get_bug_delta(
         event.object_before_modification, event.object, user)
 
+    assert bug_delta is not None
+
     attrs_actionnames = {'title': 'bugtitlechanged',
                          'summary': 'bugsummarychanged',
                          'description': 'bugdescriptionchanged',

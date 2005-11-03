@@ -89,6 +89,7 @@
     <include file="publishedpackage.zcml" />
     <include file="queue.zcml" />
     <include file="registry.zcml" />
+    <include file="schema.zcml" />
     <include file="sourcepackage.zcml" />
     <include file="sourcepackagename.zcml" />
     <include file="sourcepackagepublishing.zcml" />
