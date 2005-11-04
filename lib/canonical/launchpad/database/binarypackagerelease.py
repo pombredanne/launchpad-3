@@ -17,7 +17,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.database.publishing import BinaryPackagePublishing
-from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.files import BinaryPackageFile
 from canonical.launchpad.helpers import shortlist
 
@@ -166,6 +165,7 @@ class BinaryPackageRelease(SQLBase):
     def publish(self, priority, status, pocket, embargo,
                 distroarchrelease=None):
         """See IBinaryPackageRelease."""
+        # XXX: completely untested code
         if not distroarchrelease:
             distroarchrelease = self.build.distroarchrelease
 

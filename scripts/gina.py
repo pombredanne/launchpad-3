@@ -295,7 +295,7 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
 
         if nosource:
             # XXX: untested
-            log.warn('%i sources packages not found' % len(nosource))
+            log.warn('%i source packages not found' % len(nosource))
             for pkg in nosource:
                 log.warn(pkg)
 

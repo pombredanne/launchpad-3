@@ -23,6 +23,8 @@ Bug watches are accessed via a utility that provides IBugWatchSet.
     >>> bugwatch = getUtility(IBugWatchSet).get(2)
     >>> bugwatch.remotebug
     u'2000'
+    >>> bugwatch.url
+    u'http://bugzilla.mozilla.org//show_bug.cgi?id=2000'
 
 Creating Bug Watches
 --------------------
@@ -38,5 +40,35 @@ To create a bugwatch, use IBugWatchSet.createBugWatch:
     >>> bugwatch = getUtility(IBugWatchSet).createBugWatch(
     ...     bug=bug_one, owner=sample_person, bugtracker=bmo,
     ...     remotebug='1234')
-    >>> bugwatch.remotebug
-    u'1234'
+    >>> bugwatch.url
+    u'http://bugzilla.mozilla.org//show_bug.cgi?id=1234'
+
+
+Creating a SF.net Bugtracker
+----------------------------
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugTrackerSet)
+    >>> from canonical.lp.dbschema import BugTrackerType
+    >>> bts = getUtility(IBugTrackerSet)
+    >>> sf = ("http://sourceforge.net/tracker/?atid=737291"
+    ...       "&group_id=136955&func=browse")
+    >>> bts.ensureBugTracker(sf, sample_person,
+    ...     BugTrackerType.SOURCEFORGE, "GNUTelephony BTS", "My summary", 
+    ...     "My contact details", "gnutelephony-bugs")
+    <BugTracker at 0x...>
+    >>> gtb = getUtility(IBugTrackerSet)['gnutelephony-bugs']
+
+Creating SF.net Bug Watches
+---------------------------
+
+The URLifier for these bug watches deals with SF.net's horrible URLs.
+
+    >>> sample_person = getUtility(IPersonSet).get(12)
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> bugwatch = getUtility(IBugWatchSet).createBugWatch(
+    ...     bug=bug_one, owner=sample_person, bugtracker=gtb,
+    ...     remotebug='1337833')
+    >>> bugwatch.url
+    u'http://sourceforge.net/tracker/?aid=1337833&group_id=136955&atid=737291&func=detail'
+
