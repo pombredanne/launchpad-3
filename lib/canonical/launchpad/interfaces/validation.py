@@ -80,24 +80,27 @@ def non_duplicate_bug(value):
 
     from canonical.launchpad.interfaces.bug import IBugSet
     bugset = getUtility(IBugSet)
-    duplicate = getUtility(ILaunchBag).bug
+    current_bug = getUtility(ILaunchBag).bug
     dup_target = value
-    current_bug_has_dup_refs = bugset.searchAsUser(
+    current_bug_has_dup_refs = bool(bugset.searchAsUser(
         user=getUtility(ILaunchBag).user,
-        duplicateof=duplicate).count()
-    target_is_dup = dup_target.duplicateof
-    if duplicate == dup_target:
+        duplicateof=current_bug))
+    if current_bug == dup_target:
         raise LaunchpadValidationError(_(dedent("""
             You can't mark a bug as a duplicate of itself.""")))
-
-    if (not target_is_dup) and (not current_bug_has_dup_refs):
-        return True
-    else:
+    elif dup_target.duplicateof is not None:
         raise LaunchpadValidationError(_(dedent("""
             Bug %i is already a duplicate of bug %i. You can only
             duplicate to bugs that are not duplicates themselves.
-            """% (dup_target.id, (dup_target.duplicateof).id))))
-
+            """% (dup_target.id, dup_target.duplicateof.id))))
+    elif current_bug_has_dup_refs: 
+        raise LaunchpadValidationError(_(dedent("""
+            There are other bugs already marked as duplicates of Bug %i.
+            These bugs should be changed to be duplicates of another bug
+            if you are certain you would like to perform this change."""
+            % current_bug.id))) 
+    else:
+        return True
 
 def valid_bug_number(value):
     from canonical.launchpad.interfaces.bug import IBugSet

@@ -72,7 +72,7 @@
         <a tal:attributes="href sprint_link/sprint/fmt:url"
            tal:content="sprint_link/sprint/name" /> 
         (<a tal:content="sprint_link/status/title"
-            tal:attributes="href string:${sprint_link/fmt:url}/+admin"
+            tal:attributes="href string:${sprint_link/fmt:url}/+edit"
             >Approved</a>)<br />
       </tal:sprint>
 	</tal:has_sprints>
