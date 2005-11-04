@@ -15,6 +15,8 @@
                     tal:content="context/owner/preferredemail_sha1">
                     0BEEC7B5EA3f0FDBC95D0DD47F3C5BC275DA8A33
                 </foaf:mbox_sha1sum>
+                <metal:block tal:define="context member"
+                    metal:use-macro="context/@@rdf_macros/owner_foaf_gpg" />
             </foaf:Person>
             <foaf:Group tal:condition="context/owner/isTeam">
                 <foaf:name tal:content="context/owner/displayname">
@@ -30,9 +32,23 @@
                             tal:condition="member/preferredemail"
                             tal:content="member/preferredemail_sha1"
                             >0BEEC7B5EA3f0FDBC95D0DD47F3C5BC275DA8A33
-                         </foaf:mbox_sha1sum>
+                        </foaf:mbox_sha1sum>
+                        <metal:block tal:define="owner member"
+                            metal:use-macro="context/@@rdf_macros/owner_foaf_gpg" />
                     </foaf:Person>
                 </foaf:member>
             </foaf:Group>
+    </metal:block>
+
+    <metal:block define-macro="owner_foaf_gpg">
+        <wot:hasKey tal:condition="owner/gpgkeys">
+            <wot:PubKey tal:repeat="gpgkey owner/gpgkeys">
+                <wot:hex_id tal:content="gpgkey/keyid">91CFA34D</wot:hex_id>
+                <wot:length tal:content="gpgkey/keysize">1024</wot:length>
+                <wot:fingerprint tal:content="gpgkey/fingerprint">04FFF3AC57DF217C6D383DBC0110FB923756EA0B</wot:fingerprint>
+                <wot:pubkeyAddress tal:attributes="rdf:resource
+                    string:http://keyserver.ubuntu.com:11371/pks/lookup?op=get&amp;search=0x${gpgkey/fingerprint};"/>
+            </wot:PubKey>
+        </wot:hasKey>
     </metal:block>
 </rdf:RDF>
