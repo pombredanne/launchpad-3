@@ -41,8 +41,15 @@
     </tbody>
   </table>
 
-  <h2>Revision History:</h2>
+  <h2>Recent History:</h2>
 
+  <p tal:condition="not:context/revision_count">
+    This branch has not been scanned for revisions yet, or no revisions were
+    found on the last scan. Branches are scanned at least once a day.
+  </p>
+
+  <tal:history_available condition="context/revision_count">
+  <p>Summary of the 10 latest revisions on that branch.</p>
   <table class="listing">
     <thead>
       <tr>
@@ -61,6 +68,7 @@
       </tr>
     </tbody>
   </table>
+  </tal:history_available>
 
 </div>
 </body>
