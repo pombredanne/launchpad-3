@@ -6,8 +6,6 @@ __metaclass__ = type
 
 from zope.app.form.browser.add import AddView
 
-from canonical.launchpad.interfaces import ISprintSpecification
-
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from canonical.launchpad.webapp import canonical_url

@@ -97,6 +97,8 @@ And rock this baby:
     ...              'dapper', 'dapper-updates']
     >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
     >>> print proc.stderr.read()
+    WARNING No source package bdftopcf (0.99.0-1) listed for bdftopcf (0.99.0-1), scrubbing archive...
+    <BLANKLINE>
     >>> proc.wait()
     0
 
@@ -122,7 +124,7 @@ And that one of the packages in main is here too:
     >>> print ekg.component.name
     main
 
-And finally, that the package it generates in universe was successfully
+Check that the package it generates in universe was successfully
 processed. In particular, its section should be stripped of the
 component name.
 
@@ -137,4 +139,25 @@ component name.
     >>> print ekg.priority == PackagePublishingPriority.OPTIONAL
     True
 
+The bdftopcf package is in a bit of a fix. Its binary package is present
+in universe, but no source package is listed for it, and the actual
+package files are in main! Gina to the rescue: she finds them in the
+right place, updates the component, and creates it with a semi-bogus
+DSC.
 
+    >>> n = BinaryPackageName.selectOneBy(name="bdftopcf")
+    >>> ekg = BinaryPackageRelease.selectOneBy(binarypackagenameID=n.id,
+    ...                                        version="0.99.0-1")
+    >>> print ekg.section.name
+    x11
+    >>> print ekg.component.name
+    universe
+    >>> print ekg.build.sourcepackagerelease.sourcepackagename.name
+    bdftopcf
+    >>> print ekg.build.sourcepackagerelease.component.name
+    main
+    >>> print ekg.build.sourcepackagerelease.version
+    0.99.0-1
+
+XXX: bin-only NMU
+XXX: udebs
