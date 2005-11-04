@@ -85,7 +85,7 @@ class SpecificationFeedbackClearingView:
                 return self.process_status
 
         clearedreqs = self.request['feedbackrequest']
-        if type(clearedreqs) == type(u'foobar'):
+        if isinstance(clearedreqs, unicode):
             # only a single item was selected, but we want to deal with a
             # list for the general case, so convert it to a list
             clearedreqs = [clearedreqs,]

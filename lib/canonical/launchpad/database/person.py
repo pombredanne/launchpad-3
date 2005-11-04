@@ -1131,8 +1131,9 @@ class PersonSet:
         skip.append(('ticketsubscription', 'person'))
 
         # Update the SpecificationFeedback entries that will not conflict
-        # and trash the rest
-        # first the reviewer
+        # and trash the rest.
+        
+        # First we handle the reviewer.
         cur.execute('''
             UPDATE SpecificationFeedback
             SET reviewer=%(to_id)d
@@ -1148,7 +1149,7 @@ class PersonSet:
             ''' % vars())
         skip.append(('specificationfeedback', 'reviewer'))
 
-        # and now the requester
+        # And now we handle the requester.
         cur.execute('''
             UPDATE SpecificationFeedback
             SET requester=%(to_id)d

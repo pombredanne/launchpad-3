@@ -177,6 +177,7 @@ class Specification(SQLBase):
             return True
         if self.productseries is not None:
             return True
+        return False
 
     def getDelta(self, old_spec, user):
         """See ISpecification."""
