@@ -24,7 +24,7 @@ class ISpecificationFeedback(Interface):
         vocabulary='ValidPersonOrTeam', readonly=True,
         description=_("Select the person who you would like to give you "
         "some feedback on this specification."))
-    requestor = Int(title=_("The person who requested this feedback."),
+    requester = Int(title=_("The person who requested this feedback."),
         required=True)
     specification = Int(title=_('Specification ID'), required=True,
         readonly=True)

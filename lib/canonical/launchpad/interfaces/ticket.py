@@ -104,7 +104,7 @@ class ITicket(IHasOwner, IMessageTarget):
     def mark_resolved(person):
         """Indicate that the person thinks this ticket is resolved.
 
-        Depending on whether this is the requestor (owner) or someone else,
+        Depending on whether this is the requester (owner) or someone else,
         it will affect the status in different ways. When the owner says it
         is resolved, we mark it as 'closed'. When someone else says it is
         resolved, we mark it as 'answered.'
@@ -115,7 +115,7 @@ class ITicket(IHasOwner, IMessageTarget):
         
         This can only be done to NEW tickets. It will usually be done when
         the first message for the ticket is received from someone other than
-        the requestor (owner).  Doing so will also set the dateaccepted.
+        the requester (owner).  Doing so will also set the dateaccepted.
         """
 
     def reject(rejector):

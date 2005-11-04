@@ -36,13 +36,13 @@
           <td>
             <input type="checkbox" name="feedbackrequest"
                    tal:attributes="
-                     value fbreq/requestor/name;
-                     id string:req_${fbreq/requestor/name}" />
+                     value fbreq/requester/name;
+                     id string:req_${fbreq/requester/name}" />
           </td>
           <td>
-            <label tal:content="fbreq/requestor/browsername"
+            <label tal:content="fbreq/requester/browsername"
                    tal:attributes="
-                     for string:req_${fbreq/requestor/name}">Foo
+                     for string:req_${fbreq/requester/name}">Foo
                      Bar</label>
             <div tal:condition="fbreq/queuemsg"
                  tal:content="fbreq/queuemsg"

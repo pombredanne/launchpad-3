@@ -41,12 +41,12 @@
   </tal:block>
   <i tal:condition="context/whiteboard"
      tal:content="context/whiteboard">white board goes here</i>
-  <tal:block condition="view/review">
-    <b>Review Requested by
-    <span tal:replace="view/review/requestor/browsername">Foo Bar</span>.
-    <span tal:replace="view/review/queuemsg"
-          tal:condition="view/review/queuemsg">Msg goes here</span></b>.
-  </tal:block>
+  <tal:fbreqs repeat="fbreq view/feedbackrequests">
+    <b>Your feedback requested</b> by
+    <span tal:replace="fbreq/requester/browsername">Foo Bar</span>.
+    <i tal:content="fbreq/queuemsg"
+       tal:condition="fbreq/queuemsg">Msg goes here</i>
+  </tal:fbreqs>
   <tal:sprints condition="context/sprints">
   <br />
   <b>Sprints</b>:

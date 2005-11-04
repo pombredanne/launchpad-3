@@ -135,9 +135,9 @@ class Person(SQLBase):
         orderBy=['-datecreated'])
     drafted_specs = MultipleJoin('Specification', joinColumn='drafter',
         orderBy=['-datecreated'])
-    review_specs = RelatedJoin('Specification', joinColumn='reviewer',
+    feedback_specs = RelatedJoin('Specification', joinColumn='reviewer',
         otherColumn='specification',
-        intermediateTable='SpecificationReview',
+        intermediateTable='SpecificationFeedback',
         orderBy=['-datecreated'])
     subscribed_specs = RelatedJoin('Specification', joinColumn='person',
         otherColumn='specification',
@@ -260,7 +260,7 @@ class Person(SQLBase):
         ret = ret.union(self.approver_specs)
         ret = ret.union(self.assigned_specs)
         ret = ret.union(self.drafted_specs)
-        ret = ret.union(self.review_specs)
+        ret = ret.union(self.feedback_specs)
         ret = ret.union(self.subscribed_specs)
         if sort is None or sort == SpecificationSort.DATE:
             sortkey = lambda a: a.datecreated
@@ -1134,35 +1134,35 @@ class PersonSet:
         # and trash the rest
         # first the reviewer
         cur.execute('''
-            UPDATE SpecificationReview
+            UPDATE SpecificationFeedback
             SET reviewer=%(to_id)d
             WHERE reviewer=%(from_id)d AND specification NOT IN
                 (
                 SELECT specification
-                FROM SpecificationReview
+                FROM SpecificationFeedback
                 WHERE reviewer = %(to_id)d
                 )
             ''' % vars())
         cur.execute('''
-            DELETE FROM SpecificationReview WHERE reviewer=%(from_id)d
+            DELETE FROM SpecificationFeedback WHERE reviewer=%(from_id)d
             ''' % vars())
-        skip.append(('specificationreview', 'reviewer'))
+        skip.append(('specificationfeedback', 'reviewer'))
 
-        # and now the requestor
+        # and now the requester
         cur.execute('''
-            UPDATE SpecificationReview
-            SET requestor=%(to_id)d
-            WHERE requestor=%(from_id)d AND specification NOT IN
+            UPDATE SpecificationFeedback
+            SET requester=%(to_id)d
+            WHERE requester=%(from_id)d AND specification NOT IN
                 (
                 SELECT specification
-                FROM SpecificationReview
-                WHERE requestor = %(to_id)d
+                FROM SpecificationFeedback
+                WHERE requester = %(to_id)d
                 )
             ''' % vars())
         cur.execute('''
-            DELETE FROM SpecificationReview WHERE requestor=%(from_id)d
+            DELETE FROM SpecificationFeedback WHERE requester=%(from_id)d
             ''' % vars())
-        skip.append(('specificationreview', 'requestor'))
+        skip.append(('specificationfeedback', 'requester'))
 
         # Update the SpecificationSubscription entries that will not conflict
         # and trash the rest

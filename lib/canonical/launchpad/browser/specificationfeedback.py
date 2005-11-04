@@ -22,8 +22,8 @@ __all__ = [
 
 class SpecificationFeedbackAddView(AddView):
 
-    def create(self, reviewer, requestor, queuemsg=None):
-        return self.context.queue(reviewer, requestor, queuemsg)
+    def create(self, reviewer, requester, queuemsg=None):
+        return self.context.queue(reviewer, requester, queuemsg)
 
     def add(self, content):
         """Skipping 'adding' this content to a container, because
@@ -94,12 +94,12 @@ class SpecificationFeedbackClearingView:
         number_cleared = 0
         msg = 'Cleared requests from: '
         for clearedreq in clearedreqs:
-            requestor = getUtility(IPersonSet).getByName(clearedreq)
-            if requestor is not None:
-                self.context.unqueue(self.user, requestor)
+            requester = getUtility(IPersonSet).getByName(clearedreq)
+            if requester is not None:
+                self.context.unqueue(self.user, requester)
                 if number_cleared > 0:
                     msg += ', '
-                msg += requestor.browsername
+                msg += requester.browsername
                 number_cleared += 1
 
         self.process_status = msg

@@ -244,8 +244,8 @@ class IPerson(IHasSpecifications):
         "this person, sorted newest first.")
     created_specs = Attribute("Specifications that were created by "
         "this person, sorted newest first.")
-    review_specs = Attribute("Specifications which this person "
-        "has been asked to review, sorted newest first.")
+    feedback_specs = Attribute("Specifications on which this person "
+        "has been asked to provide feedback, sorted newest first.")
     subscribed_specs = Attribute("Specifications to which this person "
         "has subscribed, sorted newest first.")
     tickets = Attribute("Any support requests related to this person. "

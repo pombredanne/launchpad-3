@@ -239,11 +239,11 @@ class Specification(SQLBase):
                 return
 
     # queueing
-    def queue(self, reviewer, requestor, queuemsg=None):
+    def queue(self, reviewer, requester, queuemsg=None):
         """See ISpecification."""
         for fbreq in self.feedbackrequests:
             if (fbreq.reviewer.id == reviewer.id and
-                fbreq.requestor == requestor.id):
+                fbreq.requester == requester.id):
                 # we have a relevant request already, update it
                 fbreq.queuemsg = queuemsg
                 return fbreq
@@ -252,15 +252,15 @@ class Specification(SQLBase):
         return SpecificationFeedback(
             specification=self,
             reviewer=reviewer,
-            requestor=requestor,
+            requester=requester,
             queuemsg=queuemsg)
 
-    def unqueue(self, reviewer, requestor):
+    def unqueue(self, reviewer, requester):
         """See ISpecification."""
         # see if a relevant queue entry exists, and if so, delete it
         for fbreq in self.feedbackrequests:
             if (fbreq.reviewer.id == reviewer.id and
-                fbreq.requestor.id == requestor.id):
+                fbreq.requester.id == requester.id):
                 SpecificationFeedback.delete(fbreq.id)
                 return
 

@@ -243,12 +243,12 @@
     schema="canonical.launchpad.interfaces.ISpecificationFeedback"
     class="canonical.launchpad.browser.SpecificationFeedbackAddView"
     label="Request Feedback on Specification"
-    fields="reviewer requestor queuemsg"
-    keyword_arguments="reviewer requestor queuemsg"
+    fields="reviewer requester queuemsg"
+    keyword_arguments="reviewer requester queuemsg"
     permission="launchpad.AnyPerson"
     template="../templates/specification-requestfeedback.pt">
     <browser:widget
-      field="requestor"
+      field="requester"
       class="canonical.widgets.HiddenUserWidget" />
     <browser:widget
       field="queuemsg"

@@ -155,7 +155,7 @@ class SpecificationView(LaunchpadView):
 
     def initialize(self):
         # The review that the user requested on this spec, if any.
-        self.review = None
+        self.feedbackrequests = []
         self.notices = []
         request = self.request
 

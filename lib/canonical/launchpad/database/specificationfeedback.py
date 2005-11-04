@@ -18,12 +18,12 @@ class SpecificationFeedback(SQLBase):
 
     implements(ISpecificationFeedback)
 
-    _table='SpecificationReview'
+    _table='SpecificationFeedback'
     specification = ForeignKey(dbName='specification',
         foreignKey='Specification', notNull=True)
     reviewer = ForeignKey(dbName='reviewer', foreignKey='Person',
         notNull=True)
-    requestor = ForeignKey(dbName='requestor', foreignKey='Person',
+    requester = ForeignKey(dbName='requester', foreignKey='Person',
         notNull=True)
     queuemsg = StringCol(notNull=False, default=None)
 
