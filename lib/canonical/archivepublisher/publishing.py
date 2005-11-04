@@ -205,6 +205,8 @@ class Publisher(object):
                 #   -- kiko, 2005-09-23
                 f = open("%s/override.%s.%s" % (self._config.overrideroot,
                                                 distrorelease, component), "w")
+                ef = open("%s/override.%s.extra.%s" % (
+                    self._config.overrideroot, distrorelease, component), "w")
                 overrides[distrorelease][component]['bin'].sort()
                 for tup in overrides[distrorelease][component]['bin']:
                     if tup[2].endswith("debian-installer"):
@@ -218,8 +220,41 @@ class Publisher(object):
                     else:
                         f.write("\t".join(tup))
                         f.write("\n")
+                        # XXX: dsilvers: This needs to be made databaseish
+                        # and be actually managed within Launchpad. (Or else
+                        # we need to change the ubuntu as appropriate and look
+                        # for bugs addresses etc in launchpad.
+                        # bug 3900
+                        ef.write("\t".join([tup[0], "Origin", "Ubuntu"]))
+                        ef.write("\n")
+                        ef.write("\t".join(
+                            [tup[0], "Bugs",
+                             "mailto:ubuntu-users@lists.ubuntu.com"]))
+                        ef.write("\n")
                 f.close()
 
+                # XXX: dsilvers: As above, this needs to be integrated into
+                # the database at some point.
+                # bug 3900
+                extra_extra_overrides = os.path.join(
+                    self._config.miscroot,
+                    "more-extra.override.%s.main" % (distrorelease))
+                if (os.path.exists(extra_extra_overrides) and
+                    component == "main"):
+                    eef = open(extra_extra_overrides, "r")
+                    extras = {}
+                    for line in eef:
+                        (package, header, value) = eef.strip().split("\t")
+                        pkg_extras = extras.setdefault(package, {})
+                        header_values = pkg_extras.setdefault(header, [])
+                        header_values.append(value)
+                    eef.close()
+                    for pkg, headers in extras.items():
+                        for header, values in headers.items():
+                            ef.write("\t".join(
+                                [pkg, header, ", ".join(values)]))
+                ef.close()
+                
                 if len(di_overrides):
                     # We managed to find some d-i bits in these binaries,
                     # so we output a magical "component"-ish "section"-y sort
@@ -378,6 +413,7 @@ tree "dists/%(DISTRORELEASEONDISK)s"
   Architectures "%(ARCHITECTURES)s";
   BinOverride "override.%(DISTRORELEASE)s.$(SECTION)";
   SrcOverride "override.%(DISTRORELEASE)s.$(SECTION).src";
+  ExtraOverride "override.%(DISTRORELEASE)s.extra.$(SECTION).src";
   Packages::Extensions "%(EXTENSIONS)s";
   BinCacheDB "packages-%(CACHEINSERT)s$(ARCH).db";
   Contents " ";
