@@ -29,6 +29,9 @@ Let's check the complex properties of a build object.
   >>> firefox_build.title
   u'i386 build of mozilla-firefox 0.9 in ubuntu warty (2004-09-27)'
 
+  >>> firefox_build.build_icon
+  '/++resource++build-success'
+
   >>> firefox_build.buildlog = 34
   >>> firefox_build.buildlog.url
   'http://localhost:58000/34/evolution-2.2-test.pot'

@@ -33,7 +33,7 @@ from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.interfaces import (
     IBuilderSet, IBuildQueueSet, IBuildSet, ILibraryFileAliasSet,
-    IBinaryPackageReleaseSet
+    IBinaryPackageReleaseSet, IBinaryPackageNameSet
     )
 
 from canonical.lp import dbschema
@@ -242,12 +242,14 @@ class BuilderGroup:
         buildid = "%s-%s" % (queueItem.build.id, queueItem.id)
         self.logger.debug("Initiating build %s on %s"
                           % (buildid, builder.url))
-        queueItem.builder = builder
-        queueItem.buildstart = UTC_NOW
+
         chroot = self.findChrootFor(queueItem, pocket)
         if not chroot:
             self.logger.critical("OOPS! Could not find CHROOT")
             return
+
+        queueItem.builder = builder
+        queueItem.buildstart = UTC_NOW
 
         # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
         slave = removeSecurityProxy(builder.slave)
@@ -336,37 +338,40 @@ class BuilderGroup:
         # Practically speaking, all the code below will be replaced by the
         # uploader-integration branch, the binary is treated properly there,
         # not here.
-        binname = getUtility(IBinaryPackageNameSet).ensure(name)
+        binname = getUtility(IBinaryPackageNameSet).ensure(binname)
         archspec = not filename.endswith("all.deb")
         binpackageformat = dbschema.BinaryPackageFormat.DEB
         component = build.sourcepackagerelease.component
         section = build.sourcepackagerelease.section
         priority = dbschema.PackagePublishingPriority.STANDARD
-        shllibdeps = None
+        summary = "Launchpad Auto Build System summary placeholder"
+        description = "Launchpad Auto Build System description placeholder"
+        shlibdeps = None
         depends = None
-        recomends = None
+        recommends = None
         suggests = None
         conflicts = None
         replaces = None
         provides = None
         essential = False
         installedsize = None
+        copyright = None
         licence = None
         
-        build.createBinaryPackageRelease(
+        binpkg = build.createBinaryPackageRelease(
             binname, version, summary, description, binpackageformat,
             component, section, priority, shlibdeps, depends, recommends,
             suggests, conflicts, replaces, provides, essential, installedsize,
-            copyright, licence, archespec)
+            copyright, licence, archspec)
         
         # add the binary file
-        alias = getUtility(ILibraryFileAliasSet).get(aliasid)
+        alias = getUtility(ILibraryFileAliasSet)[aliasid]
         binpkg.addFile(alias)
 
         # publish file as PENDING in pocket RELEASE with no EMBARGO 
-        status=dbschema.PackagePublishingStatus.PENDING,
-        pocket=dbschema.PackagePublishingPocket.RELEASE,
-        embargo=False
+        status = dbschema.PackagePublishingStatus.PENDING,
+        pocket = dbschema.PackagePublishingPocket.RELEASE,
+        embargo = False
         binpkg.publish(priority, status, pocket, embargo)
         
         self.logger.debug("Absorbed binary package %s" % filename)
@@ -509,8 +514,12 @@ class BuilderGroup:
             aliasid = self.getFileFromSlave(slave, result, filemap[result],
                                             librarian)
             if result.endswith(".deb"):
+                self.logger.debug("Found a DEB: '%s'" % result)
                 # Process a binary package
-                self.processBinaryPackage(queueItem.build, aliasid, result)
+                # XXX cprov 20051102: comment it out to avoid troubles
+                # and inconsistent actions. The result should only be visible
+                # through +builds facets
+                # self.processBinaryPackage(queueItem.build, aliasid, result)
 
         self.logger.debug("Gathered build of %s completely"
                           % queueItem.name)
@@ -936,8 +945,11 @@ class BuilddMaster:
                 break
 
         # parse package builde dependencies using apt_pkg
-        parsed_deps = apt_pkg.ParseDepends(job.builddependsindep)
-
+        try:
+            parsed_deps = apt_pkg.ParseDepends(job.builddependsindep)
+        except ValueError:
+            parsed_deps = []
+            
         # apt_pkg requires InitSystem to get VersionCompare working properly
         apt_pkg.InitSystem()
 
@@ -949,6 +961,8 @@ class BuilddMaster:
         # http://www.debian.org/doc/debian-policy/ch-relationships.html
         #
         relation_map = {
+            # empty package workarround
+            '' : lambda x : True,
             # stricly later
             '>>' : lambda x : x == 1,
             # later or equal
