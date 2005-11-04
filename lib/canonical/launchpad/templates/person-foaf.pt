@@ -13,13 +13,13 @@
             tal:content="context/preferredemail_sha1"
             >0BEEC7B5EA3f0FDBC95D0DD47F3C5BC275DA8A33</foaf:mbox_sha1sum>
 
-        <wot:hasKey tal:condition="context/gpgkeys">
-            <wot:PubKey tal:repeat="gpgkey context/gpgkeys">
+        <wot:hasKey tal:repeat="gpgkey context/gpgkeys">
+            <wot:PubKey>
                 <wot:hex_id tal:content="gpgkey/keyid">91CFA34D</wot:hex_id>
                 <wot:length tal:content="gpgkey/keysize">1024</wot:length>
                 <wot:fingerprint tal:content="gpgkey/fingerprint">04FFF3AC57DF217C6D383DBC0110FB923756EA0B</wot:fingerprint>
-                <wot:pubkeyAddress tal:attributes="rdf:resource
-                    string:http://keyserver.ubuntu.com:11371/pks/lookup?op=get&amp;search=0x${gpgkey/fingerprint};"/>
+                <wot:pubkeyAddress 
+                    tal:attributes="rdf:resource gpgkey/keyserverURL" />
             </wot:PubKey>
         </wot:hasKey>
     </foaf:Person>
@@ -40,13 +40,13 @@
                     tal:content="member/preferredemail_sha1"
                     >0BEEC7B5EA3f0FDBC95D0DD47F3C5BC275DA8A33
                 </foaf:mbox_sha1sum>
-                <wot:hasKey tal:condition="member/gpgkeys">
-                    <wot:PubKey tal:repeat="gpgkey member/gpgkeys">
+                <wot:hasKey tal:repeat="gpgkey member/gpgkeys">
+                    <wot:PubKey>
                         <wot:hex_id tal:content="gpgkey/keyid">91CFA34D</wot:hex_id>
                         <wot:length tal:content="gpgkey/keysize">1024</wot:length>
                         <wot:fingerprint tal:content="gpgkey/fingerprint">04FFF3AC57DF217C6D383DBC0110FB923756EA0B</wot:fingerprint>
-                        <wot:pubkeyAddress tal:attributes="rdf:resource
-                            string:http://keyserver.ubuntu.com:11371/pks/lookup?op=get&amp;search=0x${gpgkey/fingerprint};"/>
+                        <wot:pubkeyAddress 
+                            tal:attributes="rdf:resource gpgkey/keyserverURL" />
                     </wot:PubKey>
                 </wot:hasKey>
             </foaf:Person>
