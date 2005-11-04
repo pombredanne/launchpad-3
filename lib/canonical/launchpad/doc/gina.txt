@@ -53,8 +53,8 @@ Create a distribution release and an arch release for breezy:
 Now, lets run gina on hoary and breezy. This test imports a few
 packages successfully (at least partially):
 
-   * archive-copier, a source package with no binary packages. Its
-     maintainer has a name which contains a ","
+   * archive-copier, a source package which generates one udeb
+     in debian-installer. Its maintainer has a name which contains a ","
    * db1-compat, source package what generates 1 binary package. The same
      version was included in both hoary and breezy.
    * gcc-defaults, a source package that generates 8 binary packages with
@@ -84,7 +84,8 @@ packages successfully (at least partially):
    * 9wm, a source package that generates a binary package, and whose
      changelog file name starts with the binary package name.
    * rioutil, a source package that generates a binary package, and
-     whose source contains a shlibs file.
+     whose source contains a shlibs file. Its current binary package is
+     actually an evil bin-only-NMU!
 
 And one completely broken package:
 
@@ -139,6 +140,8 @@ Check STDERR for the errors we expected:
      -> http://...deb not found)
     ERROR   Error processing package files for python2.4-sqlite
      -> http://...deb not found)
+    WARNING No source package rioutil (1.4.4-1.0.1) listed for rioutil (1.4.4-1.0.1), scrubbing archive...
+    WARNING Nope, couldn't find it. Could it be a bin-only-NMU? Checking...
     ERROR   Error processing package files for util-linux
      -> http://...deb not found)
     ERROR   Unable to create BinaryPackageData for util-linux-locales
@@ -146,6 +149,7 @@ Check STDERR for the errors we expected:
     ERROR   Invalid Sources stanza in /tmp/tmp...
      -> http://...bogus\n')
     WARNING No changelog file found for mkvmlinuz in mkvmlinuz-14ubuntu1
+    WARNING No copyright file found for mkvmlinuz in mkvmlinuz-14ubuntu1
     WARNING Invalid urgency in mkvmlinuz, None, assumed 'low'
     ERROR   Error processing package files for python-sqlite
      -> http://...dsc not in archive)
@@ -296,21 +300,27 @@ We have 23 binary packages in breezy. db1-compat, ed, the 3 libcap packages and
 python-pam is unchanged.  python-sqlite fails. The 5 ubuntu-meta packages work.
 
     >>> BinaryPackageRelease.select().count() - orig_bpr_count
-    39
+    40
     >>> Build.select().count() - orig_build_count
-    12
+    13
     >>> SBPPH.select().count() - orig_sbpph_count
-    45
+    46
 
-Check that the shlibs parsing works as expected:
+Check that the shlibs parsing and bin-only-NMU version handling works as
+expected:
 
     >>> from canonical.launchpad.database import BinaryPackageName
     >>> n = BinaryPackageName.selectOneBy(name="rioutil")
     >>> rio = BinaryPackageRelease.selectOneBy(binarypackagenameID=n.id)
     >>> print rio.shlibdeps
     librioutil 1 rioutil
+    >>> print rio.version
+    1.4.4-1.0.1
+    >>> print rio.build.sourcepackagerelease.version
+    1.4.4-1
 
-Test all the data got to the ed BPR intact:
+Test all the data got to the ed BPR intact, and that the missing
+priority was correctly munged to "extra":
 
     >>> n = BinaryPackageName.selectOneBy(name="ed")
     >>> ed = BinaryPackageRelease.selectOneBy(binarypackagenameID=n.id)
@@ -324,6 +334,8 @@ Test all the data got to the ed BPR intact:
     x86
     >>> print ed.build.distroarchrelease.architecturetag
     i386
+    >>> print ed.priority
+    10
     >>> print ed.summary
     The classic unix line editor.
     >>> print ed.licence
@@ -347,9 +359,25 @@ its source version number.
     >>> print lib.build.sourcepackagerelease.maintainer.displayname
     Debian GCC maintainers
 
-XXX: test binary package creation, in particular gcc-defaults, whose
-     package versions differ from its source version
-XXX: test package with invalid version and invalid source version
+Check if the udeb was properly parsed and identified:
+
+    >>> n = BinaryPackageName.selectOneBy(name="archive-copier")
+    >>> ac = BinaryPackageRelease.selectOneBy(binarypackagenameID=n.id,
+    ...         version="0.1.5")
+    >>> print ac.version
+    0.1.5
+    >>> print ac.priority
+    30
+    >>> print ac.section.name
+    debian-installer
+    >>> print ac.build.sourcepackagerelease.version
+    0.1.5
+    >>> print ac.build.sourcepackagerelease.maintainer.name
+    cjwatson
+    >>> print ac.build.processor.name
+    386
+
+XXX: test package with invalid source version
 XXX: test package with maintainer with non-ascii name
 
 === Testing People Created ===
@@ -424,11 +452,11 @@ Nothing should happen to our data -- no counts should have changed, etc.
     >>> print WikiName.select().count() - orig_wiki_count
     12
     >>> BinaryPackageRelease.select().count() - orig_bpr_count
-    39
+    40
     >>> Build.select().count() - orig_build_count
-    12
+    13
     >>> SBPPH.select().count() - orig_sbpph_count
-    45
+    46
 
 === Other tests ===
 

@@ -605,7 +605,7 @@ Section: sound
 Installed-Size: 272
 Maintainer: Jens Schmalzing <jensen@debian.org>
 Architecture: i386
-Version: 1.4.4-1
+Version: 1.4.4-1.0.1
 Depends: libc6 (>= 2.3.2.ds1-4), libusb-0.1-4 (>= 1:0.1.8), zlib1g (>= 1:1.2.1)
 Filename: pool/main/r/rioutil/rioutil_1.4.4-1_i386.deb
 Size: 70884

@@ -17,6 +17,7 @@ __all__ = [
     ]
 
 import os
+import re
 
 from sqlobject import SQLObjectNotFound, SQLObjectMoreThanOneResultError
 
@@ -34,7 +35,8 @@ from canonical.launchpad.scripts import log
 from canonical.launchpad.scripts.gina.library import (getLibraryAlias,
                                                       checkLibraryForFile)
 from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
-    urgencymap, prioritymap, get_dsc_path, PoolFileNotFound)
+    urgencymap, prioritymap, get_dsc_path, licence_cache, read_dsc,
+    PoolFileNotFound)
 
 from canonical.launchpad.database import (Distribution, DistroRelease,
     DistroArchRelease,Processor, SourcePackageName, SourcePackageRelease,
@@ -197,6 +199,10 @@ class ImporterHandler:
         info = self._get_distroarchrelease_info(archtag)
         self.archinfo[archtag] = info
 
+    #
+    # Package stuff
+    #
+
     def ensure_sourcepackagename(self, name):
         """Import only the sourcepackagename ensuring them."""
         self.sphandler.ensureSourcePackageName(name)
@@ -207,8 +213,10 @@ class ImporterHandler:
         happen, for instance, if a source package didn't change over
         releases, or if Gina runs multiple times over the same release
         """
-        sourcepackagerelease = self.sphandler.checkSource(sourcepackagedata, 
-                                                          self.distrorelease)
+        sourcepackagerelease = self.sphandler.checkSource(
+                                   sourcepackagedata.package,
+                                   sourcepackagedata.version,
+                                   self.distrorelease)
         if not sourcepackagerelease:
             log.debug('SPR not found in preimport: %r %r' %
                 (sourcepackagedata.package, sourcepackagedata.version))
@@ -220,13 +228,15 @@ class ImporterHandler:
 
     def import_sourcepackage(self, sourcepackagedata):
         """Handler the sourcepackage import process"""
-        assert not self.sphandler.checkSource(sourcepackagedata,
+        assert not self.sphandler.checkSource(sourcepackagedata.package,
+                                              sourcepackagedata.version,
                                               self.distrorelease)
         handler = self.sphandler.createSourcePackageRelease
         sourcepackagerelease = handler(sourcepackagedata,
                                        self.distrorelease)
 
         self._store_sprelease_for_publishing(sourcepackagerelease)
+        # See preimport_sourcecheck
         return sourcepackagerelease
 
     def preimport_binarycheck(self, archtag, binarypackagedata):
@@ -259,21 +269,8 @@ class ImporterHandler:
 
         # Find the sourcepackagerelease that generated this binarypackage.
         distrorelease = distroarchinfo['distroarchrelease'].distrorelease
-        sourcepackage = self.sphandler.getSourceForBinary(
-            binarypackagedata, distrorelease)
-
-        if not sourcepackage:
-            # We couldn't find a sourcepackagerelease in the database.
-            # Perhaps we can opportunistically pick one out of the archive.
-            log.warn("No source package %s (%s) listed for %s (%s), "
-                     "scrubbing archive..." %
-                (binarypackagedata.source,
-                 binarypackagedata.source_version,
-                 binarypackagedata.package,
-                 binarypackagedata.version))
-            sourcepackage = self.sphandler.findAndImportUnlistedSourcePackage(
-                binarypackagedata, distrorelease)
-
+        sourcepackage = self.locate_sourcepackage(binarypackagedata,
+                                                  distrorelease)
         if not sourcepackage:
             # XXX: untested
             # If the sourcepackagerelease is not imported, not way to import
@@ -289,6 +286,61 @@ class ImporterHandler:
                                                            distroarchinfo,
                                                            archtag)
         self._store_bprelease_for_publishing(binarypackage, archtag)
+
+    binnmu_re = re.compile(r"^(.+)\.\d+$")
+    binnmu_re2 = re.compile(r"^(.+)\.\d+\.\d+$")
+
+    def locate_sourcepackage(self, binarypackagedata, distrorelease):
+        # This function uses a list of versions to deal with the fact
+        # that we may need to munge the version number as we search for
+        # bin-only-NMUs. The fast path is dealt with the first cycle of
+        # the loop; we only cycle more than once if the source package
+        # is really missing.
+        versions = [binarypackagedata.source_version]
+
+        is_binnmu = self.binnmu_re2.match(binarypackagedata.source_version)
+        if is_binnmu:
+            # DEB is jikes-sablevm_1.1.5-1.0.1_all.deb
+            #   bin version is 1.1.5-1.0.1
+            # DSC is sablevm_1.1.5-1.dsc
+            #   src version is 1.1.5-1
+            versions.append(is_binnmu.group(1))
+
+        is_binnmu = self.binnmu_re.match(binarypackagedata.source_version)
+        if is_binnmu:
+            # DEB is jikes-sablevm_1.1.5-1.1_all.deb
+            #   bin version is 1.1.5-1.1
+            # DSC is sablevm_1.1.5-1.dsc
+            #   src version is 1.1.5-1
+            versions.append(is_binnmu.group(1))
+
+        for version in versions:
+            sourcepackage = self.sphandler.checkSource(
+                binarypackagedata.source, version, distrorelease)
+            if sourcepackage:
+                return sourcepackage
+
+            # We couldn't find a sourcepackagerelease in the database.
+            # Perhaps we can opportunistically pick one out of the archive.
+            log.warn("No source package %s (%s) listed for %s (%s), "
+                     "scrubbing archive..." %
+                     (binarypackagedata.source,
+                      version, binarypackagedata.package,
+                      binarypackagedata.version))
+
+            sourcepackage = self.sphandler.findUnlistedSourcePackage(
+                binarypackagedata.source, version,
+                binarypackagedata.component, binarypackagedata.section,
+                distrorelease)
+            if sourcepackage:
+                return sourcepackage
+
+            log.warn("Nope, couldn't find it. Could it be a "
+                     "bin-only-NMU? Checking...")
+
+            # XXX: testing a third cycle of this loop isn't done
+
+        return None
 
     def publish_sourcepackages(self, pocket):
         log.info('Publishing Source Packages...')
@@ -362,8 +414,8 @@ class SourcePackageReleaseHandler:
     def ensureSourcePackageName(self, name):
         return SourcePackageName.ensure(name)
 
-    def findAndImportUnlistedSourcePackage(self, binarypackagedata,
-                                           distrorelease):
+    def findUnlistedSourcePackage(self, sp_name, sp_version,
+                                  sp_component, sp_section, distrorelease):
         """Try to find a sourcepackagerelease in the archive for the
         provided binarypackage data.
 
@@ -380,19 +432,15 @@ class SourcePackageReleaseHandler:
         in the database. I.E. the binary import will fail but the
         process as a whole will continue okay.
         """
-        assert not self.getSourceForBinary(binarypackagedata,
-                                           distrorelease)
-
-        sp_name = binarypackagedata.source
-        sp_version = binarypackagedata.source_version
-        sp_component = binarypackagedata.component
-        sp_section = binarypackagedata.section
+        assert not self.checkSource(sp_name, sp_version, distrorelease)
 
         log.debug("Looking for source package %r (%r) in %r" %
                   (sp_name, sp_version, sp_component))
 
         sp_data = self._getSourcePackageDataFromDSC(sp_name,
             sp_version, sp_component, sp_section)
+        if not sp_data:
+            return None
 
         # Process the package
         sp_data.process_package(self.ktdb, self.archive_root, self.keyrings)
@@ -410,7 +458,6 @@ class SourcePackageReleaseHandler:
         # being imported "late" in the process, we publish it immediately
         # to make sure it doesn't get lost.
         SourcePublisher(distrorelease).publish(spr, self.pocket)
-
         return spr
 
     def _getSourcePackageDataFromDSC(self, sp_name, sp_version,
@@ -429,7 +476,7 @@ class SourcePackageReleaseHandler:
         # Since the dsc doesn't know, we add in the directory, package
         # component and section
         dsc_contents['directory'] = os.path.join("pool",
-                                                 poolify(sp_name, sp_component))
+            poolify(sp_name, sp_component))
         dsc_contents['package'] = sp_name
         dsc_contents['component'] = sp_component
         dsc_contents['section'] = sp_section
@@ -452,35 +499,19 @@ class SourcePackageReleaseHandler:
 
         return SourcePackageData(**capitalized_dsc)
 
-
-    def getSourceForBinary(self, binarypackagedata, distrorelease):
-        """Get a SourcePackageRelease for a BinaryPackage"""
-        try:
-            spname = SourcePackageName.byName(binarypackagedata.source)
-        except SQLObjectNotFound:
-            return None
-
-        # Check if this sourcepackagerelease already exists using name and
-        # version
-        return self._getSource(spname,
-                               binarypackagedata.source_version,
-                               distrorelease)
-
-    def checkSource(self, sourcepackagedata, distrorelease):
+    def checkSource(self, source, version, distrorelease):
         """Check if a sourcepackagerelease is already on lp db.
 
         Returns the sourcepackagerelease if exists or none if not.
         """
         try:
-            spname = SourcePackageName.byName(sourcepackagedata.package)
+            spname = SourcePackageName.byName(source)
         except SQLObjectNotFound:
             return None
 
         # Check if this sourcepackagerelease already exists using name and
         # version
-        return self._getSource(spname,
-                               sourcepackagedata.version,
-                               distrorelease)
+        return self._getSource(spname, version, distrorelease)
 
     def _getSource(self, sourcepackagename, version, distrorelease):
         """Returns a sourcepackagerelease by its name and version."""
@@ -594,10 +625,10 @@ class SourcePublisher:
 
         # XXX: Component may be incorrect: this code does not cope with
         # source packages not listed in Sources.gz (added by
-        # findAndImportUnlistedSourcePackage) that have moved around in
-        # the pool. We should be using locate_source_package_in_pool()
-        # here instead of the strict component name. Section may suffer
-        # from the same problem.
+        # findUnlistedSourcePackage) that have moved around in the pool.
+        # We should be using locate_source_package_in_pool() here
+        # instead of the strict component name. Section may suffer from
+        # the same problem.
         #
         # Create the Publishing entry with status PENDING so that we can
         # republish this later into a Soyuz archive.
@@ -657,7 +688,7 @@ class BinaryPackageHandler:
         # When looking for binaries, we need to remember that they are
         # shared between distribution releases, so match on the
         # distribution and the architecture tag of the distroarchrelease
-        # they were built for 
+        # they were built for
         query = ("BinaryPackageRelease.binarypackagename=%s AND "
                  "BinaryPackageRelease.version=%s AND "
                  "BinaryPackageRelease.build = Build.id AND "
@@ -682,6 +713,35 @@ class BinaryPackageHandler:
                      distrorelease.distribution.name))
         return bpr
 
+    def readLicence(self, bin_name, src_name, version, component):
+        licence = self.readLicenceCached(bin_name, src_name, version)
+        if licence:
+            return licence
+
+        # XXX: untested
+        try:
+            # Read the DSC to ensure the licence_cache is set
+            read_dsc(src_name, version, component, self.archive_root)
+        except PoolFileNotFound:
+            licence = None
+        else:
+            licence = self.readLicenceCached(bin_name, src_name, version)
+
+        if licence is None:
+            log.warn("While groping for a copyright file for %s, could "
+                     "not even find the source package for %s (%s) in "
+                     "the archive. Dropped copyright." %
+                     (bin_name, src_name, version))
+        return licence
+
+    def readLicenceCached(self, bin_name, src_name, version):
+        licence = licence_cache.get((src_name, version, bin_name), None)
+        if licence is None:
+            # No binarypackage-specific licence, so let's get the
+            # main one (if it's there)
+            licence = licence_cache.get((src_name, version, None), None)
+        return licence
+
     def createBinaryPackage(self, bin, srcpkg, distroarchinfo, archtag):
         """Create a new binarypackage."""
         fdir, fname = os.path.split(bin.filename)
@@ -694,6 +754,10 @@ class BinaryPackageHandler:
 
         bin_name = getUtility(IBinaryPackageNameSet).ensure(bin.package)
         build = self.ensureBuild(bin, srcpkg, distroarchinfo, archtag)
+
+        licence = self.readLicence(bin.package,
+                                   srcpkg.sourcepackagename.name,
+                                   srcpkg.version, srcpkg.component.name)
 
         # Create the binarypackage entry on lp db.
         binpkg = BinaryPackageRelease(
@@ -715,7 +779,7 @@ class BinaryPackageHandler:
             provides = bin.provides,
             essential = bin.essential,
             installedsize = bin.installed_size,
-            licence = bin.licence,
+            licence = licence,
             architecturespecific = architecturespecific,
             copyright = None,
             )

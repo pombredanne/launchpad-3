@@ -12,6 +12,7 @@ __all__ = ['AbstractPackageData', 'SourcePackageData', 'BinaryPackageData']
 
 import re
 import os
+import glob
 import tempfile
 import shutil
 import rfc822
@@ -32,6 +33,10 @@ from canonical.launchpad.validators.version import valid_debian_version
 
 # Stash a reference to the poolifier method
 poolify = Poolifier().poolify
+
+# Keep a licence_cache around to avoid needing to unpack the source
+# twice.
+licence_cache = {}
 
 #
 # Data setup
@@ -68,11 +73,11 @@ def stripseq(seq):
 
 
 epoch_re = re.compile(r"^\d+:")
-binnmu_re = re.compile(r"^(.+)\.0\.\d+$")
 def get_dsc_path(name, version, component, archive_root):
     pool_root = os.path.join(archive_root, "pool")
     version = epoch_re.sub("", version)
     filename = "%s_%s.dsc" % (name, version)
+
     # We do a first attempt using the obvious directory name, composed
     # with the component. However, this may fail if a binary is being
     # published in another component.
@@ -89,15 +94,6 @@ def get_dsc_path(name, version, component, archive_root):
         fullpath = os.path.join(pool_root, pool_dir, filename)
         if os.path.exists(fullpath):
             return filename, fullpath, alt_component
-
-    # DEB is jikes-sablevm_1.1.5-1.0.1_all.deb
-    #   bin version is 1.1.5-1.0.1
-    # DSC is sablevm_1.1.5-1.dsc
-    #   src version is 1.1.5-1
-    is_binnmu = binnmu_re.match(version)
-    if is_binnmu:
-        version = is_binnmu.group(1)
-        return get_dsc_path(name, version, component, archive_root)
 
     # Couldn't find the file anywhere -- too bad.
     raise PoolFileNotFound("File %s not in archive" % filename)
@@ -118,6 +114,8 @@ def read_dsc(package, version, component, archive_root):
     source_dir, dsc_path = unpack_dsc(package, version, component,
                                       archive_root)
 
+    dsc = open(dsc_path).read().strip()
+
     fullpath = os.path.join(source_dir, "debian", "changelog")
     changelog = None
     if os.path.exists(fullpath):
@@ -129,33 +127,32 @@ def read_dsc(package, version, component, archive_root):
                  (package, source_dir))
         changelog = None
 
-    dsc = open(dsc_path).read().strip()
+    # Welcome to the world's biggest hack. Source packages contain the
+    # licence files, but they may be specific to a certain binary
+    # package, and we store them in the binary package release table,
+    # anyway. To avoid unpacking the debian source multiple times, we
+    # save the licence in a cache, keying it appropriately.
+    licence = None
+    globpath = os.path.join(source_dir, "debian", "*copyright")
+    for fullpath in glob.glob(globpath):
+        if not os.path.exists(fullpath):
+            continue
+        licence = open(fullpath).read().strip()
+        file_name = os.path.basename(fullpath)
+        if "." in file_name:
+            binpkg = file_name.split(".")[0]
+        else:
+            binpkg = None
+        licence = encoding.guess(licence)
+        licence_cache[(package, version, binpkg)] = licence
+
+    if licence is None:
+        log.warn("No copyright file found for %s in %s" % 
+                 (package, source_dir))
+        # Cache we didn't find it and avoid looking it up again later
+        licence_cache[(package, version, None)] = None
 
     return dsc, changelog
-
-
-def read_licence(package, version, component, archive_root,
-                 binary_package):
-    source_dir, dsc_path = unpack_dsc(package, version, component,
-                                      archive_root)
-    # Look for the license. License is an interesting case: we obtain it
-    # when opening the DSC file, but we only really do this when
-    # creating a BinaryPackageRelease, because that's where it needs to
-    # be stored.
-    fullpath = os.path.join(source_dir, "debian", "%s.copyright" % 
-                            binary_package)
-    if os.path.exists(fullpath):
-        licence = open(fullpath).read().strip()
-    else:
-        fullpath = os.path.join(source_dir, "debian", "copyright")
-        if os.path.exists(fullpath):
-            licence = open(fullpath).read().strip()
-        else:
-            log.warn("No license file found for %s in %s" % 
-                     (package, source_dir))
-            licence = None
-
-    return licence
 
 
 def parse_person(val):
@@ -387,13 +384,13 @@ class SourcePackageData(AbstractPackageData):
         AbstractPackageData.__init__(self)
 
     def do_package(self, archive_root):
-        """Get the Changelog and licence from the package on archive.
+        """Get the Changelog and urgency from the package on archive.
 
         If successful processing of the package occurs, this method
-        sets the changelog, urgency and licence attributes.
+        sets the changelog and urgency attributes.
         """
-        dsc, changelog = read_dsc(self.package, self.version, self.component,
-                                  archive_root)
+        dsc, changelog = read_dsc(self.package, self.version,
+                                  self.component, archive_root)
         self.dsc = encoding.guess(dsc)
 
         self.urgency = None
@@ -563,7 +560,7 @@ class BinaryPackageData(AbstractPackageData):
         AbstractPackageData.__init__(self)
 
     def do_package(self, archive_root):
-        """Grab shared library and license from file in archive."""
+        """Grab shared library info from .deb."""
         fullpath = os.path.join(archive_root, self.filename)
         if not os.path.exists(fullpath):
             raise PoolFileNotFound('%s not found' % fullpath)
@@ -573,10 +570,6 @@ class BinaryPackageData(AbstractPackageData):
         if os.path.exists(shlibfile):
             self.shlibs = open(shlibfile).read().strip()
             log.debug("Grabbing shared library info from %s" % shlibfile)
-
-        licence = read_licence(self.source, self.source_version,
-                               self.component, archive_root, self.package)
-        self.licence = encoding.guess(licence)
 
     def do_katie(self, kdb, keyrings):
         # XXX: disabled for the moment, untested
