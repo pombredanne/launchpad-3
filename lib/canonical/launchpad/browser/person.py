@@ -58,11 +58,10 @@ from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
     ISSHKeySet, IBugTaskSet, IPersonSet, IEmailAddressSet, IWikiNameSet,
     IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
-    ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, IKarmaActionSet,
-    IKarmaSet, UBUNTU_WIKI_URL, ITeamMembershipSet, IObjectReassignment,
-    ITeamReassignment, IPollSubset, IPerson, ICalendarOwner,
-    BugTaskSearchParams, ITeam, ILibraryFileAliasSet, ITeamMembershipSubset,
-    IPollSet, NotFoundError)
+    ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
+    ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
+    IPerson, ICalendarOwner, BugTaskSearchParams, ITeam, ILibraryFileAliasSet,
+    ITeamMembershipSubset, IPollSet, NotFoundError)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin

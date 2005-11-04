@@ -210,7 +210,8 @@ class IBugDelta(Interface):
     private = Attribute("A dict with two keys, 'old' and 'new', or None.")
     name = Attribute("A dict with two keys, 'old' and 'new', or None.")
     duplicateof = Attribute(
-        "The ID of which this bug report is a duplicate, or None.")
+        "A dict with two keys, 'old' and 'new', or None. Key values are "
+        "IBug's")
 
     # other things linked to the bug
     external_reference = Attribute(

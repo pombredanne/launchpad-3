@@ -44,7 +44,7 @@ from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, structured, GetitemNavigation, Navigation,
-    stepthrough, stepto)
+    stepthrough)
 
 
 class ProductNavigation(

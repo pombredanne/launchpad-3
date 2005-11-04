@@ -9,19 +9,14 @@ __all__ = [
     'DistributionSourcePackageBugsView',
     ]
 
-from zope.app.form.utility import setUpWidgets, getWidgetsData
-from zope.app.form.interfaces import IInputWidget
-from zope.component import getUtility
-
 from canonical.launchpad.interfaces import (
-    IDistributionSourcePackage, IBugTaskSearch, BugTaskSearchParams,
-    ILaunchBag, UNRESOLVED_BUGTASK_STATUSES)
+    IDistributionSourcePackage, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, BugTaskSearchListingView)
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, ContextMenu, ApplicationMenu,
+    StandardLaunchpadFacets, Link, ApplicationMenu,
     GetitemNavigation)
 from canonical.launchpad.searchbuilder import any
 

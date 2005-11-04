@@ -909,7 +909,7 @@ class PersonSet:
 
     def getByName(self, name, default=None, ignore_merged=True):
         """See IPersonSet."""
-        query = Person.q.name==name
+        query = (Person.q.name == name)
         if ignore_merged:
             query = AND(query, Person.q.mergedID==None)
         person = Person.selectOne(query)

@@ -70,7 +70,7 @@ class DistroArchReleaseBinariesView:
         self._results = None
 
         self.searchrequested = False
-        if self.text is not None and self.text <> '':
+        if self.text:
             self.searchrequested = True
 
     def searchresults(self):
@@ -94,7 +94,6 @@ class DistroArchReleaseBinariesView:
                 self.text))
 
         start = int(self.request.get('batch_start', 0))
-        end = int(self.request.get('batch_end', BATCH_SIZE))
         batch_size = BATCH_SIZE
         batch = Batch(list = binary_packages, start = start,
                       size = batch_size)
