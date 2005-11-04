@@ -70,7 +70,7 @@
                    title="To show the Builder, click here."/>
               </tal:block>
               <tal:block condition="not:build/builder">
-                <dfn>Gina is Bad!</dfn>
+                <img alt="[Unavailable Info]" src="/++resource++stop" />
               </tal:block>
             </td>
             <td>
@@ -84,7 +84,7 @@
                 </a>
               </tal:block>
               <tal:block condition="not:build/buildlog">
-                 <img alt="Gina is BAD" src="/++resource++stop" />
+                 <img alt="[Unavailable Info]" src="/++resource++stop" />
               </tal:block>
             </td>
             <td>

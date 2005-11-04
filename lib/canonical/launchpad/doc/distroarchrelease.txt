@@ -24,7 +24,7 @@ interrogate this information.
 
 
 DistroArchRelease class has a built-in method to return a single 
-dependency package candidate by its name as a PublishedPacckage 
+dependency package candidate by its name as a PublishedPackage 
 instance:
 
    >>> hoary_i386.findDepCandidateByName("pmount").binarypackagename

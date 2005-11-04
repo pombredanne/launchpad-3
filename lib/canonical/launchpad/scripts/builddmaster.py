@@ -516,9 +516,10 @@ class BuilderGroup:
             if result.endswith(".deb"):
                 self.logger.debug("Found a DEB: '%s'" % result)
                 # Process a binary package
-                # XXX cprov 20051102: comment it out to avoid troubles
-                # and inconsistent actions. The result should only be visible
-                # through +builds facets
+                # XXX cprov 20051104: processBinaryPackage won't be used
+                # locally, the binary will be passed to a uploader instance.
+                # So this code and its related gets obsolete. The ETA for
+                # complete removal is 20051105 by dsilvers 
                 # self.processBinaryPackage(queueItem.build, aliasid, result)
 
         self.logger.debug("Gathered build of %s completely"
@@ -948,6 +949,8 @@ class BuilddMaster:
         try:
             parsed_deps = apt_pkg.ParseDepends(job.builddependsindep)
         except ValueError:
+            self._logger.warn("COULD NOT PARSE DEP: %s" %
+                              job.builddependsindep)
             parsed_deps = []
             
         # apt_pkg requires InitSystem to get VersionCompare working properly
@@ -961,18 +964,18 @@ class BuilddMaster:
         # http://www.debian.org/doc/debian-policy/ch-relationships.html
         #
         relation_map = {
-            # empty package workarround
-            '' : lambda x : True,
+            # any version is acceptable if no relationship is given
+            '': lambda x : True,
             # stricly later
-            '>>' : lambda x : x == 1,
+            '>>': lambda x : x == 1,
             # later or equal
-            '>=' : lambda x : x >= 0,
+            '>=': lambda x : x >= 0,
             # stricly equal
-            '=' : lambda x : x == 0,
+            '=': lambda x : x == 0,
             # earlier or equal
-            '<=' : lambda x : x <= 0,
+            '<=': lambda x : x <= 0,
             # strictly ealier
-            '<<' : lambda x : x == -1
+            '<<': lambda x : x == -1
             }
 
         for token in parsed_deps:
@@ -997,7 +1000,7 @@ class BuilddMaster:
                 dep_result = apt_pkg.VersionCompare(
                     dep_candidate.binarypackageversion, version)
 
-                # use the previous mapped result to indentify if the depency
+                # use the previous mapped result to identify if the depency
                 # ws satisfied or not
                 if relation_map[relation](dep_result):
                     # grant more 1 (one) point of scoring for each satisfied
@@ -1090,9 +1093,7 @@ class BuilddMaster:
 
     def startBuild(self, builders, builder, queueItem, pocket):
         """Find the list of files and give them to the builder."""
-        # XXX: this method is not tested; there was a trivial attribute
-        # error in the first line. Test it.
-        #   -- kiko, 2005-09-23
+
         build = queueItem.build
         
         self.getLogger().debug("startBuild(%s, %s, %s, %s)"
