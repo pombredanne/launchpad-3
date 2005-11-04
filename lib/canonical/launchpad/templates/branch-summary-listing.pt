@@ -4,31 +4,18 @@
 - <img src="/++resource++user.gif" />
   <a tal:condition="not: context/author"
      tal:attributes="href context/owner/fmt:url"
-     tal:content="context/owner/browsername"
-  >Owner</a>
+     tal:content="context/owner/browsername">Owner</a>
   <a tal:condition="context/author"
      tal:attributes="href context/author/fmt:url"
-     tal:content="context/author/browsername"
-  >Author</a><br />
+     tal:content="context/author/browsername">Author</a>
+  <br />
 <span tal:replace="context/summary">
   This branch has a summary like this, it's a very simple description of
   what the branch does.
 </span>
+<br>
 <span tal:replace="context/revision_count">35</span> revisions,
-
-Status: <span tal:replace="context/lifecycle_status/title">Ready</span><br />
-
-<span class="dummy">
-  <img src="/++resource++favorite_icon.gif" />
-  <img src="/++resource++favorite_icon.gif" />
-  <img src="/++resource++favorite_icon.gif" />
-  <img src="/++resource++favorite_icon.gif" />
-</span>
-
-<span tal:replace="view/count_revisions">31</span> changes in the past month. 
-
-<span class="dummy">- 3 comments<br /></span>
-
+<span tal:replace="view/count_revisions">31</span> in the past month.<br />
 <a tal:attributes="href context/home_page"
    tal:content="context/home_page">http://wiki.launchpad.net</a>
 </p>

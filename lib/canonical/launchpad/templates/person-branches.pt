@@ -16,9 +16,6 @@
 <div metal:fill-slot="main">
   <h1>Bazaar Branches</h1>
 
-  <p>(Grey areas indicate parts of the page that are not yet implemented.
-     Please try again later.)</p>
-
   <tal:has_authored_branches condition="context/authored_branches"
     ><h2>Branches Authored</h2>
     <tal:block repeat="branch context/authored_branches"
