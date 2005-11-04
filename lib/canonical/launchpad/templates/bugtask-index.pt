@@ -90,20 +90,19 @@
           $Person.browsername</a>
         at <span tal:replace="message/datecreated/fmt:datetime">Thursday
         13:21</span>
-        <tal:block condition="message/bugattachments">
-        - with attachments:
-          <tal:block repeat="attachment message/bugattachments">
-            <img src="/++resource++file" />
-            <a tal:attributes="href attachment/libraryfile/url"
-               tal:content="attachment/libraryfile/filename">foo.txt</a>
-          </tal:block>
-        </tal:block>
       </div>
 
       <div class="boardCommentBody">
+        <ul tal:condition="message/bugattachments">
+          <li tal:repeat="attachment message/bugattachments"
+              class="download">
+            <a tal:attributes="href attachment/libraryfile/url"
+               tal:content="attachment/title">foo.txt</a>
+          </li>
+        </ul>
+
         <tal:comment
-          content="structure message/contents/fmt:text-to-html"
-        >
+          content="structure message/contents/fmt:text-to-html">
           Comment text.
         </tal:comment>
       </div>

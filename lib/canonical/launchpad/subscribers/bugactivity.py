@@ -77,7 +77,12 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
         for changed_field in changes.keys():
             oldvalue, newvalue = changes[changed_field]
             if changed_field == 'duplicateof':
-                whatchanged = 'marked as duplicate'
+                if oldvalue is None and newvalue is not None:
+                    whatchanged = 'marked as duplicate'
+                elif oldvalue is not None and newvalue is not None:
+                    whatchanged = 'changed duplicate marker'
+                elif oldvalue is not None and newvalue is None:
+                    whatchanged = 'removed duplicate marker'
             else:
                 whatchanged = changed_field
             getUtility(IBugActivitySet).new(

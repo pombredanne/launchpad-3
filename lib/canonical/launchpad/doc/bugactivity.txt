@@ -261,6 +261,41 @@ EVENT: this bug report is marked as a duplicate of another bug report
   >>> latest_activity.newvalue == u'1'
   True
 
+EVENT: the same bug report has his duplicate marker changed to another
+bug report
+
+  >>> edit_fields = [
+  ...     "id", "title", "summary", "description", "name",
+  ...     "private", "duplicateof"]
+  >>> old_bug = capture_state(bug, *edit_fields)
+  >>> bug.duplicateof = 2 
+  >>> bug_edited = SQLObjectModifiedEvent(bug, old_bug, edit_fields)
+  >>> notify(bug_edited)
+  >>> latest_activity = bug.activity[-1]
+  >>> latest_activity.whatchanged
+  u'changed duplicate marker'
+  >>> latest_activity.oldvalue == u'1' 
+  True
+  >>> latest_activity.newvalue == u'2'
+  True
+
+EVENT: the bug report is now un-duplicated 
+
+  >>> edit_fields = [
+  ...     "id", "title", "summary", "description", "name",
+  ...     "private", "duplicateof"]
+  >>> old_bug = capture_state(bug, *edit_fields)
+  >>> bug.duplicateof = None 
+  >>> bug_edited = SQLObjectModifiedEvent(bug, old_bug, edit_fields)
+  >>> notify(bug_edited)
+  >>> latest_activity = bug.activity[-1]
+  >>> latest_activity.whatchanged
+  u'removed duplicate marker'
+  >>> latest_activity.oldvalue == u'2' 
+  True
+  >>> latest_activity.newvalue is None
+  True
+
 EVENT: add a subscriber to this bug
 
   >>> from canonical.launchpad.database import BugSubscription
