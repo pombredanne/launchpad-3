@@ -10,7 +10,8 @@ We export FOAF RDF metadata from the /people/$Person.name/+index document.
   ...
 
 
-And this is what the FOAF document actually looks like
+And this is what the FOAF document for a person actually looks like.  It
+includes GPG information, if the user has any.
 
   >>> print http(r"""
   ... GET /people/name16/+rdf HTTP/1.1
@@ -21,9 +22,54 @@ And this is what the FOAF document actually looks like
   <BLANKLINE>
   <?xml version="1.0" encoding="utf-8"?>
   <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-           xmlns:foaf="http://xmlns.com/foaf/0.1/">
+           xmlns:foaf="http://xmlns.com/foaf/0.1/"
+           xmlns:wot="http://xmlns.com/wot/0.1/">
       <foaf:Person>
           <foaf:name>Foo Bar</foaf:name>
   ...
           <foaf:mbox_sha1sum>F6F8570EBFC7A0550A71E59CAECA52EDE54671F8</foaf:mbox_sha1sum>
+          <wot:hasKey>
+              <wot:PubKey>
+                  <wot:hex_id>12345678</wot:hex_id>
+                  <wot:length>1024</wot:length>
+                  <wot:fingerprint>ABCDEF0123456789ABCDDCBA0000111112345678</wot:fingerprint>
+                  <wot:pubkeyAddress
+      rdf:resource="http://keyserver.ubuntu.com:11371/pks/lookup?op=get&amp;search=0xABCDEF0123456789ABCDDCBA0000111112345678"/>
+              </wot:PubKey>
   ...
+
+
+Teams also have an RDF export, which includes information for each member of the
+team.
+
+  >>> print http(r"""
+  ... GET /people/name17/+rdf HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: application/rdf+xml
+  <BLANKLINE>
+  <?xml version="1.0" encoding="utf-8"?>
+  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+           xmlns:foaf="http://xmlns.com/foaf/0.1/"
+           xmlns:wot="http://xmlns.com/wot/0.1/">
+      <foaf:Group>
+          <foaf:name>Ubuntu Team</foaf:name>
+          <foaf:nick>name17</foaf:nick>
+  ...
+          <foaf:member>
+              <foaf:Person>
+                  <foaf:name>Foo Bar</foaf:name>
+                  <foaf:mbox_sha1sum>F6F8570EBFC7A0550A71E59CAECA52EDE54671F8</foaf:mbox_sha1sum>
+                  <wot:hasKey>
+                      <wot:PubKey>
+                          <wot:hex_id>12345678</wot:hex_id>
+  ...
+                      </wot:PubKey>
+                  </wot:hasKey>
+              </foaf:Person>
+          </foaf:member>
+  ...
+
+
+
