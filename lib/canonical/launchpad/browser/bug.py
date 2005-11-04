@@ -22,7 +22,7 @@ from zope.component import getUtility
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, structured, Navigation)
 from canonical.launchpad.interfaces import (
-    IBug, ILaunchBag, IBugSet, IBugLinkTarget, IBugCve,
+    IBug, ILaunchBag, IBugSet, IBugLinkTarget,
     IDistroBugTask, IDistroReleaseBugTask, NotFoundError)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView

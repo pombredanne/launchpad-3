@@ -31,4 +31,13 @@
         permission="zope.Public"
         />
 
+    <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for="canonical.launchpad.fields.IBugField"
+        provides="zope.app.form.interfaces.IInputWidget"
+        factory="canonical.widgets.bug.BugWidget"
+        permission="zope.Public"
+        />
+
+
 </configure>

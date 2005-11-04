@@ -28,6 +28,5 @@ class SprintSpecification(SQLBase):
         foreignKey='Specification', notNull=True)
     status = EnumCol(schema=SprintSpecificationStatus, notNull=True,
         default=SprintSpecificationStatus.SUBMITTED)
-    needs_discussion = BoolCol(notNull=True, default=True)
     whiteboard = StringCol(notNull=False, default=None)
 

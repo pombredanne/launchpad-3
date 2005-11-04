@@ -4,17 +4,6 @@
 
 __metaclass__ = type
 
-from zope.component import getUtility
-
-from canonical.launchpad.interfaces import (
-    IProduct, IDistribution, ILaunchBag, ISpecification, ISpecificationSet)
-from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.addview import SQLObjectAddView
-
-from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, enabled_with_permission,
-    LaunchpadView, Navigation, GeneralFormView)
-
 __all__ = [
     'SpecificationContextMenu',
     'SpecificationNavigation',
@@ -23,6 +12,17 @@ __all__ = [
     'SpecificationEditView',
     'SpecificationRetargetingView',
     ]
+
+from zope.component import getUtility
+
+from canonical.launchpad.interfaces import (
+    IProduct, IDistribution, ISpecification, ISpecificationSet)
+from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.addview import SQLObjectAddView
+
+from canonical.launchpad.webapp import (
+    canonical_url, ContextMenu, Link, enabled_with_permission,
+    LaunchpadView, Navigation, GeneralFormView)
 
 
 class SpecificationNavigation(Navigation):
@@ -267,11 +267,7 @@ class SpecificationRetargetingView(GeneralFormView):
             if distribution.getSpecification(self.context.name) is not None:
                 return '%s already has a spec called %s' % (
                     distribution.name, self.context.name)
-        self.context.product = product
-        self.context.distribution = distribution
-        self.context.productseries = None
-        self.context.distrorelease = None
-        self.context.milestone = None
+        self.context.retarget(product=product, distribution=distribution)
         self._nextURL = canonical_url(self.context)
         return 'Done.'
 

@@ -56,12 +56,12 @@ from canonical.lp.batching import BatchNavigator
 
 from canonical.launchpad.interfaces import (
     ISSHKeySet, IBugTaskSet, IPersonSet, IEmailAddressSet, IWikiNameSet,
-    IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
-    ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, IKarmaActionSet,
-    IKarmaSet, UBUNTU_WIKI_URL, ITeamMembershipSet, IObjectReassignment,
-    ITeamReassignment, IPollSubset, IPerson, ICalendarOwner,
-    BugTaskSearchParams, ITeam, ILibraryFileAliasSet, ITeamMembershipSubset,
-    IPollSet)
+    IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet,
+    IPasswordEncryptor, ISignedCodeOfConductSet, IGPGKeySet,
+    IGPGHandler, UBUNTU_WIKI_URL, ITeamMembershipSet,
+    IObjectReassignment, ITeamReassignment, IPollSubset, IPerson,
+    ICalendarOwner, BugTaskSearchParams, ITeam, ILibraryFileAliasSet,
+    ITeamMembershipSubset, IPollSet)
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
@@ -250,27 +250,27 @@ class PersonSpecsMenu(ApplicationMenu):
              'subscribed']
 
     def created(self):
-        text = 'Specs Created'
+        text = 'Show Specs Created'
         return Link('+createdspecs', text, icon='spec')
 
     def approver(self):
-        text = 'Specs to Approve'
+        text = 'Show Specs for Approval'
         return Link('+approverspecs', text, icon='spec')
 
     def assigned(self):
-        text = 'Specs Assigned'
+        text = 'Show Assigned Specs'
         return Link('+assignedspecs', text, icon='spec')
 
     def drafted(self):
-        text = 'Specs Drafted'
+        text = 'Show Drafted Specs'
         return Link('+draftedspecs', text, icon='spec')
 
     def review(self):
-        text = 'Specs To Review'
+        text = 'Show Feedback Requests'
         return Link('+reviewspecs', text, icon='spec')
 
     def subscribed(self):
-        text = 'Subscribed Specs'
+        text = 'Show Subscribed Specs'
         return Link('+subscribedspecs', text, icon='spec')
 
 

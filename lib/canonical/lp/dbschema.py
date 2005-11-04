@@ -479,6 +479,13 @@ class BugTrackerType(DBSchema):
         software development projects.
         """)
 
+    SOURCEFORGE = Item(5, """
+        SourceForge
+
+        SourceForge is a project hosting service which includes bug,
+        support and request tracking.
+        """)
+
 
 class CveStatus(DBSchema):
     """The Status of this item in the CVE Database
@@ -2088,6 +2095,15 @@ class BugTaskStatus(DBSchema):
 
         This is a new bug and has not yet been accepted by the maintainer
         of this product or source package.
+        """)
+
+    NEEDINFO = Item(15, """
+        NeedInfo
+
+        More info is required before making further progress on this
+        bug, likely from the reporter. E.g. the exact error message
+        the user saw, the URL the user was visiting when the bug
+        occurred, etc.
         """)
 
     ACCEPTED = Item(20, """

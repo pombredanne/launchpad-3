@@ -36,7 +36,7 @@
         <td tal:content="spec/priority/title"
             tal:attributes="
                 class string:specpriority${spec/priority/name}">High</td>
-        <td tal:content="spec/priority/title"
+        <td tal:content="spec/status/title"
             tal:attributes="
                 class string:specstatus${spec/status/name}">Approved</td>
         <td><a tal:content="spec/name/fmt:shorten/35"

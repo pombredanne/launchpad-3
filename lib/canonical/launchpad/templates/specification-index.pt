@@ -51,7 +51,7 @@
 
   <p class="lesser" tal:condition="context/whiteboard">
     <b>Whiteboard:</b>
-    <i content="context/whiteboard">
+    <i tal:content="context/whiteboard">
       white board text goes here
     </i>
   </p>
