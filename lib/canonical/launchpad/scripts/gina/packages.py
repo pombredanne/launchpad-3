@@ -331,7 +331,6 @@ class SourcePackageData(AbstractPackageData):
     section = None
     format = None
 
-    # XXX: handle missing priorities?
     priority = None
 
     is_processed = False
@@ -427,6 +426,7 @@ class SourcePackageData(AbstractPackageData):
         #        get_person_by_key(keyrings, self.dsc_signing_key)
 
     def ensure_complete(self, kdb):
+        # XXX: should we handle missing priorities?
         if self.section is None:
             # This assumption is a bit evil. There is a hidden issue
             # that manifests itself if the source package was unchanged
@@ -525,8 +525,8 @@ class BinaryPackageData(AbstractPackageData):
                         "not a valid integer: %r" % v)
             else:
                 setattr(self, k.lower().replace("-", "_"), v)
-            # XXX: "enhances" is not used and not stored anywhere
-            # XXX: same for "pre_depends"
+            # XXX: "enhances" is not used and not stored anywhere,
+            # same for "pre_depends"
 
         if self.source:
             # We need to handle cases like "Source: myspell

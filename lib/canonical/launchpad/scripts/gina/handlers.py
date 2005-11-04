@@ -18,6 +18,8 @@ __all__ = [
 
 import os
 import re
+import tempfile
+import shutil
 
 from sqlobject import SQLObjectNotFound, SQLObjectMoreThanOneResultError
 
@@ -328,6 +330,9 @@ class ImporterHandler:
                       version, binarypackagedata.package,
                       binarypackagedata.version))
 
+            # XXX: I question whether binarypackagedata.section here is
+            # actually correct -- but where can we obtain this
+            # information from introspecting the archive?
             sourcepackage = self.sphandler.findUnlistedSourcePackage(
                 binarypackagedata.source, version,
                 binarypackagedata.component, binarypackagedata.section,
@@ -623,13 +628,6 @@ class SourcePublisher:
                       source_publishinghistory.status.title)
             return
 
-        # XXX: Component may be incorrect: this code does not cope with
-        # source packages not listed in Sources.gz (added by
-        # findUnlistedSourcePackage) that have moved around in the pool.
-        # We should be using locate_source_package_in_pool() here
-        # instead of the strict component name. Section may suffer from
-        # the same problem.
-        #
         # Create the Publishing entry with status PENDING so that we can
         # republish this later into a Soyuz archive.
         SecureSourcePackagePublishingHistory(
@@ -720,8 +718,15 @@ class BinaryPackageHandler:
 
         # XXX: untested
         try:
-            # Read the DSC to ensure the licence_cache is set
-            read_dsc(src_name, version, component, self.archive_root)
+            tempdir = tempfile.mkdtemp()
+            cwd = os.getcwd()
+            os.chdir(tempdir)
+            try:
+                # Read the DSC and ensure the licence_cache is set
+                read_dsc(src_name, version, component, self.archive_root)
+            finally:
+                os.chdir(cwd)
+            shutil.rmtree(tempdir)
         except PoolFileNotFound:
             licence = None
         else:
