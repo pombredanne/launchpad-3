@@ -4,17 +4,12 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.webapp import GeneralFormView
-
-from canonical.launchpad.interfaces import ISpecificationDependency
-
-from canonical.launchpad.webapp import canonical_url
-
-
 __all__ = [
     'SpecificationDependencyAddView',
     'SpecificationDependencyRemoveView',
     ]
+
+from canonical.launchpad.webapp import GeneralFormView, canonical_url
 
 class SpecificationDependencyAddView(GeneralFormView):
 

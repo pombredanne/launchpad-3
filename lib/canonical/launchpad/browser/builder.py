@@ -16,17 +16,14 @@ import zope.security.interfaces
 from zope.component import getUtility
 from zope.event import notify
 from zope.app.form.browser.add import AddView
-from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
-
-from canonical.lp import dbschema
-from canonical.database.constants import UTC_NOW
+from zope.app.event.objectevent import ObjectCreatedEvent
 
 from canonical.launchpad.interfaces import (
     IPerson, IBuilderSet, IBuilder, IBuildSet
     )
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, GetitemNavigation, stepthrough)
+    StandardLaunchpadFacets, GetitemNavigation, stepthrough)
 
 
 class BuilderSetNavigation(GetitemNavigation):

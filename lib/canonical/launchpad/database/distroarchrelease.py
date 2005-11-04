@@ -27,9 +27,7 @@ from canonical.launchpad.database.distroarchreleasebinarypackage import (
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.publishing import BinaryPackagePublishing
 from canonical.launchpad.database.publishedpackage import PublishedPackage
-from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.processor import Processor
-from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.helpers import shortlist

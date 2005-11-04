@@ -111,10 +111,10 @@ class CveSetView:
         self.text = self.request.form.get('text', None)
         self.searchrequested = False
 
-        # if we do not have text, we are done
-        if not self.text:
-            return
+        if self.text:
+            self.pre_search()
 
+    def pre_search(self):
         # see if we have a proper sequence
         sequence = self.text
         if sequence[:4].lower() in ['cve-', 'can-']:
