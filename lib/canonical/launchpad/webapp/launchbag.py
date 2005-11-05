@@ -20,6 +20,7 @@ from canonical.launchpad.interfaces import (
         IDistroRelease, ISourcePackage, IBug, IDistroArchRelease,
         ISpecification, IBugTask)
 from canonical.launchpad.webapp.interfaces import ILoggedInEvent
+from canonical.launchpad.interfaces import ILaunchpadCelebrities
 
 _utc_tz = pytz.timezone('UTC')
 
@@ -48,10 +49,19 @@ class LaunchBag:
         '''See IOpenLaunchBag.'''
         self._store.login = login
 
+    @property
     def login(self):
         return getattr(self._store, 'login', None)
-    login = property(login)
+    
+    def setDeveloper(self, is_developer):
+        '''See IOpenLaunchBag.'''
+        self._store.developer = is_developer
 
+    @property
+    def developer(self):
+        return getattr(self._store, 'developer', False)
+
+    @property
     def user(self):
         interaction = zope.security.management.queryInteraction()
         principals = [
@@ -69,8 +79,6 @@ class LaunchBag:
             except TypeError:
                 person = None
             return person
-
-    user = property(user)
 
     def add(self, obj):
         store = self._store
@@ -174,8 +182,23 @@ def set_login_in_launchbag_when_principal_identified(event):
     else:
         launchbag.setLogin(loggedinevent.login)
 
+def set_developer_in_launchbag_when_logged_in(event):
+    """Subscriber to ILoggedInEvent"""
+    launchbag = getUtility(IOpenLaunchBag)
+    user = launchbag.user
+    assert user is not None, 'No user but ILoggedInEvent published'
+    celebrities = getUtility(ILaunchpadCelebrities)
+    is_developer = user.inTeam(celebrities.launchpad_developers)
+    launchbag.setDeveloper(is_developer)
+
 def reset_login_in_launchbag_on_logout(event):
     """Subscriber for ILoggedOutEvent that sets 'login' in launchbag to None.
     """
     launchbag = getUtility(IOpenLaunchBag)
     launchbag.setLogin(None)
+
+def reset_developer_in_launchbag_on_logout(event):
+    """Subscriber for ILoggedOutEvent that resets the developer flag."""
+    launchbag = getUtility(IOpenLaunchBag)
+    launchbag.setDeveloper(False)
+
