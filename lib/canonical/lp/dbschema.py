@@ -1829,6 +1829,12 @@ class PackagePublishingPocket(DBSchema):
         pocket.
         """)
 
+    BACKPORTS = Item(40, """
+        Backports
+
+        This is where backported packages go.
+        """)
+
 class SourcePackageRelationships(DBSchema):
     """Source Package Relationships
 

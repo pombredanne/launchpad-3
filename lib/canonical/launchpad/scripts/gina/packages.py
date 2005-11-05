@@ -262,9 +262,10 @@ class AbstractPackageData:
     version = None
 
     # Component is something of a special case. It is set up in
-    # archive.py:PackagesMap (and only overwritten here in special
-    # cases, which I'm not sure is really correct). We check it as part
-    # of _required in the subclasses only as a sanity check.
+    # archive.py:PackagesMap and always supplied to the constructor (and
+    # only overwritten after in special cases, which I'm not sure are
+    # really correct). We check it as part of _required in the
+    # subclasses only as a sanity check.
     component = None
 
     def __init__(self):
@@ -326,11 +327,10 @@ class SourcePackageData(AbstractPackageData):
     build_depends_indep = ""
     # XXX: this isn't stored at all
     standards_version = ""
-
-    # Defaults, overwritten by do_package and ensure_required
     section = None
     format = None
 
+    # XXX: not used anywhere
     priority = None
 
     is_processed = False
@@ -340,7 +340,7 @@ class SourcePackageData(AbstractPackageData):
     # supplied to __init__ as keyword arguments. If any are not, a
     # MissingRequiredArguments exception is raised.
     _required = [
-        'package', 'binaries', 'version', 'maintainer',
+        'package', 'binaries', 'version', 'maintainer', 'section',
         'architecture', 'directory', 'files', 'component']
 
     def __init__(self, **args):
@@ -380,7 +380,23 @@ class SourcePackageData(AbstractPackageData):
             else:
                 setattr(self, k.lower().replace("-", "_"), v)
 
+        if self.section is None:
+            # XXX: untested and disabled
+            # if kdb:
+            #     log.warn("Source package %s lacks section, looking it up..." %
+            #              self.package)
+            #     self.section = kdb.getSourceSection(self.package)
+            self.section = 'misc'
+            log.warn("Source package %s lacks section, assumed %r" %
+                     (self.package, self.section))
+
+        if '/' in self.section:
+            # this apparently happens with packages in universe.
+            # 3dchess, for instance, uses "universe/games"
+            self.section = self.section.split("/", 1)[1]
+
         AbstractPackageData.__init__(self)
+
 
     def do_package(self, archive_root):
         """Get the Changelog and urgency from the package on archive.
@@ -426,42 +442,17 @@ class SourcePackageData(AbstractPackageData):
         #        get_person_by_key(keyrings, self.dsc_signing_key)
 
     def ensure_complete(self, kdb):
-        # XXX: should we handle missing priorities?
-        if self.section is None:
-            # This assumption is a bit evil. There is a hidden issue
-            # that manifests itself if the source package was unchanged
-            # between releases and its Sources file lacked a section
-            # initially and later the section is added: we will never
-            # update the record. I doubt this will be an issue in
-            # practice.
-            if kdb:
-                # XXX: untested
-                log.warn("Source package %s lacks section, looking it up..." %
-                         self.package)
-                self.section = kdb.getSourceSection(self.package)
-                if '/' in self.section:
-                    self.component, self.section = self.section.split("/")
-            else:
-                self.section = 'misc'
-                log.warn("Source package %s lacks section, assumed %r" %
-                         (self.package, self.section))
-
         if self.format is None:
+            # XXX: this is very funny. We care so much about it here,
+            # but we don't do anything about this in handlers.py!
             log.warn("Invalid format in %s, assumed %r" % 
                      (self.package, "1.0"))
             self.format = "1.0"
-            # XXX: this is very funny. We care so much about it here,
-            # but we don't do anything about this in handlers.py!
 
         if self.urgency not in urgencymap:
             log.warn("Invalid urgency in %s, %r, assumed %r" % 
                      (self.package, self.urgency, "low"))
             self.urgency = "low"
-
-        if '/' in self.section:
-            # this apparently happens with packages in universe.
-            # 3dchess, for instance, uses "universe/games"
-            self.section = self.section.split("/", 1)[1]
 
 
 class BinaryPackageData(AbstractPackageData):
@@ -471,9 +462,9 @@ class BinaryPackageData(AbstractPackageData):
     # They are passed in as keyword arguments. If any are not set, a
     # MissingRequiredArguments exception is raised.
     _required = [
-        'package', 'installed_size', 'maintainer',
+        'package', 'installed_size', 'maintainer', 'section',
         'architecture', 'version', 'filename', 'component',
-        'size', 'md5sum', 'description', 'summary']
+        'size', 'md5sum', 'description', 'summary', 'priority']
 
     # Set in __init__
     source = None
@@ -481,6 +472,8 @@ class BinaryPackageData(AbstractPackageData):
     version = None
     architecture = None
     filename = None
+    section = None
+    priority = None
 
     # Defaults, optionally overwritten in __init__
     depends = ""
@@ -493,10 +486,6 @@ class BinaryPackageData(AbstractPackageData):
 
     # Overwritten in do_package, optionally
     shlibs = None
-
-    # Overwritten by __init__ and ensure_required
-    section = None
-    priority = None
 
     #
     is_processed = False
@@ -557,6 +546,16 @@ class BinaryPackageData(AbstractPackageData):
                 "refers to source package %s with invalid version: %s" %
                 (self.package, self.version, self.source, self.source_version))
 
+        if self.section is None:
+            self.section = 'misc'
+            log.warn("Binary package %s lacks a section, assumed %r" %
+                     (self.package, self.section))
+
+        if self.priority is None:
+            self.priority = 'extra'
+            log.warn("Binary package %s lacks valid priority, assumed %r" %
+                     (self.package, self.priority))
+
         AbstractPackageData.__init__(self)
 
     def do_package(self, archive_root):
@@ -588,15 +587,4 @@ class BinaryPackageData(AbstractPackageData):
         self.gpg_signing_key_owner = \
             get_person_by_key(keyrings, self.gpg_signing_key)
         return True
-
-    def ensure_complete(self, kdb):
-        if self.section is None:
-            self.section = 'misc'
-            log.warn("Binary package %s lacks a section, assumed %r" %
-                     (self.package, self.section))
-
-        if self.priority is None:
-            self.priority = 'extra'
-            log.warn("Binary package %s lacks valid priority, assumed %r" %
-                     (self.package, self.priority))
 

@@ -181,17 +181,18 @@ class ImporterHandler:
 
         return {'distroarchrelease': dar, 'processor': processor}
 
-    def _store_sprelease_for_publishing(self, sourcepackagerelease):
+    def _store_sprelease_for_publishing(self, sourcepackagerelease,
+                                        spdata):
         """Append to the sourcepackagerelease imported list."""
         if sourcepackagerelease not in self.imported_sources:
-            self.imported_sources.append(sourcepackagerelease)
+            self.imported_sources.append((sourcepackagerelease, spdata))
 
-    def _store_bprelease_for_publishing(self, binarypackage, archtag):
+    def _store_bprelease_for_publishing(self, binarypackage, bpdata,
+                                        archtag):
         """Append to the binarypackage imported list."""
         if archtag not in self.imported_bins.keys():
             self.imported_bins[archtag] = []
-
-        self.imported_bins[archtag].append(binarypackage)
+        self.imported_bins[archtag].append((binarypackage, bpdata))
 
     def _store_archinfo(self, archtag):
         """Append retrived distroarchrelease info to a dict."""
@@ -225,7 +226,8 @@ class ImporterHandler:
             return None
 
         # Append to the sourcepackagerelease imported list.
-        self._store_sprelease_for_publishing(sourcepackagerelease)
+        self._store_sprelease_for_publishing(sourcepackagerelease,
+                                             sourcepackagedata)
         return sourcepackagerelease
 
     def import_sourcepackage(self, sourcepackagedata):
@@ -237,7 +239,8 @@ class ImporterHandler:
         sourcepackagerelease = handler(sourcepackagedata,
                                        self.distrorelease)
 
-        self._store_sprelease_for_publishing(sourcepackagerelease)
+        self._store_sprelease_for_publishing(sourcepackagerelease,
+                                             sourcepackagedata)
         # See preimport_sourcecheck
         return sourcepackagerelease
 
@@ -258,7 +261,8 @@ class ImporterHandler:
             return None
 
         # Append to the sourcepackagerelease imported list.
-        self._store_bprelease_for_publishing(binarypackagerelease, archtag)
+        self._store_bprelease_for_publishing(binarypackagerelease,
+                                             binarypackagedata, archtag)
         return binarypackagerelease
 
     def import_binarypackage(self, archtag, binarypackagedata):
@@ -287,7 +291,8 @@ class ImporterHandler:
                                                            sourcepackage,
                                                            distroarchinfo,
                                                            archtag)
-        self._store_bprelease_for_publishing(binarypackage, archtag)
+        self._store_bprelease_for_publishing(binarypackage,
+                                             binarypackagedata, archtag)
 
     binnmu_re = re.compile(r"^(.+)\.\d+$")
     binnmu_re2 = re.compile(r"^(.+)\.\d+\.\d+$")
@@ -350,8 +355,8 @@ class ImporterHandler:
     def publish_sourcepackages(self, pocket):
         log.info('Publishing Source Packages...')
         publisher = SourcePublisher(self.distrorelease)
-        for spr in self.imported_sources:
-            publisher.publish(spr, pocket)
+        for spr, spdata in self.imported_sources:
+            publisher.publish(spr, spdata, pocket)
         log.info('done')
 
     def publish_binarypackages(self, pocket):
@@ -360,8 +365,8 @@ class ImporterHandler:
             archinfo = self.archinfo[archtag]
             distroarchrelease = archinfo['distroarchrelease']
             publisher = BinaryPackagePublisher(distroarchrelease)
-            for binary in binarypackages:
-                publisher.publish(binary, pocket)
+            for binary, bpdata in binarypackages:
+                publisher.publish(binary, bpdata, pocket)
         log.info('done')
 
 
@@ -462,7 +467,7 @@ class SourcePackageReleaseHandler:
         # the binary import is started. Thusly since this source is
         # being imported "late" in the process, we publish it immediately
         # to make sure it doesn't get lost.
-        SourcePublisher(distrorelease).publish(spr, self.pocket)
+        SourcePublisher(distrorelease).publish(spr, sp_data, self.pocket)
         return spr
 
     def _getSourcePackageDataFromDSC(self, sp_name, sp_version,
@@ -613,8 +618,9 @@ class SourcePublisher:
     def __init__(self, distrorelease):
         # Get the distrorelease where the sprelease will be published.
         self.distrorelease = distrorelease
+        self.distro_handler = DistroHandler()
 
-    def publish(self, sourcepackagerelease, pocket):
+    def publish(self, sourcepackagerelease, spdata, pocket):
         """Create the publishing entry on db if does not exist."""
         # Check if the sprelease is already published and if so, just
         # report it.
@@ -628,14 +634,17 @@ class SourcePublisher:
                       source_publishinghistory.status.title)
             return
 
+        component = self.distro_handler.getComponentByName(spdata.component)
+        section = self.distro_handler.ensureSection(spdata.section)
+
         # Create the Publishing entry with status PENDING so that we can
         # republish this later into a Soyuz archive.
         SecureSourcePackagePublishingHistory(
             distrorelease=self.distrorelease.id,
             sourcepackagerelease=sourcepackagerelease.id,
             status=PackagePublishingStatus.PENDING,
-            component=sourcepackagerelease.component.id,
-            section=sourcepackagerelease.section.id,
+            component=component.id,
+            section=section.id,
             datecreated=nowUTC,
             datepublished=nowUTC,
             pocket=pocket
@@ -857,8 +866,9 @@ class BinaryPackagePublisher:
     """Binarypackage publisher class."""
     def __init__(self, distroarchrelease):
         self.distroarchrelease = distroarchrelease
+        self.distro_handler = DistroHandler()
 
-    def publish(self, binarypackage, pocket):
+    def publish(self, binarypackage, bpdata, pocket):
         """Create the publishing entry on db if does not exist."""
         log.debug('Publishing BinaryPackage %s-%s' % (
             binarypackage.binarypackagename.name, binarypackage.version))
@@ -872,12 +882,20 @@ class BinaryPackagePublisher:
                 binpkg_publishinghistory.status.title))
             return
 
+        # These need to be pulled from the binary package data, not the
+        # binary package release: the data represents data from /this
+        # specific distrorelease/, whereas the package represents data
+        # from when it was first built.
+        component = self.distro_handler.getComponentByName(bpdata.component)
+        section = self.distro_handler.ensureSection(bpdata.section)
+        priority = prioritymap[bpdata.priority]
+
         # Create the Publishing entry with status PENDING.
         SecureBinaryPackagePublishingHistory(
             binarypackagerelease = binarypackage.id,
-            component = binarypackage.component,
-            section = binarypackage.section,
-            priority = binarypackage.priority,
+            component = component.id,
+            section = section.id,
+            priority = priority,
             distroarchrelease = self.distroarchrelease.id,
             status = PackagePublishingStatus.PENDING,
             datecreated = nowUTC,
