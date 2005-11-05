@@ -18,7 +18,7 @@
       <p tal:condition="not: task_batch_navigator/batch">No bugs have been
       assigned to <span tal:replace="context/browsername" />.</p>
 
-      <tal:block tal:condition="task_batch_navigator/batch">
+      <tal:block condition="task_batch_navigator/batch">
 
       <tal:navigation
            replace="structure task_batch_navigator/@@+navigation-links" />
