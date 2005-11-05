@@ -13,6 +13,8 @@ distroarchrelease and a binarypackage (by receiving a version)
 Retrieving the Ubuntu Hoary i386 distroarchrelease
 
  >>> hoary_i386 = DistroArchRelease.get(6)
+ >>> hoary_i386.title
+ u'The Hoary Hedgehog Release for i386 (x86)'
 
 Let's build the meta object for the 'pmount' and the 'tnuomp'
 binarypackage names within the previous distroarchrelease:
@@ -31,11 +33,12 @@ IDistroArchReleaseBinaryPackageRelease object.
  >>> from canonical.launchpad.interfaces import (
  ...              IDistroArchReleaseBinaryPackageRelease)
 
- >>> assert verifyObject(IDistroArchReleaseBinaryPackageRelease, 
- ...                     pmount_metabin) is False
+ >>> verifyObject(IDistroArchReleaseBinaryPackageRelease, 
+ ...              pmount_metabin)
  Traceback (most recent call last):
- BrokenImplementation: ...
  ...
+ BrokenImplementation: ...
+ 
 
 XXX cprov 20051105: bug # 3925
 Unfortunatelly IDistroArchReleaseBinaryPackageRelease combines the
@@ -44,10 +47,16 @@ implement all the required methods, so this interfaces extension is
 pointless because we do not use all those methods directly, it
 deserves its own interface.
 
-Let's test if the version is enough to garantee uniqueness between
-published binary packages through DistroArchReleaseBinaryPackage. 
-It certifies we solved the bug # 3885:
 
- >>> assert (pmount_in_hoaryi386['0.1-1'].name == 
- ...         tnoump_in_hoaryi386['0.1-1'].name) is False
+Previously there was a bug traversing DistroArchReleaseBinaryPackage
+if there were two binarypackagereleases with the same version.
+The release for the other package could be returned by mistake.
+This test verifies if the correct binarypackagerelease is being
+returned.
+
+ >>> pmount_in_hoaryi386['0.1-1'].name
+ u'pmount'
+
+ >>> tnoump_in_hoaryi386['0.1-1'].name
+ u'tnuomp'
 
