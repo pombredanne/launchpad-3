@@ -1300,6 +1300,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'binarypackagename'::
 
 INSERT INTO binarypackagename (id, name) VALUES (8, 'mozilla-firefox');
 INSERT INTO binarypackagename (id, name) VALUES (13, 'pmount');
+INSERT INTO binarypackagename (id, name) VALUES (14, 'tnuomp');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'binarypackagename'::pg_catalog.regclass;
@@ -1309,6 +1310,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'binarypackagerelease
 
 INSERT INTO binarypackagerelease (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 10, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', NULL, NULL, NULL, 'mozilla-firefox', false, NULL, NULL, NULL, true, '''web'':3B,7C ''browser'':4B,8C ''firefox'':2B,6C ''mozilla'':1B,5C', '2005-10-19 17:50:10.874189');
 INSERT INTO binarypackagerelease (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (15, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 7, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, '''pmount'':1B,3C ''descript'':4C ''shortdesc'':2B', '2005-10-19 17:50:10.878712');
+INSERT INTO binarypackagerelease (id, binarypackagename, "version", summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (16, 14, '0.1-1', 'tnuomp shortdesc', 'tnuomp description', 7, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, '''tnuomp'':1B,3C ''descript'':4C ''shortdesc'':2B', '2005-10-20 17:50:10.878712');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'binarypackagerelease'::pg_catalog.regclass;
@@ -6332,6 +6334,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'securebinarypackagep
 
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (9, 12, 1, 2, 1, 1, 10, '2005-05-05 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (11, 15, 6, 2, 1, 1, 40, '2005-05-05 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
+INSERT INTO securebinarypackagepublishinghistory (id, binarypackagerelease, distroarchrelease, status, component, section, priority, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (12, 16, 6, 2, 1, 1, 40, '2005-05-05 00:00:00', NULL, NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'securebinarypackagepublishinghistory'::pg_catalog.regclass;

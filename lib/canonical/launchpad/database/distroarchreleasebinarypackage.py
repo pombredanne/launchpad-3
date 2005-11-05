@@ -91,12 +91,15 @@ class DistroArchReleaseBinaryPackage:
 
     def __getitem__(self, version):
         """See IDistroArchReleaseBinaryPackage."""
+
         bpph = BinaryPackagePublishingHistory.select("""
             BinaryPackagePublishingHistory.distroarchrelease = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease = 
                 BinaryPackageRelease.id AND
-            BinaryPackageRelease.version = %s
-            """ % sqlvalues(self.distroarchrelease.id, version),
+            BinaryPackageRelease.version = %s AND
+            BinaryPackageRelease.binarypackagename = %s
+            """ % sqlvalues(self.distroarchrelease.id, version,
+                            self.binarypackagename.id),
             orderBy='-datecreated',
             clauseTables=['binarypackagerelease'])
         if bpph.count() == 0:

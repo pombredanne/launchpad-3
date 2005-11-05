@@ -1,0 +1,53 @@
+Distro Arch Release Binary Package
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ >>> from zope.interface.verify import verifyObject
+
+This class is a meta object to combine information from a
+distroarchrelease and a binarypackage (by receiving a version) 
+
+ >>> from canonical.launchpad.database import (
+ ...     DistroArchReleaseBinaryPackage, DistroArchRelease,
+ ...     BinaryPackageName)
+
+Retrieving the Ubuntu Hoary i386 distroarchrelease
+
+ >>> hoary_i386 = DistroArchRelease.get(6)
+
+Let's build the meta object for the 'pmount' and the 'tnuomp'
+binarypackage names within the previous distroarchrelease:
+
+ >>> pmount = BinaryPackageName.selectOneBy(name='pmount')
+ >>> tnuomp = BinaryPackageName.selectOneBy(name='tnuomp')
+
+ >>> pmount_in_hoaryi386 = DistroArchReleaseBinaryPackage(hoary_i386, pmount)
+ >>> tnoump_in_hoaryi386 = DistroArchReleaseBinaryPackage(hoary_i386, tnuomp)
+
+Let's check if the meta object produces the correct result, an 
+IDistroArchReleaseBinaryPackageRelease object.
+
+ >>> pmount_metabin = pmount_in_hoaryi386['0.1-1']
+
+ >>> from canonical.launchpad.interfaces import (
+ ...              IDistroArchReleaseBinaryPackageRelease)
+
+ >>> assert verifyObject(IDistroArchReleaseBinaryPackageRelease, 
+ ...                     pmount_metabin) is False
+ Traceback (most recent call last):
+ BrokenImplementation: ...
+ ...
+
+XXX cprov 20051105: bug # 3925
+Unfortunatelly IDistroArchReleaseBinaryPackageRelease combines the
+interfaces IDistroArchRelease and IBinaryPackageRelease, but does not
+implement all the required methods, so this interfaces extension is 
+pointless because we do not use all those methods directly, it
+deserves its own interface.
+
+Let's test if the version is enough to garantee uniqueness between
+published binary packages through DistroArchReleaseBinaryPackage. 
+It certifies we solved the bug # 3885:
+
+ >>> assert (pmount_in_hoaryi386['0.1-1'].name == 
+ ...         tnoump_in_hoaryi386['0.1-1'].name) is False
+
