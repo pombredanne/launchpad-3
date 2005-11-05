@@ -5,14 +5,16 @@ specification, select its successor, and then update the database.
 
 First, we need to be able to see this page, we will go in as Carlos, the
 approver of the specification. Not only will we test the existence of the
-page, we will also test that the spec is currently in the Braindump status.
+page, we will also test that the spec is currently in the Drafting status.
+NB: the sampledata has this spec as Braindump, but other tests in this story
+modify that to Drafting, so this test will not run standalone.
 
   >>> print http(r"""
   ... GET /products/firefox/+spec/extension-manager-upgrades/+supersede HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
-  ...Braindump...
+  ...Drafting...
 
 
 Next, we will POST to that form, setting the spec which supersedes this one:
