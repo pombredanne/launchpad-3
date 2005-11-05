@@ -769,6 +769,8 @@ specification_removebug = 'Remove link to bug report'
 
 specification_retargeting = 'Attach spec to a different product or distribution'
 
+specification_superseding = 'Mark specification as superseded by another'
+
 specification_dependency = 'Create a Specification Dependency'
 
 specification_deptree = 'Complete Dependency Tree'
@@ -786,9 +788,9 @@ specification_productseries = 'Target Feature Specification at Series'
 
 specification_removedep = 'Remove a Dependency'
 
-specification_doreview = 'Conduct Specification Review'
+specification_givefeedback = 'Clear Feedback Requests'
 
-specification_requestreview = 'Request a Review of This Specification'
+specification_requestfeedback = 'Request Feedback on This Specification'
 
 specification_edit = 'Edit Specification Details'
 
