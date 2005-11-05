@@ -7,8 +7,6 @@ __all__ = [
     'KarmaActionSetNavigation',
     ]
 
-from zope.component import getUtility
-
 from canonical.launchpad.interfaces import IKarmaActionSet
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import Navigation, canonical_url

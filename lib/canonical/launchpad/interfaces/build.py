@@ -38,6 +38,7 @@ class IBuild(Interface):
     title = Attribute("Build Title")
 
     # useful properties
+    build_icon = Attribute("Return the icon url correspondent to buildstate.")
     distribution = Attribute("Shortcut for its distribution.")
     distributionsourcepackagerelease = Attribute("The page showing the "
         "details for this sourcepackagerelease in this distribution.")

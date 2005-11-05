@@ -23,3 +23,15 @@ interrogate this information.
    pmount
 
 
+DistroArchRelease class has a built-in method to return a single 
+dependency package candidate by its name as a PublishedPackage 
+instance:
+
+   >>> hoary_i386.findDepCandidateByName("pmount").binarypackagename
+   u'pmount'
+
+Since 'at' isn't available in our sampledata (not even published), 
+None is returned:
+
+   >>> assert hoary_i386.findDepCandidateByName("at") is None
+

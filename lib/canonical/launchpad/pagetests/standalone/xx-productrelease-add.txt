@@ -2,7 +2,7 @@ Test that the page to add a product release loads.
 
   >>> print http(r"""
   ... GET /products/firefox/+series/milestones/+addrelease HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -15,7 +15,7 @@ Test that the page to add a product release works.
 
   >>> print http(r"""
   ... POST /products/firefox/+series/milestones/+addrelease HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 285
   ... Content-Type: application/x-www-form-urlencoded
   ... 
@@ -27,3 +27,57 @@ Test that the page to add a product release works.
       <h1>Register a New Release</h1>
   ...
 
+
+Now we'll add a new product release with the same version of an existing
+product release from another product series
+
+
+  >>> print http(r"""
+  ... POST /products/firefox/+series/milestones/+addrelease HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------10625510271450016991355919626
+  ... 
+  ... -----------------------------10625510271450016991355919626
+  ... Content-Disposition: form-data; name="field.version"
+  ... 
+  ... 1.0.0
+  ... -----------------------------10625510271450016991355919626
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... SameName
+  ... -----------------------------10625510271450016991355919626
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... Test the adding of a new product release with the same version of a existing product release in another serie.
+  ... 
+  ... -----------------------------10625510271450016991355919626
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... test description
+  ... -----------------------------10625510271450016991355919626
+  ... Content-Disposition: form-data; name="field.changelog"
+  ... 
+  ... test
+  ... -----------------------------10625510271450016991355919626
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------10625510271450016991355919626--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../products/firefox/+series/milestones/1.0.0 
+  ...
+
+  And we check if both links are there pointing to different places.
+
+  >>> print http(r"""
+  ... GET /products/firefox/ HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...<a href="http://.../products/firefox/+series/1.0/1.0.0">1.0.0</a>...
+  ...
+  ...<a href="http://.../products/firefox/+series/milestones/1.0.0">1.0.0</a>...
+  ...
