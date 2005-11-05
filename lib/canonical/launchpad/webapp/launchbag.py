@@ -186,10 +186,12 @@ def set_developer_in_launchbag_when_logged_in(event):
     """Subscriber to ILoggedInEvent"""
     launchbag = getUtility(IOpenLaunchBag)
     user = launchbag.user
-    assert user is not None, 'No user but ILoggedInEvent published'
-    celebrities = getUtility(ILaunchpadCelebrities)
-    is_developer = user.inTeam(celebrities.launchpad_developers)
-    launchbag.setDeveloper(is_developer)
+    if user is None:
+        launchbag.setDeveloper(False)
+    else:
+        celebrities = getUtility(ILaunchpadCelebrities)
+        is_developer = user.inTeam(celebrities.launchpad_developers)
+        launchbag.setDeveloper(is_developer)
 
 def reset_login_in_launchbag_on_logout(event):
     """Subscriber for ILoggedOutEvent that sets 'login' in launchbag to None.
