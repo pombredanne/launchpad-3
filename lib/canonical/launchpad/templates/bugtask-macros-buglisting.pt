@@ -63,6 +63,10 @@
       Slot for placing extra search widgets below the table.
     </metal:extra_widgets_below_table>
 
+  <tal:navigation
+    replace="structure task_batch_navigator/@@+navigation-links"
+    tal:condition="view/showBatchedListing"
+  />
   <tal:table_view tal:condition="view/showTableView">
     <table
        metal:use-macro="context/@@+bugtask-macros-tableview/batched-table" />
