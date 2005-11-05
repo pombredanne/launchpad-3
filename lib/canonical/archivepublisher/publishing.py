@@ -244,15 +244,18 @@ class Publisher(object):
                     eef = open(extra_extra_overrides, "r")
                     extras = {}
                     for line in eef:
-                        (package, header, value) = eef.strip().split("\t")
-                        pkg_extras = extras.setdefault(package, {})
-                        header_values = pkg_extras.setdefault(header, [])
-                        header_values.append(value)
+                        line = line.strip()
+                        if line:
+                            (package, header, value) = line.split()
+                            pkg_extras = extras.setdefault(package, {})
+                            header_values = pkg_extras.setdefault(header, [])
+                            header_values.append(value)
                     eef.close()
                     for pkg, headers in extras.items():
                         for header, values in headers.items():
                             ef.write("\t".join(
                                 [pkg, header, ", ".join(values)]))
+                            ef.write("\n")
                 ef.close()
                 
                 if len(di_overrides):
@@ -413,7 +416,7 @@ tree "dists/%(DISTRORELEASEONDISK)s"
   Architectures "%(ARCHITECTURES)s";
   BinOverride "override.%(DISTRORELEASE)s.$(SECTION)";
   SrcOverride "override.%(DISTRORELEASE)s.$(SECTION).src";
-  ExtraOverride "override.%(DISTRORELEASE)s.extra.$(SECTION).src";
+  %(HIDEEXTRA)sExtraOverride "override.%(DISTRORELEASE)s.extra.$(SECTION)";
   Packages::Extensions "%(EXTENSIONS)s";
   BinCacheDB "packages-%(CACHEINSERT)s$(ARCH).db";
   Contents " ";
@@ -480,7 +483,9 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                 self.debug("Generating apt config for %s%s" % (
                     dr, pocketsuffix[pocket]))
                 # Replace those tokens
-
+                extra_override_comment = "// "
+                if pocketsuffix[pocket] == '':
+                    extra_override_comment = ""
                 cnf.write(stanza_template % {
                     "LISTPATH": self._config.overrideroot,
                     "DISTRORELEASE": dr + pocketsuffix[pocket],
@@ -489,7 +494,8 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                     "ARCHITECTURES": " ".join(archs) + " source",
                     "SECTIONS": " ".join(comps),
                     "EXTENSIONS": ".deb",
-                    "CACHEINSERT": ""
+                    "CACHEINSERT": "",
+                    "HIDEEXTRA": extra_override_comment
                     })
                 dr_full_name = dr + pocketsuffix[pocket]
                 if dr_full_name in self._di_release_components:
@@ -508,7 +514,8 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                             "ARCHITECTURES": " ".join(archs),
                             "SECTIONS": "debian-installer",
                             "EXTENSIONS": ".udeb",
-                            "CACHEINSERT": "debian-installer-"
+                            "CACHEINSERT": "debian-installer-",
+                            "HIDEEXTRA": extra_override_comment
                             })
 
                 def safe_mkdir(path):

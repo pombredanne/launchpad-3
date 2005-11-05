@@ -19,12 +19,19 @@ from canonical.launchpad.database import (
 
 from sqlobject import AND
 
-from canonical.lp.dbschema import \
-     PackagePublishingStatus, PackagePublishingPocket
+from canonical.lp.dbschema import (
+     PackagePublishingStatus, PackagePublishingPocket,
+     DistributionReleaseStatus)
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
     sqlvalues, SQLBase, flush_database_updates, _clearCache)
+
+# These states are used for domination unless we're being careful
+non_careful_domination_states = set([
+    DistributionReleaseStatus.EXPERIMENTAL,
+    DistributionReleaseStatus.DEVELOPMENT,
+    DistributionReleaseStatus.FROZEN])
 
 # We do this for more accurate exceptions. It doesn't slow us down very
 # much so it's not worth making it an option.
@@ -125,10 +132,12 @@ judgejudy = Dominator(logging.getLogger("Dominator"))
 try:
     debug("Attempting to perform domination.")
     for distrorelease in drs:
-        for pocket in PackagePublishingPocket.items:
-            judgejudy.judgeAndDominate(distrorelease, pocket, pubconf)
-            debug("Flushing caches.")
-            clear_cache()
+        if ((distrorelease.releasestatus in non_careful_domination_states) or
+            careful):
+            for pocket in PackagePublishingPocket.items:
+                judgejudy.judgeAndDominate(distrorelease, pocket, pubconf)
+                debug("Flushing caches.")
+                clear_cache()
     debug("Committing.")
     txn.commit()
 except:
