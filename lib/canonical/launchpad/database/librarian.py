@@ -3,16 +3,10 @@
 __metaclass__ = type
 __all__ = ['LibraryFileContent', 'LibraryFileAlias', 'LibraryFileAliasSet']
 
-import datetime
-from pytz import utc
-
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import (
-    ILibraryFileAlias, ILibraryFileAliasSet
-    )
-
+from canonical.launchpad.interfaces import ILibraryFileAliasSet
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW

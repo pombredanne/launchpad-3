@@ -64,7 +64,6 @@ class ArchiveFilesystemInfo:
 
         difd, di_tagfile = tempfile.mkstemp()
         if os.path.exists(di_zipped):
-            # XXX: untested
             call("gzip -dc %s > %s" % (di_zipped, di_tagfile))
         difile = os.fdopen(difd)
 
@@ -164,9 +163,8 @@ class PackagesMap:
                     continue
                 tmpbin_map[bin_name] = bin_tmp
 
-            # XXX: untested
             # Run over the D-I stanzas and store info in tmp_bin_map.
-            dibinaries = apt_pkg.ParseTagFile(info_set.binfile)
+            dibinaries = apt_pkg.ParseTagFile(info_set.difile)
             while dibinaries.Step():
                 dibin_tmp = dict(dibinaries.Section)
                 dibin_tmp['Component'] = info_set.component
@@ -174,7 +172,7 @@ class PackagesMap:
                     dibin_name = dibin_tmp['Package']
                 except KeyError:
                     log.exception("Invalid Releases stanza in %s" %
-                                  info_set.binfile)
+                                  info_set.difile)
                     continue
                 tmpbin_map[dibin_name] = dibin_tmp
 

@@ -156,6 +156,11 @@ Let's create a bunch of mock slaves for testing the Builder State Handler:
   >>> class OkSlave:
   ...     def status(self):
   ...         return ('BuilderStatus.IDLE',)
+  ...     def ensurepresent(self, sha1, url):
+  ...         print 'OkSlave has everithing !!! avoid file transfers'
+  ...         return True
+  ...     def build(self, buildid, buildtype, chroot, filemap, args):
+  ...         print 'OkSlaves BUILDING !!!'
 
   >>> class BuildingSlave:
   ...     def status(self):
@@ -251,6 +256,9 @@ Let's create a bunch of mock slaves for testing the Builder State Handler:
   ...         self.buildstart = datetime.datetime(2005, 1, 1, 8, 0, 0, 
   ...                                             tzinfo=UTC)
   ...         self.name = "unimportant-name"
+  ...         self.files = []
+  ...         self.component_name = "main"
+  ...         self.archhintlist = ""
   ...     def destroySelf(self):
   ...         pass
 
@@ -469,6 +477,28 @@ the available builder slaves at moment.
   >>> for proc, queueItems in byproc.iteritems():
   ...     bm.dispatchByProcessor(proc, queueItems)
 
+Create a totally bogus but usable CHROOT 
+
+  >>> from canonical.lp import dbschema
+  >>> from canonical.launchpad.database import LibraryFileAlias
+  >>> from canonical.launchpad.database import PocketChroot
+  >>> pocket = dbschema.PackagePublishingPocket.RELEASE
+  >>> chroot = LibraryFileAlias.get(1)
+  >>> p = PocketChroot(distroarchreleaseID=archrelease.id,
+  ...                  pocket=pocket, chroot=chroot)
+
+Fix some BuildQueue missed attributes
+
+  >>> bqItem3.version = 'Demo'
+  >>> bqItem3.archrelease = archrelease
+
+Resquest a Slave Build process:
+
+  >>> bm.startBuild(buildergroup, builder2, bqItem3, pocket)
+  OkSlave has everithing !!! avoid file transfers
+  OkSlaves BUILDING !!!
+
+See OkSlave() class implementation for further details
 
 Remove locally installed Librarian server if necessary
 

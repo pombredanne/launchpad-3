@@ -32,7 +32,7 @@ from zope.app.form.interfaces import IInputWidget
 
 from canonical.lp import dbschema
 from canonical.launchpad.webapp import (
-    canonical_url, Link, GetitemNavigation, Navigation, stepthrough,
+    canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
@@ -162,7 +162,7 @@ class BugTaskNavigation(Navigation):
             return getUtility(IBugExternalRefSet)[name]
 
     @stepthrough('watches')
-    def traverse_references(self, name):
+    def traverse_watches(self, name):
         if name.isdigit():
             return getUtility(IBugWatchSet)[name]
 
