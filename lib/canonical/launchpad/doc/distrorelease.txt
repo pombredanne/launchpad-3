@@ -105,10 +105,10 @@ are valid for that distrorelease. These selections are used by (among
 other things) the uploader for validating incoming uploads.
 
    >>> hoary = distroreleaseset.get(3)
-   >>> for c in hoary.real_components:
+   >>> for c in hoary.components:
    ...     print c.name
    main
-   >>> for s in hoary.real_sections:
+   >>> for s in hoary.sections:
    ...     print s.name
    editors
 
