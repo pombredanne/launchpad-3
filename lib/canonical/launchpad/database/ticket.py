@@ -99,7 +99,7 @@ class Ticket(SQLBase):
         """See ITicket."""
         # the person believes this is resolved
         if person.id == self.owner.id:
-            # it is the requestor, so we should consider this ticket
+            # it is the requester, so we should consider this ticket
             # closed if it is not already that way.
             if self.status != TicketStatus.CLOSED:
                 self.dateclosed = UTC_NOW

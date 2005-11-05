@@ -12,17 +12,18 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-reviewqueue" />
+  <div tal:replace="structure context/@@+portlet-feedbackqueue" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
-  <p metal:fill-slot="extra_info" class="documentDescription">
-    You can request a review of a specification by a specific person,
-    including a brief message to explain what you need them to do.
-  </p>
+    <p metal:fill-slot="extra_info" class="documentDescription">
+      You can request feedback on a specification from a specific person,
+      including a brief message to explain what you need them to look at or
+      consider.
+    </p>
 
   </div>
 

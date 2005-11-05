@@ -1040,8 +1040,8 @@ class NascentUpload:
             # Validate the component and section. (needs the distrorelease)
             dr = self.distrorelease
             valid_components = set(
-                component.name for component in dr.real_components)
-            valid_sections = set(section.name for section in dr.real_sections)
+                component.name for component in dr.components)
+            valid_sections = set(section.name for section in dr.sections)
             if uploaded_file.component not in valid_components:
                 self.reject("%s: Component %s is not valid" % (
                     uploaded_file.filename, uploaded_file.component))

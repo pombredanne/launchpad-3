@@ -39,7 +39,7 @@ class TicketBugRemoveView(AddView):
     """
 
     def create(self, bug):
-        # unsubscribe the ticket requestor from the bug
+        # unsubscribe the ticket requester from the bug
         bug = getUtility(IBugSet).get(bug)
         return self.context.unLinkBug(bug)
 

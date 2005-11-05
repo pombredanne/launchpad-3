@@ -163,7 +163,7 @@ class BugTaskNavigation(Navigation):
             return getUtility(IBugExternalRefSet)[name]
 
     @stepthrough('watches')
-    def traverse_references(self, name):
+    def traverse_watches(self, name):
         if name.isdigit():
             return getUtility(IBugWatchSet)[name]
 

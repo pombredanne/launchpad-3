@@ -638,12 +638,94 @@ duplicate.
     Public bug report changed:
     http://.../malone/bugs/2
     ...
-    *** This bug has been marked a duplicate of 1 ***
+    *** This bug has been marked a duplicate of bug 1 ***
+    ...
+   
+    >>> stub.test_emails = []
+
+
+Now we change the target of a bug that's already marked as a dupe and check if the correct notification message is sent.
+
+
+    >>> bug_six = getUtility(IBugSet).get(6)
+    >>> bug_three = getUtility(IBugSet).get(3)
+    >>> bug_six_unmodified = Snapshot(bug_six, providing=IBug)
+    >>> bug_six.duplicateof = bug_three 
+    >>> marked_duplicate = SQLObjectModifiedEvent(
+    ...     bug_six, bug_six_unmodified, edited_fields=['duplicateof'])
+    >>> notify(marked_duplicate)
+
+    >>> transaction.commit()
+    
+    >>> test_emails = list(stub.test_emails)
+    >>> test_emails.sort(by_to_addrs)
+    >>> len(test_emails)
+    5
+    >>> all_to_addrs = [
+    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
+    >>> print all_to_addrs
+    [['dilys@muse.19inch.net'], ['dilys@muse.19inch.net'], ['foo.bar@canonical.com'], ['mark@hbd.com'], ['test@canonical.com']]
+    >>> sample_person_mails = [email.message_from_string(raw_message)
+    ...                        for from_, to, raw_message in test_emails
+    ...                        if 'test@canonical.com' in to]
+    >>> sample_person_mails.sort(key=lambda msg: msg['Subject'])
+
+    >>> bug_six_notification = sample_person_mails[0]
+    >>> print bug_six_notification['Subject']
+    [Bug 6] Firefox crashes when Save As dialog for a nonexistent...
+    >>> body = bug_six_notification.get_payload(decode=True)
+    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    Public bug report changed:
+    http://.../malone/bugs/6
+    <BLANKLINE>
+    *** This bug is no longer a duplicate of bug 5 ***
+    <BLANKLINE>
+    *** This bug has been marked a duplicate of bug 3 ***
+    <BLANKLINE>
+    <BLANKLINE>
+
+    >>> stub.test_emails = []
+
+Now we unduplicate the above bug and check if the correct notification message is sent.
+
+
+    >>> bug_six = getUtility(IBugSet).get(6)
+    >>> bug_six_unmodified = Snapshot(bug_six, providing=IBug)
+    >>> bug_six.duplicateof = None 
+    >>> marked_duplicate = SQLObjectModifiedEvent(
+    ...     bug_six, bug_six_unmodified, edited_fields=['duplicateof'])
+    >>> notify(marked_duplicate)
+
+    >>> transaction.commit()
+    
+    >>> test_emails = list(stub.test_emails)
+    >>> test_emails.sort(by_to_addrs)
+    >>> len(test_emails)
+    2
+    >>> all_to_addrs = [
+    ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
+    >>> print all_to_addrs
+    [['dilys@muse.19inch.net'], ['test@canonical.com']]
+    >>> sample_person_mails = [email.message_from_string(raw_message)
+    ...                        for from_, to, raw_message in test_emails
+    ...                        if 'test@canonical.com' in to]
+    >>> sample_person_mails.sort(key=lambda msg: msg['Subject'])
+
+    >>> bug_six_notification = sample_person_mails[0]
+    >>> print bug_six_notification['Subject']
+    [Bug 6] Firefox crashes when Save As dialog for a nonexistent...
+    >>> body = bug_six_notification.get_payload(decode=True)
+    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    Public bug report changed:
+    http://.../malone/bugs/6
+    ...
+    *** This bug is no longer a duplicate of bug 3 ***
     ...
 
     >>> stub.test_emails = []
 
 
+    
 Implications of Bug Privacy
 ---------------------------
 
