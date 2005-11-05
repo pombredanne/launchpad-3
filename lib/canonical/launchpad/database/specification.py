@@ -76,6 +76,8 @@ class Specification(SQLBase):
     man_days = IntCol(notNull=False, default=None)
     delivery = EnumCol(schema=SpecificationDelivery, notNull=True,
         default=SpecificationDelivery.UNKNOWN)
+    superseded_by = ForeignKey(dbName='superseded_by',
+        foreignKey='Specification', notNull=False, default=None)
 
     # useful joins
     subscriptions = MultipleJoin('SpecificationSubscription',

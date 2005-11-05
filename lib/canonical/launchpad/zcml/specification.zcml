@@ -125,6 +125,17 @@
     template="../templates/specification-retargeting.pt"
     />
 
+  <browser:generalform
+    name="+supersede"
+    for="canonical.launchpad.interfaces.ISpecification"
+    schema="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationSupersedingView"
+    fields="superseded_by"
+    keyword_arguments="superseded_by"
+    permission="launchpad.Edit"
+    template="../templates/specification-superseding.pt"
+    />
+
   <browser:editform
     name="+edit"
     schema="canonical.launchpad.interfaces.ISpecification"

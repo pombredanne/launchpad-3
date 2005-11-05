@@ -1,0 +1,97 @@
+
+We want to test the interface that allows us to mark one specification as
+superseded by another. It should allow us to select the superseded
+specification, select its successor, and then update the database.
+
+First, we need to be able to see this page, we will go in as Carlos, the
+approver of the specification. Not only will we test the existence of the
+page, we will also test that the spec is currently in the Braindump status.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+spec/extension-manager-upgrades/+supersede HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Braindump...
+
+
+Next, we will POST to that form, setting the spec which supersedes this one:
+
+  >>> print http(r"""
+  ... POST /products/firefox/+spec/extension-manager-upgrades/+supersede HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 455
+  ... Content-Type: multipart/form-data; boundary=---------------------------4541881241115323056567717597
+  ... 
+  ... -----------------------------4541881241115323056567717597
+  ... Content-Disposition: form-data; name="field.superseded_by"
+  ... 
+  ... svg-support
+  ... -----------------------------4541881241115323056567717597
+  ... Content-Disposition: form-data; name="field.superseded_by-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------4541881241115323056567717597
+  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... 
+  ... Continue
+  ... -----------------------------4541881241115323056567717597--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../products/firefox/+spec/extension-manager-upgrades
+  ...
+
+
+Now, on the spec page we should see an alert that the spec has been
+superseded. The spec status should also have changed to superseded.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+spec/extension-manager-upgrades HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...This specification has been superseded. See the newer spec...
+  ...Superseded...
+
+
+And finally, we want to clear the superseding spec data and reset the
+status to Braindump. If we POST back to the form, with no spec selected,
+then it should automatically do this:
+
+
+  >>> print http(r"""
+  ... POST /products/firefox/+spec/extension-manager-upgrades/+supersede HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 440
+  ... Content-Type: multipart/form-data; boundary=---------------------------995565308452305105620340155
+  ... 
+  ... -----------------------------995565308452305105620340155
+  ... Content-Disposition: form-data; name="field.superseded_by"
+  ... 
+  ... 
+  ... -----------------------------995565308452305105620340155
+  ... Content-Disposition: form-data; name="field.superseded_by-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------995565308452305105620340155
+  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... 
+  ... Continue
+  ... -----------------------------995565308452305105620340155--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../products/firefox/+spec/extension-manager-upgrades
+  ...
+
+
+Let's confirm the status change:
+
+  >>> print http(r"""
+  ... GET /products/firefox/+spec/extension-manager-upgrades HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Braindump...
+
+

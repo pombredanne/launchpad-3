@@ -106,6 +106,12 @@ class ISpecification(IHasOwner):
         vocabulary='SpecificationDelivery', description=_("An estimate "
         "of the likelyhood that this feature will be delivered in the "
         "targeted release or series."))
+    superseded_by = Choice(title=_("Superseded by"),
+        required=False, default=None,
+        vocabulary='Specification', description=_("The specification "
+        "which supersedes this one. Note that selecting a specification "
+        "here and pressing Continue will mark this specification as "
+        "superseded."))
     # other attributes
     product = Choice(title=_('Product'), required=False,
         vocabulary='Product')

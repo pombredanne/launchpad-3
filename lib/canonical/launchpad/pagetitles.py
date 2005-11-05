@@ -769,6 +769,8 @@ specification_removebug = 'Remove link to bug report'
 
 specification_retargeting = 'Attach spec to a different product or distribution'
 
+specification_superseding = 'Mark specification as superseded by another'
+
 specification_dependency = 'Create a Specification Dependency'
 
 specification_deptree = 'Complete Dependency Tree'

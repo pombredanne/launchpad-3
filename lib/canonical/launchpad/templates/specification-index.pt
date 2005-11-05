@@ -19,11 +19,16 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Feature Specification</h1>
-
   <p tal:repeat="notice view/notices" tal:content="notice"
      class="portalMessage" style="margin-bottom: 10px">
     notice goes here
+  </p>
+
+  <p tal:condition="context/superseded_by" class="portalMessage">
+    This specification has been superseded. See the newer specification
+    "<a tal:content="context/superseded_by/title"
+        tal:attributes="href context/superseded_by/fmt:url">new spec
+    title</a>" for updated plans.
   </p>
 
   <p tal:condition="not:context/specurl" class="portalMessage"

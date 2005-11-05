@@ -16,12 +16,15 @@ from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, GeneralFormView)
 
+from canonical.lp.dbschema import SpecificationStatus
+
 __all__ = [
     'SpecificationContextMenu',
     'SpecificationNavigation',
     'SpecificationView',
     'SpecificationAddView',
     'SpecificationEditView',
+    'SpecificationSupersedingView',
     'SpecificationRetargetingView',
     ]
 
@@ -42,7 +45,8 @@ class SpecificationContextMenu(ContextMenu):
              'milestone', 'requestfeedback', 'givefeedback', 'subscription',
              'subscribeanother',
              'linkbug', 'unlinkbug', 'adddependency', 'removedependency',
-             'dependencytree', 'linksprint', 'retarget', 'administer']
+             'dependencytree', 'linksprint', 'supersede',
+             'retarget', 'administer']
 
     def edit(self):
         text = 'Edit Details'
@@ -59,6 +63,10 @@ class SpecificationContextMenu(ContextMenu):
     def priority(self):
         text = 'Change Priority'
         return Link('+priority', text, icon='edit')
+
+    def supersede(self):
+        text = 'Mark Superseded'
+        return Link('+supersede', text, icon='edit')
 
     def setseries(self):
         text = 'Target to Series'
@@ -248,5 +256,22 @@ class SpecificationRetargetingView(GeneralFormView):
                     distribution.name, self.context.name)
         self.context.retarget(product=product, distribution=distribution)
         self._nextURL = canonical_url(self.context)
+        return 'Done.'
+
+
+class SpecificationSupersedingView(GeneralFormView):
+
+    def process(self, superseded_by=None):
+        self.context.superseded_by = superseded_by
+        if superseded_by is not None:
+            # set the state to superseded
+            self.context.status = SpecificationStatus.SUPERSEDED
+        else:
+            # if the current state is SUPERSEDED and we are now removing the
+            # superseded-by then we should move this spec back into the
+            # drafting pipeline by resetting its status to BRAINDUMP
+            if self.context.status == SpecificationStatus.SUPERSEDED:
+                self.context.status = SpecificationStatus.BRAINDUMP
+        self.request.response.redirect(canonical_url(self.context))
         return 'Done.'
 
