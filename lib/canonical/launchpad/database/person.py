@@ -39,7 +39,7 @@ from canonical.launchpad.interfaces import (
     IEmailAddressSet, ISourcePackageReleaseSet, IPasswordEncryptor,
     ICalendarOwner, UBUNTU_WIKI_URL, ISignedCodeOfConductSet,
     ILoginTokenSet, KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken,
-    NotFoundError, IKarmaSet, IKarmaCacheSet)
+    NotFoundError, IKarmaSet, IKarmaCacheSet, IBugTaskSet)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -314,6 +314,10 @@ class Person(SQLBase):
             ShippingRequest.id NOT IN (SELECT request FROM Shipment)
             ''' % sqlvalues(self.id)
         return ShippingRequest.selectOne(query)
+
+    def searchTasks(self, search_params):
+        """See IPerson."""
+        return getUtility(IBugTaskSet).search(search_params)
 
     def assignKarma(self, action_name):
         """See IPerson."""

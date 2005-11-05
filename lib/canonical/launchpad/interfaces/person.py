@@ -371,6 +371,14 @@ class IPerson(IHasSpecifications):
         Return None otherwise.
         """
 
+    def searchTasks(search_params):
+        """Search IBugTasks with the given search parameters.
+
+        :search_params: a BugTaskSearchParams object
+
+        Return an iterable of matching results.
+        """
+
     def validateAndEnsurePreferredEmail(email):
         """Ensure this person has a preferred email.
 

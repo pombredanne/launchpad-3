@@ -42,7 +42,8 @@
                         bugwatch dateassigned datecreated age owner
                         maintainer maintainer_displayname targetname
                         title related_tasks statusdisplayhtml statuselsewhere
-                        setStatusFromDebbugs setSeverityFromDebbugs" />
+                        setStatusFromDebbugs setSeverityFromDebbugs
+                        updateTargetNameCache" />
         <require
             permission="launchpad.Edit"
             set_attributes="product sourcepackagename distribution
@@ -519,15 +520,6 @@
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugTasksReport"
         name="+index" />
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IBugTasksReport"
-        class="canonical.launchpad.browser.BugTasksReportView"
-        permission="launchpad.AnyPerson">
-        <browser:page name="+index"
-              template="../templates/bugs-assigned.pt"
-              lp:url="malone/assigned/" />
-    </browser:pages>
 
   </facet>
 

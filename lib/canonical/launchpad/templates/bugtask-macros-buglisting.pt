@@ -26,9 +26,10 @@
 
   <tal:tag condition="view/assign_to_milestones|nothing"/>
 
-  <h1>Bugs in <span tal:replace="context/title">Title</span></h1>
+  <metal:heading define-slot="heading" tal:replace="nothing" />
 
   <form name="bugtask_search" action="" method="GET">
+  <tal:show-search-widgets condition="view/shouldShowSearchWidgets">
     <table>
       <tr>
         <th>
@@ -62,13 +63,14 @@
         tal:replace="nothing">
       Slot for placing extra search widgets below the table.
     </metal:extra_widgets_below_table>
+  </tal:show-search-widgets>
 
   <tal:table_view tal:condition="view/showTableView">
     <table
        metal:use-macro="context/@@+bugtask-macros-tableview/batched-table" />
   </tal:table_view>
   <tal:list_view tal:condition="view/showListView"
-                 tal:define="show_packagename view/shouldShowPackageName|nothing">
+                 tal:define="show_targetname view/shouldShowTargetName|nothing">
 
     <table>
       <tr tal:repeat="task task_batch_navigator/batch">

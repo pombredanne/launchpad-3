@@ -2,8 +2,11 @@
   <tal:comment replace="nothing">
   This macro expects the following variables defined:
       :task: An IBugTask to be rendered.
-      :show_packagename: Should the sourcepackage name be shown?
+      :show_targetname: Should the sourcepackage name be shown?
       Defaults to False.
+      If the view provides a doNotShowAssignee method and it returns True,
+      only the bugtask status is displayed, but not the assignee. Otherwise,
+      the status and the assignee (in case there's one) are displayed.
   </tal:comment>
 
   <td class="icon left">
@@ -17,21 +20,30 @@
       </a>
     </div>
     <div class="lesser">
-      <tal:packagename condition="show_packagename|nothing">
-        <tal:has_package condition="task/sourcepackagename">
-        in
-        <a
-          tal:attributes="
-            href string:${task/target/fmt:url}/+bugs;
-            title string:All bug reports about ${task/targetname};
-          "
-          tal:content="task/sourcepackagename/name"
-        >firefox</a>,
-        </tal:has_package>
+      <tal:packagename condition="show_targetname|nothing">
+        <tal:has_target condition="task/target">
+          in
+          <a
+            tal:attributes="
+              href string:${task/target/fmt:url}/+bugs;
+              title string:All bug reports about ${task/targetname};
+            "
+            tal:content="task/targetname"
+          >firefox</a>,
+        </tal:has_target>
       </tal:packagename>
-      <tal:status content="structure task/statusdisplayhtml">
-        assigned to Foo Bar
-      </tal:status>
+      <tal:block define="do_not_show_assignee view/doNotShowAssignee|nothing">
+        <tal:status-with-assignee
+          condition="not: do_not_show_assignee"
+          content="structure task/statusdisplayhtml">
+          assigned to Foo Bar
+        </tal:status-with-assignee>
+        <tal:status 
+          condition="do_not_show_assignee"
+          content="task/status/title/lower">
+          accepted
+        </tal:status>
+      </tal:block>
       <tal:milestone condition="task/milestone">
         for <tal:icon content="structure task/milestone/fmt:icon" />
         <a tal:attributes="href task/milestone/fmt:url"
@@ -56,7 +68,7 @@
 
 <metal:item define-macro="sortwidget">
   <tal:comment condition="nothing">
-    This macro expects that the callsite's view class has a shouldShowPackageName
+    This macro expects that the callsite's view class has a shouldShowTargetName
     method.
   </tal:comment>
 
@@ -74,9 +86,9 @@
             tal:attributes="selected python:orderby == 'title'">title</option>
     <option value="milestone"
             tal:attributes="selected python:orderby == 'milestone'">milestone</option>
-    <option tal:condition="view/shouldShowPackageName|nothing"
-            tal:attributes="selected python:orderby == 'package'"
-            value="package">package</option>
+    <option tal:condition="view/shouldShowTargetName|nothing"
+            tal:attributes="selected python:orderby == 'targetname'"
+            value="targetname">location</option>
   </select>
 
 </metal:item>
