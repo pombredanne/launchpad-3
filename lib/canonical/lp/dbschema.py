@@ -480,6 +480,13 @@ class BugTrackerType(DBSchema):
         software development projects.
         """)
 
+    SOURCEFORGE = Item(5, """
+        SourceForge
+
+        SourceForge is a project hosting service which includes bug,
+        support and request tracking.
+        """)
+
 
 class CveStatus(DBSchema):
     """The Status of this item in the CVE Database

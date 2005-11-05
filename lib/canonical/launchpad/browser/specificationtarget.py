@@ -8,10 +8,9 @@ __all__ = [
     'SpecificationTargetView',
     ]
 
-from canonical.lp.dbschema import (
-    SpecificationStatus, SpecificationPriority, SpecificationSort)
+from canonical.lp.dbschema import SpecificationSort
 
-from canonical.launchpad.interfaces import ISpecificationTarget, IPerson
+from canonical.launchpad.interfaces import IPerson
 
 class SpecificationTargetView:
 
@@ -116,10 +115,10 @@ class SpecificationTargetView:
     @property
     def count(self):
         """Return the number of specs in this view."""
-        if self._count is not None:
-            return self._count
-        # generating the spec list will set self._count
-        speclist = self.specs
+        if self._count is None:
+            # specs is a property; generating the spec list will as a
+            # side-effect set self._count.
+            speclist = self.specs
         return self._count
 
     def getLatestSpecifications(self, quantity=5):

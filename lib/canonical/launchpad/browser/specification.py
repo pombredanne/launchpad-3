@@ -4,20 +4,6 @@
 
 __metaclass__ = type
 
-from zope.component import getUtility
-
-from canonical.launchpad.interfaces import (
-    IProduct, IDistribution, ILaunchBag, ISpecification, ISpecificationSet,
-    NameNotAvailable)
-from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.addview import SQLObjectAddView
-
-from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, enabled_with_permission,
-    LaunchpadView, Navigation, GeneralFormView)
-
-from canonical.lp.dbschema import SpecificationStatus
-
 __all__ = [
     'SpecificationContextMenu',
     'SpecificationNavigation',
@@ -27,6 +13,21 @@ __all__ = [
     'SpecificationSupersedingView',
     'SpecificationRetargetingView',
     ]
+
+from zope.component import getUtility
+
+from canonical.launchpad.interfaces import (
+    IProduct, IDistribution, ILaunchBag, ISpecification, ISpecificationSet,
+    NameNotAvailable)
+
+from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.addview import SQLObjectAddView
+
+from canonical.launchpad.webapp import (
+    canonical_url, ContextMenu, Link, enabled_with_permission,
+    LaunchpadView, Navigation, GeneralFormView)
+
+from canonical.lp.dbschema import SpecificationStatus
 
 
 class SpecificationNavigation(Navigation):

@@ -26,9 +26,9 @@
 
   <p tal:condition="context/superseded_by" class="portalMessage">
     This specification has been superseded. See the newer specification
-    "<a tal:content="context/superseded_by/title"
-        tal:attributes="href context/superseded_by/fmt:url">new spec
-    title</a>" for updated plans.
+    "<b><a tal:content="context/superseded_by/title"
+           tal:attributes="href context/superseded_by/fmt:url">new spec
+    title</a></b>" for updated plans.
   </p>
 
   <p tal:condition="not:context/specurl" class="portalMessage"
