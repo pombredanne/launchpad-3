@@ -878,8 +878,6 @@ COMMENT ON COLUMN DistroRelease.name IS 'The unique name of the distrorelease. T
 COMMENT ON COLUMN DistroRelease.title IS 'The display-name title of the distrorelease E.g. "Warty Warthog"';
 COMMENT ON COLUMN DistroRelease.description IS 'The long detailed description of the release. This may describe the focus of the release or other related information.';
 COMMENT ON COLUMN DistroRelease.version IS 'The version of the release. E.g. warty would be "4.10" and hoary would be "5.4"';
-COMMENT ON COLUMN DistroRelease.components IS 'The components which are considered valid within this distrorelease.';
-COMMENT ON COLUMN DistroRelease.sections IS 'The sections which are considered valid within this distrorelease.';
 COMMENT ON COLUMN DistroRelease.releasestatus IS 'The current release status of this distrorelease. E.g. "pre-release freeze" or "released"';
 COMMENT ON COLUMN DistroRelease.datereleased IS 'The date on which this distrorelease was released. (obviously only valid for released distributions)';
 COMMENT ON COLUMN DistroRelease.parentrelease IS 'The parent release on which this distribution is based. This is related to the inheritance stuff.';
