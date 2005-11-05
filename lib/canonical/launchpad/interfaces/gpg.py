@@ -35,13 +35,15 @@ class IGPGKey(Interface):
     displayname = Attribute("Key Display Name")
     revoked = Attribute("Workarrounded Revoked flag, temporary.")
     keyserverURL = Attribute("The URL to retrieve this key from the keyserver.")
+    can_encrypt = Bool(title=_("Key can be used for encryption"),
+                       required=True)
 
 
 class IGPGKeySet(Interface):
     """The set of GPGKeys."""
 
     def new(self, ownerID, keyid, fingerprint, keysize,
-            algorithm, active=True):
+            algorithm, active=True, can_encrypt=True):
         """Create a new GPGKey pointing to the given Person."""
 
     def get(key_id, default=None):
