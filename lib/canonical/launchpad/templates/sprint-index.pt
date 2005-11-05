@@ -43,7 +43,7 @@
       <b>Agenda status:</b>
       <a tal:condition="spec_link/required:launchpad.Admin"
          tal:content="spec_link/status/title"
-         tal:attributes="href string:${spec_link/fmt:url}/+admin"
+         tal:attributes="href string:${spec_link/fmt:url}/+edit"
          >approved</a><span
             tal:condition="not: spec_link/required:launchpad.Admin"
             tal:replace="spec_link/status/title">Approved</span><tal:wb

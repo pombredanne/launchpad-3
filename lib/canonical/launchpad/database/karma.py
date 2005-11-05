@@ -78,7 +78,7 @@ class KarmaSet:
         results = KarmaAction.select(q, clauseTables=['Karma'])
         recentpoints = results.sum('points')
         if recentpoints is None:
-           recentpoints = 0
+            recentpoints = 0
 
         begin = now - timedelta(90)
         end = datetime.now(pytz.timezone('UTC')) - timedelta(30)
@@ -89,7 +89,7 @@ class KarmaSet:
         results = KarmaAction.select(q, clauseTables=['Karma'])
         notsorecentpoints = results.sum('points')
         if notsorecentpoints is None:
-           notsorecentpoints = 0
+            notsorecentpoints = 0
 
         begin = now - timedelta(365)
         end = now - timedelta(90)
@@ -100,7 +100,7 @@ class KarmaSet:
         results = KarmaAction.select(q, clauseTables=['Karma'])
         oldpoints = results.sum('points')
         if oldpoints is None:
-           oldpoints = 0
+            oldpoints = 0
 
         return int(recentpoints + (notsorecentpoints * 0.5) + (oldpoints * 0.2))
 
