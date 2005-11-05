@@ -239,4 +239,12 @@ class IPOFileSet(Interface):
     def getDummy(potemplate, language):
         """Return a dummy pofile for the given po template and language."""
 
+    def getPOFileByPathAndOrigin(self, path, productseries=None,
+        distrorelease=None, sourcepackagename=None):
+        """Return an IPOFile that is stored at 'path' in source code and
+           came from the given arguments.
+
+        Raise NotFoundError exception if there is not such IPOTemplate.
+        """
+
 

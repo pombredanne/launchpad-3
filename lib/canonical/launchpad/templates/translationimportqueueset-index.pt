@@ -7,13 +7,145 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Translation files pending to be imported in Launchpad</h1>
+  <h1>Translation files pending to be imported</h1>
 
-    <div>
-      <tal:block repeat="entry context">
-          <span tal:replace="entry/id">1</span><br />
-      </tal:block>
-    </div>
+  <div class="documentDescription">
+    This is a listing of all of translation resources pending to be imported
+    in Rosetta. <tal:loggedin condition="not:request/lp:person">If you want to
+    remove your entries, please log in into the system.</tal:loggedin>
+  </div>
+
+  <form name="entries_to_import" action="" method="POST">
+
+    <table class="sortable listing" id="translation-import-queue" width="100%">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Uploader</th>
+          <th>Waiting since</th>
+          <th>Published</th>
+          <th>Path</th>
+          <th>Origin</th>
+          <th>Import into</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="entry view/ready_to_import">
+          <td>
+            <input type="checkbox"
+                   tal:condition="entry/required:launchpad.Edit"
+                   tal:attributes="name string:entry-${entry/id}" />
+          </td>
+          <td>
+            <a tal:content="entry/importer/browsername"
+               tal:attributes="href string:${entry/importer/fmt:url}"
+               >Mark Shuttleworth</a>
+          </td>
+          <td tal:content="entry/dateimport/fmt:datetime">
+            date
+          </td>
+          <td>
+            <span tal:content="entry/ispublished">True</span>
+          </td>
+          <td>
+            <span tal:content="entry/path">po/foo.pot</span>
+          </td>
+          <td>
+            <a tal:condition="entry/sourcepackage"
+               tal:content="entry/sourcepackage/title"
+               tal:attributes="href string:${entry/sourcepackage/fmt:url}"
+               >evolution in Ubuntu Hoary</a>
+            <a tal:condition="entry/productseries"
+               tal:content="entry/productseries/title"
+               tal:attributes="href string:${entry/productseries/fmt:url}"
+               >Evolution Series: MAIN</a>
+          </td>
+          <td>
+            <a tal:content="entry/import_into/title"
+               tal:attributes="href string:${entry/import_into/fmt:url}"
+               >Foo</a>
+          </td>
+          <td>
+            <tal:block condition="entry/required:launchpad.Admin">
+              [<a tal:attributes="href string:${entry/fmt:url}">Edit</a>]
+            </tal:block>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <input tal:condition="request/lp:person"
+           style="float: left" type="submit" name="remove" value="Remove" />
+    <input tal:condition="context/required:launchpad.Admin"
+           style="float: left" type="submit" name="block" value="Block" />
+    <br />
+  </form>
+
+  <div class="documentDescription">
+    This is a listing of all of translation resources pending to be reviewed
+    by a Rosetta Expert. <tal:loggedin condition="not:request/lp:person">If you want to
+    remove your entries, please log in into the system.</tal:loggedin>
+  </div>
+
+  <form name="entries_to_review" action="" method="POST">
+
+    <table class="sortable listing" id="translation-import-queue-review" width="100%">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Uploader</th>
+          <th>Waiting since</th>
+          <th>Published</th>
+          <th>Path</th>
+          <th>Origin</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="entry view/pending_review">
+          <td>
+            <input type="checkbox"
+                   tal:condition="entry/required:launchpad.Edit"
+                   tal:attributes="name string:entry-${entry/id}" />
+          </td>
+          <td>
+            <a tal:content="entry/importer/browsername"
+               tal:attributes="href string:${entry/importer/fmt:url}"
+               >Mark Shuttleworth</a>
+          </td>
+          <td tal:content="entry/dateimport/fmt:datetime">
+            date
+          </td>
+          <td>
+            <span tal:content="entry/ispublished">True</span>
+          </td>
+          <td>
+            <span tal:content="entry/path">po/foo.pot</span>
+          </td>
+          <td>
+            <a tal:condition="entry/sourcepackage"
+               tal:content="entry/sourcepackage/title"
+               tal:attributes="href string:${entry/sourcepackage/fmt:url}"
+               >evolution in Ubuntu Hoary</a>
+            <a tal:condition="entry/productseries"
+               tal:content="entry/productseries/title"
+               tal:attributes="href string:${entry/productseries/fmt:url}"
+               >Evolution Series: MAIN</a>
+          </td>
+          <td>
+            <tal:block condition="entry/required:launchpad.Admin">
+              [<a tal:attributes="href string:${entry/fmt:url}">Edit</a>]
+            </tal:block>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <input tal:condition="request/lp:person"
+           style="float: left" type="submit" name="remove" value="Remove" />
+    <input tal:condition="context/required:launchpad.Admin"
+           style="float: left" type="submit" name="block" value="Block" />
+    <br />
+  </form>
 
 </div>
 

@@ -59,6 +59,10 @@ class ITranslationImportQueue(Interface):
 
     content = Attribute("The file content.")
 
+    sourcepackage = Attribute("The sourcepackage associated with this entry.")
+
+    import_into = Attribute("The Object where this entry will be imported.")
+
     def attachToPOFileOrPOTemplate(pofile_or_potemplate):
         """Move the imported file into the given IPOFile or IPOTemplate.
 

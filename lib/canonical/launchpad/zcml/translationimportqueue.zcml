@@ -20,6 +20,12 @@
         module="canonical.launchpad.browser"
         classes="TranslationImportQueueNavigation TranslationImportQueueSetNavigation"
         />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.ITranslationImportQueue"
+        urldata="canonical.launchpad.browser.TranslationImportQueueURL"
+        />
+
 <!--
     <browser:defaultView
         for="canonical.launchpad.interfaces.ITranslationImportQueue"
@@ -74,6 +80,7 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.ITranslationImportQueueSet"
+        class="canonical.launchpad.browser.TranslationImportQueueSetView"
         facet="translations"
         permission="zope.Public">
         <browser:page

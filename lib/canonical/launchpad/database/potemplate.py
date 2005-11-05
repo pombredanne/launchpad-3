@@ -801,4 +801,41 @@ class POTemplateSet:
         for potemplate in results:
             yield potemplate
 
+    def getPOTemplateByPathAndOrigin(self, path, productseries=None,
+        distrorelease=None, sourcepackagename=None):
+        """See IPOTemplateSet."""
+        if sourcepackagename is not None:
+            # The POTemplate belongs to a distribution and it could come from
+            # another package that the one it's linked at the moment so we
+            # first check to find it at IPOTemplate.fromsourcepackagename
+            try:
+                return POTemplate.selectOne(
+                    productseries=productseries,
+                    distrorelease=distrorelease,
+                    fromsourcepackagename=sourcepackagename,
+                    path=path)
+            except SQLObjectNotFound:
+                # There is no potemplate in that 'path' and
+                # 'fromsourcepackagename' so we do a search using the usual
+                # sourcepackagename.
+                pass
 
+            try:
+                return POTemplate.selectOne(
+                    productseries=productseries,
+                    distrorelease=distrorelease,
+                    sourcepackagename=sourcepackagename,
+                    path=path)
+            except SQLObjectNotFound:
+                if productseries is None:
+                    message = (
+                        'There is no POTemplate at %s for %s that comes from'
+                        ' %s' % (
+                            sourcepackagename.name, distrorelease.name, path)
+                        )
+                else:
+                    message = (
+                        'There is no POTemplate at %s that comes from %s' % (
+                            productseries.title, path)
+                        )
+                raise NotFoundError(message)

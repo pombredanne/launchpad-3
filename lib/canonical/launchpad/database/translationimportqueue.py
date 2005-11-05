@@ -13,7 +13,9 @@ from canonical.database.sqlbase import SQLBase
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import DEFAULT
 from canonical.launchpad.interfaces import (ITranslationImportQueue,
-    ITranslationImportQueueSet, NotFoundError)
+    ITranslationImportQueueSet, NotFoundError, IPOFile, IPOFileSet,
+    IPOTemplateSet)
+from canonical.launchpad.database import SourcePackage
 from canonical.librarian.interfaces import ILibrarianClient
 
 class TranslationImportQueue(SQLBase):
@@ -34,9 +36,43 @@ class TranslationImportQueue(SQLBase):
         dbName='distrorelease', notNull=False, default=None)
     productseries = ForeignKey(foreignKey='ProductSeries',
         dbName='productseries', notNull=False, default=None)
-    ignore = BoolCol(dbName='ignore', notNull=True, default=DEFAULT)
+    ignore = BoolCol(dbName='ignore', notNull=True, default=False)
     ispublished = BoolCol(dbName='ispublished', notNull=True)
 
+    @property
+    def sourcepackage(self):
+        """See ITranslationImportQueue."""
+        if self.sourcepackagename is None or self.distrorelease is None:
+            return None
+
+        return SourcePackage(self.sourcepackagename, self.distrorelease)
+
+    @property
+    def import_into(self):
+        """See ITranslationImportQueue."""
+        if self.path.endswith('.pot'):
+            # It's an IPOTemplate
+            potemplate_set = getUtility(IPOTemplateSet)
+            try:
+                return potemplate_set.getPOTemplateByPathAndOrigin(
+                    self.path, productseries=self.productseries,
+                    distrorelease=self.distrorelease,
+                    sourcepackagename=self.sourcepackagename)
+            except NotFoundError:
+                return None
+        elif self.path.endswith('.po'):
+            # It's an IPOFile
+            pofile_set = getUtility(IPOFileSet)
+            try:
+                return pofile_set.getPOFileByPathAndOrigin(
+                    self.path, productseries=self.productseries,
+                    distrorelease=self.distrorelease,
+                    sourcepackagename=self.sourcepackagename)
+            except NotFoundError:
+                return None
+        else:
+            # Unknow import so we don't know where to import it.
+            return None
 
     def attachToPOFileOrPOTemplate(self, pofile_or_potemplate):
         """See ITranslationImportQueue."""

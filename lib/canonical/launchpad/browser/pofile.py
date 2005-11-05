@@ -288,7 +288,7 @@ class POFileView:
 
         if not filename.endswith('.po'):
             self.status_message = (
-                'The name of the file that you uploaded does not ends with'
+                'The name of the file that you uploaded does not end with'
                 ' the \'.po\' suffix. Upload rejected.')
             return
 

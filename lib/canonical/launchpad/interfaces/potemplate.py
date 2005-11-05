@@ -349,6 +349,14 @@ class IPOTemplateSet(Interface):
     def getTemplatesPendingImport():
         """Return a list of PO templates that have data to be imported."""
 
+    def getPOTemplateByPathAndOrigin(self, path, productseries=None,
+        distrorelease=None, sourcepackagename=None):
+        """Return an IPOTemplate that is stored at 'path' in source code and
+           came from the given arguments.
+
+        Raise NotFoundError exception if there is not such IPOTemplate.
+        """
+
 
 class IPOTemplateWithContent(IPOTemplate):
     """Interface for an IPOTemplate used to create the new POTemplate form."""
