@@ -312,9 +312,6 @@ class AbstractPackageData:
     def do_katie(self, kdb, keyrings):
         raise NotImplementedError
 
-    def ensure_complete(self, kdb):
-        raise NotImplementedError
-
 
 class SourcePackageData(AbstractPackageData):
     """This Class holds important data to a given sourcepackagerelease."""
