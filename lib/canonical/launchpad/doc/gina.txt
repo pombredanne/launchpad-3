@@ -41,8 +41,8 @@ Create a distribution release and an arch release for breezy:
     >>> drs = getUtility(IDistroReleaseSet)
     >>> hoary = drs.findByName("hoary")
     >>> breezy = drs.new(ubuntu, "breezy", "Breezy Badger", "My title",
-    ...                  "My summary", "My description", "5.10", 1,
-    ...                  1, hoary, celebs.launchpad_developers)
+    ...                  "My summary", "My description", "5.10",
+    ...                  hoary, celebs.launchpad_developers)
     >>> pf = ProcessorFamily.selectOneBy(name="x86")
     >>> dar = DistroArchRelease(distrorelease=breezy, processorfamily=pf,
     ...                         architecturetag="i386", official=True,

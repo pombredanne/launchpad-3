@@ -37,8 +37,8 @@ Create a distribution release and an arch release for dapper:
     >>> drs = getUtility(IDistroReleaseSet)
     >>> hoary = drs.findByName("hoary")
     >>> dapper = drs.new(ubuntu, "dapper", "Dapper Dragoon", "My title",
-    ...                  "My summary", "My description", "5.10", 1,
-    ...                  1, hoary, celebs.launchpad_developers)
+    ...                  "My summary", "My description", "5.10",
+    ...                  hoary, celebs.launchpad_developers)
 
 Check it was properly created and create its DistroArchReleases.
 
