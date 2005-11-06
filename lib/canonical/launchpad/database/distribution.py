@@ -33,8 +33,11 @@ from canonical.launchpad.database.publishing import (
     SourcePackageFilePublishing, BinaryPackageFilePublishing)
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.build import Build
+
 from canonical.lp.dbschema import (
-    EnumCol, BugTaskStatus, DistributionReleaseStatus, TranslationPermission)
+    EnumCol, BugTaskStatus, DistributionReleaseStatus,
+    TranslationPermission, SpecificationSort)
+
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IDistroPackageFinder, NotFoundError,
     IHasBuildRecords, ISourcePackageName)
@@ -72,8 +75,6 @@ class Distribution(SQLBase):
         intermediateTable='DistributionBounty')
     bugtasks = MultipleJoin('BugTask', joinColumn='distribution')
     milestones = MultipleJoin('Milestone', joinColumn='distribution')
-    specifications = MultipleJoin('Specification', joinColumn='distribution',
-        orderBy=['-priority', '-datecreated', 'id'])
     uploaders = MultipleJoin('DistroComponentUploader',
         joinColumn='distribution')
     source_package_caches = MultipleJoin('DistributionSourcePackageCache',
@@ -212,6 +213,15 @@ class Distribution(SQLBase):
             except SQLObjectNotFound:
                 return None
         return DistributionSourcePackage(self, sourcepackagename)
+
+    def specifications(self, sort=None, quantity=None):
+        """See IHasSpecifications."""
+        if sort is None or sort == SpecificationSort.DATE:
+            order = ['-datecreated', 'id']
+        elif sort == SpecificationSort.PRIORITY:
+            order = ['-priority', 'status', 'name']
+        return Specification.selectBy(distributionID=self.id,
+            orderBy=order)[:quantity]
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""
@@ -451,6 +461,9 @@ class Distribution(SQLBase):
             # Is it a sourcepackagename?
             sourcepackagename = SourcePackageName.selectOneBy(name=pkgname)
             if sourcepackagename is not None:
+
+                # XXX: completely untested code
+
                 # It's definitely only a sourcepackagename. Let's make sure it
                 # is published in the current distro release.
                 publishing = SourcePackagePublishing.select('''
@@ -469,6 +482,8 @@ class Distribution(SQLBase):
                 return (sourcepackagename, None)
             # It's neither a sourcepackage, nor a binary package name.
             raise ValueError('Unknown package: %s' % pkgname)
+
+        # XXX: completely untested code
 
         # Ok, so we have a binarypackage with that name. let's see if it's
         # published, and what its sourcepackagename is.

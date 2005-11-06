@@ -4,47 +4,23 @@
 
 __metaclass__ = type
 
-from zope.app.form.browser.add import AddView
-
-from canonical.launchpad.interfaces import ISpecificationDependency
-
-from canonical.launchpad.webapp import canonical_url
-
-
 __all__ = [
     'SpecificationDependencyAddView',
     'SpecificationDependencyRemoveView',
     ]
 
-class SpecificationDependencyAddView(AddView):
+from canonical.launchpad.webapp import GeneralFormView, canonical_url
 
-    def create(self, dependency):
+class SpecificationDependencyAddView(GeneralFormView):
+
+    def process(self, dependency):
+        self._nextURL = canonical_url(self.context)
         return self.context.createDependency(dependency)
 
-    def add(self, content):
-        """Skipping 'adding' this content to a container, because
-        this is a placeless system."""
-        return content
 
-    def nextURL(self):
-        return canonical_url(self.context)
+class SpecificationDependencyRemoveView(GeneralFormView):
 
-
-class SpecificationDependencyRemoveView(AddView):
-    """This is counter-intuitive. We are using the zope addform machinery to
-    render the form, so the spec gets passed to the "create" method of this
-    class, but we are actually REMOVING the dependency.
-    """
-
-    def create(self, dependency):
+    def process(self, dependency):
+        self._nextURL = canonical_url(self.context)
         return self.context.removeDependency(dependency)
-
-    def add(self, content):
-        """Skipping 'adding' this content to a container, because
-        this is a placeless system."""
-        return content
-
-    def nextURL(self):
-        return canonical_url(self.context)
-
 

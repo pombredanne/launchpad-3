@@ -43,7 +43,7 @@ from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, structured, GetitemNavigation, Navigation,
-    stepthrough, stepto)
+    stepthrough)
 
 
 class ProductNavigation(
@@ -215,15 +215,19 @@ class ProductSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'specifications'
-    links = ['roadmap', 'table', 'new']
+    links = ['roadmap', 'table', 'workload', 'new']
 
     def roadmap(self):
-        text = 'Roadmap'
+        text = 'Show Roadmap'
         return Link('+specplan', text, icon='info')
 
     def table(self):
-        text = 'Assignments Table'
+        text = 'Show Assignments'
         return Link('+specstable', text, icon='info')
+
+    def workload(self):
+        text = 'Show Workload'
+        return Link('+workload', text, icon='info')
 
     def new(self):
         text = 'New Specification'

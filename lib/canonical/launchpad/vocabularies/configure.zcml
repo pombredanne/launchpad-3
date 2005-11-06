@@ -116,8 +116,8 @@
     />
 
   <vocabulary
-    name="KarmaActionCategory"
-    factory="canonical.launchpad.vocabularies.KarmaActionCategoryVocabulary"
+    name="KarmaCategory"
+    factory="canonical.launchpad.vocabularies.KarmaCategoryVocabulary"
     />
 
   <vocabulary
@@ -198,6 +198,11 @@
   <vocabulary
     name="SpecificationDependencies"
     factory="canonical.launchpad.vocabularies.SpecificationDependenciesVocabulary"
+    />
+
+  <vocabulary
+    name="SpecificationDelivery"
+    factory="canonical.launchpad.vocabularies.SpecificationDeliveryVocabulary"
     />
 
   <vocabulary

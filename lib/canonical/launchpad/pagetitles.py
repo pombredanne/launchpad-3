@@ -767,6 +767,10 @@ specification_bug = ContextTitle(
 
 specification_removebug = 'Remove link to bug report'
 
+specification_retargeting = 'Attach spec to a different product or distribution'
+
+specification_superseding = 'Mark specification as superseded by another'
+
 specification_dependency = 'Create a Specification Dependency'
 
 specification_deptree = 'Complete Dependency Tree'
@@ -784,9 +788,9 @@ specification_productseries = 'Target Feature Specification at Series'
 
 specification_removedep = 'Remove a Dependency'
 
-specification_doreview = 'Conduct Specification Review'
+specification_givefeedback = 'Clear Feedback Requests'
 
-specification_requestreview = 'Request a Review of This Specification'
+specification_requestfeedback = 'Request Feedback on This Specification'
 
 specification_edit = 'Edit Specification Details'
 
@@ -806,6 +810,8 @@ specificationtarget_specs = ContextTitle('Specifications for %s')
 
 specificationtarget_specplan = ContextTitle('Project Plan for %s')
 
+specificationtarget_workload = ContextTitle('Feature work load in %s')
+
 sprint_attend = ContextTitle('Register your Attendance at %s')
 
 sprint_edit = ContextTitle('Edit Meeting Details: %s')
@@ -813,6 +819,8 @@ sprint_edit = ContextTitle('Edit Meeting Details: %s')
 sprint_index = ContextTitle('%s (Sprint or Meeting)')
 
 sprint_new = 'Register a new Meeting or Sprint in Launchpad'
+
+sprint_register = 'Register someone to attend this meeting'
 
 sprint_table = ContextTitle('Table of Specs for %s')
 

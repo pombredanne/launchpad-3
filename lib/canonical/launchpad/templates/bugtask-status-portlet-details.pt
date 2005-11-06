@@ -14,7 +14,7 @@
 
       <b>On:</b>
       <a tal:content="context/targetname"
-         tal:attributes="href context/target/fmt:url">ubuntu</a><br />
+         tal:attributes="href string:${context/target/fmt:url}/+bugs">ubuntu</a><br />
 
       <b>Date:</b>
       <tal:block content="context/datecreated/fmt:date" />

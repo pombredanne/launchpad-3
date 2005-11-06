@@ -110,7 +110,7 @@ class IPerson(IHasSpecifications):
             )
     karma = Int(
             title=_('Karma'), readonly=False,
-            description=_('The cached karma for this person.')
+            description=_('The cached total karma for this person.')
             )
     homepage_content = Text(title=_("Homepage Content"), required=False,
         description=_("The content of your home page. Edit this and it "
@@ -185,6 +185,8 @@ class IPerson(IHasSpecifications):
             vocabulary='TimezoneName')
 
     # Properties of the Person object.
+    karma_category_caches = Attribute('The caches of karma scores, by '
+        'karma category.')
     ubuntite = Attribute("Ubuntite Flag")
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
@@ -242,8 +244,8 @@ class IPerson(IHasSpecifications):
         "this person, sorted newest first.")
     created_specs = Attribute("Specifications that were created by "
         "this person, sorted newest first.")
-    review_specs = Attribute("Specifications which this person "
-        "has been asked to review, sorted newest first.")
+    feedback_specs = Attribute("Specifications on which this person "
+        "has been asked to provide feedback, sorted newest first.")
     subscribed_specs = Attribute("Specifications to which this person "
         "has subscribed, sorted newest first.")
     tickets = Attribute("Any support requests related to this person. "
@@ -337,6 +339,10 @@ class IPerson(IHasSpecifications):
         """Update this person's karma attribute and all entries in the
         KarmaCache table for this person.
         """
+
+    def latestKarma(quantity=25):
+        """Return the latest karma actions for this person, up to the number
+        given as quantity."""
 
     def inTeam(team):
         """Return True if this person is a member or the owner of <team>.

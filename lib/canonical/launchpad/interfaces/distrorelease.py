@@ -49,20 +49,8 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         description=_("The version string for this release."))
     distribution = Int(title=_("Distribution"), required=True,
         description=_("The distribution for which this is a release."))
-    components = Choice(
-        title=_("Components"),
-        description=_("The release components."), required=True,
-        vocabulary='Schema')
-    sections = Choice(
-        title=_("Section"),
-        description=_("The release sections."), required=True,
-        vocabulary='Schema')
-    # XXX: dsilvers: 20051013: These should be renamed and the above removed
-    # in the future when we have time. Uploader and Queue systems will need
-    # fixing to cope.
-    # Bug 3256
-    real_components = Attribute("The release's components.")
-    real_sections = Attribute("The release's sections.")
+    components = Attribute("The release's components.")
+    sections = Attribute("The release's sections.")
     releasestatus = Choice(
         title=_("Release Status"), required=True,
         vocabulary='DistributionReleaseStatus')
@@ -239,6 +227,34 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         in the queue.
         """
 
+    def initialiseFromParent():
+        """Copy in all of the parent distrorelease's configuration. This
+        includes all configuration for distrorelease and distroarchrelease
+        publishing and all publishing records for sources and binaries.
+
+        Preconditions:
+          The distrorelease must have been set up with its distroarchreleases
+          as needed. It should have its nominated arch-indep set up along
+          with all other basic requirements for the structure of the
+          distrorelease. This distrorelease and all its distroarchreleases
+          must have empty publishing sets. Section and component selections
+          must be empty.
+
+        Outcome:
+          The publishing structure will be copied from the parent. All
+          PUBLISHED and PENDING packages in the parent will be created in
+          this distrorelease and its distroarchreleases. The lucille config
+          will be copied in, all component and section selections will be
+          duplicated as will any permission-related structures.
+
+        Note:
+          This method will assert all of its preconditions where possible.
+          After this is run, you still need to construct chroots for building,
+          you need to add anything missing wrt. ports etc. This method is
+          only meant to give you a basic copy of a parent release in order
+          to assist you in preparing a new release of a distribution or
+          in the initialisation of a derivative.
+        """
 
 class IDistroReleaseSet(Interface):
     """The set of distro releases."""
@@ -285,5 +301,5 @@ class IDistroReleaseSet(Interface):
         """
 
     def new(distribution, name, displayname, title, summary, description,
-            version, components, sections, parentrelease, owner):
+            version, parentrelease, owner):
         """Creates a new distrorelease"""

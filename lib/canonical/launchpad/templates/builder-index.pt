@@ -98,7 +98,7 @@
             <td>&#8212;</td>
             <td>&#8212;</td>
             <td>
-              <img alt="/++resource++idle" />
+              <img alt="[idle]" src="/++resource++idle" />
               <span tal:replace="context/status">STATUS</span>
             </td>
           </tr>
@@ -131,7 +131,9 @@
             <th>Distribution / Distribution Release / Architecture</th>
             <th>Created</th>
             <th>Started</th>
-            <th colspan="2">Result</th>
+            <th>Result</th>
+            <th>BuildLog</th>
+            <th>Duration</th>
         </tr>
         <tr tal:repeat="build view/lastBuilds">
             <td>
@@ -155,23 +157,17 @@
             <td tal:content="build/datecreated/fmt:datetime">CREATED</td>
             <td tal:content="build/datebuilt/fmt:datetime">BUILT</td>
             <td>
-              <img
-                tal:condition="build/buildstate/value"
-                alt="Fully built after "
-                src="/++resource++build-success"
-              />
-              <img
-                tal:condition="not: build/buildstate/value"
-                alt="Failed after "
-                src="/++resource++build-success"
-              />
+              <img tal:attributes="alt build/buildstate/name; 
+                                   src build/build_icon" />
+            </td>
+            <td>
               <a tal:attributes="href build/buildlog/url">
-                <span tal:replace="build/buildduration/fmt:approximateduration"
-                >4 minutes</span>
+                 <img alt="[BuildLog]" src="/++resource++info" />
               </a>
             </td>
             <td>
-              <input alt="(Retry)" type="image" src="/++resource++retry" />
+               <span tal:replace="build/buildduration/fmt:approximateduration"
+               >4 minutes</span>     
             </td>
         </tr>
       </table>

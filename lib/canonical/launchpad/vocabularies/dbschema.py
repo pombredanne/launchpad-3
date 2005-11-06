@@ -21,12 +21,12 @@ __all__ = [
     'DistributionReleaseStatusVocabulary',
     'GPGKeyAlgorithmVocabulary',
     'InfestationStatusVocabulary',
-    'KarmaActionCategoryVocabulary',
     'PackagingTypeVocabulary',
     'PollAlgorithmVocabulary',
     'PollSecrecyVocabulary',
-    'SpecificationStatusVocabulary',
+    'SpecificationDeliveryVocabulary',
     'SpecificationPriorityVocabulary',
+    'SpecificationStatusVocabulary',
     'SprintSpecificationStatusVocabulary',
     'TeamSubscriptionPolicyVocabulary',
     'TicketPriorityVocabulary',
@@ -73,12 +73,12 @@ CveStatusVocabulary = vocab_factory(dbschema.CveStatus)
 DistributionReleaseStatusVocabulary = vocab_factory(dbschema.DistributionReleaseStatus)
 GPGKeyAlgorithmVocabulary = vocab_factory(dbschema.GPGKeyAlgorithm)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
-KarmaActionCategoryVocabulary = vocab_factory(dbschema.KarmaActionCategory)
 PackagingTypeVocabulary = vocab_factory(dbschema.PackagingType)
 PollAlgorithmVocabulary = vocab_factory(dbschema.PollAlgorithm)
 PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)
-SpecificationStatusVocabulary =  vocab_factory(dbschema.SpecificationStatus)
+SpecificationDeliveryVocabulary =  vocab_factory(dbschema.SpecificationDelivery)
 SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)
+SpecificationStatusVocabulary =  vocab_factory(dbschema.SpecificationStatus)
 SprintSpecificationStatusVocabulary =  vocab_factory(dbschema.SprintSpecificationStatus)
 TeamSubscriptionPolicyVocabulary = vocab_factory(
         dbschema.TeamSubscriptionPolicy)

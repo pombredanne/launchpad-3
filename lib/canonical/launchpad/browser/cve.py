@@ -20,7 +20,7 @@ from canonical.launchpad.interfaces import ICve, ICveSet, ILaunchBag, IBug
 from canonical.launchpad.validators.cve import valid_cve
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, GetitemNavigation)
-from canonical.launchpad.browser.form import FormView
+from canonical.launchpad.webapp.generalform import GeneralFormView
 
 
 class CveSetNavigation(GetitemNavigation):
@@ -62,19 +62,15 @@ class CveView:
         self.request = request
 
 
-class CveLinkView(FormView):
+class CveLinkView(GeneralFormView):
     """This view will be used for objects that can be linked to a CVE,
     currently that is only IBug.
     """
 
-    schema = ICve
-    fieldNames = ['sequence']
-    _arguments = ['sequence',]
-
     def __init__(self, context, request):
         self._nextURL = canonical_url(context)
         context = IBug(context)
-        FormView.__init__(self, context, request)
+        GeneralFormView.__init__(self, context, request)
 
     def process(self, sequence):
         cve = getUtility(ICveSet)[sequence]
@@ -85,17 +81,13 @@ class CveLinkView(FormView):
         return 'CVE-%s added to bug #%d' % (sequence, self.context.id)
 
 
-class CveUnlinkView(FormView):
+class CveUnlinkView(GeneralFormView):
     """This view is used to unlink a CVE from a bug."""
-
-    schema = ICve
-    fieldNames = ['sequence']
-    _arguments = ['sequence',]
 
     def __init__(self, context, request):
         self._nextURL = canonical_url(context)
         context = IBug(context)
-        FormView.__init__(self, context, request)
+        GeneralFormView.__init__(self, context, request)
 
     def process(self, sequence):
         cve = getUtility(ICveSet)[sequence]
@@ -119,10 +111,10 @@ class CveSetView:
         self.text = self.request.form.get('text', None)
         self.searchrequested = False
 
-        # if we do not have text, we are done
-        if not self.text:
-            return
+        if self.text:
+            self.pre_search()
 
+    def pre_search(self):
         # see if we have a proper sequence
         sequence = self.text
         if sequence[:4].lower() in ['cve-', 'can-']:

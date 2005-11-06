@@ -1,0 +1,147 @@
+It is possible to set a specification to a specific distribution
+release.
+This pagetest tries to add a spec to the Ubuntu distribution and set it
+to the Grumpy distrorelease.
+
+First we try to access the addspec page.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+addspec HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...<h1>Register a feature specification</h1>...
+  ...
+
+Then we try to add a specification to that distro
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+addspec HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1648
+  ... Content-Type: multipart/form-data; boundary=---------------------------172939122815469920901060052744
+  ... 
+  ... -----------------------------172939122815469920901060052744
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... testspec
+  ... -----------------------------172939122815469920901060052744
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Test Specification
+  ... -----------------------------172939122815469920901060052744
+  ... Content-Disposition: form-data; name="field.specurl"
+  ... 
+  ... http://wiki.test.com
+  ... -----------------------------172939122815469920901060052744
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... TEst spec add 
+  ... -----------------------------172939122815469920901060052744
+  ... Content-Disposition: form-data; name="field.priority"
+  ... 
+  ... Medium
+  ... -----------------------------172939122815469920901060052744
+  ... Content-Disposition: form-data; name="field.priority-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------172939122815469920901060052744
+  ... Content-Disposition: form-data; name="field.status"
+  ... 
+  ... Braindump
+  ... -----------------------------172939122815469920901060052744
+  ... Content-Disposition: form-data; name="field.status-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------172939122815469920901060052744
+  ... Content-Disposition: form-data; name="field.assignee"
+  ... 
+  ... test@canonical.com
+  ... -----------------------------172939122815469920901060052744
+  ... Content-Disposition: form-data; name="field.drafter"
+  ... 
+  ... test@canonical.com
+  ... -----------------------------172939122815469920901060052744
+  ... Content-Disposition: form-data; name="field.approver"
+  ... 
+  ... test@canonical.com
+  ... -----------------------------172939122815469920901060052744
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------172939122815469920901060052744--
+  ... """)
+  HTTP/1.1 303 See Other
+  ... Location: http://.../distros/ubuntu/+spec/testspec
+  ...
+
+We're redirected to the Specification page
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+spec/testspec HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+Now we try to open the setdistrorelease page, where there is a form to
+target the newly created spec to a distribution.
+
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+spec/testspec/+setdistrorelease HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...<h1>Target to a Distribution Release</h1>...
+  ...
+  
+We are able to target a specification to a distrorelease.
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+spec/media-integrity-check/+setdistrorelease HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 841
+  ... Content-Type: multipart/form-data; boundary=---------------------------117456295555762087296338191
+  ... 
+  ... -----------------------------117456295555762087296338191
+  ... Content-Disposition: form-data; name="field.distrorelease"
+  ... 
+  ... 3
+  ... -----------------------------117456295555762087296338191
+  ... Content-Disposition: form-data; name="field.distrorelease-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------117456295555762087296338191
+  ... Content-Disposition: form-data; name="field.delivery"
+  ... 
+  ... Certain
+  ... -----------------------------117456295555762087296338191
+  ... Content-Disposition: form-data; name="field.delivery-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------117456295555762087296338191
+  ... Content-Disposition: form-data; name="field.whiteboard"
+  ... 
+  ... mostly implemented already
+  ... -----------------------------117456295555762087296338191
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------117456295555762087296338191--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../distros/ubuntu/+spec/media-integrity-check
+  ...
+
+After the POST we should see the release goal on the specification page.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+spec/media-integrity-check HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Release Goal...
+  ...hoary...Certain...
+

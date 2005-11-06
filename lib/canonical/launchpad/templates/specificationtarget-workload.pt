@@ -1,0 +1,79 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Specification Workload</h1>
+
+  <p class="portalMessage" tal:condition="not: view/workload">
+    There are no specifications assigned to people for 
+    <span tal:replace="context/displayname">Ubuntu</span>
+    at the moment.
+  </p>
+
+  <tal:workload condition="view/workload">
+    <tal:person repeat="group view/workload">
+
+      <h2 tal:content="group/person/browsername">Foo Bar</h2>
+
+      <table class="listing sortable"
+             tal:attributes="id string:work${group/person/name}">
+        <thead>
+          <tr>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Spec</th>
+            <th>Ass.</th>
+            <th>Draft</th>
+            <th>App.</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="spec group/by_priority" class="lesser">
+            <td width="80">
+              <span style="display: none"
+                    tal:content="spec/spec/priority/value" />
+              <span tal:content="spec/spec/priority/title"
+                    tal:attributes="
+                    class string:specpriority${spec/spec/priority/name}">High
+              </span>
+            </td>
+            <td width="80">
+              <span style="display: none"
+                    tal:content="spec/spec/status/value" />
+              <span tal:content="spec/spec/status/title"
+                    tal:attributes="
+                    class string:specstatus${spec/spec/status/name}">Approved
+              </span>
+            </td>
+            <td>
+              <a tal:content="spec/spec/name"
+                 tal:attributes="href spec/spec/fmt:url">foo-bar</a>
+            </td>
+            <td width="40">
+              <tal:assignee condition="spec/assignee">X</tal:assignee>
+            </td>
+            <td width="40">
+              <tal:drafter condition="spec/drafter">X</tal:drafter>
+            </td>
+            <td width="40">
+              <tal:approver condition="spec/approver">X</tal:approver>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    
+    </tal:person>
+  </tal:workload>
+
+</div>
+</body>
+</html>

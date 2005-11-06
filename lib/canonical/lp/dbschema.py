@@ -48,8 +48,6 @@ __all__ = (
 'GPGKeyAlgorithm',
 'ImportTestStatus',
 'ImportStatus',
-'KarmaActionCategory',
-'KarmaActionName',
 'LoginTokenType',
 'ManifestEntryType',
 'ManifestEntryHint',
@@ -74,7 +72,9 @@ __all__ = (
 'SourcePackageFormat',
 'SourcePackageRelationships',
 'SourcePackageUrgency',
+'SpecificationDelivery',
 'SpecificationPriority',
+'SpecificationSort',
 'SpecificationStatus',
 'SprintSpecificationStatus',
 'SSHKeyType',
@@ -478,6 +478,13 @@ class BugTrackerType(DBSchema):
 
         Trac is an enhanced wiki and issue tracking system for
         software development projects.
+        """)
+
+    SOURCEFORGE = Item(5, """
+        SourceForge
+
+        SourceForge is a project hosting service which includes bug,
+        support and request tracking.
         """)
 
 
@@ -1114,18 +1121,76 @@ class SourcePackageUrgency(DBSchema):
         """)
 
 
+class SpecificationDelivery(DBSchema):
+    """The estimated likelyhood that a feature is actually delivered in the
+    targeted release or series.
+    """
+
+    UNKNOWN = Item(0, """
+        Unknown
+
+        There is no estimate of the likelyhood of delivery for this feature.
+        """)
+
+    DEFERRED = Item(10, """
+        Deferred
+
+        There is no chance that this feature will actually be delivered in
+        the targeted release. The specification has effectively been
+        deferred to a later date of implementation.
+        """)
+
+    UNLIKELY = Item(40, """
+        Unlikely
+
+        This feature is unlikely to be delivered in the targeted release. It
+        has a high risk of failure.
+        """)
+
+    PROBABLE = Item(60, """
+        Probable
+
+        This specification is considered likely to be implemented in the
+        targeted release, but has not yet been delivered.
+        """)
+
+    CERTAIN = Item(70, """
+        Certain
+
+        This functionality is considered a certainty for the targeted
+        release, but has not yet been delivered.
+        """)
+
+    DONE = Item(90, """
+        Done
+
+        This functionality has been delivered for the targeted release.
+        """)
+
+
 class SpecificationPriority(DBSchema):
     """The Priority with a Specification must be implemented.
 
     This enum is used to prioritise work.
     """
 
-    WISHLIST = Item(0, """
-        Wishlist
+    NOTFORUS = Item(0, """
+        Not for us
 
-        This specification is on the "nice to have" list, but is unlikely to
-        be implemented as part of a specific release unless somebody
-        develops an irresistable itch to do so, on their own initiative.
+        This feature has been proposed but the project leaders have decided
+        that it is not appropriate for inclusion in the mainline codebase.
+        See the status whiteboard or the
+        specification itself for the rationale for this decision. Of course,
+        you are welcome to implement it in any event and publish that work
+        for consideration by the community and end users, but it is unlikely
+        to be accepted by the mainline developers.
+        """)
+
+    PROPOSED = Item(5, """
+        Proposed
+
+        This feature has recently been proposed and has not yet been
+        evaluated and prioritised by the project leaders.
         """)
 
     LOW = Item(10, """
@@ -1133,31 +1198,61 @@ class SpecificationPriority(DBSchema):
 
         The specification is low priority. We would like to have it in the
         code, but it's not on any critical path and is likely to get bumped
-        in favour of higher-priority work.
+        in favour of higher-priority work. The idea behind the specification
+        is sound and the project leaders would incorporate this
+        functionality if the work was done. In general, "low" priority
+        specifications will not get core resources assigned to them.
         """)
 
     MEDIUM = Item(50, """
         Medium
 
-        The specification is of a medium, or normal priority. We will
-        definitely get to this feature but perhaps not in the next month or
-        two.
+        The specification is of a medium, or normal priority. The project
+        developers will definitely get to this feature but perhaps not in
+        the next major release or two.
         """)
 
     HIGH = Item(70, """
         High
 
-        The specification is definitely desired for the next major release,
-        and should be the focal point of developer attention right now.
+        This specification is strongly desired for the next major release,
+        and we have every reason to believe that it can be delivered in that
+        timeframe.
         """)
 
-    EMERGENCY = Item(90, """
-        Emergency
+    ESSENTIAL = Item(90, """
+        Essential
 
-        The specification is required immediately, and should be implemented
-        in such a way that it can be moved to production as soon as it is
-        ready, perhaps by publishing a new stable product release rather
-        than waiting for a new major release.
+        The specification is essential for the next release, and should be
+        the focus of current development. Use this state only for the most
+        important of all features.
+        """)
+
+
+class SpecificationSort(DBSchema):
+    """A preferred sorting scheme for the results of a query about
+    specifications.
+
+    This is usually used in interfaces which ask for a filtered list of
+    specifications, so that you can tell which specifications you would
+    expect to see first.
+
+    NB: this is not really a "dbschema" in that is doesn't map to an int
+    that is stored in the db. In future, we will likely have a different way
+    of defining such enums.
+    """
+    DATE = Item(10, """
+        Date
+
+        This indicates a preferred sort order of date of creation, newest
+        first.
+        """)
+
+    PRIORITY = Item(20, """
+        Priority
+
+        This indicates a preferred sort order of priority (highest first)
+        followed by status.
         """)
 
 
@@ -1174,29 +1269,42 @@ class SpecificationStatus(DBSchema):
         Approved
 
         This specification has been approved. The project team believe that
-        is ready to be implemented.
+        it is ready to be implemented without substantial further issues being
+        encountered.
         """)
 
-    PENDING = Item(20, """
+    PENDINGAPPROVAL = Item(15, """
         Pending Approval
 
+        This spec has been reviewed, and is considered to be ready for final
+        approval. The reviewer believes that the specification is clearly
+        written and adequately addresses all the important issues that will
+        be raised during implementation.
+        """)
+
+    PENDINGREVIEW = Item(20, """
+        Pending Review
+
         This spec has been put in a reviewers queue. The reviewer will
-        either move it to "approved" or bump it back to "draft", making
-        review comments for consideration at the bottom.
+        assess the clarity and comprehensiveness of the spec, and decide
+        whether further work is needed before the spec can be considered for
+        actual approval.
         """)
 
     DRAFT = Item(30, """
-        Draft
+        Drafting
 
-        The specification is in Draft status. The drafter has made a start
-        on reviewing the document.
+        The specification is actively being drafted. The spec should only be
+        in this state if it has a drafter in place, and the spec is under
+        regular revision. Please do not park specs in the "drafting" state
+        indefinitely.
         """)
 
     BRAINDUMP = Item(40, """
         Braindump
 
-        The specification is just a thought, or collection of thoughts, with
-        no attention paid to implementation strategy, dependencies or
+        The specification is a thought, or collection of thoughts, with
+        no attention yet given to implementation strategy, dependencies or
         presentation/UI issues.
         """)
 
@@ -1215,10 +1323,10 @@ class SpecificationStatus(DBSchema):
         and links to actual specifications for implementation.
         """)
 
-    SUPERCEDED = Item(60, """
-        Superceded
+    SUPERSEDED = Item(60, """
+        Superseded
 
-        This specification is still interesting, but has been superceded by
+        This specification is still interesting, but has been superseded by
         a newer spec, or set of specs, that clarify or describe a newer way
         to implement the desired feature(s). Please use the newer specs and
         not this one.
@@ -1240,17 +1348,19 @@ class SprintSpecificationStatus(DBSchema):
     agreed to discuss an item.
     """
 
-    APPROVED = Item(10, """
-        approved
+    CONFIRMED = Item(10, """
+        confirmed
 
-        This spec has been approved for the meeting agenda.
+        The meeting organisers have confirmed this topic for the meeting
+        agenda.
         """)
 
-    DECLINED = Item(20, """
-        declined
+    DEFERRED = Item(20, """
+        deferred
 
-        This spec was submitted for consideration for the meeting agenda but
-        has been declined.
+        This spec has been deferred from the meeting agenda 
+        because of a lack of available resources, or uncertainty over
+        the specific requirements or outcome desired.
         """)
 
     SUBMITTED = Item(30, """
@@ -2035,6 +2145,15 @@ class BugTaskStatus(DBSchema):
         of this product or source package.
         """)
 
+    NEEDINFO = Item(15, """
+        NeedInfo
+
+        More info is required before making further progress on this
+        bug, likely from the reporter. E.g. the exact error message
+        the user saw, the URL the user was visiting when the bug
+        occurred, etc.
+        """)
+
     ACCEPTED = Item(20, """
         Accepted
 
@@ -2329,155 +2448,6 @@ class RosettaImportStatus(DBSchema):
 
         The attached rawfile import failed.
         """)
-
-
-class KarmaActionName(DBSchema):
-    """The name of an action that gives karma to a user."""
-
-    BUGCREATED = Item(1, """
-        New Bug Created
-
-        """)
-
-    BUGCOMMENTADDED = Item(2, """
-        New Comment
-
-        """)
-
-    BUGTITLECHANGED = Item(3, """
-        Bug Title Changed
-
-        """)
-
-    BUGSUMMARYCHANGED = Item(4, """
-        Bug Summary Changed
-
-        """)
-
-    BUGDESCRIPTIONCHANGED = Item(5, """
-        Bug Description Changed
-
-        """)
-
-    BUGEXTREFADDED = Item(6, """
-        Bug External Reference Added
-
-        """)
-
-    BUGCVEREFADDED = Item(7, """
-        Bug CVE Reference Added
-
-        """)
-
-    BUGFIXED = Item(8, """
-        Bug Status Changed to FIXED
-
-        """)
-
-    BUGTASKCREATED = Item(9, """
-        New Bug Task Created
-
-        """)
-
-    TRANSLATIONTEMPLATEIMPORT = Item(10, """
-        Translation Template Import
-
-        """)
-
-    TRANSLATIONIMPORTUPSTREAM = Item(11, """
-        Import Upstream Translation
-
-        """)
-
-    TRANSLATIONTEMPLATEDESCRIPTIONCHANGED = Item(12, """
-        Translation Template Description Changed
-
-        """)
-
-    TRANSLATIONSUGGESTIONADDED = Item(13, """
-        Translation Suggestion Added
-
-        """)
-
-    TRANSLATIONSUGGESTIONAPPROVED = Item(14, """
-        Translation Suggestion Approved
-
-        """)
-
-    TRANSLATIONREVIEW = Item(15, """
-        Translation Review
-
-        """)
-
-    BUGREJECTED = Item(16, """
-        Bug Status Changed to REJECTED
-
-        """)
-
-    BUGACCEPTED = Item(17, """
-        Bug Status Changed to ACCEPTED
-
-        """)
-
-    BUGTASKSEVERITYCHANGED = Item(18, """
-        Change the Severity of a Bug Task
-
-        """)
-
-    BUGTASKPRIORITYCHANGED = Item(19, """
-        Change the Priority of a Bug Task
-
-        """)
-
-    BUGMARKEDASDUPLICATE = Item(20, """
-        Mark a Bug as a Duplicate
-
-        """)
-
-    BUGWATCHADDED = Item(21, """
-        New Bug Watch Added
-
-        """)
-
-
-class KarmaActionCategory(DBSchema):
-    """The class of an action that gives karma to a user.
-
-    This schema documents the different classes of actions that can result
-    in Karma assigned to a person. A person have a list of assigned Karmas,
-    each of these Karma entries have a KarmaAction and each of these actions
-    have a Class, which is represented by one of the following items.
-    """
-
-    MISC = Item(1, """
-        Miscellaneous
-
-        Any action that doesn't fit into any other class.
-    """)
-
-    BUGS = Item(2, """
-        Bugs
-
-        All actions related to bugs.
-    """)
-
-    TRANSLATIONS = Item(3, """
-        Translations
-
-        All actions related to translations.
-    """)
-
-    BOUNTIES = Item(4, """
-        Bounties
-
-        All actions related to bounties.
-    """)
-
-    HATCHERY = Item(5, """
-        Hatchery
-
-        All actions related to the Hatchery.
-    """)
 
 
 class SSHKeyType(DBSchema):

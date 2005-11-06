@@ -11,7 +11,8 @@
     <require
         permission="launchpad.Edit"
         set_attributes="displayname title summary description version
-                        releasestatus owner datelastlangpack"
+                        releasestatus owner datelastlangpack 
+                        nominatedarchindep"
         />
   </content>
 
