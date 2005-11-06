@@ -526,6 +526,12 @@ class SourcePackageReleaseHandler:
     def _getSource(self, sourcepackagename, version, distrorelease):
         """Returns a sourcepackagerelease by its name and version."""
         distributionID=distrorelease.distribution.id
+        # XXX: we use the source package publishing tables here, but I
+        # think that's a bit flawed. We should have a way of saying "my
+        # distrorelease overlays the version namespace of that
+        # distrorelease" and use that to decide on whether we've seen
+        # this package before or not. The publishing tables are wrong,
+        # for instance, in the context of proper derivation.
         query = """
                 sourcepackagerelease.sourcepackagename = %s AND
                 sourcepackagerelease.version = %s AND
