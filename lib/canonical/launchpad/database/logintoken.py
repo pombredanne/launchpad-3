@@ -4,6 +4,7 @@ __metaclass__ = type
 __all__ = ['LoginToken', 'LoginTokenSet']
 
 from datetime import datetime
+import pytz
 import random
 
 from zope.interface import implements
@@ -21,6 +22,8 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.lp.dbschema import LoginTokenType, EnumCol
 from canonical.launchpad.validators.email import valid_email
+
+UTC = pytz.timezone('UTC')
 
 
 class LoginToken(SQLBase):
@@ -56,14 +59,18 @@ class LoginToken(SQLBase):
         subject = "Launchpad: Validate your email address"
         simple_sendmail(fromaddress, self.email, subject, message)
 
-    def sendGPGValidationRequest(self, appurl, key, encrypt=None):
+    def sendGPGValidationRequest(self, appurl, key):
         """See ILoginToken."""
         formatted_uids = ''
         for email in key.emails:
             formatted_uids += '\t%s\n' % email
 
+        assert self.tokentype in (LoginTokenType.VALIDATEGPG,
+                                  LoginTokenType.VALIDATESIGNONLYGPG)
+
         template = open(
             'lib/canonical/launchpad/emailtemplates/validate-gpg.txt').read()
+            
         fromaddress = "Launchpad GPG Validator <noreply@ubuntu.com>"
 
         replacements = {'longstring': self.token,
@@ -76,7 +83,7 @@ class LoginToken(SQLBase):
         message = template % replacements
 
         # encrypt message if requested
-        if encrypt:
+        if key.can_encrypt:
             gpghandler = getUtility(IGPGHandler)
             message = gpghandler.encryptContent(message.encode('utf-8'),
                                                 key.fingerprint)

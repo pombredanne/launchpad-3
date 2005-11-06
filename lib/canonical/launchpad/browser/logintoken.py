@@ -259,7 +259,6 @@ class ValidateEmailView(BaseLoginTokenView):
 
         self._activateGPGKey(key, can_encrypt=False)
 
-
     def validateSignOnlyGpg(self):
         """Validate a gpg key."""
         if self.request.form.get('logmein'):
@@ -296,13 +295,9 @@ class ValidateEmailView(BaseLoginTokenView):
                                                           requester)
             return
             
-        content = 'Please register %s to %s %s UTC' % (
-            fingerprint, self.context.requesteremail,
-            self.context.created.asTimezone(UTC).strftime('%Y-%m-%d %H:%M:%S'))
-
         # we compare the word-splitted content to avoid failures due
         # to whitepace differences.
-        if signature.plain_data.split() != content.split():
+        if signature.plain_data.split() != self.validationphrase.split():
             self.errormessage = (
                 'The signed content does not match the message found '
                 'in the email.')
@@ -311,6 +306,15 @@ class ValidateEmailView(BaseLoginTokenView):
             return
 
         self._activateGPGKey(key, can_encrypt=False)
+
+    @property
+    def validationphrase(self):
+        """The phrase used to validate sign-only GPG keys"""
+        utctime = self.context.created.astimezone(UTC)
+        return 'Please register %s to the Launchpad user %s\n%s UTC' % (
+            self.context.fingerprint, self.context.requester.name,
+            utctime.strftime('%Y-%m-%d %H:%M:%S'))
+
 
     def _getGPGKey(self):
         logintokenset = getUtility(ILoginTokenSet)

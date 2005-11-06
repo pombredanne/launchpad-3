@@ -1112,13 +1112,18 @@ class PersonView:
         preferredemail = bag.user.preferredemail.email
         login = bag.login
 
+        if key.can_encrypt:
+            tokentype = LoginTokenType.VALIDATEGPG
+        else:
+            tokentype = LoginTokenType.VALIDATESIGNONLYGPG
+        
         token = logintokenset.new(self.context, login,
                                   preferredemail,
-                                  LoginTokenType.VALIDATEGPG,
+                                  tokentype,
                                   fingerprint=key.fingerprint)
 
         appurl = self.request.getApplicationURL()
-        token.sendGPGValidationRequest(appurl, key, encrypt=True)
+        token.sendGPGValidationRequest(appurl, key)
 
     def processPasswordChangeForm(self):
         if self.request.method != 'POST':
