@@ -14,16 +14,16 @@ from zope.schema import Bool, Int, TextLine, Choice
 from zope.interface import Interface, Attribute
 from canonical.launchpad import _
 
+from canonical.launchpad.interfaces.launchpad import IHasOwner
 from canonical.launchpad.validators.gpg import valid_fingerprint, valid_keyid
 
 KEYSERVER_QUERY_URL = (
     'http://keyserver.ubuntu.com:11371/pks/lookup?op=get&search=0x')
 
 
-class IGPGKey(Interface):
+class IGPGKey(IHasOwner):
     """GPG support"""
     id = Int(title=_("Database id"), required=True, readonly=True)
-    owner = Int(title=_("Owner"), required=True, readonly=True)
     keysize = Int(title=_("Keysize"), required=True)
     algorithm = Choice(title=_("Algorithm"), required=True,
             vocabulary='GpgAlgorithm')
@@ -33,7 +33,6 @@ class IGPGKey(Interface):
             constraint=valid_fingerprint)
     active = Bool(title=_("Active"), required=True)
     displayname = Attribute("Key Display Name")
-    revoked = Attribute("Workarrounded Revoked flag, temporary.")
     keyserverURL = Attribute("The URL to retrieve this key from the keyserver.")
     can_encrypt = Bool(title=_("Key can be used for encryption"),
                        required=True)

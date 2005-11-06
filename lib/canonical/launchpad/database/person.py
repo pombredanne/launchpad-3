@@ -1404,13 +1404,6 @@ class GPGKey(SQLBase):
     def displayname(self):
         return '%s%s/%s' % (self.keysize, self.algorithm.title, self.keyid)
 
-    # XXX cprov 20050705
-    # keep a property to avoid untested issues in other compoenents
-    # that i'm not aware
-    @property
-    def revoked(self):
-        return not self.active
-
 
 class GPGKeySet:
     implements(IGPGKeySet)

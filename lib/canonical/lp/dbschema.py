@@ -2472,6 +2472,13 @@ class LoginTokenType(DBSchema):
         be validated.
         """)
 
+    VALIDATESIGNONLYGPG = Item(7, """
+        Validate a sign-only GPG key
+
+        A user has submitted a new sign-only GPG key to his account and it
+        needs to be validated.
+        """)
+
 
 class BuildStatus(DBSchema):
     """Build status type
