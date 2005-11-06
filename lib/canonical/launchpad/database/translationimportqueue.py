@@ -237,6 +237,14 @@ class TranslationImportQueueSet:
         for entry in res:
             yield entry
 
+    def hasBlockedEntries(self):
+        """See ITranslationImportQueueSet."""
+        res = TranslationImportQueue.select('ignore = TRUE')
+        if res.count() > 0:
+            return True
+        else:
+            return False
+
     def getBlockedEntries(self):
         """See ITranslationImportQueueSet."""
         res = TranslationImportQueue.select('ignore = TRUE')

@@ -21,48 +21,31 @@
         classes="TranslationImportQueueNavigation TranslationImportQueueSetNavigation"
         />
 
-    <browser:url
+    <browser:defaultView
         for="canonical.launchpad.interfaces.ITranslationImportQueue"
-        urldata="canonical.launchpad.browser.TranslationImportQueueURL"
-        />
+        name="+index" />
 
     <browser:menus
         module="canonical.launchpad.browser"
         classes="TranslationImportQueueSetContextMenu"
         />
 
-<!--
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.ITranslationImportQueue"
-        name="+index" />
-
     <browser:url
         for="canonical.launchpad.interfaces.ITranslationImportQueue"
-        path_expression="id"
-        parent_utility="canonical.launchpad.interfaces.ITranslationImportQueueSet"
+        urldata="canonical.launchpad.browser.TranslationImportQueueURL"
         />
 
     <browser:pages
         for="canonical.launchpad.interfaces.ITranslationImportQueue"
         facet="translations"
         class="canonical.launchpad.browser.TranslationImportQueueView"
-        permission="zope.Public">
+        permission="launchpad.Admin">
         <browser:page
-            template="../templates/translationimportqueue.pt"
+            template="../templates/translationimportqueue-index.pt"
             name="+index"
             lp:url="/rosetta/imports/$TranslationImportQueue.id/+index" />
     </browser:pages>
 
-    <browser:editform
-        name="+edit"
-        schema="canonical.launchpad.interfaces.ITranslationImportQueue"
-        facet="translations"
-        label="Modify Translation Import Details:"
-        fields="name title summary"
-        permission="launchpad.Edit"
-        template="../templates/launchpad-editform.pt"
-        lp:url="/rosetta/imports/$TranslationImportQueue.id/+edit" />
--->
     <!-- TranslationImportQueueSet -->
     <securedutility
         class="canonical.launchpad.database.TranslationImportQueueSet"

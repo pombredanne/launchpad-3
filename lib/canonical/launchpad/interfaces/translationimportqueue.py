@@ -130,6 +130,9 @@ class ITranslationImportQueueSet(Interface):
         the given distrorelease and sourcepackagename.
         """
 
+    def hasBlockedEntries():
+        """Return whether there are blocked entries in the queue or not."""
+
     def getBlockedEntries():
         """Return the set of ITranslationImportQueue objects that are set as
         blocked to be imported.

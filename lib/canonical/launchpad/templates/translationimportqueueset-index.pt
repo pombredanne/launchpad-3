@@ -43,6 +43,7 @@
           <th>Origin</th>
           <th>Import into</th>
           <th></th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -82,6 +83,9 @@
                >Foo</a>
           </td>
           <td>
+            [<a tal:attributes="href string:${entry/content/url}">Download</a>]
+          </td>
+          <td>
             <tal:block condition="entry/required:launchpad.Admin">
               [<a tal:attributes="href string:${entry/fmt:url}">Edit</a>]
             </tal:block>
@@ -118,6 +122,7 @@
           <th>Path</th>
           <th>Origin</th>
           <th></th>
+          <th></th>
         </tr>
       </thead>
       <tbody>
@@ -150,6 +155,9 @@
                tal:content="entry/productseries/title"
                tal:attributes="href string:${entry/productseries/fmt:url}"
                >Evolution Series: MAIN</a>
+          </td>
+          <td>
+            [<a tal:attributes="href string:${entry/content/url}">Download</a>]
           </td>
           <td>
             <tal:block condition="entry/required:launchpad.Admin">
