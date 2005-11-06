@@ -20,6 +20,7 @@ import _pythonpath
 
 import os
 import sys
+import time
 import psycopg
 from optparse import OptionParser
 from datetime import timedelta
@@ -207,8 +208,17 @@ def import_sourcepackages(packages_map, kdb, package_root,
         count += 1
         package_name = source.get("Package", "unknown")
         try:
-            do_one_sourcepackage(source, kdb, package_root, keyrings,
-                                 importer_handler)
+            try:
+                do_one_sourcepackage(source, kdb, package_root, keyrings,
+                                     importer_handler)
+            except psycopg.Error:
+                log.exception("Database error: unable to create "
+                              "Source Package for %s. Retrying once.."
+                              % package_name)
+                importer_handler.abort()
+                time.sleep(15)
+                do_one_sourcepackage(source, kdb, package_root, keyrings,
+                                     importer_handler)
         except (InvalidVersionError, MissingRequiredArguments,
                 DisplayNameDecodingError):
             log.exception("Unable to create SourcePackageData for %s" % 
@@ -219,15 +229,15 @@ def import_sourcepackages(packages_map, kdb, package_root,
             log.exception("Error processing package files for %s" %
                           package_name)
             continue
+        except psycopg.Error:
+            log.exception("Database errors made me give up: unable to create "
+                          "Source Package for %s" % package_name)
+            importer_handler.abort()
+            continue
         except MultiplePackageReleaseError:
             log.exception("Database duplication processing %s" %
                           package_name)
             continue
-        except psycopg.Error:
-            log.exception("Database error: unable to create "
-                          "SourcePackageData for %s" % package_name)
-            importer_handler.abort()
-            return
 
         if COUNTDOWN and count % COUNTDOWN == 0:
             log.warn('%i/%i sourcepackages processed' % (count, npacks))
@@ -263,8 +273,17 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
             count += 1
             package_name = binary.get("Package", "unknown")
             try:
-                do_one_binarypackage(binary, arch, kdb, package_root,
-                                     keyrings, importer_handler)
+                try:
+                    do_one_binarypackage(binary, arch, kdb, package_root,
+                                         keyrings, importer_handler)
+                except psycopg.Error:
+                    log.exception("Database errors when importing a"
+                                  "Binary Package for %s. Retrying once.."
+                                  % package_name)
+                    importer_handler.abort()
+                    time.sleep(15)
+                    do_one_binarypackage(binary, arch, kdb, package_root,
+                                         keyrings, importer_handler)
             except (InvalidVersionError, MissingRequiredArguments):
                 log.exception("Unable to create BinaryPackageData for %s" % 
                               package_name)
@@ -279,8 +298,8 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
                               package_name)
                 continue
             except psycopg.Error:
-                log.exception("Database error: unable to create "
-                              "BinaryPackageData for %s" % package_name)
+                log.exception("Database errors made me give up: unable to "
+                              "create Binary Package for %s" % package_name)
                 importer_handler.abort()
                 continue
             except NoSourcePackageError:
@@ -308,7 +327,6 @@ def do_one_binarypackage(binary, arch, kdb, package_root, keyrings,
     if importer_handler.preimport_binarycheck(arch, binary_data):
         log.info('%s already exists in the archive' % binary_data.package)
         return
-    binary_data.ensure_complete(kdb)
     binary_data.process_package(kdb, package_root, keyrings)
     importer_handler.import_binarypackage(arch, binary_data)
     importer_handler.commit()

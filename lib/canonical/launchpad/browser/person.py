@@ -675,7 +675,11 @@ class PersonView:
             status=any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
             omit_dupes=True, orderby="-dateassigned")
 
-        return getUtility(IBugTaskSet).search(search_params)
+        batch_start = int(self.request.get('batch_start', 0))
+        tasks = getUtility(IBugTaskSet).search(search_params)
+        batch = Batch(tasks, batch_start, 50)
+
+        return BatchNavigator(batch=batch, request=self.request)
 
     def bugTasksOnMaintainedSoftware(self):
         """Return all the open IBugTasks on software this person maintains.

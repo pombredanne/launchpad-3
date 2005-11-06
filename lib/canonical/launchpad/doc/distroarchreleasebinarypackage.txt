@@ -1,0 +1,62 @@
+Distro Arch Release Binary Package
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+ >>> from zope.interface.verify import verifyObject
+
+This class is a meta object to combine information from a
+distroarchrelease and a binarypackage (by receiving a version) 
+
+ >>> from canonical.launchpad.database import (
+ ...     DistroArchReleaseBinaryPackage, DistroArchRelease,
+ ...     BinaryPackageName)
+
+Retrieving the Ubuntu Hoary i386 distroarchrelease
+
+ >>> hoary_i386 = DistroArchRelease.get(6)
+ >>> hoary_i386.title
+ u'The Hoary Hedgehog Release for i386 (x86)'
+
+Let's build the meta object for the 'pmount' and the 'tnuomp'
+binarypackage names within the previous distroarchrelease:
+
+ >>> pmount = BinaryPackageName.selectOneBy(name='pmount')
+ >>> tnuomp = BinaryPackageName.selectOneBy(name='tnuomp')
+
+ >>> pmount_in_hoaryi386 = DistroArchReleaseBinaryPackage(hoary_i386, pmount)
+ >>> tnoump_in_hoaryi386 = DistroArchReleaseBinaryPackage(hoary_i386, tnuomp)
+
+Let's check if the meta object produces the correct result, an 
+IDistroArchReleaseBinaryPackageRelease object.
+
+ >>> pmount_metabin = pmount_in_hoaryi386['0.1-1']
+
+ >>> from canonical.launchpad.interfaces import (
+ ...              IDistroArchReleaseBinaryPackageRelease)
+
+ >>> verifyObject(IDistroArchReleaseBinaryPackageRelease, 
+ ...              pmount_metabin)
+ Traceback (most recent call last):
+ ...
+ BrokenImplementation: ...
+ 
+
+XXX cprov 20051105: bug # 3925
+Unfortunatelly IDistroArchReleaseBinaryPackageRelease combines the
+interfaces IDistroArchRelease and IBinaryPackageRelease, but does not
+implement all the required methods, so this interfaces extension is 
+pointless because we do not use all those methods directly, it
+deserves its own interface.
+
+
+Previously there was a bug traversing DistroArchReleaseBinaryPackage
+if there were two binarypackagereleases with the same version.
+The release for the other package could be returned by mistake.
+This test verifies if the correct binarypackagerelease is being
+returned.
+
+ >>> pmount_in_hoaryi386['0.1-1'].name
+ u'pmount'
+
+ >>> tnoump_in_hoaryi386['0.1-1'].name
+ u'tnuomp'
+

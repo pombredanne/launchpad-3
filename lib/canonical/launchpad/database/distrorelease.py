@@ -77,10 +77,6 @@ class DistroRelease(SQLBase):
     summary = StringCol(notNull=True)
     description = StringCol(notNull=True)
     version = StringCol(notNull=True)
-    components = ForeignKey(
-        dbName='components', foreignKey='Schema', notNull=True)
-    sections = ForeignKey(
-        dbName='sections', foreignKey='Schema', notNull=True)
     releasestatus = EnumCol(notNull=True, schema=DistributionReleaseStatus)
     datereleased = UtcDateTimeCol(notNull=False, default=None)
     parentrelease =  ForeignKey(
@@ -104,21 +100,10 @@ class DistroRelease(SQLBase):
     binary_package_caches = MultipleJoin('DistroReleasePackageCache',
         joinColumn='distrorelease', orderBy='name')
 
-    # XXX: dsilvers: 20051013: At some point, get rid of components/sections
-    # from above and rename these and fix up the uploader and queue stuff.
-    real_components = RelatedJoin(
+    components = RelatedJoin(
         'Component', joinColumn='distrorelease', otherColumn='component',
         intermediateTable='ComponentSelection')
-    real_sections = RelatedJoin(
-        'Section', joinColumn='distrorelease', otherColumn='section',
-        intermediateTable='SectionSelection')
-
-    # XXX: dsilvers: 20051013: At some point, get rid of components/sections
-    # from above and rename these and fix up the uploader and queue stuff.
-    real_components = RelatedJoin(
-        'Component', joinColumn='distrorelease', otherColumn='component',
-        intermediateTable='ComponentSelection')
-    real_sections = RelatedJoin(
+    sections = RelatedJoin(
         'Section', joinColumn='distrorelease', otherColumn='section',
         intermediateTable='SectionSelection')
 
@@ -442,7 +427,7 @@ class DistroRelease(SQLBase):
         comp = Component.byName(name)
         if comp is None:
             raise NotFoundError(name)
-        permitted = set(self.real_components)
+        permitted = set(self.components)
         if comp in permitted:
             return comp
         raise NotFoundError(name)
@@ -452,7 +437,7 @@ class DistroRelease(SQLBase):
         section = Section.byName(name)
         if section is None:
             raise NotFoundError(name)
-        permitted = set(self.real_sections)
+        permitted = set(self.sections)
         if section in permitted:
             return section
         raise NotFoundError(name)
@@ -621,9 +606,9 @@ class DistroRelease(SQLBase):
                     arch.architecturetag))
         assert self.nominatedarchindep is not None, \
                "Must have a nominated archindep architecture."
-        assert len(self.real_components) == 0, \
+        assert len(self.components) == 0, \
                "Component selections must be empty."
-        assert len(self.real_sections) == 0, \
+        assert len(self.sections) == 0, \
                "Section selections must be empty."
 
         # MAINTAINER: dsilvers: 20051031
@@ -779,19 +764,17 @@ class DistroReleaseSet:
             return DistroRelease.select(where_clause)
 
     def new(self, distribution, name, displayname, title, summary, description,
-            version, components, sections, parentrelease, owner):
+            version, parentrelease, owner):
         """See IDistroReleaseSet."""
         return DistroRelease(
-            distribution = distribution,
-            name = name,
-            displayname = displayname,
-            title = title,
-            summary = summary,
-            description = description,
-            version = version,
-            components = components,
-            sections = sections,
-            releasestatus = DistributionReleaseStatus.EXPERIMENTAL,
-            parentrelease =  parentrelease,
-            owner = owner)
+            distribution=distribution,
+            name=name,
+            displayname=displayname,
+            title=title,
+            summary=summary,
+            description=description,
+            version=version,
+            releasestatus=DistributionReleaseStatus.EXPERIMENTAL,
+            parentrelease=parentrelease,
+            owner=owner)
 
