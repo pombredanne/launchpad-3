@@ -327,7 +327,6 @@ def do_one_binarypackage(binary, arch, kdb, package_root, keyrings,
     if importer_handler.preimport_binarycheck(arch, binary_data):
         log.info('%s already exists in the archive' % binary_data.package)
         return
-    binary_data.ensure_complete(kdb)
     binary_data.process_package(kdb, package_root, keyrings)
     importer_handler.import_binarypackage(arch, binary_data)
     importer_handler.commit()
