@@ -235,7 +235,7 @@ class MaloneContextMenu(ContextMenu):
 
 class RosettaContextMenu(ContextMenu):
     usedfor = IRosettaApplication
-    links = ['overview', 'about', 'preferences']
+    links = ['overview', 'about', 'preferences', 'imports']
 
     def overview(self):
         target = ''
@@ -260,6 +260,11 @@ class RosettaContextMenu(ContextMenu):
     def preferences(self):
         target = 'prefs'
         text = 'Preferences'
+        return Link(target, text)
+
+    def imports(self):
+        target = 'imports'
+        text = 'Import queue'
         return Link(target, text)
 
 

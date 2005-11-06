@@ -906,6 +906,7 @@ translationgroup = ContextTitle('Rosetta Translation Group: %s')
 translationgroups = 'Rosetta Translation Groups'
 
 translationimportqueueset_index = 'Translation Import Queue'
+translationimportqueueset_blocked = 'Translation Import Queue - Blocked'
 
 # ul_main_template is probably obselete
 

@@ -26,6 +26,11 @@
         urldata="canonical.launchpad.browser.TranslationImportQueueURL"
         />
 
+    <browser:menus
+        module="canonical.launchpad.browser"
+        classes="TranslationImportQueueSetContextMenu"
+        />
+
 <!--
     <browser:defaultView
         for="canonical.launchpad.interfaces.ITranslationImportQueue"
@@ -87,6 +92,10 @@
             name="+index"
             template="../templates/translationimportqueueset-index.pt" />
             lp:url="/rosetta/imports/+index" />
+        <browser:page
+            name="+blocked"
+            template="../templates/translationimportqueueset-blocked.pt" />
+            lp:url="/rosetta/imports/+blocked" />
     </browser:pages>
 
 </configure>

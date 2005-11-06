@@ -1,0 +1,101 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="rosetta">
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <tal:block condition="view/submitForm" />
+
+  <h1>Translation files blocked from being imported</h1>
+
+  <p tal:repeat="alert view/alerts"
+    class="portalMessage"
+    tal:content="alert">
+    Notification Message
+  </p>
+  <p tal:repeat="notice view/notices"
+    class="portalMessage"
+    tal:content="notice">
+    Notification Message
+  </p>
+
+  <tal:block condition="context/getBlockedEntries">
+  <div class="documentDescription">
+    This is a listing of all translation resources that were blocked to be
+    imported by a Rosetta Expert. Usually, this is due automatic imports into
+    Rosetta that imports some files that are not needed. If you have any
+    comment/question about them, please contact <a
+    href="mailto:rosetta@launchpad.net">Rosetta Experts</a>.
+  </div>
+
+  <form name="entries" action="" method="POST">
+
+    <table class="sortable listing" id="translation-import-queue-blocked" width="100%">
+      <thead>
+        <tr>
+          <th></th>
+          <th>Uploader</th>
+          <th>Ignored since</th>
+          <th>Path</th>
+          <th>Origin</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="entry context/getBlockedEntries">
+          <td>
+            <input type="checkbox"
+                   tal:condition="entry/required:launchpad.Edit"
+                   tal:attributes="name string:entry-${entry/id}" />
+          </td>
+          <td>
+            <a tal:content="entry/importer/browsername"
+               tal:attributes="href string:${entry/importer/fmt:url}"
+               >Mark Shuttleworth</a>
+          </td>
+          <td tal:content="entry/dateimport/fmt:datetime">
+            date
+          </td>
+          <td>
+            <span tal:content="entry/path">po/foo.pot</span>
+          </td>
+          <td>
+            <a tal:condition="entry/sourcepackage"
+               tal:content="entry/sourcepackage/title"
+               tal:attributes="href string:${entry/sourcepackage/fmt:url}"
+               >evolution in Ubuntu Hoary</a>
+            <a tal:condition="entry/productseries"
+               tal:content="entry/productseries/title"
+               tal:attributes="href string:${entry/productseries/fmt:url}"
+               >Evolution Series: MAIN</a>
+          </td>
+          <td>
+            <tal:block condition="entry/required:launchpad.Admin">
+              [<a tal:attributes="href string:${entry/fmt:url}">Edit</a>]
+            </tal:block>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+    <input tal:condition="request/lp:person"
+           style="float: left"
+           type="submit" name="remove_blocked" value="Remove" />
+    <input tal:condition="context/required:launchpad.Admin"
+           style="float: left"
+           type="submit" name="unblock" value="Unblock" />
+    <br />
+  </form>
+  </tal:block>
+
+  <tal:block condition="not: context/getBlockedEntries">
+    <div class="documentDescription">
+      There are no files being blocked.
+    </div>
+  </tal:block>
+</div>
+
+</body>
+</html>

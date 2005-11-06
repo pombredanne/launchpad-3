@@ -7,13 +7,28 @@
 
 <div metal:fill-slot="main">
 
+  <tal:block condition="view/submitForm" />
+
   <h1>Translation files pending to be imported</h1>
 
+  <p tal:repeat="alert view/alerts"
+    class="portalMessage"
+    tal:content="alert">
+    Notification Message
+  </p>
+  <p tal:repeat="notice view/notices"
+    class="portalMessage"
+    tal:content="notice">
+    Notification Message
+  </p>
+
+  <tal:block condition="view/has_things_to_import">
   <div class="documentDescription">
     This is a listing of all of translation resources pending to be imported
     in Rosetta. <tal:loggedin condition="not:request/lp:person">If you want to
     remove your entries, please log in into the system.</tal:loggedin>
   </div>
+
 
   <form name="entries_to_import" action="" method="POST">
 
@@ -31,7 +46,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr tal:repeat="entry view/ready_to_import">
+        <tr tal:repeat="entry view/readyToImport">
           <td>
             <input type="checkbox"
                    tal:condition="entry/required:launchpad.Edit"
@@ -75,12 +90,16 @@
       </tbody>
     </table>
     <input tal:condition="request/lp:person"
-           style="float: left" type="submit" name="remove" value="Remove" />
+           style="float: left" 
+           type="submit" name="remove_import" value="Remove" />
     <input tal:condition="context/required:launchpad.Admin"
-           style="float: left" type="submit" name="block" value="Block" />
+           style="float: left"
+           type="submit" name="block_import" value="Block" />
     <br />
   </form>
+  </tal:block>
 
+  <tal:block condition="view/has_pending_reviews">
   <div class="documentDescription">
     This is a listing of all of translation resources pending to be reviewed
     by a Rosetta Expert. <tal:loggedin condition="not:request/lp:person">If you want to
@@ -102,7 +121,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr tal:repeat="entry view/pending_review">
+        <tr tal:repeat="entry view/pendingReview">
           <td>
             <input type="checkbox"
                    tal:condition="entry/required:launchpad.Edit"
@@ -141,12 +160,22 @@
       </tbody>
     </table>
     <input tal:condition="request/lp:person"
-           style="float: left" type="submit" name="remove" value="Remove" />
+           style="float: left"
+           type="submit" name="remove_review" value="Remove" />
     <input tal:condition="context/required:launchpad.Admin"
-           style="float: left" type="submit" name="block" value="Block" />
+           style="float: left"
+           type="submit" name="block_review" value="Block" />
     <br />
   </form>
+  </tal:block>
 
+  <tal:block condition="not: view/has_things_to_import">
+    <tal:block condition="not: view/has_pending_reviews">
+      <div class="documentDescription">
+        There are no pending files to be imported into Rosetta.
+      </div>
+    </tal:block>
+  </tal:block>
 </div>
 
 </body>

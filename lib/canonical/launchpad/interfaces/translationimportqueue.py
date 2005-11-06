@@ -71,6 +71,9 @@ class ITranslationImportQueue(Interface):
         sourcepackage/productseries.
         """
 
+    def block(value=True):
+        """Set this object as being (or nor) importable."""
+
 class ITranslationImportQueueSet(Interface):
     """A set of files to be imported into Rosetta."""
 
@@ -127,9 +130,17 @@ class ITranslationImportQueueSet(Interface):
         the given distrorelease and sourcepackagename.
         """
 
+    def getBlockedEntries():
+        """Return the set of ITranslationImportQueue objects that are set as
+        blocked to be imported.
+        """
+
     def get(id):
         """Return the ITranslationImportQueue with the given id.
 
         If there is not entries with that id, the NotFoundError exception is
         raised.
         """
+
+    def remove(id):
+        """Remove the item referered by 'id' from the queue."""

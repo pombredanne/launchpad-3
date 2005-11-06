@@ -122,6 +122,12 @@ class TranslationImportQueue(SQLBase):
         # queue.
         TranslationImportQueue.delete(self.id)
 
+    def block(self, value=True):
+        """See ITranslationImportQueueSet."""
+        self.ignore = value
+        # Sync it so future queries get this change.
+        self.sync()
+
 
 class TranslationImportQueueSet:
     implements(ITranslationImportQueueSet)
@@ -149,25 +155,7 @@ class TranslationImportQueueSet:
         if path is None or path == '':
             raise ValueError('The path cannot be empty')
 
-        if sourcepackagename is not None:
-            sourcepackagenameid = sourcepackagename.id
-        else:
-            sourcepackagenameid = None
-        if distrorelease is not None:
-            distroreleaseid = distrorelease.id
-        else:
-            distroreleaseid = None
-        if productseries is not None:
-            productseriesid = productseries.id
-        else:
-            productseriesid = None
-
-        res = TranslationImportQueue.selectBy(
-            path=path, importerID=importer.id,
-            sourcepackagenameID=sourcepackagenameid,
-            distroreleaseID=distroreleaseid,
-            productseriesID=productseriesid)
-
+        # Upload the file into librarian.
         filename = path.split('/')[-1]
         size = len(content)
         file = StringIO(content)
@@ -177,6 +165,18 @@ class TranslationImportQueueSet:
             size=size,
             file=file,
             contentType='application/x-po')
+
+        # Check if we got already this request from this user.
+        if sourcepackagename is not None:
+            # The import is related with a sourcepackage and a distribution.
+            res = TranslationImportQueue.selectBy(
+                path=path, importerID=importer.id,
+                sourcepackagenameID=sourcepackagename.id,
+                distroreleaseID=distrorelease.id)
+        else:
+            res = TranslationImportQueue.selectBy(
+                path=path, importerID=importer.id,
+                productseriesID=productseries.id)
 
         if res.count() > 0:
             # It's an update.
@@ -237,10 +237,20 @@ class TranslationImportQueueSet:
         for entry in res:
             yield entry
 
+    def getBlockedEntries(self):
+        """See ITranslationImportQueueSet."""
+        res = TranslationImportQueue.select('ignore = TRUE')
+        for entry in res:
+            yield entry
+
     def get(self, id):
         """See ITranslationImportQueueSet."""
         try:
-            TranslationImportQueue.get(id)
+            return TranslationImportQueue.get(id)
         except SQLObjectNotFound:
             raise NotFoundError("Unable to locate an entry in the translation"
                 " import queue with ID %s" % str(id))
+
+    def remove(self, id):
+        """See ITranslationImportQueueSet."""
+        TranslationImportQueue.delete(id)
