@@ -74,7 +74,8 @@
        metal:use-macro="context/@@+bugtask-macros-tableview/batched-table" />
   </tal:table_view>
   <tal:list_view tal:condition="view/showListView"
-                 tal:define="show_targetname view/shouldShowTargetName|nothing">
+                 tal:define="show_targetname view/shouldShowTargetName|nothing;
+                             do_not_show_assignee view/doNotShowAssignee|nothing">
 
     <table>
       <tr tal:repeat="task task_batch_navigator/batch">

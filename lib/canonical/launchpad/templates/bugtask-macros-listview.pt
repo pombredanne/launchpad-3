@@ -4,7 +4,7 @@
       :task: An IBugTask to be rendered.
       :show_targetname: Should the sourcepackage name be shown?
       Defaults to False.
-      If the view provides a doNotShowAssignee method and it returns True,
+      If there's a do_not_show_assignee variable and it's set to True,
       only the bugtask status is displayed, but not the assignee. Otherwise,
       the status and the assignee (in case there's one) are displayed.
   </tal:comment>
@@ -32,7 +32,7 @@
           >firefox</a>,
         </tal:has_target>
       </tal:packagename>
-      <tal:block define="do_not_show_assignee view/doNotShowAssignee|nothing">
+      <tal:block define="do_not_show_assignee do_not_show_assignee|nothing">
         <tal:status-with-assignee
           condition="not: do_not_show_assignee"
           content="structure task/statusdisplayhtml">

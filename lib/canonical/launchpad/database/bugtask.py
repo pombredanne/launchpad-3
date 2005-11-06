@@ -161,7 +161,7 @@ class BugTask(SQLBase, BugTaskMixin):
         # We need to overwrite this method to make sure the targetnamecache
         # column is updated after a new bugtask is created. We can't rely on
         # event subscribers for doing this because they can run in a
-        # non-predictable order.
+        # unpredictable order.
         SQLBase._create(self, id, **kw)
         self.updateTargetNameCache()
 
@@ -169,7 +169,7 @@ class BugTask(SQLBase, BugTaskMixin):
         # We need to overwrite this method to make sure the targetnamecache
         # column is updated when a bugtask is modified. We can't rely on
         # event subscribers for doing this because they can run in a
-        # non-predictable order.
+        # unpredictable order.
         SQLBase.set(self, **kw)
         # We also can't simply update kw with the value we want for
         # targetnamecache because the _calculate_targetname method needs to
