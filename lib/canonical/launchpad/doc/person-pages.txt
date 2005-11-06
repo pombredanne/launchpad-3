@@ -25,7 +25,8 @@ object on a person:
 The assigned bugs report shows bug tasks directly assigned to this
 person:
 
-  >>> tasks = assignedbugs_view.bugTasksAssignedToPerson()
+  >>> task_batch_navigator = assignedbugs_view.bugTasksAssignedToPerson()
+  >>> tasks = task_batch_navigator.batch
   >>> task_ids = sorted([task.id for task in tasks])
   >>> task_ids
   [5, 14]
