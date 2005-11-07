@@ -145,6 +145,32 @@ class ImporterHandler:
         if not self.dry_run:
             self.ztm.abort()
 
+    def ensure_archinfo(self, archtag):
+        """Append retrived distroarchrelease info to a dict."""
+        if archtag in self.archinfo.keys():
+            return
+
+        """Get distroarchrelease and processor from the architecturetag"""
+        dar = DistroArchRelease.selectOneBy(
+                distroreleaseID=self.distrorelease.id,
+                architecturetag=archtag)
+        if not dar:
+            raise DataSetupError("Error finding distroarchrelease for %s/%s"
+                                 % (self.distrorelease.name, archtag))
+
+        # XXX: is this really a selectOneBy? Can't there be multiple
+        # proessors per family?
+        processor = Processor.selectOneBy(familyID=dar.processorfamily.id)
+        if not processor:
+            raise DataSetupError("Unable to find a processor from the "
+                                 "processor family %s chosen from %s/%s"
+                                 % (dar.processorfamily.name,
+                                    self.distrorelease.name, archtag))
+
+        info = {'distroarchrelease': dar, 'processor': processor}
+        self.archinfo[archtag] = info
+
+
     #
     # Distro Stuff: Should go to DistroHandler
     #
@@ -164,23 +190,6 @@ class ImporterHandler:
             raise DataSetupError("Error finding distrorelease %r" % name)
         return dr
 
-    def _get_distroarchrelease_info(self, archtag):
-        """Get distroarchrelease and processor from the architecturetag"""
-        dar = DistroArchRelease.selectOneBy(
-                distroreleaseID=self.distrorelease.id,
-                architecturetag=archtag)
-        if not dar:
-            raise DataSetupError("Error finding distroarchrelease for %s/%s"
-                                 % (self.distrorelease.name, archtag))
-
-        processor = Processor.selectOneBy(familyID=dar.processorfamily.id)
-        if not processor:
-            raise DataSetupError("Unable to find a processor from the "
-                                 "processor family chosen from %s/%s"
-                                 % (self.distrorelease.name, archtag))
-
-        return {'distroarchrelease': dar, 'processor': processor}
-
     def _store_sprelease_for_publishing(self, sourcepackagerelease,
                                         spdata):
         """Append to the sourcepackagerelease imported list."""
@@ -193,14 +202,6 @@ class ImporterHandler:
         if archtag not in self.imported_bins.keys():
             self.imported_bins[archtag] = []
         self.imported_bins[archtag].append((binarypackage, bpdata))
-
-    def _store_archinfo(self, archtag):
-        """Append retrived distroarchrelease info to a dict."""
-        if archtag in self.archinfo.keys():
-            return
-
-        info = self._get_distroarchrelease_info(archtag)
-        self.archinfo[archtag] = info
 
     #
     # Package stuff
@@ -250,7 +251,6 @@ class ImporterHandler:
         happen, for instance, if a binary package didn't change over
         releases, or if Gina runs multiple times over the same release
         """
-        self._store_archinfo(archtag)
         distroarchinfo = self.archinfo[archtag]
         binarypackagerelease = self.bphandler.checkBin(binarypackagedata,
                                                        distroarchinfo)
@@ -267,7 +267,6 @@ class ImporterHandler:
 
     def import_binarypackage(self, archtag, binarypackagedata):
         """Handler the binarypackage import process"""
-        self._store_archinfo(archtag)
         distroarchinfo = self.archinfo[archtag]
 
         # We know that preimport_binarycheck has run

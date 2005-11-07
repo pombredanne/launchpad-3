@@ -52,13 +52,6 @@ Check it was properly created and create its DistroArchReleases.
     >>> dar = DistroArchRelease(distrorelease=dapper, processorfamily=pf,
     ...                         architecturetag="i386", official=True,
     ...                         owner=celebs.launchpad_developers)
-    >>> pf = ProcessorFamily.selectOneBy(name="powerpc")
-    >>> if pf is None:
-    ...     pf = ProcessorFamily(name="powerpc", title="PowerPC",
-    ...                          description="PowerPC")
-    >>> dar = DistroArchRelease(distrorelease=dapper, processorfamily=pf,
-    ...                         architecturetag="powerpc", official=True,
-    ...                         owner=celebs.launchpad_developers)
     >>> pf = ProcessorFamily.selectOneBy(name="amd64")
     >>> if pf is None:
     ...     pf = ProcessorFamily(name="amd64", title="AMD64",
@@ -66,9 +59,15 @@ Check it was properly created and create its DistroArchReleases.
     >>> dar = DistroArchRelease(distrorelease=dapper, processorfamily=pf,
     ...                         architecturetag="amd64", official=True,
     ...                         owner=celebs.launchpad_developers)
+    >>> pf = ProcessorFamily.selectOneBy(name="powerpc")
+    >>> if pf is None:
+    ...     pf = ProcessorFamily(name="powerpc", title="PowerPC",
+    ...                          description="PowerPC")
+    >>> dar = DistroArchRelease(distrorelease=dapper, processorfamily=pf,
+    ...                         architecturetag="powerpc", official=True,
+    ...                         owner=celebs.launchpad_developers)
     >>> import transaction
     >>> transaction.commit()
-
 
 Let's set up the filesystem:
 
@@ -91,7 +90,26 @@ Get the librarian going:
     >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
     >>> LibrarianTestSetup().setUp()
 
-And rock this baby:
+Run gina without a powerpc processor for the powerpc family:
+
+    >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q',
+    ...              'dapper', 'dapper-updates']
+    >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
+    >>> print proc.stderr.read()
+    ERROR   Database setup required for run on powerpc
+    -> http://... (Unable to find a processor...dapper/powerpc)
+    <BLANKLINE>
+    >>> proc.wait()
+    1
+
+Set up the processor, commit and run her again.
+
+    >>> from canonical.launchpad.database import Processor
+    >>> p = Processor(name="powerpc", title="PowerPC", family=pf,
+    ...     description="The little processor that could")
+    >>> p == Processor.selectOneBy(familyID=pf.id)
+    True
+    >>> transaction.commit()
 
     >>> gina_proc = [sys.executable, 'scripts/gina.py', '-q',
     ...              'dapper', 'dapper-updates']
