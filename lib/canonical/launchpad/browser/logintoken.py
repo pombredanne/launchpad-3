@@ -88,7 +88,7 @@ class BaseLoginTokenView:
         if encryptor.validate(password, self.context.requester.password):
             return True
         else:
-            self.errormessage = "Wrong password `%r`. Please check and try again." % password
+            self.errormessage = "Wrong password. Please check and try again."
             return False
 
     def logInPersonByEmail(self, email):
