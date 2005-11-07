@@ -367,8 +367,7 @@ class ValidateEmailView(BaseLoginTokenView):
 
         if lpkey:
             lpkey.active = True
-            if can_encrypt:
-                lpkey.can_encrypt = True
+            lpkey.can_encrypt = can_encrypt
             self.infomessage = (
                 'The key %s was successfully revalidated. '
                 '<a href="%s/+editgpgkeys">See more Information</a>'
