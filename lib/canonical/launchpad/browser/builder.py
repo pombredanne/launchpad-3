@@ -19,7 +19,7 @@ from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent
 
 from canonical.launchpad.interfaces import (
-    IPerson, IBuilderSet, IBuilder, IBuildSet
+    IPerson, IBuilderSet, IBuilder, IBuildSet, IBuildSet
     )
 
 from canonical.launchpad.webapp import (
