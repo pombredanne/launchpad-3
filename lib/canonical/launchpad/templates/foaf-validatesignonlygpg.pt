@@ -19,7 +19,8 @@
 
       <p>To confirm your GPG key, please enter your Launchpad password.</p>
 
-      <form autocomplete="off" name="validate" action="" method="POST">
+      <form autocomplete="off" name="validate" action="" method="POST"
+            enctype="multipart/form-data">
         <div class="field">
 
           <label>Launchpad Password</label>

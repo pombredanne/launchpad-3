@@ -385,6 +385,8 @@ foaf_validateteamemail = 'Validate email address'
 
 foaf_validategpg = 'Validate GPG Key'
 
+foaf_validatesignonlygpg = 'Validate Sign-Only GPG Key'
+
 karmaaction_index = 'Karma Actions'
 
 karmaaction_edit = 'Edit Karma Action'

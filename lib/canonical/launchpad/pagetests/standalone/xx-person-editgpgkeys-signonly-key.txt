@@ -1,0 +1,161 @@
+
+Setup the stub KeyServer
+
+  >>> from canonical.zeca.ftests.harness import ZecaTestSetup
+  >>> z = ZecaTestSetup()
+  >>> z.setUp()
+  
+Clean page
+
+  >>> print http(r"""
+  ... GET /people/name12/+editgpgkeys HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+    <head>
+      <title>Sample Person GPG Keys</title>
+  ...
+
+Claim a sign only GPG key:
+
+  >>> print http(r"""
+  ... POST /people/name12/+editgpgkeys HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... action=claim_gpg&fingerprint=447DBF38C4F9C4ED752246B77D88913717B05A8F""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...1024D/17B05A8F...
+  ...  
+
+Recover Token URL
+
+  >>> import email, re
+  >>> from canonical.launchpad.mail import stub
+  >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+  >>> msg = email.message_from_string(raw_msg)
+
+Get the message content, and verify that it is not encrypted (we can't
+encrypt to sign-only keys):
+  
+  >>> body = msg.get_payload(decode=True)
+  >>> '-----BEGIN PGP MESSAGE-----' in body
+  False
+
+Do the usual procedure to extract the token URL
+ 
+  >>> link = re.findall(r'http.*/token/.*', body)[0]
+  >>> token = re.sub(r'.*token/', '', link)
+
+Ensure token is ascii to avoid utf-8 mess in URL  
+
+  >>> base_path = '/token/%s' % token.encode('ascii')
+
+When processing a sign-only key, the user is asked to sign some
+content that includes the date of the request (to avoid replay
+attacks).  To make this testable, we set the date of the token in the
+database to a fixed value:
+
+  >>> import pytz, datetime
+  >>> from canonical.launchpad.database import LoginToken
+  >>> logintoken = LoginToken.selectOneBy(token=token)
+  >>> logintoken.created = datetime.datetime(2005,04,01, 12,00,00,
+  ...                                        tzinfo=pytz.timezone('UTC'))
+  >>> logintoken.sync()
+
+Go to the link sent by email, to validate the email address.
+
+  >>> print http(r"""
+  ... GET %s HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """ % base_path)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: .../+validatesignonlygpg
+  ...
+  ...<h1>You're being redirected</h1>
+  ...
+
+We get redirected to the sign-only GPG key validation page, which
+includes a phrase that must be signed by the user.  Some things to
+note about the phrase:
+ * Includes the Launchpad user name, key fingerprint and request time.
+ * consists of only ASCII characters
+
+This should make us immune to replay attacks and encoding issues.
+
+  >>> path = '%s/+validatesignonlygpg' % base_path
+  >>> print http(r"""
+  ... GET %s HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """ % path)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <title>Validate Sign-Only GPG Key</title>
+  ...
+  <pre>Please register 447DBF38C4F9C4ED752246B77D88913717B05A8F to the Launchpad user name12
+  2005-04-01 12:00:00 UTC</pre>
+  ...
+
+
+Validate UID and consequently import the Key.
+
+  >>> print http(r"""
+  ... POST %s HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: ...
+  ... Content-Type: multipart/form-data; boundary=--abcdef
+  ... 
+  ... --abcdef
+  ... Content-Disposition: form-data; name="password"
+  ... 
+  ... test
+  ... --abcdef
+  ... Content-Disposition: form-data; name="signedcontent"
+  ... 
+  ... XXXXX
+  ... --abcdef
+  ... Content-Disposition: form-data; name="SUBMIT_CHANGES"
+  ... 
+  ... Submit
+  ... --abcdef--
+  ... """ % path)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <title>Validate Sign-Only GPG Key</title>
+  ...
+  ...1024D/17B05A8F...
+  ...
+
+Certify the key is imported
+
+  >>> print http(r"""
+  ... GET /people/name12/+editgpgkeys HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+    <head>
+      <title>Sample Person GPG Keys</title>
+  ...
+  ...1024D/17B05A8F...
+
+
+Kill stub KeyServer
+  
+  >>> z.tearDown()
+
