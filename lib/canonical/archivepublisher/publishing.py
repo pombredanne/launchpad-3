@@ -1,6 +1,4 @@
 # (C) Canonical Software Ltd. 2004, all rights reserved.
-#
-# arch-tag: 9503b5c7-7f87-48ee-a617-2a23b567d7a9
 
 import os
 
@@ -24,8 +22,9 @@ pocketsuffix = {
     PackagePublishingPocket.RELEASE: "",
     PackagePublishingPocket.SECURITY: "-security",
     PackagePublishingPocket.UPDATES: "-updates",
-    PackagePublishingPocket.PROPOSED: "-proposed"
-    }
+    PackagePublishingPocket.PROPOSED: "-proposed",
+    PackagePublishingPocket.BACKPORTS: "-backports",
+}
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
 
 def package_name(filename):
