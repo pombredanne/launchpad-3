@@ -616,9 +616,6 @@ class SourcePackagePublisher:
         """Create the publishing entry on db if does not exist."""
         # Check if the sprelease is already published and if so, just
         # report it.
-        log.debug('Publishing SourcePackage %s-%s' % (
-            sourcepackagerelease.sourcepackagename.name, 
-            sourcepackagerelease.version))
         source_publishinghistory = self._checkPublishing(
             sourcepackagerelease, self.distrorelease)
         if source_publishinghistory:
@@ -863,9 +860,6 @@ class BinaryPackagePublisher:
 
     def publish(self, binarypackage, bpdata):
         """Create the publishing entry on db if does not exist."""
-        log.debug('Publishing BinaryPackage %s-%s' % (
-            binarypackage.binarypackagename.name, binarypackage.version))
-
         # Check if the binarypackage is already published and if yes,
         # just report it.
         binpkg_publishinghistory = self._checkPublishing(
