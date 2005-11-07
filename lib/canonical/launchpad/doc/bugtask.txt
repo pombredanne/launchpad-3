@@ -773,6 +773,7 @@ Of course, it's also computed and set when a bugtask is created.
     u'thunderbird (upstream)'
 
     >>> thunderbird.name = 'thunderbird-ng'
+
     # XXX: This flush_database_updates() shouldn't be needed because we
     # already have the transaction.commit() here, but without it
     # (flush_database_updates), the cronscript won't see the thunderbird name
