@@ -102,7 +102,9 @@ Run gina without a powerpc processor for the powerpc family:
     >>> proc.wait()
     1
 
-Set up the processor, commit and run her again.
+Set up the processor, commit and run her again. Note that
+dapper-updates/universe doesn't include the powerpc architecture, but we
+just warn it and move right ahead.
 
     >>> from canonical.launchpad.database import Processor
     >>> p = Processor(name="powerpc", title="PowerPC", family=pf,
@@ -116,6 +118,7 @@ Set up the processor, commit and run her again.
     >>> proc = subprocess.Popen(gina_proc, stderr=subprocess.PIPE)
     >>> print proc.stderr.read()
     WARNING No source package bdftopcf (0.99.0-1) listed for bdftopcf (0.99.0-1), scrubbing archive...
+    WARNING The archive for dapper-updates/universe doesn't contain a directory for powerpc, skipping
     <BLANKLINE>
     >>> proc.wait()
     0
