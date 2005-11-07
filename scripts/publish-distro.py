@@ -166,7 +166,7 @@ try:
     debug("Attempting to perform domination.")
     for distrorelease in drs:
         if ((distrorelease.releasestatus in non_careful_domination_states) or
-            careful or careful_domination):
+            options.careful or options.careful_domination):
             for pocket in PackagePublishingPocket.items:
                 judgejudy.judgeAndDominate(distrorelease, pocket, pubconf)
                 debug("Flushing caches.")
@@ -225,7 +225,8 @@ try:
     debug("Doing apt-ftparchive work.")
     fn = os.tmpnam()
     f = file(fn,"w")
-    f.write(pub.generateAptFTPConfig(fullpublish=(careful or careful_apt)))
+    f.write(pub.generateAptFTPConfig(fullpublish=(
+        options.careful or options.careful_apt)))
     f.close()
     print fn
 
