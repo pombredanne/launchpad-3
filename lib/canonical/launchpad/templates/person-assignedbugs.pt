@@ -11,25 +11,15 @@
 
   <div metal:fill-slot="main">
 
-    <tal:block define="tasks_assigned view/bugTasksAssignedToPerson">
+    <metal:page
+        use-macro="context/@@+bugtask-macros-buglisting/page"
+        tal:define="task_batch_navigator view/search">
 
-      <h1>Bugs Assigned to <span tal:replace="context/browsername" /></h1>
+      <metal:heading fill-slot="heading">
+        <h1>Bugs Assigned to <span tal:replace="context/browsername" /></h1>
+      </metal:heading>
 
-      <p tal:condition="not: tasks_assigned">No bugs have been
-      assigned to <span tal:replace="context/browsername" />.</p>
-
-      <tal:block tal:condition="tasks_assigned">
-
-      <div style="margin-bottom: 1em"
-           tal:define="tasks tasks_assigned;">
-
-      <tal:assignedbugs
-          metal:use-macro="context/@@+bugtask-macros-tableview/table" />
-
-      </div>
-
-    </tal:block>
-    </tal:block>
+    </metal:page>
 
   </div>
 
