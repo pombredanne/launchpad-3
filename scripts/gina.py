@@ -190,7 +190,6 @@ def run_gina(options, ztm, target_section):
 
     import_sourcepackages(packages_map, kdb, package_root, keyrings,
                           importer_handler)
-    importer_handler.publish_sourcepackages(pocket)
     importer_handler.commit()
 
     if source_only:
@@ -199,7 +198,6 @@ def run_gina(options, ztm, target_section):
 
     import_binarypackages(packages_map, kdb, package_root, keyrings,
                           importer_handler)
-    importer_handler.publish_binarypackages(pocket)
     importer_handler.commit()
 
 
@@ -324,8 +322,6 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
             log.warn('%i source packages not found' % len(nosource))
             for pkg in nosource:
                 log.warn(pkg)
-
-        importer_handler.commit()
 
 
 def do_one_binarypackage(binary, archtag, kdb, package_root, keyrings,
