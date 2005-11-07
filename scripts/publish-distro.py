@@ -3,9 +3,10 @@
 import logging
 import gc
 
-logging.basicConfig()
-logging.getLogger().setLevel(logging.DEBUG)
-logging.getLogger().debug("Publisher importing modules initialising.")
+from optparse import OptionParser
+from canonical.config import config
+from canonical.launchpad.scripts import (execute_zcml_for_scripts,
+                                         logger, logger_options)
 
 from canonical.lp import initZopeless
 from canonical.archivepublisher import \
@@ -45,24 +46,56 @@ def clear_cache():
     _clearCache()
     gc.collect()
 
-careful = False
-if sys.argv[1] == "--careful":
-    careful = True
-    # XXX: dsilvers: 20050921: Replace all this with an option parser
-    # but for now, and just for SteveA:
-    # "lookee here, altering sys.argv"
-    sys.argv.remove("--careful")
-    
 
-distroname = sys.argv[1]
+parser = OptionParser()
+logger_options(parser)
 
+parser.add_option("-C", "--careful", action="store_true",
+                  dest="careful", metavar="", default=False,
+                  help="Turns on all the below careful options.")
 
-error = logging.getLogger().error
-warn = logging.getLogger().warn
-info = logging.getLogger().info
-debug = logging.getLogger().debug
+parser.add_option("-P", "--careful-publishing", action="store_true",
+                  dest="careful_publishing", metavar="", default=False,
+                  help="Make the package publishing process careful.")
 
-info("Beginning publication process for %s" % distroname)
+parser.add_option("-D", "--careful-domination", action="store_true",
+                  dest="careful_domination", metavar="", default=False,
+                  help="Make the domination process careful.")
+
+parser.add_option("-A", "--careful-apt", action="store_true",
+                  dest="careful_apt", metavar="", default=False,
+                  help="Make the apt-ftparchive run careful.")
+
+parser.add_option("-d", "--distribution",
+                  dest="distribution", metavar="DISTRO", default="ubuntu",
+                  help="The distribution to publish.")
+
+(options, args) = parser.parse_args()
+
+log = logger(options, "process-upload")
+
+distroname = options.distribution
+
+assert len(args) == 0, "publish-distro takes no arguments, only options."
+
+error = log.error
+warn = log.warn
+info = log.info
+debug = log.debug
+
+def careful_msg(what):
+    """Quick handy util for the below."""
+    if options.careful:
+        return "Careful (Overridden)"
+    if what:
+        return "Careful"
+    return "Normal"
+
+info("  Distribution: %s" % distroname)
+info("    Publishing: %s" % careful_msg(options.careful_publishing))
+info("    Domination: %s" % careful_msg(options.careful_domination))
+info("Apt-FTPArchive: %s" % careful_msg(options.careful_apt))
+
 
 debug("Initialising zopeless.")
 
@@ -110,7 +143,7 @@ try:
     # main publishing section
     debug("Attempting to publish pending sources.")
     clause = "distribution = %s" % sqlvalues(distro.id)
-    if not careful:
+    if not (options.careful or options.careful_publishing):
         clause = clause + (" AND publishingstatus = %s" %
                            sqlvalues(PackagePublishingStatus.PENDING))
     spps = SourcePackageFilePublishing.select(clause)
@@ -133,7 +166,7 @@ try:
     debug("Attempting to perform domination.")
     for distrorelease in drs:
         if ((distrorelease.releasestatus in non_careful_domination_states) or
-            careful):
+            careful or careful_domination):
             for pocket in PackagePublishingPocket.items:
                 judgejudy.judgeAndDominate(distrorelease, pocket, pubconf)
                 debug("Flushing caches.")
@@ -192,7 +225,7 @@ try:
     debug("Doing apt-ftparchive work.")
     fn = os.tmpnam()
     f = file(fn,"w")
-    f.write(pub.generateAptFTPConfig(fullpublish=careful))
+    f.write(pub.generateAptFTPConfig(fullpublish=(careful or careful_apt)))
     f.close()
     print fn
 
