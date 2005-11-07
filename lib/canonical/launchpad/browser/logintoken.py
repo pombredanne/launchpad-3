@@ -30,7 +30,7 @@ from canonical.launchpad.webapp import canonical_url, GetitemNavigation
 
 from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, IPasswordEncryptor, ILoginTokenSet,
-    IGPGKeySet, IGPGHandler)
+    IGPGKeySet, IGPGHandler, GPGVerificationError)
 
 UTC = pytz.timezone('UTC')
 
@@ -88,7 +88,7 @@ class BaseLoginTokenView:
         if encryptor.validate(password, self.context.requester.password):
             return True
         else:
-            self.errormessage = "Wrong password. Please check and try again."
+            self.errormessage = "Wrong password `%r`. Please check and try again." % password
             return False
 
     def logInPersonByEmail(self, email):
@@ -246,11 +246,6 @@ class ValidateEmailView(BaseLoginTokenView):
             self.logInPersonByEmail(self.context.requesteremail)
 
         requester = self.context.requester
-        fingerprint = self.context.fingerprint
-        assert fingerprint is not None
-
-        gpgkeyset = getUtility(IGPGKeySet)
-        logintokenset = getUtility(ILoginTokenSet)
 
         # retrieve respective key info
         key = self._getGPGKey()
@@ -275,24 +270,23 @@ class ValidateEmailView(BaseLoginTokenView):
         if not key:
             return
 
+        fingerprint = self.context.fingerprint
+
         # verify the signed content
         signedcontent = self.request.form.get('signedcontent', '')
         try:
-            signature = gpghandler.getVerifiedSignature(signedcontent)
-        except GPGVerificationError, e:
+            signature = gpghandler.getVerifiedSignature(
+                signedcontent.encode('ASCII'))
+        except (GPGVerificationError, UnicodeEncodeError), e:
             self.errormessage = (
                 'Launchpad could not verify your signature: %s'
                 % str(e))
-            logintokenset.deleteByFingerprintAndRequester(fingerprint,
-                                                          requester)
             return
 
         if signature.fingerprint != fingerprint:
             self.errormessage = (
                 'The key used to sign the content (%s) is not the key '
                 'you were being registering' % signature.fingerprint)
-            logintokenset.deleteByFingerprintAndRequester(fingerprint,
-                                                          requester)
             return
             
         # we compare the word-splitted content to avoid failures due
@@ -301,8 +295,6 @@ class ValidateEmailView(BaseLoginTokenView):
             self.errormessage = (
                 'The signed content does not match the message found '
                 'in the email.')
-            logintokenset.deleteByFingerprintAndRequester(fingerprint,
-                                                          requester)
             return
 
         self._activateGPGKey(key, can_encrypt=False)
@@ -311,7 +303,7 @@ class ValidateEmailView(BaseLoginTokenView):
     def validationphrase(self):
         """The phrase used to validate sign-only GPG keys"""
         utctime = self.context.created.astimezone(UTC)
-        return 'Please register %s to the Launchpad user %s\n%s UTC' % (
+        return 'Please register %s to the\nLaunchpad user %s.  %s UTC' % (
             self.context.fingerprint, self.context.requester.name,
             utctime.strftime('%Y-%m-%d %H:%M:%S'))
 
@@ -365,6 +357,7 @@ class ValidateEmailView(BaseLoginTokenView):
         return key
 
     def _activateGPGKey(self, key, can_encrypt):
+        logintokenset = getUtility(ILoginTokenSet)
         gpgkeyset = getUtility(IGPGKeySet)
         requester = self.context.requester
         person_url = canonical_url(requester)

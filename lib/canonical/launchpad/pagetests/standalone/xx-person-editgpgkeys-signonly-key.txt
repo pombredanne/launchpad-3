@@ -5,7 +5,7 @@ Setup the stub KeyServer
   >>> z = ZecaTestSetup()
   >>> z.setUp()
   
-Clean page
+Sign only keys are registered on the standard +editgpgkeys page.
 
   >>> print http(r"""
   ... GET /people/name12/+editgpgkeys HTTP/1.1
@@ -19,7 +19,7 @@ Clean page
       <title>Sample Person GPG Keys</title>
   ...
 
-Claim a sign only GPG key:
+Claim a sign-only GPG key:
 
   >>> print http(r"""
   ... POST /people/name12/+editgpgkeys HTTP/1.1
@@ -58,6 +58,7 @@ Ensure token is ascii to avoid utf-8 mess in URL
 
   >>> base_path = '/token/%s' % token.encode('ascii')
 
+
 When processing a sign-only key, the user is asked to sign some
 content that includes the date of the request (to avoid replay
 attacks).  To make this testable, we set the date of the token in the
@@ -70,7 +71,9 @@ database to a fixed value:
   ...                                        tzinfo=pytz.timezone('UTC'))
   >>> logintoken.sync()
 
-Go to the link sent by email, to validate the email address.
+
+Go to the link given in the email.  Note that we get redirected to the
+sign-only key validation page instead of the regular sign-up page.
 
   >>> print http(r"""
   ... GET %s HTTP/1.1
@@ -83,6 +86,7 @@ Go to the link sent by email, to validate the email address.
   ...
   ...<h1>You're being redirected</h1>
   ...
+
 
 We get redirected to the sign-only GPG key validation page, which
 includes a phrase that must be signed by the user.  Some things to
@@ -103,33 +107,41 @@ This should make us immune to replay attacks and encoding issues.
   ...
   <title>Validate Sign-Only GPG Key</title>
   ...
-  <pre>Please register 447DBF38C4F9C4ED752246B77D88913717B05A8F to the Launchpad user name12
-  2005-04-01 12:00:00 UTC</pre>
+  <pre>Please register 447DBF38C4F9C4ED752246B77D88913717B05A8F to the
+  Launchpad user name12.  2005-04-01 12:00:00 UTC</pre>
   ...
 
 
-Validate UID and consequently import the Key.
+Below is the clear-signed version of the message we are required to sign:
 
+  >>> signedcontent = """
+  ... -----BEGIN PGP SIGNED MESSAGE-----
+  ... Hash: SHA1
+  ... 
+  ... Please register 447DBF38C4F9C4ED752246B77D88913717B05A8F to the
+  ... Launchpad user name12.  2005-04-01 12:00:00 UTC
+  ... -----BEGIN PGP SIGNATURE-----
+  ... Version: GnuPG v1.4.1 (GNU/Linux)
+  ... 
+  ... iD8DBQFDb8MIfYiRNxewWo8RAhtJAJ0TsZWBG9lDZEgterdNQxLI0F9ajACgmx+M
+  ... fe5bet4x/Y8R576T9/VFso8=
+  ... =JL4/
+  ... -----END PGP SIGNATURE-----
+  ... """
+
+
+Validate the GPG key by proving that we can sign the given phrase with
+the key:
+
+  >>> import urllib
   >>> print http(r"""
   ... POST %s HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: ...
-  ... Content-Type: multipart/form-data; boundary=--abcdef
-  ... 
-  ... --abcdef
-  ... Content-Disposition: form-data; name="password"
-  ... 
-  ... test
-  ... --abcdef
-  ... Content-Disposition: form-data; name="signedcontent"
-  ... 
-  ... XXXXX
-  ... --abcdef
-  ... Content-Disposition: form-data; name="SUBMIT_CHANGES"
-  ... 
-  ... Submit
-  ... --abcdef--
-  ... """ % path)
+  ... Content-Type: application/x-www-form-urlencoded
+  ...
+  ... password=test&signedcontent=%s&SUBMIT_CHANGES=Submit"""
+  ... % (path, urllib.quote(signedcontent)))
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
@@ -139,7 +151,8 @@ Validate UID and consequently import the Key.
   ...1024D/17B05A8F...
   ...
 
-Certify the key is imported
+
+Check that the key has been imported:
 
   >>> print http(r"""
   ... GET /people/name12/+editgpgkeys HTTP/1.1
@@ -153,6 +166,12 @@ Certify the key is imported
       <title>Sample Person GPG Keys</title>
   ...
   ...1024D/17B05A8F...
+
+
+Now that the key has been validated, the login token is removed:
+
+  >>> print LoginToken.selectOneBy(token=token)
+  None
 
 
 Kill stub KeyServer
