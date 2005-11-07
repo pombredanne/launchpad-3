@@ -193,7 +193,8 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def updateTargetNameCache(self):
         """See canonical.launchpad.interfaces.IBugTask."""
-        self.targetnamecache = self._calculate_targetname()
+        if self.targetnamecache != self._calculate_targetname():
+            self.targetnamecache = self._calculate_targetname()
 
     @property
     def statusdisplayhtml(self):
