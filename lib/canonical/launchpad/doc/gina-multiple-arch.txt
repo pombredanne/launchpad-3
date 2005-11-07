@@ -125,6 +125,7 @@ just warn it and move right ahead.
 
 Check that the source package was correctly imported:
 
+    >>> transaction.commit()
     >>> from canonical.launchpad.database import (SourcePackageName,
     ...      BinaryPackageName)
     >>> n = SourcePackageName.selectOneBy(name="ekg")
