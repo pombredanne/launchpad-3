@@ -105,6 +105,13 @@ on the other side.
     >>> print pocket.name
     SECURITY
 
+Find the backports pocket, too:
+    >>> dr, pocket = ubuntu.getDistroReleaseAndPocket('hoary-backports')
+    >>> print dr.name
+    hoary
+    >>> print pocket.name
+    BACKPORTS
+
 If we ask for a valid distrorelease which doesn't have a given pocket it should
 raise NotFoundError for us
     >>> ubuntu.getDistroReleaseAndPocket('hoary-bullshit')

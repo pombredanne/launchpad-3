@@ -24,6 +24,9 @@
     tal:define="listing_columns view/task_columns;
                 task_batch_navigator view/search">
 
+  <metal:heading fill-slot="heading">
+    <h1>Bugs in <span tal:replace="context/title">Title</span></h1>
+  </metal:heading>
 
   <metal:extra_search_widgets_in_table
       metal:fill-slot="extra_search_widgets_in_table">

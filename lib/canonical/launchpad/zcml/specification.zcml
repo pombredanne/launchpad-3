@@ -15,7 +15,7 @@
       set_attributes="title summary status specurl needs_discussion
                       superseded_by milestone productseries distrorelease
                       product distribution approver assignee drafter
-                      whiteboard" />
+                      whiteboard man_days delivery" />
     <require
       permission="launchpad.Admin"
       set_attributes="priority direction_approved name" />
@@ -82,8 +82,8 @@
       name="+portlet-bugs"
       template="../templates/specification-portlet-bugs.pt" />
     <browser:page
-      name="+portlet-reviewqueue"
-      template="../templates/specification-portlet-reviewqueue.pt" />
+      name="+portlet-feedbackqueue"
+      template="../templates/specification-portlet-feedbackqueue.pt" />
   </browser:pages>
 
   <browser:pages
@@ -93,10 +93,15 @@
     <browser:page
       name="+subscribe"
       template="../templates/specification-subscription.pt" />
-    <browser:page
-      name="+doreview"
-      template="../templates/specification-doreview.pt" />
   </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ISpecification"
+    name="+givefeedback"
+    class="canonical.launchpad.browser.SpecificationFeedbackClearingView"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-givefeedback.pt"
+    />
 
   <browser:generalform
     name="+addsubscriber"
@@ -118,6 +123,17 @@
     keyword_arguments="product distribution"
     permission="launchpad.Edit"
     template="../templates/specification-retargeting.pt"
+    />
+
+  <browser:generalform
+    name="+supersede"
+    for="canonical.launchpad.interfaces.ISpecification"
+    schema="canonical.launchpad.interfaces.ISpecification"
+    class="canonical.launchpad.browser.SpecificationSupersedingView"
+    fields="superseded_by"
+    keyword_arguments="superseded_by"
+    permission="launchpad.Edit"
+    template="../templates/specification-superseding.pt"
     />
 
   <browser:editform
@@ -157,7 +173,7 @@
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
     label="Target to a Distribution Release"
-    fields="distrorelease whiteboard"
+    fields="distrorelease delivery whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-distrorelease.pt">
     <browser:widget
@@ -171,7 +187,7 @@
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
     label="Target to a Series"
-    fields="productseries whiteboard"
+    fields="productseries delivery whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-productseries.pt">
     <browser:widget
@@ -199,7 +215,7 @@
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
     label="Change Status"
-    fields="status needs_discussion whiteboard"
+    fields="status needs_discussion man_days whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-status.pt">
     <browser:widget
@@ -233,17 +249,17 @@
   />
 
   <browser:addform
-    name="+requestreview"
+    name="+requestfeedback"
     for="canonical.launchpad.interfaces.ISpecification"
-    schema="canonical.launchpad.interfaces.ISpecificationReview"
-    class="canonical.launchpad.browser.SpecificationReviewAddView"
-    label="Request Specification Review"
-    fields="reviewer requestor queuemsg"
-    keyword_arguments="reviewer requestor queuemsg"
+    schema="canonical.launchpad.interfaces.ISpecificationFeedback"
+    class="canonical.launchpad.browser.SpecificationFeedbackAddView"
+    label="Request Feedback on Specification"
+    fields="reviewer requester queuemsg"
+    keyword_arguments="reviewer requester queuemsg"
     permission="launchpad.AnyPerson"
-    template="../templates/specification-requestreview.pt">
+    template="../templates/specification-requestfeedback.pt">
     <browser:widget
-      field="requestor"
+      field="requester"
       class="canonical.widgets.HiddenUserWidget" />
     <browser:widget
       field="queuemsg"

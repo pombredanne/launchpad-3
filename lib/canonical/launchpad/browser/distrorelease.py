@@ -260,8 +260,6 @@ class DistroReleaseAddView(AddView):
             description = data['description'],
             version = data['version'],
             distribution = self.context,
-            components = data['components'],
-            sections = data['sections'],
             parentrelease = data['parentrelease'],
             owner = owner
             )

@@ -49,20 +49,8 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         description=_("The version string for this release."))
     distribution = Int(title=_("Distribution"), required=True,
         description=_("The distribution for which this is a release."))
-    components = Choice(
-        title=_("Components"),
-        description=_("The release components."), required=True,
-        vocabulary='Schema')
-    sections = Choice(
-        title=_("Section"),
-        description=_("The release sections."), required=True,
-        vocabulary='Schema')
-    # XXX: dsilvers: 20051013: These should be renamed and the above removed
-    # in the future when we have time. Uploader and Queue systems will need
-    # fixing to cope.
-    # Bug 3256
-    real_components = Attribute("The release's components.")
-    real_sections = Attribute("The release's sections.")
+    components = Attribute("The release's components.")
+    sections = Attribute("The release's sections.")
     releasestatus = Choice(
         title=_("Release Status"), required=True,
         vocabulary='DistributionReleaseStatus')
@@ -313,5 +301,5 @@ class IDistroReleaseSet(Interface):
         """
 
     def new(distribution, name, displayname, title, summary, description,
-            version, components, sections, parentrelease, owner):
+            version, parentrelease, owner):
         """Creates a new distrorelease"""

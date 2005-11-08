@@ -38,15 +38,21 @@
         </thead>
         <tbody>
           <tr tal:repeat="spec group/by_priority" class="lesser">
-            <td width="80"
-                tal:attributes="
-                    class string:specpriority${spec/spec/priority/name}"
-                tal:content="spec/spec/priority/title">
+            <td width="80">
+              <span style="display: none"
+                    tal:content="spec/spec/priority/value" />
+              <span tal:content="spec/spec/priority/title"
+                    tal:attributes="
+                    class string:specpriority${spec/spec/priority/name}">High
+              </span>
             </td>
-            <td width="80"
-                tal:attributes="
-                    class string:specstatus${spec/spec/status/name}"
-                tal:content="spec/spec/status/title">
+            <td width="80">
+              <span style="display: none"
+                    tal:content="spec/spec/status/value" />
+              <span tal:content="spec/spec/status/title"
+                    tal:attributes="
+                    class string:specstatus${spec/spec/status/name}">Approved
+              </span>
             </td>
             <td>
               <a tal:content="spec/spec/name"

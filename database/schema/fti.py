@@ -315,11 +315,13 @@ def setup(con, configuration=DEFAULT_CONFIG):
     execute(con, r"""
         CREATE OR REPLACE FUNCTION ts2._ftq(text) RETURNS text AS %s
         LANGUAGE plpythonu IMMUTABLE
+        RETURNS NULL ON NULL INPUT
         """ % quote(text_func))
     #print psycopg.QuotedString(text_func)
     execute(con, r"""
         CREATE OR REPLACE FUNCTION ts2.ftq(text) RETURNS tsquery AS %s
         LANGUAGE plpythonu IMMUTABLE
+        RETURNS NULL ON NULL INPUT
         """ % quote(tsquery_func))
 
     execute(con,

@@ -1,4 +1,5 @@
 <table class="listing"
+       cellpadding="0" cellspacing="0"
        style="width: 100%; margin-bottom: 1px; margin-top: 2px;
               font-size: 90%;">
   <thead>
@@ -12,67 +13,69 @@
 
   <tbody>
     <tal:request repeat="bugtask context/bugtasks">
-    <tr tal:attributes="class python:view.getFixRequestRowCSSClassForBugTask(bugtask)">
-      <td tal:condition="bugtask/required:launchpad.Edit">
-        <a style="text-decoration: none;"
-          tal:attributes="
-            href string:${bugtask/fmt:url}/+editstatus;
-            title string:To change the status or assignee, click here.
-            "
-          tal:content="bugtask/targetname"
-        />
-      </td>
-      <td tal:condition="not:bugtask/required:launchpad.Edit">
-        <a style="text-decoration: none;"
-          tal:attributes="
-            href string:${bugtask/fmt:url}/+viewstatus;
-            title string:To view status details, click here.
-          "
-          tal:content="bugtask/targetname"
+    <tr tal:define="tasklink python: view.taskLink(bugtask)"
+        tal:attributes="class python:view.getFixRequestRowCSSClassForBugTask(bugtask)">
+      <td style="margin: 0; padding: 0">
+        <a style="display: block; text-decoration: none; padding: 3px"
+           tal:attributes="href tasklink"
+           tal:content="bugtask/targetname"
         />
       </td>
 
-      <td>
-        <span tal:content="bugtask/status/title"
-              tal:attributes="class string:status${bugtask/status/title}">
+      <td style="margin: 0; padding: 0">
+        <a style="display: block; text-decoration: none; padding: 3px"
+           tal:attributes="href tasklink;
+                           class string:status${bugtask/status/title}"
+           tal:content="bugtask/status/title">
           $BugTask.status
-        </span>
         <img tal:condition="bugtask/statusexplanation"
-             tal:attributes="title bugtask/statusexplanation"
              src="/++resource++text"
              />
+        </a>
       </td>
 
-      <td tal:content="bugtask/severity/title"
+      <td style="margin: 0; padding: 0"
           tal:attributes="class string:severity${bugtask/severity/title}">
-        Critical
+        <a style="display: block; text-decoration: none; padding: 3px"
+           tal:attributes="href tasklink;
+                           class string:status${bugtask/status/title}"
+           tal:content="bugtask/severity/title">
+          Critical
+        </a>
       </td>
 
-      <td>
+      <td style="margin: 0; padding: 0; vertical-align: middle">
         <tal:has_watch condition="bugtask/bugwatch">
-          <img tal:condition="bugtask/assignee"
-               src="/++resource++user.gif" alt="" />
-          <img
-            alt="Linked to "
-            src="/++resource++arrowRight.gif"
-          />
-          <a style="text-decoration: none;"
-             tal:attributes="href bugtask/bugwatch/url">
+          <a style="display: block; text-decoration: none; padding: 3px"
+             tal:attributes="href tasklink">
+            <img tal:condition="bugtask/assignee"
+                 src="/++resource++user.gif" alt="" />
+            <img
+              alt="Linked to "
+              src="/++resource++arrowRight.gif"
+            />
             <span tal:replace="bugtask/bugwatch/bugtracker/name">Zilla</span>
             #<span tal:replace="bugtask/bugwatch/remotebug">123</span>
           </a>
         </tal:has_watch>
+
         <tal:has_no_watch condition="not: bugtask/bugwatch">
-          <tal:has_assignee condition="bugtask/assignee">
-            <img src="/++resource++user.gif" alt="" />
-            <span tal:replace="bugtask/assignee/browsername">
-              assignee.browsername
-            </span>
-          </tal:has_assignee>
-          <tal:no_assignee condition="not: bugtask/assignee">
-            &mdash;
-          </tal:no_assignee>
+          <a style="display: block; text-decoration: none;"
+             tal:attributes="href tasklink">
+            <tal:has_assignee condition="bugtask/assignee">
+              <img src="/++resource++user.gif"
+                   style="padding-bottom: 2px"
+                   alt="" />
+              <span tal:replace="bugtask/assignee/browsername">
+                assignee.browsername
+              </span>
+            </tal:has_assignee>
+            <tal:no_assignee condition="not: bugtask/assignee">
+              &mdash;
+            </tal:no_assignee>
+          </a>
         </tal:has_no_watch>
+
       </td>
 
     </tr>
@@ -81,7 +84,7 @@
 
 </table>
 
-<div style="font-size: 80%; text-align: right; margin-bottom:1em;"
+<div style="font-size: 80%; text-align: right; margin-bottom: 1em;"
      tal:define="current_bugtask view/currentBugTask">
 
   Request fix:

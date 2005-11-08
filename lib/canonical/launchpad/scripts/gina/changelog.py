@@ -16,12 +16,13 @@ def parse_first_line(line):
     match = first_re.match(line)
     if not match:
         raise ValueError, line
-    srcpkg = match.group(1).lower()
-    version = match.group(2).lower()
+    srcpkg = match.group(1)
+    version = match.group(2)
 
     urgency = None
     match = urgency_re.search(line)
     if match:
+        # XXX: why do we do lower() here?
         urgency = match.group(1).lower()
 
     return (srcpkg, version, urgency)
@@ -61,8 +62,8 @@ def parse_changelog(changelines):
                 #print "State0 skip"
                 continue
             try:
-                (p, ver, pp) = parse_first_line(line.strip())
-                Version(ver)
+                (source, version, urgency) = parse_first_line(line.strip())
+                Version(version)
             except:
                 stanza.append(line)
                 #print "state0 Exception skip"
