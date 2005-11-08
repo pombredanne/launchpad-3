@@ -66,9 +66,11 @@
       belongs to.
     </tal:comment>
     <tal:memberships repeat="membership context/myactivememberships">
-      <img tal:condition="membership/team/emblem"
-           tal:attributes="src membership/team/emblem/url;
-                           title string:Emblem of ${membership/team/name}" />
+      <a tal:attributes="href membership/team/fmt:url"
+        ><img tal:condition="membership/team/emblem"
+              tal:attributes="src membership/team/emblem/url;
+                              title string:Emblem of ${membership/team/name}"
+          /></a>
     </tal:memberships>
     
   </div>
