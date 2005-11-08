@@ -3,6 +3,7 @@
 __metaclass__ = type
 __all__ = [
     'SourcePackage',
+    'SourcePackageSet',    
     ]
 
 from zope.interface import implements
@@ -18,7 +19,7 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    ISourcePackage, IHasBuildRecords)
+    ISourcePackage, ISourcePackageSet, IHasBuildRecords)
 
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
@@ -464,3 +465,11 @@ class SourcePackage:
             orderBy="-datebuilt")
     
 
+class SourcePackageSet:
+    """See ISourcePackageSet"""
+
+    implements(ISourcePackageSet)
+
+    def generate(self, sourcepackagename, distrorelease):
+        """See ISourcePackageSet"""
+        return SourcePackage(sourcepackagename, distrorelease)

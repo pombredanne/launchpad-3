@@ -157,4 +157,16 @@
             lp:url="/distros/ubuntu/hoary/+sources/apache2/+packaging" />
     </browser:pages>
 
+
+  <!-- SourcePackageSet -->
+  <content class="canonical.launchpad.database.SourcePackageSet">
+      <allow interface="canonical.launchpad.interfaces.ISourcePackageSet"/>
+  </content>
+
+  <securedutility
+      class="canonical.launchpad.database.SourcePackageSet"
+      provides="canonical.launchpad.interfaces.ISourcePackageSet">
+     <allow interface="canonical.launchpad.interfaces.ISourcePackageSet" />
+  </securedutility>
+
 </configure>

@@ -19,7 +19,7 @@ Verify if the object follows its interface contracts:
  ...     ISourcePackagePublishingHistory,
  ...     IDistributionSourcePackage,
  ...     IDistributionSourcePackageRelease,
- ...     IDistroReleaseSourcePackageRelease)
+ ...     ISourcePackage)
 
  >>> ISourcePackagePublishingHistory.providedBy(spph)
  True
@@ -40,7 +40,6 @@ Verify if the object follows its interface contracts:
  >>> IDistributionSourcePackageRelease.providedBy(spph.meta_supersededby)
  True
 
- >>> IDistroReleaseSourcePackageRelease.providedBy(
- ...              spph.meta_sourcepackagereleaseInDistroRelease)
+ >>> ISourcePackage.providedBy(spph.meta_sourcepackage)
  True
 

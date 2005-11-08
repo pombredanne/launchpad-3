@@ -1,7 +1,7 @@
   <tr>
     <td><b tal:content="python: context.status.title.upper()" /></td>
-     <td><a tal:content="context/distrorelease/name"
-            tal:attributes="href context/meta_sourcepackagereleaseInDistroRelease/fmt:url" /></td>
+     <td><a tal:content="context/meta_sourcepackage/title"
+            tal:attributes="href context/meta_sourcepackage/fmt:url" /></td>
      <td><b tal:content="context/pocket/name" /></td>
      <td><b tal:content="context/component/name" /></td>
      <td><b tal:content="context/section/name" /></td>

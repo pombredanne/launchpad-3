@@ -470,9 +470,9 @@ class ISourcePackagePublishingHistory(Interface):
             required=True, readonly=False,
             )
 
-    meta_sourcepackagereleaseInDistroRelease = Attribute(
-        "Return an IDistroReleaseSourcePackageRelease meta object "
-        "correspondent to the sourcepackagerelease attribute")
+    meta_sourcepackage = Attribute(
+        "Return an ISourcePackage meta object correspondent to the "
+        "sourcepackagerelease attribute inside a specific distrorelease")
 
     meta_sourcepackagerelease = Attribute(
         "Return an IDistribuitionSourcePackageRelease meta object "

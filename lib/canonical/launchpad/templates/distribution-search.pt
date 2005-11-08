@@ -39,25 +39,30 @@
         <a tal:attributes="href dsp/fmt:url"
            tal:content="dsp/displayname"/>
 
-        <div style="margin-left: 20px;"
-             tal:repeat="pubrec dsp/publishing_history">
+        <div style="margin-left: 20px;" tal:repeat="pubrec dsp/publishing_history">
 
-	  <a tal:content="pubrec/distrorelease/displayname" 
-             tal:attributes="href pubrec/meta_sourcepackagereleaseInDistroRelease/fmt:url"/>
-          (<span tal:replace="pubrec/section/name"/>) : 
-          <span tal:replace="pubrec/sourcepackagerelease/version"/><br/>
+	  <a tal:content="pubrec/meta_sourcepackage/title" 
+             tal:attributes="href pubrec/meta_sourcepackage/fmt:url"/>
+          (<span tal:replace="pubrec/section/name"/>):
+	  <a tal:content="pubrec/meta_sourcepackagerelease/version" 
+             tal:attributes="href pubrec/meta_sourcepackagerelease/fmt:url"/>
+          <br/>
 
           <div style="margin-left: 30px; font-size: 80%;"
                tal:define="meta_binaries pubrec/sourcepackagerelease/meta_binaries">
             <tal:has_bin condition="meta_binaries">
               Binary Packages :
               <tal:binaries repeat="bin meta_binaries">
-                <a tal:content="bin/name" tal:attributes="href bin/fmt:url"/>
+                <a tal:content="bin/name" 
+                   tal:attributes="href bin/fmt:url"/>
               </tal:binaries>
             </tal:has_bin>
+
             <tal:has_no_bin condition="not:meta_binaries">
+              <img src="/++resource++alert" />
               This package has no binaries
             </tal:has_no_bin>
+
           </div> 
 
         </div>

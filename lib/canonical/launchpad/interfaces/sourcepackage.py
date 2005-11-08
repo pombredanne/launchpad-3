@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'ISourcePackage',
+    'ISourcePackageSet'
     ]
 
 from zope.interface import Interface, Attribute
@@ -148,3 +149,8 @@ class ISourcePackage(IBugTarget, ITicketTarget):
         The attribute is True or False.""")
 
 
+class ISourcePackageSet(Interface):
+    """Handy utility for ISourcePackage."""
+
+    def generate(sourcepackagename, distrorelease):
+        """Return an initialized ISourcePackage."""

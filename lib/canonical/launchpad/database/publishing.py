@@ -24,8 +24,7 @@ from canonical.launchpad.interfaces import (
     ISourcePackageFilePublishing, IBinaryPackageFilePublishing,
     ISecureSourcePackagePublishingHistory, IBinaryPackagePublishingHistory,
     ISecureBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
-    IDistroReleaseSourcePackageReleaseSet,
-    IDistributionSourcePackageReleaseSet) 
+    ISourcePackageSet, IDistributionSourcePackageReleaseSet) 
 
 from canonical.lp.dbschema import (
     EnumCol, PackagePublishingPriority, PackagePublishingStatus,
@@ -319,10 +318,10 @@ class SourcePackagePublishingHistory(SQLBase):
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
 
     @property
-    def meta_sourcepackagereleaseInDistroRelease(self):
+    def meta_sourcepackage(self):
         """see ISourcePackagePublishingHistory."""
-        return getUtility(IDistroReleaseSourcePackageReleaseSet).generate(
-            self.distrorelease, self.sourcepackagerelease
+        return getUtility(ISourcePackageSet).generate(
+            self.sourcepackagerelease.sourcepackagename, self.distrorelease
             )
 
     @property
