@@ -715,6 +715,8 @@ class BinaryPackageHandler:
             return licence
 
         # XXX: untested
+        # Couldn't find the licence in the cache; let's trigger a
+        # read_dsc to see if we can find it.
         try:
             tempdir = tempfile.mkdtemp()
             cwd = os.getcwd()
@@ -726,15 +728,14 @@ class BinaryPackageHandler:
                 os.chdir(cwd)
             shutil.rmtree(tempdir)
         except PoolFileNotFound:
-            licence = None
-        else:
-            licence = self.readLicenceCached(bin_name, src_name, version)
-
-        if licence is None:
             log.warn("While groping for a copyright file for %s, could "
                      "not even find the source package for %s (%s) in "
                      "the archive. Dropped copyright." %
                      (bin_name, src_name, version))
+            licence = None
+        else:
+            licence = self.readLicenceCached(bin_name, src_name, version)
+
         return licence
 
     def readLicenceCached(self, bin_name, src_name, version):
