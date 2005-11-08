@@ -344,6 +344,12 @@ class BugTaskSet:
         if params.statusexplanation:
             extra_clauses.append("BugTask.fti @@ ftq(%s)" %
                                  sqlvalues(params.statusexplanation))
+        
+        if params.subscriber is not None:
+            clauseTables = ['Bug', 'BugSubscription']
+            extra_clauses.append("""Bug.id = BugSubscription.bug AND
+                    BugSubscription.person = %(personid)s""" %
+                    sqlvalues(personid=params.subscriber.id))
 
         # Filter the search results for privacy-awareness.
         if params.user:

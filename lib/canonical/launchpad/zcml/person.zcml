@@ -206,6 +206,15 @@
       lp:url="/people/$Person.name/+reportedbugs" />
 
   <browser:page
+      name="+subscribedbugs"
+      for="canonical.launchpad.interfaces.IPerson"
+      facet="bugs"
+      class="canonical.launchpad.browser.SubscribedBugTaskSearchListingView"
+      permission="zope.Public"
+      template="../templates/person-subscribedbugs.pt"
+      lp:url="/people/$Person.name/+subscribedbugs" />
+
+  <browser:page
       for="canonical.launchpad.interfaces.IPerson"
       class="canonical.launchpad.browser.TicketTargetView"
       name="+portlet-latesttickets"
