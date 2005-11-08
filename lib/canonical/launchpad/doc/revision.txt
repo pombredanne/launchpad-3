@@ -1,22 +1,20 @@
-Bazaar Revisions
-================
+= Bazaar Revisions =
 
 Branches are collection of revisions, and a revision can exist independently
 from any branch. Revisions are created automatically by scanning branches, they
 have no creation interface and Launchpad cannot create or modify them.
 
-Creating revisions
-------------------
+== Creating revisions ==
 
-Revisions have an owner attribute. I do not think that is useful at all, but
-Mark wants to keep that around. As a convention, the owner of a Revision is
-always the Launchpad Admins team.
+XXX: Revisions have an owner attribute. As a convention, the owner of a
+Revision is always the Launchpad Admins team. The Revision.owner attribute will
+be removed soon. -- DavidAllouche 2005-10-08
 
 >>> from canonical.launchpad.database import Person
 >>> admins = Person.selectOneBy(name='admins')
 
-The creator of a revision is identified by a RevisionAuthor. A RevisionAutor is
-not a person because that is only an informational attribute, and even if we
+The creator of a revision is identified by a RevisionAuthor. A RevisionAuthor
+is not a person because that is only an informational attribute, and even if we
 trust it, there's really no simple way to map that reliably to persons.
 
 >>> from canonical.launchpad.database import RevisionAuthor
@@ -46,8 +44,7 @@ while the date_created is the time when the database record was created.
 >>> revision_1 = Revision(owner=admins, log_body=log_body_1,
 ...     revision_author=author, revision_id=revision_id_1, revision_date=date)
 
-Ancestors
----------
+== Ancestors ==
 
 Bazaar revisions can have multiple ancestors, the "leftmost" ancestor is the
 revision that was used as a base when committing, other ancestors are used to
@@ -63,8 +60,7 @@ we can represent revision whose at least one ancestor is a ghost revision.
 >>> rev2_parent = RevisionParent(sequence=0, revision=revision_2,
 ...                              parent_id=revision_1.revision_id)
 
-Revision numbers
-----------------
+== Revision numbers ==
 
 Revisions are associated to branches through the RevisionNumber table. A given
 revision may appear in different positions in different branches thanks to

@@ -1,10 +1,8 @@
-Person Views of Branch Lists
-============================
+= Person Views of Branch Lists =
 
 There are several views of the branches related to a person.
 
-Related Branches
-----------------
+== Related Branches ==
 
 First, get the code facet (related branches) for an user which has branches in
 each lifecycle.
@@ -31,8 +29,7 @@ If a person does not have any related branches, we should print an informative m
   ...David Allouche
   ...at present...
 
-Authored Branches
------------------
+== Authored Branches ==
 
 There should be a link in the branch context menu for person which points to
 the authored branches page.
@@ -51,8 +48,7 @@ And we can load the authored branches page.
   HTTP/1.1 200 Ok
   ...
 
-Registered Branches
--------------------
+== Registered Branches ==
 
 There should also be a link which points to the registered branches page.
 
@@ -73,8 +69,7 @@ And we can load the authored branches page.
   HTTP/1.1 200 Ok
   ...
 
-Subscribed branches
--------------------
+== Subscribed branches ==
 
   >>> print http(r"""
   ... GET /people/name12/+branches HTTP/1.1

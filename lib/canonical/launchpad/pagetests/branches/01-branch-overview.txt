@@ -1,5 +1,4 @@
-Branches Overview
-=================
+= Branches Overview =
 
 We should be able to see a list of branches on any product in Launchpad.
 

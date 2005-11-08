@@ -1,8 +1,5 @@
 <div class="portlet">
   <h4 tal:content="context/title">branch title</h4>
-  <tal:comment replace="nothing">XXX: This is ugly when the branch title is an
-       Arch name, and needs to be changed to allow at least some word wrapping
-       -- David Allouche 2005-09-07</tal:comment>
   <div class="portletBody portletContent">
 
         <tal:has_homepage condition="context/home_page">
@@ -20,7 +17,7 @@
              class="link">Author Nome</a><br />
         </tal:has_author>
 
-	<tal:different_registrant condition="not:view/author_is_owner">
+        <tal:different_registrant condition="not:view/author_is_owner">
           <b>Registrant:</b><br />
           <img src="/++resource++user.gif">
           <a tal:attributes="href context/owner/fmt:url"

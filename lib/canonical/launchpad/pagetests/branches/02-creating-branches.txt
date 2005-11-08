@@ -1,5 +1,4 @@
-Creating Branches
-=================
+= Creating Branches =
 
 We should be able to create a new branch from a product.
 

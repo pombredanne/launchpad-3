@@ -36,7 +36,6 @@ class IRevision(IHasOwner):
 class IRevisionAuthor(Interface):
     """Committer of a Bazaar revision."""
 
-    # id = Int(title=_("RevisionAuthor ID"), required=True, readonly=True)
     name = TextLine(title=_("Revision Author Name"), required=True)
 
 

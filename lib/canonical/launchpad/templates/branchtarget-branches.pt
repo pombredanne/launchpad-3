@@ -19,9 +19,8 @@
     <span tal:replace="context/displayname">Steve Alexander</span>.
   </p>
 
-  <p tal:replace="nothing">
-    <!-- ABOUT THIS PAGE
-    XXX: This page was cargo-culted from tickettarget-tickets.pt
+  <tal:comment condition="nothing">
+    <!-- This page was cargo-culted from tickettarget-tickets.pt
          David Allouche 2005-09-09
 
     This page uses a view class that organises the tasks into a set of
@@ -33,7 +32,7 @@
        category/branches => the list of branches
        branch => an IBranch
     -->
-  </p>
+  </tal:comment>
 
   <p tal:condition="not:context/branches">
     <i>There are no branches currently registered for

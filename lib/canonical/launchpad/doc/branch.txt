@@ -1,5 +1,4 @@
-Bazaar Branches
-===============
+= Bazaar Branches =
 
 The Branch table holds information about an Bazaar Branch. It describes the
 Launchpad user model of a branch, and in particular should be able (in the
@@ -29,8 +28,7 @@ Bazaar model does not forbid users from replacing the history of a branch.
 Actually, the conceptual model of Bazaar does not really have an identifiable
 concept of a branch. Branch describes a Launchpad concept.
 
-Creating branches
------------------
+== Creating branches ==
 
 Branches can be created with IBranchSet.new. IBranchSet can be accessed as an
 utility.
@@ -77,8 +75,7 @@ True
 >>> junkcode.home_page is None
 True
 
-Branches and products
----------------------
+== Branches and products ==
 
 Branch not associated to a product are called "junk" branch and treated for
 navigation purposes as if they were associated to a magic product named
@@ -89,8 +86,7 @@ navigation purposes as if they were associated to a magic product named
 >>> gterm_dev.product_name
 u'gnome-terminal'
 
-Branches registered and authored
---------------------------------
+== Branches registered and authored ==
 
 You can get the list of branches for a given Launchpad owner. These are called
 the "registered branches", because the owner is initially set to the current
@@ -120,8 +116,7 @@ authored branch listings for a person.
 >>> list(ddaa.registered_branches) == [gterm_dev]
 True
 
-Branch subscriptions
---------------------
+== Branch subscriptions ==
 
 Branches can be subscribed to and unsubscribed from by a Person.
 
@@ -144,8 +139,7 @@ True
 >>> gterm_dev.subscribers
 []
 
-Branches related to a person
-----------------------------
+== Branches related to a person ==
 
 Finally, you can get the list of related branches for a person, that includes
 the branches registered, authored and subscribed to by this person.
@@ -163,8 +157,7 @@ the branches registered, authored and subscribed to by this person.
 >>> sorted(lifeless.branches, key=getName) == [gterm_dev, junkcode, meshmerge]
 True
 
-Branches and revisions
-----------------------
+== Branches and revisions ==
 
 See revision.txt for a doctest covering the creation of revisions and related
 objects. Revision data is loaded in the database by a batch job using a
@@ -175,8 +168,7 @@ Let's get a branch with some revisions in it.
 >>> sample_person = personset[12]
 >>> junk = sample_person.getBranch(None, 'junk.dev')
 
-Revision history of Branch
---------------------------
+== Revision history of Branch ==
 
 Branch.revision_history gives the sequence of revisions in this branch's
 history, latest revisions first. All revision history items must implement the
@@ -212,8 +204,7 @@ skewed clock.
 >>> list(junk.revisions_since(timestamp)) == two_latest
 True
 
-Ancestry of Revision
---------------------
+== Ancestry of Revision ==
 
 The revision-history of a given branch, is only one possible ancestry path in
 the ancestry graph. It is also possible to examine the ancestry graph directly.

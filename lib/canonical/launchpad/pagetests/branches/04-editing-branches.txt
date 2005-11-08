@@ -1,12 +1,10 @@
-Editing Branches
-================
+= Editing Branches =
 
 We are not happy with the title of the branch for Klingon support in GNOME
 Terminal, and want to associate it to its true author, which recently created
 an account on Launchpad.
 
-Editing branch details
-----------------------
+== Editing branch details ==
 
 First, check that the edit link is visible on the branch page.
 
@@ -114,8 +112,7 @@ Finally, set the author back to its previous value.
   Location: http://localhost:9000/people/name12/+branch/gnome-terminal/klingon
   ...
 
-Editing the Lifecycle Status
-----------------------------
+== Editing the Lifecycle Status ==
 
 We want to update the lifecycle status of the branch and add a joyful
 whiteboard message. We use the +lifecycle page for that.
@@ -208,8 +205,7 @@ Set the branch status back to its initial state.
   Location: http://localhost:9000/people/name12/+branch/gnome-terminal/klingon
   ...
 
-Editing Administrative properties
----------------------------------
+== Editing Administrative properties ==
 
 The administrative form allows changing the registrant, product and name of a
 branch. Let's check that we can attach a junk branch to a product, and make it

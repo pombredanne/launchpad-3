@@ -1,5 +1,4 @@
-Subscribing to Branches
-=======================
+= Subscribing to Branches =
 
 Let us subscribe to one of the branches. First, let's make sure we can see the
 link "Subscribe" from a branch's page.
