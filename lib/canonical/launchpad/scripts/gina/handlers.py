@@ -137,7 +137,7 @@ class ImporterHandler:
 
         self.sppublisher = SourcePackagePublisher(self.distrorelease, pocket)
         # This is initialized in ensure_archinfo
-        self.bppublisher = None
+        self.bppublishers = {}
 
     def commit(self):
         """Commit to the database."""
@@ -174,7 +174,7 @@ class ImporterHandler:
         info = {'distroarchrelease': dar, 'processor': processor}
         self.archinfo[archtag] = info
 
-        self.bppublisher = BinaryPackagePublisher(dar, self.pocket)
+        self.bppublishers[archtag] = BinaryPackagePublisher(dar, self.pocket)
         self.imported_bins[archtag] = []
 
     #
@@ -350,7 +350,8 @@ class ImporterHandler:
         log.info('Publishing binary %s (%s) into %s for %s' %
                  (binarypackagedata.package, binarypackagedata.version,
                   self.distrorelease.name, archtag))
-        self.bppublisher.publish(binarypackagerelease, binarypackagedata)
+        self.bppublishers[archtag].publish(binarypackagerelease,
+                                           binarypackagedata)
         self.imported_bins[archtag].append((binarypackagerelease,
                                             binarypackagedata))
 

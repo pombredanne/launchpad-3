@@ -283,7 +283,7 @@ Make sure that we only imported one db1-compat source package.
 
 We check that the source package publishing override facility works:
 
-    >>> for pub in SecureSourcePackagePublishingHistory.selectBy(
+    >>> for pub in SSPPH.selectBy(
     ...     sourcepackagereleaseID=db1.id, orderBy='distrorelease'):
     ...     print pub.distrorelease.name, pub.section.name
     hoary libs
@@ -473,8 +473,7 @@ Nothing should happen to our data -- no counts should have changed, etc.
 
     >>> SourcePackageRelease.select().count() - orig_spr_count
     16
-    >>> print SecureSourcePackagePublishingHistory.select().count() \
-    ...     - orig_sspph_count
+    >>> print SSPPH.select().count() - orig_sspph_count
     19
     >>> print Person.select().count() - orig_person_count
     12
