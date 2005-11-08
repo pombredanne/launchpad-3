@@ -431,7 +431,7 @@ class Bugzilla:
         # from the Debian bug tracker by the "debzilla" program.  For
         # these bugs, generate a task and watch on the corresponding
         # bugs.debian.org bug.
-        if re.match(r'^deb\d+$', bug.alias):
+        if bug.alias and re.match(r'^deb\d+$', bug.alias):
             watch = self.bugwatchset.createBugWatch(
                 lp_bug, lp_bug.owner, self.debbugs, int(bug.alias[3:]))
             debtask = self.bugtaskset.createTask(
