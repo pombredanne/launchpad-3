@@ -126,8 +126,7 @@ class BugTask(SQLBase, BugTaskMixin):
         notNull=False, default=None)
     dateassigned = UtcDateTimeCol(notNull=False, default=UTC_NOW)
     datecreated  = UtcDateTimeCol(notNull=False, default=UTC_NOW)
-    owner = ForeignKey(
-        foreignKey='Person', dbName='owner', notNull=False, default=None)
+    owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
     # The targetnamecache is a value that is only supposed to be set when a
     # bugtask is created/modified or by the update-bugtask-targetnamecaches
     # cronscript. For this reason it's not exposed in the interface, and
@@ -157,19 +156,18 @@ class BugTask(SQLBase, BugTaskMixin):
             # This is a distro task.
             mark_task(self, IDistroBugTask)
 
-    def _create(self, id, **kw):
-        # We need to overwrite this method to make sure the targetnamecache
-        # column is updated after a new bugtask is created. We can't rely on
-        # event subscribers for doing this because they can run in a
-        # unpredictable order.
-        SQLBase._create(self, id, **kw)
-        self.updateTargetNameCache()
+    def _SO_setValue(self, name, value, fromPython, toPython):
+        # We need to overwrite this method to make sure whenever we change a
+        # single attribute of a BugTask the targetnamecache column is updated.
+        SQLBase._SO_setValue(self, name, value, fromPython, toPython)
+        if name != 'targetnamecache':
+            self.updateTargetNameCache()
 
     def set(self, **kw):
         # We need to overwrite this method to make sure the targetnamecache
-        # column is updated when a bugtask is modified. We can't rely on
-        # event subscribers for doing this because they can run in a
-        # unpredictable order.
+        # column is updated when multiple attributes of a bugtask are
+        # modified. We can't rely on event subscribers for doing this because
+        # they can run in a unpredictable order.
         SQLBase.set(self, **kw)
         # We also can't simply update kw with the value we want for
         # targetnamecache because the _calculate_targetname method needs to
@@ -195,7 +193,8 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def updateTargetNameCache(self):
         """See canonical.launchpad.interfaces.IBugTask."""
-        self.targetnamecache = self._calculate_targetname()
+        if self.targetnamecache != self._calculate_targetname():
+            self.targetnamecache = self._calculate_targetname()
 
     @property
     def statusdisplayhtml(self):
