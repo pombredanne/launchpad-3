@@ -254,8 +254,6 @@ class Bug:
 class Bugzilla:
     """Representation of a bugzilla instance"""
 
-    bugtracker_name = 'ubuntu-bugzilla'
-
     def __init__(self, conn):
         if conn is not None:
             self.backend = BugzillaBackend(conn)
@@ -263,7 +261,7 @@ class Bugzilla:
             self.backend = None
         self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         self.debian = getUtility(ILaunchpadCelebrities).debian
-        self.bugtracker = getUtility(IBugTrackerSet)[self.bugtracker_name]
+        self.bugtracker = getUtility(ILaunchpadCelebrities).ubuntu_bugzilla
         self.debbugs = getUtility(ILaunchpadCelebrities).debbugs
         self.bugset = getUtility(IBugSet)
         self.bugtaskset = getUtility(IBugTaskSet)

@@ -101,7 +101,7 @@ it to return:
   >>> from canonical.launchpad.ftests import login, ANONYMOUS
   >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
   >>> from canonical.launchpad.interfaces import (
-  ...     IPersonSet, IBugSet, IBugTrackerSet)
+  ...     IPersonSet, IBugSet, IBugTrackerSet, ILaunchpadCelebrities)
   >>> from canonical.lp.dbschema import BugTrackerType
   >>> from canonical.launchpad.scripts import bugzilla
   >>> LibrarianTestSetup().setUp()
@@ -109,11 +109,7 @@ it to return:
 Some setup, including the creation of a bug tracker record:
 
   >>> login('test@canonical.com')
-
-  >>> person = getUtility(IPersonSet).getByEmail('test@canonical.com')
-  >>> bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(
-  ...     'http://bugzilla.ubuntu.com/', person,
-  ...     BugTrackerType.BUGZILLA, name='ubuntu-bugzilla')
+  >>> bugtracker = getUtility(ILaunchpadCelebrities).ubuntu_bugzilla
 
 Now we create a bugzilla.Bugzilla instance to handle the import, using
 our fake backend data:
