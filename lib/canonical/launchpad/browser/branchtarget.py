@@ -11,7 +11,7 @@ __all__ = [
 from canonical.launchpad.interfaces import IPerson
 
 # XXX This stuff was cargo-culted from ITicketTarget, that needs to be factored
-# out. -- David Allouche 2005-09-09
+# out. See bug 4011. -- David Allouche 2005-09-09
 
 
 class BranchTargetView:
@@ -21,6 +21,10 @@ class BranchTargetView:
         self.request = request
 
     def context_relationship(self):
+        """The relationship text used for display.
+
+        Explains how the this branch listing relates to the context object. 
+        """
         url = self.request.getURL()
         if '+authoredbranches' in url:
             return "authored by"
@@ -70,4 +74,6 @@ class BranchTargetView:
                 categories[branch.lifecycle_status] = category
             category['branches'].append(branch)
         categories = categories.values()
-        return sorted(categories, key=lambda a: a['status'].value)
+        def by_status(category):
+            return category['status'].value
+        return sorted(categories, key=by_status)
