@@ -286,7 +286,7 @@ class ValidateEmailView(BaseLoginTokenView):
         if signature.fingerprint != fingerprint:
             self.errormessage = (
                 'The key used to sign the content (%s) is not the key '
-                'you were being registering' % signature.fingerprint)
+                'you were registering' % signature.fingerprint)
             return
             
         # we compare the word-splitted content to avoid failures due
