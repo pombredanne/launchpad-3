@@ -1,0 +1,81 @@
+#!/bin/sh
+
+if [ "$1" != $(id -un) ]; then
+	echo "THIS SCRIPT WILL DESTROY ALL OF YOUR POSTGRESQL DATA"
+	echo "If you really want that, run it with your username as"
+	echo "an argument"
+	exit 1
+fi
+
+set -e
+
+# This attempts to automate instructions provided on
+# https://wiki.launchpad.canonical.com/DatabaseSetup which are intended for
+# initial Launchpad setup on an otherwise unconfigured postgresql instance
+
+sudo /etc/init.d/postgresql-8.0 stop
+
+
+main=/var/lib/postgresql/8.0/main
+echo Purging postgresql data...
+sudo -u postgres sh -c "rm -rf $main/*"
+echo Re-creating postgresql database...
+sudo -u postgres /usr/lib/postgresql/8.0/bin/initdb \
+	--pgdata=$main \
+	--encoding=UNICODE --locale=C
+sudo -u postgres ln -s /etc/postgresql-common/root.crt $main
+sudo -u postgres ln -s /etc/postgresql-common/postgresql.crt $main/server.crt
+sudo -u postgres ln -s /etc/postgresql-common/postgresql.pem $main/server.key
+
+echo Applying postgresql configuration changes...
+
+sudo -u postgres grep -q Launchpad /etc/postgresql/8.0/main/pg_hba.conf || \
+sudo -u postgres patch /etc/postgresql/8.0/main/pg_hba.conf <<'EOF'
+--- pg_hba.conf 2005-11-02 17:33:08.000000000 -0800
++++ /tmp/pg_hba.conf    2005-11-03 07:32:46.932400423 -0800
+@@ -58,7 +58,9 @@
+ # on a non-local interface via the listen_addresses configuration parameter,
+ # or via the -i or -h command line switches.
+ #
+-
++# Launchpad users
++local   all         all                                          trust
++host    all         all         127.0.0.1       255.255.255.255  trust
+
+
+
+EOF
+
+sudo grep -q Launchpad /etc/postgresql/8.0/main/postgresql.conf || \
+sudo patch /etc/postgresql/8.0/main/postgresql.conf <<'EOF'
+--- /etc/postgresql/8.0/main/postgresql.conf    2005-11-03 07:56:27.000000000 -0800
++++ /tmp/postgresql.conf        2005-11-03 07:57:28.156973216 -0800
+@@ -318,3 +318,11 @@
+ # - Other Platforms & Clients -
+
+ #transform_null_equals = false
++##
++## Launchpad configuration
++##
++# Enable launchpad full text searching in database
++search_path='$user,public,ts2'
++add_missing_from=false
++# Force use of indexes, to assist in tuning queries
++enable_seqscan=false
+EOF
+
+sudo sed -i -e 's/^manual/auto/' /etc/postgresql/8.0/main/start.conf
+
+sudo /etc/init.d/postgresql-8.0 start
+
+echo Waiting 10 seconds for postgresql to come up...
+sleep 10
+
+echo Creating postgresql user $(id -un)
+sudo -u postgres createuser -a -d $(id -un)
+
+echo
+echo Looks like everything went ok.
+echo Now run "make" in the database/schema subdirectory of launchpad
+
+exit 0

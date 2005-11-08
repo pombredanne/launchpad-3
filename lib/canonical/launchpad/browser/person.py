@@ -21,6 +21,9 @@ __all__ = [
     'PersonEditView',
     'PersonEmblemView',
     'PersonHackergotchiView',
+    'PersonAssignedBugTaskSearchListingView',
+    'ReportedBugTaskSearchListingView',
+    'BugTasksOnMaintainedSoftwareSearchListingView',
     'PersonRdfView',
     'PersonView',
     'TeamJoinView',
@@ -50,19 +53,20 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
-    TeamSubscriptionPolicy, BugTaskStatus)
+    TeamSubscriptionPolicy)
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
 from canonical.launchpad.interfaces import (
     ISSHKeySet, IBugTaskSet, IPersonSet, IEmailAddressSet, IWikiNameSet,
-    IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet,
-    IPasswordEncryptor, ISignedCodeOfConductSet, IGPGKeySet,
-    IGPGHandler, UBUNTU_WIKI_URL, ITeamMembershipSet,
-    IObjectReassignment, ITeamReassignment, IPollSubset, IPerson,
-    ICalendarOwner, BugTaskSearchParams, ITeam, ILibraryFileAliasSet,
+    IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
+    ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
+    ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
+    IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet,
     ITeamMembershipSubset, IPollSet)
 
+from canonical.launchpad.browser.bugtask import (
+    BugTaskSearchListingView, BUGTASK_STATUS_OPEN)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.helpers import (
@@ -557,6 +561,47 @@ def userIsActiveTeamMember(team):
     return user in team.activemembers
 
 
+class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
+    """All bugs reported by someone."""
+
+    def getExtraSearchParams(self):
+        return {'status': any(*BUGTASK_STATUS_OPEN), 'owner': self.context}
+
+
+class BugTasksOnMaintainedSoftwareSearchListingView(BugTaskSearchListingView):
+    """All bugs reported on software maintained by someone."""
+
+    def search(self, searchtext=None, batch_start=None):
+        # Overwrite the search() method from BugTaskSearchListingView because
+        # to get the list of bugs on software maintained by someone we need to
+        # use the maintainedBugTasks method of BugTask, which is not used in
+        # the original search() method.
+        orderBy = ('-dateassigned', '-priority', '-severity')
+        tasks = getUtility(IBugTaskSet).maintainedBugTasks(
+            self.context, orderBy=orderBy, user=self.user)
+        if batch_start is None:
+            batch_start = int(self.request.get('batch_start', 0))
+        batch = Batch(tasks, batch_start)
+        return BatchNavigator(batch=batch, request=self.request)
+
+    def shouldShowSearchWidgets(self):
+        # XXX: It's not possible to search amongst the bugs on maintained
+        # software, so for now I'll be simply hiding the search widgets.
+        # -- Guilherme Salgado, 2005-11-05
+        return False
+
+
+class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
+    """All open bugs assigned to someone."""
+
+    def getExtraSearchParams(self):
+        return {'status': any(*BUGTASK_STATUS_OPEN), 'assignee': self.context}
+
+    def doNotShowAssignee(self):
+        """Should we not show the assignee in the list of results?"""
+        return True
+
+
 class PersonView:
     """A View class used in almost all Person's pages."""
 
@@ -661,52 +706,6 @@ class PersonView:
         """Return True if this is not a restricted team."""
         restricted = TeamSubscriptionPolicy.RESTRICTED
         return self.context.subscriptionpolicy != restricted
-
-    def reportedBugTasks(self):
-        """Return up to 30 bug tasks reported recently by this person."""
-        search_params = BugTaskSearchParams(owner=self.context, user=self.user,
-                                            orderby="-datecreated")
-        return getUtility(IBugTaskSet).search(search_params)[:30]
-
-    def bugTasksAssignedToPerson(self):
-        """Return all the open IBugTasks assigned to this person."""
-        search_params = BugTaskSearchParams(
-            assignee=self.context, user=self.user,
-            status=any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
-            omit_dupes=True, orderby="-dateassigned")
-
-        return getUtility(IBugTaskSet).search(search_params)
-
-    def bugTasksOnMaintainedSoftware(self):
-        """Return all the open IBugTasks on software this person maintains.
-
-        This list does *not* include tasks that are assigned directly
-        to this person. For that, see PersonView.bugTasksAssignedToPerson.
-        """
-        orderBy = ('-dateassigned', '-priority', '-severity')
-        results = getUtility(IBugTaskSet).maintainedBugTasks(
-            self.context, orderBy=orderBy, user=self.user)
-
-        return results
-
-    def bugTasksWithSharedInterest(self):
-        """Return bug tasks (ordered by date assigned) which this
-        person and the logged in user share some interest.
-
-        We assume they share some interest if they're both members of the
-        maintainer or if one is the maintainer and the task is directly
-        assigned to the other.
-        """
-        assert self.user is not None, (
-            'This method should not be called without a logged in user')
-        if self.context.id == self.user.id:
-            return []
-
-        orderBy = ('-dateassigned', '-priority', '-severity')
-        results = getUtility(IBugTaskSet).bugTasksWithSharedInterest(
-            self.context, self.user, user=self.user, orderBy=orderBy)
-
-        return results
 
     def obfuscatedEmail(self):
         if self.context.preferredemail is not None:

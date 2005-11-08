@@ -70,10 +70,14 @@ class BugTaskMixin:
         else:
             return None
 
-    # XXX 2005-06-25 kiko: if target actually works, we can probably
-    # nuke this or simplify it significantly.
     @property
     def targetname(self):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        return self.targetnamecache
+
+    # XXX 2005-06-25 kiko: if target actually works, we can probably
+    # nuke this or simplify it significantly.
+    def _calculate_targetname(self):
         """See canonical.launchpad.interfaces.IBugTask.
 
         Depending on whether the task has a distribution,
@@ -215,6 +219,13 @@ class NullBugTask(BugTaskMixin):
         self.binarypackagename = None
         self.bugwatch = None
         self.owner = None
+
+    @property
+    def targetname(self):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        # For a INullBugTask, there is no targetname in the database, of
+        # course, so we fallback on calculating the targetname in Python.
+        return self._calculate_targetname()
 
     @property
     def statusdisplayhtml(self):

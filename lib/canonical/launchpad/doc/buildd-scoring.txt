@@ -133,8 +133,8 @@ scoreBuildQueueEntry() method.
   >>> bq4.name, bq4.lastscore
   ('Vier', 1026)
 
-* 750 point for restricted component
-* 5 point for LOW priority
+* 750 points for restricted component
+* 5 points for LOW priority
 * 20 points for queue_time ( > 3600 seconds)
 * -20 points for TWO unsatisfied dependency
 
@@ -148,3 +148,17 @@ scoreBuildQueueEntry() method.
 
   >>> bq5.name, bq5.lastscore
   ('Funf', 755)
+
+
+* 1000 points for main component
+* 5 points for LOW priority
+* nothing for queue_time NOW
+* 1 point for satisfied dependency
+
+  >>> time6 = LOCAL_NOW 
+  >>> bq6 = MockBuildQueue('Sechs', SourcePackageUrgency.LOW, 
+  ...                      'main', warty386, time6,
+  ...                      'mozilla-firefox')
+  >>> bm.scoreBuildQueueEntry(bq6)
+  >>> bq6.name, bq6.lastscore
+  ('Sechs', 1006)

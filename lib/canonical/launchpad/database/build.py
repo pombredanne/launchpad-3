@@ -84,6 +84,18 @@ class Build(SQLBase):
             self.datecreated.strftime('%Y-%m-%d'))
 
     @property
+    def build_icon(self):
+        """See IBuild"""
+        icon_map = {
+            BuildStatus.NEEDSBUILD.value : "/++resource++build-success",
+            BuildStatus.FULLYBUILT.value : "/++resource++build-success",
+            BuildStatus.FAILEDTOBUILD.value : "/++resource++build-failure",
+            BuildStatus.MANUALDEPWAIT.value : "/++resource++build-failure",
+            BuildStatus.CHROOTWAIT.value : "/++resource++build-failure",
+            }
+        return icon_map[self.buildstate.value]
+
+    @property
     def distributionsourcepackagerelease(self):
         """See IBuild."""
         return DistributionSourcePackageRelease(
@@ -119,14 +131,14 @@ class Build(SQLBase):
         
         """See IBuild."""
         
-        return BinaryPackageRelease(build=self.id,
-                                    binarypackagename=binarypackagename,
+        return BinaryPackageRelease(buildID=self.id,
+                                    binarypackagenameID=binarypackagename,
                                     version=version,
                                     summary=summary,
                                     description=description,
                                     binpackageformat=binpackageformat,
-                                    component=component,
-                                    section=section,
+                                    componentID=component,
+                                    sectionID=section,
                                     priority=priority,
                                     shlibdeps=shlibdeps,
                                     depends=depends,

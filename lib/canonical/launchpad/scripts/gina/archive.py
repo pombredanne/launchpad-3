@@ -22,6 +22,10 @@ class MangledArchiveError(Exception):
     """Raised when the archive is found to be grossly incomplete"""
 
 
+class NoBinaryArchive(Exception):
+    """Raised when the archive is found to be grossly incomplete"""
+
+
 class ArchiveFilesystemInfo:
     """Archive information files holder
 
@@ -37,15 +41,23 @@ class ArchiveFilesystemInfo:
         self.component = component
         self.arch = arch
 
+        dist_dir = os.path.join(root, "dists", distrorelease, component)
+        if not os.path.exists(dist_dir):
+            raise MangledArchiveError("No archive directory for %s/%s" %
+                                      (distrorelease, component))
+
+        dist_bin_dir = os.path.join(dist_dir, "binary-%s" % arch)
+        if not os.path.exists(dist_bin_dir):
+            raise NoBinaryArchive
+
         # Search and get the files with full path
         sources_zipped = os.path.join(root, "dists", distrorelease,
                                       component, "source", "Sources.gz")
         if not os.path.exists(sources_zipped):
             raise MangledArchiveError("Archive mising Sources.gz at %s"
                                       % sources_zipped)
-        binaries_zipped = os.path.join(root, "dists", distrorelease,
-                                       component, "binary-%s" % arch,
-                                       "Packages.gz")
+
+        binaries_zipped = os.path.join(dist_bin_dir, "Packages.gz")
         if not os.path.exists(binaries_zipped):
             raise MangledArchiveError("Archive mising Packages.gz at %s"
                                       % binaries_zipped)
@@ -94,12 +106,17 @@ class ArchiveComponentItems:
         for arch in archs:
             # Runs through components.
             for component in components:
-                # Create the ArchiveFilesystemInfo instance.
-                archive_info = ArchiveFilesystemInfo(archive_root,
-                                                     distrorelease,
-                                                     component, arch)
-                # Hold it in a list.
-                archive_archs.append(archive_info)
+                try:
+                    # Create the ArchiveFilesystemInfo instance.
+                    archive_info = ArchiveFilesystemInfo(archive_root,
+                                       distrorelease, component, arch)
+                except NoBinaryArchive:
+                    log.warn("The archive for %s/%s doesn't contain "
+                             "a directory for %s, skipping" % 
+                             (distrorelease, component, arch))
+                else:
+                    # Hold it in a list.
+                    archive_archs.append(archive_info)
 
         self._archive_archs = archive_archs
 
