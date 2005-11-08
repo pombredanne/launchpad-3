@@ -112,7 +112,47 @@ This should make us immune to replay attacks and encoding issues.
   ...
 
 
-Below is the clear-signed version of the message we are required to sign:
+Below is a clear-signed version signed with a different key (DFD20543):
+
+  >>> signedcontent = """
+  ... -----BEGIN PGP SIGNED MESSAGE-----
+  ... Hash: SHA1
+  ... 
+  ... Please register 447DBF38C4F9C4ED752246B77D88913717B05A8F to the
+  ... Launchpad user name12.  2005-04-01 12:00:00 UTC
+  ... -----BEGIN PGP SIGNATURE-----
+  ... Version: GnuPG v1.4.1 (GNU/Linux)
+  ... 
+  ... iD8DBQFDcLOh2yWXVgK6XvYRAkpWAKDFHRpVJc2flFwpQMMxub4cl+TcCACgyciu
+  ... s7GH1fQGOQMqpvpinwOjGto=
+  ... =w7/b
+  ... -----END PGP SIGNATURE-----
+  ... """
+
+The key validation does not succeed with this key:
+
+  >>> import urllib
+  >>> print http(r"""
+  ... POST %s HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ...
+  ... password=test&signedcontent=%s&SUBMIT_CHANGES=Submit"""
+  ... % (path, urllib.quote(signedcontent)))
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <title>Validate Sign-Only GPG Key</title>
+  ...
+  ...The key used to sign the content (A419AE861E88BC9E04B9C26FBA2B9389DFD20543) is not the key you were being registering...
+  ...
+
+
+
+Below is the clear-signed version of the message we are required to
+sign, signed with the correct key:
 
   >>> signedcontent = """
   ... -----BEGIN PGP SIGNED MESSAGE-----
@@ -133,7 +173,6 @@ Below is the clear-signed version of the message we are required to sign:
 Validate the GPG key by proving that we can sign the given phrase with
 the key:
 
-  >>> import urllib
   >>> print http(r"""
   ... POST %s HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
