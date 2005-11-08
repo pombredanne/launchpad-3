@@ -296,6 +296,7 @@ And this is for a person:
 >>> check("/people/name16/+portlet-emails")
 >>> check("/people/name16/+portlet-details")
 >>> check("/people/name16/+portlet-editdetails")
+>>> check("/people/name16/+portlet-team-assignedbugs")
 >>> check("/people/name16/+calendar")
 >>> check("/people/name16/+calendar/+subscribe", auth=True)
 
