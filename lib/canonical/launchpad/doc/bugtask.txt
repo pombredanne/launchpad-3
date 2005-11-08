@@ -329,6 +329,12 @@ For a person:
     >>> [bugtask.targetname for bugtask in foobar.searchTasks(params)]
     [u'evolution (ubuntu)', u'evolution (upstream)', u'mozilla-firefox (debian)', u'mozilla-firefox (ubuntu)']
 
+It's also possible to search bugs that a person is subscribed to:
+    
+    >>> params = BugTaskSearchParams(user=None, subscriber=foobar)
+    >>> [bugtask.bug.id for bugtask in foobar.searchTasks(params)]
+    [7]
+
 To provide null-matching search criteria, use canonical.launchpad.searchbuilder.NULL:
 
     >>> from canonical.launchpad.searchbuilder import NULL
