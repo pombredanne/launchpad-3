@@ -59,7 +59,7 @@ it to return:
   ...          'blocker', 'UPSTREAM',
   ...          datetime(2005, 4, 4, tzinfo=UTC), 'Test bug 5',
   ...          'Linux', 'P1', 'Ubuntu', 'i386', 1, '--', 'evolution',
-  ...          '', '--', 0, '', '', ''),
+  ...          '', '--', 0, '', '', 'deb1234'),
   ...     ]
 
   >>> ccs = [[], [3], [], [], []]
@@ -112,7 +112,7 @@ Some setup, including the creation of a bug tracker record:
 
   >>> person = getUtility(IPersonSet).getByEmail('test@canonical.com')
   >>> bugtracker = getUtility(IBugTrackerSet).ensureBugTracker(
-  ...     'http://bugzilla.ubuntu.com', person,
+  ...     'http://bugzilla.ubuntu.com/', person,
   ...     BugTrackerType.BUGZILLA, name='ubuntu-bugzilla')
 
 Now we create a bugzilla.Bugzilla instance to handle the import, using
@@ -151,6 +151,8 @@ function will be used:
   ...             print '    Severity:', task.severity.name
   ...         if task.statusexplanation:
   ...             print '    Explanation:', task.statusexplanation
+  ...         if task.bugwatch:
+  ...             print '    Watch:', task.bugwatch.url
   ...     if bug.cves:
   ...         print 'CVEs:'
   ...     for cve in bug.cves:
@@ -355,6 +357,7 @@ and attach a watch to the upstream bug tracker:
       Status: NEW
       Product: evolution
       Severity: NORMAL
+      Watch: http://bugzilla.gnome.org//show_bug.cgi?id=273041
   Task: evolution (ubuntu)
       Status: NEW
       Distro: ubuntu
@@ -363,6 +366,12 @@ and attach a watch to the upstream bug tracker:
       Priority: HIGH
       Severity: CRITICAL
       Explanation: Bugzilla status=UPSTREAM, product=Ubuntu, component=evolution
+  Task: evolution (debian)
+      Status: NEW
+      Distro: debian
+      Source package: evolution
+      Severity: NORMAL
+      Watch: http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1234
   Messages:
       Author: Sample Person
       Date: 2005-04-05 00:00:00+00:00

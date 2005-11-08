@@ -33,7 +33,7 @@ from canonical.launchpad.interfaces import (
     IPersonSet, IDistributionSet, IBugSet, IBugTaskSet,
     IBugTrackerSet, IBugExternalRefSet, IBugAttachmentSet,
     IMessageSet, ILibraryFileAliasSet, ICveSet, IBugWatchSet,
-    NotFoundError)
+    ILaunchpadCelebrities, NotFoundError)
 from canonical.lp.dbschema import (
     BugTaskSeverity, BugTaskStatus, BugTaskPriority, BugAttachmentType)
 
@@ -261,7 +261,10 @@ class Bugzilla:
             self.backend = BugzillaBackend(conn)
         else:
             self.backend = None
+        self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self.debian = getUtility(ILaunchpadCelebrities).debian
         self.bugtracker = getUtility(IBugTrackerSet)[self.bugtracker_name]
+        self.debbugs = getUtility(ILaunchpadCelebrities).debbugs
         self.bugset = getUtility(IBugSet)
         self.bugtaskset = getUtility(IBugTaskSet)
         self.bugwatchset = getUtility(IBugWatchSet)
@@ -305,9 +308,8 @@ class Bugzilla:
         if bug.product != 'Ubuntu':
             raise ValueError('product must be Ubuntu')
         
-        ubuntu = getUtility(IDistributionSet)['ubuntu']
         try:
-            srcpkg, binpkg = ubuntu.getPackageNames(
+            srcpkg, binpkg = self.ubuntu.getPackageNames(
                 bug.component.encode('ASCII'))
         except ValueError:
             logger.warning('could not find package name for "%s"',
@@ -315,7 +317,7 @@ class Bugzilla:
             srcpkg = binpkg = None
 
         return {
-            'distribution': ubuntu,
+            'distribution': self.ubuntu,
             'sourcepackagename': srcpkg,
             'binarypackagename': binpkg
             }
@@ -325,9 +327,8 @@ class Bugzilla:
         if bug.product != 'Ubuntu':
             raise ValueError('product must be Ubuntu')
         
-        ubuntu = getUtility(IDistributionSet)['ubuntu']
         try:
-            srcpkgname, binpkgname = ubuntu.getPackageNames(
+            srcpkgname, binpkgname = self.ubuntu.getPackageNames(
                 bug.component.encode('ASCII'))
         except ValueError:
             logger.warning('could not find package name for "%s"',
@@ -336,7 +337,7 @@ class Bugzilla:
 
         # find a product series
         series = None
-        for release in ubuntu.releases:
+        for release in self.ubuntu.releases:
             srcpkg = release.getSourcePackage(srcpkgname)
             if srcpkg:
                 series = srcpkg.productseries
@@ -427,6 +428,22 @@ class Bugzilla:
         bug.mapSeverity(task)
         bug.mapPriority(task)
         bug.mapStatus(task)
+
+        # bugs with an alias of the form "deb1234" have been imported
+        # from the Debian bug tracker by the "debzilla" program.  For
+        # these bugs, generate a task and watch on the corresponding
+        # bugs.debian.org bug.
+        if re.match(r'^deb\d+$', bug.alias):
+            watch = self.bugwatchset.createBugWatch(
+                lp_bug, lp_bug.owner, self.debbugs, int(bug.alias[3:]))
+            debtask = self.bugtaskset.createTask(
+                lp_bug,
+                owner=lp_bug.owner,
+                distribution=self.debian,
+                binarypackagename=target['binarypackagename'],
+                sourcepackagename=target['sourcepackagename'])
+            debtask.datecreated = bug.creation_ts
+            debtask.bugwatch = watch
 
         # for UPSTREAM bugs, try to find whether the URL field contains
         # a bug reference.
