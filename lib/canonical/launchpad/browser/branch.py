@@ -124,15 +124,15 @@ class BranchPullListing(LaunchpadView):
              Steve Alexander when working on that.
         """
         if branch.product is None:
-            productname = "+junk"
+            product_name = "+junk"
         else:
-            productname = branch.product.name
-        return "%s %s %s %s" % (branch.url, branch.owner.name, productname,
+            product_name = branch.product.name
+        return "%s %s %s %s" % (branch.url, branch.owner.name, product_name,
                                 branch.name)
 
     def branches_page(self, branches):
         """Return the full page for the supplied list of branches."""
-        lines = [self.branch_line(branch)+ "\n" for branch in branches]
+        lines = [self.branch_line(branch) + "\n" for branch in branches]
         return "".join(lines)
 
     def branches_to_pull(self):

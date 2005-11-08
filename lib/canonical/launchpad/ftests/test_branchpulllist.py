@@ -56,11 +56,11 @@ class MockProduct:
 class MockBranch:
     """A fake branch with the usual fields."""
 
-    def __init__(self, name, url, productname, personname):
+    def __init__(self, name, url, product_name, person_name):
         self.name = name
-        self.owner = MockPerson(personname)
-        if productname is not None:
-            self.product = MockProduct(productname)
+        self.owner = MockPerson(person_name)
+        if product_name is not None:
+            self.product = MockProduct(product_name)
         else:
             self.product = None
         self.url = url
@@ -68,7 +68,7 @@ class MockBranch:
 
 class TestBranchPullListing(unittest.TestCase):
 
-    def test_class_exists(self):
+    def test_branch_pull_class_exists(self):
         from canonical.launchpad.browser import BranchPullListing
 
 
@@ -139,7 +139,7 @@ class TestBranchesToPullSample(LaunchpadFunctionalTestCase):
         self.assertEqual(expected_ids, got_ids)
         # Should rollback here.
 
-    def test_render(self):
+    def test_branch_pull_render(self):
         self.login()
         mock_request = MockRequest()
         mock_request.response = MockResponse()
@@ -157,7 +157,7 @@ class TestBranchesToPullSample(LaunchpadFunctionalTestCase):
             u'']),
             set(view.render().split('\n')))
         
-    def test_sets_mime_type(self):
+    def test_branch_pull_mime_type(self):
         mock_request = MockRequest()
         mock_request.response = MockResponse()
         view = browser.BranchPullListing(None, mock_request)
