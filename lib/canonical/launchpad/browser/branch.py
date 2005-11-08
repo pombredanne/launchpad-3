@@ -4,6 +4,14 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'BranchAddView',
+    'BranchContextMenu',
+    'BranchEditView',
+    'BranchPullListing',
+    'BranchView',
+    ]
+
 from datetime import datetime, timedelta
 import pytz
 
@@ -15,14 +23,6 @@ from canonical.launchpad.browser.addview import SQLObjectAddView
 
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission, LaunchpadView)
-
-__all__ = [
-    'BranchAddView',
-    'BranchContextMenu',
-    'BranchEditView',
-    'BranchPullListing',
-    'BranchView',
-    ]
 
 
 class BranchContextMenu(ContextMenu):
@@ -41,7 +41,7 @@ class BranchContextMenu(ContextMenu):
 
     def subscription(self):
         user = self.user
-        if user is not None and has_branch_subscription(user, self.context):
+        if user is not None and self.context.has_subscription(user):
             text = 'Unsubscribe'
         else:
             text = 'Subscribe'
@@ -53,28 +53,18 @@ class BranchContextMenu(ContextMenu):
         return Link('+admin', text, icon='edit')
 
 
-def has_branch_subscription(person, branch):
-    """Return whether the person has a subscription to the branch.
-
-    XXX: Refactor this to a method on IBranch.
-         DavidAllouche, 2005-09-26
-    """
-    assert person is not None
-    for subscription in branch.subscriptions:
-        if subscription.person.id == person.id:
-            return True
-    return False
-
-
 class BranchView(LaunchpadView):
 
     __used_for__ = IBranch
 
     def initialize(self):
         self.notices = []
-        # establish if a subscription form was posted
-        newsub = self.request.form.get('subscribe', None)
-        if newsub is not None and self.user and self.request.method == 'POST':
+        self._add_subscription_notice()
+
+    def _add_subscription_notice(self):
+        """Add the appropriate notice after posting the subscription form."""
+        if self.user and self.request.method == 'POST':
+            newsub = self.request.form.get('subscribe', None)
             if newsub == 'Subscribe':
                 self.context.subscribe(self.user)
                 self.notices.append("You have subscribed to this branch.")
@@ -82,19 +72,12 @@ class BranchView(LaunchpadView):
                 self.context.unsubscribe(self.user)
                 self.notices.append("You have unsubscribed from this branch.")
 
-    def url(self):
-        components = self.context.url.split('/')
-        return '/&#x200B;'.join(components)
-
     @property
-    def subscription(self):
-        """BranchSubscription for the current user and this branch, or None."""
+    def user_is_subscribed(self):
+        """Is the current user subscribed to this branch?"""
         if self.user is None:
-            return None
-        for subscription in self.context.subscriptions:
-            if subscription.person.id == self.user.id:
-                return subscription
-        return None
+            return False
+        return self.context.has_subscription(self.user)
 
     def count_revisions(self, days=30):
         """Number of revisions committed during the last N days."""
@@ -102,7 +85,7 @@ class BranchView(LaunchpadView):
         return self.context.revisions_since(timestamp).count()
 
     def author_is_owner(self):
-        """Whether the branch author is set and is equal to the registrant."""
+        """Is the branch author set and equal to the registrant?"""
         return self.context.author == self.context.owner
 
 
@@ -113,7 +96,6 @@ class BranchEditView(SQLObjectEditView):
 
 
 class BranchAddView(SQLObjectAddView):
-    """Add new branch."""
 
     _nextURL = None    
 
@@ -128,7 +110,7 @@ class BranchAddView(SQLObjectAddView):
         self._nextURL = canonical_url(branch)
 
     def nextURL(self):
-        assert self._nextURL
+        assert self._nextURL is not None, 'nextURL was called before create()'
         return self._nextURL
 
         

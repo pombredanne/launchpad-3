@@ -23,9 +23,10 @@ class Revision(SQLBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     log_body = StringCol(notNull=True)
+    gpgkey = ForeignKey(dbName='gpgkey', foreignKey='GPGKey', default=None)
+
     revision_author = ForeignKey(
         dbName='revision_author', foreignKey='RevisionAuthor', notNull=True)
-    gpgkey = ForeignKey(dbName='gpgkey', foreignKey='GPGKey', default=None)
     revision_id = StringCol(notNull=True)
     revision_date = UtcDateTimeCol(notNull=False)
 

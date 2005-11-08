@@ -120,6 +120,13 @@ class Branch(SQLBase):
                 BranchSubscription.delete(sub.id)
                 break
 
+    def has_subscription(self, person):
+        """See IBranch."""
+        assert person is not None
+        subscription = BranchSubscription.selectOneBy(
+            personID=person.id, branchID=self.id)
+        return subscription is not None
+
 
 class BranchSet:
     """The set of all branches."""

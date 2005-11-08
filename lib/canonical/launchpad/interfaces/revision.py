@@ -43,7 +43,7 @@ class IRevisionAuthor(Interface):
 class IRevisionParent(Interface):
     """The association between a revision and its parent revisions."""
 
-    revision = Attribute("The descendant revision.")
+    revision = Attribute("The child revision.")
     sequence = Attribute("The order of the parent of that revision.")
     parent = Attribute("The revision_id of the parent revision.")
 

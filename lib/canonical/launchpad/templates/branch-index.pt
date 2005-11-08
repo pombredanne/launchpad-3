@@ -27,7 +27,7 @@
       <tr style="border-top: 1px solid #8cacbb;">
         <td><b>Branch URL:</b></td>
         <td><tt><a tal:attributes="href context/url"
-                   tal:content="structure view/url"
+                   tal:content="context/url"
           >http://example.com/software/hello.devel</a></tt></td>
       </tr>
       <tr>

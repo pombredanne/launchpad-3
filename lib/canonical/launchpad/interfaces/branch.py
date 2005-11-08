@@ -134,6 +134,9 @@ class IBranch(IHasOwner):
     subscriptions = Attribute("BranchSubscriptions associated to this branch.")
     subscribers = Attribute("Persons subscribed to this branch.")
 
+    def has_subscription(person):
+        """Is this person subscribed to the branch?"""
+
     def latest_revisions(quantity=10):
         """A specific number of the latest revisions in that branch."""
 
