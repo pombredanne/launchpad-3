@@ -60,7 +60,7 @@ def _reconnect_sqlos(dbuser=None):
     # to the right database
     assert db_adapter.isConnected(), 'Failed to reconnect'
     cur = db_adapter._v_connection.cursor()
-    cur.execute('SELECT count(*) FROM person')
+    cur.execute('SELECT count(*) FROM LaunchpadDatabaseRevision')
     assert cur.fetchone()[0] > 0, 'Sample data not loaded!'
 
     # Confirm that the SQLOS connection cache has been emptied, so access
@@ -69,7 +69,9 @@ def _reconnect_sqlos(dbuser=None):
 
     # Confirm that SQLOS is again talking to the database (it connects
     # as soon as SQLBase._connection is accessed
-    r = SQLBase._connection.queryAll('SELECT count(*) FROM person')
+    r = SQLBase._connection.queryAll(
+            'SELECT count(*) FROM LaunchpadDatabaseRevision'
+            )
     assert r[0][0] > 0, 'SQLOS is not talking to the database'
 
 

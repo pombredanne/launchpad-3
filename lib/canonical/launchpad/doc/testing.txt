@@ -163,7 +163,7 @@ And always remember to tearDown or you will victimize other tests!
 In general, Zopeless tests should never be running as the launchpad user.
 You can select the user you connect as:
 
->>> setup = LaunchpadZopelessTestSetup(dbuser=config.statistician.dbuser)
+>>> setup = LaunchpadZopelessTestSetup(dbuser=config.librarian.dbuser)
 >>> setup.setUp()
 >>> from canonical.launchpad.database import SourcePackageName
 >>> SourcePackageName.get(1).name
@@ -201,13 +201,13 @@ True
 
 You can change the user that the tests connect as:
 
->>> setup = LaunchpadFunctionalTestSetup(dbuser=config.statistician.dbuser)
+>>> setup = LaunchpadFunctionalTestSetup(dbuser=config.librarian.dbuser)
 >>> setup.setUp()
 >>> connection = setup.connect()
 >>> cursor = connection.cursor()
 >>> cursor.execute('SELECT current_user')
 >>> cursor.fetchone()[0]
-'statistician'
+'librarian'
 >>> SourcePackageName.get(1).name
 Traceback (most recent call last):
 ...
