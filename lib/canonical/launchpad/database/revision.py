@@ -32,6 +32,11 @@ class Revision(SQLBase):
 
     @property
     def parent_ids(self):
+        """Sequence of globally unique ids for the parents of this revision.
+
+        The corresponding Revision objects can be retrieved, if they are
+        present in the database, using the RevisionSet Zope utility.
+        """
         parents = RevisionParent.selectBy(
             revisionID=self.id, orderBy='sequence')
         return [parent.parent_id for parent in parents]
@@ -54,6 +59,7 @@ class RevisionParent(SQLBase):
 
     revision = ForeignKey(
         dbName='revision', foreignKey='Revision', notNull=True)
+
     sequence = IntCol(notNull=True)
     parent_id = StringCol(notNull=True)
 
@@ -65,9 +71,10 @@ class RevisionNumber(SQLBase):
 
     _table = 'RevisionNumber'
     
-    sequence = IntCol(notNull=True)
     branch = ForeignKey(
         dbName='branch', foreignKey='Branch', notNull=True)
+
+    sequence = IntCol(notNull=True)
     revision = ForeignKey(
         dbName='revision', foreignKey='Revision', notNull=True)
 
