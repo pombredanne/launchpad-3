@@ -119,7 +119,7 @@ class IPerson(IHasSpecifications):
     emblem = Bytes(
         title=_("Emblem"), required=False, description=_("A small image, "
         "max 16x16 pixels and 8k in file size, that can be used to refer "
-        "to this team of person."),
+        "to this team."),
         constraint=valid_emblem)
     hackergotchi = Bytes(
         title=_("Hackergotchi"), required=False, description=_("An image, "
