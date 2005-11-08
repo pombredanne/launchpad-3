@@ -8,10 +8,9 @@ __all__ = [
     'SpecificationTargetView',
     ]
 
-from canonical.lp.dbschema import (
-    SpecificationStatus, SpecificationPriority, SpecificationSort)
+from canonical.lp.dbschema import SpecificationSort
 
-from canonical.launchpad.interfaces import ISpecificationTarget, IPerson
+from canonical.launchpad.interfaces import IPerson
 
 class SpecificationTargetView:
 
@@ -61,7 +60,7 @@ class SpecificationTargetView:
             elif '+assignedspecs' in url:
                 specs = self.context.assigned_specs
             elif '+reviewspecs' in url:
-                specs = self.context.review_specs
+                specs = self.context.feedback_specs
             elif '+draftedspecs' in url:
                 specs = self.context.drafted_specs
             elif '+subscribedspecs' in url:
@@ -91,7 +90,7 @@ class SpecificationTargetView:
          - all specs (self.context.specifications())
          - created by this person (self.context.created_specs)
          - assigned to this person (self.context.assigned_specs)
-         - for review by this person (self.context.review_specs)
+         - for review by this person (self.context.feedback_specs)
          - specs this person must approve (self.context.approver_specs)
          - drafted by this person (self.context.drafted_specs)
          - subscribed by this person (self.context.subscriber_specs)
@@ -116,10 +115,10 @@ class SpecificationTargetView:
     @property
     def count(self):
         """Return the number of specs in this view."""
-        if self._count is not None:
-            return self._count
-        # generating the spec list will set self._count
-        speclist = self.specs
+        if self._count is None:
+            # specs is a property; generating the spec list will as a
+            # side-effect set self._count.
+            speclist = self.specs
         return self._count
 
     def getLatestSpecifications(self, quantity=5):

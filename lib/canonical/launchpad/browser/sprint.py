@@ -15,8 +15,7 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    IProduct, IDistribution, ILaunchBag, ISprint, ISprintSet)
+from canonical.launchpad.interfaces import ILaunchBag, ISprint, ISprintSet
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
@@ -32,7 +31,7 @@ class SprintFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an ISprint."""
 
     usedfor = ISprint
-    enable_only = ['overview',]
+    enable_only = ['overview']
 
 
 class SprintContextMenu(ContextMenu):
@@ -63,19 +62,19 @@ class SprintContextMenu(ContextMenu):
         return Link('+edit', text, icon='edit')
 
     def confirmed(self):
-        text = 'Show confirmed'
+        text = 'Show Confirmed'
         return Link('.', text, icon='info')
 
     def all(self):
-        text = 'Show all'
+        text = 'Show All'
         return Link('./?show=all', text, icon='info')
 
     def deferred(self):
-        text = 'Show deferred'
+        text = 'Show Deferred'
         return Link('./?show=deferred', text, icon='info')
 
     def submitted(self):
-        text = 'Show new'
+        text = 'Show New'
         return Link('./?show=submitted', text, icon='info')
 
 
@@ -146,10 +145,10 @@ class SprintView:
 
     @property
     def count(self):
-        if self._count is not None:
-            return self._count
-        # creating list of spec links will set self._count
-        spec_links = self.spec_links()
+        if self._count is None:
+            # creating list of spec links will set self._count as a
+            # sideeffect
+            spec_links = self.spec_links()
         return self._count
 
     @property

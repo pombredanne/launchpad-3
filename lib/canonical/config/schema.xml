@@ -340,6 +340,15 @@
         </key>
     </sectiontype>
 
+    <sectiontype name="targetnamecacheupdater">
+        <key name="dbuser" datatype="string" default="targetnamecacheupdater">
+            <description>
+                The database user wich will be used to update the
+                targetnamecache column of bugtasks.
+            </description>
+        </key>
+    </sectiontype>
+
     <sectiontype name="cveupdater">
         <key name="dbuser" datatype="string" default="cve">
             <description>
@@ -476,6 +485,8 @@
         <section name="*" type="shipitexporter" attribute="shipitexporter" />
         <section name="*" type="karmacacheupdater"
             attribute="karmacacheupdater" />
+        <section name="*" type="targetnamecacheupdater"
+            attribute="targetnamecacheupdater" />
         <section name="*" type="cveupdater" attribute="cveupdater" />
         <section name="*" type="tickettracker" attribute="tickettracker" />
         <section name="*" type="buildsequencer" attribute="buildsequencer" />

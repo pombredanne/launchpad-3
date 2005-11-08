@@ -133,7 +133,7 @@
        <!-- Grant permissions to write on BuildQueue and Build. --> 
        <require
             permission="zope.Public"
-            set_attributes="lastscore"/>
+            set_attributes="lastscore builder buildstart logtail"/>
     </content>
 
     <!-- BuildQueueSet -->

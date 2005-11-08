@@ -4,6 +4,9 @@ __metaclass__ = type
 __all__ = ['BugWatch', 'BugWatchSet']
 
 import re
+import cgi
+import urllib
+import urlparse
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -64,9 +67,30 @@ class BugWatch(SQLBase):
             BugTrackerType.ROUNDUP:  '%s/issue%s'
         }
         bt = self.bugtracker.bugtrackertype
-        if not url_formats.has_key(bt):
+        if bt == BugTrackerType.SOURCEFORGE:
+            return self._sf_url()
+        elif not url_formats.has_key(bt):
             raise AssertionError('Unknown bug tracker type %s' % bt)
         return url_formats[bt] % (self.bugtracker.baseurl, self.remotebug)
+
+    def _sf_url(self):
+        # XXX: validate that the bugtracker URL has atid and group_id in
+        # it.
+        #
+        # Sourceforce has a pretty nasty URL model, with two codes that
+        # specify what project are looking at. This code disassembles
+        # it, sets the bug number and then reassembles it again.
+        # http://sourceforge.net/tracker/?atid=737291
+        #                                &group_id=136955
+        #                                &func=detail
+        #                                &aid=1337833
+        method, base, path, query, frag = \
+            urlparse.urlsplit(self.bugtracker.baseurl)
+        params = cgi.parse_qs(query)
+        params['func'] = "detail"
+        params['aid'] = self.remotebug
+        param_string = urllib.urlencode(params, doseq=True)
+        return urlparse.urlunsplit((method, base, path, param_string, frag))
 
     @property
     def needscheck(self):

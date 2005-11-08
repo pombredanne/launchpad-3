@@ -463,6 +463,9 @@ class Distribution(SQLBase):
             # Is it a sourcepackagename?
             sourcepackagename = SourcePackageName.selectOneBy(name=pkgname)
             if sourcepackagename is not None:
+
+                # XXX: completely untested code
+
                 # It's definitely only a sourcepackagename. Let's make sure it
                 # is published in the current distro release.
                 publishing = SourcePackagePublishing.select('''
@@ -481,6 +484,8 @@ class Distribution(SQLBase):
                 return (sourcepackagename, None)
             # It's neither a sourcepackage, nor a binary package name.
             raise ValueError('Unknown package: %s' % pkgname)
+
+        # XXX: completely untested code
 
         # Ok, so we have a binarypackage with that name. let's see if it's
         # published, and what its sourcepackagename is.

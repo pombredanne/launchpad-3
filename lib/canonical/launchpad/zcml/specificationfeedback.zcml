@@ -5,13 +5,13 @@
   xmlns:lp="http://launchpad.canonical.com"
   i18n_domain="launchpad">
 
-  <!-- SpecificationReview -->
-  <content class="canonical.launchpad.database.SpecificationReview">
+  <!-- SpecificationFeedback -->
+  <content class="canonical.launchpad.database.SpecificationFeedback">
     <allow
-      interface="canonical.launchpad.interfaces.ISpecificationReview" />
+      interface="canonical.launchpad.interfaces.ISpecificationFeedback" />
     <require
       permission="zope.Public"
-      set_schema="canonical.launchpad.interfaces.ISpecificationReview"
+      set_schema="canonical.launchpad.interfaces.ISpecificationFeedback"
       />
   </content>
 

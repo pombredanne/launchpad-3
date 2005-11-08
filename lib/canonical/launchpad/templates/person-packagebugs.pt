@@ -11,25 +11,15 @@
 
   <div metal:fill-slot="main">
 
-    <tal:block define="packagebugs view/bugTasksOnMaintainedSoftware">
+    <metal:page
+        use-macro="context/@@+bugtask-macros-buglisting/page"
+        tal:define="task_batch_navigator view/search">
 
-      <h1>Bugs on Software Maintained by <span tal:replace="context/browsername" /></h1>
+      <metal:heading fill-slot="heading">
+        <h1>Bugs on Software Maintained by <span tal:replace="context/browsername" /></h1>
+      </metal:heading>
 
-      <p tal:condition="not: packagebugs">There are no open bugs on
-      packages maintained by <span tal:replace="context/browsername" />.</p>
-
-      <tal:block tal:condition="packagebugs">
-
-      <div style="margin-bottom: 1em"
-           tal:define="tasks packagebugs;">
-
-      <tal:assignedbugs
-          metal:use-macro="context/@@+bugtask-macros-tableview/table" />
-
-      </div>
-
-    </tal:block>
-    </tal:block>
+    </metal:page>
 
   </div>
 

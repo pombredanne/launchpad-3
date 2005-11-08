@@ -1,0 +1,76 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-feedbackqueue" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Give Feedback on Specification</h1>
+
+  <p class="documentDescription">
+    Select the requests which you wish to remove from your queue.
+  </p>
+
+  <p class="portalMessage"
+     tal:define="status view/process_form"
+     tal:condition="status"
+     tal:content="status" />
+
+  <form tal:attributes="action request/URL" method="POST">
+
+    <table>
+      <tbody>
+        <tr tal:repeat="fbreq view/feedbackrequests">
+          <td>
+            <input type="checkbox" name="feedbackrequest"
+                   tal:attributes="
+                     value fbreq/requester/name;
+                     id string:req_${fbreq/requester/name}" />
+          </td>
+          <td>
+            <label tal:content="fbreq/requester/browsername"
+                   tal:attributes="
+                     for string:req_${fbreq/requester/name}">Foo
+                     Bar</label>
+            <div tal:condition="fbreq/queuemsg"
+                 tal:content="fbreq/queuemsg"
+                 class="lesser" />
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="discreet">
+      Select the items that you have addressed in this specification, and
+      click "Continue" to clear those feedback requests from your queue.
+    </div>
+
+
+    <div class="actions">
+      <input type="submit"
+             name="cancel"
+             value="Cancel" />
+      <input tal:condition="view/feedbackrequests"
+             type="submit"
+             name="FORM_SUBMIT"
+             value="Continue" />
+    </div>
+
+  </form>
+
+</div>
+
+</body>
+</html>

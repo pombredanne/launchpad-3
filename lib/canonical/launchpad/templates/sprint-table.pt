@@ -33,12 +33,18 @@
     </thead>
     <tbody>
       <tr tal:repeat="spec view/specs" class="lesser">
-        <td tal:content="spec/priority/title"
-            tal:attributes="
-                class string:specpriority${spec/priority/name}">High</td>
-        <td tal:content="spec/status/title"
-            tal:attributes="
-                class string:specstatus${spec/status/name}">Approved</td>
+        <td>
+          <span style="display: none" tal:content="spec/priority/value" />
+          <span tal:content="spec/priority/title"
+                tal:attributes="
+                class string:specpriority${spec/priority/name}">High</span>
+        </td>
+        <td>
+          <span style="display: none" tal:content="spec/status/value" />
+          <span tal:content="spec/status/title"
+                tal:attributes="
+                class string:specstatus${spec/status/name}">Approved</span>
+        </td>
         <td><a tal:content="spec/name/fmt:shorten/35"
                tal:attributes="
                  href spec/fmt:url;

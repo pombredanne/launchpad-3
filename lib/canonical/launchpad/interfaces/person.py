@@ -244,8 +244,8 @@ class IPerson(IHasSpecifications):
         "this person, sorted newest first.")
     created_specs = Attribute("Specifications that were created by "
         "this person, sorted newest first.")
-    review_specs = Attribute("Specifications which this person "
-        "has been asked to review, sorted newest first.")
+    feedback_specs = Attribute("Specifications on which this person "
+        "has been asked to provide feedback, sorted newest first.")
     subscribed_specs = Attribute("Specifications to which this person "
         "has subscribed, sorted newest first.")
     tickets = Attribute("Any support requests related to this person. "
@@ -369,6 +369,14 @@ class IPerson(IHasSpecifications):
         """Return this person's unshipped ShipIt request, if there's one.
         
         Return None otherwise.
+        """
+
+    def searchTasks(search_params):
+        """Search IBugTasks with the given search parameters.
+
+        :search_params: a BugTaskSearchParams object
+
+        Return an iterable of matching results.
         """
 
     def validateAndEnsurePreferredEmail(email):

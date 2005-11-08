@@ -8,7 +8,7 @@ __all__ = [
     'ISprintSpecification',
     ]
 
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Int, Text
 from zope.i18nmessageid import MessageIDFactory
 
@@ -30,4 +30,7 @@ class ISprintSpecification(Interface):
             "Your changes will override the current text. Note that "
             "this is purely related to this spec at this meeting, not "
             "the specification in general."))
+
+    is_confirmed = Attribute("True if this spec is confirmed for the "
+        "agenda of this sprint.")
 
