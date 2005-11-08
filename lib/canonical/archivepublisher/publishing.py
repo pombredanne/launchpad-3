@@ -638,6 +638,7 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                 file_stub = os.path.join(component, architecture, file_stub)
                 all_files.add(file_stub)
                 all_files.add(file_stub + ".gz")
+                all_files.add(file_stub + ".bz2")
                 all_files.add(os.path.join(component, architecture, "Release"))
                 f = open(os.path.join(self._config.distsroot, full_name,
                                       component, architecture, "Release"), "w")
