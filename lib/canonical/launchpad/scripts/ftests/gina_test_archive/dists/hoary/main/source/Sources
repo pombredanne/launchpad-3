@@ -198,3 +198,19 @@ Files:
  65902f2e8a0ae18b71937ee4d1803f8b 408302 rioutil_1.4.4.orig.tar.gz
  d24420813f9b6911ca0f37dd7d2a2cb1 4222 rioutil_1.4.4-1.diff.gz
 
+Package: clearlooks
+Binary: gtk2-engines-clearlooks
+Version: 0.6.2-1~hoary1
+Priority: optional
+Section: gnome
+Maintainer: Ross Burton <ross@debian.org>
+Build-Depends: debhelper (>= 4.1.0), cdbs, libgtk2.0-dev
+Architecture: any
+Standards-Version: 3.6.1
+Format: 1.0
+Directory: pool/main/c/clearlooks
+Files:
+ 29aef978c913e5596127fa679e3b8f8b 380 clearlooks_0.6.2-1~hoary1.dsc
+ cebb59c051b935391bd8e64947902fc0 394350 clearlooks_0.6.2.orig.tar.gz
+ 5c56d5c2eb52c8750271ff13da17d971 5746 clearlooks_0.6.2-1~hoary1.diff.gz
+
