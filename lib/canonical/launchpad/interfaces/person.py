@@ -731,6 +731,7 @@ class ITeamMembership(Interface):
     # Properties
     statusname = Attribute("Status Name")
     is_admin = Attribute("True if the person is an admin of the team.")
+    is_owner = Attribute("True if the person is the team owner.")
 
     def isExpired():
         """Return True if this membership's status is EXPIRED."""
