@@ -6,11 +6,13 @@ __metaclass__ = type
 
 __all__ = [
     'DistroReleaseSourcePackageRelease',
+    'DistroReleaseSourcePackageReleaseSet'
     ]
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import IDistroReleaseSourcePackageRelease
+from canonical.launchpad.interfaces import (
+    IDistroReleaseSourcePackageRelease, IDistroReleaseSourcePackageReleaseSet)
 
 from canonical.database.sqlbase import sqlvalues
 
@@ -180,3 +182,12 @@ class DistroReleaseSourcePackageRelease:
         """See ISourcePackageRelease."""
         return self.sourcepackagerelease.sourcepackagename
 
+class DistroReleaseSourcePackageReleaseSet:
+    """See IDistroReleaseSourcePackageSet"""
+
+    implements(IDistroReleaseSourcePackageReleaseSet)
+
+    def generate(self, distrorelease, sourcepackagerelease):
+        """See IDistroReleaseSourcePackageSet"""
+        return DistroReleaseSourcePackageRelease(distrorelease,
+                                                 sourcepackagerelease)

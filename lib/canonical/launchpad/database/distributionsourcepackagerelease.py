@@ -6,11 +6,15 @@ __metaclass__ = type
 
 __all__ = [
     'DistributionSourcePackageRelease',
+    'DistributionSourcePackageReleaseSet'
     ]
 
 from zope.interface import implements
+from zope.component import getUtility
 
-from canonical.launchpad.interfaces import IDistributionSourcePackageRelease
+from canonical.launchpad.interfaces import (
+    IDistributionSourcePackageRelease, IDistributionSourcePackageReleaseSet,
+    IDistributionSourcePackageSet)
 
 from canonical.database.sqlbase import sqlvalues
 
@@ -36,6 +40,12 @@ class DistributionSourcePackageRelease:
     def __init__(self, distribution, sourcepackagerelease):
         self.distribution = distribution
         self.sourcepackagerelease = sourcepackagerelease
+
+    @property
+    def sourcepackage(self):
+        """See IDistributionSourcePackageRelease"""
+        return getUtility(IDistributionSourcePackageSet).generate(
+            self.distribution, self.sourcepackagerelease.sourcepackagename)
 
     @property
     def name(self):
@@ -126,3 +136,14 @@ class DistributionSourcePackageRelease:
                         publishing.binarypackagerelease.binarypackagename))
         return samples
 
+
+class DistributionSourcePackageReleaseSet:
+    """See IDistributionSourcePackageReleaseSet"""
+
+    implements(IDistributionSourcePackageReleaseSet)
+
+    def generate(self, distribution, sourcepackagerelease):
+        """See IDistributionSourcePackageReleaseSet"""
+        return DistributionSourcePackageRelease(distribution,
+                                                sourcepackagerelease)
+    

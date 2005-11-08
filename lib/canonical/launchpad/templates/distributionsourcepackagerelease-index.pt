@@ -15,11 +15,12 @@
 
 <div metal:fill-slot="main">
 
-  <h2>Sample Binary Packages</h2>
+  <h2><span tal:replace="context/displayname"/> Source Package Release</h2>
 
   <p>
-    The following are examples of binary packages produced in this
-    distribution from this source package:
+    Binary packages produced in this distribution for this version of 
+    <a tal:attributes="href context/sourcepackage/fmt:url"
+       tal:content="context/sourcepackage/name"/>:
   </p>
 
   <ul class="packages">
@@ -38,9 +39,21 @@
   </ul>
 
   <h2>Publishing History</h2>
-
-  <div tal:repeat="publishing context/publishing_history"
-       tal:replace="structure publishing/@@+listing-detailed" />
+  <table class="listing">
+  <tr>
+    <td align="center">Status</td>
+    <td align="center">Distrorelease</td>
+    <td align="center">Pocket</td>
+    <td align="center">Component</td>
+    <td align="center">Section</td>
+    <td align="center">Version</td>
+    <td align="center">Date</td>
+    <td colspan="3" align="center">Info</td>
+  </tr>
+  <tal:block repeat="publishing context/publishing_history"
+             replace="structure publishing/@@+listing-detailed">
+  </tal:block>
+  </table>
 
 </div>
 </body>

@@ -6,9 +6,10 @@ __metaclass__ = type
 
 __all__ = [
     'IDistributionSourcePackage',
+    'IDistributionSourcePackageSet'
     ]
 
-from zope.interface import Attribute
+from zope.interface import Interface, Attribute
 
 from canonical.launchpad.interfaces.bug import IBugTarget
 from canonical.launchpad.interfaces.tickettarget import ITicketTarget
@@ -82,3 +83,9 @@ class IDistributionSourcePackage(ITicketTarget, IBugTarget):
         or sourcepackagename compare not equal.
         """
 
+class IDistributionSourcePackageSet(Interface):
+    """Handy utility for IDistributionSourcePackage."""
+
+    def generate(distribution, sourcepackagename):
+        """Return an initialized IDistributionSourcePackage."""
+        

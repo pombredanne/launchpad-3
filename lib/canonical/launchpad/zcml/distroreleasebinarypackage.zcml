@@ -53,4 +53,17 @@
       />
   </browser:pages>
 
+
+  <!-- DistroReleaseBinaryPackageSet -->
+  <content class="canonical.launchpad.database.DistroReleaseBinaryPackageSet">
+      <allow interface="canonical.launchpad.interfaces.IDistroReleaseBinaryPackageSet"/>
+  </content>
+
+  <securedutility
+      class="canonical.launchpad.database.DistroReleaseBinaryPackageSet"
+      provides="canonical.launchpad.interfaces.IDistroReleaseBinaryPackageSet">
+     <allow interface="canonical.launchpad.interfaces.IDistroReleaseBinaryPackageSet" />
+  </securedutility>
+
+
 </configure>

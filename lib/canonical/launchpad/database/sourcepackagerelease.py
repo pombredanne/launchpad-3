@@ -19,8 +19,9 @@ from canonical.lp.dbschema import (
     EnumCol, SourcePackageUrgency, SourcePackageFormat,
     SourcePackageFileType, BuildStatus)
 
-from canonical.launchpad.interfaces import (ISourcePackageRelease,
-    ISourcePackageReleaseSet)
+from canonical.launchpad.interfaces import (
+    ISourcePackageRelease, ISourcePackageReleaseSet,
+    IDistroReleaseBinaryPackageSet)
 
 from canonical.launchpad.database.binarypackagerelease import (
      BinaryPackageRelease)
@@ -128,6 +129,14 @@ class SourcePackageRelease(SQLBase):
                  ' AND BinaryPackageRelease.build = Build.id '
                  ' AND Build.sourcepackagerelease = %i' % self.id)
         return BinaryPackageRelease.select(query, clauseTables=clauseTables)
+
+    @property
+    def meta_binaries(self):
+        """See ISourcePackageRelease."""        
+        return [getUtility(IDistroReleaseBinaryPackageSet).generate(
+                       binary.build.distroarchrelease.distrorelease,
+                       binary.binarypackagename)
+                for binary in self.binaries]
 
     @property
     def current_publishings(self):

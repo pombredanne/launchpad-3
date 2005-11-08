@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'IDistroReleaseBinaryPackage',
+    'IDistroReleaseBinaryPackageSet'
     ]
 
 from zope.interface import Interface, Attribute
@@ -37,4 +38,11 @@ class IDistroReleaseBinaryPackage(Interface):
     current_publishings = Attribute("The BinaryPackagePublishing records "
         "for this binary package name in this distrorelease.")
 
+class IDistroReleaseBinaryPackageSet(Interface):
+    """Handy utility to build IDistroReleaseBinaryPackage objects."""
 
+    def generate(distrorelease, binarypackagename):
+        """Combines a distrorelease and a binarypackagename.
+
+        Returns an IDistroReleaseBinaryPackage.
+        """

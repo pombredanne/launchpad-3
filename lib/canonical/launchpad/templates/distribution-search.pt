@@ -11,12 +11,13 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Source Package Search</h1>
+  <h1>Source Packages in <span tal:replace="context/title" /></h1>
 
+  <div class="form">
   <form name="search" method="GET">
     <div>
       <label for="text">
-        Show <span tal:replace="context/title" />packages containing:
+        Show <span tal:replace="context/title" /> packages containing:
       </label>
     </div>
     <input type="text"
@@ -28,35 +29,51 @@
         tal:condition="not: view/searchrequested" />
     <input type="submit" value="Search Again"
         tal:condition="view/searchrequested" />
-
   </form>
+  </div>
 
-  <tal:searching condition="view/searchrequested">
+  <div condition="view/searchrequested">
 
-    <tal:has_matches condition="view/searchresults">
+    <ul class="sources" condition="view/searchresults">
+      <li tal:repeat="dsp view/searchresults">
+        <a tal:attributes="href dsp/fmt:url"
+           tal:content="dsp/displayname"/>
 
-      <tal:per_match repeat="dsp view/searchresults">
-        <img src="/++resource++package-source" />
-        <a tal:content="dsp/name"
-           tal:attributes="href dsp/fmt:url">foobar</a>:
-        <div style="margin-left: 30px; font-size: 80%;"
-          tal:content="dsp/binary_package_names">
-          apache2 apache-runtime-utils apr
+        <div style="margin-left: 20px;"
+             tal:repeat="pubrec dsp/publishing_history">
+
+	  <a tal:content="pubrec/distrorelease/displayname" 
+             tal:attributes="href pubrec/meta_sourcepackagereleaseInDistroRelease/fmt:url"/>
+          (<span tal:replace="pubrec/section/name"/>) : 
+          <span tal:replace="pubrec/sourcepackagerelease/version"/><br/>
+
+          <div style="margin-left: 30px; font-size: 80%;"
+               tal:define="meta_binaries pubrec/sourcepackagerelease/meta_binaries">
+            <tal:has_bin condition="meta_binaries">
+              Binary Packages :
+              <tal:binaries repeat="bin meta_binaries">
+                <a tal:content="bin/name" tal:attributes="href bin/fmt:url"/>
+              </tal:binaries>
+            </tal:has_bin>
+            <tal:has_no_bin condition="not:meta_binaries">
+              This package has no binaries
+            </tal:has_no_bin>
+          </div> 
+
         </div>
-      </tal:per_match>
+      </li>
+    </ul>
 
-    </tal:has_matches>
-
-    <tal:no_matches condition="not: view/matches">
+    <tal:no_matches condition="not: view/searchresults">
 
       <img src="/++resource++alert" />
-      <i>No packages matching "<span tal:replace="view/text">amarok</span>"
+      <i>No packages matching '<span tal:replace="view/text">amarok</span>'
       are published in
       <span tal:replace="context/displayname">ubuntu</span>.</i>
 
     </tal:no_matches>
 
-  </tal:searching>
+  </div>
 
 </div>
 

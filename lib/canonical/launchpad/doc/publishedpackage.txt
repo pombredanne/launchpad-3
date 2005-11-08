@@ -13,4 +13,17 @@ which distributions.
     >>> verifyObject(IPublishedPackageSet, pp_set)
     True
 
+There are also some meta objectsto combine informations from the DB
+model in more intuitive ones:
+
+ >>> from canonical.launchpad.interfaces import (
+ ...     IDistroReleaseBinaryPackage)
+
+ >>> from canonical.launchpad.database import SourcePackageRelease
+ >>> src = SourcePackageRelease.get(20)
+ >>> src.name
+ u'pmount'
+
+ >>> IDistroReleaseBinaryPackage.providedBy(src.meta_binaries[0])
+ True
 

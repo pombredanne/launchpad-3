@@ -71,7 +71,7 @@ class PublishedPackageSet:
         if text:
             text = text.lower().strip()
             querytxt += " AND binarypackagefti @@ ftq(%s)" % quote(text)
-        return PublishedPackage.select(querytxt)
+        return PublishedPackage.select(querytxt, orderBy=['-datebuilt',])
 
     def findDepCandidate(self, name, distroarchrelease):
         """See IPublishedSet."""

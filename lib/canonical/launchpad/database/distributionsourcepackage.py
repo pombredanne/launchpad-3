@@ -6,13 +6,16 @@ __metaclass__ = type
 
 __all__ = [
     'DistributionSourcePackage',
+    'DistributionSourcePackageSet'
     ]
 
 from sqlobject import SQLObjectNotFound
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import IDistributionSourcePackage
+from canonical.launchpad.interfaces import (
+    IDistributionSourcePackage, IDistributionSourcePackageSet)
+
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
@@ -235,3 +238,12 @@ class DistributionSourcePackage:
             sourcepackagename=self.sourcepackagename,
             owner=owner, title=title, comment=comment,
             private=private)
+
+class DistributionSourcePackageSet:
+    """See IDistributionSourcePackageSet"""
+
+    implements(IDistributionSourcePackageSet)
+
+    def generate(self, distribution, sourcepackagename):
+        """See IDistributionSourcePackageSet"""
+        return DistributionSourcePackage(distribution, sourcepackagename)

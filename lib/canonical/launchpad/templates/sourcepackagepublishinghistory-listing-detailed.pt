@@ -1,14 +1,21 @@
-<b><span tal:replace="context/distrorelease/name">breezy</span>
-   <span tal:replace="context/pocket/name">pocket</span></b>:
-<span tal:replace="context/status/title">Published</span>
-<span tal:replace="context/sourcepackagerelease/version">1.1-2</span>
-in component <span tal:replace="context/component/name">main</span>
-and section <span tal:replace="context/section/name">x11</span>
-<tal:has_datepublished condition="context/datepublished">
-  on <span tal:replace="context/datepublished/fmt:datetime" />
-</tal:has_datepublished>
-<tal:has_datesuperseded condition="context/datesuperseded">
-  and superseded on <span tal:replace="context/datesuperseded/fmt:datetime"
-  /> by <span tal:replace="context/supersededby/title" />
-</tal:has_datesuperseded>
-<hr />
+  <tr>
+    <td><b tal:content="python: context.status.title.upper()" /></td>
+     <td><a tal:content="context/distrorelease/name"
+            tal:attributes="href context/meta_sourcepackagereleaseInDistroRelease/fmt:url" /></td>
+     <td><b tal:content="context/pocket/name" /></td>
+     <td><b tal:content="context/component/name" /></td>
+     <td><b tal:content="context/section/name" /></td>
+    <td><a tal:attributes="href context/meta_sourcepackagerelease/fmt:url">
+           <img alt="Superseded" src="/++resource++package-source"/>
+           <span tal:replace="context/meta_sourcepackagerelease/version"/>
+        </a></td>
+     <td><span tal:replace="context/datepublished/fmt:datetime" /></td>
+     <td><a tal:condition="context/supersededby"
+            tal:attributes="href context/meta_supersededby/fmt:url">
+            <img alt="Superseded by" src="/++resource++package-source"/>
+            <span tal:replace="context/supersededby/version"/>
+         </a></td>
+     <td><span tal:replace="context/datesuperseded/fmt:datetime"/></td>
+     <td><span tal:condition="context/dateremoved"
+               tal:replace="context/dateremoved/fmt:datetime"/></td>
+  </tr>

@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'IDistroReleaseSourcePackageRelease',
+    'IDistroReleaseSourcePackageReleaseSet'
     ]
 
 from zope.interface import Interface, Attribute
@@ -49,4 +50,9 @@ class IDistroReleaseSourcePackageRelease(ISourcePackageRelease):
         "distrorelease.")
 
 
+class IDistroReleaseSourcePackageReleaseSet(Interface):
+    """Handy utility for IDistroReleaseSourcePackageRelease."""
+
+    def generate(distrorelease, sourcepackagerelease):
+        """Return an initialized IDistroReleaseSourcePackageRelease."""
 

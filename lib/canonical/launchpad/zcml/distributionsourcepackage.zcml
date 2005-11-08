@@ -99,4 +99,16 @@
       width="62" />
   </browser:addform>
 
+
+  <!-- DistributionSourcePackageSet -->
+  <content class="canonical.launchpad.database.DistributionSourcePackageSet">
+      <allow interface="canonical.launchpad.interfaces.IDistributionSourcePackageSet"/>
+  </content>
+
+  <securedutility
+      class="canonical.launchpad.database.DistributionSourcePackageSet"
+      provides="canonical.launchpad.interfaces.IDistributionSourcePackageSet">
+     <allow interface="canonical.launchpad.interfaces.IDistributionSourcePackageSet" />
+  </securedutility>
+
 </configure>
