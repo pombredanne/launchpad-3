@@ -3,8 +3,6 @@
 __metaclass__ = type
 __all__ = ['LoginToken', 'LoginTokenSet']
 
-from datetime import datetime
-import pytz
 import random
 
 from zope.interface import implements
@@ -22,8 +20,6 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.lp.dbschema import LoginTokenType, EnumCol
 from canonical.launchpad.validators.email import valid_email
-
-UTC = pytz.timezone('UTC')
 
 
 class LoginToken(SQLBase):

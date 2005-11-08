@@ -359,11 +359,13 @@ class ValidateEmailView(BaseLoginTokenView):
     def _activateGPGKey(self, key, can_encrypt):
         logintokenset = getUtility(ILoginTokenSet)
         gpgkeyset = getUtility(IGPGKeySet)
+
+        fingerprint = key.fingerprint
         requester = self.context.requester
         person_url = canonical_url(requester)
 
         # Is it a revalidation ?
-        lpkey = gpgkeyset.getByFingerprint(key.fingerprint)
+        lpkey = gpgkeyset.getByFingerprint(fingerprint)
 
         if lpkey:
             lpkey.active = True
@@ -380,7 +382,6 @@ class ValidateEmailView(BaseLoginTokenView):
 
         # Otherwise prepare to add
         ownerID = self.context.requester.id
-        fingerprint = key.fingerprint
         keyid = key.keyid
         keysize = key.keysize
         algorithm = GPGKeyAlgorithm.items[key.algorithm]
