@@ -343,6 +343,8 @@ class Bugzilla:
                 if series:
                     return series.product
         else:
+            logger.warning('could not find upstream product for '
+                           'source package "%s"', srcpkgname.name)
             return None
         
     _bug_re = re.compile('bug\s*#?\s*(?P<id>\d+)', re.IGNORECASE)
