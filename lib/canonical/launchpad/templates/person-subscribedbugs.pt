@@ -1,0 +1,27 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+  </metal:leftportlets>
+
+  <div metal:fill-slot="main">
+
+    <metal:page
+        use-macro="context/@@+bugtask-macros-buglisting/page"
+        tal:define="task_batch_navigator view/search">
+
+      <metal:heading fill-slot="heading">
+        <h1>Bugs <span tal:replace="context/browsername"/> is subscribed to</h1>
+      </metal:heading>
+
+    </metal:page>
+
+  </div>
+
+</body>
+</html>

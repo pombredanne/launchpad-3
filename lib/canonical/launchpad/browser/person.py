@@ -24,6 +24,7 @@ __all__ = [
     'PersonAssignedBugTaskSearchListingView',
     'ReportedBugTaskSearchListingView',
     'BugTasksOnMaintainedSoftwareSearchListingView',
+    'SubscribedBugTaskSearchListingView',
     'PersonRdfView',
     'PersonView',
     'TeamJoinView',
@@ -228,7 +229,7 @@ class PersonBugsMenu(ApplicationMenu):
 
     facet = 'bugs'
 
-    links = ['assignedbugs', 'softwarebugs', 'reportedbugs']
+    links = ['assignedbugs', 'softwarebugs', 'reportedbugs', 'subscribedbugs']
 
     def assignedbugs(self):
         text = 'Bugs Assigned'
@@ -242,6 +243,9 @@ class PersonBugsMenu(ApplicationMenu):
         text = 'Bugs Reported'
         return Link('+reportedbugs', text, icon='bugs')
 
+    def subscribedbugs(self):
+        text = 'Bugs Subscribed'
+        return Link('+subscribedbugs', text, icon='bugs')
 
 
 class PersonSpecsMenu(ApplicationMenu):
@@ -587,6 +591,14 @@ class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
     def doNotShowAssignee(self):
         """Should we not show the assignee in the list of results?"""
         return True
+
+
+class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
+    """All bugs someone is subscribed to."""
+
+    def getExtraSearchParams(self):
+        return {'status': any(*BUGTASK_STATUS_OPEN), 
+                'subscriber': self.context}
 
 
 class PersonView:
