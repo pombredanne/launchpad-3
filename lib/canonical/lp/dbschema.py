@@ -72,6 +72,7 @@ __all__ = (
 'SourcePackageFormat',
 'SourcePackageRelationships',
 'SourcePackageUrgency',
+'SpecificationDelivery',
 'SpecificationPriority',
 'SpecificationSort',
 'SpecificationStatus',
@@ -1120,6 +1121,53 @@ class SourcePackageUrgency(DBSchema):
         """)
 
 
+class SpecificationDelivery(DBSchema):
+    """The estimated likelyhood that a feature is actually delivered in the
+    targeted release or series.
+    """
+
+    UNKNOWN = Item(0, """
+        Unknown
+
+        There is no estimate of the likelyhood of delivery for this feature.
+        """)
+
+    DEFERRED = Item(10, """
+        Deferred
+
+        There is no chance that this feature will actually be delivered in
+        the targeted release. The specification has effectively been
+        deferred to a later date of implementation.
+        """)
+
+    UNLIKELY = Item(40, """
+        Unlikely
+
+        This feature is unlikely to be delivered in the targeted release. It
+        has a high risk of failure.
+        """)
+
+    PROBABLE = Item(60, """
+        Probable
+
+        This specification is considered likely to be implemented in the
+        targeted release, but has not yet been delivered.
+        """)
+
+    CERTAIN = Item(70, """
+        Certain
+
+        This functionality is considered a certainty for the targeted
+        release, but has not yet been delivered.
+        """)
+
+    DONE = Item(90, """
+        Done
+
+        This functionality has been delivered for the targeted release.
+        """)
+
+
 class SpecificationPriority(DBSchema):
     """The Priority with a Specification must be implemented.
 
@@ -1827,6 +1875,12 @@ class PackagePublishingPocket(DBSchema):
         pocket, and so will start testing these packages. Once they are
         proven safe for wider deployment they will go into the updates
         pocket.
+        """)
+
+    BACKPORTS = Item(40, """
+        Backports
+
+        This is where backported packages go.
         """)
 
 class SourcePackageRelationships(DBSchema):

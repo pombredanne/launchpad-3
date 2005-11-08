@@ -19,7 +19,7 @@
   <div metal:use-macro="context/@@launchpad_generalform/generalform">
 
     <div metal:fill-slot="extra_info" class="documentDescription">
-      Subscribe someone other than yourself to this specification.
+      Select the specification which has superseded this one.
     </div>
 
   </div>
@@ -28,4 +28,3 @@
     
 </body>
 </html>
-

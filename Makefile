@@ -147,7 +147,7 @@ TAGS:
 #	etags `find . -name \*.py -print`
 
 tags:
-	ctags -R
+	ctags -R lib sourcecode
 
 .PHONY: check tags TAGS zcmldocs realclean clean debug stop start run \
 		ftest_build ftest_inplace test_build test_inplace pagetests \

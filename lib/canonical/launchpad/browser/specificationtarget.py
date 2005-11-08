@@ -60,7 +60,7 @@ class SpecificationTargetView:
             elif '+assignedspecs' in url:
                 specs = self.context.assigned_specs
             elif '+reviewspecs' in url:
-                specs = self.context.review_specs
+                specs = self.context.feedback_specs
             elif '+draftedspecs' in url:
                 specs = self.context.drafted_specs
             elif '+subscribedspecs' in url:
@@ -90,7 +90,7 @@ class SpecificationTargetView:
          - all specs (self.context.specifications())
          - created by this person (self.context.created_specs)
          - assigned to this person (self.context.assigned_specs)
-         - for review by this person (self.context.review_specs)
+         - for review by this person (self.context.feedback_specs)
          - specs this person must approve (self.context.approver_specs)
          - drafted by this person (self.context.drafted_specs)
          - subscribed by this person (self.context.subscriber_specs)

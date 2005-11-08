@@ -14,6 +14,7 @@ COMMENT ON COLUMN Bug.description IS 'A detailed description of the bug. Initial
 /* BugTask */
 
 COMMENT ON TABLE BugTask IS 'Links a given Bug to a particular (sourcepackagename, distro) or product.';
+COMMENT ON COLUMN BugTask.targetnamecache IS 'A cached value of the target name of this bugtask, to make it easier to sort and search on the target name.';
 COMMENT ON COLUMN BugTask.bug IS 'The bug that is assigned to this (sourcepackagename, distro) or product.';
 COMMENT ON COLUMN BugTask.product IS 'The product in which this bug shows up.';
 COMMENT ON COLUMN BugTask.sourcepackagename IS 'The name of the sourcepackage in which this bug shows up.';
@@ -418,12 +419,12 @@ COMMENT ON COLUMN Ticket.answerer IS 'The person who last claimed to have "answe
 COMMENT ON COLUMN Ticket.product IS 'The upstream product to which this support request is related. Note that a support request MUST be linked either to a product, or to a distribution. In future, we may allow a request to be linked to both.';
 COMMENT ON COLUMN Ticket.distribution IS 'The distribution for which a support request was filed. Note that a request MUST be linked either to a product or a distribution, and in future, we may allow it to be linked to both.';
 COMMENT ON COLUMN Ticket.sourcepackagename IS 'An optional source package name. This only makes sense if the ticket is bound to a distribution. It then allows us to guess the correct upstream product, allowing the user to "publish this request upstream too".';
-COMMENT ON COLUMN Ticket.datelastquery IS 'The date we last saw a comment from the requestor (owner).';
-COMMENT ON COLUMN Ticket.datelastresponse IS 'The date we last saw a comment from somebody other than the requestor.';
-COMMENT ON COLUMN Ticket.dateaccepted IS 'The date we "confirmed" or "accepted" this support request. It is usually set to the date of the first response by someone other than the requestor. This allows us to track the time between first request and first response.';
+COMMENT ON COLUMN Ticket.datelastquery IS 'The date we last saw a comment from the requester (owner).';
+COMMENT ON COLUMN Ticket.datelastresponse IS 'The date we last saw a comment from somebody other than the requester.';
+COMMENT ON COLUMN Ticket.dateaccepted IS 'The date we "confirmed" or "accepted" this support request. It is usually set to the date of the first response by someone other than the requester. This allows us to track the time between first request and first response.';
 COMMENT ON COLUMN Ticket.datedue IS 'The date this ticket is "due", if such a date can be established. Usually this will be set automatically on the basis of a support contract SLA commitment.';
-COMMENT ON COLUMN Ticket.dateanswered IS 'The date this ticket was last "answered", in the sense of receiving a comment from someone other than the requestor that they considered sufficient to close the ticket.';
-COMMENT ON COLUMN Ticket.dateclosed IS 'The date the requestor marked this ticket CLOSED.';
+COMMENT ON COLUMN Ticket.dateanswered IS 'The date this ticket was last "answered", in the sense of receiving a comment from someone other than the requester that they considered sufficient to close the ticket.';
+COMMENT ON COLUMN Ticket.dateclosed IS 'The date the requester marked this ticket CLOSED.';
 COMMENT ON COLUMN Ticket.whiteboard IS 'A general status whiteboard. This is a scratch space to which arbitrary data can be added (there is only one constant whiteboard with no history). It is displayed at the top of the ticket. So its a useful way for projects to add their own semantics or metadata to the support tracker.';
 
 /* TicketBug */
@@ -806,11 +807,11 @@ COMMENT ON COLUMN Specification.whiteboard IS 'As long as the specification is s
 COMMENT ON COLUMN Specification.superseded_by IS 'The specification which replaced this specification.';
 COMMENT ON COLUMN Specification.needs_discussion IS 'Whether or not this specification requires further discussion at this sprint. This is used as part of the scheduling algorithm.';
 
--- SpecificationReview
-COMMENT ON TABLE SpecificationReview IS 'A table representing a review request of a specification, from one user to another, with an optional message.';
-COMMENT ON COLUMN SpecificationReview.reviewer IS 'The person who has been asked to do the review.';
-COMMENT ON COLUMN SpecificationReview.requestor IS 'The person who made the request.';
-COMMENT ON COLUMN SpecificationReview.queuemsg IS 'An optional text message for the reviewer, from the requestor.';
+-- SpecificationFeedback
+COMMENT ON TABLE SpecificationFeedback IS 'A table representing a review request of a specification, from one user to another, with an optional message.';
+COMMENT ON COLUMN SpecificationFeedback.reviewer IS 'The person who has been asked to do the review.';
+COMMENT ON COLUMN SpecificationFeedback.requester IS 'The person who made the request.';
+COMMENT ON COLUMN SpecificationFeedback.queuemsg IS 'An optional text message for the reviewer, from the requester.';
 
 -- SpecificationBug
 COMMENT ON TABLE SpecificationBug IS 'A table linking a specification and a bug. This is used to provide for easy navigation from bugs to specs.';
@@ -878,8 +879,6 @@ COMMENT ON COLUMN DistroRelease.name IS 'The unique name of the distrorelease. T
 COMMENT ON COLUMN DistroRelease.title IS 'The display-name title of the distrorelease E.g. "Warty Warthog"';
 COMMENT ON COLUMN DistroRelease.description IS 'The long detailed description of the release. This may describe the focus of the release or other related information.';
 COMMENT ON COLUMN DistroRelease.version IS 'The version of the release. E.g. warty would be "4.10" and hoary would be "5.4"';
-COMMENT ON COLUMN DistroRelease.components IS 'The components which are considered valid within this distrorelease.';
-COMMENT ON COLUMN DistroRelease.sections IS 'The sections which are considered valid within this distrorelease.';
 COMMENT ON COLUMN DistroRelease.releasestatus IS 'The current release status of this distrorelease. E.g. "pre-release freeze" or "released"';
 COMMENT ON COLUMN DistroRelease.datereleased IS 'The date on which this distrorelease was released. (obviously only valid for released distributions)';
 COMMENT ON COLUMN DistroRelease.parentrelease IS 'The parent release on which this distribution is based. This is related to the inheritance stuff.';

@@ -267,6 +267,8 @@ class BuilderGroup:
     def getFileFromSlave(self, slave, filename, sha1sum, librarian):
         """Request a file from Slave.
 
+        Protocol version 1.0new or higher provides /filecache/
+        which allows us to be clever in large file transfer. This method
         Receive a file identifier (sha1sum) a MIME header filename and a
         librarian instance. Store the incomming file in Librarian and return
         the file alias_id, if it failed return None. 'buildlog' string is a
@@ -275,9 +277,10 @@ class BuilderGroup:
         copy in librarian.
         """
         aliasid = None
-        # Protocol version 1.0new or higher provides /filecache/
-        # which allows us to be clever in large file transfer
-        out_file_fd, out_file_name = tempfile.mkstemp()
+        # ensure the tempfile will return a proper name, which does not
+        # confuses the gzip as suffixes like '-Z', '-z', almost everything
+        # insanely related to 'z'. Might also be solved by bug # 3111
+        out_file_fd, out_file_name = tempfile.mkstemp(suffix=".tmp")
         out_file = os.fdopen(out_file_fd, "r+")
 
         try:
