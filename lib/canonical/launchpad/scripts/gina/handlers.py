@@ -339,17 +339,11 @@ class ImporterHandler:
 
     def publish_sourcepackage(self, sourcepackagerelease, sourcepackagedata):
         """Append to the sourcepackagerelease imported list."""
-        log.info('Publishing source %s (%s) into %s' %
-                 (sourcepackagedata.package, sourcepackagedata.version,
-                  self.distrorelease.name))
         self.sppublisher.publish(sourcepackagerelease, sourcepackagedata)
         self.imported_sources.append((sourcepackagerelease, sourcepackagedata))
 
     def publish_binarypackage(self, binarypackagerelease, binarypackagedata,
                               archtag):
-        log.info('Publishing binary %s (%s) into %s for %s' %
-                 (binarypackagedata.package, binarypackagedata.version,
-                  self.distrorelease.name, archtag))
         self.bppublishers[archtag].publish(binarypackagerelease,
                                            binarypackagedata)
         self.imported_bins[archtag].append((binarypackagerelease,
@@ -620,7 +614,7 @@ class SourcePackagePublisher:
         source_publishinghistory = self._checkPublishing(
             sourcepackagerelease, self.distrorelease)
         if source_publishinghistory:
-            log.debug('SourcePackageRelease already published as %s' %
+            log.info('SourcePackageRelease already published as %s' %
                       source_publishinghistory.status.title)
             return
 
@@ -639,7 +633,7 @@ class SourcePackagePublisher:
             datepublished=nowUTC,
             pocket=self.pocket
             )
-        log.debug('Source package %s (%s) published' % (
+        log.info('Source package %s (%s) published' % (
             entry.sourcepackagerelease.sourcepackagename.name,
             entry.sourcepackagerelease.version))
 
@@ -867,7 +861,7 @@ class BinaryPackagePublisher:
         binpkg_publishinghistory = self._checkPublishing(
             binarypackage, self.distroarchrelease)
         if binpkg_publishinghistory:
-            log.debug('Binarypackage already published as %s' % (
+            log.info('Binarypackage already published as %s' % (
                 binpkg_publishinghistory.status.title))
             return
 
@@ -896,7 +890,7 @@ class BinaryPackagePublisher:
             dateremoved = None,
             )
 
-        log.debug('BinaryPackage %s-%s published.' % (
+        log.info('BinaryPackage %s-%s published.' % (
             binarypackage.binarypackagename.name, binarypackage.version))
 
 
