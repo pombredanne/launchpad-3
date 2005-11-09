@@ -43,6 +43,7 @@ ALL_FTI = [
             ]),
 
     ('bugtask', [
+            ('targetnamecache', B),
             ('statusexplanation', C),
             ]),
 
