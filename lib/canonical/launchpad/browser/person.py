@@ -91,6 +91,18 @@ class PersonNavigation(Navigation, CalendarTraversalMixin):
 
     @stepto('+branch')
     def traverse_branch(self):
+        """Branch of this person for the specified product and branch names.
+
+        For example:
+
+        * '/people/ddaa/+branch/bazaar/devel' points to the branch whose owner
+          name is 'ddaa', whose product name is 'bazaar', and whose branch name
+          is 'devel'.
+
+        * '/people/sabdfl/+branch/+junk/junkcode' points to the branch whose
+          owner name is 'sabdfl', with no associated product, and whose branch
+          name is 'junkcode'.
+        """
         stepstogo = self.request.stepstogo
         product_name = stepstogo.consume()
         branch_name = stepstogo.consume()
@@ -167,51 +179,39 @@ class PersonFacets(StandardLaunchpadFacets):
     links = StandardLaunchpadFacets.links + ['code']
 
     def overview(self):
-        target = ''
         text = 'Overview'
         summary = 'General information about %s' % self.context.browsername
-        return Link(target, text, summary)
+        return Link('', text, summary)
 
     def bugs(self):
         # XXX: Soon the +assignedbugs and +reportedbugs pages of IPerson will
         # be merged into a single +bugs page, and I'll fix the target here.
         # -- GuilhermeSalgado, 2005-07-29
-        target = '+assignedbugs'
         text = 'Bugs'
         summary = (
-            'Bug reports that %s is involved with' % self.context.browsername
-        )
-        return Link(target, text, summary)
+            'Bug reports that %s is involved with' % self.context.browsername)
+        return Link('+assignedbugs', text, summary)
 
     def support(self):
-        target = '+tickets'
         text = 'Support'
         summary = (
             'Support requests that %s is involved with' %
             self.context.browsername)
-        return Link(target, text, summary)
+        return Link('+tickets', text, summary)
 
     def specifications(self):
-        target = '+specs'
         text = 'Specifications'
         summary = (
             'Feature specifications that %s is involved with' %
             self.context.browsername)
-        return Link(target, text, summary)
+        return Link('+specs', text, summary)
 
     def bounties(self):
-        target = '+bounties'
         text = 'Bounties'
         summary = (
             'Bounty offers that %s is involved with' % self.context.browsername
             )
-        return Link(target, text, summary)
-
-    def code(self):
-        target = '+branches'
-        text = 'Code'
-        summary = 'Branches and revisions by %s' % self.context.browsername
-        return Link(target, text, summary)
+        return Link('+bounties', text, summary)
 
     def translations(self):
         target = '+translations'
@@ -221,21 +221,19 @@ class PersonFacets(StandardLaunchpadFacets):
             self.context.browsername)
         return Link(target, text, summary)
 
-    def code(self):
-        target = '+branches'
-        text = 'Code'
-        summary = 'Bazaar Branches for %s' % self.context.browsername
-        return Link(target, text, summary)
-
     def calendar(self):
-        target = '+calendar'
         text = 'Calendar'
         summary = (
             u'%s\N{right single quotation mark}s scheduled events' %
             self.context.browsername)
         # only link to the calendar if it has been created
         enabled = ICalendarOwner(self.context).calendar is not None
-        return Link(target, text, summary, enabled=enabled)
+        return Link('+calendar', text, summary, enabled=enabled)
+
+    def code(self):
+        text = 'Code'
+        summary = 'Branches and revisions by %s' % self.context.browsername
+        return Link('+branches', text, summary)
 
 
 class PersonBugsMenu(ApplicationMenu):
