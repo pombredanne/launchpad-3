@@ -10,4 +10,4 @@ UPDATE GpgKey SET can_encrypt = TRUE;
 ALTER TABLE GpgKey ALTER COLUMN can_encrypt SET DEFAULT FALSE;
 ALTER TABLE GpgKey ALTER COLUMN can_encrypt SET NOT NULL;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (25, 90, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (25, 56, 0);

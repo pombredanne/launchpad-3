@@ -1416,7 +1416,7 @@ class GPGKey(SQLBase):
 
     active = BoolCol(dbName='active', notNull=True)
 
-    can_encrypt = BoolCol(dbName='can_encrypt', notNull=True)
+    can_encrypt = BoolCol(dbName='can_encrypt', notNull=False)
 
     @property
     def keyserverURL(self):
@@ -1431,7 +1431,7 @@ class GPGKeySet:
     implements(IGPGKeySet)
 
     def new(self, ownerID, keyid, fingerprint, keysize,
-            algorithm, active=True, can_encrypt=True):
+            algorithm, active=True, can_encrypt=False):
         """See IGPGKeySet"""
         return GPGKey(owner=ownerID, keyid=keyid,
                       fingerprint=fingerprint, keysize=keysize,
