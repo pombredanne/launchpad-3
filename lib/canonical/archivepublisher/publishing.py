@@ -238,8 +238,7 @@ class Publisher(object):
                 extra_extra_overrides = os.path.join(
                     self._config.miscroot,
                     "more-extra.override.%s.main" % (distrorelease))
-                if (os.path.exists(extra_extra_overrides) and
-                    component == "main"):
+                if os.path.exists(extra_extra_overrides):
                     eef = open(extra_extra_overrides, "r")
                     extras = {}
                     for line in eef:
