@@ -8,7 +8,11 @@ _ = MessageIDFactory('launchpad')
 
 __metaclass__ = type
 
-__all__ = ('ITranslationImportQueue', 'ITranslationImportQueueSet')
+__all__ = [
+    'ITranslationImportQueue',
+    'ITranslationImportQueueSet',
+    'ITranslationImportQueueEdition',
+    ]
 
 class ITranslationImportQueue(Interface):
     """An entry of the Translation Import Queue."""
@@ -16,7 +20,10 @@ class ITranslationImportQueue(Interface):
     id = Attribute('The item ID')
 
     path = TextLine(
-        title=_("File's path in the source tree, including the filename"),
+        title=_("Path"),
+        description=_(
+            "The path to this file inside the source tree. Includes the"
+            " filename."),
         required=True)
 
     importer = Choice(
@@ -79,6 +86,13 @@ class ITranslationImportQueueSet(Interface):
 
     def __iter__():
         """Iterate over all entries in the queue."""
+
+    def __getitem__(id):
+        """Return the ITranslationImportQueue with the given id.
+
+        If there is not entries with that id, the NotFoundError exception is
+        raised.
+        """
 
     def addOrUpdateEntry(path, content, is_published, importer,
         sourcepackagename=None, distrorelease=None, productseries=None):
@@ -147,3 +161,44 @@ class ITranslationImportQueueSet(Interface):
 
     def remove(id):
         """Remove the item referered by 'id' from the queue."""
+
+
+class ITranslationImportQueueEdition(Interface):
+    """Set of widgets needed to moderate an entry on the imports queue."""
+
+    potemplatename = Choice(
+        title=_("Template Name"),
+        description=_("The name of this PO template, for example "
+            "'evolution-2.2'. Each translation template has a "
+            "unique name in its package. It's important to get this "
+            "correct, because Rosetta will recommend alternative "
+            "translations based on the name."),
+        required=True,
+        vocabulary="POTemplateName")
+
+    productseries = Choice(
+        title=_("Product Branch or Series"),
+        required=False,
+        vocabulary="ProductSeries")
+
+    sourcepackagename = Choice(
+        title=_("Source Package Name"),
+        description=_(
+            "The source package that uses this template."),
+        required=False,
+        vocabulary="SourcePackageName")
+
+    language = Choice(
+        title=_("Language"),
+        required=False,
+        vocabulary="Language")
+
+    variant = TextLine(
+        title=_("Variant"),
+        required=False)
+
+    path = TextLine(
+        title=_("Path"),
+        description=_(
+            "The path to this file inside the source tree."),
+        required=True)

@@ -18,9 +18,10 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
     ITranslationImportQueue, ITranslationImportQueueSet, ICanonicalUrlData,
-    ILaunchpadCelebrities)
+    ILaunchpadCelebrities, ITranslationImportQueueEdition)
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, ContextMenu, Link)
+from canonical.launchpad.webapp.generalform import GeneralFormView
 
 
 class TranslationImportQueueNavigation(GetitemNavigation):
@@ -44,11 +45,16 @@ class TranslationImportQueueURL:
         return getUtility(ITranslationImportQueueSet)
 
 
-class TranslationImportQueueView:
+class TranslationImportQueueView(GeneralFormView):
+    """This view handles the view part of the admin interface for the
+    translation import queue.
+    """
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    def process(self, potemplatename, productseries, sourcepackagename,
+        language, variant, path):
+        """Process the form we got from the submission."""
+        return 'Hi!'
+
 
 
 class TranslationImportQueueSetNavigation(GetitemNavigation):

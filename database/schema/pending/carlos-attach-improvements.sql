@@ -31,4 +31,10 @@ ALTER TABLE POTemplate ADD CONSTRAINT valid_fromsourcepackagename CHECK (sourcep
 -- We need a join of the path and filename fields before removing that column.
 --ALTER TABLE POTemplate DROP COLUMN filename;
 
+
+--How would we define a constraint check that would be something like?:
+--ALTER TABLE POFile ADD CONSTRAINT valid_fromsourcepackagename CHECK (potemplate.sourcepackagename IS NOT NULL OR fromsourcepackagename IS NULL);
+--The idea is that the POFile.fromsourcepackagename cannot be not null unless POFile.potemplate.sourcepackagename is not null.
+
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (25,99,0);

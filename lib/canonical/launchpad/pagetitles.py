@@ -905,6 +905,7 @@ template_new = 'EXAMPLE NEW TITLE'
 translationgroup = ContextTitle('Rosetta Translation Group: %s')
 translationgroups = 'Rosetta Translation Groups'
 
+translationimportqueue_index = 'Translation Import Queue Entry'
 translationimportqueueset_index = 'Translation Import Queue'
 translationimportqueueset_blocked = 'Translation Import Queue - Blocked'
 

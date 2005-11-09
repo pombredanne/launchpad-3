@@ -35,15 +35,30 @@
         urldata="canonical.launchpad.browser.TranslationImportQueueURL"
         />
 
+    <browser:generalform
+        name="+index"
+        for="canonical.launchpad.interfaces.ITranslationImportQueue"
+        schema="canonical.launchpad.interfaces.ITranslationImportQueueEdition"
+        class="canonical.launchpad.browser.TranslationImportQueueView"
+        template="../templates/translationimportqueue-index.pt"
+        permission="launchpad.Admin">
+        fields="potemplatename productseries sourcepackagename
+                language variant path"
+        arguments="potemplatename productseries sourcepackagename
+                language variant path"
+        lp:url="/rosetta/imports/$TranslationImportQueue.id/+index" />
+    </browser:generalform>
+
     <browser:pages
         for="canonical.launchpad.interfaces.ITranslationImportQueue"
-        facet="translations"
-        class="canonical.launchpad.browser.TranslationImportQueueView"
-        permission="launchpad.Admin">
+        facet="overview"
+        permission="zope.Public">
+        <!-- TranslationImportQueue Portlets -->
         <browser:page
-            template="../templates/translationimportqueue-index.pt"
-            name="+index"
-            lp:url="/rosetta/imports/$TranslationImportQueue.id/+index" />
+            name="+portlet-details"
+            template="../templates/translationimportqueue-portlet-details.pt"
+            lp:url="/rosetta/imports/1/+portlet-details"
+            />
     </browser:pages>
 
     <!-- TranslationImportQueueSet -->

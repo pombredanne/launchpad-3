@@ -1,0 +1,29 @@
+
+<div class="portlet">
+
+    <h4>Import Entry Details:</h4>
+
+    <div class="portletBody">
+        <div class="portletContent">
+            <b>Origin:</b><br />
+            <a tal:condition="context/sourcepackage"
+               tal:content="context/sourcepackage/title"
+               tal:attributes="href string:${context/sourcepackage/fmt:url}"
+               >evolution in Ubuntu Hoary</a>
+            <a tal:condition="context/productseries"
+               tal:content="context/productseries/title"
+               tal:attributes="href string:${context/productseries/fmt:url}"
+               >Evolution Series: MAIN</a><br />
+            <b>Path:</b>
+            <span tal:replace="context/path" /><br />
+            <b>Uploader:</b><br />
+            <img src="/++resource++user.gif" />
+            <span tal:replace="context/importer/browsername" /><br />
+            <b>Waiting since:</b>
+            <span tal:replace="context/dateimport/fmt:date">
+              2004-05-22
+            </span><br />
+        </div>
+    </div>
+</div>
+

@@ -137,6 +137,16 @@ class TranslationImportQueueSet:
         for entry in self.getEntries(include_ignored=True):
             yield entry
 
+    def __getitem__(self, id):
+        """See ITranslationImportQueueSet."""
+        try:
+            idnumber = int(id)
+        except ValueError:
+            raise NotFoundError("Unable to locate an entry in the translation"
+                " import queue with ID %s" % id)
+
+        return self.get(idnumber)
+
     def addOrUpdateEntry(self, path, content, is_published, importer,
         sourcepackagename=None, distrorelease=None, productseries=None):
         """See ITranslationImportQueueSet."""
