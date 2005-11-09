@@ -1,3 +1,23 @@
+launchpad-buildd (18) unstable; urgency=low
+
+  * Remove sbuildrc.tmp dangleberry in postinst
+  * Add linux32 to set of depends so that hppa, sparc and powerpc can build
+  * Make hppa, sparc, powerpc use linux32 to invoke the sbuild binary
+  * Add --resolve-deps to debootstrap invocation
+  * Make chroot tool use /bin/su - rather than /bin/sh for chrooting. shiny
+    (apparently)
+  * Add a bunch of deps infinity spotted.
+  * Make sure we chown the chroot tarball to the calling user after packing
+    it up.
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Wed,  9 Nov 2005 17:37:37 -0500
+
+launchpad-buildd (17) unstable; urgency=low
+
+  * Changed default UID/GID to match the ldap buildd UID/GID
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Wed,  9 Nov 2005 17:13:22 -0500
+
 launchpad-buildd (16) unstable; urgency=low
 
   * Change the XMLRPC method 'ensure' to be 'ensurepresent'

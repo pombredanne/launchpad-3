@@ -6,8 +6,8 @@ set -e
 set -u
 
 USER=${BUILDD_USER:-buildd}
-BUILDDGID=${BUILDD_GID:-65500}
-BUILDDUID=${BUILDD_UID:-65500}
+BUILDDGID=${BUILDD_GID:-2501}
+BUILDDUID=${BUILDD_UID:-2001}
 
 make_buildd()
 {
@@ -38,6 +38,7 @@ case "$1" in
             <sbuildrc.tmp > .sbuildrc
 	chown $USER:buildd .sbuildrc
 	chmod 0644 .sbuildrc
+	rm sbuildrc.tmp
 
 	# Prepare a default buildd...
 	test -e /etc/launchpad-buildd/default || make_buildd

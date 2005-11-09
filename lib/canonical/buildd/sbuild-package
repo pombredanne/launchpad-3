@@ -21,6 +21,10 @@ shift
 
 cd "$HOME/build-$BUILDID"
 
+case $(dpkg --print-installation-architecture) in
+  hppa|powerpc|sparc) SBUILD="linux32 $SBUILD" ;;
+esac
+
 $SBUILD "$@"
 RET=$?
 
