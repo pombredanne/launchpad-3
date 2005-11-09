@@ -13,7 +13,6 @@ def call(cmd):
     out, err = p.communicate()
     for line in out.splitlines():
         log.debug("> %s" % line)
-    log.debug("> RETURNED: %d" % p.returncode)
     if p.returncode != 0:
         raise ExecutionError("Error %d running %s" % (p.returncode, cmd))
     return p.returncode
