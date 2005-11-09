@@ -1,18 +1,16 @@
   <tr>
-    <td><b tal:content="python: context.status.title.upper()" /></td>
+     <td><span tal:replace="context/datepublished/fmt:datetime" /></td>
+     <td><b tal:content="context/status/title" /></td>
      <td><a tal:content="context/meta_sourcepackage/title"
             tal:attributes="href context/meta_sourcepackage/fmt:url" /></td>
-     <td><b tal:content="context/pocket/name" /></td>
+     <td><b tal:content="context/pocket/title" /></td>
      <td><b tal:content="context/component/name" /></td>
      <td><b tal:content="context/section/name" /></td>
     <td><a tal:attributes="href context/meta_sourcepackagerelease/fmt:url">
-           <img alt="Superseded" src="/++resource++package-source"/>
            <span tal:replace="context/meta_sourcepackagerelease/version"/>
         </a></td>
-     <td><span tal:replace="context/datepublished/fmt:datetime" /></td>
      <td><a tal:condition="context/supersededby"
             tal:attributes="href context/meta_supersededby/fmt:url">
-            <img alt="Superseded by" src="/++resource++package-source"/>
             <span tal:replace="context/supersededby/version"/>
          </a></td>
      <td><span tal:replace="context/datesuperseded/fmt:datetime"/></td>

@@ -30,13 +30,13 @@
   <h2>Publishing History</h2>
   <table class="listing">
   <tr>
+    <td align="center">Datetime</td>
     <td align="center">Status</td>
-    <td align="center">Distrorelease</td>
+    <td align="center">Target</td>
     <td align="center">Pocket</td>
     <td align="center">Component</td>
     <td align="center">Section</td>
     <td align="center">Version</td>
-    <td align="center">Date</td>
     <td colspan="3" align="center">Info</td>
   </tr>
   <tal:block repeat="publishing context/publishing_history"
