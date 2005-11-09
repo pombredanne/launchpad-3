@@ -38,7 +38,7 @@ standard output with noisely output.
 
 Now we have satisfied all needs for BuildMaster, let's instantiate it.
 
-  >>> bm = BuilddMaster(logging.getLogger(), transaction)
+  >>> bm = BuilddMaster(logging.getLogger(), transaction, [])
 
 Emulates a PocketChroot entry to validate the distroarchrelese 
 Ubuntu/Warty/i386/RELEASE and Debian/Woody/i386/RELEASE:

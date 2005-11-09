@@ -23,6 +23,8 @@ import pytz
 import tempfile
 import os
 import apt_pkg
+import subprocess
+import shutil
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -44,6 +46,11 @@ from canonical.launchpad.helpers import filenameToContentType
 from canonical.buildd.slave import BuilderStatus
 from canonical.buildd.utils import notes
 
+
+KBYTE=1024
+def file_chunks(from_file, chunk_size=256*KBYTE):
+    """Using the special two-arg form of iter() iterate a file's chunks."""
+    return iter(lambda: from_file.read(chunk_size), '')
 
 # XXX cprov 20050628
 # I couldn't found something similar in hct.utils, but probably there is.
@@ -76,9 +83,10 @@ class BuilderGroup:
     def rollback(self):
         self._tm.rollback()
 
-    def __init__(self, logger, tm):
+    def __init__(self, logger, tm, upload_cmdline):
         self._tm = tm
         self.logger = logger
+        self.upload_cmdline = upload_cmdline
 
     def checkAvailableSlaves(self, arch):
         """Iter through available builder-slaves for an given architecture."""
@@ -290,7 +298,7 @@ class BuilderGroup:
             # two-arg form of iter, see
             # /usr/share/doc/python2.4/html/lib/built-in-funcs.html#l2h-42
             bytes_written = 0
-            for chunk in iter(lambda: slave_file.read(1024*256), ''):
+            for chunk in file_chunks(slave_file):
                 out_file.write(chunk)
                 bytes_written += len(chunk)
                 
@@ -330,55 +338,6 @@ class BuilderGroup:
             
         return aliasid
 
-    def processBinaryPackage(self, build, aliasid, filename):
-        """Process the binary package resulted of the a build process."""
-        # extract name and version from filename
-        binname, version = extractNameAndVersion(filename)
-
-        # XXX cprov 20051019
-        # * is this DEB dependent part mandatory
-        # * create a binarypackagerelease with default fields for a while
-        # Practically speaking, all the code below will be replaced by the
-        # uploader-integration branch, the binary is treated properly there,
-        # not here.
-        binname = getUtility(IBinaryPackageNameSet).ensure(binname)
-        archspec = not filename.endswith("all.deb")
-        binpackageformat = dbschema.BinaryPackageFormat.DEB
-        component = build.sourcepackagerelease.component
-        section = build.sourcepackagerelease.section
-        priority = dbschema.PackagePublishingPriority.STANDARD
-        summary = "Launchpad Auto Build System summary placeholder"
-        description = "Launchpad Auto Build System description placeholder"
-        shlibdeps = None
-        depends = None
-        recommends = None
-        suggests = None
-        conflicts = None
-        replaces = None
-        provides = None
-        essential = False
-        installedsize = None
-        copyright = None
-        licence = None
-        
-        binpkg = build.createBinaryPackageRelease(
-            binname, version, summary, description, binpackageformat,
-            component, section, priority, shlibdeps, depends, recommends,
-            suggests, conflicts, replaces, provides, essential, installedsize,
-            copyright, licence, archspec)
-        
-        # add the binary file
-        alias = getUtility(ILibraryFileAliasSet)[aliasid]
-        binpkg.addFile(alias)
-
-        # publish file as PENDING in pocket RELEASE with no EMBARGO 
-        status = dbschema.PackagePublishingStatus.PENDING,
-        pocket = dbschema.PackagePublishingPocket.RELEASE,
-        embargo = False
-        binpkg.publish(priority, status, pocket, embargo)
-        
-        self.logger.debug("Absorbed binary package %s" % filename)
-        
     def updateBuild(self, queueItem, librarian):
         """Verify the current build job status and perform the required
         actions for each state.
@@ -476,9 +435,8 @@ class BuilderGroup:
         
         * Build has been built successfully (BuildStatus.OK), in this case
           we have a 'filemap', so we can retrive those files and store in
-          Librarian with getFileFromSlave() and install the binary in LP
-          with processBinary() (the last should change when we have publisher
-          component available).
+          Librarian with getFileFromSlave() and then pass the binaries to
+          the uploader for processing.
         """
         # XXX: dsilvers: 20050302: Confirm the builder has the right build?
         assert buildstatus.startswith('BuildStatus.')
@@ -513,18 +471,45 @@ class BuilderGroup:
         """Builder has built package entirely, get all the content back"""
         self.storeBuildInfo(queueItem, slave, librarian, buildid)
         queueItem.build.buildstate = dbschema.BuildStatus.FULLYBUILT
-        for result in filemap:
-            aliasid = self.getFileFromSlave(slave, result, filemap[result],
-                                            librarian)
-            if result.endswith(".deb"):
-                self.logger.debug("Found a DEB: '%s'" % result)
-                # Process a binary package
-                # XXX cprov 20051104: processBinaryPackage won't be used
-                # locally, the binary will be passed to a uploader instance.
-                # So this code and its related gets obsolete. The ETA for
-                # complete removal is 20051105 by dsilvers 
-                # self.processBinaryPackage(queueItem.build, aliasid, result)
+        # Commit the transaction so that the uploader can see the updated
+        # build record 
+        self.commit()
+        temp_dir = tempfile.mkdtemp(prefix="build-%s" % buildid,
+                                    suffix=".upload")
 
+        self.logger.debug("Processing successful build %s in %s" % (
+            buildid, temp_dir))
+        
+        try:
+            for filename in filemap:
+                slave_file = slave.getFile(filemap[filename])
+                out_file_name = os.path.join(temp_dir, filename)
+                out_file = open(out_file_name, "wb")
+                try:
+                    for chunk in file_chunks(slave_file):
+                        out_file.write(chunk)
+                finally:
+                    slave_file.close()
+                    out_file.close()
+
+            uploader_argv = list(self.upload_cmdline)
+            try:
+                while uploader_argv.index("BUILDID"):
+                    uploader_argv[uploader_argv.index("BUILDID")] = str(
+                        queueItem.build.id)
+            except ValueError:
+                # Assume this is "not in list" and swallow it
+                pass
+                
+            uploader_argv.append(temp_dir)
+
+            self.logger.debug("Invoking uploader on %s" % temp_dir)
+            uploader_process = subprocess.Popen(uploader_argv)
+            result_code = uploader_process.wait()
+            self.logger.debug("Uploader returned %d" % result_code)
+        finally:
+            self.logger.debug("Cleaning up temporary directory")
+            shutil.rmtree(temp_dir)
         self.logger.debug("Gathered build of %s completely"
                           % queueItem.name)
 
@@ -668,11 +653,12 @@ class BuilddMaster:
     # DistroArchRelease
     self._archreleases[DAR]['builders'] = buildersByProcessor
     """
-    def __init__(self, logger, tm):
+    def __init__(self, logger, tm, upload_cmdline):
         self._logger = logger
         self._tm = tm
         self.librarian = getUtility(ILibrarianClient)
         self._archreleases = {}
+        self.upload_cmdline = upload_cmdline
         self._logger.info("Buildd Master has been initialised")
         
     def commit(self):
@@ -727,7 +713,8 @@ class BuilddMaster:
             
             # setup a BuilderGroup object
             info = "builders.%s" % archrelease.processorfamily.name
-            builderGroup = BuilderGroup(self.getLogger(info), self._tm)
+            builderGroup = BuilderGroup(self.getLogger(info), self._tm,
+                                        self.upload_cmdline)
             
             # check the available slaves for this archrelease
             builderGroup.checkAvailableSlaves(archrelease)

@@ -35,7 +35,8 @@ Select a sigle DistroArchRelease
 Create an empty BuilderGroup object
   
   >>> from canonical.launchpad.scripts.builddmaster import BuilderGroup
-  >>> buildergroup = BuilderGroup(logging.getLogger(), transaction)
+  >>> buildergroup = BuilderGroup(logging.getLogger(), transaction, 
+  ...                             ['/bin/echo', 'BUILDID'])
   
 Mock Builder, a class to emulate the Builder behaviour:
 
@@ -435,7 +436,8 @@ filesystem before uncompress.
 
 BuilddMaster class:
 
-  >>> bm = BuilddMaster(logging.getLogger(), transaction)
+  >>> bm = BuilddMaster(logging.getLogger(), transaction, 
+  ...                   ['/bin/echo', 'BUILDID'])
   
 As we do when building the BuildQueue entries we need to recognise
 all available distroarchrelease and figure out which slave builder
