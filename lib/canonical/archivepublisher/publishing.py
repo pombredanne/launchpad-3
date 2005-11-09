@@ -482,9 +482,6 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                 self.debug("Generating apt config for %s%s" % (
                     dr, pocketsuffix[pocket]))
                 # Replace those tokens
-                extra_override_comment = "// "
-                if pocketsuffix[pocket] == '':
-                    extra_override_comment = ""
                 cnf.write(stanza_template % {
                     "LISTPATH": self._config.overrideroot,
                     "DISTRORELEASE": dr + pocketsuffix[pocket],
@@ -494,7 +491,7 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                     "SECTIONS": " ".join(comps),
                     "EXTENSIONS": ".deb",
                     "CACHEINSERT": "",
-                    "HIDEEXTRA": extra_override_comment
+                    "HIDEEXTRA": ""
                     })
                 dr_full_name = dr + pocketsuffix[pocket]
                 if dr_full_name in self._di_release_components:
@@ -514,7 +511,7 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                             "SECTIONS": "debian-installer",
                             "EXTENSIONS": ".udeb",
                             "CACHEINSERT": "debian-installer-",
-                            "HIDEEXTRA": extra_override_comment
+                            "HIDEEXTRA": "// "
                             })
 
                 def safe_mkdir(path):
@@ -641,6 +638,7 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                 file_stub = os.path.join(component, architecture, file_stub)
                 all_files.add(file_stub)
                 all_files.add(file_stub + ".gz")
+                all_files.add(file_stub + ".bz2")
                 all_files.add(os.path.join(component, architecture, "Release"))
                 f = open(os.path.join(self._config.distsroot, full_name,
                                       component, architecture, "Release"), "w")
