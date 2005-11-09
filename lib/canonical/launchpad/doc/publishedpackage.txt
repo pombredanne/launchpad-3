@@ -13,7 +13,7 @@ which distributions.
     >>> verifyObject(IPublishedPackageSet, pp_set)
     True
 
-There are also some meta objectsto combine informations from the DB
+There are also some meta objects to combine information from the DB
 model in more intuitive ones:
 
  >>> from canonical.launchpad.interfaces import (

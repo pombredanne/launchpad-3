@@ -23,8 +23,7 @@ from canonical.launchpad.interfaces import (
     ISourcePackagePublishingView, IBinaryPackagePublishingView,
     ISourcePackageFilePublishing, IBinaryPackageFilePublishing,
     ISecureSourcePackagePublishingHistory, IBinaryPackagePublishingHistory,
-    ISecureBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
-    ISourcePackageSet, IDistributionSourcePackageReleaseSet) 
+    ISecureBinaryPackagePublishingHistory, ISourcePackagePublishingHistory) 
 
 from canonical.lp.dbschema import (
     EnumCol, PackagePublishingPriority, PackagePublishingStatus,
@@ -320,15 +319,15 @@ class SourcePackagePublishingHistory(SQLBase):
     @property
     def meta_sourcepackage(self):
         """see ISourcePackagePublishingHistory."""
-        return getUtility(ISourcePackageSet).generate(
-            self.sourcepackagerelease.sourcepackagename, self.distrorelease
+        return self.distrorelease.distribution.getSourcePackage(
+            self.sourcepackagerelease.sourcepackagename
             )
 
     @property
     def meta_sourcepackagerelease(self):
         """see ISourcePackagePublishingHistory."""
-        return getUtility(IDistributionSourcePackageReleaseSet).generate(
-            self.distrorelease.distribution, self.sourcepackagerelease
+        return self.distrorelease.distribution.getSourcePackageRelease(
+            self.sourcepackagerelease
             )
 
     @property
@@ -336,8 +335,8 @@ class SourcePackagePublishingHistory(SQLBase):
         """see ISourcePackagePublishingHistory."""
         if not self.supersededby:
             return None
-        return getUtility(IDistributionSourcePackageReleaseSet).generate(
-            self.distrorelease.distribution, self.supersededby
+        return self.distrorelease.distribution.getSourcePackageRelease(
+            self.supersededby
             )
 
 

@@ -49,16 +49,4 @@
       />
   </browser:pages>
 
-  <!-- DistroReleaseSourcePackageReleaseSet -->
-  <content class="canonical.launchpad.database.DistroReleaseSourcePackageReleaseSet">
-      <allow interface="canonical.launchpad.interfaces.IDistroReleaseSourcePackageReleaseSet"/>
-  </content>
-
-  <securedutility
-      class="canonical.launchpad.database.DistroReleaseSourcePackageReleaseSet"
-      provides="canonical.launchpad.interfaces.IDistroReleaseSourcePackageReleaseSet">
-     <allow interface="canonical.launchpad.interfaces.IDistroReleaseSourcePackageReleaseSet" />
-  </securedutility>
-
-
 </configure>

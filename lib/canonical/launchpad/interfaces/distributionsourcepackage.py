@@ -6,7 +6,6 @@ __metaclass__ = type
 
 __all__ = [
     'IDistributionSourcePackage',
-    'IDistributionSourcePackageSet'
     ]
 
 from zope.interface import Interface, Attribute
@@ -82,10 +81,3 @@ class IDistributionSourcePackage(ITicketTarget, IBugTarget):
         Distro sourcepackages compare not equal if either of their distribution
         or sourcepackagename compare not equal.
         """
-
-class IDistributionSourcePackageSet(Interface):
-    """Handy utility for IDistributionSourcePackage."""
-
-    def generate(distribution, sourcepackagename):
-        """Return an initialized IDistributionSourcePackage."""
-        

@@ -3,7 +3,6 @@
 __metaclass__ = type
 __all__ = [
     'DistroReleaseBinaryPackage',
-    'DistroReleaseBinaryPackageSet'
     ]
 
 import sets
@@ -18,8 +17,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import (
     PackagePublishingStatus, PackagePublishingPocket)
 
-from canonical.launchpad.interfaces import (
-    IDistroReleaseBinaryPackage, IDistroReleaseBinaryPackageSet)
+from canonical.launchpad.interfaces import IDistroReleaseBinaryPackage
 
 from canonical.launchpad.database.distroreleasepackagecache import (
     DistroReleasePackageCache)
@@ -101,13 +99,3 @@ class DistroReleaseBinaryPackage:
         return sorted(ret, key=lambda a: (
             a.distroarchrelease.architecturetag,
             a.datecreated))
-
-
-class DistroReleaseBinaryPackageSet:
-    """See DistroReleaseBinaryPackageSet."""
-
-    implements(IDistroReleaseBinaryPackageSet)
-
-    def generate(self, distrorelease, binarypackagename):
-        """See DistroReleaseBinaryPackageSet."""
-        return DistroReleaseBinaryPackage(distrorelease, binarypackagename)

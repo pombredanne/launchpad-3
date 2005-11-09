@@ -49,17 +49,4 @@
       />
   </browser:pages>
 
-
-  <!-- DistributionSourcePackageReleaseSet -->
-  <content class="canonical.launchpad.database.DistributionSourcePackageReleaseSet">
-      <allow interface="canonical.launchpad.interfaces.IDistributionSourcePackageReleaseSet"/>
-  </content>
-
-  <securedutility
-      class="canonical.launchpad.database.DistributionSourcePackageReleaseSet"
-      provides="canonical.launchpad.interfaces.IDistributionSourcePackageReleaseSet">
-     <allow interface="canonical.launchpad.interfaces.IDistributionSourcePackageReleaseSet" />
-  </securedutility>
-
-
 </configure>

@@ -13,7 +13,6 @@
 
   <h1>Source Packages in <span tal:replace="context/title" /></h1>
 
-  <div class="form">
   <form name="search" method="GET">
     <div>
       <label for="text">
@@ -30,11 +29,10 @@
     <input type="submit" value="Search Again"
         tal:condition="view/searchrequested" />
   </form>
-  </div>
 
-  <div condition="view/searchrequested">
+  <div tal:condition="view/searchrequested">
 
-    <ul class="sources" condition="view/searchresults">
+    <ul class="sources" tal:condition="view/searchresults">
       <li tal:repeat="dsp view/searchresults">
         <a tal:attributes="href dsp/fmt:url; 
                            title dsp/title"

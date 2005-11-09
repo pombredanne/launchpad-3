@@ -6,7 +6,6 @@ __metaclass__ = type
 
 __all__ = [
     'ISourcePackage',
-    'ISourcePackageSet'
     ]
 
 from zope.interface import Interface, Attribute
@@ -147,10 +146,3 @@ class ISourcePackage(IBugTarget, ITicketTarget):
         By 'import' we mean sourcerer analysis resulting in a manifest and a
         set of Bazaar branches which describe the source package release.
         The attribute is True or False.""")
-
-
-class ISourcePackageSet(Interface):
-    """Handy utility for ISourcePackage."""
-
-    def generate(sourcepackagename, distrorelease):
-        """Return an initialized ISourcePackage."""

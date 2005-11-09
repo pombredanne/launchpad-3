@@ -124,7 +124,8 @@ class SourcePackageRelease(SQLBase):
 
     @property
     def binaries(self):
-        clauseTables = ['SourcePackageRelease', 'BinaryPackageRelease', 'Build']
+        clauseTables = ['SourcePackageRelease', 'BinaryPackageRelease',
+                        'Build']
         query = ('SourcePackageRelease.id = Build.sourcepackagerelease'
                  ' AND BinaryPackageRelease.build = Build.id '
                  ' AND Build.sourcepackagerelease = %i' % self.id)
@@ -133,9 +134,8 @@ class SourcePackageRelease(SQLBase):
     @property
     def meta_binaries(self):
         """See ISourcePackageRelease."""        
-        return [getUtility(IDistroReleaseBinaryPackageSet).generate(
-                       binary.build.distroarchrelease.distrorelease,
-                       binary.binarypackagename)
+        return [binary.build.distroarchrelease.distrorelease.getBinaryPackage(
+                                    binary.binarypackagename)
                 for binary in self.binaries]
 
     @property
@@ -151,12 +151,14 @@ class SourcePackageRelease(SQLBase):
     def architecturesReleased(self, distroRelease):
         # The import is here to avoid a circular import. See top of module.
         from canonical.launchpad.database.soyuz import DistroArchRelease
-        clauseTables = ['BinaryPackagePublishing', 'BinaryPackageRelease', 'Build']
+        clauseTables = ['BinaryPackagePublishing', 'BinaryPackageRelease',
+                        'Build']
 
         archReleases = sets.Set(DistroArchRelease.select(
             'BinaryPackagePublishing.distroarchrelease = DistroArchRelease.id '
             'AND DistroArchRelease.distrorelease = %d '
-            'AND BinaryPackagePublishing.binarypackagerelease = BinaryPackageRelease.id '
+            'AND BinaryPackagePublishing.binarypackagerelease = '
+            'BinaryPackageRelease.id '
             'AND BinaryPackageRelease.build = Build.id '
             'AND Build.sourcepackagerelease = %d'
             % (distroRelease.id, self.id),

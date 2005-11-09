@@ -10,15 +10,11 @@ our Database Model for packages in a intuitive manner, they are:
  ...     DistributionSourcePackage,
  ...     DistributionSourcePackageRelease,
  ...     DistroReleaseSourcePackageRelease)
- 
 
  >>> from canonical.launchpad.interfaces import (
  ...     IDistributionSourcePackage,
- ...     IDistributionSourcePackageSet,
  ...     IDistributionSourcePackageRelease,
- ...     IDistributionSourcePackageReleaseSet,
- ...     IDistroReleaseSourcePackageRelease,
- ...     IDistroReleaseSourcePackageReleaseSet)
+ ...     IDistroReleaseSourcePackageRelease)
 
 
 We can combine information of a Distribution and a SourcePackagenName:
@@ -64,25 +60,3 @@ Combining DistroRelease and SourcePackageRelease:
 
  >>> drspr.displayname
  u'pmount 0.1-1'
-
-
-We can also use the respective utilities for easy building that meta
-classes without the risk of circular imports by directly import the
-code.
-
- >>> dsp_util = getUtility(IDistributionSourcePackageSet).generate(
- ...      distribution, src_name)
- >>> IDistributionSourcePackage.providedBy(dsp_util)
- True
-
-
- >>> dspr_util = getUtility(IDistributionSourcePackageReleaseSet).generate(
- ...      distribution, sourcepackagerelease)
- >>> IDistributionSourcePackageRelease.providedBy(dspr_util)
- True
-
-
- >>> drspr_util = getUtility(IDistroReleaseSourcePackageReleaseSet).generate(
- ...      distrorelease, sourcepackagerelease)
- >>> IDistroReleaseSourcePackageRelease.providedBy(drspr)
- True
