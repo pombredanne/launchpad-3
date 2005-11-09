@@ -16,6 +16,7 @@ shift
 
 # -o APT::GPGV::TrustedKeyring=${chroot}/etc/apt/trusted.gpg
 
+export DEBIAN_FRONTEND=noninteractive
 export TTY=unknown
 exec /usr/bin/apt-get --purge \
     -o Dir::State=${chroot}/var/lib/apt \
