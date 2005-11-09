@@ -639,6 +639,13 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                 all_files.add(file_stub + ".gz")
                 all_files.add(file_stub + ".bz2")
                 all_files.add(os.path.join(component, architecture, "Release"))
+                di_file_stub = os.path.join(component, "debian-installer",
+                                            architecture, file_stub)
+
+                for suffix in ('', '.gz', '.bz2'):
+                    if os.path.exists(di_file_stub+suffix):
+                        all_files.add(di_file_stub+suffix)
+                        
                 f = open(os.path.join(self._config.distsroot, full_name,
                                       component, architecture, "Release"), "w")
                 contents = """Archive: %s
