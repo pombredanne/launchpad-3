@@ -35,6 +35,8 @@ from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
 from canonical.launchpad.database.distroreleasebinarypackage import (
     DistroReleaseBinaryPackage)
+from canonical.launchpad.database.distroreleasesourcepackagerelease import (
+    DistroReleaseSourcePackageRelease)
 from canonical.launchpad.database.distroreleasepackagecache import (
     DistroReleasePackageCache)
 from canonical.launchpad.database.publishing import (
@@ -334,6 +336,10 @@ class DistroRelease(SQLBase):
             except SQLObjectNotFound:
                 return None
         return DistroReleaseBinaryPackage(self, name)
+
+    def getSourcePackageRelease(self, sourcepackagerelease):
+        """See IDistroRelease."""
+        return DistroReleaseSourcePackageRelease(self, sourcepackagerelease)
 
     def __getitem__(self, archtag):
         """See IDistroRelease."""
