@@ -76,5 +76,7 @@ def main(argv):
                   component=options.component,
                   status=options.status)
 
+    bz.processDuplicates(ztm)
+
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

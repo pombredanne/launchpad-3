@@ -85,6 +85,12 @@ it to return:
   ...     [], []
   ...     ]
 
+  >>> duplicates = [
+  ...     (1, 2),
+  ...     (2, 3),
+  ...     (2, 4),
+  ...     ]
+
   >>> class FakeBackend:
   ...     def lookupUser(self, user_id):
   ...         return users[user_id - 1]
@@ -96,6 +102,8 @@ it to return:
   ...         return comments[bug_id - 1]
   ...     def getBugAttachments(self, bug_id):
   ...         return attachments[bug_id - 1]
+  ...     def getDuplicates(self):
+  ...         return duplicates
 
   >>> from zope.component import getUtility
   >>> from canonical.launchpad.ftests import login, ANONYMOUS
@@ -514,8 +522,37 @@ then the bug is filed directly against the distribution.
   ValueError: product must be Ubuntu
 
 
+Duplicate Bug Handling
+----------------------
+
+The Bugzilla duplicate bugs table can be used to mark the
+corresponding Launchpad bugs as duplicates too:
+
+  >>> class FakeTransactionManager:
+  ...     def begin(self):
+  ...         pass
+  ...     abort = commit = begin
+  ...
+  >>> bz.processDuplicates(FakeTransactionManager())
+
+Now check that the bugs have been marked duplicate:
+
+  >>> bug1 = getUtility(IBugSet).queryByRemoteBug(bugtracker, 1)
+  >>> bug2 = getUtility(IBugSet).queryByRemoteBug(bugtracker, 2)
+  >>> bug3 = getUtility(IBugSet).queryByRemoteBug(bugtracker, 3)
+  >>> bug4 = getUtility(IBugSet).queryByRemoteBug(bugtracker, 4)
+
+  >>> print bug1.duplicateof
+  None
+  >>> bug2.duplicateof == bug1
+  True
+  >>> bug3.duplicateof == bug2
+  True
+  >>> bug4.duplicateof == bug2
+  True
+
+
 Cleanup:
 
   >>> LibrarianTestSetup().tearDown()
-
 

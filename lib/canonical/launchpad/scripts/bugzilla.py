@@ -140,6 +140,7 @@ class BugzillaBackend:
                      submitter_id) in self.cursor.fetchall()]
 
     def findBugs(self, product=[], component=[], status=[]):
+        """Returns the requested bug IDs as a list"""
         joins = []
         conditions = []
         if product:
@@ -160,6 +161,12 @@ class BugzillaBackend:
         self.cursor.execute('SELECT bug_id FROM bugs %s %s ORDER BY bug_id' %
                             (' '.join(joins), conditions))
         return [bug_id for (bug_id,) in self.cursor.fetchall()]
+
+    def getDuplicates(self):
+        """Returns a list of (dupe_of, dupe) relations."""
+        self.cursor.execute('SELECT dupe_of, dupe FROM duplicates '
+                            'ORDER BY dupe, dupe_of')
+        return [(dupe_of, dupe) for (dupe_of, dupe) in self.cursor.fetchall()]
 
 class Bug:
     """Representation of a Bugzilla Bug"""
@@ -498,6 +505,50 @@ class Bugzilla:
                 title=description, message=msg)
 
         return lp_bug
+
+    def processDuplicates(self, trans):
+        logger.info('Processing duplicate bugs')
+        bugmap = {}
+        def getlpbug(bugid):
+            """Get the Launchpad bug corresponding to the given remote ID
+
+            This function makes use of a cache dictionary to reduce the
+            number of lookups.
+            """
+            lpbugid = bugmap.get(bugid)
+            if lpbugid is not None:
+                if lpbugid != 0:
+                    lpbug = self.bugset.get(lpbugid)
+                else:
+                    lpbug = None
+            else:
+                lpbug = self.bugset.queryByRemoteBug(self.bugtracker, bugid)
+                if lpbug is not None:
+                    bugmap[bugid] = lpbug.id
+                else:
+                    bugmap[bugid] = 0
+            return lpbug
+
+        for (dupe_of, dupe) in self.backend.getDuplicates():
+            # get the Launchpad bugs corresponding to the two Bugzilla bugs:
+            try:
+                trans.begin()
+                lpdupe_of = getlpbug(dupe_of)
+                lpdupe = getlpbug(dupe)
+                # if both bugs exist in Launchpad, and lpdupe is not already
+                # a duplicate, mark it as a duplicate of lpdupe_of.
+                if (lpdupe_of is not None and lpdupe is not None and
+                    lpdupe.duplicateof is None):
+                    logger.info('Marking %d as a duplicate of %d',
+                                lpdupe.id, lpdupe_of.id)
+                    lpdupe.duplicateof = lpdupe_of
+            except (SystemExit, KeyboardInterrupt):
+                raise
+            except:
+                logger.exception('Could not set up duplicate bug relationship')
+                trans.abort()
+            else:
+                trans.commit()
 
     def importBugs(self, trans, **kws):
         bugs = self.backend.findBugs(**kws)
