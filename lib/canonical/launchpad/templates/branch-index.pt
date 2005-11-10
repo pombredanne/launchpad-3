@@ -17,21 +17,21 @@
     notice goes here
   </p>
 
-  <div class="documentDescription" tal:content="context/summary">
+  <p tal:content="context/summary">
     $Branch.summary goes here. This should be quite short, just a single
     paragraph of text really, giving the branch highlights.
-  </div>
+  </p>
 
-  <table class="listing"  style="line-height: 1.5;">
+  <table>
     <tbody>
-      <tr style="border-top: 1px solid #8cacbb;">
-        <td><b>Branch URL:</b></td>
+      <tr>
+        <th>Branch URL:</th>
         <td><tt><a tal:attributes="href context/url"
                    tal:content="context/url"
           >http://example.com/software/hello.devel</a></tt></td>
       </tr>
       <tr>
-        <td><b>Status:</b></td>
+        <th>Status:</th>
         <td tal:content="context/lifecycle_status/title">Stable</td>
       </tr>
       <tr tal:condition="context/whiteboard">
