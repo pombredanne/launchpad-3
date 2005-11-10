@@ -271,7 +271,6 @@ class POTemplateAddView(AddView):
         iscurrent = data.get('iscurrent')
         owner = data.get('owner')
         path = data.get('path')
-        filename = data.get('filename')
         content = data.get('content')
 
         potemplateset = getUtility(IPOTemplateSet)
@@ -286,7 +285,6 @@ class POTemplateAddView(AddView):
         potemplate.description = description
         potemplate.iscurrent = iscurrent
         potemplate.path = path
-        potemplate.filename = filename
 
         self._nextURL = canonical_url(potemplate)
 

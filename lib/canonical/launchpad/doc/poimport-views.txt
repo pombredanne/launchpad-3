@@ -132,7 +132,7 @@ We should have three entries, the previous one + the new additions.
     True
 
 Now let's test the upload view on POFile. This works very similarly. The extra
-twist is that we check that the 'ispublished' attribute gets set.
+twist is that we check that the 'is_published' attribute gets set.
 
 First, our POFile object.
 
@@ -189,9 +189,9 @@ We should have four entries, the previous one + the new additions.
     >>> content == '# Yo!'
     True
 
-Check the 'ispublished' flag.
+Check the 'is_published' flag.
 
-    >>> entry.ispublished
+    >>> entry.is_published
     False
 
     >>> LibrarianTestSetup().tearDown()
