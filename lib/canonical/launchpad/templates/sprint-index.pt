@@ -43,12 +43,17 @@
       <b>Agenda status:</b>
       <a tal:condition="spec_link/required:launchpad.Admin"
          tal:content="spec_link/status/title"
-         tal:attributes="href string:${spec_link/fmt:url}/+admin"
+         tal:attributes="href string:${spec_link/fmt:url}"
          >approved</a><span
             tal:condition="not: spec_link/required:launchpad.Admin"
             tal:replace="spec_link/status/title">Approved</span><tal:wb
             condition="spec_link/whiteboard"> <i>(<span
             tal:replace="spec_link/whiteboard" />)</i></tal:wb>.
+      <b>Track:</b>
+      <a tal:content="spec_link/specification/target/displayname"
+         tal:attributes="href spec_link/specification/target/fmt:url">
+        Ubuntu
+      </a>
     </div>
     <hr />
   </tal:spec_links>

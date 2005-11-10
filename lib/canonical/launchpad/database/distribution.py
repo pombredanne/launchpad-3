@@ -19,6 +19,8 @@ from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.distributionbounty import DistributionBounty
 from canonical.launchpad.database.distributionsourcepackage import (
     DistributionSourcePackage)
+from canonical.launchpad.database.distributionsourcepackagerelease import (
+    DistributionSourcePackageRelease)
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from canonical.launchpad.database.distrorelease import DistroRelease
@@ -213,6 +215,10 @@ class Distribution(SQLBase):
             except SQLObjectNotFound:
                 return None
         return DistributionSourcePackage(self, sourcepackagename)
+
+    def getSourcePackageRelease(self, sourcepackagerelease):
+        """See IDistribution."""
+        return DistributionSourcePackageRelease(self, sourcepackagerelease)
 
     def specifications(self, sort=None, quantity=None):
         """See IHasSpecifications."""
@@ -461,6 +467,9 @@ class Distribution(SQLBase):
             # Is it a sourcepackagename?
             sourcepackagename = SourcePackageName.selectOneBy(name=pkgname)
             if sourcepackagename is not None:
+
+                # XXX: completely untested code
+
                 # It's definitely only a sourcepackagename. Let's make sure it
                 # is published in the current distro release.
                 publishing = SourcePackagePublishing.select('''
@@ -479,6 +488,8 @@ class Distribution(SQLBase):
                 return (sourcepackagename, None)
             # It's neither a sourcepackage, nor a binary package name.
             raise ValueError('Unknown package: %s' % pkgname)
+
+        # XXX: completely untested code
 
         # Ok, so we have a binarypackage with that name. let's see if it's
         # published, and what its sourcepackagename is.

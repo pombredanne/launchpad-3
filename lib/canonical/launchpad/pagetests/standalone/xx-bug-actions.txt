@@ -103,3 +103,31 @@ links to add things to the bug.
   ...
   ...Not a valid bug number...
   ...
+
+
+  Marking a bugX as a duplicate of bugY is not allowed if bugX has dupes.
+
+
+  >>> print http(r"""
+  ... POST /products/firefox/+bug/5/+duplicate HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------24583171312468616741133437317
+  ... 
+  ... -----------------------------24583171312468616741133437317
+  ... Content-Disposition: form-data; name="field.duplicateof"
+  ... 
+  ... 4
+  ... -----------------------------24583171312468616741133437317
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------24583171312468616741133437317--
+  ... """)
+  HTTP/1.1 200 Ok 
+  ...
+  ...There are other bugs already...
+  ...
+
+  >>> from canonical.launchpad.database import Bug
+  >>> Bug.get(5).duplicateof is None
+  True

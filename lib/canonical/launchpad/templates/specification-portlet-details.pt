@@ -11,13 +11,19 @@
     <b>For:</b>
     <a tal:content="context/target/displayname"
        tal:attributes="href context/target/fmt:url">ubuntu</a>
-    <a tal:condition="context/productseries"
-       tal:attributes="href context/productseries/fmt:url"
-       tal:content="context/productseries/name">1.2</a>
-    <a  tal:condition="context/distrorelease"
-        tal:attributes="href context/distrorelease/fmt:url"
-        tal:content="context/distrorelease/name">hoary</a>
     <br />
+
+    <tal:goal condition="context/has_release_goal">
+      <b>Release Goal:</b><br />
+      <a tal:condition="context/productseries"
+         tal:attributes="href context/productseries/fmt:url"
+         tal:content="context/productseries/name">1.2</a>
+      <a  tal:condition="context/distrorelease"
+          tal:attributes="href context/distrorelease/fmt:url"
+          tal:content="context/distrorelease/name">hoary</a>
+      (<span tal:replace="context/delivery/title">Probable</span>)
+      <br />
+    </tal:goal>
 
     <b>Priority:</b>
     <span tal:replace="context/priority/title">High</span>
@@ -40,6 +46,11 @@
        tal:content="context/assignee/browsername"
        tal:attributes="href context/assignee/fmt:url">Foo Bar</a>
     <i tal:condition="not: context/assignee">No assignee</i><br />
+    <tal:man_days condition="context/man_days">
+      (<span tal:replace="context/man_days">5</span> days)
+      <br />
+    </tal:man_days>
+
     <b>Drafter:</b><br />
     <img src="/++resource++user.gif" />
     <a tal:condition="context/drafter"
@@ -61,7 +72,7 @@
         <a tal:attributes="href sprint_link/sprint/fmt:url"
            tal:content="sprint_link/sprint/name" /> 
         (<a tal:content="sprint_link/status/title"
-            tal:attributes="href string:${sprint_link/fmt:url}/+admin"
+            tal:attributes="href string:${sprint_link/fmt:url}/+edit"
             >Approved</a>)<br />
       </tal:sprint>
 	</tal:has_sprints>

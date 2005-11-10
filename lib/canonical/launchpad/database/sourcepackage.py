@@ -393,6 +393,7 @@ class SourcePackage:
 
     def getVersion(self, version):
         """See ISourcePackage."""
+        # XXX: untested and broken
         dsp = DistributionSourcePackage(
             self.distribution,
             self.sourcepackagename)
@@ -461,5 +462,3 @@ class SourcePackage:
                           'SourcePackagePublishingHistory'],
             limit=limit,
             orderBy="-datebuilt")
-    
-

@@ -481,6 +481,18 @@ class ISourcePackagePublishingHistory(Interface):
             required=True, readonly=False,
             )
 
+    meta_sourcepackage = Attribute(
+        "Return an ISourcePackage meta object correspondent to the "
+        "sourcepackagerelease attribute inside a specific distrorelease")
+
+    meta_sourcepackagerelease = Attribute(
+        "Return an IDistribuitionSourcePackageRelease meta object "
+        "correspondent to the sourcepackagerelease attribute")
+
+    meta_supersededby = Attribute(
+        "Return an IDistribuitionSourcePackageRelease meta object "
+        "correspondent to the supersededby attribute. if supersededby "
+        "is None return None.")
 
 class IBinaryPackagePublishingHistory(Interface):
     """A binary package publishing record."""

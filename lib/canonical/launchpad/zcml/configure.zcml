@@ -96,7 +96,7 @@
     <include file="sourcepackagerelease.zcml" />
     <include file="specification.zcml" />
     <include file="specificationdependency.zcml" />
-    <include file="specificationreview.zcml" />
+    <include file="specificationfeedback.zcml" />
     <include file="specificationsubscription.zcml" />
     <include file="specificationtarget.zcml" />
     <include file="sprint.zcml" />

@@ -11,23 +11,23 @@ __all__ = ['BinaryPackagePublishing', 'SourcePackagePublishing',
            ]
 
 from zope.interface import implements
+from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
-from canonical.launchpad.interfaces import ( IBinaryPackagePublishing,
-    ISourcePackagePublishing, ISourcePackagePublishingView,
-    IBinaryPackagePublishingView, ISourcePackageFilePublishing,
-    IBinaryPackageFilePublishing,
-    ISecureSourcePackagePublishingHistory,
-    ISecureBinaryPackagePublishingHistory,
-    ISourcePackagePublishingHistory, IBinaryPackagePublishingHistory )
+from canonical.launchpad.interfaces import (
+    IBinaryPackagePublishing, ISourcePackagePublishing,
+    ISourcePackagePublishingView, IBinaryPackagePublishingView,
+    ISourcePackageFilePublishing, IBinaryPackageFilePublishing,
+    ISecureSourcePackagePublishingHistory, IBinaryPackagePublishingHistory,
+    ISecureBinaryPackagePublishingHistory, ISourcePackagePublishingHistory) 
 
-from canonical.lp.dbschema import \
-    EnumCol, PackagePublishingPriority, PackagePublishingStatus, \
-    PackagePublishingPocket
+from canonical.lp.dbschema import (
+    EnumCol, PackagePublishingPriority, PackagePublishingStatus,
+    PackagePublishingPocket)
 
 from warnings import warn
 
@@ -345,10 +345,33 @@ class SourcePackagePublishingHistory(SQLBase):
     datecreated = UtcDateTimeCol(default=None)
     datesuperseded = UtcDateTimeCol(default=None)
     supersededby = ForeignKey(foreignKey='SourcePackageRelease',
-        dbName='supersededby', default=None)
+                              dbName='supersededby', default=None)
     datemadepending = UtcDateTimeCol(default=None)
     dateremoved = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
+
+    @property
+    def meta_sourcepackage(self):
+        """see ISourcePackagePublishingHistory."""
+        return self.distrorelease.distribution.getSourcePackage(
+            self.sourcepackagerelease.sourcepackagename
+            )
+
+    @property
+    def meta_sourcepackagerelease(self):
+        """see ISourcePackagePublishingHistory."""
+        return self.distrorelease.distribution.getSourcePackageRelease(
+            self.sourcepackagerelease
+            )
+
+    @property
+    def meta_supersededby(self):
+        """see ISourcePackagePublishingHistory."""
+        if not self.supersededby:
+            return None
+        return self.distrorelease.distribution.getSourcePackageRelease(
+            self.supersededby
+            )
 
 
 class BinaryPackagePublishingHistory(SQLBase):

@@ -152,7 +152,7 @@ Origin: Ubuntu
 Task: edubuntu-standard
 
 Package: libdb1-compat
-Priority: required
+Priority: optional
 Section: oldlibs
 Installed-Size: 112
 Maintainer: Colin Watson <cjwatson@debian.org>

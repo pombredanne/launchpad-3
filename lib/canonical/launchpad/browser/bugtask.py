@@ -9,7 +9,6 @@ __all__ = [
     'BugTaskNavigation',
     'BugTaskSetNavigation',
     'BugTaskContextMenu',
-    'BugTasksReportView',
     'BugTaskEditView',
     'BugListingPortletView',
     'BugTaskSearchListingView',
@@ -21,6 +20,7 @@ __all__ = [
     'AdvancedBugTaskSearchView',
     'BugTargetView',
     'BugTaskView',
+    'BUGTASK_STATUS_OPEN',
     'BugTaskReleaseTargetingView',
     'get_sortorder_from_request']
 
@@ -32,17 +32,18 @@ from zope.app.form.interfaces import IInputWidget
 
 from canonical.lp import dbschema
 from canonical.launchpad.webapp import (
-    canonical_url, Link, GetitemNavigation, Navigation, stepthrough,
+    canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
-    IPersonSet, ILaunchBag, IDistroBugTaskSearch, IUpstreamBugTaskSearch,
+    ILaunchBag, IDistroBugTaskSearch, IUpstreamBugTaskSearch,
     IBugSet, IProduct, IDistribution, IDistroRelease, IBugTask, IBugTaskSet,
     IDistroReleaseSet, ISourcePackageNameSet, BugTaskSearchParams,
-    IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask,
+    IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, IPerson,
     INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
-    NotFoundError, IDistributionSourcePackage, ISourcePackage)
+    NotFoundError, IDistributionSourcePackage, ISourcePackage,
+    IPersonBugTaskSearch)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -53,8 +54,8 @@ from canonical.launchpad.components.bugtask import NullBugTask
 # This shortcut constant indicates what we consider "open"
 # (non-terminal) states. XXX: should this be centralized elsewhere?
 #       -- kiko, 2005-08-23
-STATUS_OPEN = [dbschema.BugTaskStatus.NEW,
-               dbschema.BugTaskStatus.ACCEPTED]
+BUGTASK_STATUS_OPEN = [dbschema.BugTaskStatus.NEW,
+                       dbschema.BugTaskStatus.ACCEPTED]
 
 def get_sortorder_from_request(request):
     """Get the sortorder from the request."""
@@ -162,7 +163,7 @@ class BugTaskNavigation(Navigation):
             return getUtility(IBugExternalRefSet)[name]
 
     @stepthrough('watches')
-    def traverse_references(self, name):
+    def traverse_watches(self, name):
         if name.isdigit():
             return getUtility(IBugWatchSet)[name]
 
@@ -177,114 +178,6 @@ class BugTaskSetNavigation(GetitemNavigation):
 
 class BugTaskContextMenu(BugContextMenu):
     usedfor = IBugTask
-
-
-class BugTasksReportView:
-    """The view class for the assigned bugs report."""
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.user = None
-
-        form = self.request.form
-        # default to showing bugs assigned to the logged in user.
-        username = form.get('name')
-        if username:
-            self.user = getUtility(IPersonSet).getByName(username)
-        else:
-            self.user = getUtility(ILaunchBag).user
-
-        # default to showing even wishlist bugs
-        self.minseverity = int(form.get('minseverity', 0))
-        self.minpriority = int(form.get('minpriority', 0))
-        self.showclosed = form.get('showclosed') == 'yes'
-
-    def productColumns(self):
-        return ['id', 'product', 'title', 'severity', 'priority', 'assignee',
-                'status', 'target', 'assignedto']
-
-    def packageColumns(self):
-        return ['id', 'package', 'title', 'severity', 'priority',
-                'assignee', 'status', 'target', 'assignedto']
-
-    def maintainedPackageBugs(self):
-        return self.context.maintainedPackageBugs(
-            self.user, self.minseverity, self.minpriority, self.showclosed)
-
-    def maintainedProductBugs(self):
-        return self.context.maintainedProductBugs(
-            self.user, self.minseverity, self.minpriority, self.showclosed)
-
-    def packageAssigneeBugs(self):
-        return self.context.packageAssigneeBugs(
-            self.user, self.minseverity, self.minpriority, self.showclosed)
-
-    def productAssigneeBugs(self):
-        return self.context.productAssigneeBugs(
-            self.user, self.minseverity, self.minpriority, self.showclosed)
-
-    def assignedBugs(self):
-        return self.context.assignedBugs(
-            self.user, self.minseverity, self.minpriority, self.showclosed)
-
-    # TODO: replace this with a smart vocabulary and widget
-    def userSelector(self):
-        if self.user:
-            name = self.user.name
-        else:
-            name = ""
-        return '<input type="text" name="name" value="%s"/>\n' % name
-        # Don't do this - when you have 60000+ people it tends to kill
-        # the production server.
-        # html = '<select name="name">\n'
-        # for person in self.allPeople():
-        #     html = html + '<option value="'+person.name+'"'
-        #     if person==self.user:
-        #         html = html + ' selected="yes"'
-        #     html = html + '>'
-        #     html = html + person.browsername + '</option>\n'
-        # html = html + '</select>\n'
-        # return html
-
-    # TODO: replace this with a smart vocabulary and widget
-    def severitySelector(self):
-        html = '<select name="minseverity">\n'
-        for item in dbschema.BugTaskSeverity.items:
-            html = html + '<option value="' + str(item.value) + '"'
-            if item.value == self.minseverity:
-                html = html + ' selected="yes"'
-            html = html + '>'
-            html = html + str(item.title)
-            html = html + '</option>\n'
-        html = html + '</select>\n'
-        return html
-
-    # TODO: replace this with a smart vocabulary and widget
-    def prioritySelector(self):
-        html = '<select name="minpriority">\n'
-        for item in dbschema.BugTaskPriority.items:
-            html = html + '<option value="' + str(item.value) + '"'
-            if item.value == self.minpriority:
-                html = html + ' selected="yes"'
-            html = html + '>'
-            html = html + str(item.title)
-            html = html + '</option>\n'
-        html = html + '</select>\n'
-        return html
-
-    def showClosedSelector(self):
-        html = ('<input type="checkbox" id="showclosed" '
-                'name="showclosed" value="yes"')
-        if self.showclosed:
-            html = html + ' checked="yes"'
-        html = html + ' />'
-        return html
-
-    def allPeople(self):
-        # XXX: We should be using None, not NULL outside of database code.
-        #      -- Steve Alexander, 2005-04-22
-        return getUtility(IPersonSet).search(password=NULL)
 
 
 class BugTaskView:
@@ -562,6 +455,8 @@ class BugTaskSearchListingView(LaunchpadView):
             self.search_form_schema = IUpstreamBugTaskSearch
         elif self._distributionContext() or self._distroReleaseContext():
             self.search_form_schema = IDistroBugTaskSearch
+        elif self._personContext():
+            self.search_form_schema = IPersonBugTaskSearch
         else:
             raise TypeError("Unknown context: %s" % repr(self.context))
 
@@ -629,6 +524,13 @@ class BugTaskSearchListingView(LaunchpadView):
         else:
             batch = tasks
         return BatchNavigator(batch=batch, request=self.request)
+
+    def shouldShowSearchWidgets(self):
+        """Should the search widgets be displayed on this page?"""
+        # XXX: It's probably a good idea to hide the search widgets if there's
+        # only one batched page of results, but this will have to wait because
+        # this patch is already big enough. -- Guilherme Salgado, 2005-11-05.
+        return True
 
     def showBatchedListing(self):
         """Should the listing be batched?"""
@@ -756,20 +658,17 @@ class BugTaskSearchListingView(LaunchpadView):
 
         return sortlink
 
-    def shouldShowPackageName(self):
-        """Should the source package name be displayed in the list results?
+    def shouldShowTargetName(self):
+        """Should the bug target name be displayed in the list of results?
 
         This is mainly useful for the listview.
         """
-        target = self.context
-
-        # It only makes sense to show the sourcepackage name when viewing
-        # distribution or distrorelease bugs.
-        if (IDistribution.providedBy(target) or
-            IDistroRelease.providedBy(target)):
-            return True
-        else:
+        # It doesn't make sense to show the target name when viewing product
+        # bugs.
+        if IProduct.providedBy(self.context):
             return False
+        else:
+            return True
 
     def getSortClass(self, colname):
         """Return a class appropriate for sorted columns"""
@@ -809,6 +708,13 @@ class BugTaskSearchListingView(LaunchpadView):
         """
         return IProduct(self.context, None)
 
+    def _personContext(self):
+        """Is this page being viewed in a person context?
+
+        Return the IPerson if yes, otherwise return None.
+        """
+        return IPerson(self.context, None)
+
     def _distributionContext(self):
         """Is this page being viewed in a distribution context?
 
@@ -828,21 +734,25 @@ class AssignedBugTasksView(BugTaskSearchListingView):
     """All open bugs assigned to someone."""
 
     def getExtraSearchParams(self):
-        return {'status': any(*STATUS_OPEN), 'assignee': self.user}
+        return {'status': any(*BUGTASK_STATUS_OPEN), 'assignee': self.user}
+
+    def doNotShowAssignee(self):
+        """Should we not show the assignee in the list of results?"""
+        return True
 
 
 class OpenBugTasksView(BugTaskSearchListingView):
     """All open bugs."""
 
     def getExtraSearchParams(self):
-        return {'status': any(*STATUS_OPEN)}
+        return {'status': any(*BUGTASK_STATUS_OPEN)}
 
 
 class CriticalBugTasksView(BugTaskSearchListingView):
     """All open critical bugs."""
 
     def getExtraSearchParams(self):
-        return {'status': any(*STATUS_OPEN),
+        return {'status': any(*BUGTASK_STATUS_OPEN),
                 'severity': dbschema.BugTaskSeverity.CRITICAL}
 
 
@@ -860,7 +770,7 @@ class UnassignedBugTasksView(BugTaskSearchListingView):
     """All open bugs that don't have an assignee."""
 
     def getExtraSearchParams(self):
-        return {'status': any(*STATUS_OPEN), 'assignee': NULL}
+        return {'status': any(*BUGTASK_STATUS_OPEN), 'assignee': NULL}
 
 
 class AdvancedBugTaskSearchView(BugTaskSearchListingView):
@@ -887,7 +797,7 @@ class AdvancedBugTaskSearchView(BugTaskSearchListingView):
         if attachmenttype:
             search_params['attachmenttype'] = any(*attachmenttype)
 
-        statuses = form_params.get("status", STATUS_OPEN)
+        statuses = form_params.get("status", BUGTASK_STATUS_OPEN)
         if statuses is not None:
             search_params['status'] = any(*statuses)
 

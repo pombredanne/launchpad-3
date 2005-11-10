@@ -116,7 +116,7 @@ from canonical.launchpad.interfaces.sourcepackagerelease import *
 from canonical.launchpad.interfaces.specification import *
 from canonical.launchpad.interfaces.specificationbug import *
 from canonical.launchpad.interfaces.specificationdependency import *
-from canonical.launchpad.interfaces.specificationreview import *
+from canonical.launchpad.interfaces.specificationfeedback import *
 from canonical.launchpad.interfaces.specificationsubscription import *
 from canonical.launchpad.interfaces.spokenin import *
 from canonical.launchpad.interfaces.sprint import *

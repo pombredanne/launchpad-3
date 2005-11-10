@@ -167,7 +167,7 @@ class BuildQueue(SQLBase):
     @property
     def archhintlist(self):
         """See IBuildQueue"""
-        return self.build.sourcepackagerelease.archhintlist
+        return self.build.sourcepackagerelease.architecturehintlist
     
     @property
     def name(self):

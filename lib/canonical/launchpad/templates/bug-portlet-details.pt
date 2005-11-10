@@ -23,8 +23,7 @@
       style="text-decoration: underline"></a><br />
 
     <b>First reported:</b><br />
-    <span tal:replace="context/datecreated/fmt:datetime">12-12-2004
-    20:44:00 UTC</span>
+    <span tal:replace="context/datecreated/fmt:date">12-12-2004</span>
     <br />
 
     <b>Secrecy:</b>

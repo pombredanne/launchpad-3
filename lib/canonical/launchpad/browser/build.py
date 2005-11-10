@@ -44,7 +44,8 @@ class BuildRecordsView:
 
         If no result is available return None.
         """
-        result = self.getBuilt()
+        result = self.context.getBuildRecords(status=BuildStatus.FULLYBUILT,
+                                              limit=0)
         if result:
             return result.count()
         return None
@@ -59,7 +60,8 @@ class BuildRecordsView:
 
         If no result is available return None.
         """
-        result = self.getPending()
+        result = self.context.getBuildRecords(status=BuildStatus.NEEDSBUILD,
+                                              limit=0)
         if result:
             return result.count()
         return None

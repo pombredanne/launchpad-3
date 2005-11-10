@@ -12,6 +12,7 @@ __all__ = ['AbstractPackageData', 'SourcePackageData', 'BinaryPackageData']
 
 import re
 import os
+import glob
 import tempfile
 import shutil
 import rfc822
@@ -32,6 +33,10 @@ from canonical.launchpad.validators.version import valid_debian_version
 
 # Stash a reference to the poolifier method
 poolify = Poolifier().poolify
+
+# Keep a licence_cache around to avoid needing to unpack the source
+# twice.
+licence_cache = {}
 
 #
 # Data setup
@@ -67,76 +72,87 @@ def stripseq(seq):
     return [s.strip() for s in seq]
 
 
+epoch_re = re.compile(r"^\d+:")
 def get_dsc_path(name, version, component, archive_root):
     pool_root = os.path.join(archive_root, "pool")
-    version = re.sub("^\d+:", "", version)
+    version = epoch_re.sub("", version)
     filename = "%s_%s.dsc" % (name, version)
+
     # We do a first attempt using the obvious directory name, composed
     # with the component. However, this may fail if a binary is being
     # published in another component.
     pool_dir = poolify(name, component)
     fullpath = os.path.join(pool_root, pool_dir, filename)
     if os.path.exists(fullpath):
-        return filename, fullpath
+        return filename, fullpath, component
 
     # Do a second pass, scrubbing through all components in the pool.
-    for component in os.listdir(pool_root):
-        if not os.path.isdir(os.path.join(pool_root, component)):
+    for alt_component in os.listdir(pool_root):
+        if not os.path.isdir(os.path.join(pool_root, alt_component)):
             continue
-        pool_dir = poolify(name, component)
+        pool_dir = poolify(name, alt_component)
         fullpath = os.path.join(pool_root, pool_dir, filename)
         if os.path.exists(fullpath):
-            return filename, fullpath
+            return filename, fullpath, alt_component
 
     # Couldn't find the file anywhere -- too bad.
     raise PoolFileNotFound("File %s not in archive" % filename)
 
 
-def read_dsc(package, version, component, archive_root):
-    urgency = None
-
-    dsc_name, dsc_path = get_dsc_path(package, version,
-                                      component, archive_root)
+def unpack_dsc(package, version, component, archive_root):
+    dsc_name, dsc_path, component = get_dsc_path(package, version,
+                                                 component, archive_root)
     call("dpkg-source -sn -x %s" % dsc_path)
 
     version = re.sub("^\d+:", "", version)
     version = re.sub("-[^-]+$", "", version)
-    filename = "%s-%s" % (package, version)
-    fullpath = os.path.join(filename, "debian", "changelog")
-    changelog = None
-    if os.path.exists(fullpath):
-        # XXX: this should be moved into changelog.py and simplified,
-        # the code is all there.
-        clfile = open(fullpath)
-        line = ""
-        while not line:
-            line = clfile.readline().strip()
-        if "urgency=" in line:
-            urgency = line.split("urgency=", 1)[1].strip().lower()
-        clfile.seek(0)
-        # XXX: 3dchess actually /does/ have a changelog, but it doesn't
-        # parse (for some reason). Need to investigate why.
-        changelog = parse_changelog(clfile)
-        clfile.close()
-    if not changelog:
-        # This also catches a null result of parse_changelog above
-        log.warn("No changelog file found for %s in %s" % (package, filename))
-        changelog = None
+    source_dir = "%s-%s" % (package, version)
+    return source_dir, dsc_path
 
-    # Look for the license. License is an interesting case: we obtain it
-    # when opening the DSC file, but we only really do this when
-    # creating a BinaryPackageRelease, because that's where it needs to
-    # be stored.
-    fullpath = os.path.join(filename, "debian", "copyright")
-    if os.path.exists(fullpath):
-        licence = open(fullpath).read().strip()
-    else:
-        log.warn("No license file found for %s in %s" % (package, filename))
-        licence = None
+
+def read_dsc(package, version, component, archive_root):
+    source_dir, dsc_path = unpack_dsc(package, version, component,
+                                      archive_root)
 
     dsc = open(dsc_path).read().strip()
 
-    return dsc, urgency, changelog, licence
+    fullpath = os.path.join(source_dir, "debian", "changelog")
+    changelog = None
+    if os.path.exists(fullpath):
+        clfile = open(fullpath)
+        changelog = parse_changelog(clfile)
+        clfile.close()
+    else:
+        log.warn("No changelog file found for %s in %s" % 
+                 (package, source_dir))
+        changelog = None
+
+    # Welcome to the world's biggest hack. Source packages contain the
+    # licence files, but they may be specific to a certain binary
+    # package, and we store them in the binary package release table,
+    # anyway. To avoid unpacking the debian source multiple times, we
+    # save the licence in a cache, keying it appropriately.
+    licence = None
+    globpath = os.path.join(source_dir, "debian", "*copyright")
+    for fullpath in glob.glob(globpath):
+        if not os.path.exists(fullpath):
+            continue
+        licence = open(fullpath).read().strip()
+        file_name = os.path.basename(fullpath)
+        if "." in file_name:
+            binpkg = file_name.split(".")[0]
+        else:
+            binpkg = None
+        licence = encoding.guess(licence)
+        licence_cache[(package, version, binpkg)] = licence
+
+    if licence is None:
+        log.warn("No copyright file found for %s in %s" % 
+                 (package, source_dir))
+        # Cache we didn't find it and avoid looking it up again later
+        licence_cache[(package, version, None)] = None
+
+    return dsc, changelog
 
 
 def parse_person(val):
@@ -220,7 +236,7 @@ class InvalidVersionError(Exception):
     """An invalid package version was found"""
 
 
-class InvalidSourceVersionError(Exception):
+class InvalidSourceVersionError(InvalidVersionError):
     """
     An invalid source package version was found when processing a binary
     package.
@@ -246,23 +262,21 @@ class AbstractPackageData:
     version = None
 
     # Component is something of a special case. It is set up in
-    # archive.py:PackagesMap (and only overwritten here in special
-    # cases, which I'm not sure is really correct). We check it as part
-    # of _required in the subclasses only as a sanity check.
+    # archive.py:PackagesMap and always supplied to the constructor (and
+    # only overwritten after in special cases, which I'm not sure are
+    # really correct). We check it as part of _required in the
+    # subclasses only as a sanity check.
     component = None
 
     def __init__(self):
         if self.version is None or not valid_debian_version(self.version):
-            # XXX: untested
             raise InvalidVersionError("%s has an invalid version: %s" %
                                       (self.package, self.version))
-
 
         absent = object()
         missing = [attr for attr in self._required if
                    getattr(self, attr, absent) is absent]
         if missing:
-            # XXX: untested
             raise MissingRequiredArguments(missing)
 
     def process_package(self, kdb, archive_root, keyrings):
@@ -298,9 +312,6 @@ class AbstractPackageData:
     def do_katie(self, kdb, keyrings):
         raise NotImplementedError
 
-    def ensure_complete(self, kdb):
-        raise NotImplementedError
-
 
 class SourcePackageData(AbstractPackageData):
     """This Class holds important data to a given sourcepackagerelease."""
@@ -311,11 +322,13 @@ class SourcePackageData(AbstractPackageData):
     # Defaults, potentially overwritten by __init__
     build_depends = ""
     build_depends_indep = ""
+    # XXX: this isn't stored at all
     standards_version = ""
-
-    # Defaults, overwritten by do_package and ensure_required
     section = None
     format = None
+
+    # XXX: not used anywhere
+    priority = None
 
     is_processed = False
     is_created = False
@@ -324,7 +337,7 @@ class SourcePackageData(AbstractPackageData):
     # supplied to __init__ as keyword arguments. If any are not, a
     # MissingRequiredArguments exception is raised.
     _required = [
-        'package', 'binaries', 'version', 'maintainer',
+        'package', 'binaries', 'version', 'maintainer', 'section',
         'architecture', 'directory', 'files', 'component']
 
     def __init__(self, **args):
@@ -364,31 +377,50 @@ class SourcePackageData(AbstractPackageData):
             else:
                 setattr(self, k.lower().replace("-", "_"), v)
 
+        if self.section is None:
+            # XXX: untested and disabled
+            # if kdb:
+            #     log.warn("Source package %s lacks section, looking it up..." %
+            #              self.package)
+            #     self.section = kdb.getSourceSection(self.package)
+            self.section = 'misc'
+            log.warn("Source package %s lacks section, assumed %r" %
+                     (self.package, self.section))
+
+        if '/' in self.section:
+            # this apparently happens with packages in universe.
+            # 3dchess, for instance, uses "universe/games"
+            self.section = self.section.split("/", 1)[1]
+
         AbstractPackageData.__init__(self)
 
+
     def do_package(self, archive_root):
-        """Get the Changelog and licence from the package on archive.
+        """Get the Changelog and urgency from the package on archive.
 
         If successful processing of the package occurs, this method
-        sets the changelog, urgency and licence attributes.
+        sets the changelog and urgency attributes.
         """
-        ret = read_dsc(self.package, self.version, self.component,
-                       archive_root)
-        # We don't use the licence here at all
-        dsc, urgency, changelog, dummy = ret
-
+        dsc, changelog = read_dsc(self.package, self.version,
+                                  self.component, archive_root)
         self.dsc = encoding.guess(dsc)
-        self.urgency = urgency
 
-        if changelog:
-            if changelog[0] and changelog[0].has_key("changes"):
-                self.changelog = encoding.guess(changelog[0]["changes"])
+        self.urgency = None
+        self.changelog = None
+        if changelog and changelog[0]:
+            cldata = changelog[0]
+            if cldata.has_key("changes"):
+                if cldata["package"] != self.package:
+                    log.warn("Changelog package %s differs from %s" %
+                             (cldata["package"], self.package))
+                if cldata["version"] != self.version:
+                    log.warn("Changelog version %s differs from %s" %
+                             (cldata["version"], self.version))
+                self.changelog = encoding.guess(cldata["changes"])
+                self.urgency = cldata["urgency"]
             else:
-                log.warn("Changelog changes empty for source %s (%s)" %
+                log.warn("Changelog empty for source %s (%s)" %
                          (self.package, self.version))
-        else:
-            # XXX: untested
-            self.changelog = None
 
     def do_katie(self, kdb, keyrings):
         # XXX: disabled for the moment, untested
@@ -407,41 +439,17 @@ class SourcePackageData(AbstractPackageData):
         #        get_person_by_key(keyrings, self.dsc_signing_key)
 
     def ensure_complete(self, kdb):
-        if self.section is None:
-            # This assumption is a bit evil. There is a hidden issue
-            # that manifests itself if the source package was unchanged
-            # between releases and its Sources file lacked a section
-            # initially and later the section is added: we will never
-            # update the record. I doubt this will be an issue in
-            # practice.
-            if kdb:
-                # XXX: untested
-                log.warn("Source package %s lacks section, looking it up..." %
-                         self.package)
-                self.section = kdb.getSourceSection(self.package)
-                if '/' in self.section:
-                    self.component, self.section = self.section.split("/")
-            else:
-                self.section = 'misc'
-                log.warn("Source package %s lacks section, assumed %r" %
-                         (self.package, self.section))
-
         if self.format is None:
+            # XXX: this is very funny. We care so much about it here,
+            # but we don't do anything about this in handlers.py!
             log.warn("Invalid format in %s, assumed %r" % 
                      (self.package, "1.0"))
             self.format = "1.0"
-            # XXX: this is very funny. I care so much about it, but we
-            # don't do anything about this in handlers.py!
 
         if self.urgency not in urgencymap:
             log.warn("Invalid urgency in %s, %r, assumed %r" % 
                      (self.package, self.urgency, "low"))
             self.urgency = "low"
-
-        if '/' in self.section:
-            # this apparently happens with packages in universe.
-            # 3dchess, for instance, uses "universe/games"
-            self.section = self.section.split("/", 1)[1]
 
 
 class BinaryPackageData(AbstractPackageData):
@@ -451,9 +459,9 @@ class BinaryPackageData(AbstractPackageData):
     # They are passed in as keyword arguments. If any are not set, a
     # MissingRequiredArguments exception is raised.
     _required = [
-        'package', 'installed_size', 'maintainer',
+        'package', 'installed_size', 'maintainer', 'section',
         'architecture', 'version', 'filename', 'component',
-        'size', 'md5sum', 'description', 'summary']
+        'size', 'md5sum', 'description', 'summary', 'priority']
 
     # Set in __init__
     source = None
@@ -461,6 +469,8 @@ class BinaryPackageData(AbstractPackageData):
     version = None
     architecture = None
     filename = None
+    section = None
+    priority = None
 
     # Defaults, optionally overwritten in __init__
     depends = ""
@@ -472,11 +482,7 @@ class BinaryPackageData(AbstractPackageData):
     essential = False
 
     # Overwritten in do_package, optionally
-    shlibs = ""
-
-    # Overwritten by __init__ and ensure_required
-    section = None
-    priority = None
+    shlibs = None
 
     #
     is_processed = False
@@ -505,8 +511,8 @@ class BinaryPackageData(AbstractPackageData):
                         "not a valid integer: %r" % v)
             else:
                 setattr(self, k.lower().replace("-", "_"), v)
-            # XXX: "enhances" is not used and not stored anywhere
-            # XXX: same for "pre_depends"
+            # XXX: "enhances" is not used and not stored anywhere,
+            # same for "pre_depends"
 
         if self.source:
             # We need to handle cases like "Source: myspell
@@ -531,15 +537,26 @@ class BinaryPackageData(AbstractPackageData):
             self.source_version = self.version
 
         if (self.source_version is None or
+            self.source_version != self.version and
             not valid_debian_version(self.source_version)):
             raise InvalidSourceVersionError("Binary package %s (%s) "
                 "refers to source package %s with invalid version: %s" %
                 (self.package, self.version, self.source, self.source_version))
 
+        if self.section is None:
+            self.section = 'misc'
+            log.warn("Binary package %s lacks a section, assumed %r" %
+                     (self.package, self.section))
+
+        if self.priority is None:
+            self.priority = 'extra'
+            log.warn("Binary package %s lacks valid priority, assumed %r" %
+                     (self.package, self.priority))
+
         AbstractPackageData.__init__(self)
 
     def do_package(self, archive_root):
-        """Grab shared library and license from file in archive."""
+        """Grab shared library info from .deb."""
         fullpath = os.path.join(archive_root, self.filename)
         if not os.path.exists(fullpath):
             raise PoolFileNotFound('%s not found' % fullpath)
@@ -547,18 +564,8 @@ class BinaryPackageData(AbstractPackageData):
         call("dpkg -e %s" % fullpath)
         shlibfile = os.path.join("DEBIAN", "shlibs")
         if os.path.exists(shlibfile):
-            # XXX: untested
-            log.debug("Grabbing shared library info from %s" % 
-                      os.path.basename(fullpath))
             self.shlibs = open(shlibfile).read().strip()
-
-        # XXX: we could probably refactor read_dsc into three parts, one
-        # that unpacked the file and two consumers that read specific
-        # data from it.
-        ret = read_dsc(self.source, self.source_version,
-                       self.component, archive_root)
-        dummy, dummy, dummy, licence = ret
-        self.licence = encoding.guess(licence)
+            log.debug("Grabbing shared library info from %s" % shlibfile)
 
     def do_katie(self, kdb, keyrings):
         # XXX: disabled for the moment, untested
@@ -577,15 +584,4 @@ class BinaryPackageData(AbstractPackageData):
         self.gpg_signing_key_owner = \
             get_person_by_key(keyrings, self.gpg_signing_key)
         return True
-
-    def ensure_complete(self, kdb):
-        if self.section is None:
-            self.section = 'misc'
-            log.warn("Binary package %s lacks a section, assumed %r" %
-                     (self.package, self.section))
-
-        if self.priority is None:
-            self.priority = 'extra'
-            log.warn("Binary package %s lacks valid priority, assumed %r" %
-                     (self.package, self.priority))
 
