@@ -21,6 +21,10 @@ __all__ = [
     'PersonEditView',
     'PersonEmblemView',
     'PersonHackergotchiView',
+    'PersonAssignedBugTaskSearchListingView',
+    'ReportedBugTaskSearchListingView',
+    'BugTasksOnMaintainedSoftwareSearchListingView',
+    'SubscribedBugTaskSearchListingView',
     'PersonRdfView',
     'PersonView',
     'TeamJoinView',
@@ -50,19 +54,20 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
-    TeamSubscriptionPolicy, BugTaskStatus)
+    TeamSubscriptionPolicy)
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
 from canonical.launchpad.interfaces import (
     ISSHKeySet, IBugTaskSet, IPersonSet, IEmailAddressSet, IWikiNameSet,
     IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
-    ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, IKarmaActionSet,
-    IKarmaSet, UBUNTU_WIKI_URL, ITeamMembershipSet, IObjectReassignment,
-    ITeamReassignment, IPollSubset, IPerson, ICalendarOwner,
-    BugTaskSearchParams, ITeam, ILibraryFileAliasSet, ITeamMembershipSubset,
-    IPollSet)
+    ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
+    ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
+    IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet,
+    ITeamMembershipSubset, IPollSet)
 
+from canonical.launchpad.browser.bugtask import (
+    BugTaskSearchListingView, BUGTASK_STATUS_OPEN)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.helpers import (
@@ -224,7 +229,7 @@ class PersonBugsMenu(ApplicationMenu):
 
     facet = 'bugs'
 
-    links = ['assignedbugs', 'softwarebugs', 'reportedbugs']
+    links = ['assignedbugs', 'softwarebugs', 'reportedbugs', 'subscribedbugs']
 
     def assignedbugs(self):
         text = 'Bugs Assigned'
@@ -238,6 +243,9 @@ class PersonBugsMenu(ApplicationMenu):
         text = 'Bugs Reported'
         return Link('+reportedbugs', text, icon='bugs')
 
+    def subscribedbugs(self):
+        text = 'Bugs Subscribed'
+        return Link('+subscribedbugs', text, icon='bugs')
 
 
 class PersonSpecsMenu(ApplicationMenu):
@@ -309,17 +317,6 @@ class CommonMenuLinks:
         text = 'Edit Home Page'
         return Link(target, text, icon='edit')
 
-    def common_edithackergotchi(self):
-        target = '+edithackergotchi'
-        text = 'Edit Hackergotchi'
-        return Link(target, text, icon='edit')
-
-    @enabled_with_permission('launchpad.Admin')
-    def common_editemblem(self):
-        target = '+editemblem'
-        text = 'Edit Emblem'
-        return Link(target, text, icon='edit')
-
     def common_packages(self):
         target = '+packages'
         text = 'Packages'
@@ -332,8 +329,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     usedfor = IPerson
     facet = 'overview'
     links = ['karma', 'common_edit', 'common_edithomepage',
-             'common_edithackergotchi',
-             'common_editemblem', 'editsshkeys', 'editgpgkeys',
+             'common_edithackergotchi', 'editsshkeys', 'editgpgkeys',
              'codesofconduct', 'administer', 'common_packages']
 
     def karma(self):
@@ -360,6 +356,11 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         summary = 'Used for the Supermirror, and when maintaining packages'
         return Link(target, text, summary, icon='edit')
 
+    def common_edithackergotchi(self):
+        target = '+edithackergotchi'
+        text = 'Edit Hackergotchi'
+        return Link(target, text, icon='edit')
+
     def codesofconduct(self):
         target = '+codesofconduct'
         text = 'Codes of Conduct'
@@ -378,9 +379,9 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['common_edit', 'common_edithomepage', 'common_edithackergotchi',
-             'common_editemblem', 'members', 'editemail', 'polls',
-             'joinleave', 'reassign', 'common_packages']
+    links = ['common_edit', 'common_edithomepage', 'common_editemblem',
+             'members', 'editemail', 'polls', 'joinleave', 'reassign',
+             'common_packages']
 
     @enabled_with_permission('launchpad.Admin')
     def reassign(self):
@@ -389,6 +390,11 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         summary = 'Change the owner of the team'
         # alt="(Change owner)"
         return Link(target, text, summary, icon='edit')
+
+    def common_editemblem(self):
+        target = '+editemblem'
+        text = 'Edit Emblem'
+        return Link(target, text, icon='edit')
 
     def members(self):
         target = '+members'
@@ -399,17 +405,6 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+polls'
         text = 'Show Polls'
         return Link(target, text, icon='info')
-
-    def teamhierarchy(self):
-        # XXX: removed because of bug https://launchpad.net/malone/bugs/2435
-        #      that i cannot see at the moment.
-        #      SteveAlexander / Salgado, 2005-09-21
-        target = '+teamhierarchy'
-        text = 'Team Hierarchy'
-        summary = (
-            'Which teams are members of %s, and which teams %s is a member of'
-            % (self.context.browsername, self.context.browsername))
-        return Link(target, text, summary, icon='people')
 
     @enabled_with_permission('launchpad.Edit')
     def editemail(self):
@@ -557,6 +552,55 @@ def userIsActiveTeamMember(team):
     return user in team.activemembers
 
 
+class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
+    """All bugs reported by someone."""
+
+    def getExtraSearchParams(self):
+        return {'status': any(*BUGTASK_STATUS_OPEN), 'owner': self.context}
+
+
+class BugTasksOnMaintainedSoftwareSearchListingView(BugTaskSearchListingView):
+    """All bugs reported on software maintained by someone."""
+
+    def search(self, searchtext=None, batch_start=None):
+        # Overwrite the search() method from BugTaskSearchListingView because
+        # to get the list of bugs on software maintained by someone we need to
+        # use the maintainedBugTasks method of BugTask, which is not used in
+        # the original search() method.
+        orderBy = ('-dateassigned', '-priority', '-severity')
+        tasks = getUtility(IBugTaskSet).maintainedBugTasks(
+            self.context, orderBy=orderBy, user=self.user)
+        if batch_start is None:
+            batch_start = int(self.request.get('batch_start', 0))
+        batch = Batch(tasks, batch_start)
+        return BatchNavigator(batch=batch, request=self.request)
+
+    def shouldShowSearchWidgets(self):
+        # XXX: It's not possible to search amongst the bugs on maintained
+        # software, so for now I'll be simply hiding the search widgets.
+        # -- Guilherme Salgado, 2005-11-05
+        return False
+
+
+class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
+    """All open bugs assigned to someone."""
+
+    def getExtraSearchParams(self):
+        return {'status': any(*BUGTASK_STATUS_OPEN), 'assignee': self.context}
+
+    def doNotShowAssignee(self):
+        """Should we not show the assignee in the list of results?"""
+        return True
+
+
+class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
+    """All bugs someone is subscribed to."""
+
+    def getExtraSearchParams(self):
+        return {'status': any(*BUGTASK_STATUS_OPEN), 
+                'subscriber': self.context}
+
+
 class PersonView:
     """A View class used in almost all Person's pages."""
 
@@ -661,52 +705,6 @@ class PersonView:
         """Return True if this is not a restricted team."""
         restricted = TeamSubscriptionPolicy.RESTRICTED
         return self.context.subscriptionpolicy != restricted
-
-    def reportedBugTasks(self):
-        """Return up to 30 bug tasks reported recently by this person."""
-        search_params = BugTaskSearchParams(owner=self.context, user=self.user,
-                                            orderby="-datecreated")
-        return getUtility(IBugTaskSet).search(search_params)[:30]
-
-    def bugTasksAssignedToPerson(self):
-        """Return all the open IBugTasks assigned to this person."""
-        search_params = BugTaskSearchParams(
-            assignee=self.context, user=self.user,
-            status=any(BugTaskStatus.NEW, BugTaskStatus.ACCEPTED),
-            omit_dupes=True, orderby="-dateassigned")
-
-        return getUtility(IBugTaskSet).search(search_params)
-
-    def bugTasksOnMaintainedSoftware(self):
-        """Return all the open IBugTasks on software this person maintains.
-
-        This list does *not* include tasks that are assigned directly
-        to this person. For that, see PersonView.bugTasksAssignedToPerson.
-        """
-        orderBy = ('-dateassigned', '-priority', '-severity')
-        results = getUtility(IBugTaskSet).maintainedBugTasks(
-            self.context, orderBy=orderBy, user=self.user)
-
-        return results
-
-    def bugTasksWithSharedInterest(self):
-        """Return bug tasks (ordered by date assigned) which this
-        person and the logged in user share some interest.
-
-        We assume they share some interest if they're both members of the
-        maintainer or if one is the maintainer and the task is directly
-        assigned to the other.
-        """
-        assert self.user is not None, (
-            'This method should not be called without a logged in user')
-        if self.context.id == self.user.id:
-            return []
-
-        orderBy = ('-dateassigned', '-priority', '-severity')
-        results = getUtility(IBugTaskSet).bugTasksWithSharedInterest(
-            self.context, self.user, user=self.user, orderBy=orderBy)
-
-        return results
 
     def obfuscatedEmail(self):
         if self.context.preferredemail is not None:
@@ -1182,10 +1180,8 @@ class PersonHackergotchiView(GeneralFormView):
                 file=StringIO(hackergotchi),
                 contentType=content_type)
             self.context.hackergotchi = hkg
+        self._nextURL = canonical_url(self.context)
         return 'Success'
-
-    def nextURL(self):
-        return canonical_url(self.context)
 
 
 class TeamJoinView(PersonView):

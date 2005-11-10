@@ -151,7 +151,7 @@
         schema="canonical.launchpad.interfaces.IDistroRelease"
         label="Register a New Distribution Release"
         fields="name displayname title summary description version
-        parentrelease components sections"
+        parentrelease"
         content_factory="canonical.launchpad.database.DistroRelease"
         class="canonical.launchpad.browser.DistroReleaseAddView"
         facet="overview"

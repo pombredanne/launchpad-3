@@ -17,22 +17,23 @@ from canonical.launchpad.interfaces import (
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.database.specificationdependency import \
-    SpecificationDependency
-from canonical.launchpad.database.specificationbug import \
-    SpecificationBug
-from canonical.launchpad.database.specificationreview import \
-    SpecificationReview
-from canonical.launchpad.database.specificationsubscription import \
-    SpecificationSubscription
-from canonical.launchpad.database.sprintspecification import \
-    SprintSpecification
+from canonical.launchpad.database.specificationdependency import (
+    SpecificationDependency)
+from canonical.launchpad.database.specificationbug import (
+    SpecificationBug)
+from canonical.launchpad.database.specificationfeedback import (
+    SpecificationFeedback)
+from canonical.launchpad.database.specificationsubscription import (
+    SpecificationSubscription)
+from canonical.launchpad.database.sprintspecification import (
+    SprintSpecification)
 from canonical.launchpad.database.sprint import Sprint
 
 from canonical.launchpad.components.specification import SpecificationDelta
 
 from canonical.lp.dbschema import (
-    EnumCol, SpecificationStatus, SpecificationPriority)
+    EnumCol, SpecificationStatus, SpecificationPriority,
+    SpecificationDelivery)
 
 
 class Specification(SQLBase):
@@ -72,6 +73,11 @@ class Specification(SQLBase):
     whiteboard = StringCol(notNull=False, default=None)
     needs_discussion = BoolCol(notNull=True, default=True)
     direction_approved = BoolCol(notNull=True, default=False)
+    man_days = IntCol(notNull=False, default=None)
+    delivery = EnumCol(schema=SpecificationDelivery, notNull=True,
+        default=SpecificationDelivery.UNKNOWN)
+    superseded_by = ForeignKey(dbName='superseded_by',
+        foreignKey='Specification', notNull=False, default=None)
 
     # useful joins
     subscriptions = MultipleJoin('SpecificationSubscription',
@@ -79,7 +85,7 @@ class Specification(SQLBase):
     subscribers = RelatedJoin('Person',
         joinColumn='specification', otherColumn='person',
         intermediateTable='SpecificationSubscription', orderBy='name')
-    reviews = MultipleJoin('SpecificationReview',
+    feedbackrequests = MultipleJoin('SpecificationFeedback',
         joinColumn='specification', orderBy='id')
     sprint_links = MultipleJoin('SprintSpecification', orderBy='id',
         joinColumn='specification')
@@ -125,6 +131,7 @@ class Specification(SQLBase):
         self.milestone = None
         self.product = product
         self.distribution = distribution
+        self.delivery = SpecificationDelivery.UNKNOWN
 
     def getSprintSpecification(self, sprintname):
         """See ISpecification."""
@@ -133,11 +140,24 @@ class Specification(SQLBase):
                 return sprintspecification
         return None
 
+    def getFeedbackRequests(self, person):
+        """See ISpecification."""
+        reqlist = []
+        for fbreq in self.feedbackrequests:
+            if fbreq.reviewer.id == person.id:
+                reqlist.append(fbreq)
+        return reqlist
+
     # emergent properties
     @property
     def is_incomplete(self):
         """See ISpecification."""
-        return self.status not in [
+        return not self.is_complete
+
+    @property
+    def is_complete(self):
+        """See ISpecification."""
+        return self.status in [
             SpecificationStatus.IMPLEMENTED,
             SpecificationStatus.INFORMATIONAL,
             SpecificationStatus.OBSOLETE,
@@ -145,16 +165,20 @@ class Specification(SQLBase):
             ]
 
     @property
-    def is_complete(self):
-        """See ISpecification."""
-        return not self.is_incomplete
-
-    @property
     def is_blocked(self):
         """See ISpecification."""
         for spec in self.dependencies:
             if spec.is_incomplete:
                 return True
+        return False
+
+    @property
+    def has_release_goal(self):
+        """See ISpecification."""
+        if self.distrorelease is not None:
+            return True
+        if self.productseries is not None:
+            return True
         return False
 
     def getDelta(self, old_spec, user):
@@ -218,27 +242,29 @@ class Specification(SQLBase):
                 return
 
     # queueing
-    def queue(self, reviewer, requestor, queuemsg=None):
+    def queue(self, reviewer, requester, queuemsg=None):
         """See ISpecification."""
-        # first see if a relevant queue entry exists, and if so, update it
-        for review in self.reviews:
-            if review.reviewer.id == reviewer.id:
-                review.requestor = requestor
-                review.queuemsg = queuemsg
-                return review
-        # since no previous review existed for this person, create a new one
-        return SpecificationReview(
+        for fbreq in self.feedbackrequests:
+            if (fbreq.reviewer.id == reviewer.id and
+                fbreq.requester == requester.id):
+                # we have a relevant request already, update it
+                fbreq.queuemsg = queuemsg
+                return fbreq
+        # since no previous feedback request existed for this person,
+        # create a new one
+        return SpecificationFeedback(
             specification=self,
             reviewer=reviewer,
-            requestor=requestor,
+            requester=requester,
             queuemsg=queuemsg)
 
-    def unqueue(self, reviewer):
+    def unqueue(self, reviewer, requester):
         """See ISpecification."""
         # see if a relevant queue entry exists, and if so, delete it
-        for review in self.reviews:
-            if review.reviewer.id == reviewer.id:
-                SpecificationReview.delete(review.id)
+        for fbreq in self.feedbackrequests:
+            if (fbreq.reviewer.id == reviewer.id and
+                fbreq.requester.id == requester.id):
+                SpecificationFeedback.delete(fbreq.id)
                 return
 
     # linking to bugs

@@ -75,7 +75,7 @@ class BaseLoginTokenView:
 
     def validateRequesterPassword(self, password):
         """Return True if <password> is the same as the requester's password.
-        
+
         In case of failure, an error message is assigned to self.errormessage.
         """
         assert self.context.requester is not None
@@ -193,7 +193,7 @@ class ValidateEmailView(BaseLoginTokenView):
 
     def setTeamContactAddress(self):
         """Set the new email address as the team's contact email address.
-        
+
         Make sure that the new email address is owned by the team, if it
         already exists, set it as the team's contact address (removing any
         previous contact address) and remove the logintoken used to validate
@@ -259,7 +259,7 @@ class ValidateEmailView(BaseLoginTokenView):
                 'gpg --fingerprint YOU</kdb>). Try later or '
                 '<a href="%s/+editgpgkeys">cancel your request</a>.'
                 % (key, person_url))
-            return        
+            return
 
         # if key is globally revoked skip import and remove token
         if key.revoked:
@@ -286,8 +286,8 @@ class ValidateEmailView(BaseLoginTokenView):
 
         # Is it a revalidation ?
         lpkey = gpgkeyset.getByFingerprint(fingerprint)
-        
-        if lpkey:            
+
+        if lpkey:
             gpgkeyset.activateGPGKey(lpkey.id)
             self.infomessage = (
                 'The key %s was successfully revalidated. '
@@ -367,8 +367,8 @@ class ValidateEmailView(BaseLoginTokenView):
                     continue
                 # store guessed email address with status NEW
                 email = emailset.new(uid, requester.id)
-                guessed.append(email)                    
-                                
+                guessed.append(email)
+
         return guessed, hijacked
 
     def _ensureEmail(self, emailaddress):
@@ -408,7 +408,7 @@ class ValidateEmailView(BaseLoginTokenView):
         # table.
         email = emailset.new(emailaddress, requester.id)
         return email
-        
+
 
 class NewAccountView(AddView, BaseLoginTokenView):
 
@@ -475,7 +475,7 @@ class MergePeopleView(BaseLoginTokenView):
         # with this transaction will see this changes and thus they'll be
         # displayed on the page that calls this method.
         flush_database_updates()
-         
+
         if self.request.form.get('logmein'):
             self.logInPersonByEmail(email.email)
 

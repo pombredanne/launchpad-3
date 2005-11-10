@@ -47,6 +47,3 @@ class IDistroReleaseSourcePackageRelease(ISourcePackageRelease):
     was_uploaded = Attribute("True or False, indicating whether or not "
         "a source package of this name was ever uploaded to this "
         "distrorelease.")
-
-
-

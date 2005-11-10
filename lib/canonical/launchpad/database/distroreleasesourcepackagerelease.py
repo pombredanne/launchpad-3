@@ -179,4 +179,3 @@ class DistroReleaseSourcePackageRelease:
     def sourcepackagename(self):
         """See ISourcePackageRelease."""
         return self.sourcepackagerelease.sourcepackagename
-

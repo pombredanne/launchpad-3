@@ -768,6 +768,9 @@ ul.news>li, li.news {
 ul.packages>li, li.packages {
   list-style-image: url(/++resource++package-binary);
 }
+ul.sources>li, li.sources {
+  list-style-image: url(/++resource++package-source);
+}
 ul.products>li, li.products {
   list-style-image: url(/++resource++product_icon.gif);
 }

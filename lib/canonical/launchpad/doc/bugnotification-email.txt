@@ -167,8 +167,27 @@ to a user that is explicitly subscribed to this bug):
     Private bug report changed:
     http://.../bugs/2
     <BLANKLINE>
-    Visibility changed to:
+    Secrecy changed to:
         Private
+    <BLANKLINE>
+
+Now we set the bug public and check if the e-mail sent changed as well.
+
+    >>> edited_bug.private = False 
+    >>> bug_delta = BugDelta(
+    ...     bug = edited_bug,
+    ...     bugurl = "http://www.example.com/bugs/2",
+    ...     user = sample_person,
+    ...     private = {'old' : True, 'new' : edited_bug.private})
+    >>> subject, body = generate_bug_edit_email(bug_delta)
+    >>> subject
+    u'[Bug 2] the new title'
+    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    Public bug report changed:
+    http://.../bugs/2
+    <BLANKLINE>
+    Secrecy changed to:
+        Public
     <BLANKLINE>
 
 Adding a new bug task
@@ -190,7 +209,7 @@ pretend we had just added task five:
    >>> subject
    u'[Bug 2] the new title'
    >>> print body
-   Private bug report changed:
+   Public bug report changed:
    http://.../bugs/2
    <BLANKLINE>
    Also affects: mozilla-firefox (debian)
@@ -227,7 +246,7 @@ bugmail when a bug task is edited.
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Private bug report changed:
+    Public bug report changed:
     http://.../bugs/2
     <BLANKLINE>
     Changed in: Ubuntu (upstream)
@@ -266,7 +285,7 @@ Adding a web link can be seen as "editing" a bug.
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Private bug report changed:
+    Public bug report changed:
     http://www.example.com/bugs/2
     <BLANKLINE>
     Web links changed:
@@ -293,7 +312,7 @@ modified link as having been "Added" (though no actual "adding" or
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Private bug report changed:
+    Public bug report changed:
     http://www.example.com/bugs/2
     <BLANKLINE>
     Web links changed:
@@ -330,7 +349,7 @@ generated when a bug watch is added:
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Private bug report changed:
+    Public bug report changed:
     http://www.example.com/bugs/2
     <BLANKLINE>
     Bug watches changed:
@@ -356,7 +375,7 @@ Let's demonstrate with an example:
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Private bug report changed:
+    Public bug report changed:
     http://www.example.com/bugs/2
     <BLANKLINE>
     Bug watches changed:
@@ -396,7 +415,7 @@ Adding a CVE will generate a notification that looks as follows:
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Private bug report changed:
+    Public bug report changed:
     http://www.example.com/bugs/2
     <BLANKLINE>
     Added CVE-2004-0718 (Candidate)
@@ -418,7 +437,7 @@ Similarly, removing a CVE ref will result in an email:
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Private bug report changed:
+    Public bug report changed:
     http://www.example.com/bugs/2
     <BLANKLINE>
     Removed CVE-2004-0719 (Candidate)
