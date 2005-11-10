@@ -8,7 +8,7 @@ __all__ = [
     'IDistributionSourcePackage',
     ]
 
-from zope.interface import Interface, Attribute
+from zope.interface import Attribute
 
 from canonical.launchpad.interfaces.bug import IBugTarget
 from canonical.launchpad.interfaces.tickettarget import ITicketTarget

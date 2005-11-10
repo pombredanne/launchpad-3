@@ -6,7 +6,6 @@ __metaclass__ = type
 
 __all__ = [
     'IDistributionSourcePackageRelease',
-    'IDistributionSourcePackageReleaseSet'
     ]
 
 from zope.interface import Interface, Attribute
@@ -52,9 +51,3 @@ class IDistributionSourcePackageRelease(ISourcePackageRelease):
     sample_binary_packages = Attribute("A single binary package of each "
         "named package produced from this source package in this "
         "distribution. The are each of form DistroReleaseBinaryPackage.")
-
-class IDistributionSourcePackageReleaseSet(Interface):
-    """Handy utility for IDistributionSourcePackageRelease."""
-
-    def generate(distrorelease, sourcepackagerelease):
-        """Return an initialized IDistributionSourcePackageRelease."""
