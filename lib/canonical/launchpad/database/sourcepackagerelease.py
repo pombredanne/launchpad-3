@@ -20,8 +20,7 @@ from canonical.lp.dbschema import (
     SourcePackageFileType, BuildStatus)
 
 from canonical.launchpad.interfaces import (
-    ISourcePackageRelease, ISourcePackageReleaseSet,
-    IDistroReleaseBinaryPackageSet)
+    ISourcePackageRelease, ISourcePackageReleaseSet)
 
 from canonical.launchpad.database.binarypackagerelease import (
      BinaryPackageRelease)
