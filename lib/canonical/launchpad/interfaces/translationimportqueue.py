@@ -57,7 +57,7 @@ class ITranslationImportQueue(Interface):
         required=True,
         default=False)
 
-    ispublished = Bool(
+    is_published = Bool(
         title=_("This import comes from a published file"),
         description=_(
             "If checked, this import will be handled as already published."),
@@ -80,6 +80,10 @@ class ITranslationImportQueue(Interface):
 
     def block(value=True):
         """Set this object as being (or nor) importable."""
+
+    def getFileContent():
+        """Return the imported file content as a stream."""
+
 
 class ITranslationImportQueueSet(Interface):
     """A set of files to be imported into Rosetta."""
@@ -176,16 +180,11 @@ class ITranslationImportQueueEdition(Interface):
         required=True,
         vocabulary="POTemplateName")
 
-    productseries = Choice(
-        title=_("Product Branch or Series"),
-        required=False,
-        vocabulary="ProductSeries")
-
     sourcepackagename = Choice(
         title=_("Source Package Name"),
         description=_(
             "The source package that uses this template."),
-        required=False,
+        required=True,
         vocabulary="SourcePackageName")
 
     language = Choice(
@@ -200,5 +199,6 @@ class ITranslationImportQueueEdition(Interface):
     path = TextLine(
         title=_("Path"),
         description=_(
-            "The path to this file inside the source tree."),
-        required=True)
+            "The path to this file inside the source tree. If it's empty, we"
+            " use the one from the queue entry."),
+        required=False)

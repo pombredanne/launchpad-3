@@ -15,7 +15,7 @@
             set_attributes="potemplatename description header iscurrent
                             owner productseries distrorelease
                             sourcepackagename sourcepackageversion
-                            binarypackagename languagepack path filename"
+                            binarypackagename languagepack path"
             />
         <require
             permission="zope.Public"
@@ -89,8 +89,7 @@
         template="../templates/potemplate-edit.pt"
         fields="name potemplatename description header iscurrent owner
                 productseries distrorelease sourcepackagename
-                sourcepackageversion binarypackagename languagepack path
-                filename" 
+                sourcepackageversion binarypackagename languagepack path"
         />
 
     <browser:page

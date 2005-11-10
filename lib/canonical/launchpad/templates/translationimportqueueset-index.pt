@@ -62,7 +62,7 @@
             date
           </td>
           <td>
-            <span tal:content="entry/ispublished">True</span>
+            <span tal:content="entry/is_published">True</span>
           </td>
           <td>
             <span tal:content="entry/path">po/foo.pot</span>
@@ -141,7 +141,7 @@
             date
           </td>
           <td>
-            <span tal:content="entry/ispublished">True</span>
+            <span tal:content="entry/is_published">True</span>
           </td>
           <td>
             <span tal:content="entry/path">po/foo.pot</span>

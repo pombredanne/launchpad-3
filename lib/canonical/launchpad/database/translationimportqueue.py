@@ -14,7 +14,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import DEFAULT
 from canonical.launchpad.interfaces import (ITranslationImportQueue,
     ITranslationImportQueueSet, NotFoundError, IPOFile, IPOFileSet,
-    IPOTemplateSet)
+    IPOTemplateSet, ICanAttachRawFileData)
 from canonical.launchpad.database import SourcePackage
 from canonical.librarian.interfaces import ILibrarianClient
 
@@ -36,8 +36,12 @@ class TranslationImportQueue(SQLBase):
         dbName='distrorelease', notNull=False, default=None)
     productseries = ForeignKey(foreignKey='ProductSeries',
         dbName='productseries', notNull=False, default=None)
-    ignore = BoolCol(dbName='ignore', notNull=True, default=False)
-    ispublished = BoolCol(dbName='ispublished', notNull=True)
+    blocked = BoolCol(dbName='blocked', notNull=True, default=False)
+    is_published = BoolCol(dbName='is_published', notNull=True)
+    pofile = ForeignKey(foreignKey='POFile', dbName='pofile',
+        notNull=False, default=None)
+    potemplate = ForeignKey(foreignKey='POTemplate',
+        dbName='potemplate', notNull=False, default=None)
 
     @property
     def sourcepackage(self):
@@ -76,9 +80,9 @@ class TranslationImportQueue(SQLBase):
 
     def attachToPOFileOrPOTemplate(self, pofile_or_potemplate):
         """See ITranslationImportQueue."""
-        if self.ignore:
+        if self.blocked:
             raise ValueError(
-                'This entry cannot be imported. It has the ignore flag set')
+                'This entry cannot be imported. It has the blocked flag set')
         if IPOFile.providedBy(pofile_or_potemplate):
             if not self.path.lower().endswith('.po'):
                 raise ValueError(
@@ -116,17 +120,23 @@ class TranslationImportQueue(SQLBase):
         pofile_or_potemplate.path = self.path
         attach_object = ICanAttachRawFileData(pofile_or_potemplate)
         attach_object.attachRawFileDataAsFileAlias(
-            file.content, file.ispublished, file.importer, file.dateimport)
+            self.content, self.is_published, self.importer, self.dateimport)
 
         # The import is noted now, so we should remove this entry from the
         # queue.
         TranslationImportQueue.delete(self.id)
 
     def block(self, value=True):
-        """See ITranslationImportQueueSet."""
-        self.ignore = value
+        """See ITranslationImportQueue."""
+        self.blocked = value
         # Sync it so future queries get this change.
         self.sync()
+
+    def getFileContent(self):
+        """See ITranslationImportQueue."""
+        client = getUtility(ILibrarianClient)
+
+        return client.getFileByAlias(self.content.id).read()
 
 
 class TranslationImportQueueSet:
@@ -134,7 +144,7 @@ class TranslationImportQueueSet:
 
     def __iter__(self):
         """See ITranslationImportQueueSet."""
-        for entry in self.getEntries(include_ignored=True):
+        for entry in self.getEntries(include_blocked=True):
             yield entry
 
     def __getitem__(self, id):
@@ -192,7 +202,7 @@ class TranslationImportQueueSet:
             # It's an update.
             entry = res[0]
             entry.content = alias
-            entry.ispublished = is_published
+            entry.is_published = is_published
             entry.sync()
             return entry
         else:
@@ -200,7 +210,7 @@ class TranslationImportQueueSet:
             entry = TranslationImportQueue(path=path, content=alias,
                 importer=importer, sourcepackagename=sourcepackagename,
                 distrorelease=distrorelease, productseries=productseries,
-                ispublished=is_published)
+                is_published=is_published)
             return entry
 
     def addOrUpdateEntriesFromTarball(self, content, is_published, importer,
@@ -223,12 +233,12 @@ class TranslationImportQueueSet:
 
         return len(files)
 
-    def getEntries(self, include_ignored=False):
+    def getEntries(self, include_blocked=False):
         """See ITranslationImportQueueSet."""
-        if include_ignored == True:
+        if include_blocked == True:
             res = TranslationImportQueue.select()
         else:
-            res = TranslationImportQueue.select('ignore = FALSE')
+            res = TranslationImportQueue.select('blocked = FALSE')
         for entry in res:
             yield entry
 
@@ -249,7 +259,7 @@ class TranslationImportQueueSet:
 
     def hasBlockedEntries(self):
         """See ITranslationImportQueueSet."""
-        res = TranslationImportQueue.select('ignore = TRUE')
+        res = TranslationImportQueue.select('blocked = TRUE')
         if res.count() > 0:
             return True
         else:
@@ -257,7 +267,7 @@ class TranslationImportQueueSet:
 
     def getBlockedEntries(self):
         """See ITranslationImportQueueSet."""
-        res = TranslationImportQueue.select('ignore = TRUE')
+        res = TranslationImportQueue.select('blocked = TRUE')
         for entry in res:
             yield entry
 

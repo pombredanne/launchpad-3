@@ -163,6 +163,9 @@ class POFile(SQLBase, RosettaStats):
     latestsubmission = ForeignKey(foreignKey='POSubmission',
         dbName='latestsubmission', notNull=False, default=None)
 
+    from_sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
+        dbName='from_sourcepackagename', notNull=False, default=None)
+
     @property
     def title(self):
         """See IPOFile."""

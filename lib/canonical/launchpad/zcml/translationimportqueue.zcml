@@ -41,13 +41,12 @@
         schema="canonical.launchpad.interfaces.ITranslationImportQueueEdition"
         class="canonical.launchpad.browser.TranslationImportQueueView"
         template="../templates/translationimportqueue-index.pt"
-        permission="launchpad.Admin">
-        fields="potemplatename productseries sourcepackagename
-                language variant path"
-        arguments="potemplatename productseries sourcepackagename
-                language variant path"
+        permission="launchpad.Admin"
+        fields="sourcepackagename potemplatename path
+                language variant"
+        arguments="potemplatename"
+        keyword_arguments="sourcepackagename path language variant"
         lp:url="/rosetta/imports/$TranslationImportQueue.id/+index" />
-    </browser:generalform>
 
     <browser:pages
         for="canonical.launchpad.interfaces.ITranslationImportQueue"

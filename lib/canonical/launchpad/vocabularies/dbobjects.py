@@ -638,7 +638,7 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
         # NB: We use '/' as the seperator because '-' is valid in
         # a product.name or productseries.name
         token = '%s/%s' % (obj.product.name, obj.name)
-        return SimpleTerm(obj.id,
+        return SimpleTerm(obj,
                           token,
                           obj.product.name + ' ' + obj.name)
 
@@ -932,17 +932,8 @@ class POTemplateNameVocabulary(NamedSQLObjectVocabulary):
     _table = POTemplateName
     _orderBy = 'name'
 
-    def search(self, query):
-        """Return terms where query is a substring of the name"""
-        if query:
-            query = query.lower()
-            objs = self._table.select(
-                CONTAINSSTRING(POTemplateName.q.name, query),
-                orderBy=self._orderBy
-                )
-
-            for o in objs:
-                yield self._toTerm(o)
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.translationdomain)
 
 
 class ProcessorVocabulary(NamedSQLObjectVocabulary):

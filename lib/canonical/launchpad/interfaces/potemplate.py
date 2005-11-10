@@ -90,7 +90,7 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
         required=False,
         vocabulary="SourcePackageName")
 
-    fromsourcepackagename = Choice(
+    from_sourcepackagename = Choice(
         title=_("From Source Package Name"),
         description=_(
             "The source package this template comes from (set it only if it's"
@@ -119,11 +119,7 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
         default=False)
 
     path = TextLine(
-        title=_("Path of the template in the source tree"),
-        required=False)
-
-    filename = TextLine(
-        title=_("Filename of template in the source tree"),
+        title=_("Path of the template in the source tree, including filename."),
         required=False)
 
     priority = Attribute("The template priority.")

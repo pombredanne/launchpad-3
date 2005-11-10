@@ -79,8 +79,8 @@ class POTemplate(SQLBase, RosettaStats):
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='sourcepackagename', notNull=False, default=None)
-    fromsourcepackagename = ForeignKey(foreignKey='SourcePackageName',
-        dbName='fromsourcepackagename', notNull=False, default=None)
+    from_sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
+        dbName='from_sourcepackagename', notNull=False, default=None)
     sourcepackageversion = StringCol(dbName='sourcepackageversion',
         notNull=False, default=None)
     distrorelease = ForeignKey(foreignKey='DistroRelease',
@@ -89,7 +89,6 @@ class POTemplate(SQLBase, RosettaStats):
     binarypackagename = ForeignKey(foreignKey='BinaryPackageName',
         dbName='binarypackagename', notNull=False, default=None)
     languagepack = BoolCol(dbName='languagepack', notNull=True, default=False)
-    filename = StringCol(dbName='filename', notNull=False, default=None)
 
     # joins
     pofiles = MultipleJoin('POFile', joinColumn='potemplate')
@@ -790,7 +789,7 @@ class POTemplateSet:
 
         return POTemplateSubset(
             distrorelease=distrorelease,
-            fromsourcepackagename=sourcepackagename)
+            from_sourcepackagename=sourcepackagename)
 
     def getTemplatesPendingImport(self):
         """See IPOTemplateSet."""
@@ -807,16 +806,16 @@ class POTemplateSet:
         if sourcepackagename is not None:
             # The POTemplate belongs to a distribution and it could come from
             # another package that the one it's linked at the moment so we
-            # first check to find it at IPOTemplate.fromsourcepackagename
+            # first check to find it at IPOTemplate.from_sourcepackagename
             try:
                 return POTemplate.selectOne(
                     productseries=productseries,
                     distrorelease=distrorelease,
-                    fromsourcepackagename=sourcepackagename,
+                    from_sourcepackagename=sourcepackagename,
                     path=path)
             except SQLObjectNotFound:
                 # There is no potemplate in that 'path' and
-                # 'fromsourcepackagename' so we do a search using the usual
+                # 'from_sourcepackagename' so we do a search using the usual
                 # sourcepackagename.
                 pass
 

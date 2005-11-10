@@ -323,7 +323,8 @@ COMMENT ON COLUMN POTemplate.sourcepackageversion IS 'The sourcepackage version 
 COMMENT ON COLUMN POTemplate.header IS 'The header of a .pot file when we import it. Most important info from it is POT-Creation-Date and custom headers.';
 COMMENT ON COLUMN POTemplate.potemplatename IS 'A reference to a POTemplateName row that tells us the name/domain for this POTemplate.';
 COMMENT ON COLUMN POTemplate.productseries IS 'A reference to a ProductSeries from where this POTemplate comes.';
-COMMENT ON COLUMN POTemplate.fromsourcepackagename IS 'A reference to a SourcePackageName when the .pot file came from another package instead of the one noted at POTemplate.sourcepackagename.';
+COMMENT ON COLUMN POTemplate.path IS 'The path to the .pot source file inside the tarball tree, including the filename.';
+COMMENT ON COLUMN POTemplate.from_sourcepackagename IS 'The sourcepackagename from where the last .pot file came (only if it\'s different from POTemplate.sourcepackagename)';
 
 -- POTemplateName
 COMMENT ON TABLE POTemplateName IS 'POTemplate Name. This table stores the domains/names of a set of POTemplate rows.';
@@ -341,6 +342,7 @@ COMMENT ON COLUMN POFile.rawimportstatus IS 'The status of the import. See the R
 COMMENT ON COLUMN POFile.exportfile IS 'The Library file alias of an export of this PO file.';
 COMMENT ON COLUMN POFile.exporttime IS 'The time at which the file referenced by exportfile was generated.';
 COMMENT ON COLUMN POFile.path IS 'The path (included the filename) inside the tree from where the content was imported.';
+COMMENT ON COLUMN POFile.from_sourcepackagename IS 'The sourcepackagename from where the last .po file came (only if it\'s different from POFile.potemplate.sourcepackagename)';
 
 -- POSelection
 COMMENT ON TABLE POSelection IS 'This table captures the full set
@@ -1205,4 +1207,8 @@ COMMENT ON COLUMN TranslationImportQueue.dateimport IS 'The timestamp when the i
 COMMENT ON COLUMN TranslationImportQueue.distrorelease IS 'The distribution release related to this import.';
 COMMENT ON COLUMN TranslationImportQueue.sourcepackagename IS 'The source package name related to this import.';
 COMMENT ON COLUMN TranslationImportQueue.productseries IS 'The product series related to this import.';
-COMMENT ON COLUMN TranslationImportQueue.ignore IS 'If this flag is set, the row should be ignored and not imported.';
+COMMENT ON COLUMN TranslationImportQueue.blocked IS 'If this flag is set, the row should be blocked and not imported.';
+COMMENT ON COLUMN TranslationImportQueue.is_published IS 'Notes whether is a published upload.';
+COMMENT ON COLUMN TranslationImportQueue.pofile IS 'Link to the POFile where this import will end.';
+COMMENT ON COLUMN TranslationImportQueue.potemplate IS 'Link to the POTemplate where this import will end.';
+

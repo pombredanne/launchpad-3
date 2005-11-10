@@ -18,7 +18,8 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
     ITranslationImportQueue, ITranslationImportQueueSet, ICanonicalUrlData,
-    ILaunchpadCelebrities, ITranslationImportQueueEdition)
+    ILaunchpadCelebrities, ITranslationImportQueueEdition, IPOTemplateSet,
+    RawFileBusy, NotFoundError)
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, ContextMenu, Link)
 from canonical.launchpad.webapp.generalform import GeneralFormView
@@ -50,11 +51,92 @@ class TranslationImportQueueView(GeneralFormView):
     translation import queue.
     """
 
-    def process(self, potemplatename, productseries, sourcepackagename,
-        language, variant, path):
-        """Process the form we got from the submission."""
-        return 'Hi!'
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.initialize()
+        GeneralFormView.__init__(self, context, request)
 
+    def initialize(self):
+        """Useful initialization for this view class."""
+        if (self.context.productseries is not None and
+            'sourcepackagename' in self.fieldNames):
+            self.fieldNames.remove('sourcepackagename')
+
+        if self.context.path.endswith('.pot'):
+            if 'language' in self.fieldNames:
+                self.fieldNames.remove('language')
+            if 'variant' in self.fieldNames:
+                self.fieldNames.remove('variant')
+
+    def process(self, potemplatename, path=None, sourcepackagename=None,
+        language=None, variant=None):
+        """Process the form we got from the submission."""
+        translationimportqueue_set = getUtility(ITranslationImportQueueSet)
+
+        if self.context.path != path:
+            # The Rosetta Expert decided to change the path of the file.
+            self.context.path = path
+
+        if (sourcepackagename is not None and
+            self.context.sourcepackagename is not None):
+            destination_sourcepackagename = sourcepackagename
+        else:
+            destination_sourcepackagename = self.context.sourcepackagename
+
+        potemplate_set = getUtility(IPOTemplateSet)
+        potemplate_subset = potemplate_set.getSubset(
+                productseries=self.context.productseries,
+                distrorelease=self.context.distrorelease,
+                sourcepackagename=destination_sourcepackagename)
+        try:
+            potemplate = potemplate_subset[potemplatename.name]
+        except NotFoundError:
+            # The POTemplate does not exists. In this case we don't care if
+            # the file is a .pot or a .po file, we can use both as the base
+            # template.
+            potemplate = potemplate_subset.new(
+                potemplatename,
+                self.context.getFileContent(),
+                self.context.importer)
+
+            # Point to the right path.
+            potemplate.path = self.context.path
+            # Set the real import date.
+            IRawFileData(potemplate).daterawimport = self.context.dateimport
+
+            if language is None:
+                # We can remove the element from the queue as it was a direct
+                # import into an IPOTemplate.
+                translationimportqueue_set.remove(self.context.id)
+                return 'Your changes has been done.'
+
+        if language is None:
+            try:
+                self.context.attachToPOFileOrPOTemplate(potemplate)
+            except RawFileBusy:
+                # There is already one file waiting for being imported, we add
+                # a link to the IPOTemplate and wait for it.
+                self.context.potemplate = potemplate
+        else:
+            # We are hadling an IPOFile import.
+            pofile = potemplate.getOrCreatePOFile(language.code, variant,
+                self.context.importer)
+            try:
+                self.context.attachToPOFileOrPOTemplate(pofile)
+            except RawFileBusy:
+                # There is already one file waiting for being imported, we add
+                # a link to the IPOFile and wait for it.
+                self.context.pofile = pofile
+
+        return 'Your changes has been done.'
+
+    def nextURL(self):
+        """Return the URL of the main queue so the form submission forwards
+        there.
+        """
+        translationimportqueue_set = getUtility(ITranslationImportQueue)
+        return canonical_url(translationimportqueue_set)
 
 
 class TranslationImportQueueSetNavigation(GetitemNavigation):

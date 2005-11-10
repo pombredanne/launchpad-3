@@ -223,11 +223,10 @@
         class="canonical.launchpad.browser.POTemplateAddView"
         facet="translations"
         label="Add a New Translation Template"
-        fields="potemplatename description iscurrent owner path filename
-                content"
+        fields="potemplatename description iscurrent owner path content"
         arguments=""
         keyword_arguments="potemplatename description iscurrent owner
-                           path filename content"
+                           path content"
         content_factory="canonical.launchpad.database.POTemplate"
         permission="launchpad.Append"
         template="../templates/potemplate-add.pt" >
