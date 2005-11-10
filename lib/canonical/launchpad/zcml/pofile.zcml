@@ -10,12 +10,12 @@
 
     <content class="canonical.launchpad.database.POFile">
         <require
-            permission="launchpad.Edit"
+            permission="zope.Public"
             interface="canonical.launchpad.interfaces.IPOFile"
             set_attributes="header pluralforms path"
             />
         <require
-            permission="launchpad.Edit"
+            permission="zope.Public"
             interface="canonical.launchpad.interfaces.IRawFileData"
             set_attributes="rawimportstatus"
             />

@@ -22,7 +22,7 @@ from zope.app.form.browser.add import AddView
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    IPOTemplate, IPOTemplateSet, IPOTemplateNameSet, IPOExportRequestSet,
+    IPOTemplate, IPOTemplateSet, IPOExportRequestSet,
     IPersonSet, RawFileAttachFailed, ICanonicalUrlData, ILaunchpadCelebrities,
     ILaunchBag, IPOFileSet, IPOTemplateSubset, ITranslationImportQueueSet)
 from canonical.launchpad.browser.pofile import (
@@ -266,17 +266,13 @@ class POTemplateAddView(AddView):
 
     def createAndAdd(self, data):
         # retrieve submitted values from the form
-        potemplatenameid = data.get('potemplatename')
+        potemplatename = data.get('potemplatename')
         description = data.get('description')
         iscurrent = data.get('iscurrent')
         owner = data.get('owner')
         path = data.get('path')
         filename = data.get('filename')
         content = data.get('content')
-
-        # Get the POTemplateName
-        potemplatenameset = getUtility(IPOTemplateNameSet)
-        potemplatename = potemplatenameset.get(potemplatenameid)
 
         potemplateset = getUtility(IPOTemplateSet)
         potemplatesubset = potemplateset.getSubset(

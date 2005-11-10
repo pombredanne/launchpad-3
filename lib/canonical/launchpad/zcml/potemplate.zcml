@@ -10,7 +10,7 @@
 
     <content class="canonical.launchpad.database.POTemplate">
         <require
-            permission="launchpad.Edit"
+            permission="zope.Public"
             interface="canonical.launchpad.interfaces.IPOTemplate"
             set_attributes="potemplatename description header iscurrent
                             owner productseries distrorelease
@@ -18,7 +18,7 @@
                             binarypackagename languagepack path"
             />
         <require
-            permission="launchpad.Edit"
+            permission="zope.Public"
             interface="canonical.launchpad.interfaces.IRawFileData"
             set_attributes="rawimportstatus daterawimport"
             />
