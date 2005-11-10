@@ -44,7 +44,6 @@ class Branch(SQLBase):
     branch_home_page = StringCol(default=None)
     home_page_locked = BoolCol(default=False, notNull=True)
 
-    starred = IntCol(default=1, notNull=True)
     lifecycle_status = EnumCol(schema=BranchLifecycleStatus, notNull=True,
         default=BranchLifecycleStatus.NEW)
 
@@ -57,11 +56,10 @@ class Branch(SQLBase):
     current_activity = IntCol(default=0, notNull=True)
     stats_updated = UtcDateTimeCol(default=None)
 
-    # mirror_status = EnumCol(schema=MirrorStatus, default=MirrorStatus.XXX,
-    #                         notNull=True)
     last_mirrored = UtcDateTimeCol(default=None)
     last_mirror_attempt = UtcDateTimeCol(default=None)
     mirror_failures = IntCol(default=0, notNull=True)
+    pull_disabled = BoolCol(default=False, notNull=True)
 
     cache_url = StringCol(default=None)
 
@@ -145,10 +143,10 @@ class BranchSet:
 
     def get_supermirror_pull_queue(self):
         """See IBranchSet.get_supermirror_pull_queue."""
-        return set(Branch.select("(last_mirror_attempt is NULL "
-                                 "or (%s - last_mirror_attempt "
-                                 "> '1 day')) and NOT ("
-                                 "url ILIKE 'http://bazaar.ubuntu.com/%%')" % UTC_NOW))
+        return Branch.select(
+            "(last_mirror_attempt is NULL "
+            " OR (%s - last_mirror_attempt > '1 day')) "
+            "AND NOT (url ILIKE 'http://bazaar.ubuntu.com/%%')" % UTC_NOW)
 
 
 class BranchRelationship(SQLBase):

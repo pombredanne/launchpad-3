@@ -147,7 +147,7 @@ spider -- StuartBishop 20050822
 >>> check("/distros/ubuntu/hoary/+source/evolution/")
 >>> check("/distros/ubuntu/hoary/+source/evolution/+bugs")
 
-DISABLED while HCT transitions to bzr. XXX FIXME
+# FIXME: disable while HCT transitions to bzr. See bug #4117. -- RobertCollins.
 #>>> check("/distros/ubuntu/hoary/+source/evolution/+hctstatus")
 
 >>> check("/distros/ubuntu/hoary/+source/evolution/+changelog")

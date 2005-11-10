@@ -1,6 +1,5 @@
 """Tests for canonical.launchpad.hctapi."""
 
-import unittest
 from hct.scaffold import Scaffold, register
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 
@@ -1411,8 +1410,13 @@ class PutManifest(DatabaseScaffold):
         self.assertRaises(LaunchpadError, put_manifest,
                           "lp:///distros/ubuntu", manifest)
 
+# Disabled hctapi tests until hctapi is fixed for the branches changes. See bug
+# #4117. -- Robert Collins 2005-11-02
 
 #register(__name__)
+
+# Temporary hack to make the test runner happy until the register() statement
+# can be uncommented. See #4117. -- Robert Collins 2005-11-02
 def test_suite():
-    # disabled
+    import unittest
     return unittest.TestSuite()

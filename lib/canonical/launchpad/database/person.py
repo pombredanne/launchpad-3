@@ -46,6 +46,7 @@ from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.karma import (
     KarmaAction, Karma, KarmaCategory)
 from canonical.launchpad.database.shipit import ShippingRequest
+from canonical.launchpad.database.branch import Branch
 
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
@@ -286,20 +287,25 @@ class Person(SQLBase):
 
     @property
     def branches(self):
-        ret = set(self.authored_branches)
-        ret = ret.union(self.registered_branches)
-        ret = ret.union(self.subscribed_branches)
-        ret = sorted(ret, key=lambda a: -a.id)
-        return ret
+        """See IPerson."""
+        S = set(self.authored_branches)
+        S.update(self.registered_branches)
+        S.update(self.subscribed_branches)
+        def by_reverse_id(branch):
+            return -branch.id
+        return sorted(S, key=by_reverse_id)
 
     @property
     def registered_branches(self):
-        from canonical.launchpad.database import Branch
+        """See IPerson."""
         return Branch.select('owner=%d AND (author!=%d OR author is NULL)'
                              % (self.id, self.id), orderBy='-id')
 
     def getBranch(self, product_name, branch_name):
-        from canonical.launchpad.database import Product, Branch
+        """See IPerson."""
+        # import here to work around a circular import problem
+        from canonical.launchpad.database import Product
+
         if product_name is None:
             return Branch.selectOne(
                 'owner=%d AND product is NULL AND name=%s'

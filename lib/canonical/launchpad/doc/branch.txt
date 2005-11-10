@@ -25,8 +25,11 @@ It's not tied to a specific revision history because each new commit appends to
 the history, and it's not restricted to appending to the history because the
 Bazaar model does not forbid users from replacing the history of a branch.
 
-Actually, the conceptual model of Bazaar does not really have an identifiable
-concept of a branch. Branch describes a Launchpad concept.
+Bazaar does not have a identifiable concept of a Branch below the user
+interface level. Since the conceptual model of Bazaar does not define Branch,
+Launchpad cannot just implement the Bazaar branch model. You should think of a
+Branch, not as "a Bazaar branch in Launchpad", but as a "Launchpad branch based
+on Bazaar". If that makes any sense to you. Otherwise, don't worry.
 
 == Creating branches ==
 

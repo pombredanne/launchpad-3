@@ -146,6 +146,9 @@ class NotifyingBuild(ConfigurableBuild):
         try:
             self.getObserver().startBuild()
         except:
+            # Catch any exception, safely abort the transaction, convert the
+            # exception into a Twisted failure and pass it. Leaving the
+            # exception bubble up breaks Buildbot.
             f = Failure()
             tryToAbortTransaction()
             return self.buildException(f, "startBuild")
@@ -158,6 +161,9 @@ class NotifyingBuild(ConfigurableBuild):
             try:
                 self.getObserver().buildFinished(successful)
             except:
+                # Catch any exception, safely abort the transaction, convert
+                # the exception into a Twisted failure and pass it. Leaving the
+                # exception bubble up breaks Buildbot.
                 f = Failure()
                 tryToAbortTransaction()
                 # that will cause buildFinished to be called recursively
@@ -166,12 +172,10 @@ class NotifyingBuild(ConfigurableBuild):
 
     def refreshBuilder(self, rerun, periodic):
         self.builder.stopPeriodicBuildTimer()
-        # change the builder and run it again after the buildFinished 
-        # process finishes.
-        # XXX: This should not be needed. It is needed because we are
-        # in a deep call stack which will call into
-        # self.build.builder.expectations which is currently coupled
-        # to the value of self.build.builder.steps.
+        # Change the builder and run it again after the buildFinished process
+        # finishes. callLater not be needed. It is needed because we are in a
+        # deep call stack which will call into self.build.builder.expectations
+        # which is currently coupled to the value of self.build.builder.steps.
         # If this is fixed, we can simply call self.refreshBuilder().
         reactor.callLater(1, self.refreshBuilderDelayed, rerun, periodic)
 
@@ -184,9 +188,9 @@ class NotifyingBuild(ConfigurableBuild):
         self.builder.buildFactory.addSteps()
         self.builder.waiting = self.builder.newBuild()
         self.builder.expectations = None
-        p = self.builder.waiting.setupProgress()
-        if p:
-            self.builder.expectations = Expectations(p)
+        progress = self.builder.waiting.setupProgress()
+        if progress:
+            self.builder.expectations = Expectations(progress)
         self.builder.periodicBuildTime = periodic
         self.builder.startPeriodicBuildTimer()
         if rerun:

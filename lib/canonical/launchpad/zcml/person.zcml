@@ -425,27 +425,27 @@
       permission="launchpad.AnyPerson"
       template="../templates/person-branch-add.pt">
       <browser:widget
-	  field="url"
-	  class="zope.app.form.browser.TextWidget"
-	  displayWidth="65" />
+          field="url"
+          class="zope.app.form.browser.TextWidget"
+          displayWidth="65" />
       <browser:widget
-	  field="home_page"
-	  class="zope.app.form.browser.TextWidget"
-	  displayWidth="65" />
+          field="home_page"
+          class="zope.app.form.browser.TextWidget"
+          displayWidth="65" />
       <browser:widget
           field="title"
           class="zope.app.form.browser.TextWidget"
           displayWidth="65" />
       <browser:widget
-	  field="summary"
-	  class="zope.app.form.browser.TextAreaWidget"
-	  height="5" />
+          field="summary"
+          class="zope.app.form.browser.TextAreaWidget"
+          height="5" />
       <browser:widget
-	  field="owner"
-	  class="canonical.widgets.HiddenUserWidget" />
+          field="owner"
+          class="canonical.widgets.HiddenUserWidget" />
       <browser:widget
-	  field="author"
-	  class="canonical.widgets.ContextWidget" />
+          field="author"
+          class="canonical.widgets.ContextWidget" />
     </browser:addform>
 
   <!-- PersonSet -->

@@ -158,6 +158,7 @@ class TestBranchesToPullSample(LaunchpadFunctionalTestCase):
             set(view.render().split('\n')))
         
     def test_branch_pull_mime_type(self):
+        self.login()
         mock_request = MockRequest()
         mock_request.response = MockResponse()
         view = browser.BranchPullListing(None, mock_request)

@@ -38,8 +38,6 @@ ALTER TABLE Branch ADD COLUMN home_page_locked boolean;
 ALTER TABLE Branch ADD COLUMN url text;
 ALTER TABLE Branch ADD CONSTRAINT valid_url CHECK (valid_absolute_url(url));
 
-ALTER TABLE Branch ADD COLUMN starred int;
-
 ALTER TABLE Branch ADD COLUMN whiteboard text;
 
 ALTER TABLE Branch ADD COLUMN lifecycle_status int;
@@ -61,13 +59,11 @@ ALTER TABLE Branch ADD COLUMN stats_updated timestamp without time zone;
 
 ALTER TABLE Branch ADD COLUMN current_activity int;
 
-ALTER TABLE Branch ADD COLUMN mirror_status int;
-
 ALTER TABLE Branch ADD COLUMN last_mirrored timestamp without time zone;
-
 ALTER TABLE Branch ADD COLUMN last_mirror_attempt timestamp without time zone;
-
 ALTER TABLE Branch ADD COLUMN mirror_failures int;
+ALTER TABLE Branch ADD COLUMN pull_disabled bool;
+
 
 ALTER TABLE Branch ADD COLUMN cache_url text;
 ALTER TABLE Branch ADD CONSTRAINT valid_cache_url
@@ -81,14 +77,12 @@ ALTER TABLE Branch ALTER COLUMN name SET NOT NULL;
 ALTER TABLE Branch ALTER COLUMN product_locked SET DEFAULT false;
 ALTER TABLE Branch ALTER COLUMN product_locked SET NOT NULL;
 ALTER TABLE Branch ALTER COLUMN home_page_locked SET DEFAULT false;
-ALTER TABLE Branch ALTER COLUMN starred SET DEFAULT 1;
-ALTER TABLE Branch ALTER COLUMN starred SET NOT NULL;
 ALTER TABLE Branch ALTER COLUMN lifecycle_status SET DEFAULT 1;
 ALTER TABLE Branch ALTER COLUMN lifecycle_status SET NOT NULL;
 ALTER TABLE Branch ALTER COLUMN current_activity SET DEFAULT 0;
 ALTER TABLE Branch ALTER COLUMN current_activity SET NOT NULL;
-ALTER TABLE Branch ALTER COLUMN mirror_status SET DEFAULT 1;
-ALTER TABLE Branch ALTER COLUMN mirror_status SET NOT NULL;
+ALTER TABLE Branch ALTER COLUMN pull_disabled SET DEFAULT false;
+ALTER TABLE Branch ALTER COLUMN pull_disabled SET NOT NULL;
 ALTER TABLE Branch ALTER COLUMN mirror_failures SET DEFAULT 0;
 ALTER TABLE Branch ALTER COLUMN mirror_failures SET NOT NULL;
 

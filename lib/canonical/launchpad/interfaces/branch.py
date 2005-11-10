@@ -91,14 +91,12 @@ class IBranch(IHasOwner):
                       " is overriden by the home page set in Launchpad."))
 
     # Stats and status attributes
-    starred = Attribute("How many stars this branch has.")
-
     lifecycle_status = Choice(
         title=_('Status'), vocabulary='BranchLifecycleStatus',
         default=BranchLifecycleStatus.NEW, description=_("The current "
         "status of this branch."))
 
-    # TODO: landing_target, needs a BranchVocabulaty
+    # TODO: landing_target, needs a BranchVocabulaty. See bug #4119.
     # -- DavidAllouche 2005-09-05
 
     current_delta_url = Attribute(
@@ -116,15 +114,17 @@ class IBranch(IHasOwner):
 
     # Mirroring attributes
 
-    # TODO: mirror_status, needs a MirrorStatus EnumCol
-    # -- DavidAllouche 2005-09-05
-
     last_mirrored = Attribute(
         "Last time this branch was successfully mirrored.")
     last_mirror_attempt = Attribute(
         "Last time a mirror of this branch was attempted.")
     mirror_failures = Attribute(
         "Number of failed mirror attempts since the last successful mirror.")
+    pull_disabled = Bool(
+        title=_("Do not try to pull this branch anymore."),
+        description=_("Disable periodic pulling of this branch by Launchpad. "
+                      "That will prevent connection attempts to the branch "
+                      "URL. Use this if the branch is no longer available."))
 
     cache_url = Attribute("Private mirror of the branch, for internal use.")
 

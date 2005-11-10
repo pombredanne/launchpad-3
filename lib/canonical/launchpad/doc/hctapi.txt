@@ -7,8 +7,8 @@ from database objects and vice-versa.
 
 We should be able to import it.
 
-FIXME: Currently broken due to the branch changes.
-       -- Gustavo Niemeyer, 2005-11-02
+FIXME: Currently broken due to the branch changes. See bug #4117.
+-- Gustavo Niemeyer, 2005-11-02
 
     #>>> from canonical.launchpad import hctapi
 
