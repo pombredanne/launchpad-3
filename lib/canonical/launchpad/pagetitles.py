@@ -625,6 +625,8 @@ productseries_source = 'Add Source Import'
 
 productseries_sourceadmin = 'Add Source Import'
 
+productseries_translations_upload = 'Request New Translations Upload'
+
 project = ContextTitle('Upstream Project: %s')
 
 project_branches = ContextTitle('Bazaar Summary for %s')

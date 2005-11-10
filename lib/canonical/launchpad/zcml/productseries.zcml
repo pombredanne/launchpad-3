@@ -5,7 +5,7 @@
     xmlns:zope="http://namespaces.zope.org/zope"
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
-    
+
     <!-- This is class ProductSeries -->
     <content class="canonical.launchpad.database.ProductSeries">
         <allow interface="canonical.launchpad.interfaces.IProductSeries" />
@@ -130,6 +130,11 @@
             name="+edit"
             template="../templates/productseries-edit.pt"
             lp:url="/products/$Product.name/+series/$ProductSeries.name/+edit" />
+        <browser:page
+            name="+translations-upload"
+            facet="translations"
+            template="../templates/productseries-translations-upload.pt"
+            lp:url="/products/evolution/+series/main/+translations-upload" />
     </browser:pages>
 
     <browser:addform

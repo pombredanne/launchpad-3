@@ -19,9 +19,9 @@ from zope.interface import implements
 from canonical.launchpad.interfaces import (
     ITranslationImportQueue, ITranslationImportQueueSet, ICanonicalUrlData,
     ILaunchpadCelebrities, ITranslationImportQueueEdition, IPOTemplateSet,
-    RawFileBusy, NotFoundError)
+    IRawFileData, RawFileBusy, NotFoundError)
 from canonical.launchpad.webapp import (
-    GetitemNavigation, LaunchpadView, ContextMenu, Link)
+    GetitemNavigation, LaunchpadView, ContextMenu, Link, canonical_url)
 from canonical.launchpad.webapp.generalform import GeneralFormView
 
 
@@ -59,6 +59,9 @@ class TranslationImportQueueView(GeneralFormView):
 
     def initialize(self):
         """Useful initialization for this view class."""
+        self.fieldNames = ['sourcepackagename', 'potemplatename', 'path',
+            'language', 'variant']
+
         if (self.context.productseries is not None and
             'sourcepackagename' in self.fieldNames):
             self.fieldNames.remove('sourcepackagename')
@@ -74,7 +77,7 @@ class TranslationImportQueueView(GeneralFormView):
         """Process the form we got from the submission."""
         translationimportqueue_set = getUtility(ITranslationImportQueueSet)
 
-        if self.context.path != path:
+        if path and self.context.path != path:
             # The Rosetta Expert decided to change the path of the file.
             self.context.path = path
 
@@ -135,7 +138,7 @@ class TranslationImportQueueView(GeneralFormView):
         """Return the URL of the main queue so the form submission forwards
         there.
         """
-        translationimportqueue_set = getUtility(ITranslationImportQueue)
+        translationimportqueue_set = getUtility(ITranslationImportQueueSet)
         return canonical_url(translationimportqueue_set)
 
 

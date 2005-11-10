@@ -2,6 +2,7 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:zope="http://namespaces.zope.org/zope"
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
@@ -14,7 +15,7 @@
             set_attributes="header pluralforms path"
             />
         <require
-            permission="zope.Public"
+            permission="launchpad.Edit"
             interface="canonical.launchpad.interfaces.IRawFileData"
             set_attributes="rawimportstatus"
             />

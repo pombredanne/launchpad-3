@@ -25,6 +25,7 @@ CREATE TABLE TranslationImportQueue(
 
 CREATE UNIQUE INDEX unique_entry_per_importer ON TranslationImportQueue (
                         importer,
+                        path,
                         (COALESCE(distrorelease, -1)),
                         (COALESCE(sourcepackagename, -1)),
                         (COALESCE(productseries, -1))

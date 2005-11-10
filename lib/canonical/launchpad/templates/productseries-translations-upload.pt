@@ -1,0 +1,61 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <tal:block condition="view/translationsUpload" />
+
+  <h1>Upload new translation resources for <span tal:replace="context/title" />
+  </h1>
+
+  <p tal:repeat="alert view/alerts"
+    class="portalMessage"
+    tal:content="structure alert">
+    Notification Message
+  </p>
+  <p tal:repeat="notice view/notices"
+    class="portalMessage"
+    tal:content="structure notice">
+    Notification Message
+  </p>
+
+  <p>
+    Here you can upload either a single file (<code>.pot</code> /
+    <code>.po</code>) or a tar file containing a PO template and a set of PO
+    files (<code>.tar</code>, <code>.tar.gz</code>, <code>.tgz</code> or
+    <code>.tar.bz2</code>).
+    The files you uploa will be imported into Rosetta shortly, they will be
+    waiting for and admin review. Next updates will not need this review but
+    we do it for new uploads to prevent abuses.
+  </p>
+
+  <form action="+translations-upload" method="POST" enctype="multipart/form-data">
+    <table>
+      <tr>
+        <th><label for="file_input">File:</label></th>
+        <td><input id="file_input" name="file" type="file" /></td>
+      </tr>
+      <tr>
+        <th></th>
+        <td>
+          <input name="TRANSLATIONS-UPLOAD" type="submit" value="Request Upload"/>
+        </td>
+      </tr>
+    </table>
+  </form>
+</div>
+
+</body>
+</html>

@@ -15,6 +15,7 @@ import urllib
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.publisher.browser import FileUpload
 
 from CVS.protocol import CVSRoot
 import pybaz
@@ -23,14 +24,16 @@ from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 
-from canonical.launchpad.helpers import request_languages, browserLanguages
+from canonical.launchpad.helpers import (
+    request_languages, browserLanguages, is_tar_filename)
 from canonical.launchpad.interfaces import (
     IPerson, ICountry, IPOTemplateSet, ILaunchpadCelebrities, ILaunchBag,
-    ISourcePackageNameSet, validate_url, IProductSeries, IProductSeriesSet)
+    ISourcePackageNameSet, validate_url, IProductSeries, IProductSeriesSet,
+    ITranslationImportQueueSet)
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.webapp import (
     ContextMenu, Link, enabled_with_permission, Navigation, GetitemNavigation,
-    stepto)
+    stepto, canonical_url)
 
 
 class ProductSeriesNavigation(Navigation):
@@ -55,8 +58,8 @@ class ProductSeriesContextMenu(ContextMenu):
 
     usedfor = IProductSeries
     links = ['overview', 'specs', 'edit', 'editsource', 'ubuntupkg',
-             'addpackage', 'addrelease', 'download', 'addpotemplate',
-             'review']
+             'addpackage', 'addrelease', 'download', 'translationupload',
+             'addpotemplate', 'review']
 
     def overview(self):
         text = 'Series Overview'
@@ -89,6 +92,10 @@ class ProductSeriesContextMenu(ContextMenu):
     def download(self):
         text = 'Download RDF Metadata'
         return Link('+rdf', text, icon='download')
+
+    def translationupload(self):
+        text = 'Request Translations Upload'
+        return Link('+translations-upload', text, icon='add')
 
     @enabled_with_permission('launchpad.Admin')
     def addpotemplate(self):
@@ -424,6 +431,83 @@ class ProductSeriesView(object):
 
     def browserLanguages(self):
         return browserLanguages(self.request)
+
+    def translationsUpload(self):
+        """Handle a form submission to change the contents of the template."""
+        # check that we are processing the correct form, and that
+        # it has been POST'ed
+        self.alerts = []
+        self.notices = []
+        form = self.form
+        if not form.get("TRANSLATIONS-UPLOAD", None)=="Request Upload":
+            return
+        if not self.request.method == "POST":
+            return
+
+        file = self.request.form['file']
+
+        if not isinstance(file, FileUpload):
+            if file == '':
+                self.alerts.append('Please, select a file to upload.')
+            else:
+                # XXX: Carlos Perello Marin 2004/12/30
+                # Epiphany seems to have an aleatory bug with upload forms (or
+                # perhaps it's launchpad because I never had problems with
+                # bugzilla). The fact is that some uploads don't work and we
+                # get a unicode object instead of a file-like object in
+                # "file". We show an error if we see that behaviour. For more
+                # info, look at bug #116.
+                self.alerts.append(
+                    'There was an unknown error in uploading your file.')
+            return
+
+        filename = file.filename
+        content = file.read()
+
+        if len(content) == 0:
+            self.alerts.append(
+                'Sorry, the uploaded file is empty. Upload ignored.')
+            return
+
+        translation_import_queue_set = getUtility(ITranslationImportQueueSet)
+
+        if filename.endswith('.pot') or filename.endswith('.po'):
+            # Add it to the queue.
+            translation_import_queue_set.addOrUpdateEntry(
+                filename, content, True, self.user,
+                productseries=self.context)
+
+            self.notices.append(
+                'Thank you for your upload. The file content will be'
+                ' reviewed soon by an admin and then imported into Rosetta.'
+                ' You can track its status from the <a href="%s">Translation'
+                ' Import Queue</a>' %
+                    canonical_url(translation_import_queue_set))
+
+        elif is_tar_filename(filename):
+            # Add the whole tarball to the import queue.
+            num = translation_import_queue_set.addOrUpdateEntriesFromTarball(
+                content, True, self.user,
+                productseries=self.context)
+
+            if num > 0:
+                self.notices.append(
+                    'Thank you for your upload. %d files from the tarball'
+                    ' will be reviewed soon by an admin and then imported'
+                    ' into Rosetta. You can track its status from the'
+                    ' <a href="%s">Translation Import Queue</a>' % (
+                        num,
+                        canonical_url(translation_import_queue_set)))
+            else:
+                self.alerts.append(
+                    'The tarball you uploaded does not contain any file'
+                    ' that would be imported into Rosetta. Your request has'
+                    ' been ignored.')
+
+        else:
+            self.alerts.append(
+                'The file you uploaded was not recognised as a file that '
+                'can be imported. Your request has been ignored.')
 
 
 class ProductSeriesRdfView(object):

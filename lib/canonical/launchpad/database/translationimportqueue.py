@@ -9,7 +9,7 @@ from zope.interface import implements
 from zope.component import getUtility
 from sqlobject import SQLObjectNotFound, StringCol, ForeignKey, BoolCol
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import DEFAULT
 from canonical.launchpad.interfaces import (ITranslationImportQueue,
@@ -54,6 +54,14 @@ class TranslationImportQueue(SQLBase):
     @property
     def import_into(self):
         """See ITranslationImportQueue."""
+        # First check if a Rosetta Expert choosed already where this file
+        # should be attached
+        if self.pofile is not None:
+            return self.pofile
+        if self.potemplate is not None:
+            return self.potemplate
+
+        # No information from admins, check to guess it from the path.
         if self.path.endswith('.pot'):
             # It's an IPOTemplate
             potemplate_set = getUtility(IPOTemplateSet)
@@ -189,18 +197,23 @@ class TranslationImportQueueSet:
         # Check if we got already this request from this user.
         if sourcepackagename is not None:
             # The import is related with a sourcepackage and a distribution.
-            res = TranslationImportQueue.selectBy(
-                path=path, importerID=importer.id,
-                sourcepackagenameID=sourcepackagename.id,
-                distroreleaseID=distrorelease.id)
+            entry = TranslationImportQueue.selectOne(
+                "TranslationImportQueue.path = %s AND"
+                " TranslationImportQueue.importer = %s AND"
+                " TranslationImportQueue.sourcepackagename = %s AND"
+                " TranslationImportQueue.distrorelease = %s" % sqlvalues(
+                    path, importer.id, sourcepackagename.id, distrorelease.id)
+                )
         else:
-            res = TranslationImportQueue.selectBy(
-                path=path, importerID=importer.id,
-                productseriesID=productseries.id)
+            entry = TranslationImportQueue.selectOne(
+                "TranslationImportQueue.path = %s AND"
+                " TranslationImportQueue.importer = %s AND"
+                " TranslationImportQueue.productseries = %s" % sqlvalues(
+                    path, importer.id, productseries.id)
+                )
 
-        if res.count() > 0:
+        if entry is not None:
             # It's an update.
-            entry = res[0]
             entry.content = alias
             entry.is_published = is_published
             entry.sync()
