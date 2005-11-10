@@ -5,13 +5,11 @@ __all__ = [
     'BugTask',
     'BugTaskSet',
     'BugTaskFactory',
-    'BugTasksReport',
     'bugtask_sort_key']
 
 import urllib
 import cgi
 import datetime
-from sets import Set
 
 from sqlobject import ForeignKey, StringCol
 from sqlobject import SQLObjectNotFound
@@ -31,12 +29,11 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.searchbuilder import any, NULL
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IBugTask, IBugTasksReport, IBugTaskSet,
-    IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, ILaunchBag,
-    NotFoundError, ILaunchpadCelebrities)
+    BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
+    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, NotFoundError,
+    ILaunchpadCelebrities)
 
 
 debbugsstatusmap = {'open': BugTaskStatus.NEW,
@@ -492,90 +489,4 @@ class BugTaskSet:
 def BugTaskFactory(context, **kw):
     # XXX kiko: WTF, context is ignored?! LaunchBag? ARGH!
     return BugTask(bugID=getUtility(ILaunchBag).bug.id, **kw)
-
-
-class BugTasksReport:
-
-    implements(IBugTasksReport)
-
-    def _handle_showclosed(self, showclosed, querystr):
-        """Returns replacement querystr modified to take into account
-        showclosed.
-        """
-        if showclosed:
-            return querystr
-        else:
-            return querystr + ' AND BugTask.status < %s' % sqlvalues(
-                BugTaskPriority.MEDIUM)
-
-    # bugs assigned (i.e. tasks) to packages maintained by the user
-    def maintainedPackageBugs(self, user, minseverity, minpriority, showclosed):
-        querystr = (
-            "BugTask.sourcepackagename = Maintainership.sourcepackagename AND "
-            "BugTask.distribution = Maintainership.distribution AND "
-            "Maintainership.maintainer = %s AND "
-            "BugTask.severity >= %s AND "
-            "BugTask.priority >= %s") % sqlvalues(
-            user.id, minseverity, minpriority)
-        clauseTables = ['Maintainership']
-        querystr = self._handle_showclosed(showclosed, querystr)
-        if not showclosed:
-            querystr = querystr + ' AND BugTask.status < %s' % sqlvalues(
-                BugTaskPriority.MEDIUM)
-        return shortlist(BugTask.select(querystr, clauseTables=clauseTables))
-
-    # bugs assigned (i.e. tasks) to products owned by the user
-    def maintainedProductBugs(self, user, minseverity, minpriority,
-                              showclosed):
-        querystr = (
-            "BugTask.product = Product.id AND "
-            "Product.owner = %s AND "
-            "BugTask.severity >= %s AND "
-            "BugTask.priority >= %s") % sqlvalues(
-            user.id, minseverity, minpriority)
-        clauseTables = ['Product']
-        querystr = self._handle_showclosed(showclosed, querystr)
-        return shortlist(BugTask.select(querystr, clauseTables=clauseTables))
-
-    # package bugs assigned specifically to the user
-    def packageAssigneeBugs(self, user, minseverity, minpriority, showclosed):
-        querystr = (
-            "BugTask.sourcepackagename IS NOT NULL AND "
-            "BugTask.assignee = %s AND "
-            "BugTask.severity >= %s AND "
-            "BugTask.priority >= %s") % sqlvalues(
-            user.id, minseverity, minpriority)
-        querystr = self._handle_showclosed(showclosed, querystr)
-        return shortlist(BugTask.select(querystr))
-
-    # product bugs assigned specifically to the user
-    def productAssigneeBugs(self, user, minseverity, minpriority, showclosed):
-        querystr = (
-            "BugTask.product IS NOT NULL AND "
-            "BugTask.assignee =%s AND "
-            "BugTask.severity >=%s AND "
-            "BugTask.priority >=%s") % sqlvalues(
-            user.id, minseverity, minpriority)
-        querystr = self._handle_showclosed(showclosed, querystr)
-        return list(BugTask.select(querystr))
-
-    # all bugs assigned to a user
-    def assignedBugs(self, user, minseverity, minpriority, showclosed):
-        bugs = Set()
-        for bugtask in self.maintainedPackageBugs(
-            user, minseverity, minpriority, showclosed):
-            bugs.add(bugtask.bug)
-        for bugtask in self.maintainedProductBugs(
-            user, minseverity, minpriority, showclosed):
-            bugs.add(bugtask.bug)
-        for bugtask in self.packageAssigneeBugs(
-            user, minseverity, minpriority, showclosed):
-            bugs.add(bugtask.bug)
-        for bugtask in self.productAssigneeBugs(
-            user, minseverity, minpriority, showclosed):
-            bugs.add(bugtask.bug)
-
-        bugs = list(bugs)
-        bugs.sort(key=lambda bug: bug.datecreated, reverse=True)
-        return bugs
 
