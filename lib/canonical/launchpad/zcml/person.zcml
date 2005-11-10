@@ -58,7 +58,7 @@
       for="canonical.launchpad.interfaces.IPerson"
       schema="canonical.launchpad.interfaces.IPerson"
       class="canonical.launchpad.browser.PersonEditView"
-      label="Edit Person Details"
+      label="Edit Personal Details"
       fields="name displayname givenname familyname timezone"
       permission="launchpad.Edit"
       template="../templates/person-edit.pt"
@@ -123,21 +123,6 @@
           template="../templates/person-packages.pt"
           lp:url="/people/$Person.name/+packages" />
       <browser:page
-          name="+assignedbugs"
-          facet="bugs"
-          template="../templates/person-assignedbugs.pt"
-          lp:url="/people/$Person.name/+assignedbugs" />
-      <browser:page
-          name="+packagebugs"
-          facet="bugs"
-          template="../templates/person-packagebugs.pt"
-          lp:url="/people/$Person.name/+packagebugs" />
-      <browser:page
-          name="+reportedbugs"
-          facet="bugs"
-          template="../templates/person-reportedbugs.pt"
-          lp:url="/people/$Person.name/+reportedbugs" />
-      <browser:page
           name="+karma"
           template="../templates/person-karma.pt"
           lp:url="/people/$Person.name/+karma" />
@@ -159,6 +144,10 @@
           name="+portlet-emails"
           template="../templates/person-portlet-emails.pt"
           lp:url="/people/$Person.name/+portlet-emails" />
+      <browser:page
+          name="+portlet-team-assignedbugs"
+          template="../templates/person-portlet-team-assignedbugs.pt"
+          lp:url="/people/$Person.name/+portlet-team-assignedbugs" />
       <browser:page
           name="+portlet-details"
           template="../templates/person-portlet-details.pt"
@@ -184,12 +173,54 @@
       />
 
   <browser:page
-    for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.TicketTargetView"
-    name="+portlet-latesttickets"
-    permission="zope.Public"
-    template="../templates/tickettarget-portlet-latesttickets.pt"
-    />
+      for="canonical.launchpad.interfaces.IPerson"
+      name="+bugtask-macros-buglisting"
+      permission="zope.Public"
+      template="../templates/bugtask-macros-buglisting.pt" />
+
+  <browser:page
+      name="+assignedbugs"
+      for="canonical.launchpad.interfaces.IPerson"
+      facet="bugs"
+      class="canonical.launchpad.browser.PersonAssignedBugTaskSearchListingView"
+      permission="zope.Public"
+      template="../templates/person-assignedbugs.pt"
+      lp:url="/people/$Person.name/+assignedbugs" />
+
+  <browser:page
+      name="+packagebugs"
+      for="canonical.launchpad.interfaces.IPerson"
+      facet="bugs"
+      class="canonical.launchpad.browser.BugTasksOnMaintainedSoftwareSearchListingView"
+      permission="zope.Public"
+      template="../templates/person-packagebugs.pt"
+      lp:url="/people/$Person.name/+packagebugs" />
+
+  <browser:page
+      name="+reportedbugs"
+      for="canonical.launchpad.interfaces.IPerson"
+      facet="bugs"
+      class="canonical.launchpad.browser.ReportedBugTaskSearchListingView"
+      permission="zope.Public"
+      template="../templates/person-reportedbugs.pt"
+      lp:url="/people/$Person.name/+reportedbugs" />
+
+  <browser:page
+      name="+subscribedbugs"
+      for="canonical.launchpad.interfaces.IPerson"
+      facet="bugs"
+      class="canonical.launchpad.browser.SubscribedBugTaskSearchListingView"
+      permission="zope.Public"
+      template="../templates/person-subscribedbugs.pt"
+      lp:url="/people/$Person.name/+subscribedbugs" />
+
+  <browser:page
+      for="canonical.launchpad.interfaces.IPerson"
+      class="canonical.launchpad.browser.TicketTargetView"
+      name="+portlet-latesttickets"
+      permission="zope.Public"
+      template="../templates/tickettarget-portlet-latesttickets.pt"
+      />
 
   <!-- Adding SSH keys is the only possibly harmful thing that can be done
   without the user's password, so we use a special permission here to make

@@ -127,9 +127,14 @@
         <li tal:condition="not: membership/person/isTeam">
           <a tal:content="membership/person/browsername"
              tal:attributes="href membership/person/fmt:url">Joe Soap</a>
-          <tal:is_admin condition="membership/is_admin">
-            (Admin)
-          </tal:is_admin>
+          <tal:is_owner condition="membership/is_owner">
+            (Owner)
+          </tal:is_owner>
+          <tal:is_not_owner condition="not: membership/is_owner">
+            <tal:is_admin condition="membership/is_admin">
+              (Administrator)
+            </tal:is_admin>
+          </tal:is_not_owner>
         </li>
       </tal:block>
     </ul>

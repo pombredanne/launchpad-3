@@ -27,6 +27,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import GeneralFormView
+from canonical.launchpad.helpers import check_permission
 
 
 class BugSetNavigation(Navigation):
@@ -133,6 +134,14 @@ class BugView:
         'current' is determined by simply looking in the ILaunchBag utility.
         """
         return getUtility(ILaunchBag).bugtask
+
+    def taskLink(self, bugtask):
+        """Return the proper link to the bugtask whether it's editable"""
+        user = getUtility(ILaunchBag).user
+        if check_permission('launchpad.Edit', user):
+            return canonical_url(bugtask) + "/+editstatus"
+        else:
+            return canonical_url(bugtask) + "/+viewstatus"
 
     def getFixRequestRowCSSClassForBugTask(self, bugtask):
         """Return the fix request row CSS class for the bugtask.

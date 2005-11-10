@@ -38,10 +38,7 @@ class SystemErrorView:
             self.pagetesting = True
         if canonical.launchpad.layers.DebugLayer.providedBy(self.request):
             self.debugging = True
-        user = getUtility(ILaunchBag).user
-        if user is not None:
-            if user.inTeam(getUtility(ILaunchpadCelebrities).launchpad_developers):
-                self.specialuser = True
+        self.specialuser = getUtility(ILaunchBag).developer
 
     def computeDebugOutput(self):
         """Inspect the exception, and set up instance attributes.

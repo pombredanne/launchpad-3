@@ -31,13 +31,13 @@ from canonical.database import postgresql
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, ITeamMembership, ITeamParticipation,
-    ITeamMembershipSet, IEmailAddress, IWikiName, IIrcID, IJabberID, IIrcIDSet,
-    ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey,
-    IMaintainershipSet, IEmailAddressSet, ISourcePackageReleaseSet,
-    IPasswordEncryptor, ICalendarOwner, UBUNTU_WIKI_URL,
-    ISignedCodeOfConductSet, ILoginTokenSet, KEYSERVER_QUERY_URL,
-    EmailAddressAlreadyTaken, NotFoundError,
-    IKarmaSet, IKarmaCacheSet)
+    ITeamMembershipSet, IEmailAddress, IWikiName, IIrcID,
+    IJabberID, IIrcIDSet, ISSHKeySet, IJabberIDSet,
+    IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IMaintainershipSet,
+    IEmailAddressSet, ISourcePackageReleaseSet, IPasswordEncryptor,
+    ICalendarOwner, UBUNTU_WIKI_URL, ISignedCodeOfConductSet,
+    ILoginTokenSet, KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken,
+    NotFoundError, IKarmaSet, IKarmaCacheSet, IBugTaskSet)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -138,9 +138,9 @@ class Person(SQLBase):
         orderBy=['-datecreated'])
     drafted_specs = MultipleJoin('Specification', joinColumn='drafter',
         orderBy=['-datecreated'])
-    review_specs = RelatedJoin('Specification', joinColumn='reviewer',
+    feedback_specs = RelatedJoin('Specification', joinColumn='reviewer',
         otherColumn='specification',
-        intermediateTable='SpecificationReview',
+        intermediateTable='SpecificationFeedback',
         orderBy=['-datecreated'])
     subscribed_specs = RelatedJoin('Specification', joinColumn='person',
         otherColumn='specification',
@@ -263,7 +263,7 @@ class Person(SQLBase):
         ret = ret.union(self.approver_specs)
         ret = ret.union(self.assigned_specs)
         ret = ret.union(self.drafted_specs)
-        ret = ret.union(self.review_specs)
+        ret = ret.union(self.feedback_specs)
         ret = ret.union(self.subscribed_specs)
         if sort is None or sort == SpecificationSort.DATE:
             sortkey = lambda a: a.datecreated
@@ -349,6 +349,10 @@ class Person(SQLBase):
             ShippingRequest.id NOT IN (SELECT request FROM Shipment)
             ''' % sqlvalues(self.id)
         return ShippingRequest.selectOne(query)
+
+    def searchTasks(self, search_params):
+        """See IPerson."""
+        return getUtility(IBugTaskSet).search(search_params)
 
     def assignKarma(self, action_name):
         """See IPerson."""
@@ -1165,22 +1169,40 @@ class PersonSet:
             ''' % vars())
         skip.append(('ticketsubscription', 'person'))
 
-        # Update the SpecificationReview entries that will not conflict
-        # and trash the rest
+        # Update the SpecificationFeedback entries that will not conflict
+        # and trash the rest.
+        
+        # First we handle the reviewer.
         cur.execute('''
-            UPDATE SpecificationReview
+            UPDATE SpecificationFeedback
             SET reviewer=%(to_id)d
             WHERE reviewer=%(from_id)d AND specification NOT IN
                 (
                 SELECT specification
-                FROM SpecificationReview
+                FROM SpecificationFeedback
                 WHERE reviewer = %(to_id)d
                 )
             ''' % vars())
         cur.execute('''
-            DELETE FROM SpecificationReview WHERE reviewer=%(from_id)d
+            DELETE FROM SpecificationFeedback WHERE reviewer=%(from_id)d
             ''' % vars())
-        skip.append(('specificationreview', 'reviewer'))
+        skip.append(('specificationfeedback', 'reviewer'))
+
+        # And now we handle the requester.
+        cur.execute('''
+            UPDATE SpecificationFeedback
+            SET requester=%(to_id)d
+            WHERE requester=%(from_id)d AND specification NOT IN
+                (
+                SELECT specification
+                FROM SpecificationFeedback
+                WHERE requester = %(to_id)d
+                )
+            ''' % vars())
+        cur.execute('''
+            DELETE FROM SpecificationFeedback WHERE requester=%(from_id)d
+            ''' % vars())
+        skip.append(('specificationfeedback', 'requester'))
 
         # Update the SpecificationSubscription entries that will not conflict
         # and trash the rest
@@ -1660,6 +1682,10 @@ class TeamMembership(SQLBase):
     @property
     def is_admin(self):
         return self.status in [TeamMembershipStatus.ADMIN]
+
+    @property
+    def is_owner(self):
+        return self.person.id == self.team.teamowner.id
 
     def isExpired(self):
         return self.status == TeamMembershipStatus.EXPIRED

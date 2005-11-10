@@ -26,9 +26,10 @@
 
   <tal:tag condition="view/assign_to_milestones|nothing"/>
 
-  <h1>Bugs in <span tal:replace="context/title">Title</span></h1>
+  <metal:heading define-slot="heading" tal:replace="nothing" />
 
   <form name="bugtask_search" action="" method="GET">
+  <tal:show-search-widgets condition="view/shouldShowSearchWidgets">
     <table>
       <tr>
         <th>
@@ -62,36 +63,51 @@
         tal:replace="nothing">
       Slot for placing extra search widgets below the table.
     </metal:extra_widgets_below_table>
+  </tal:show-search-widgets>
 
+  <tal:navigation
+    replace="structure task_batch_navigator/@@+navigation-links"
+    tal:condition="python:view.showBatchedListing() and task_batch_navigator.batch"
+  />
   <tal:table_view tal:condition="view/showTableView">
     <table
        metal:use-macro="context/@@+bugtask-macros-tableview/batched-table" />
   </tal:table_view>
   <tal:list_view tal:condition="view/showListView"
-                 tal:define="show_packagename view/shouldShowPackageName|nothing">
+                 tal:define="show_targetname view/shouldShowTargetName|nothing;
+                             do_not_show_assignee view/doNotShowAssignee|nothing">
 
-    <table>
-      <tr tal:repeat="task task_batch_navigator/batch">
-        <td tal:condition="view/mass_edit_allowed">
-          <input type="checkbox" name="task" tal:attributes="value task/id" />
-        </td>
-        <metal:taskrow use-macro="task/@@+bugtask-macros-listview/item" />
-      </tr>
-    </table>
-  </tal:list_view>
+      <table>
+        <tr tal:repeat="task task_batch_navigator/batch">
+          <td tal:condition="view/mass_edit_allowed">
+            <input type="checkbox" name="task" tal:attributes="value task/id" />
+          </td>
+          <metal:taskrow use-macro="task/@@+bugtask-macros-listview/item" />
+        </tr>
+      </table>
+    </tal:list_view>
 
-  <tal:edit tal:condition="view/mass_edit_allowed">
-    <tal:block content="structure view/milestone_assignment_widget" />
-    <input type="submit" name="assign_to_milestone"
-           value="Assign to Milestone" />
-  </tal:edit>
+    <tal:edit tal:condition="view/mass_edit_allowed">
+      <tal:block content="structure view/milestone_assignment_widget" />
+      <input type="submit" name="assign_to_milestone"
+             value="Assign to Milestone" />
+    </tal:edit>
 
-  </form>
+    </form>
 
-  <tal:navigation
-    replace="structure task_batch_navigator/@@+navigation-links"
-    tal:condition="view/showBatchedListing"
-  />
+    <tal:navigation
+      replace="structure task_batch_navigator/@@+navigation-links"
+      tal:condition="python:view.showBatchedListing() and task_batch_navigator.batch"
+    />
+
+  <tal:resultslist condition="not: task_batch_navigator/batch">
+    <br />
+    No matching results found. Would you like to
+    <a href="#"
+       tal:attributes="href string:${context/fmt:url}/+filebug;
+                       title string:Report a bug on ${context/displayname}">
+                       open a new bug?</a>
+  </tal:resultslist>
 
   <script>
     <!--
