@@ -525,6 +525,8 @@ person_reportedbugs = ContextDisplayName('Bugs Reported By %s')
 
 person_review = ContextDisplayName("Review %s' Information")
 
+person_subscribedbugs = ContextDisplayName('Bugs %s is subscribed to')
+
 person_translations = ContextDisplayName('Translations Made By %s')
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
