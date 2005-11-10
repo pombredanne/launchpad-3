@@ -301,7 +301,7 @@ Reason:
         """Return True if the given order should be automatically approved.
 
         Any order placed by a shipit admin is automatically approved.
-        Also, orders placed by normal users with a total of 80 CDs or less
+        Also, orders placed by normal users with a total of 50 CDs or less
         get approved automatically if the user doesn't have any order that
         was already shipped.
         """
@@ -312,7 +312,7 @@ Reason:
 
         # XXX: Ideally it should be possible to tweak this number through
         # a web interface. -- Guilherme Salgado 2005-09-27
-        if recipient.shippedShipItRequests() or order.totalCDs > 80:
+        if recipient.shippedShipItRequests() or order.totalCDs > 50:
             return False
         else:
             return True

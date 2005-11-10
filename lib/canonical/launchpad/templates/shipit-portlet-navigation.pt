@@ -4,7 +4,6 @@
 >
   <ul><base href="">
     <li class="search"><a href="/requests">Search Requests</a></li>
-    <li class="edit"><a href="/requests/+oldestpending">Oldest Pending Request</a></li>
     <li class="add"><a href="/myrequest">Create new Request</a></li>
     <li class="info"><a href="/exports">Generated Exports</a></li>
     <li class="info"><a href="/standardoptions">Standard Options</a></li>
