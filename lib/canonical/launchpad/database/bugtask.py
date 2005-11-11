@@ -126,8 +126,13 @@ class BugTask(SQLBase, BugTaskMixin):
         notNull=False, default=None)
     dateassigned = UtcDateTimeCol(notNull=False, default=UTC_NOW)
     datecreated  = UtcDateTimeCol(notNull=False, default=UTC_NOW)
-    owner = ForeignKey(
-        foreignKey='Person', dbName='owner', notNull=False, default=None)
+    owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
+    # The targetnamecache is a value that is only supposed to be set when a
+    # bugtask is created/modified or by the update-bugtask-targetnamecaches
+    # cronscript. For this reason it's not exposed in the interface, and
+    # client code should always use the targetname read-only property.
+    targetnamecache = StringCol(
+        dbName='targetnamecache', notNull=False, default=None)
 
     @property
     def age(self):
@@ -151,6 +156,25 @@ class BugTask(SQLBase, BugTaskMixin):
             # This is a distro task.
             mark_task(self, IDistroBugTask)
 
+    def _SO_setValue(self, name, value, fromPython, toPython):
+        # We need to overwrite this method to make sure whenever we change a
+        # single attribute of a BugTask the targetnamecache column is updated.
+        SQLBase._SO_setValue(self, name, value, fromPython, toPython)
+        if name != 'targetnamecache':
+            self.updateTargetNameCache()
+
+    def set(self, **kw):
+        # We need to overwrite this method to make sure the targetnamecache
+        # column is updated when multiple attributes of a bugtask are
+        # modified. We can't rely on event subscribers for doing this because
+        # they can run in a unpredictable order.
+        SQLBase.set(self, **kw)
+        # We also can't simply update kw with the value we want for
+        # targetnamecache because the _calculate_targetname method needs to
+        # access bugtask's attributes that may be available only after
+        # SQLBase.set() is called.
+        SQLBase.set(self, **{'targetnamecache': self._calculate_targetname()})
+
     def setStatusFromDebbugs(self, status):
         """See canonical.launchpad.interfaces.IBugTask."""
         try:
@@ -166,6 +190,11 @@ class BugTask(SQLBase, BugTaskMixin):
         except KeyError:
             raise ValueError('Unknown debbugs severity "%s"' % severity)
         return self.severity
+
+    def updateTargetNameCache(self):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        if self.targetnamecache != self._calculate_targetname():
+            self.targetnamecache = self._calculate_targetname()
 
     @property
     def statusdisplayhtml(self):
@@ -205,8 +234,7 @@ class BugTaskSet:
         "severity": "BugTask.severity",
         "priority": "BugTask.priority",
         "assignee": "BugTask.assignee",
-        "sourcepackagename": "BugTask.sourcepackagename",
-        "product": "BugTask.product",
+        "targetname": "BugTask.targetnamecache",
         "status": "BugTask.status",
         "title": "Bug.title",
         "milestone": "BugTask.milestone",
@@ -316,6 +344,12 @@ class BugTaskSet:
         if params.statusexplanation:
             extra_clauses.append("BugTask.fti @@ ftq(%s)" %
                                  sqlvalues(params.statusexplanation))
+        
+        if params.subscriber is not None:
+            clauseTables = ['Bug', 'BugSubscription']
+            extra_clauses.append("""Bug.id = BugSubscription.bug AND
+                    BugSubscription.person = %(personid)s""" %
+                    sqlvalues(personid=params.subscriber.id))
 
         # Filter the search results for privacy-awareness.
         if params.user:
@@ -452,12 +486,6 @@ class BugTaskSet:
 
         return maintainedProductBugTasks.union(
             maintainedPackageBugTasks, orderBy=orderBy)
-
-    def bugTasksWithSharedInterest(self, person1, person2, orderBy=None,
-                                   user=None):
-        person1Tasks = self.maintainedBugTasks(person1, user=user)
-        person2Tasks = self.maintainedBugTasks(person2, user=user)
-        return person1Tasks.intersect(person2Tasks, orderBy=orderBy)
 
 
 def BugTaskFactory(context, **kw):

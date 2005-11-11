@@ -201,6 +201,11 @@
     />
 
   <vocabulary
+    name="SpecificationDelivery"
+    factory="canonical.launchpad.vocabularies.SpecificationDeliveryVocabulary"
+    />
+
+  <vocabulary
     name="SpecificationPriority"
     factory="canonical.launchpad.vocabularies.SpecificationPriorityVocabulary"
     />

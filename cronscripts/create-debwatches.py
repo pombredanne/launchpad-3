@@ -76,6 +76,10 @@ def main(args):
     target_package_set = set()
     previousimportset = set()
 
+    logger.info('Connecting to database...')
+    ztm = initZopeless(implicitBegin=False)
+    ztm.begin()
+
     logger.info('Calculating target package set...')
 
     # first find all the published ubuntu packages
@@ -96,8 +100,8 @@ def main(args):
         logger.info('Lockfile %s already exists, exiting.' % lockfile_path)
         return 0
 
+    ztm.abort()
     try:
-        ztm = initZopeless()
         ztm.begin()
         do_import(logger, options.max, options.debbugs, target_bugs,
             target_package_set, previousimportset, MIN_AGE, debbugs_pl)

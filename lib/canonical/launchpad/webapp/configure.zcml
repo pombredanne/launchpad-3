@@ -244,8 +244,18 @@
         />
 
     <subscriber
+        for="canonical.launchpad.webapp.interfaces.ILoggedInEvent"
+        factory="canonical.launchpad.webapp.launchbag.set_developer_in_launchbag_when_logged_in"
+        />
+
+    <subscriber
         for="canonical.launchpad.webapp.interfaces.ILoggedOutEvent"
         factory="canonical.launchpad.webapp.launchbag.reset_login_in_launchbag_on_logout"
+        />
+
+    <subscriber
+        for="canonical.launchpad.webapp.interfaces.ILoggedOutEvent"
+        factory="canonical.launchpad.webapp.launchbag.reset_developer_in_launchbag_on_logout"
         />
 
     <utility

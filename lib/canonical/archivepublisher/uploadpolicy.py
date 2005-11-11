@@ -207,7 +207,7 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
     def getDefaultPermittedComponents(self):
         """Return the set of components this distrorelease permits."""
         return set(
-            component.name for component in self.distrorelease.real_components)
+            component.name for component in self.distrorelease.components)
 
 # Register this as the 'buildd' policy
 AbstractUploadPolicy._registerPolicy(BuildDaemonUploadPolicy)

@@ -30,3 +30,8 @@ class SprintSpecification(SQLBase):
         default=SprintSpecificationStatus.SUBMITTED)
     whiteboard = StringCol(notNull=False, default=None)
 
+    @property
+    def is_confirmed(self):
+        """See ISprintSpecification."""
+        return self.status == SprintSpecificationStatus.CONFIRMED
+
