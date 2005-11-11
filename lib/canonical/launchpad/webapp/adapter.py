@@ -42,15 +42,8 @@ class LaunchpadDatabaseAdapter(PsycopgAdapter):
         using a thread local.
         """
         if not self.isConnected():
-            try:
-                self._v_connection = ZopeConnection(
-                    self._connection_factory(_dbuser=_dbuser), self)
-            # Note: I added the general Exception, since the DA can return
-            # implementation-specific errors. But we really want to catch all
-            # issues at this point, so that we can convert it to a
-            # DatabaseException.
-            except psycopg.Error, error:
-                raise DatabaseException, str(error)
+            self._v_connection = ZopeConnection(
+                self._connection_factory(_dbuser=_dbuser), self)
 
     def _connection_factory(self, _dbuser=None):
         """Override method provided by PsycopgAdapter to pull
