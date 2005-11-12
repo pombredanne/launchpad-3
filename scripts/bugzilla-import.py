@@ -40,8 +40,7 @@ def main(argv):
     parser.add_option('--status', metavar='STATUS,...', action='store',
                       help='Only import bugs with the given status',
                       type='string', dest='status',
-                      default='UNCONFIRMED,NEW,ASSIGNED,REOPENED,NEEDINFO,'
-                              'UPSTREAM,PENDINGUPLOAD')
+                      default=None)
 
     # MySQL connection details
     parser.add_option('-d', '--dbname', metavar='DB', action='store',
@@ -61,7 +60,10 @@ def main(argv):
     logger_options(parser, logging.INFO)
     
     options, args = parser.parse_args(argv[1:])
-    options.status = options.status.split(',')
+    if options.status is not None:
+        options.status = options.status.split(',')
+    else:
+        options.status = []
 
     logger(options, 'canonical.launchpad.scripts.bugzilla')
 
