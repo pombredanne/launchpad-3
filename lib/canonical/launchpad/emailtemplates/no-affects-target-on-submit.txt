@@ -1,0 +1,23 @@
+An error occurred while processing your mail to create a new bug. You
+didn't specify on what you want to file a bug on. A new bug has to
+affect either a product or a distribution. Please use the 'affects'
+command in order to specify on what you want to file a bug on. For
+example, in order to file a bug on Malone itself, use:
+
+    affects /products/malone
+
+To file a bug on Mozilla Firefox in Ubuntu:
+
+    affects /distros/ubuntu/mozilla-firefox
+
+To file a bug on Ubuntu without specifying a package:
+
+    affects /distros/ubuntu
+
+And so on.
+
+-- 
+This email was sent to you since an error occurred while interacting
+with Malone's email interface. For more information about using the
+email interface, please see
+https://wiki.launchpad.canonical.com/MaloneEmailInterfaceUserDoc.
