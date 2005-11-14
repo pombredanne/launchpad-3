@@ -19,6 +19,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import ISQLObjectCreatedEvent
+from canonical.launchpad.mailnotification import get_email_template
 
 from canonical.lp.dbschema import BugTaskStatus, BugTaskSeverity
 
@@ -117,6 +118,10 @@ class BugEmailCommand(EmailCommand):
                 owner=getUtility(ILaunchBag).user,
                 filealias=filealias,
                 parsed_message=parsed_msg)
+            if message.contents.strip() == '':
+                 raise ValueError(
+                    get_email_template('no-affects-target-on-submit.txt'))
+
             bug = getUtility(IBugSet).createBug(
                 msg=message,
                 title=message.title,
