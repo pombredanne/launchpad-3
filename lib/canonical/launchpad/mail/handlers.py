@@ -11,7 +11,7 @@ from zope.exceptions import NotFoundError
 from canonical.launchpad.helpers import Snapshot
 from canonical.launchpad.interfaces import (
     ILaunchBag, IMessageSet, IBugEmailCommand, IBug, IMailHandler,
-    IBugMessageSet, BugCreationConstraintsError)
+    IBugMessageSet, BugCreationConstraintsError, EmailProcessingError)
 from canonical.launchpad.mail.commands import emailcommands
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
@@ -143,7 +143,7 @@ class MaloneHandler:
                                     ob_event, bug_event)
                                 bug_event = SQLObjectModifiedEvent(
                                     bug, bug_snapshot, edited_fields)
-                except EmailCommandError, error:
+                except EmailProcessingError, error:
                     raise IncomingEmailError(str(error))
 
             if bug_event is not None:

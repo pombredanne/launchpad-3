@@ -4,7 +4,7 @@
 __metaclass__ = type
 __all__ = ['ISignedMessage',
            'IMailHandler',
-           'EmailCommandError',
+           'EmailProcessingError',
            'IEmailCommand',
            'IBugEmailCommand',
            'IBugEditEmailCommand']
@@ -54,7 +54,7 @@ class IMailHandler(Interface):
         """
 
 
-class EmailCommandError(ValueError):
+class EmailProcessingError(Exception):
     """Something went wrong while processing an email command."""
 
 
