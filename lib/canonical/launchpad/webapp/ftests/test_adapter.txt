@@ -12,7 +12,7 @@ Imports and test setup:
     >>> from zope.app.rdb.interfaces import IZopeDatabaseAdapter
     >>> from sqlos.interfaces import IConnectionName
     >>> from canonical.config import config
-    >>> from canonical.database.adapter import *
+    >>> from canonical.launchpad.webapp.adapter import *
 
     >>> from canonical.launchpad.ftests.harness import (
     ...     LaunchpadFunctionalTestSetup)
@@ -166,6 +166,76 @@ If no timeout has been set, then requests will not time out:
     >>> set_request_started(time.time() - 60)
     >>> cursor.execute('SELECT 1')
     >>> clear_request_started()
+
+
+Customizing the database adapter also lets us easily tweak the current
+connection. For example we can make it read only:
+
+    >>> cursor.execute("""
+    ...     INSERT INTO SourcePackageName(name) VALUES ('fnord')
+    ...     """)
+    >>> da.readonly()
+    >>> cursor.execute("""
+    ...     INSERT INTO SourcePackageName(name) VALUES ('fnord2')
+    ...     """)
+    Traceback (most recent call last):
+    ...
+    ProgrammingError: ERROR:  transaction is read-only
+    ...
+
+The read only status only lasts until the end of the transaction.:
+
+    >>> import transaction
+    >>> transaction.abort()
+    >>> cursor = da().cursor()
+    >>> cursor.execute("""
+    ...     INSERT INTO SourcePackageName(name) VALUES ('fnord2')
+    ...     """)
+    >>> transaction.abort()
+
+We can also change the user we are connected as, which is useful in tests.
+You should only change the user at the start of a transaction, or else any
+uncommitted changes made may be lost:
+
+    >>> da.switchUser(config.statistician.dbuser)
+    >>> cursor = da().cursor()
+    >>> cursor.execute("SELECT current_user")
+    >>> cursor.fetchone()[0] == config.statistician.dbuser
+    True
+    >>> cursor.execute("""
+    ...     INSERT INTO SourcePackageName(name) VALUES ('fnord4')
+    ...     """)
+    Traceback (most recent call last):
+    ...
+    ProgrammingError: ERROR:  permission denied for relation sourcepackagename
+    ...
+
+Unlike readonly, this is not reset at the end of the transaction:
+
+    >>> transaction.abort()
+    >>> cursor = da().cursor()
+    >>> cursor.execute("SELECT current_user")
+    >>> cursor.fetchone()[0] == config.statistician.dbuser
+    True
+    >>> cursor.execute("""
+    ...     INSERT INTO SourcePackageName(name) VALUES ('fnord4')
+    ...     """)
+    Traceback (most recent call last):
+    ...
+    ProgrammingError: ERROR:  permission denied for relation sourcepackagename
+    ...
+    >>> transaction.abort()
+
+So you need to explicity set the user back:
+
+    >>> da.switchUser()
+    >>> cursor = da().cursor()
+    >>> cursor.execute("""
+    ...     INSERT INTO SourcePackageName(name) VALUES ('fnord4')
+    ...     """)
+    >>> cursor.execute("SELECT current_user")
+    >>> cursor.fetchone()[0] == config.launchpad.dbuser
+    True
 
 Cleanup:
 

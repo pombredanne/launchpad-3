@@ -479,6 +479,8 @@ def send_bug_notification(bug, user, subject, body,
     concerning the same bug (if the email client supports threading).
     """
 
+    assert user is not None, 'user is None'
+
     if headers is None:
         headers = {}
     if to_addrs is None:
