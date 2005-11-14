@@ -116,14 +116,23 @@ class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
 
 
 class LaunchpadTestCase(unittest.TestCase):
+    dbuser = LaunchpadTestSetup.dbuser
+    dbname = LaunchpadTestSetup.dbname
+    template = LaunchpadTestSetup.template
+
     def setUp(self):
-        LaunchpadTestSetup().setUp()
+        self._setup = LaunchpadTestSetup()
+        self._setup.dbuser = self.dbuser
+        self._setup.dbname = self.dbname
+        self._setup.template = self.template
+
+        self._setup.setUp()
 
     def tearDown(self):
-        LaunchpadTestSetup().tearDown()
+        self._setup.tearDown()
 
     def connect(self):
-        return LaunchpadTestSetup().connect()
+        return self._setup.connect()
 
 
 class LaunchpadFunctionalTestCase(unittest.TestCase):
