@@ -35,6 +35,7 @@ class Karma(SQLBase):
     implements(IKarma)
 
     _table = 'Karma'
+    _defaultOrder = ['action', 'id']
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     action = ForeignKey(dbName='action', foreignKey='KarmaAction', notNull=True)
@@ -155,6 +156,7 @@ class KarmaCache(SQLBase):
     implements(IKarmaCache)
 
     _table = 'KarmaCache'
+    _defaultOrder = ['category', 'id']
 
     person = ForeignKey(dbName='person', notNull=True)
     category = ForeignKey(dbName='category', foreignKey='KarmaCategory',
@@ -184,6 +186,8 @@ class KarmaCacheSet:
 class KarmaCategory(SQLBase):
     """See IKarmaCategory."""
     implements(IKarmaCategory)
+
+    _defaultOrder = ['title', 'id']
 
     name = StringCol(notNull=True, alternateID=True)
     title = StringCol(notNull=True)
