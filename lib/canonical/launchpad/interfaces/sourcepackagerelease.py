@@ -92,6 +92,16 @@ class ISourcePackageRelease(Interface):
         Return None if not found.
         """
 
+    def attachTranslationFiles(tarball_alias, is_published, importer=None):
+        """Attach a tarball with translations to be imported into Rosetta.
+
+        'tarball_alias' is a Librarian alias that references to a tarball with
+        translations.
+        'is_published' indicates if the imported files are already published by
+        upstream.
+        'importer' is the person that did the import.
+        """
+
 
 class ISourcePackageReleaseSet(Interface):
 

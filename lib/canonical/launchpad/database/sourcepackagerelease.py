@@ -20,7 +20,7 @@ from canonical.lp.dbschema import (
     SourcePackageFileType, BuildStatus)
 
 from canonical.launchpad.interfaces import (
-    ISourcePackageRelease, ISourcePackageReleaseSet, ILibrarianClient,
+    ISourcePackageRelease, ISourcePackageReleaseSet,
     ILaunchpadCelebrities, ITranslationImportQueueSet)
 
 from canonical.launchpad.database.binarypackagerelease import (
@@ -31,6 +31,7 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishing)
 
 from canonical.launchpad.database.files import SourcePackageReleaseFile
+from canonical.librarian.interfaces import ILibrarianClient
 
 class SourcePackageRelease(SQLBase):
     implements(ISourcePackageRelease)

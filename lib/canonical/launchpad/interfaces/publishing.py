@@ -257,16 +257,6 @@ class IBinaryPackagePublishingView(Interface):
             title=_('Package publishing pocket'), required=True, readonly=True,
             )
 
-    def attachTranslationFiles(tarball_alias, ispublished, importer=None):
-        """Attach a tarball with translations to be imported into Rosetta.
-
-        'tarball_alias' is a Librarian alias that references to a tarball with
-        translations.
-        'ispublished' indicates if the imported files are already published by
-        upstream.
-        'importer' is the person that did the import.
-        """
-
 
 class ISecureSourcePackagePublishingHistory(Interface):
     """A source package publishing history record."""
