@@ -143,7 +143,7 @@ class MaloneHandler:
                                     ob_event, bug_event)
                                 bug_event = SQLObjectModifiedEvent(
                                     bug, bug_snapshot, edited_fields)
-                except ValueError, error:
+                except EmailCommandError, error:
                     raise IncomingEmailError(str(error))
 
             if bug_event is not None:

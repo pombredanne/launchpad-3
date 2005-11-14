@@ -18,6 +18,6 @@ And so on.
 
 -- 
 This email was sent to you since an error occurred while interacting
-with Malone's email interface.  For more information about using the
+with Malone's email interface. For more information about using the
 email interface, please see
 https://wiki.launchpad.canonical.com/MaloneEmailInterfaceUserDoc.
