@@ -180,7 +180,7 @@ class DistroReleaseQueueSource(SQLBase):
             self.sourcepackagerelease.version,
             self.distroreleasequeue.distrorelease.distribution.name,
             self.distroreleasequeue.distrorelease.name))
-        
+
         return SecureSourcePackagePublishingHistory(
             distrorelease=self.distroreleasequeue.distrorelease.id,
             sourcepackagerelease=self.sourcepackagerelease.id,
@@ -189,7 +189,7 @@ class DistroReleaseQueueSource(SQLBase):
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             pocket=self.distroreleasequeue.pocket,
-            embargo=False)        
+            embargo=False)
 
 
 class DistroReleaseQueueCustom(SQLBase):
@@ -253,7 +253,11 @@ class DistroReleaseQueueCustom(SQLBase):
                                      dr.name)
         finally:
             os.remove(temp_file_name)
-            
+
     def publish_ROSETTA_TRANSLATIONS(self, logger=None):
         """See IDistroReleaseQueueCustom."""
-        raise NotImplementedError()
+        sourcepackagerelease = (
+            self.distroreleasequeue.builds[0].build.sourcepackagerelease)
+        # Attach the translation tarball. It's always published.
+        sourcepackagerelease.attachTranslationFiles(libraryfilealias, True)
+

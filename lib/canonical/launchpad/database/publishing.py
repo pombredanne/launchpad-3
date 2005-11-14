@@ -251,38 +251,7 @@ class SecureSourcePackagePublishingHistory(SQLBase):
         return super(SecureSourcePackagePublishingHistory,
                      cls).selectBy(*args, **kwargs)
 
-    def attachTranslationFiles(self, tarball_alias, is_published,
-        importer=None):
-        """See ISecureSourcePackagePublishingHistory."""
-        client = getUtility(ILibrarianClient)
 
-        try:
-            tarball_file = client.getFileByAlias(tarball_alias)
-        except DownloadFailed, e:
-            return
-
-        tarball = tarfile.open('', 'r', tarball_file)
-
-        # Get the list of files to attach.
-        files = []
-        for name in tarball.getnames():
-            if name.startswith('source/') or name.startswith('./source/'):
-                if name.endswith('.pot') or name.endswith('.po'):
-                    files.append(name)
-
-        if importer is None:
-            importer = getUtility(ILaunchpadCelebrities).rosetta_expert
-
-        translation_import_queue_set = getUtility(ITranslationImportQueueSet)
-
-        # Attach all files
-        for file in files:
-            # Fetch the file
-            content = tarball.extractfile(file).read()
-            # Add it to the queue.
-            translation_import_queue_set.addOrUpdateEntry(
-                file, content, is_published, importer,
-                securesourcepackagepublishinghistory=self)
 
 
 class SecureBinaryPackagePublishingHistory(SQLBase):

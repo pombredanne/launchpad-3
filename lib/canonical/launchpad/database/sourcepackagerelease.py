@@ -20,7 +20,8 @@ from canonical.lp.dbschema import (
     SourcePackageFileType, BuildStatus)
 
 from canonical.launchpad.interfaces import (
-    ISourcePackageRelease, ISourcePackageReleaseSet)
+    ISourcePackageRelease, ISourcePackageReleaseSet, ILibrarianClient,
+    ILaunchpadCelebrities, ITranslationImportQueueSet)
 
 from canonical.launchpad.database.binarypackagerelease import (
      BinaryPackageRelease)
@@ -198,6 +199,40 @@ class SourcePackageRelease(SQLBase):
         """See ISourcePackageRelease."""
         return Build.selectOneBy(sourcepackagereleaseID=self.id,
                                  distroarchreleaseID=distroarchrelease.id)
+
+    def attachTranslationFiles(self, tarball_alias, is_published,
+        importer=None):
+        """See ISourcePackageRelease."""
+        client = getUtility(ILibrarianClient)
+
+        try:
+            tarball_file = client.getFileByAlias(tarball_alias)
+        except DownloadFailed, e:
+            return
+
+        tarball = tarfile.open('', 'r', tarball_file)
+
+        # Get the list of files to attach.
+        files = []
+        for name in tarball.getnames():
+            if name.startswith('source/') or name.startswith('./source/'):
+                if name.endswith('.pot') or name.endswith('.po'):
+                    files.append(name)
+
+        if importer is None:
+            importer = getUtility(ILaunchpadCelebrities).rosetta_expert
+
+        translation_import_queue_set = getUtility(ITranslationImportQueueSet)
+
+        # Attach all files
+        for file in files:
+            # Fetch the file
+            content = tarball.extractfile(file).read()
+            # Add it to the queue.
+            translation_import_queue_set.addOrUpdateEntry(
+                file, content, is_published, importer,
+                sourcepackagename=self.sourcepackagename,
+                distrorelease=self.uploaddistrorelase)
 
 
 class SourcePackageReleaseSet:
