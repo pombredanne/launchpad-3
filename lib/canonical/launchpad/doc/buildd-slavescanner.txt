@@ -153,18 +153,18 @@ Let's create a bunch of mock slaves for testing the Builder State Handler:
   ...     def status(self):
   ...         raise xmlrpclib.Fault
 
-  >>> class OkSlave:
-  ...     def status(self):
-  ...         return ('BuilderStatus.IDLE',)
 
 Make ensurePresent() always return True, it teoretically means the
 slave has the requested file in cache.
 
+  >>> class OkSlave:
+  ...     def status(self):
+  ...         return ('BuilderStatus.IDLE',)
   ...     def ensurepresent(self, sha1, url):
   ...         print 'OkSlave has everything'
   ...         return True
   ...     def build(self, buildid, buildtype, chroot, filemap, args):
-  ...         print 'OkSlaves BUILDING !'
+  ...         print 'OkSlaves BUILDING'
 
   >>> class BuildingSlave:
   ...     def status(self):
@@ -499,8 +499,8 @@ Initialize BuildQueue missing attributes for building:
 Request a Slave Build process:
 
   >>> bm.startBuild(buildergroup, builder2, bqItem3, pocket)
-  OkSlave has everithing !!! avoid file transfers
-  OkSlaves BUILDING !!!
+  OkSlave has everything
+  OkSlaves BUILDING
 
 See OkSlave() class implementation for further details
 
