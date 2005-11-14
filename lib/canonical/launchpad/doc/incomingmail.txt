@@ -176,7 +176,7 @@ Let's create and register a handler which violates a DB constraint:
 
     >>> ztapi.provideUtility(IMailHandler, DBExceptionRaiser(), 'except.com')
 
-Now we send a mail to the handler, which should print the traceback:
+Now we send a mail to the handler, which will cause an exception:
 
     >>> exception_raiser = """From: Foo Bar <foo.bar@canonical.com>
     ... To: something@except.com
