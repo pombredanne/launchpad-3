@@ -240,7 +240,7 @@ class SignedCodeOfConductSet:
         if not gpg:
             return ('The key you used, which has the fingerprint <kbd>%s'
                     '</kbd>, is not registered in Launchpad. Please '
-                    '<a href="/people/%s/+editgpgkeys">follow the '
+                    '<a href="%s/+editgpgkeys">follow the '
                     'instructions</a> and try again.'
                     % (sig.fingerprint, canonical_url(user)))
 
