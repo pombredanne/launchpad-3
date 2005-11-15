@@ -64,6 +64,10 @@ def merge_duplicates(ztm):
 def delete_unreferenced_content(ztm):
     """Delete LibraryFileContent entries and their disk files that are
     not referenced by any LibraryFileAlias entries.
+
+    Note that a LibraryFileContent can only be accessed through a
+    LibraryFileAlias, so all entries in this state are garbage no matter
+    what their expires flag says.
     """
     while True:
         cur.execute("""
