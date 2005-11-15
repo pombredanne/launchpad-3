@@ -34,7 +34,7 @@ from canonical.launchpad.interfaces import (
 import canonical.launchpad.layers as layers
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 import canonical.launchpad.webapp.zodb
-import canonical.database.adapter
+import canonical.launchpad.webapp.adapter as da
 
 # sqlos
 import sqlos.connection
@@ -153,7 +153,7 @@ class LaunchpadBrowserPublication(
         self.clearSQLOSCache()
         getUtility(IOpenLaunchBag).clear()
 
-        canonical.database.adapter.set_request_started()
+        da.set_request_started()
 
         # Set the default layer.
         adapters = zapi.getService(zapi.servicenames.Adapters)
@@ -217,7 +217,7 @@ class LaunchpadBrowserPublication(
             request.response.setBody('')
 
     def endRequest(self, request, object):
-        canonical.database.adapter.clear_request_started()
+        da.clear_request_started()
         superclass = zope.app.publication.browser.BrowserPublication
         superclass.endRequest(self, request, object)
 
