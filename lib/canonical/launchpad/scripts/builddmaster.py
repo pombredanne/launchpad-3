@@ -968,17 +968,17 @@ class BuilddMaster:
         #
         relation_map = {
             # any version is acceptable if no relationship is given
-            '': lambda x : True,
+            '': lambda x: True,
             # stricly later
-            '>>': lambda x : x == 1,
+            '>>': lambda x: x == 1,
             # later or equal
-            '>=': lambda x : x >= 0,
+            '>=': lambda x: x >= 0,
             # stricly equal
-            '=': lambda x : x == 0,
+            '=': lambda x: x == 0,
             # earlier or equal
-            '<=': lambda x : x <= 0,
+            '<=': lambda x: x <= 0,
             # strictly ealier
-            '<<': lambda x : x == -1
+            '<<': lambda x: x == -1
             }
 
         for token in parsed_deps:
