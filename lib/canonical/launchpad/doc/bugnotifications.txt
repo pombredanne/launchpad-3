@@ -73,6 +73,8 @@ examples throughout the rest of this document.
     'Bug ... <...@bugs...>'
     >>> msg["Sender"]
     'bounces@canonical.com'
+    >>> msg.get_all("X-Malone-Bug")
+    ['product=firefox; status=New; priority=None; assignee=None;']
 
 Note that all bug notification emails include an absolute URL to the
 bug:
@@ -177,6 +179,8 @@ let's hang a bug onto the ILaunchBag utility.
     'Bug ... <...@bugs...>'
     >>> msg["Sender"]
     'bounces@canonical.com'
+    >>> msg.get_all("X-Malone-Bug")
+    ['product=firefox; status=New; priority=None; assignee=None;', 'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None; status=New; priority=None; assignee=None; ']
 
     >>> print msg.get_payload(decode=True)
     Public bug report changed:
@@ -220,6 +224,8 @@ let's hang a bug onto the ILaunchBag utility.
     'Bug ... <...@bugs...>'
     >>> msg["Sender"]
     'bounces@canonical.com'
+    >>> msg.get_all("X-Malone-Bug")
+    ['product=firefox; status=New; priority=None; assignee=None;', 'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None; status=New; priority=None; assignee=None; ', 'distribution=debian; release=sid; sourcepackage=mozilla-firefox;\n\tcomponent=None; status=New; priority=None; assignee=None; ']
 
     >>> print msg.get_payload(decode=True)
     Public bug report changed:
@@ -266,6 +272,8 @@ let's hang a bug onto the ILaunchBag utility.
     'Bug ... <...@bugs...>'
     >>> msg["Sender"]
     'bounces@canonical.com'
+    >>> msg.get_all("X-Malone-Bug")
+    ['product=evolution; status=New; priority=None; assignee=None;', 'product=firefox; status=New; priority=None; assignee=None;', 'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None; status=New; priority=None; assignee=None; ', 'distribution=debian; release=sid; sourcepackage=mozilla-firefox;\n\tcomponent=None; status=New; priority=None; assignee=None; ']
 
     >>> print msg.get_payload(decode=True)
     Public bug report changed:
@@ -308,6 +316,8 @@ let's hang a bug onto the ILaunchBag utility.
     'Bug ... <...@bugs...>'
     >>> msg["Sender"]
     'bounces@canonical.com'
+    >>> msg.get_all("X-Malone-Bug")
+    ['product=evolution; status=New; priority=None; assignee=None;', 'product=firefox; status=New; priority=None; assignee=None;', 'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None; status=New; priority=None; assignee=None; ', 'distribution=debian; release=sid; sourcepackage=mozilla-firefox;\n\tcomponent=None; status=New; priority=None; assignee=None; ']
 
     >>> print msg.get_payload(decode = True)
     Public bug report changed:
@@ -360,6 +370,8 @@ task Accepted, assigns himself to it, and adds a status note.
     'Bug ... <...@bugs...>'
     >>> msg["Sender"]
     'bounces@canonical.com'
+    >>> msg.get_all("X-Malone-Bug")
+    ['product=evolution; status=New; priority=None; assignee=None;', 'product=firefox; status=New; priority=None; assignee=None;', 'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None; status=Fixed; priority=None;\n\tassignee=test@canonical.com; ', 'distribution=debian; release=sid; sourcepackage=mozilla-firefox;\n\tcomponent=None; status=New; priority=None; assignee=None; ']
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
@@ -402,6 +414,8 @@ pretending we've just added a watch to a bug.
     'Bug ... <...@bugs...>'
     >>> msg["Sender"]
     'bounces@canonical.com'
+    >>> msg.get_all("X-Malone-Bug")
+    ['product=firefox; status=New; priority=Wontfix;\n\tassignee=mark@hbd.com; ', 'product=ubuntu; status=New; priority=Medium; assignee=None;', 'distribution=ubuntu; sourcepackage=mozilla-firefox;\n\tcomponent=main; status=New; priority=Medium; assignee=None; ', 'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None; status=Accepted; priority=High; assignee=None; ']
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
@@ -446,6 +460,8 @@ the changes made:
     'Bug ... <...@bugs...>'
     >>> msg["Sender"]
     'bounces@canonical.com'
+    >>> msg.get_all("X-Malone-Bug")
+    ['product=firefox; status=New; priority=Wontfix;\n\tassignee=mark@hbd.com; ', 'product=ubuntu; status=New; priority=Medium; assignee=None;', 'distribution=ubuntu; sourcepackage=mozilla-firefox;\n\tcomponent=main; status=New; priority=Medium; assignee=None; ', 'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None; status=Accepted; priority=High; assignee=None; ']
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
@@ -491,6 +507,8 @@ this document:
     'Bug ... <...@bugs...>'
     >>> msg["Sender"]
     'bounces@canonical.com'
+    >>> msg.get_all("X-Malone-Bug")
+    ['product=firefox; status=New; priority=Wontfix;\n\tassignee=mark@hbd.com; ', 'product=ubuntu; status=New; priority=Medium; assignee=None;', 'distribution=ubuntu; sourcepackage=mozilla-firefox;\n\tcomponent=main; status=New; priority=Medium; assignee=None; ', 'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None; status=Accepted; priority=High; assignee=None; ']
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
@@ -535,6 +553,8 @@ publishing an object created event.
     'Bug ... <...@bugs...>'
     >>> msg["Sender"]
     'bounces@canonical.com'
+    >>> msg.get_all("X-Malone-Bug")
+    ['product=firefox; status=New; priority=Wontfix;\n\tassignee=mark@hbd.com; ', 'product=ubuntu; status=New; priority=Medium; assignee=None;', 'distribution=ubuntu; sourcepackage=mozilla-firefox;\n\tcomponent=main; status=New; priority=Medium; assignee=None; ', 'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None; status=Accepted; priority=High; assignee=None; ']
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
@@ -578,6 +598,8 @@ When a link is edited, the notification will look as follows:
     'Bug ... <...@bugs...>'
     >>> msg["Sender"]
     'bounces@canonical.com'
+    >>> msg.get_all("X-Malone-Bug")
+    ['product=firefox; status=New; priority=Wontfix;\n\tassignee=mark@hbd.com; ', 'product=ubuntu; status=New; priority=Medium; assignee=None;', 'distribution=ubuntu; sourcepackage=mozilla-firefox;\n\tcomponent=main; status=New; priority=Medium; assignee=None; ', 'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None; status=Accepted; priority=High; assignee=None; ']
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
@@ -817,6 +839,8 @@ private, and Foo Bar is not an explicit subscriber to the bug, he will
     'Bug ... <...@bugs...>'
     >>> msg["Sender"]
     'bounces@canonical.com'
+    >>> msg.get_all("X-Malone-Bug")
+    ['product=applets; status=New; priority=None; assignee=None;', 'product=evolution; status=New; priority=None; assignee=None;', 'product=firefox; status=New; priority=None; assignee=None;', 'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None; status=Fixed; priority=None;\n\tassignee=test@canonical.com; ', 'distribution=debian; release=sid; sourcepackage=mozilla-firefox;\n\tcomponent=None; status=New; priority=None; assignee=None; ']
 
     >>> stub.test_emails = []
 

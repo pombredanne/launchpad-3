@@ -33,7 +33,7 @@ from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
     IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, NotFoundError,
-    ILaunchpadCelebrities)
+    ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage)
 
 
 debbugsstatusmap = {'open': BugTaskStatus.NEW,
@@ -192,6 +192,73 @@ class BugTask(SQLBase, BugTaskMixin):
         """See canonical.launchpad.interfaces.IBugTask."""
         if self.targetnamecache != self._calculate_targetname():
             self.targetnamecache = self._calculate_targetname()
+
+    def asEmailHeader(self):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        # Calculate an appropriate display value for the assignee.
+        assignee = self.assignee
+        assignee_email = 'None'
+        if assignee and assignee.preferredemail:
+            assignee_email = assignee.preferredemail.email
+
+        # Calculate an appropriate display value for the priority.
+        priority_value = 'None'
+        if self.priority:
+            priority_value = self.priority.title
+
+        # Calculate an appropriate display value for the sourcepackage.
+        sourcepackagename = self.sourcepackagename
+        sourcepackagename_value = 'None'
+        if sourcepackagename:
+            sourcepackagename_value = sourcepackagename.name
+
+        # Calculate an appropriate display value for the component, if the
+        # target looks like some kind of source package.
+        component = 'None'
+        currentrelease = None
+        if ISourcePackage.providedBy(self.target):
+            currentrelease = self.target.currentrelease
+        if IDistributionSourcePackage.providedBy(self.target):
+            if self.target.currentrelease:
+                currentrelease = self.target.currentrelease.sourcepackagerelease
+
+        if currentrelease:
+            component = currentrelease.component.name
+
+        if IUpstreamBugTask.providedBy(self):
+            return (
+                ('product=%(productname)s; status=%(status)s; '
+                 'priority=%(priority)s; assignee=%(assignee)s;') %
+                {'productname': self.target.name,
+                 'status': self.status.title,
+                 'priority': priority_value,
+                 'assignee': assignee_email})
+        elif IDistroBugTask.providedBy(self):
+            return (
+                ('distribution=%(distroname)s; '
+                 'sourcepackage=%(sourcepackagename)s; '
+                 'component=%(componentname)s; status=%(status)s; '
+                 'priority=%(priority)s; assignee=%(assignee)s;') %
+                {'distroname': self.distribution.name,
+                 'sourcepackagename': sourcepackagename_value,
+                 'componentname': component,
+                 'status': self.status.title,
+                 'priority': priority_value,
+                 'assignee': assignee_email})
+        elif IDistroReleaseBugTask.providedBy(self):
+            return (
+                ('distribution=%(distroname)s; '
+                 'release=%(distroreleasename)s; '
+                 'sourcepackage=%(sourcepackagename)s; '
+                 'component=%(componentname)s; status=%(status)s; '
+                 'priority=%(priority)s; assignee=%(assignee)s;') %
+                {'distroname': self.distrorelease.distribution.name,
+                 'distroreleasename': self.distrorelease.name,
+                 'sourcepackagename': sourcepackagename_value,
+                 'componentname': component,
+                 'status': self.status.title,
+                 'priority': priority_value,
+                 'assignee': assignee_email})
 
     @property
     def statusdisplayhtml(self):

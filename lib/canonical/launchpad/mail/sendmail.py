@@ -11,7 +11,9 @@ messaging settings -- stub 2004-10-21
 
 """
 
-__all__ = ['sendmail', 'simple_sendmail', 'raw_sendmail']
+__all__ = [
+    'sendmail', 'encode_address_field', 'validate_email_headers',
+    'simple_sendmail', 'raw_sendmail']
 
 import sets
 from email.Utils import make_msgid, formatdate, parseaddr, formataddr
@@ -50,20 +52,17 @@ def encode_address_field(address_field):
     return formataddr((str(Header(name)), str(address)))
 
 
-def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
-    """Send an email from from_addr to to_addrs with the subject and body
-    provided. to_addrs can be a list, tuple, or ASCII/Unicode string.
+def validate_email_headers(from_addr, to_addrs, subject, body):
+    """Validate various bits of the email.
 
-    Arbitrary headers can be set using the headers parameter.
+    An AssertionError will be raised if one of the parameters is
+    invalid.
 
-    Returns the Message-Id.
+    Extremely paranoid parameter checking is required to ensure we
+    raise an exception rather than stick garbage in the mail
+    queue. Currently, the Z3 mailer is too forgiving and accepts badly
+    formatted emails which the delivery mechanism then can't send.
     """
-
-    # Extremely paranoid parameter checking is required to ensure
-    # we raise an exception rather than stick garbage in the mail
-    # queue. Currently, the Z3 mailer is too forgiving and accepts
-    # badly formatted emails which the delivery mechanism then
-    # can't send.
     # XXX: These checks need to be migrated upstream if this bug
     # still exists in modern Z3 -- StuartBishop 20050319
     if zisinstance(to_addrs, basestring):
@@ -78,6 +77,17 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
     for addr in to_addrs:
         assert zisinstance(addr, basestring) and bool(addr), \
                 'Invalid recipient: %r in %r' % (addr, to_addrs)
+
+
+def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
+    """Send an email from from_addr to to_addrs with the subject and body
+    provided. to_addrs can be a list, tuple, or ASCII/Unicode string.
+
+    Arbitrary headers can be set using the headers parameter.
+
+    Returns the Message-Id.
+    """
+    validate_email_headers(from_addr, to_addrs, subject, body)
 
     msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
     for k,v in headers.items():

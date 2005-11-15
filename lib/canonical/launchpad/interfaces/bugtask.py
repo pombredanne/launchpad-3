@@ -127,6 +127,13 @@ class IBugTask(IHasDateCreated):
         example, an IDistribution is renamed.
         """
 
+    def asEmailHeader(self):
+        """Return the X-Malone-Bug header information for this bugtask.
+
+        This allows users to create mail filters to organize their Malone
+        bugmail in a way that's convenient for them.
+        """
+
 
 class INullBugTask(IBugTask):
     """A marker interface for an IBugTask that doesn't exist in a context.

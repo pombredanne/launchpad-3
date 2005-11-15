@@ -8,6 +8,7 @@ import os.path
 import itertools
 import sets
 import textwrap
+from email.MIMEText import MIMEText
 
 from zope.security.proxy import isinstance as zope_isinstance
 
@@ -15,7 +16,8 @@ import canonical.launchpad
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IBugDelta, IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
-from canonical.launchpad.mail import simple_sendmail
+from canonical.launchpad.mail import (
+    sendmail, simple_sendmail, validate_email_headers, encode_address_field)
 from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.components.bugtask import BugTaskDelta
 from canonical.launchpad.helpers import contactEmailAddresses
@@ -479,10 +481,14 @@ def send_bug_notification(bug, user, subject, body,
     concerning the same bug (if the email client supports threading).
     """
 
-    if headers is None:
+    if not headers:
         headers = {}
     if to_addrs is None:
         to_addrs = get_cc_list(bug)
+
+    if not to_addrs:
+        # Nothing to do here.
+        return
 
     if ('Message-Id' not in headers or
             headers['Message-Id'] != bug.initial_message.rfc822msgid):
@@ -504,10 +510,35 @@ def send_bug_notification(bug, user, subject, body,
         headers["Reply-To"] = get_bugmail_replyto_address(bug)
     if "Sender" not in headers:
         headers["Sender"] = config.bounce_address
-    from_addr = get_bugmail_from_address(user)
-    for to_addr in to_addrs:
-        simple_sendmail(from_addr, to_addr, subject, body, headers=headers)
 
+    from_addr = get_bugmail_from_address(user)
+
+    validate_email_headers(
+        from_addr=from_addr, to_addrs=to_addrs, subject=subject, body=body)
+
+    for to_addr in to_addrs:
+        # We have to create the message manually in this method (as
+        # opposed to calling simple_sendmail) because we rely on the
+        # magic-dict behaviour of the Message object, which allows setting
+        # of a header more than once. This is needed for the X-Malone-Bug
+        # header, which may appear multiple times for bugs which have
+        # multiple tasks.
+        msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
+        for k,v in headers.items():
+            del msg[k]
+            msg[k] = v
+        msg['To'] = encode_address_field(to_addr)
+        msg['From'] = encode_address_field(from_addr)
+        msg['Subject'] = subject
+
+        # Add a header for each task on this bug, to help users
+        # organize their incoming mail in a way that's convenient for
+        # them.
+        bugtasks = bug.bugtasks
+        for bugtask in bugtasks:
+            msg["X-Malone-Bug"] = bugtask.asEmailHeader()
+
+        sendmail(msg)
 
 def send_bug_edit_notification(bug_delta):
     """Send a notification email about a bug that was modified.
@@ -683,8 +714,8 @@ def notify_bug_added(bug, event):
     subject, body = generate_bug_add_email(bug)
 
     send_bug_notification(
-            bug, event.user, subject, body,
-            headers={'Message-Id': bug.initial_message.rfc822msgid})
+        bug, event.user, subject, body,
+        headers={'Message-Id': bug.initial_message.rfc822msgid})
 
 
 def notify_bug_modified(modified_bug, event):

@@ -1,0 +1,48 @@
+Filtering Malone Bugmail
+========================
+
+As a Malone user, the volume of bugmail you receive may quickly start piling up
+in your Inbox. To help make life easier Malone provides extra headers which
+allow users to create email filters to organize their bugmail in a way that's
+convenient for them.
+
+BugTask -> Email Header
+=======================
+
+You can ask an IBugTask for its representation as an email header:
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IBugTaskSet
+
+    >>> bugtaskset = getUtility(IBugTaskSet)
+    >>> upstream_firefox_bugtask = bugtaskset.get(2)
+    >>> upstream_firefox_bugtask_no_assignee = bugtaskset.get(13)
+    >>> debian_firefox_bugtask = bugtaskset.get(4)
+    >>> warty_firefox_bugtask = bugtaskset.get(16)
+
+    >>> upstream_firefox_bugtask.asEmailHeader()
+    u'product=firefox; status=New; priority=Wontfix; assignee=mark@hbd.com;'
+
+    >>> upstream_firefox_bugtask_no_assignee.asEmailHeader()
+    u'product=firefox; status=New; priority=Medium; assignee=None;'
+
+    >>> debian_firefox_bugtask.asEmailHeader()
+    u'distribution=debian; sourcepackage=mozilla-firefox; component=None; status=Accepted; priority=High; assignee=None;'
+
+    >>> warty_firefox_bugtask.asEmailHeader()
+    u'distribution=ubuntu; release=warty; sourcepackage=mozilla-firefox; component=main; status=New; priority=Medium; assignee=None;'
+
+Here's what the headers look like for distro tasks that have no sourcepackage
+(we have to login to be allowed to set attributes on these tasks):
+
+    >>> login("foo.bar@canonical.com")
+
+    >>> mozilla_firefox_packagename = debian_firefox_bugtask.sourcepackagename
+    >>> debian_firefox_bugtask.sourcepackagename = None
+    >>> warty_firefox_bugtask.sourcepackagename = None
+
+    >>> debian_firefox_bugtask.asEmailHeader()
+    u'distribution=debian; sourcepackage=None; component=None; status=Accepted; priority=High; assignee=None;'
+
+    >>> warty_firefox_bugtask.asEmailHeader()
+    u'distribution=ubuntu; release=warty; sourcepackage=None; component=None; status=New; priority=Medium; assignee=None;'
