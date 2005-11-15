@@ -6,10 +6,12 @@ __all__ = ['DistroReleaseQueue', 'DistroReleaseQueueBuild',
 
 import os
 import tempfile
+import pytz
+from datetime import datetime
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, MultipleJoin
+from sqlobject import ForeignKey, MultipleJoin, StringCol
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -25,6 +27,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
+
+from canonical.cachedproperty import cachedproperty
 
 # There are imports below in DistroReleaseQueueCustom for various bits
 # of the archivepublisher which cause circular import errors if they
@@ -57,6 +61,7 @@ class DistroReleaseQueue(SQLBase):
     pocket = EnumCol(dbName='pocket', unique=False, default=None, notNull=True,
                      schema=PackagePublishingPocket)
 
+    changesfile = StringCol(dbName='changesfile', default=None, notNull=True)
 
     # Join this table to the DistroReleaseQueueBuild and the
     # DistroReleaseQueueSource objects which are related.
@@ -68,6 +73,78 @@ class DistroReleaseQueue(SQLBase):
     customfiles = MultipleJoin('DistroReleaseQueueCustom',
                                joinColumn='distroreleasequeue')
 
+    @cachedproperty
+    def changesfilename(self):
+        """A changes filename to accurately represent this upload."""
+        filename = self.sourcepackagename.name + "_" + self.sourceversion + "_"
+        arch_done = False
+        if len(self.sources):
+            filename += "source"
+            arch_done = True
+        for build in self.builds:
+            if arch_done:
+                filename += "+"
+            filename += build.build.distroarchrelease.architecturetag
+            arch_done = True
+        filename += ".changes"
+        return filename
+
+    @cachedproperty
+    def datecreated(self):
+        """The date on which this queue item was created.
+
+        We look through the sources/builds of this queue item to find out
+        when we created it. This is heuristic for now but may be made into
+        a column at a later date.
+        """
+        # If we can find a source, return it
+        for source in self.sources:
+            return source.sourcepackagerelease.dateuploaded
+        # Ditto for builds
+        for build in self.builds:
+            return build.build.datecreated
+        # Strange, but there's no source or build, complain
+        raise NotFoundError()
+
+    @property
+    def age(self):
+        """See IDistroReleaseQueue"""
+        UTC = pytz.timezone('UTC')
+        now = datetime.now(UTC)
+        return now - self.datecreated
+
+
+    @cachedproperty
+    def sourcepackagename(self):
+        """The source package name related to this queue item.
+
+        We look through sources/builds to find it. This is heuristic for now
+        but may be made into a column at a later date.
+        """
+        # If there's a source, use it
+        for source in self.sources:
+            return source.sourcepackagerelease.sourcepackagename
+        # ditto builds
+        for build in self.builds:
+            return build.sourcepackagerelease.sourcepackagename
+        # strange, no source or build
+        raise NotFoundError()
+
+    @cachedproperty
+    def sourceversion(self):
+        """The source package version related to this queue item.
+
+        This is currently heuristic but may be more easily calculated later.
+        """
+        # If there's a source, use it
+        for source in self.sources:
+            return source.sourcepackagerelease.version
+        # ditto builds
+        for build in self.builds:
+            return build.sourcepackagerelease.version
+        # strange, no source or build
+        raise NotFoundError()
+        
     def realiseUpload(self, logger=None):
         """See IDistroReleaseQueue."""
         assert self.status == DistroReleaseQueueStatus.ACCEPTED
