@@ -2110,15 +2110,6 @@ CREATE TABLE karmacategory (
 
 
 
-CREATE TABLE maintainership_bak (
-    id integer,
-    distribution integer,
-    sourcepackagename integer,
-    maintainer integer
-);
-
-
-
 CREATE INDEX idx_libraryfilecontent_sha1 ON libraryfilecontent USING btree (sha1);
 
 
@@ -6180,9 +6171,5 @@ CREATE VIEW sourcepackagefilepublishing AS
 CREATE VIEW sourcepackagepublishingview AS
     SELECT sourcepackagepublishing.id, distrorelease.name AS distroreleasename, sourcepackagename.name AS sourcepackagename, component.name AS componentname, section.name AS sectionname, distrorelease.distribution, sourcepackagepublishing.status AS publishingstatus, sourcepackagepublishing.pocket FROM (((((sourcepackagepublishing JOIN distrorelease ON ((sourcepackagepublishing.distrorelease = distrorelease.id))) JOIN sourcepackagerelease ON ((sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id))) JOIN sourcepackagename ON ((sourcepackagerelease.sourcepackagename = sourcepackagename.id))) JOIN component ON ((sourcepackagepublishing.component = component.id))) JOIN section ON ((sourcepackagepublishing.section = section.id)));
 
-
-
-CREATE VIEW nr AS
-    SELECT distrorelease, requestedcds.request, quantity AS requested, CASE WHEN (dateshipped IS NOT NULL) THEN 0 WHEN (approved IS FALSE) THEN 0 WHEN (quantityapproved IS NULL) THEN 0 WHEN (quantityapproved > quantity) THEN quantity ELSE quantityapproved END AS approved, CASE WHEN (quantityapproved IS NULL) THEN 0 WHEN (approved IS FALSE) THEN quantity WHEN (quantityapproved >= quantity) THEN 0 ELSE (quantity - quantityapproved) END AS rejected, CASE WHEN (dateshipped IS NOT NULL) THEN 0 WHEN (quantityapproved IS NULL) THEN quantity ELSE 0 END AS pending, CASE WHEN (dateshipped IS NULL) THEN 0 WHEN (quantityapproved IS NULL) THEN quantity WHEN (quantityapproved > quantity) THEN quantity ELSE quantityapproved END AS shipped FROM ((requestedcds JOIN shippingrequest ON ((requestedcds.request = shippingrequest.id))) LEFT JOIN shipment ON ((shippingrequest.id = shipment.request))) WHERE ((cancelled IS FALSE) OR ((cancelled IS TRUE) AND (shipment.id IS NOT NULL)));
 
 
