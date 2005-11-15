@@ -30,10 +30,10 @@ import urlparse
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    IPersonSet, IDistributionSet, IBugSet, IBugTaskSet,
-    IBugTrackerSet, IBugExternalRefSet, IBugAttachmentSet,
-    IMessageSet, ILibraryFileAliasSet, ICveSet, IBugWatchSet,
-    ILaunchpadCelebrities, NotFoundError)
+    IPersonSet, IEmailAddressSet, IDistributionSet, IBugSet,
+    IBugTaskSet, IBugTrackerSet, IBugExternalRefSet,
+    IBugAttachmentSet, IMessageSet, ILibraryFileAliasSet, ICveSet,
+    IBugWatchSet, ILaunchpadCelebrities, NotFoundError)
 from canonical.lp.dbschema import (
     BugTaskSeverity, BugTaskStatus, BugTaskPriority, BugAttachmentType)
 
@@ -276,6 +276,7 @@ class Bugzilla:
         self.cveset = getUtility(ICveSet)
         self.extrefset = getUtility(IBugExternalRefSet)
         self.personset = getUtility(IPersonSet)
+        self.emailset = getUtility(IEmailAddressSet)
         self.person_mapping = {}
 
     def person(self, bugzilla_id):
@@ -301,6 +302,15 @@ class Bugzilla:
 
             person = self.personset.ensurePerson(
                 email=email, displayname=displayname)
+
+            # Bugzilla performs similar address checks to Launchpad, so
+            # if the Launchpad account has no preferred email, use the
+            # Bugzilla one.
+            emailaddr = self.emailset.getByEmail(email)
+            assert emailaddr is not None
+            if person.preferredemail is None:
+                person.preferredemail = emailaddr
+                
             self.person_mapping[bugzilla_id] = person.id
 
         return person
