@@ -3,41 +3,44 @@
 
 __metaclass__ = type
 
+from canonical.config import config
 from canonical.database.sqlbase import cursor
+from canonical.librarian.storage import _relFileLocation as relative_file_path
 
 log = None
 
 def merge_duplicates(ztm):
     """Merge duplicate LibraryFileContent rows"""
 
-    while True:
+    # Get a list of all (sha1, filesize) that are duplicated in
+    # LibraryFileContent
+    ztm.begin()
+    cur = cursor()
+    cur.execute("""
+        SELECT sha1, filesize
+        FROM LibraryFileContent
+        GROUP BY sha1, filesize
+        HAVING COUNT(*) > 1
+        """)
+    rows = list(cur.fetchall())
+    ztm.abort()
+
+    # Merge the duplicate entries, each one in a seperate transaction
+    for sha1, filesize in rows:
         ztm.begin()
-
         cur = cursor()
-        cur.execute("""
-            SELECT sha1, filesize
-            FROM LibraryFileContent
-            GROUP BY sha1, filesize
-            HAVING COUNT(*) > 1
-            LIMIT 1
-            """)
-        row = cur.fetchone()
 
-        if row is None:
-            # No more duplicates, so exit loop
-            break
-
-        sha1, filesize = cur.fetchone()
+        sha1 = sha1.encode('US-ASCII') # Can't pass Unicode to execute (yet)
 
         # Get a list of our dupes, making sure that the first in the
         # list is not deleted if possible.
         cur.execute("""
             SELECT id
             FROM LibraryFileContent
-            WHERE sha1=%(sha1) AND filesize=%(filesize)s
+            WHERE sha1=%(sha1)s AND filesize=%(filesize)s
             ORDER BY deleted, datecreated
             """, vars())
-        dupes = [row[0] for row in cur.fetchall()]
+        dupes = [str(row[0]) for row in cur.fetchall()]
 
         log.info(
                 "Found duplicate LibraryFileContents %s",
@@ -54,8 +57,8 @@ def merge_duplicates(ztm):
                 )
         cur.execute("""
             UPDATE LibraryFileAlias SET content=%(prime_id)s
-            WHERE content in (%(dupe_ids)s)
-            """)
+            WHERE content in (%(other_ids)s)
+            """, vars())
 
         log.debug("Committing")
         ztm.commit()
@@ -69,18 +72,41 @@ def delete_unreferenced_content(ztm):
     LibraryFileAlias, so all entries in this state are garbage no matter
     what their expires flag says.
     """
-    while True:
-        cur.execute("""
-            SELECT LibraryFileContent.id, deleted
-            FROM LibraryFileContent
-            LEFT OUTER JOIN LibraryFileAlias
-                ON LibraryFileContent.id = LibraryFileAlias.content
-            WHERE LibraryFileAlias.content IS NULL
-            LIMIT 1
-            """)
+    ztm.begin()
+    cur.execute("""
+        SELECT LibraryFileContent.id
+        FROM LibraryFileContent
+        LEFT OUTER JOIN LibraryFileAlias
+            ON LibraryFileContent.id = LibraryFileAlias.content
+        WHERE LibraryFileAlias.content IS NULL
+        """)
+    garbage_ids = cur.fetchall()
+    ztm.abort()
 
+    # Determine the directory where the librarian stores its files,
+    # and do a basic sanity check on it.
+    storage_root = config.librarian.server.root
+    if not os.path.isdir(os.path.join(storage_root, 'incoming')):
+        raise RuntimeError(
+                "Librarian file storage not found at %s" % storage_root
+                )
+
+    for garbage_id, deleted in cur.fetchall():
+        # Remove the file from disk, if it hasn't already been
+        path = os.path.join(
+                storage_root, relative_path(garbage_id)
+                )
+        if os.path.exists(path):
+            log.info("Deleting %s", path)
+            os.unlink(path)
+        else:
+            log.info("%s already deleted", path)
+
+        ztm.begin()
         # Delete old LibraryFileContent entries
-        log.debug("Deleting LibraryFileContents %s", dupe_ids)
+        log.info("Deleting LibraryFileContent %d", garbage_id)
         cur.execute("""
-            DELETE FROM LibraryFileContent WHERE id IN (%(dupe_ids)s)
+            DELETE FROM LibraryFileContent WHERE id = %(garbage_id)s)
             """, vars())
+        ztm.commit()
+
