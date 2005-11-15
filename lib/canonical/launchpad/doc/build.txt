@@ -37,6 +37,9 @@ Let's check the complex properties of a build object.
   >>> firefox_build.buildlog.url
   'http://localhost:58000/34/evolution-2.2-test.pot'
 
+Initialize all the required arguments to create a binary package for a
+given build record entry.
+
   >>> from canonical.launchpad.interfaces import IBinaryPackageNameSet
   >>> binarypackagename = getUtility(IBinaryPackageNameSet).ensure('demo').id
   >>> version = '0.0.1-demo'
@@ -60,6 +63,7 @@ Let's check the complex properties of a build object.
   >>> licence = None
   >>> architecturespecific = False 
 
+Invoke createBinaryPackageRelease with all required arguments.
 
   >>> bin = Build.get(7).createBinaryPackageRelease(
   ...                                 binarypackagename, version,
