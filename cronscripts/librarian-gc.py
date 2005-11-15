@@ -13,11 +13,7 @@ __metaclass__ = type
 from optparse import OptionParser
 
 from canonical.launchpad.scripts import logger_options, logger
-
-def merge_duplicates(ztm):
-    """Merge duplicate LibraryFileContent rows, and remove unlinked files
-    from disk
-    """
+from canonical.librarian import librariangc
 
 
 def main():
@@ -27,6 +23,7 @@ def main():
     (options, args) = parser.parse_args()
 
     log = logger(options)
+    librariangc.log = log
 
 
 if __name__ == '__main__':
