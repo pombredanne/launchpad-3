@@ -12,7 +12,7 @@ messaging settings -- stub 2004-10-21
 """
 
 __all__ = [
-    'sendmail', 'encode_address_field', 'validate_email_headers',
+    'sendmail', 'encode_address_field', 'do_paranoid_email_content_validation',
     'simple_sendmail', 'raw_sendmail']
 
 import sets
@@ -52,16 +52,16 @@ def encode_address_field(address_field):
     return formataddr((str(Header(name)), str(address)))
 
 
-def validate_email_headers(from_addr, to_addrs, subject, body):
+def do_paranoid_email_content_validation(from_addr, to_addrs, subject, body):
     """Validate various bits of the email.
-
-    An AssertionError will be raised if one of the parameters is
-    invalid.
 
     Extremely paranoid parameter checking is required to ensure we
     raise an exception rather than stick garbage in the mail
     queue. Currently, the Z3 mailer is too forgiving and accepts badly
     formatted emails which the delivery mechanism then can't send.
+
+    An AssertionError will be raised if one of the parameters is
+    invalid.
     """
     # XXX: These checks need to be migrated upstream if this bug
     # still exists in modern Z3 -- StuartBishop 20050319
@@ -87,7 +87,8 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
 
     Returns the Message-Id.
     """
-    validate_email_headers(from_addr, to_addrs, subject, body)
+    do_paranoid_email_content_validation(
+        from_addr=from_addr, to_addrs=to_addrs, subject=subject, body=body)
 
     msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
     for k,v in headers.items():

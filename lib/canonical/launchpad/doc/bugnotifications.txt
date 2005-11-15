@@ -338,7 +338,10 @@ task Accepted, assigns himself to it, and adds a status note.
     ...     implements(IDistroBugTask)
 
     >>> bugtask_before_modification = MockObject()
-    >>> for name in IDistroBugTask.names(all=True):
+    >>> for name in ["status", "priority", "severity", "product",
+    ...              "distribution", "distrorelease", "sourcepackagename",
+    ...              "bug", "assignee", "binarypackagename", "bugwatch",
+    ...              "milestone", "statusexplanation"]:
     ...     setattr(bugtask_before_modification, name,
     ...             getattr(firefox_crashes_in_debian, name))
     >>> firefox_crashes_in_debian.status = BugTaskStatus.FIXED

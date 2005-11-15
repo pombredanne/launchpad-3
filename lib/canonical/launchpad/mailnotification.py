@@ -17,7 +17,8 @@ from canonical.config import config
 from canonical.launchpad.interfaces import (
     IBugDelta, IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
 from canonical.launchpad.mail import (
-    sendmail, simple_sendmail, validate_email_headers, encode_address_field)
+    sendmail, simple_sendmail, do_paranoid_email_content_validation,
+    encode_address_field)
 from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.components.bugtask import BugTaskDelta
 from canonical.launchpad.helpers import contactEmailAddresses
@@ -462,8 +463,8 @@ def generate_bug_comment_email(bug_comment):
     return (subject, body)
 
 
-def send_bug_notification(bug, user, subject, body,
-                          to_addrs=None, headers=None):
+def send_bug_notification(bug, user, subject, body, to_addrs=None,
+                          headers=None):
     """Sends a bug notification.
 
     :bug: The bug the notification concerns.
@@ -483,13 +484,14 @@ def send_bug_notification(bug, user, subject, body,
 
     assert user is not None, 'user is None'
 
-    if not headers:
+    if headers is None:
         headers = {}
     if to_addrs is None:
         to_addrs = get_cc_list(bug)
 
     if not to_addrs:
-        # Nothing to do here.
+        # No recipients for this email means there's no point generating an
+        # email.
         return
 
     if ('Message-Id' not in headers or
@@ -515,30 +517,31 @@ def send_bug_notification(bug, user, subject, body,
 
     from_addr = get_bugmail_from_address(user)
 
-    validate_email_headers(
+    do_paranoid_email_content_validation(
         from_addr=from_addr, to_addrs=to_addrs, subject=subject, body=body)
 
-    for to_addr in to_addrs:
-        # We have to create the message manually in this method (as
-        # opposed to calling simple_sendmail) because we rely on the
-        # magic-dict behaviour of the Message object, which allows setting
-        # of a header more than once. This is needed for the X-Malone-Bug
-        # header, which may appear multiple times for bugs which have
-        # multiple tasks.
-        msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
-        for k,v in headers.items():
-            del msg[k]
-            msg[k] = v
-        msg['To'] = encode_address_field(to_addr)
-        msg['From'] = encode_address_field(from_addr)
-        msg['Subject'] = subject
+    # Construct the message, including the appropriate headers. We have to
+    # create this message directly in this method (rather than calling, for
+    # example, simple_sendmail) because we want to be able to add the
+    # X-Malone-Bug header potentially multiple times to the message, which
+    # simple_sendmail's API does not account for.
+    msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
+    msg['From'] = encode_address_field(from_addr)
+    msg['Subject'] = subject
+    for k,v in headers.items():
+        del msg[k]
+        msg[k] = v
 
-        # Add a header for each task on this bug, to help users
-        # organize their incoming mail in a way that's convenient for
-        # them.
-        bugtasks = bug.bugtasks
-        for bugtask in bugtasks:
-            msg["X-Malone-Bug"] = bugtask.asEmailHeader()
+    # Add a header for each task on this bug, to help users organize their
+    # incoming mail in a way that's convenient for them.
+    bugtasks = bug.bugtasks
+    for bugtask in bugtasks:
+        msg["X-Malone-Bug"] = bugtask.asEmailHeaderValue()
+
+    for to_addr in to_addrs:
+        # Remove the previous To header, if there was one.
+        del msg["To"]
+        msg['To'] = encode_address_field(to_addr)
 
         sendmail(msg)
 

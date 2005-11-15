@@ -6,10 +6,10 @@ in your Inbox. To help make life easier Malone provides extra headers which
 allow users to create email filters to organize their bugmail in a way that's
 convenient for them.
 
-BugTask -> Email Header
-=======================
+BugTask -> Email Header Value
+=============================
 
-You can ask an IBugTask for its representation as an email header:
+You can ask an IBugTask for its representation as an email header value:
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IBugTaskSet
@@ -20,20 +20,20 @@ You can ask an IBugTask for its representation as an email header:
     >>> debian_firefox_bugtask = bugtaskset.get(4)
     >>> warty_firefox_bugtask = bugtaskset.get(16)
 
-    >>> upstream_firefox_bugtask.asEmailHeader()
+    >>> upstream_firefox_bugtask.asEmailHeaderValue()
     u'product=firefox; status=New; priority=Wontfix; assignee=mark@hbd.com;'
 
-    >>> upstream_firefox_bugtask_no_assignee.asEmailHeader()
+    >>> upstream_firefox_bugtask_no_assignee.asEmailHeaderValue()
     u'product=firefox; status=New; priority=Medium; assignee=None;'
 
-    >>> debian_firefox_bugtask.asEmailHeader()
+    >>> debian_firefox_bugtask.asEmailHeaderValue()
     u'distribution=debian; sourcepackage=mozilla-firefox; component=None; status=Accepted; priority=High; assignee=None;'
 
-    >>> warty_firefox_bugtask.asEmailHeader()
+    >>> warty_firefox_bugtask.asEmailHeaderValue()
     u'distribution=ubuntu; release=warty; sourcepackage=mozilla-firefox; component=main; status=New; priority=Medium; assignee=None;'
 
-Here's what the headers look like for distro tasks that have no sourcepackage
-(we have to login to be allowed to set attributes on these tasks):
+Here's what the header values look like for distro tasks that have no
+sourcepackage (we have to login to be allowed to set attributes on these tasks):
 
     >>> login("foo.bar@canonical.com")
 
@@ -41,8 +41,8 @@ Here's what the headers look like for distro tasks that have no sourcepackage
     >>> debian_firefox_bugtask.sourcepackagename = None
     >>> warty_firefox_bugtask.sourcepackagename = None
 
-    >>> debian_firefox_bugtask.asEmailHeader()
+    >>> debian_firefox_bugtask.asEmailHeaderValue()
     u'distribution=debian; sourcepackage=None; component=None; status=Accepted; priority=High; assignee=None;'
 
-    >>> warty_firefox_bugtask.asEmailHeader()
+    >>> warty_firefox_bugtask.asEmailHeaderValue()
     u'distribution=ubuntu; release=warty; sourcepackage=None; component=None; status=New; priority=Medium; assignee=None;'

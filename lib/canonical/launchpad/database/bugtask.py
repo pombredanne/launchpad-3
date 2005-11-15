@@ -193,24 +193,29 @@ class BugTask(SQLBase, BugTaskMixin):
         if self.targetnamecache != self._calculate_targetname():
             self.targetnamecache = self._calculate_targetname()
 
-    def asEmailHeader(self):
+    def asEmailHeaderValue(self):
         """See canonical.launchpad.interfaces.IBugTask."""
         # Calculate an appropriate display value for the assignee.
-        assignee = self.assignee
-        assignee_email = 'None'
-        if assignee and assignee.preferredemail:
-            assignee_email = assignee.preferredemail.email
+        try:
+            assignee_email = self.assignee.preferredemail.email
+        except AttributeError:
+            # There appears to be either no assignee, or an assignee with no
+            # preferred email.
+            assignee_email = 'None'
 
         # Calculate an appropriate display value for the priority.
-        priority_value = 'None'
-        if self.priority:
+        try:
             priority_value = self.priority.title
+        except AttributeError:
+            priority_value = 'None'
 
         # Calculate an appropriate display value for the sourcepackage.
-        sourcepackagename = self.sourcepackagename
-        sourcepackagename_value = 'None'
-        if sourcepackagename:
-            sourcepackagename_value = sourcepackagename.name
+        try:
+            sourcepackagename_value = self.sourcepackagename.name
+        except AttributeError:
+            # There appears to be no sourcepackagename associated with this
+            # task.
+            sourcepackagename_value = 'None'
 
         # Calculate an appropriate display value for the component, if the
         # target looks like some kind of source package.
