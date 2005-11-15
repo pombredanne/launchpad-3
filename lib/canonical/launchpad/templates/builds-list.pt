@@ -38,8 +38,7 @@
      <table class="listing" tal:condition="view/number_built">
         <tr class="thead">
             <th>Source Package</th>
-            <th>Distribution Release / Architecture</th>
-            <th>Created</th>
+            <th>Requested</th>
             <th>Built</th>
             <th>Builder</th>
             <th>Result</th>
@@ -52,14 +51,6 @@
                  <img alt="[package]" src="/++resource++package-binary" />
                  <span tal:replace="build/title">NAME</span>
               </a>
-            </td>
-            <td>
-              <a tal:content="build/distroarchrelease/distrorelease/title"
-                 tal:attributes="href build/distroarchrelease/distrorelease/fmt:url"
-                 title="To show the Distribution Release, click here."/> /
-              <a tal:content="build/distroarchrelease/title"
-                 tal:attributes="href build/distroarchrelease/fmt:url"
-                 title="To show the Distribution Architecture Release, click here."/>
             </td>
             <td tal:content="build/datecreated/fmt:datetime">CREATED</td>
             <td tal:content="build/datebuilt/fmt:datetime">BUILT</td>

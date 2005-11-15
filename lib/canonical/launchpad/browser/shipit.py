@@ -301,7 +301,7 @@ Reason:
         """Return True if the given order should be automatically approved.
 
         Any order placed by a shipit admin is automatically approved.
-        Also, orders placed by normal users with a total of 80 CDs or less
+        Also, orders placed by normal users with a total of 50 CDs or less
         get approved automatically if the user doesn't have any order that
         was already shipped.
         """
@@ -312,7 +312,7 @@ Reason:
 
         # XXX: Ideally it should be possible to tweak this number through
         # a web interface. -- Guilherme Salgado 2005-09-27
-        if recipient.shippedShipItRequests() or order.totalCDs > 80:
+        if recipient.shippedShipItRequests() or order.totalCDs > 50:
             return False
         else:
             return True
@@ -546,6 +546,8 @@ Reason:
 
         Add an error message to self.addressFormMessages if it doesn't.
         """
+        if not value:
+            self.addressFormMessages.append(_('You must enter a phone number.'))
         if value and len(value) > 16:
             self.addressFormMessages.append(_(
                 "Your phone mumber must be less than 16 characters. Leave it "
@@ -684,6 +686,17 @@ class ShippingRequestAdminView:
         amd64approved = positiveIntOrZero(form.get('quantityamd64'))
         ppcapproved = positiveIntOrZero(form.get('quantityppc'))
         return [x86approved, amd64approved, ppcapproved]
+
+    def recipientHasOtherShippedRequests(self):
+        """Return True if the recipient has other requests that were already
+        sent to the shipping company."""
+        shipped_requests = self.context.recipient.shippedShipItRequests()
+        if not shipped_requests:
+            return False
+        elif len(shipped_requests) == 1 and shipped_requests[0] == self.context:
+            return False
+        else:
+            return True
 
     def processForm(self):
         user = getUtility(ILaunchBag).user

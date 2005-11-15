@@ -36,5 +36,3 @@ class IDistroReleaseBinaryPackage(Interface):
 
     current_publishings = Attribute("The BinaryPackagePublishing records "
         "for this binary package name in this distrorelease.")
-
-
