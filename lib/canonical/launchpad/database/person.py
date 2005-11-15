@@ -1664,6 +1664,10 @@ class TeamMembership(SQLBase):
     def is_admin(self):
         return self.status in [TeamMembershipStatus.ADMIN]
 
+    @property
+    def is_owner(self):
+        return self.person.id == self.team.teamowner.id
+
     def isExpired(self):
         return self.status == TeamMembershipStatus.EXPIRED
 
