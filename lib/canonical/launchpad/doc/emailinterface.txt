@@ -232,15 +232,14 @@ Now let's take a closer look at all the commands that are available for
 us to play with. First we define a function to easily submit commands
 to edit bug 4:
 
-    >>> def submit_commands(*commands):
+    >>> def submit_commands(bug, *commands):
     ...     edit_mail = ("From: test@canonical.com\n"
     ...                  "To: edit@malone-domain\n"
     ...                  "Date: Fri Jun 17 10:10:23 BST 2005\n"
     ...                  "Subject: Not important\n"
     ...                  "\n"
-    ...                  " bug 4\n"
-    ...                  " ")
-    ...     edit_mail += '\n '.join(commands)
+    ...                  " bug %d\n" % bug.id)
+    ...     edit_mail += ' ' + '\n '.join(commands)
     ...     process_email(edit_mail)
     ...     transaction.commit()
 
@@ -256,13 +255,13 @@ title "$title"
 Changes the title of the bug. The title has to be enclosed in
 quotes. Example:
 
-    >>> submit_commands('title "New title"')
+    >>> submit_commands(bug_four, 'title "New title"')
     >>> print bug_four.title
     New title
 
 Just a quick check that the whitespace will be preserved in the title:
 
-    >>> submit_commands('title "New             title"')
+    >>> submit_commands(bug_four, 'title "New             title"')
     >>> print bug_four.title #doctest: -NORMALIZE_WHITESPACE
     New             title
 
@@ -270,11 +269,11 @@ private yes|no
 ^^^^^^^^^^^^^^
 Changes the secrecy of the bug. Example:
 
-    >>> submit_commands('private yes')
+    >>> submit_commands(bug_four, 'private yes')
     >>> bug_four.private
     True
 
-    >>> submit_commands('private no')
+    >>> submit_commands(bug_four, 'private no')
     >>> bug_four.private
     False
 
@@ -291,15 +290,15 @@ be subscribed. Examples:
     [u'name12']
 
 
-    >>> submit_commands('subscribe')
+    >>> submit_commands(bug_four, 'subscribe')
     >>> 'Sample Person' in [subscription.person.displayname
     ...                     for subscription in bug_four.subscriptions]
     True
-    >>> submit_commands('subscribe foo.bar@canonical.com')
+    >>> submit_commands(bug_four, 'subscribe foo.bar@canonical.com')
     >>> 'Foo Bar' in [subscription.person.displayname
     ...               for subscription in bug_four.subscriptions]
     True
-    >>> submit_commands('subscribe sabdfl')
+    >>> submit_commands(bug_four, 'subscribe sabdfl')
     >>> 'Mark Shuttleworth' in [subscription.person.displayname
     ...                         for subscription in bug_four.subscriptions]
     True
@@ -310,15 +309,15 @@ Unsubscribes yourself or someone else from the bug.
 If you don't specify a name or email, the sender of the email will be
 unsubscribed. Examples:
 
-    >>> submit_commands('unsubscribe sabdfl')
+    >>> submit_commands(bug_four, 'unsubscribe sabdfl')
     >>> 'Mark Shuttleworth' in [subscription.person.displayname
     ...                         for subscription in bug_four.subscriptions]
     False
-    >>> submit_commands('unsubscribe foo.bar@canonical.com')
+    >>> submit_commands(bug_four, 'unsubscribe foo.bar@canonical.com')
     >>> 'Foo Bar' in [subscription.person.displayname
     ...               for subscription in bug_four.subscriptions]
     False
-    >>> submit_commands('unsubscribe')
+    >>> submit_commands(bug_four, 'unsubscribe')
     >>> 'Sample Person' in [subscription.person.displayname
     ...                     for subscription in bug_four.subscriptions]
     False
@@ -341,7 +340,7 @@ created:
     1
     >>> 'debian' in [bugtask.target.name for bugtask in bug_four.bugtasks]
     False
-    >>> submit_commands('affects /distros/debian')
+    >>> submit_commands(bug_four, 'affects /distros/debian')
     >>> len(bug_four.bugtasks)
     2
     >>> 'debian' in [bugtask.target.name for bugtask in bug_four.bugtasks]
@@ -350,14 +349,14 @@ created:
 Submitting the same thing again doesn't do anything, since the task
 already exists:
 
-    >>> submit_commands('affects /distros/debian')
+    >>> submit_commands(bug_four, 'affects /distros/debian')
     >>> len(bug_four.bugtasks)
     2
 
 We can change the assignee, status, and severity using the sub
 commands. It's possible to have these sub commands on separate lines:
 
-    >>> submit_commands('affects /distros/debian severity critical',
+    >>> submit_commands(bug_four, 'affects /distros/debian severity critical',
     ...                 'status accepted', 'assignee test@canonical.com')
 
     >>> len(bug_four.bugtasks)
@@ -372,7 +371,7 @@ commands. It's possible to have these sub commands on separate lines:
 
 To set which source package the bug affects, we use:
 
-    >>> submit_commands('affects /distros/debian/mozilla-firefox')
+    >>> submit_commands(bug_four, 'affects /distros/debian/mozilla-firefox')
     >>> len(bug_four.bugtasks)
     3
     >>> debian_task = bug_four.bugtasks[-1]
@@ -381,8 +380,11 @@ To set which source package the bug affects, we use:
 
 Let's take on the upstream task as well:
 
-    >>> submit_commands('affects /products/firefox severity critical',
-    ...                 'status accepted', 'assignee test@canonical.com')
+    >>> submit_commands(
+    ...     bug_four,
+    ...     'affects /products/firefox severity critical',
+    ...     'status accepted',
+    ...     'assignee test@canonical.com')
 
     >>> len(bug_four.bugtasks)
     3
