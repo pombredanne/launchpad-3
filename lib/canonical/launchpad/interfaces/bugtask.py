@@ -341,7 +341,7 @@ class BugTaskSearchParams:
                  assignee=None, sourcepackagename=None,
                  binarypackagename=None, owner=None,
                  statusexplanation=None, attachmenttype=None,
-                 orderby=None, omit_dupes=False):
+                 orderby=None, omit_dupes=False, subscriber=None):
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
@@ -357,6 +357,7 @@ class BugTaskSearchParams:
         self.user = user
         self.orderby = orderby
         self.omit_dupes = omit_dupes
+        self.subscriber = subscriber
 
         self._has_context = False
 
