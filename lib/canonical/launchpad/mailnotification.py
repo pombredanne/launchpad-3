@@ -8,7 +8,6 @@ import os.path
 import itertools
 import sets
 import textwrap
-from email.MIMEText import MIMEText
 
 from zope.security.proxy import isinstance as zope_isinstance
 
