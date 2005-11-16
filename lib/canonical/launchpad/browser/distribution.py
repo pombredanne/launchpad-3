@@ -16,6 +16,8 @@ from zope.app.form.browser.add import AddView
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
+from canonical.lp.z3batching import Batch
+from canonical.lp.batching import BatchNavigator
 
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPerson, IPublishedPackageSet,
@@ -223,6 +225,11 @@ class DistributionView(BuildRecordsView):
         self.searchrequested = False
         if self.text is not None and self.text != '':
             self.searchrequested = True
+
+        self.batch = Batch(list(self.searchresults()),
+                           int(request.get('batch_start', 0)))
+        self.batchnav = BatchNavigator(self.batch, request)
+
 
     def searchresults(self):
         """Try to find the source packages in this distribution that match

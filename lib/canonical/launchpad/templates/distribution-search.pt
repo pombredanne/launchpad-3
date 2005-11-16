@@ -19,25 +19,31 @@
         Show <span tal:replace="context/title" /> packages containing:
       </label>
     </div>
-    <input type="text"
-      name="text"
-      size="35"
+
+    <input type="text" name="text" size="35"
       tal:attributes="value request/text|nothing" />
 
     <input type="submit" value="Search"
         tal:condition="not: view/searchrequested" />
+
     <input type="submit" value="Search Again"
         tal:condition="view/searchrequested" />
   </form>
 
   <div tal:condition="view/searchrequested">
 
-    <ul class="sources" tal:condition="view/searchresults">
-      <li tal:repeat="dsp view/searchresults">
+    <h3>Found <span tal:replace="view/matches"/> results.</h3>
+
+    <div tal:condition="view/batchnav/prevBatchURL">
+       <a tal:attributes="href view/batchnav/prevBatchURL"><b><< Prev</b></a>
+    </div>
+
+    <ul class="sources" tal:condition="view/batch">
+      <li tal:repeat="dsp view/batch">
         <a tal:attributes="href dsp/fmt:url; 
                            title dsp/title"
            tal:content="dsp/title"/>
-        <ul>
+        <ul tal:condition="view/detailed">
         <li tal:repeat="pubrec dsp/publishing_history">  
 	  <a tal:content="pubrec/distrorelease/name" 
              tal:attributes="href pubrec/meta_sourcepackage/fmt:url;
@@ -54,7 +60,7 @@
             <tal:has_bin condition="meta_binaries">
                Binary Packages:
                <tal:binaries repeat="bin meta_binaries">
-                <a tal:content="string: ${bin/name}"
+                <a tal:content="bin/name"
                    tal:attributes="href bin/fmt:url; title bin/title"/>
               </tal:binaries>
             </tal:has_bin>
@@ -69,6 +75,10 @@
       </li>
     </ul>
 
+    <div tal:condition="view/batchnav/nextBatchURL">
+       <a tal:attributes="href view/batchnav/nextBatchURL"><b>Next >></b></a>
+    </div>
+     
     <tal:no_matches condition="not: view/searchresults">
 
       <img src="/++resource++alert" />
@@ -79,7 +89,7 @@
     </tal:no_matches>
 
   </div>
-
+  
 </div>
 
 </body>
