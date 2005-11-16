@@ -42,7 +42,8 @@
                         bugwatch dateassigned datecreated age owner
                         maintainer maintainer_displayname targetname
                         title related_tasks statusdisplayhtml statuselsewhere
-                        setStatusFromDebbugs setSeverityFromDebbugs" />
+                        setStatusFromDebbugs setSeverityFromDebbugs
+                        updateTargetNameCache" />
         <require
             permission="launchpad.Edit"
             set_attributes="product sourcepackagename distribution
@@ -201,9 +202,6 @@
         template="../templates/bug-mark-as-duplicate.pt"
         fields="duplicateof"
         lp:url="malone/bugs/$Bug.id/+duplicate">
-        <browser:widget
-            field="duplicateof"
-            class="canonical.widgets.bug.BugWidget" />
     </browser:editform>
 
     <!-- NullBugTask -->
@@ -449,21 +447,27 @@
       permission="launchpad.AnyPerson"
       template="../templates/bug-subscription.pt" />
 
-    <browser:page
+    <browser:generalform
       name="+linkcve"
       for="canonical.launchpad.interfaces.IBugTask"
+      schema="canonical.launchpad.interfaces.ICve"
       class="canonical.launchpad.browser.CveLinkView"
+      fields="sequence"
+      arguments="sequence"
       permission="launchpad.AnyPerson"
       template="../templates/bug-cve.pt">
-    </browser:page>
+    </browser:generalform>
 
-    <browser:page
+    <browser:generalform
       name="+unlinkcve"
       for="canonical.launchpad.interfaces.IBugTask"
+      schema="canonical.launchpad.interfaces.ICve"
       class="canonical.launchpad.browser.CveUnlinkView"
+      fields="sequence"
+      arguments="sequence"
       permission="launchpad.AnyPerson"
       template="../templates/bug-removecve.pt">
-    </browser:page>
+    </browser:generalform>
 
     <browser:addform
       name="+addsubscriber"
@@ -496,35 +500,6 @@
     <content class="canonical.launchpad.components.bugtask.BugTaskDelta">
         <allow interface="canonical.launchpad.interfaces.IBugTaskDelta" />
     </content>
-
-    <!-- BugTasksReport -->
-    <!-- TODO: figure out why we need to give explicit attributes instead of
-               using set_schema-->
-    <content class="canonical.launchpad.database.BugTasksReport">
-        <allow interface="canonical.launchpad.interfaces.IBugTasksReport" />
-        <require
-            permission="zope.Public"
-            set_attributes="user minseverity minpriority showclosed" />
-    </content>
-
-    <securedutility
-        class="canonical.launchpad.database.BugTasksReport"
-        provides="canonical.launchpad.interfaces.IBugTasksReport">
-        <allow interface="canonical.launchpad.interfaces.IBugTasksReport" />
-    </securedutility>
-
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IBugTasksReport"
-        name="+index" />
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IBugTasksReport"
-        class="canonical.launchpad.browser.BugTasksReportView"
-        permission="launchpad.AnyPerson">
-        <browser:page name="+index"
-              template="../templates/bugs-assigned.pt"
-              lp:url="malone/assigned/" />
-    </browser:pages>
 
   </facet>
 

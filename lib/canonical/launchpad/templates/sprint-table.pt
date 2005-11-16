@@ -20,31 +20,53 @@
     No specifications to display.
   </p>
 
-  <table class="listing" tal:condition="view/specs">
+  <table class="listing sortable" tal:condition="view/specs" id="work">
     <thead>
       <tr>
+        <th>Prio.</th>
+        <th>Stat.</th>
         <th>Name</th>
-        <th>Assignee</th>
-        <th>Drafter</th>
-        <th>Approver</th>
+        <th>Assign</th>
+        <th>Draft</th>
+        <th>Approve</th>
       </tr>
     </thead>
     <tbody>
-      <tr tal:repeat="spec view/specs">
-        <td><a tal:content="spec/name/fmt:shorten/20"
-               tal:attributes="href spec/fmt:url">foo-bar-baz</a></td>
+      <tr tal:repeat="spec view/specs" class="lesser">
+        <td>
+          <span style="display: none" tal:content="spec/priority/value" />
+          <span tal:content="spec/priority/title"
+                tal:attributes="
+                class string:specpriority${spec/priority/name}">High</span>
+        </td>
+        <td>
+          <span style="display: none" tal:content="spec/status/value" />
+          <span tal:content="spec/status/title"
+                tal:attributes="
+                class string:specstatus${spec/status/name}">Approved</span>
+        </td>
+        <td><a tal:content="spec/name/fmt:shorten/35"
+               tal:attributes="
+                 href spec/fmt:url;
+                 title spec/title">foo-bar-baz</a></td>
         <td><a tal:condition="spec/assignee"
-               tal:content="spec/assignee/browsername"
+               tal:content="spec/assignee/name"
                tal:attributes="href spec/assignee/fmt:url">Assignee Bar</a></td>
         <td><a tal:condition="spec/drafter"
-               tal:content="spec/drafter/browsername"
+               tal:content="spec/drafter/name"
                tal:attributes="href spec/drafter/fmt:url">Drafter Baz</a></td>
         <td><a tal:condition="spec/approver"
-               tal:content="spec/approver/browsername"
+               tal:content="spec/approver/name"
                tal:attributes="href spec/approver/fmt:url">Approver Foo</a></td>
       </tr>
     </tbody>
   </table>
+
+  <p class="discreet">
+    This table is sorted by priority, highest first, by default. Click a
+    column heading to sort by that column. Point your mouse at a
+    specification name to see the title.
+  </p>
 
 </div>
 </body>

@@ -22,11 +22,12 @@ from zope.component import getUtility
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, structured, Navigation)
 from canonical.launchpad.interfaces import (
-    IBug, ILaunchBag, IBugSet, IBugLinkTarget, IBugCve,
+    IBug, ILaunchBag, IBugSet, IBugLinkTarget,
     IDistroBugTask, IDistroReleaseBugTask, NotFoundError)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.form import FormView
+from canonical.launchpad.webapp import GeneralFormView
+from canonical.launchpad.helpers import check_permission
 
 
 class BugSetNavigation(Navigation):
@@ -46,8 +47,8 @@ class BugSetNavigation(Navigation):
 class BugContextMenu(ContextMenu):
     usedfor = IBug
     links = ['editdescription', 'secrecy', 'markduplicate', 'subscription',
-             'addsubscriber', 'addattachment', 'linktocve', 'addwatch',
-             'filebug', 'activitylog', 'targetfix']
+             'addsubscriber', 'addattachment', 'linktocve', 'unlinkcve',
+             'addwatch', 'filebug', 'activitylog', 'targetfix']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -133,6 +134,14 @@ class BugView:
         'current' is determined by simply looking in the ILaunchBag utility.
         """
         return getUtility(ILaunchBag).bugtask
+
+    def taskLink(self, bugtask):
+        """Return the proper link to the bugtask whether it's editable"""
+        user = getUtility(ILaunchBag).user
+        if check_permission('launchpad.Edit', user):
+            return canonical_url(bugtask) + "/+editstatus"
+        else:
+            return canonical_url(bugtask) + "/+viewstatus"
 
     def getFixRequestRowCSSClassForBugTask(self, bugtask):
         """Return the fix request row CSS class for the bugtask.
@@ -265,42 +274,36 @@ class BugRelatedObjectEditView(SQLObjectEditView):
         self.request.response.redirect(canonical_url(bugtask))
 
 
-class BugLinkView(FormView):
+class BugLinkView(GeneralFormView):
     """This view will be used for objects that support IBugLinkTarget, and
     so can be linked and unlinked from bugs.
     """
 
-    schema = IBugCve
-    fieldNames = ['bug']
-    _arguments = ['bug']
-
     def process(self, bug):
         # we are not creating, but we need to find the bug from the bug num
-        malone_bug = getUtility(IBugSet).get(bug)
+        try:
+            malone_bug = getUtility(IBugSet).get(bug)
+        except NotFoundError:
+            return 'No malone bug #%s' % str(bug)
         user = getUtility(ILaunchBag).user
         assert IBugLinkTarget.providedBy(self.context)
+        self._nextURL = canonical_url(self.context)
         return self.context.linkBug(malone_bug, user)
 
-    def nextURL(self):
-        return canonical_url(self.context)
 
-
-class BugUnlinkView(FormView):
+class BugUnlinkView(GeneralFormView):
     """This view will be used for objects that support IBugLinkTarget, and
     thus can be unlinked from bugs.
     """
 
-    schema = IBugCve
-    fieldNames = ['bug']
-    _arguments = ['bug']
-
     def process(self, bug):
-        malone_bug = getUtility(IBugSet).get(bug)
+        try:
+            malone_bug = getUtility(IBugSet).get(bug)
+        except NotFoundError:
+            return 'No malone bug #%s' % str(bug)
         user = getUtility(ILaunchBag).user
+        self._nextURL = canonical_url(self.context)
         return self.context.unlinkBug(malone_bug, user)
-
-    def nextURL(self):
-        return canonical_url(self.context)
 
 
 class DeprecatedAssignedBugsView:

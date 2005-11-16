@@ -15,13 +15,13 @@
 
 <metal:rightportlets fill-slot="portlets_two">
     <div tal:replace="structure context/@@+portlet-search" />
-    <div tal:replace="structure context/target/@@+portlet-latestbugs" />
     <div tal:condition="context/bug/specifications"
          tal:replace="structure context/@@+portlet-specs" />
     <div tal:replace="structure context/@@+portlet-attachments" />
     <div tal:replace="structure context/@@+portlet-cve" />
     <div tal:replace="structure context/@@+portlet-reference" />
     <div tal:replace="structure context/@@+portlet-watch" />
+    <div tal:replace="structure context/target/@@+portlet-latestbugs" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -74,8 +74,7 @@
   <div tal:replace="structure context/@@+headline-tasks" />
 
     <tal:description
-      content="structure context/bug/description/fmt:text-to-html"
-    >
+      content="structure context/bug/description/fmt:text-to-html">
       $Bug.description
     </tal:description>
 
@@ -91,19 +90,19 @@
           $Person.browsername</a>
         at <span tal:replace="message/datecreated/fmt:datetime">Thursday
         13:21</span>
-        <tal:block condition="message/bugattachments">
-        - with attachments:
-          <tal:block repeat="attachment message/bugattachments">
-            <a tal:attributes="href attachment/libraryfile/url"
-               tal:content="attachment/libraryfile/filename">foo.txt</a>
-          </tal:block>
-        </tal:block>
       </div>
 
       <div class="boardCommentBody">
+        <ul tal:condition="message/bugattachments">
+          <li tal:repeat="attachment message/bugattachments"
+              class="download">
+            <a tal:attributes="href attachment/libraryfile/url"
+               tal:content="attachment/title">foo.txt</a>
+          </li>
+        </ul>
+
         <tal:comment
-          content="structure message/contents/fmt:text-to-html"
-        >
+          content="structure message/contents/fmt:text-to-html">
           Comment text.
         </tal:comment>
       </div>

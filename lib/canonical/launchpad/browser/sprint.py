@@ -15,8 +15,7 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (
-    IProduct, IDistribution, ILaunchBag, ISprint, ISprintSet)
+from canonical.launchpad.interfaces import ILaunchBag, ISprint, ISprintSet
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
@@ -32,19 +31,23 @@ class SprintFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an ISprint."""
 
     usedfor = ISprint
-    enable_only = ['overview',]
+    enable_only = ['overview']
 
 
 class SprintContextMenu(ContextMenu):
 
     usedfor = ISprint
-    links = ['attendance', 'workload',
-             'approved', 'all', 'declined', 'submitted',
-             'table', 'edit']
+    links = ['attendance', 'registration',
+             'all', 'confirmed', 'deferred', 'submitted',
+             'workload', 'table', 'edit']
 
     def attendance(self):
-        text = 'Register Attendance'
+        text = 'Register Yourself'
         return Link('+attend', text, icon='add')
+
+    def registration(self):
+        text = 'Register Someone'
+        return Link('+register', text, icon='add')
 
     def workload(self):
         text = 'Show Workload'
@@ -58,20 +61,20 @@ class SprintContextMenu(ContextMenu):
         text = 'Edit Details'
         return Link('+edit', text, icon='edit')
 
-    def approved(self):
-        text = 'Approved specs'
+    def confirmed(self):
+        text = 'Show Confirmed'
         return Link('.', text, icon='info')
 
     def all(self):
-        text = 'All specs'
+        text = 'Show All'
         return Link('./?show=all', text, icon='info')
 
-    def declined(self):
-        text = 'Declined specs'
-        return Link('./?show=declined', text, icon='info')
+    def deferred(self):
+        text = 'Show Deferred'
+        return Link('./?show=deferred', text, icon='info')
 
     def submitted(self):
-        text = 'Submitted specs'
+        text = 'Show New'
         return Link('./?show=submitted', text, icon='info')
 
 
@@ -98,7 +101,7 @@ class SprintView:
         self.context = context
         self.request = request
         self._sprint_spec_links = None
-        self._workload = None
+        self._count = None
         self.show = request.form.get('show', None)
         self.listing_detailed = True
         self.listing_compact = False
@@ -122,74 +125,35 @@ class SprintView:
         if self._sprint_spec_links is not None:
             return self._sprint_spec_links
         if self.show is None:
-            self._sprint_spec_links = self.context.specificationLinks(
-                status=SprintSpecificationStatus.APPROVED)
+            spec_links = self.context.specificationLinks(
+                status=SprintSpecificationStatus.CONFIRMED)
         elif self.show == 'all':
-            self._sprint_spec_links = self.context.specificationLinks()
-        elif self.show == 'declined':
-            self._sprint_spec_links = self.context.specificationLinks(
-                status=SprintSpecificationStatus.DECLINED)
+            spec_links = self.context.specificationLinks()
+        elif self.show == 'deferred':
+            spec_links = self.context.specificationLinks(
+                status=SprintSpecificationStatus.DEFERRED)
         elif self.show == 'submitted':
-            self._sprint_spec_links = self.context.specificationLinks(
+            spec_links = self.context.specificationLinks(
                 status=SprintSpecificationStatus.SUBMITTED)
-        if len(self._sprint_spec_links) > 5:
+        self._sprint_spec_links = [
+            link for link in spec_links if link.specification.is_incomplete]
+        self._count = len(self._sprint_spec_links)
+        if self._count > 5:
             self.listing_detailed = False
             self.listing_compact = True
         return self._sprint_spec_links
 
     @property
+    def count(self):
+        if self._count is None:
+            # creating list of spec links will set self._count as a
+            # sideeffect
+            spec_links = self.spec_links()
+        return self._count
+
+    @property
     def specs(self):
         return [sl.specification for sl in self.spec_links()]
-
-    def workload(self):
-        """Return a structure that lists people, and for each person, the
-        specs at this conference that for which they are the approver, the
-        assignee or the drafter."""
-
-        if self._workload is not None:
-            return self._workload
-
-        class Group:
-            def __init__(self, person):
-                self.person = person
-                self.approver = []
-                self.drafter = []
-                self.assignee = []
-
-        class Report:
-            def __init__(self):
-                self.contents = {}
-
-            def _getGroup(self, person):
-                group = self.contents.get(person.name, None)
-                if group is not None:
-                    return group
-                group = Group(person)
-                self.contents[person.name] = group
-                return group
-
-            def process(self, spec):
-                """Make sure that this Report.contents has a Group for each
-                person related to the spec, and that Group has the spec in
-                the relevant list.
-                """
-                if spec.assignee is not None:
-                    self._getGroup(spec.assignee).assignee.append(spec)
-                if spec.drafter is not None:
-                    self._getGroup(spec.drafter).drafter.append(spec)
-                if spec.approver is not None:
-                    self._getGroup(spec.approver).approver.append(spec)
-
-            def results(self):
-                return [self.contents[key]
-                    for key in sorted(self.contents.keys())]
-
-        report = Report()
-        for spec_link in self.spec_links():
-            report.process(spec_link.specification)
-
-        self._workload = report.results()
-        return self._workload
 
 
 class SprintAddView(SQLObjectAddView):

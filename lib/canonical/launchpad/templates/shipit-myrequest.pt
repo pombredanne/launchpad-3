@@ -41,7 +41,7 @@
 
       <tal:block condition="view/hasErrorMessages">
         <br />
-        <p class="portalErrorMessage">There were errors in your request.</p>
+        <p class="portalError">There were errors in your request.</p>
       </tal:block>
 
     <tal:block condition="view/shouldShowOrderDetails">
@@ -53,12 +53,14 @@
         <ul>
           <li tal:repeat="pastorder view/user/pastShipItRequests">
             <span tal:replace="pastorder/daterequested/fmt:date" />:
-            <span tal:replace="pastorder/totalCDs" /> CDs 
+            <span tal:replace="pastorder/totalCDs" /> CDs requested
             <span tal:condition="pastorder/cancelled">(cancelled)</span>
             <tal:block tal:condition="not: pastorder/cancelled">
-              <span tal:condition="pastorder/shipment">(sent to shipping
-                company)</span>
-              <span tal:condition="pastorder/isDenied">(denied)</span>
+              <tal:shipped condition="pastorder/shipment">
+                , <span tal:replace="pastorder/totalapprovedCDs" />
+                CDs approved and sent to shipping company.
+                <span tal:condition="pastorder/isDenied">(denied)</span>
+              </tal:shipped>
             </tal:block>
           </li>
         </ul>
@@ -191,6 +193,12 @@
                   </option>
                 </tal:block>
               </select>
+              <div tal:condition="view/userMustProvideReasonForStandardOrder">
+                <strong>Reason for new request, in English:</strong>
+                <span class="formHelp">(required)</span>
+                <textarea name="reasonforstandardrequest" rows="4"
+                          tal:content="view/reason|nothing" />
+              </div>
             </div>
                       
           </td>
@@ -349,6 +357,7 @@
             <input 
               tal:attributes="value view/phone|order/phone|nothing"
               type="text" name="phone" size="16" maxlength="16" />
+            <span class="formHelp">(required)</span>
           </td>
         </tr>
       </table>

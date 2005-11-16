@@ -13,7 +13,7 @@ Viewing critical bugs as Sample Person:
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... """)
   HTTP/1.1 200 Ok
-  ...0 results...
+  ...No matching results...
 
 Viewing bugs "assigned to me", as Sample Person:
 

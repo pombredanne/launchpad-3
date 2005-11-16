@@ -30,10 +30,12 @@ methods some other objects to create a task, so lets get the utilities we need
 to access those other objects:
 
     >>> from canonical.launchpad.interfaces import (IBugSet, IPersonSet,
-    ...     IProductSet, IDistributionSet, IDistroReleaseSet)
+    ...     IProductSet, IDistributionSet, IDistroReleaseSet,
+    ...     ISourcePackageNameSet)
     >>> productset = getUtility(IProductSet)
     >>> distroset = getUtility(IDistributionSet)
     >>> distoreleaseset = getUtility(IDistroReleaseSet)
+    >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
     >>> bugset = getUtility(IBugSet)
     >>> personset = getUtility(IPersonSet)
     >>> bug_one = bugset.get(1)
@@ -190,10 +192,11 @@ the name of the source package (if any); and the name of the binary
 package (but only if it's named differently from the source
 package).
 
-Let's thoroughly test BugTask.targetname.  We'll set up a dummy bugtask
-class into which we put a copy of the targetname method, so we can test
-it in isolation.
+Let's thoroughly test BugTask._calculate_targetname.  We'll set up a dummy
+bugtask class into which we put a copy of the targetname method, so we can
+test it in isolation.
 
+    >>> from canonical.launchpad.components.bugtask import NullBugTask
     >>> from canonical.launchpad.database import BugTask
     >>> class DummyBugTask:
     ...     distribution = None
@@ -204,7 +207,7 @@ it in isolation.
     ...
     ...     # This next line is a hack to take a copy of the method and
     ...     # add it to this class.
-    ...     targetname = BugTask.targetname.fget
+    ...     _calculate_targetname = NullBugTask._calculate_targetname.im_func
     >>> class NamedThing:
     ...     def __init__(self, name):
     ...         self.name = '[%s.name]' % name
@@ -215,7 +218,7 @@ When all the important attributes are None, then the bugtask is in an invalid
 state.
 
     >>> bugtask = DummyBugTask()
-    >>> bugtask.targetname()
+    >>> bugtask._calculate_targetname()
     Traceback (most recent call last):
     ...
     AssertionError: ...
@@ -223,7 +226,7 @@ state.
 Product alone:
 
     >>> bugtask.product = NamedThing('product')
-    >>> bugtask.targetname()
+    >>> bugtask._calculate_targetname()
     '[product.name] (upstream)'
 
 Put things back the way they were.
@@ -233,19 +236,19 @@ Put things back the way they were.
 Distribution alone.
 
     >>> bugtask.distribution = NamedThing('distribution')
-    >>> bugtask.targetname()
+    >>> bugtask._calculate_targetname()
     '[distribution.displayname]'
 
 Distribution and sourcepackagename.
 
     >>> bugtask.sourcepackagename = NamedThing('spn')
-    >>> bugtask.targetname()
+    >>> bugtask._calculate_targetname()
     '[spn.name] ([distribution.displayname])'
 
 Distribution and sourcepackagename and binarypackagename.
 
     >>> bugtask.binarypackagename = NamedThing('bpn')
-    >>> bugtask.targetname()
+    >>> bugtask._calculate_targetname()
     '[spn.name] [bpn.name] ([distribution.displayname])'
 
 Reset the state of our bugtask.
@@ -258,19 +261,19 @@ Just a distrorelease.
 
     >>> bugtask.distrorelease = NamedThing('distrorelease')
     >>> bugtask.distrorelease.distribution = NamedThing('distribution')
-    >>> bugtask.targetname()
+    >>> bugtask._calculate_targetname()
     '[distrorelease.fullreleasename]'
 
 Distrorelease and sourcepackagename.
 
     >>> bugtask.sourcepackagename = NamedThing('spn')
-    >>> bugtask.targetname()
+    >>> bugtask._calculate_targetname()
     '[spn.name] ([distrorelease.fullreleasename])'
 
 Distrorelease, sourcepackagename and binarypackagename.
 
     >>> bugtask.binarypackagename = NamedThing('bpn')
-    >>> bugtask.targetname()
+    >>> bugtask._calculate_targetname()
     '[spn.name] [bpn.name] ([distrorelease.fullreleasename])'
 
 Note that we haven't tested any combinations that shouldn't occur, except
@@ -311,6 +314,28 @@ For a distribution:
     >>> bugtasks[0].id
     5
 
+For a person:
+
+    >>> from canonical.database.sqlbase import (
+    ...     flush_database_updates, flush_database_caches)
+    >>> foobar = personset.get(16)
+    >>> evolution_sourcepackage = sourcepackagenameset.queryByName('evolution')
+    >>> ubuntu_evolution_task = bugtaskset.createTask(
+    ...     bug=bug_one, distribution=ubuntu, owner=foobar,
+    ...     status=STATUS_NEW, priority=PRIORITY_MEDIUM,
+    ...     severity=SEVERITY_NORMAL, sourcepackagename=evolution_sourcepackage)
+    >>> flush_database_updates()
+    >>> params = BugTaskSearchParams(owner=foobar, user=None,
+    ...                              orderby='targetname')
+    >>> [bugtask.targetname for bugtask in foobar.searchTasks(params)]
+    [u'evolution (ubuntu)', u'evolution (upstream)', u'mozilla-firefox (debian)', u'mozilla-firefox (ubuntu)']
+
+It's also possible to search bugs that a person is subscribed to:
+    
+    >>> params = BugTaskSearchParams(user=None, subscriber=foobar)
+    >>> [bugtask.bug.id for bugtask in foobar.searchTasks(params)]
+    [7]
+
 To provide null-matching search criteria, use canonical.launchpad.searchbuilder.NULL:
 
     >>> from canonical.launchpad.searchbuilder import NULL
@@ -334,7 +359,7 @@ It's also possible to iterate over all the bug tasks:
 
     >>> bugtasks = [bugtask for bugtasks in bugtaskset]
     >>> len(bugtasks)
-    18
+    20
 
 Bug Task Maintainers
 --------------------
@@ -425,8 +450,6 @@ Sometimes we need to be able to render a page for a bug in a context,
 when the bug hasn't actually been filed yet in that context. For cases
 like these, use the NullBugTask object.
 
-    >>> from canonical.launchpad.components.bugtask import NullBugTask
-
     >>> netapplet = productset.get(11)
     >>> null_bugtask = NullBugTask(bug=bug_one, product=netapplet)
     >>> IUpstreamBugTask.providedBy(null_bugtask)
@@ -488,7 +511,7 @@ like these, use the NullBugTask object.
     >>> null_bugtask.statusdisplayhtml
     u'Not reported in netapplet (upstream)'
     >>> null_bugtask.statuselsewhere
-    'fixed in 2 of 7 places'
+    'fixed in 2 of 8 places'
 
 The astute reader will have noticed that NullBugTask automatically
 "marked" itself as providing the correct IBugTask interface. Let's see
@@ -716,6 +739,7 @@ Let's just make sure that the tasks on bug_one sort correctly.
     firefox (upstream)
     ubuntu (upstream)
     ubuntu
+    evolution (ubuntu)
     mozilla-firefox (ubuntu)
     Ubuntu Hoary
     mozilla-firefox (debian)
@@ -731,6 +755,56 @@ An IBugTask can be adapted to an IBug.
    >>> bug = IBug(bugtask_four)
    >>> bug.title
    u'Firefox does not support SVG'
+
+The targetnamecache attribute of BugTask
+----------------------------------------
+
+The BugTask table has this targetnamecache attribute which stores a computed
+value to allow us to sort and search on that value without having to do lots
+of SQL joins. This cached value gets updated daily by the
+update-bugtask-targetnamecaches cronscript and whenever the bugtask is changed.
+Of course, it's also computed and set when a bugtask is created.
+
+    >>> upstream_task = bugtaskset.createTask(
+    ...     bug=bug_one, product=netapplet, owner=sabdfl,
+    ...     status=STATUS_NEW, priority=PRIORITY_MEDIUM,
+    ...     severity=SEVERITY_NORMAL)
+    >>> upstream_task.targetname
+    u'netapplet (upstream)'
+
+    >>> thunderbird = productset.get(8)
+    >>> upstream_task_id = upstream_task.id
+    >>> upstream_task.product = thunderbird
+    >>> upstream_task.targetname
+    u'thunderbird (upstream)'
+
+    >>> thunderbird.name = 'thunderbird-ng'
+
+    # XXX: This flush_database_updates() shouldn't be needed because we
+    # already have the transaction.commit() here, but without it
+    # (flush_database_updates), the cronscript won't see the thunderbird name
+    # change. See https://launchpad.net/products/launchpad/+bug/3989 for more
+    # information.
+    >>> flush_database_updates()
+    >>> transaction.commit()
+
+    >>> import subprocess
+    >>> process = subprocess.Popen(
+    ...     'cronscripts/update-bugtask-targetnamecaches.py -q', shell=True,
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    >>> (out, err) = process.communicate()
+    >>> out, err
+    ('', '')
+    >>> process.returncode
+    0
+
+    # XXX: If we don't call flush_database_caches() here, we won't see the
+    # changes made by the cronscript in objects we already have cached.
+    >>> flush_database_caches()
+    >>> transaction.commit()
+
+    >>> bugtaskset.get(upstream_task_id).targetname
+    u'thunderbird-ng (upstream)'
 
 Handling IntegrityError and ProgrammingError
 --------------------------------------------
@@ -758,6 +832,4 @@ ProgrammingError
     ERROR:  new row for relation "bugtask" violates check constraint "bugtask_assignment_checks"
     <BLANKLINE>
     INSERT INTO BugTask ...
-
-
 

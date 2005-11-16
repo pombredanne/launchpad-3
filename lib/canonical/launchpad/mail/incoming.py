@@ -71,18 +71,18 @@ def authenticateEmail(mail):
 def handleMail(trans=transaction):
     # First we define an error handler. We define it as a local
     # function, to avoid having to pass a lot of parameters.
-    def _handle_error(error_msg, file_alias):
+    def _handle_error(error_msg, file_alias_url):
         """Handles error occuring in handleMail's for-loop.
 
         It does the following:
 
             * deletes the current mail from the mailbox
-            * sends error_msg and file_alias to the errors list
+            * sends error_msg and file_alias_url to the errors list
             * commits the current transaction to ensure that the
               message gets sent.
         """
         mailbox.delete(mail_id)
-        notify_errors_list(error_msg, file_alias)
+        notify_errors_list(error_msg, file_alias_url)
         trans.commit()
 
     mailbox = getUtility(IMailBox)
@@ -102,6 +102,10 @@ def handleMail(trans=transaction):
         file_alias = getUtility(ILibraryFileAliasSet).create(
                 file_name, len(raw_mail),
                 cStringIO(raw_mail), 'message/rfc822')
+        # Let's save the url of the file alias, otherwise we might not
+        # be able to access it later if we get a DB exception.
+        file_alias_url = file_alias.url
+
         # If something goes wrong when handling the mail, the
         # transaction will be aborted. Therefore we need to commit the
         # transaction now, to ensure that the mail gets stored in the
@@ -112,7 +116,7 @@ def handleMail(trans=transaction):
         # If the Return-Path header is '<>', it probably means that it's
         # a bounce from a message we sent.
         if mail['Return-Path'] == '<>':
-            _handle_error("Message had an empty Return-Path.", file_alias)
+            _handle_error("Message had an empty Return-Path.", file_alias_url)
             continue
 
         try:
@@ -121,11 +125,11 @@ def handleMail(trans=transaction):
             _handle_error(
                 "Invalid signature for %s:\n    %s" % (mail['From'],
                                                        str(error)),
-                file_alias)
+                file_alias_url)
             continue
 
         if principal is None:
-            _handle_error('Unknown user: %s ' % mail['From'], file_alias) 
+            _handle_error('Unknown user: %s ' % mail['From'], file_alias_url)
             continue
 
         # Extract the domain the mail was sent to. Mails sent to
@@ -136,7 +140,7 @@ def handleMail(trans=transaction):
             log = getLogger('canonical.launchpad.mail')
             log.warn(
                 "No X-Original-To header was present in email: %s" %
-                 file_alias.url)
+                 file_alias_url)
             # Process all addresses found as a fall back.
             cc = mail.get_all('cc') or []
             to = mail.get_all('to') or []
@@ -153,18 +157,22 @@ def handleMail(trans=transaction):
         if handler is None:
             _handle_error(
                 "No handler registered for '%s' " % (', '.join(addresses)),
-                file_alias)
+                file_alias_url)
             continue
 
         try:
             handled = handler.process(mail, email_addr, file_alias)
-        except Exception, error:
+        except:
             # The handler shouldn't raise any exceptions. If it
-            # does, it's a programming error.
-            _handle_error(
-                "An exception was raised inside the handler: %s: %s " % (
-                    error.__class__.__name__, str(error)),
-                file_alias) 
+            # does, it's a programming error. We log the error instead
+            # of sending an email in order to keep it as simple as
+            # possible, we don't want any new exceptions raised here.
+            mailbox.delete(mail_id)
+            log = getLogger('canonical.launchpad.mail')
+            log.error(
+                "An exception was raised inside the handler: %s" % (
+                    file_alias_url),
+                exc_info=True)
             continue
 
 
@@ -172,7 +180,7 @@ def handleMail(trans=transaction):
             _handle_error(
                 "Handler found, but message was not handled: %s" % (
                     mail['From'], ),
-                file_alias) 
+                file_alias_url) 
             continue
 
         # Let's commit the transaction before we delete the mail, since

@@ -1,0 +1,62 @@
+Package Meta Classes
+^^^^^^^^^^^^^^^^^^^^
+
+There are a bunch of meta classes used for combine information from
+our Database Model for packages in a intuitive manner, they are:
+
+ >>> from canonical.launchpad.database import (
+ ...     Distribution, DistroRelease, 
+ ...     SourcePackageRelease, SourcePackageName,
+ ...     DistributionSourcePackage,
+ ...     DistributionSourcePackageRelease,
+ ...     DistroReleaseSourcePackageRelease)
+
+ >>> from canonical.launchpad.interfaces import (
+ ...     IDistributionSourcePackage,
+ ...     IDistributionSourcePackageRelease,
+ ...     IDistroReleaseSourcePackageRelease)
+
+
+We can combine information of a Distribution and a SourcePackagenName:
+
+ >>> distribution = Distribution.get(1)
+ >>> distribution.name
+ u'ubuntu'
+
+ >>> src_name = SourcePackageName.selectOneBy(name='pmount')
+
+ >>> dsp = DistributionSourcePackage(distribution, src_name)
+ >>> IDistributionSourcePackage.providedBy(dsp)
+ True
+ 
+ >>> dsp.displayname
+ u'pmount in ubuntu'
+
+
+Combining Distribution and SourcePackageRelease:
+                                                                
+ >>> sourcepackagerelease = SourcePackageRelease.selectOneBy(
+ ...     sourcepackagenameID=src_name.id, version='0.1-1')
+ >>> sourcepackagerelease.name
+ u'pmount'
+
+ >>> dspr = DistributionSourcePackageRelease(distribution, 
+ ...                                         sourcepackagerelease)
+ >>> IDistributionSourcePackageRelease.providedBy(dspr)
+ True
+
+ >>> dspr.displayname, dspr.version
+ (u'pmount in ubuntu', u'0.1-1')
+
+
+Combining DistroRelease and SourcePackageRelease:
+
+ >>> distrorelease = DistroRelease.selectOneBy(name='hoary')
+
+ >>> drspr = DistroReleaseSourcePackageRelease(distrorelease, 
+ ...                                           sourcepackagerelease) 
+ >>> IDistroReleaseSourcePackageRelease.providedBy(drspr)
+ True
+
+ >>> drspr.displayname
+ u'pmount 0.1-1'

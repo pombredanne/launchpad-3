@@ -110,7 +110,7 @@ class IPerson(IHasSpecifications):
             )
     karma = Int(
             title=_('Karma'), readonly=False,
-            description=_('The cached karma for this person.')
+            description=_('The cached total karma for this person.')
             )
     homepage_content = Text(title=_("Homepage Content"), required=False,
         description=_("The content of your home page. Edit this and it "
@@ -119,7 +119,7 @@ class IPerson(IHasSpecifications):
     emblem = Bytes(
         title=_("Emblem"), required=False, description=_("A small image, "
         "max 16x16 pixels and 8k in file size, that can be used to refer "
-        "to this team of person."),
+        "to this team."),
         constraint=valid_emblem)
     hackergotchi = Bytes(
         title=_("Hackergotchi"), required=False, description=_("An image, "
@@ -185,6 +185,8 @@ class IPerson(IHasSpecifications):
             vocabulary='TimezoneName')
 
     # Properties of the Person object.
+    karma_category_caches = Attribute('The caches of karma scores, by '
+        'karma category.')
     ubuntite = Attribute("Ubuntite Flag")
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
@@ -242,8 +244,8 @@ class IPerson(IHasSpecifications):
         "this person, sorted newest first.")
     created_specs = Attribute("Specifications that were created by "
         "this person, sorted newest first.")
-    review_specs = Attribute("Specifications which this person "
-        "has been asked to review, sorted newest first.")
+    feedback_specs = Attribute("Specifications on which this person "
+        "has been asked to provide feedback, sorted newest first.")
     subscribed_specs = Attribute("Specifications to which this person "
         "has subscribed, sorted newest first.")
     tickets = Attribute("Any support requests related to this person. "
@@ -338,6 +340,10 @@ class IPerson(IHasSpecifications):
         KarmaCache table for this person.
         """
 
+    def latestKarma(quantity=25):
+        """Return the latest karma actions for this person, up to the number
+        given as quantity."""
+
     def inTeam(team):
         """Return True if this person is a member or the owner of <team>.
 
@@ -354,10 +360,23 @@ class IPerson(IHasSpecifications):
         changed.
         """
 
+    def shippedShipItRequests():
+        """Return all requests placed by this person that were sent to the
+        shipping company already.
+        """
+
     def currentShipItRequest():
         """Return this person's unshipped ShipIt request, if there's one.
         
         Return None otherwise.
+        """
+
+    def searchTasks(search_params):
+        """Search IBugTasks with the given search parameters.
+
+        :search_params: a BugTaskSearchParams object
+
+        Return an iterable of matching results.
         """
 
     def validateAndEnsurePreferredEmail(email):
@@ -712,6 +731,7 @@ class ITeamMembership(Interface):
     # Properties
     statusname = Attribute("Status Name")
     is_admin = Attribute("True if the person is an admin of the team.")
+    is_owner = Attribute("True if the person is the team owner.")
 
     def isExpired():
         """Return True if this membership's status is EXPIRED."""

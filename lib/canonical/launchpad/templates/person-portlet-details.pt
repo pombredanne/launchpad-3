@@ -27,7 +27,7 @@
       <span tal:replace="context/timezone">UTC</span>
       <i tal:condition="not: context/timezone">None given</i><br />
 
-      <b>Ubuntite:</b>
+      <b>Ubuntero:</b>
       <tal:block condition="context/ubuntite">Yes</tal:block>
       <tal:block condition="not: context/ubuntite">Not yet</tal:block>
       <br />
@@ -66,9 +66,11 @@
       belongs to.
     </tal:comment>
     <tal:memberships repeat="membership context/myactivememberships">
-      <img tal:condition="membership/team/emblem"
-           tal:attributes="src membership/team/emblem/url;
-                           title string:Emblem of ${membership/team/name}" />
+      <a tal:attributes="href membership/team/fmt:url"
+        ><img tal:condition="membership/team/emblem"
+              tal:attributes="src membership/team/emblem/url;
+                              title string:Emblem of ${membership/team/name}"
+          /></a>
     </tal:memberships>
     
   </div>

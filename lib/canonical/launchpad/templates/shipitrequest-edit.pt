@@ -29,14 +29,33 @@
     <tr>
     <td width="80%">
 
+    <div tal:condition="view/recipientHasOtherShippedRequests"
+         tal:define="shipped_requests context/recipient/shippedShipItRequests"
+         class="portalMessage">
+     <p>This person has other requests already sent to the shipping company.
+     </p>
+      <ul>
+        <tal:block repeat="shipped_request shipped_requests">
+          <li tal:condition="python: shipped_request != context">
+            <a tal:attributes="href shipped_request/fmt:url">
+              <span tal:replace="shipped_request/daterequested/fmt:date" />:
+              <span tal:replace="shipped_request/totalCDs" /> CDs requested,
+              <span tal:replace="shipped_request/totalapprovedCDs" />
+              CDs approved.
+            </a>
+          </li>
+        </tal:block>
+      </ul>
+    </div>
+
     <tal:block condition="view/contextCancelledOrShipped">
       <p tal:condition="context/cancelled" 
          class="portalMessage">This request was cancelled by 
         <span tal:replace="context/whocancelled/displayname" />.
       </p>
-      <p tal:condition="context/shipment" 
-         class="portalMessage">This request is being processed by the shipping
-         company.
+      <p tal:condition="context/shipment" class="portalMessage">
+        This request was sent to the shipping company on 
+        <span tal:replace="context/shipment/shippingrun/datecreated/fmt:date" />.
       </p>
     </tal:block>
 

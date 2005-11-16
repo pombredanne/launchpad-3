@@ -15,7 +15,7 @@ from zope.interface import implements
 from canonical.launchpad.interfaces import IDistributionSourcePackage
 
 from canonical.database.sqlbase import sqlvalues
-
+from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.distributionsourcepackagecache import \
     DistributionSourcePackageCache
@@ -70,7 +70,7 @@ class DistributionSourcePackage:
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
-            SourcePackagePublishingHistory.sourcepackagerelease = 
+            SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackageRelease.version = %s
@@ -91,14 +91,14 @@ class DistributionSourcePackage:
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackageRelease.id =
                 SourcePackagePublishing.sourcepackagerelease AND
-            SourcePackagePublishing.distrorelease = 
+            SourcePackagePublishing.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s
             """ % sqlvalues(self.sourcepackagename.id,
                             self.distribution.id),
             orderBy='datecreated',
             clauseTables=['SourcePackagePublishing', 'DistroRelease'])
-        
+
         # sort by version
         releases = sorted(shortlist(sprs),
             key=lambda item: Version(item.version))
@@ -132,6 +132,10 @@ class DistributionSourcePackage:
     @property
     def by_distroreleases(self):
         """See IDistributionSourcePackage."""
+        # XXX, Brad Bollenbach, 2005-10-24: DistroReleaseSourcePackage is not
+        # even imported into this module. This suggests that this method is an
+        # unused/untested code path. See
+        # See https://launchpad.net/products/launchpad/+bug/3531.
         result = []
         for release in self.releases:
             candidate = DistroReleaseSourcePackage(release,
@@ -145,9 +149,9 @@ class DistributionSourcePackage:
         """See IDistributionSourcePackage."""
         return SourcePackagePublishingHistory.select("""
             DistroRelease.distribution = %s AND
-            SourcePackagePublishingHistory.distrorelease = 
+            SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
-            SourcePackagePublishingHistory.sourcepackagerelease = 
+            SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s
             """ % sqlvalues(self.distribution.id,
@@ -225,3 +229,10 @@ class DistributionSourcePackage:
         search_params.setSourcePackage(self)
         return BugTaskSet().search(search_params)
 
+    def createBug(self, owner, title, comment, private=False):
+        """See IBugTarget."""
+        return BugSet().createBug(
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename,
+            owner=owner, title=title, comment=comment,
+            private=private)

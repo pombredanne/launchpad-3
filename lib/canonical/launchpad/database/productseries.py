@@ -17,12 +17,16 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces import (
     IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin,
     IProductSeriesSet, IProductSeriesSourceSet, NotFoundError)
+
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
+from canonical.launchpad.database.specification import Specification
 from canonical.database.sqlbase import (
     SQLBase, quote, sqlvalues)
+
 from canonical.lp.dbschema import (
-    EnumCol, ImportStatus, PackagingType, RevisionControlSystems)
+    EnumCol, ImportStatus, PackagingType, RevisionControlSystems,
+    SpecificationSort)
 
 
 class ProductSeries(SQLBase):
@@ -70,9 +74,6 @@ class ProductSeries(SQLBase):
                              orderBy=['version'])
     packagings = MultipleJoin('Packaging', joinColumn='productseries',
                               orderBy=['-id'])
-    specifications = MultipleJoin('Specification',
-        joinColumn='productseries', orderBy='-datecreated')
-
 
     @property
     def potemplates(self):
@@ -117,6 +118,15 @@ class ProductSeries(SQLBase):
                     for r in ret]
         ret.sort(key=lambda a: a.distribution.name + a.sourcepackagename.name)
         return ret
+
+    def specifications(self, sort=None, quantity=None):
+        """See IHasSpecifications."""
+        if sort is None or sort == SpecificationSort.DATE:
+            order = ['-datecreated', 'id']
+        elif sort == SpecificationSort.PRIORITY:
+            order = ['-priority', 'status', 'name']
+        return Specification.selectBy(productseriesID=self.id,
+            orderBy=order)[:quantity]
 
     def getSpecification(self, name):
         """See ISpecificationTarget."""

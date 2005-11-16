@@ -19,11 +19,11 @@ from zope.app.form.browser.add import AddView
 from canonical.launchpad import helpers
 from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, Link, ApplicationMenu,
-    enabled_with_permission, GetitemNavigation, stepthrough, stepto)
+    enabled_with_permission, GetitemNavigation, stepthrough)
 
 from canonical.launchpad.interfaces import (
     IDistroReleaseLanguageSet, IDistroRelease, ICountry, IDistroReleaseSet,
-    ILaunchBag, ILanguageSet, NotFoundError, IPublishedPackageSet)
+    ILaunchBag, ILanguageSet, NotFoundError)
 
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
@@ -159,7 +159,7 @@ class DistroReleaseView(BuildRecordsView):
         self._results = None
 
         self.searchrequested = False
-        if self.text is not None and self.text <> '':
+        if self.text:
             self.searchrequested = True
 
     def searchresults(self):
@@ -260,8 +260,6 @@ class DistroReleaseAddView(AddView):
             description = data['description'],
             version = data['version'],
             distribution = self.context,
-            components = data['components'],
-            sections = data['sections'],
             parentrelease = data['parentrelease'],
             owner = owner
             )

@@ -8,28 +8,32 @@ import datetime
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, IntervalCol, MultipleJoin, RelatedJoin)
+    ForeignKey, IntCol, StringCol, IntervalCol, MultipleJoin, RelatedJoin,
+    BoolCol)
 
 from canonical.launchpad.interfaces import (
-    ISpecification, ISpecificationSet)
+    ISpecification, ISpecificationSet, NameNotAvailable)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.database.specificationdependency import \
-    SpecificationDependency
-from canonical.launchpad.database.specificationbug import \
-    SpecificationBug
-from canonical.launchpad.database.specificationreview import \
-    SpecificationReview
-from canonical.launchpad.database.specificationsubscription import \
-    SpecificationSubscription
-from canonical.launchpad.database.sprintspecification import \
-    SprintSpecification
+from canonical.launchpad.database.specificationdependency import (
+    SpecificationDependency)
+from canonical.launchpad.database.specificationbug import (
+    SpecificationBug)
+from canonical.launchpad.database.specificationfeedback import (
+    SpecificationFeedback)
+from canonical.launchpad.database.specificationsubscription import (
+    SpecificationSubscription)
+from canonical.launchpad.database.sprintspecification import (
+    SprintSpecification)
 from canonical.launchpad.database.sprint import Sprint
 
+from canonical.launchpad.components.specification import SpecificationDelta
+
 from canonical.lp.dbschema import (
-    EnumCol, SpecificationStatus, SpecificationPriority)
+    EnumCol, SpecificationStatus, SpecificationPriority,
+    SpecificationDelivery)
 
 
 class Specification(SQLBase):
@@ -37,7 +41,7 @@ class Specification(SQLBase):
 
     implements(ISpecification)
 
-    _defaultOrder = ['status', '-priority']
+    _defaultOrder = ['-priority', 'status', 'name', 'id']
 
     # db field names
     name = StringCol(unique=True, notNull=True)
@@ -45,8 +49,8 @@ class Specification(SQLBase):
     summary = StringCol(notNull=True)
     status = EnumCol(schema=SpecificationStatus, notNull=True,
         default=SpecificationStatus.BRAINDUMP)
-    priority = EnumCol(schema=SpecificationPriority, notNull=False,
-        default=None)
+    priority = EnumCol(schema=SpecificationPriority, notNull=True,
+        default=SpecificationPriority.PROPOSED)
     assignee = ForeignKey(dbName='assignee', notNull=False,
         foreignKey='Person')
     drafter = ForeignKey(dbName='drafter', notNull=False,
@@ -67,6 +71,13 @@ class Specification(SQLBase):
         foreignKey='Milestone', notNull=False, default=None)
     specurl = StringCol(notNull=True)
     whiteboard = StringCol(notNull=False, default=None)
+    needs_discussion = BoolCol(notNull=True, default=True)
+    direction_approved = BoolCol(notNull=True, default=False)
+    man_days = IntCol(notNull=False, default=None)
+    delivery = EnumCol(schema=SpecificationDelivery, notNull=True,
+        default=SpecificationDelivery.UNKNOWN)
+    superseded_by = ForeignKey(dbName='superseded_by',
+        foreignKey='Specification', notNull=False, default=None)
 
     # useful joins
     subscriptions = MultipleJoin('SpecificationSubscription',
@@ -74,7 +85,7 @@ class Specification(SQLBase):
     subscribers = RelatedJoin('Person',
         joinColumn='specification', otherColumn='person',
         intermediateTable='SpecificationSubscription', orderBy='name')
-    reviews = MultipleJoin('SpecificationReview',
+    feedbackrequests = MultipleJoin('SpecificationFeedback',
         joinColumn='specification', orderBy='id')
     sprint_links = MultipleJoin('SprintSpecification', orderBy='id',
         joinColumn='specification')
@@ -103,6 +114,25 @@ class Specification(SQLBase):
             return self.product
         return self.distribution
 
+    def retarget(self, product=None, distribution=None):
+        """See ISpecification."""
+        assert not (product and distribution)
+        assert (product or distribution)
+
+        # we need to ensure that there is not already a spec with this name
+        # for this new target
+        if product:
+            assert product.getSpecification(self.name) is None
+        elif distribution:
+            assert distribution.getSpecification(self.name) is None
+
+        self.productseries = None
+        self.distrorelease = None
+        self.milestone = None
+        self.product = product
+        self.distribution = distribution
+        self.delivery = SpecificationDelivery.UNKNOWN
+
     def getSprintSpecification(self, sprintname):
         """See ISpecification."""
         for sprintspecification in self.sprint_links:
@@ -110,16 +140,28 @@ class Specification(SQLBase):
                 return sprintspecification
         return None
 
-    # emergent properties
+    def getFeedbackRequests(self, person):
+        """See ISpecification."""
+        reqlist = []
+        for fbreq in self.feedbackrequests:
+            if fbreq.reviewer.id == person.id:
+                reqlist.append(fbreq)
+        return reqlist
 
+    # emergent properties
     @property
     def is_incomplete(self):
         """See ISpecification."""
-        return self.status not in [
+        return not self.is_complete
+
+    @property
+    def is_complete(self):
+        """See ISpecification."""
+        return self.status in [
             SpecificationStatus.IMPLEMENTED,
             SpecificationStatus.INFORMATIONAL,
             SpecificationStatus.OBSOLETE,
-            SpecificationStatus.SUPERCEDED,
+            SpecificationStatus.SUPERSEDED,
             ]
 
     @property
@@ -129,6 +171,57 @@ class Specification(SQLBase):
             if spec.is_incomplete:
                 return True
         return False
+
+    @property
+    def has_release_goal(self):
+        """See ISpecification."""
+        if self.distrorelease is not None:
+            return True
+        if self.productseries is not None:
+            return True
+        return False
+
+    def getDelta(self, old_spec, user):
+        """See ISpecification."""
+        changes = {}
+        for field_name in ("title", "summary", "specurl", "productseries",
+            "distrorelease", "milestone"):
+            # fields for which we simply show the new value when they
+            # change
+            old_val = getattr(old_spec, field_name)
+            new_val = getattr(self, field_name)
+            if old_val != new_val:
+                changes[field_name] = new_val
+
+        for field_name in ("name", "priority", "status", "target"):
+            # fields for which we show old => new when their values change
+            old_val = getattr(self, field_name)
+            new_val = getattr(old_spec, field_name)
+            if old_val != new_val:
+                changes[field_name] = {}
+                changes[field_name]["old"] = old_val
+                changes[field_name]["new"] = new_val
+
+        old_bugs = self.bugs
+        new_bugs = old_spec.bugs
+        for bug in old_bugs:
+            if bug not in new_bugs:
+                if not changes.has_attr('bugs_unlinked'):
+                    changes['bugs_unlinked'] = []
+                changes['bugs_unlinked'].append(bug)
+        for bug in new_bugs:
+            if bug not in old_bugs:
+                if not changes.has_attr('bugs_linked'):
+                    changes['bugs_linked'] = []
+                changes['bugs_linked'].append(bug)
+
+        if changes:
+            changes["specification"] = self
+            changes["user"] = user
+
+            return SpecificationDelta(**changes)
+        else:
+            return None
 
     # subscriptions
     def subscribe(self, person):
@@ -149,27 +242,29 @@ class Specification(SQLBase):
                 return
 
     # queueing
-    def queue(self, reviewer, requestor, queuemsg=None):
+    def queue(self, reviewer, requester, queuemsg=None):
         """See ISpecification."""
-        # first see if a relevant queue entry exists, and if so, update it
-        for review in self.reviews:
-            if review.reviewer.id == reviewer.id:
-                review.requestor = requestor
-                review.queuemsg = queuemsg
-                return review
-        # since no previous review existed for this person, create a new one
-        return SpecificationReview(
+        for fbreq in self.feedbackrequests:
+            if (fbreq.reviewer.id == reviewer.id and
+                fbreq.requester == requester.id):
+                # we have a relevant request already, update it
+                fbreq.queuemsg = queuemsg
+                return fbreq
+        # since no previous feedback request existed for this person,
+        # create a new one
+        return SpecificationFeedback(
             specification=self,
             reviewer=reviewer,
-            requestor=requestor,
+            requester=requester,
             queuemsg=queuemsg)
 
-    def unqueue(self, reviewer):
+    def unqueue(self, reviewer, requester):
         """See ISpecification."""
         # see if a relevant queue entry exists, and if so, delete it
-        for review in self.reviews:
-            if review.reviewer.id == reviewer.id:
-                SpecificationReview.delete(review.id)
+        for fbreq in self.feedbackrequests:
+            if (fbreq.reviewer.id == reviewer.id and
+                fbreq.requester.id == requester.id):
+                SpecificationFeedback.delete(fbreq.id)
                 return
 
     # linking to bugs
@@ -266,7 +361,8 @@ class SpecificationSet:
 
     def new(self, name, title, specurl, summary, status,
         owner, approver=None, product=None, distribution=None, assignee=None,
-        drafter=None, whiteboard=None, priority=None):
+        drafter=None, whiteboard=None,
+        priority=SpecificationPriority.PROPOSED):
         """See ISpecificationSet."""
         return Specification(name=name, title=title, specurl=specurl,
             summary=summary, priority=priority, status=status,

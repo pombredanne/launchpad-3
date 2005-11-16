@@ -23,7 +23,6 @@ _ = MessageIDFactory('launchpad')
 
 class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
     ITicketTarget):
-
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -131,9 +130,6 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         given.
         """
 
-    def getSourcePackage(self, name):
-        """Return the source package with the name given."""
-
     def getMilestone(name):
         """Return a milestone with the given name for this distribution, or
         None.
@@ -142,6 +138,12 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
     def getSourcePackage(name):
         """Return a DistributionSourcePackage with the given name for this
         distribution, or None.
+        """
+
+    def getSourcePackageRelease(sourcepackagerelease):
+        """Returns an IDistributionSourcePackageRelease
+
+        Receives a sourcepackagerelease.
         """
 
     def ensureRelatedBounty(bounty):

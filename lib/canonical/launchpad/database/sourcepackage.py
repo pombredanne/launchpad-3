@@ -5,35 +5,27 @@ __all__ = [
     'SourcePackage',
     ]
 
-import sets
-
 from zope.interface import implements
-from zope.component import getUtility
 
 from sqlobject import SQLObjectNotFound
 
 from canonical.database.sqlbase import (
-    quote, sqlvalues, flush_database_updates)
+    sqlvalues, flush_database_updates)
 from canonical.database.constants import UTC_NOW
 
 from canonical.lp.dbschema import (
-    BugTaskStatus, BugTaskSeverity, PackagePublishingStatus,
-    PackagingType, PackagePublishingPocket)
+    BugTaskStatus, BugTaskSeverity, PackagingType, PackagePublishingPocket)
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    ISourcePackage, IHasBuildRecords,
-    ILaunchpadCelebrities, NotFoundError)
+    ISourcePackage, IHasBuildRecords)
 
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.maintainership import Maintainership
 from canonical.launchpad.database.publishing import SourcePackagePublishing
-from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
-from canonical.launchpad.database.binarypackagename import BinaryPackageName
-from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.ticket import Ticket
 from canonical.launchpad.database.distributionsourcepackagerelease import \
@@ -348,6 +340,20 @@ class SourcePackage:
         search_params.setSourcePackage(self)
         return BugTaskSet().search(search_params)
 
+    def createBug(self, owner, title, comment, private=False):
+        """See canonical.launchpad.interfaces.IBugTarget."""
+        # We don't currently support opening a new bug directly on an
+        # ISourcePackage, because internally ISourcePackage bugs mean bugs
+        # targetted to be fixed in a specific distrorelease + sourcepackage.
+        raise NotImplementedError(
+            "A new bug cannot be filed directly on a source package in a "
+            "specific distribution release, because releases are meant for "
+            "\"targeting\" a fix to a specific release. It's possible that "
+            "we may change this behaviour to allow filing a bug on a "
+            "distribution release source package in the not-too-distant "
+            "future. For now, you probably meant to file the bug on the "
+            "distro-wide (i.e. not release-specific) source package.")
+
     def setPackaging(self, productseries, user):
         target = self.direct_packaging
         if target is not None:
@@ -387,6 +393,7 @@ class SourcePackage:
 
     def getVersion(self, version):
         """See ISourcePackage."""
+        # XXX: untested and broken
         dsp = DistributionSourcePackage(
             self.distribution,
             self.sourcepackagename)
@@ -455,5 +462,3 @@ class SourcePackage:
                           'SourcePackagePublishingHistory'],
             limit=limit,
             orderBy="-datebuilt")
-    
-

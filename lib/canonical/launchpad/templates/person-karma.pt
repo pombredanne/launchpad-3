@@ -16,36 +16,60 @@
 
   <h1>Launchpad Karma</h1>
 
-  <p>This is a summary of all activities performed by <span
-    tal:replace="context/browsername" /> in Launchpad, organized per activity
-    type.</p>
+  <p>
+    This is a summary of the Launchpad karma earned by
+    <span tal:replace="context/browsername" />, organized by activity
+    type.
+  </p>
 
-  <ul>
-    <tal:block tal:repeat="actionCategory view/actionCategories">
-      <tal:block tal:define="actions python:view.actions(actionCategory)"
-                 tal:condition="actions">
-        <li>
-          <span tal:replace="actionCategory/title" />
+  <p class="portalMessage" tal:condition="not: context/karma_category_caches">
+    No karma has yet been assigned to <span
+    tal:replace="context/browsername" />. We update this data on a daily
+    basis, so have another look tomorrow.
+  </p>
 
-          <table class="listing">
-            <thead>
-              <tr>
-                <th>Action</th>
-                <th>Number of times performed</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr tal:repeat="action actions">
-                <td><span tal:replace="action/name/title" /></td>
-                <td><span tal:replace="python:view.actionsCount(action)" /></td>
-              </tr>
-            </tbody>
-          </table>
-        </li>
-        <br />
-      </tal:block>
-    </tal:block>
-  </ul>
+  <table class="listing sortable" id="karma"
+    tal:condition="context/karma_category_caches">
+    <thead>
+      <tr>
+        <th>Category</th>
+        <th>Points</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="cache context/karma_category_caches">
+        <td tal:content="cache/category/title">Bug Management</td>
+        <td tal:content="cache/karmavalue">10</td>
+      </tr>
+    </tbody>
+  </table>
+  <table>
+    <tr>
+      <td><b>Total:</b></td>
+      <td tal:content="context/karma">34</td>
+    </tr>
+  </table>
+
+  <tal:latest_events condition="context/latestKarma">
+  
+    <h2>Latest actions</h2>
+
+    <table class="listing sortable" id="karma">
+      <thead>
+        <tr>
+          <th>Action</th>
+          <th>Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="karma context/latestKarma">
+          <td tal:content="karma/action/title">Bug Filed</td>
+          <td tal:content="karma/datecreated/fmt:date">2005-10-06</td>
+        </tr>
+      </tbody>
+    </table>
+
+  </tal:latest_events>
 
 </div>
 

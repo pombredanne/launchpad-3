@@ -4,24 +4,30 @@
 
 __metaclass__ = type
 
-from zope.component import getUtility
-
-from canonical.launchpad.interfaces import (
-    IProduct, IDistribution, ILaunchBag, ISpecification, ISpecificationSet)
-from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.addview import SQLObjectAddView
-
-from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, enabled_with_permission,
-    LaunchpadView, Navigation)
-
 __all__ = [
     'SpecificationContextMenu',
     'SpecificationNavigation',
     'SpecificationView',
     'SpecificationAddView',
     'SpecificationEditView',
+    'SpecificationSupersedingView',
+    'SpecificationRetargetingView',
     ]
+
+from zope.component import getUtility
+
+from canonical.launchpad.interfaces import (
+    IProduct, IDistribution, ILaunchBag, ISpecification, ISpecificationSet,
+    NameNotAvailable)
+
+from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.addview import SQLObjectAddView
+
+from canonical.launchpad.webapp import (
+    canonical_url, ContextMenu, Link, enabled_with_permission,
+    LaunchpadView, Navigation, GeneralFormView)
+
+from canonical.lp.dbschema import SpecificationStatus
 
 
 class SpecificationNavigation(Navigation):
@@ -37,13 +43,14 @@ class SpecificationContextMenu(ContextMenu):
     usedfor = ISpecification
     links = ['edit', 'people', 'status', 'priority', 'setseries',
              'setdistrorelease',
-             'milestone', 'requestreview', 'doreview', 'subscription',
+             'milestone', 'requestfeedback', 'givefeedback', 'subscription',
              'subscribeanother',
              'linkbug', 'unlinkbug', 'adddependency', 'removedependency',
-             'dependencytree', 'linksprint', 'administer']
+             'dependencytree', 'linksprint', 'supersede',
+             'retarget', 'administer']
 
     def edit(self):
-        text = 'Edit Summary and Title'
+        text = 'Edit Details'
         return Link('+edit', text, icon='edit')
 
     def people(self):
@@ -57,6 +64,10 @@ class SpecificationContextMenu(ContextMenu):
     def priority(self):
         text = 'Change Priority'
         return Link('+priority', text, icon='edit')
+
+    def supersede(self):
+        text = 'Mark Superseded'
+        return Link('+supersede', text, icon='edit')
 
     def setseries(self):
         text = 'Target to Series'
@@ -72,15 +83,15 @@ class SpecificationContextMenu(ContextMenu):
         text = 'Target to Milestone'
         return Link('+milestone', text, icon='edit')
 
-    def requestreview(self):
-        text = 'Request Review'
-        return Link('+requestreview', text, icon='edit')
+    def requestfeedback(self):
+        text = 'Request Feedback'
+        return Link('+requestfeedback', text, icon='edit')
 
-    def doreview(self):
-        text = 'Conduct Review'
+    def givefeedback(self):
+        text = 'Give Feedback'
         enabled = (self.user is not None and
-                   get_review_requested(self.user, self.context) is not None)
-        return Link('+doreview', text, icon='edit', enabled=enabled)
+                   self.context.getFeedbackRequests(self.user))
+        return Link('+givefeedback', text, icon='edit', enabled=enabled)
 
     def subscription(self):
         user = self.user
@@ -123,6 +134,11 @@ class SpecificationContextMenu(ContextMenu):
         text = 'Add to Meeting'
         return Link('+linksprint', text, icon='add')
 
+    @enabled_with_permission('launchpad.Edit')
+    def retarget(self):
+        text = 'Retarget'
+        return Link('+retarget', text, icon='edit')
+
     @enabled_with_permission('launchpad.Admin')
     def administer(self):
         text = 'Administer'
@@ -142,26 +158,13 @@ def has_spec_subscription(person, spec):
     return False
 
 
-def get_review_requested(person, spec):
-    """Return the review that this person requested, or None if there is not
-    one.
-
-    XXX: Refactor this to a method on ISpecification.
-         SteveAlexander, 2005-09-26
-    """
-    assert person is not None
-    for review in spec.reviews:
-        if review.reviewer.id == person.id:
-            return review
-
-
 class SpecificationView(LaunchpadView):
 
     __used_for__ = ISpecification
 
     def initialize(self):
         # The review that the user requested on this spec, if any.
-        self.review = None
+        self.feedbackrequests = []
         self.notices = []
         request = self.request
 
@@ -175,21 +178,12 @@ class SpecificationView(LaunchpadView):
                 self.context.unsubscribe(self.user)
                 self.notices.append("You have unsubscribed from this spec.")
 
-        # see if we are clearing a review
-        formreview = request.form.get('review', None)
-        if (formreview == 'Review Complete' and self.user and
-            request.method == 'POST'):
-            self.context.unqueue(self.user)
-            self.notices.append('Thank you for your review.')
-
         if self.user is not None:
             # establish if this user has a review queued on this spec
-            self.review = get_review_requested(self.user, self.context)
-            if self.review is not None:
-                msg = "Your review was requested by %s"
-                msg %= self.review.requestor.browsername
-                if self.review.queuemsg:
-                    msg = msg + ': ' + self.review.queuemsg
+            self.feedbackrequests = self.context.getFeedbackRequests(self.user)
+            if self.feedbackrequests:
+                msg = "You have %d feedback request(s) on this specification."
+                msg %= len(self.feedbackrequests)
                 self.notices.append(msg)
 
     @property
@@ -225,6 +219,8 @@ class SpecificationAddView(SQLObjectAddView):
             distribution=distribution, assignee=assignee, drafter=drafter,
             approver=approver)
         self._nextURL = canonical_url(spec)
+        # give karma where it is due
+        owner.assignKarma('addspec')
         return spec
 
     def add(self, content):
@@ -240,4 +236,43 @@ class SpecificationEditView(SQLObjectEditView):
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.context))
+
+
+class SpecificationRetargetingView(GeneralFormView):
+
+    def process(self, product=None, distribution=None):
+        if product and distribution:
+            return 'Please choose a product OR a distribution, not both.'
+        if not (product or distribution):
+            return 'Please choose a product or distribution for this spec.'
+        # we need to ensure that there is not already a spec with this name
+        # for this new target
+        if product:
+            if product.getSpecification(self.context.name) is not None:
+                return '%s already has a spec called %s' % (
+                    product.name, self.context.name)
+        elif distribution:
+            if distribution.getSpecification(self.context.name) is not None:
+                return '%s already has a spec called %s' % (
+                    distribution.name, self.context.name)
+        self.context.retarget(product=product, distribution=distribution)
+        self._nextURL = canonical_url(self.context)
+        return 'Done.'
+
+
+class SpecificationSupersedingView(GeneralFormView):
+
+    def process(self, superseded_by=None):
+        self.context.superseded_by = superseded_by
+        if superseded_by is not None:
+            # set the state to superseded
+            self.context.status = SpecificationStatus.SUPERSEDED
+        else:
+            # if the current state is SUPERSEDED and we are now removing the
+            # superseded-by then we should move this spec back into the
+            # drafting pipeline by resetting its status to BRAINDUMP
+            if self.context.status == SpecificationStatus.SUPERSEDED:
+                self.context.status = SpecificationStatus.BRAINDUMP
+        self.request.response.redirect(canonical_url(self.context))
+        return 'Done.'
 

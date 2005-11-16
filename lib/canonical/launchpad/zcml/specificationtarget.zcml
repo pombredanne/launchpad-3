@@ -18,6 +18,9 @@
       name="+specstable"
       template="../templates/sprint-table.pt" />
     <browser:page
+      name="+workload"
+      template="../templates/specificationtarget-workload.pt" />
+    <browser:page
       name="+specplan"
       template="../templates/specificationtarget-specplan.pt" />
     <browser:page

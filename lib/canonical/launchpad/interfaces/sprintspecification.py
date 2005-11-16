@@ -8,8 +8,8 @@ __all__ = [
     'ISprintSpecification',
     ]
 
-from zope.interface import Interface
-from zope.schema import Bool, Choice, Int
+from zope.interface import Interface, Attribute
+from zope.schema import Bool, Choice, Int, Text
 from zope.i18nmessageid import MessageIDFactory
 
 _ = MessageIDFactory('launchpad')
@@ -24,8 +24,13 @@ class ISprintSpecification(Interface):
         readonly=True)
     status = Choice(title=_('Agenda Status'), required=True,
         vocabulary='SprintSpecificationStatus')
-    needs_discussion = Bool(title=_('Needs further discussion'),
-        required=True, description=_("Check this to indicate that the "
-        "specification needs further group discussion before drafting "
-        "can continue."))
+    whiteboard = Text(title=_('Whiteboard'), required=False,
+        description=_(
+            "Any reasoning or rationale for the status you set here."
+            "Your changes will override the current text. Note that "
+            "this is purely related to this spec at this meeting, not "
+            "the specification in general."))
+
+    is_confirmed = Attribute("True if this spec is confirmed for the "
+        "agenda of this sprint.")
 
