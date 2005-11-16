@@ -5,13 +5,11 @@ __all__ = [
     'BugTask',
     'BugTaskSet',
     'BugTaskFactory',
-    'BugTasksReport',
     'bugtask_sort_key']
 
 import urllib
 import cgi
 import datetime
-from sets import Set
 
 from sqlobject import ForeignKey, StringCol
 from sqlobject import SQLObjectNotFound
@@ -31,12 +29,11 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.searchbuilder import any, NULL
-from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IBugTask, IBugTasksReport, IBugTaskSet,
-    IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, ILaunchBag,
-    NotFoundError, ILaunchpadCelebrities)
+    BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
+    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, NotFoundError,
+    ILaunchpadCelebrities)
 
 
 debbugsstatusmap = {'open': BugTaskStatus.NEW,
@@ -126,8 +123,7 @@ class BugTask(SQLBase, BugTaskMixin):
         notNull=False, default=None)
     dateassigned = UtcDateTimeCol(notNull=False, default=UTC_NOW)
     datecreated  = UtcDateTimeCol(notNull=False, default=UTC_NOW)
-    owner = ForeignKey(
-        foreignKey='Person', dbName='owner', notNull=False, default=None)
+    owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
     # The targetnamecache is a value that is only supposed to be set when a
     # bugtask is created/modified or by the update-bugtask-targetnamecaches
     # cronscript. For this reason it's not exposed in the interface, and
@@ -157,19 +153,18 @@ class BugTask(SQLBase, BugTaskMixin):
             # This is a distro task.
             mark_task(self, IDistroBugTask)
 
-    def _create(self, id, **kw):
-        # We need to overwrite this method to make sure the targetnamecache
-        # column is updated after a new bugtask is created. We can't rely on
-        # event subscribers for doing this because they can run in a
-        # unpredictable order.
-        SQLBase._create(self, id, **kw)
-        self.updateTargetNameCache()
+    def _SO_setValue(self, name, value, fromPython, toPython):
+        # We need to overwrite this method to make sure whenever we change a
+        # single attribute of a BugTask the targetnamecache column is updated.
+        SQLBase._SO_setValue(self, name, value, fromPython, toPython)
+        if name != 'targetnamecache':
+            self.updateTargetNameCache()
 
     def set(self, **kw):
         # We need to overwrite this method to make sure the targetnamecache
-        # column is updated when a bugtask is modified. We can't rely on
-        # event subscribers for doing this because they can run in a
-        # unpredictable order.
+        # column is updated when multiple attributes of a bugtask are
+        # modified. We can't rely on event subscribers for doing this because
+        # they can run in a unpredictable order.
         SQLBase.set(self, **kw)
         # We also can't simply update kw with the value we want for
         # targetnamecache because the _calculate_targetname method needs to
@@ -195,7 +190,8 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def updateTargetNameCache(self):
         """See canonical.launchpad.interfaces.IBugTask."""
-        self.targetnamecache = self._calculate_targetname()
+        if self.targetnamecache != self._calculate_targetname():
+            self.targetnamecache = self._calculate_targetname()
 
     @property
     def statusdisplayhtml(self):
@@ -343,6 +339,13 @@ class BugTaskSet:
                 sqlvalues(params.searchtext, params.searchtext))
 
         if params.statusexplanation:
+            # XXX: This clause relies on the fact that the Bugtask's fti is
+            # generated using only the values of the statusexplanation column,
+            # which is not true. Unfortunately, there's no way to fix this
+            # right now, and as this doesn't seem to be a big deal, we'll
+            # leave it as is for now. More info:
+            # https://launchpad.net/products/launchpad/+bug/4066
+            # -- Guilherme Salgado, 2005-11-09
             extra_clauses.append("BugTask.fti @@ ftq(%s)" %
                                  sqlvalues(params.statusexplanation))
         
@@ -492,90 +495,4 @@ class BugTaskSet:
 def BugTaskFactory(context, **kw):
     # XXX kiko: WTF, context is ignored?! LaunchBag? ARGH!
     return BugTask(bugID=getUtility(ILaunchBag).bug.id, **kw)
-
-
-class BugTasksReport:
-
-    implements(IBugTasksReport)
-
-    def _handle_showclosed(self, showclosed, querystr):
-        """Returns replacement querystr modified to take into account
-        showclosed.
-        """
-        if showclosed:
-            return querystr
-        else:
-            return querystr + ' AND BugTask.status < %s' % sqlvalues(
-                BugTaskPriority.MEDIUM)
-
-    # bugs assigned (i.e. tasks) to packages maintained by the user
-    def maintainedPackageBugs(self, user, minseverity, minpriority, showclosed):
-        querystr = (
-            "BugTask.sourcepackagename = Maintainership.sourcepackagename AND "
-            "BugTask.distribution = Maintainership.distribution AND "
-            "Maintainership.maintainer = %s AND "
-            "BugTask.severity >= %s AND "
-            "BugTask.priority >= %s") % sqlvalues(
-            user.id, minseverity, minpriority)
-        clauseTables = ['Maintainership']
-        querystr = self._handle_showclosed(showclosed, querystr)
-        if not showclosed:
-            querystr = querystr + ' AND BugTask.status < %s' % sqlvalues(
-                BugTaskPriority.MEDIUM)
-        return shortlist(BugTask.select(querystr, clauseTables=clauseTables))
-
-    # bugs assigned (i.e. tasks) to products owned by the user
-    def maintainedProductBugs(self, user, minseverity, minpriority,
-                              showclosed):
-        querystr = (
-            "BugTask.product = Product.id AND "
-            "Product.owner = %s AND "
-            "BugTask.severity >= %s AND "
-            "BugTask.priority >= %s") % sqlvalues(
-            user.id, minseverity, minpriority)
-        clauseTables = ['Product']
-        querystr = self._handle_showclosed(showclosed, querystr)
-        return shortlist(BugTask.select(querystr, clauseTables=clauseTables))
-
-    # package bugs assigned specifically to the user
-    def packageAssigneeBugs(self, user, minseverity, minpriority, showclosed):
-        querystr = (
-            "BugTask.sourcepackagename IS NOT NULL AND "
-            "BugTask.assignee = %s AND "
-            "BugTask.severity >= %s AND "
-            "BugTask.priority >= %s") % sqlvalues(
-            user.id, minseverity, minpriority)
-        querystr = self._handle_showclosed(showclosed, querystr)
-        return shortlist(BugTask.select(querystr))
-
-    # product bugs assigned specifically to the user
-    def productAssigneeBugs(self, user, minseverity, minpriority, showclosed):
-        querystr = (
-            "BugTask.product IS NOT NULL AND "
-            "BugTask.assignee =%s AND "
-            "BugTask.severity >=%s AND "
-            "BugTask.priority >=%s") % sqlvalues(
-            user.id, minseverity, minpriority)
-        querystr = self._handle_showclosed(showclosed, querystr)
-        return list(BugTask.select(querystr))
-
-    # all bugs assigned to a user
-    def assignedBugs(self, user, minseverity, minpriority, showclosed):
-        bugs = Set()
-        for bugtask in self.maintainedPackageBugs(
-            user, minseverity, minpriority, showclosed):
-            bugs.add(bugtask.bug)
-        for bugtask in self.maintainedProductBugs(
-            user, minseverity, minpriority, showclosed):
-            bugs.add(bugtask.bug)
-        for bugtask in self.packageAssigneeBugs(
-            user, minseverity, minpriority, showclosed):
-            bugs.add(bugtask.bug)
-        for bugtask in self.productAssigneeBugs(
-            user, minseverity, minpriority, showclosed):
-            bugs.add(bugtask.bug)
-
-        bugs = list(bugs)
-        bugs.sort(key=lambda bug: bug.datecreated, reverse=True)
-        return bugs
 

@@ -377,12 +377,13 @@ class BugTaskReleaseTargetingView:
                     releasename)
 
             user = getUtility(ILaunchBag).user
+            assert user is not None, 'Not logged in'
             getUtility(IBugTaskSet).createTask(
                     bug=bug, owner=user, distrorelease=release,
                     sourcepackagename=spname)
 
         # Redirect the user back to the task form.
-        self.request.response.redirect(canonical_url(bugtask)) 
+        self.request.response.redirect(canonical_url(bugtask))
 
 
 class BugTaskEditView(SQLObjectEditView):

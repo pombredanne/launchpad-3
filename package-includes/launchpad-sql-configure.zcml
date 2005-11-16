@@ -3,13 +3,10 @@
     xmlns:sqlos="http://namespaces.sqlobject.org/sqlos"
     xmlns:rdb="http://namespaces.zope.org/rdb">
 
-    <!-- Note that the launchpad_ftest is created from the
-    launchpad_ftest_template database by the test harnesses
-    -->
     <rdb:provideConnection
         name="launchpad"
-        component="canonical.database.adapter.LaunchpadDatabaseAdapter"
-        dsn="dbi://launchpad:@/launchpad_ftest" />
+        component="canonical.launchpad.webapp.adapter.LaunchpadDatabaseAdapter"
+        />
 
     <sqlos:connectionName name="launchpad" />
 

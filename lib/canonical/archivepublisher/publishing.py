@@ -204,6 +204,8 @@ class Publisher(object):
                 #   -- kiko, 2005-09-23
                 f = open("%s/override.%s.%s" % (self._config.overrideroot,
                                                 distrorelease, component), "w")
+                ef = open("%s/override.%s.extra.%s" % (
+                    self._config.overrideroot, distrorelease, component), "w")
                 overrides[distrorelease][component]['bin'].sort()
                 for tup in overrides[distrorelease][component]['bin']:
                     if tup[2].endswith("debian-installer"):
@@ -217,8 +219,44 @@ class Publisher(object):
                     else:
                         f.write("\t".join(tup))
                         f.write("\n")
+                        # XXX: dsilvers: This needs to be made databaseish
+                        # and be actually managed within Launchpad. (Or else
+                        # we need to change the ubuntu as appropriate and look
+                        # for bugs addresses etc in launchpad.
+                        # bug 3900
+                        ef.write("\t".join([tup[0], "Origin", "Ubuntu"]))
+                        ef.write("\n")
+                        ef.write("\t".join(
+                            [tup[0], "Bugs",
+                             "mailto:ubuntu-users@lists.ubuntu.com"]))
+                        ef.write("\n")
                 f.close()
 
+                # XXX: dsilvers: As above, this needs to be integrated into
+                # the database at some point.
+                # bug 3900
+                unpocketed_release = distrorelease.split('-')[0]
+                extra_extra_overrides = os.path.join(
+                    self._config.miscroot,
+                    "more-extra.override.%s.main" % (unpocketed_release))
+                if os.path.exists(extra_extra_overrides):
+                    eef = open(extra_extra_overrides, "r")
+                    extras = {}
+                    for line in eef:
+                        line = line.strip()
+                        if line:
+                            (package, header, value) = line.split()
+                            pkg_extras = extras.setdefault(package, {})
+                            header_values = pkg_extras.setdefault(header, [])
+                            header_values.append(value)
+                    eef.close()
+                    for pkg, headers in extras.items():
+                        for header, values in headers.items():
+                            ef.write("\t".join(
+                                [pkg, header, ", ".join(values)]))
+                            ef.write("\n")
+                ef.close()
+                
                 if len(di_overrides):
                     # We managed to find some d-i bits in these binaries,
                     # so we output a magical "component"-ish "section"-y sort
@@ -377,6 +415,7 @@ tree "dists/%(DISTRORELEASEONDISK)s"
   Architectures "%(ARCHITECTURES)s";
   BinOverride "override.%(DISTRORELEASE)s.$(SECTION)";
   SrcOverride "override.%(DISTRORELEASE)s.$(SECTION).src";
+  %(HIDEEXTRA)sExtraOverride "override.%(DISTRORELEASE)s.extra.$(SECTION)";
   Packages::Extensions "%(EXTENSIONS)s";
   BinCacheDB "packages-%(CACHEINSERT)s$(ARCH).db";
   Contents " ";
@@ -443,7 +482,6 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                 self.debug("Generating apt config for %s%s" % (
                     dr, pocketsuffix[pocket]))
                 # Replace those tokens
-
                 cnf.write(stanza_template % {
                     "LISTPATH": self._config.overrideroot,
                     "DISTRORELEASE": dr + pocketsuffix[pocket],
@@ -452,7 +490,8 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                     "ARCHITECTURES": " ".join(archs) + " source",
                     "SECTIONS": " ".join(comps),
                     "EXTENSIONS": ".deb",
-                    "CACHEINSERT": ""
+                    "CACHEINSERT": "",
+                    "HIDEEXTRA": ""
                     })
                 dr_full_name = dr + pocketsuffix[pocket]
                 if dr_full_name in self._di_release_components:
@@ -471,7 +510,8 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                             "ARCHITECTURES": " ".join(archs),
                             "SECTIONS": "debian-installer",
                             "EXTENSIONS": ".udeb",
-                            "CACHEINSERT": "debian-installer-"
+                            "CACHEINSERT": "debian-installer-",
+                            "HIDEEXTRA": "// "
                             })
 
                 def safe_mkdir(path):
@@ -598,7 +638,15 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                 file_stub = os.path.join(component, architecture, file_stub)
                 all_files.add(file_stub)
                 all_files.add(file_stub + ".gz")
+                all_files.add(file_stub + ".bz2")
                 all_files.add(os.path.join(component, architecture, "Release"))
+                di_file_stub = os.path.join(component, "debian-installer",
+                                            architecture, file_stub)
+
+                for suffix in ('', '.gz', '.bz2'):
+                    if os.path.exists(di_file_stub+suffix):
+                        all_files.add(di_file_stub+suffix)
+                        
                 f = open(os.path.join(self._config.distsroot, full_name,
                                       component, architecture, "Release"), "w")
                 contents = """Archive: %s

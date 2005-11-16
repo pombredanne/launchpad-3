@@ -149,6 +149,10 @@
           template="../templates/person-portlet-emails.pt"
           lp:url="/people/$Person.name/+portlet-emails" />
       <browser:page
+          name="+portlet-team-assignedbugs"
+          template="../templates/person-portlet-team-assignedbugs.pt"
+          lp:url="/people/$Person.name/+portlet-team-assignedbugs" />
+      <browser:page
           name="+portlet-details"
           template="../templates/person-portlet-details.pt"
           lp:url="/people/$Person.name/+portlet-details" />
@@ -542,4 +546,9 @@
         template="../templates/people-portlet-about.pt" />
   </browser:pages>
 </facet>
+
+<adapter for="canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal"
+    provides="canonical.launchpad.interfaces.IPerson"
+    factory="canonical.launchpad.components.person.personFromPrincipal" />
+
 </configure>

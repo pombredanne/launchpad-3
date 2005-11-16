@@ -27,9 +27,9 @@ EMPTY_DBNAME=launchpad_empty
 #             launchpad_prod | grep -v '^--'
 # Then, manually, the 'SET client_min_messages' line is added and
 # the first two CREATEs commented out (plpythonu stuff)
-REV=25
+REV=40
 BASELINE=launchpad-${REV}-00-0.sql
-MD5SUM=98cc2671d99142bead06fe90503bfc9c  launchpad-25-00-0.sql
+MD5SUM=38f4499b444fcbef5b0348980e36c76c  launchpad-40-00-0.sql
 default: all
 
 # NB. Yes - we run fti.py twice. This should be fixed sometime, but

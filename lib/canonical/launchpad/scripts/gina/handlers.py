@@ -10,8 +10,8 @@ __all__ = [
     'ImporterHandler',
     'BinaryPackageHandler',
     'BinaryPackagePublisher',
-    'SourcePackageReleaseHandler',
-    'SourcePublisher',
+    'SourcePackageHandler',
+    'SourcePackagePublisher',
     'DistroHandler',
     'PersonHandler',
     ]
@@ -121,7 +121,7 @@ class ImporterHandler:
     def __init__(self, ztm, distro_name, distrorelease_name, dry_run,
                  ktdb, archive_root, keyrings, pocket):
         self.dry_run = dry_run
-
+        self.pocket = pocket
         self.ztm = ztm
 
         self.distro = self._get_distro(distro_name)
@@ -131,9 +131,13 @@ class ImporterHandler:
         self.imported_sources = []
         self.imported_bins = {}
 
-        self.sphandler = SourcePackageReleaseHandler(ktdb, archive_root,
-                                                     keyrings, pocket)
+        self.sphandler = SourcePackageHandler(ktdb, archive_root, keyrings, 
+                                              pocket)
         self.bphandler = BinaryPackageHandler(self.sphandler, archive_root)
+
+        self.sppublisher = SourcePackagePublisher(self.distrorelease, pocket)
+        # This is initialized in ensure_archinfo
+        self.bppublisher = None
 
     def commit(self):
         """Commit to the database."""
@@ -144,6 +148,34 @@ class ImporterHandler:
         """Rollback changes to the database."""
         if not self.dry_run:
             self.ztm.abort()
+
+    def ensure_archinfo(self, archtag):
+        """Append retrived distroarchrelease info to a dict."""
+        if archtag in self.archinfo.keys():
+            return
+
+        """Get distroarchrelease and processor from the architecturetag"""
+        dar = DistroArchRelease.selectOneBy(
+                distroreleaseID=self.distrorelease.id,
+                architecturetag=archtag)
+        if not dar:
+            raise DataSetupError("Error finding distroarchrelease for %s/%s"
+                                 % (self.distrorelease.name, archtag))
+
+        # XXX: is this really a selectOneBy? Can't there be multiple
+        # proessors per family?
+        processor = Processor.selectOneBy(familyID=dar.processorfamily.id)
+        if not processor:
+            raise DataSetupError("Unable to find a processor from the "
+                                 "processor family %s chosen from %s/%s"
+                                 % (dar.processorfamily.name,
+                                    self.distrorelease.name, archtag))
+
+        info = {'distroarchrelease': dar, 'processor': processor}
+        self.archinfo[archtag] = info
+
+        self.bppublisher = BinaryPackagePublisher(dar, self.pocket)
+        self.imported_bins[archtag] = []
 
     #
     # Distro Stuff: Should go to DistroHandler
@@ -163,44 +195,6 @@ class ImporterHandler:
         if not dr:
             raise DataSetupError("Error finding distrorelease %r" % name)
         return dr
-
-    def _get_distroarchrelease_info(self, archtag):
-        """Get distroarchrelease and processor from the architecturetag"""
-        dar = DistroArchRelease.selectOneBy(
-                distroreleaseID=self.distrorelease.id,
-                architecturetag=archtag)
-        if not dar:
-            raise DataSetupError("Error finding distroarchrelease for %s/%s"
-                                 % (self.distrorelease.name, archtag))
-
-        processor = Processor.selectOneBy(familyID=dar.processorfamily.id)
-        if not processor:
-            raise DataSetupError("Unable to find a processor from the "
-                                 "processor family chosen from %s/%s"
-                                 % (self.distrorelease.name, archtag))
-
-        return {'distroarchrelease': dar, 'processor': processor}
-
-    def _store_sprelease_for_publishing(self, sourcepackagerelease,
-                                        spdata):
-        """Append to the sourcepackagerelease imported list."""
-        if sourcepackagerelease not in self.imported_sources:
-            self.imported_sources.append((sourcepackagerelease, spdata))
-
-    def _store_bprelease_for_publishing(self, binarypackage, bpdata,
-                                        archtag):
-        """Append to the binarypackage imported list."""
-        if archtag not in self.imported_bins.keys():
-            self.imported_bins[archtag] = []
-        self.imported_bins[archtag].append((binarypackage, bpdata))
-
-    def _store_archinfo(self, archtag):
-        """Append retrived distroarchrelease info to a dict."""
-        if archtag in self.archinfo.keys():
-            return
-
-        info = self._get_distroarchrelease_info(archtag)
-        self.archinfo[archtag] = info
 
     #
     # Package stuff
@@ -225,9 +219,7 @@ class ImporterHandler:
                 (sourcepackagedata.package, sourcepackagedata.version))
             return None
 
-        # Append to the sourcepackagerelease imported list.
-        self._store_sprelease_for_publishing(sourcepackagerelease,
-                                             sourcepackagedata)
+        self.publish_sourcepackage(sourcepackagerelease, sourcepackagedata)
         return sourcepackagerelease
 
     def import_sourcepackage(self, sourcepackagedata):
@@ -239,9 +231,7 @@ class ImporterHandler:
         sourcepackagerelease = handler(sourcepackagedata,
                                        self.distrorelease)
 
-        self._store_sprelease_for_publishing(sourcepackagerelease,
-                                             sourcepackagedata)
-        # See preimport_sourcecheck
+        self.publish_sourcepackage(sourcepackagerelease, sourcepackagedata)
         return sourcepackagerelease
 
     def preimport_binarycheck(self, archtag, binarypackagedata):
@@ -250,7 +240,6 @@ class ImporterHandler:
         happen, for instance, if a binary package didn't change over
         releases, or if Gina runs multiple times over the same release
         """
-        self._store_archinfo(archtag)
         distroarchinfo = self.archinfo[archtag]
         binarypackagerelease = self.bphandler.checkBin(binarypackagedata,
                                                        distroarchinfo)
@@ -260,14 +249,12 @@ class ImporterHandler:
                  binarypackagedata.architecture))
             return None
 
-        # Append to the sourcepackagerelease imported list.
-        self._store_bprelease_for_publishing(binarypackagerelease,
-                                             binarypackagedata, archtag)
+        self.publish_binarypackage(binarypackagerelease, binarypackagedata,
+                                   archtag)
         return binarypackagerelease
 
     def import_binarypackage(self, archtag, binarypackagedata):
         """Handler the binarypackage import process"""
-        self._store_archinfo(archtag)
         distroarchinfo = self.archinfo[archtag]
 
         # We know that preimport_binarycheck has run
@@ -287,12 +274,10 @@ class ImporterHandler:
                                  binarypackagedata.source,
                                  binarypackagedata.source_version))
 
-        binarypackage = self.bphandler.createBinaryPackage(binarypackagedata,
-                                                           sourcepackage,
-                                                           distroarchinfo,
-                                                           archtag)
-        self._store_bprelease_for_publishing(binarypackage,
-                                             binarypackagedata, archtag)
+        binarypackagerelease = self.bphandler.createBinaryPackage(
+            binarypackagedata, sourcepackage, distroarchinfo, archtag)
+        self.publish_binarypackage(binarypackagerelease, binarypackagedata,
+                                   archtag)
 
     binnmu_re = re.compile(r"^(.+)\.\d+$")
     binnmu_re2 = re.compile(r"^(.+)\.\d+\.\d+$")
@@ -352,22 +337,22 @@ class ImporterHandler:
 
         return None
 
-    def publish_sourcepackages(self, pocket):
-        log.info('Publishing Source Packages...')
-        publisher = SourcePublisher(self.distrorelease)
-        for spr, spdata in self.imported_sources:
-            publisher.publish(spr, spdata, pocket)
-        log.info('done')
+    def publish_sourcepackage(self, sourcepackagerelease, sourcepackagedata):
+        """Append to the sourcepackagerelease imported list."""
+        log.info('Publishing source %s (%s) into %s' %
+                 (sourcepackagedata.package, sourcepackagedata.version,
+                  self.distrorelease.name))
+        self.sppublisher.publish(sourcepackagerelease, sourcepackagedata)
+        self.imported_sources.append((sourcepackagerelease, sourcepackagedata))
 
-    def publish_binarypackages(self, pocket):
-        log.info('Publishing Binary Packages...')
-        for archtag, binarypackages in self.imported_bins.iteritems():
-            archinfo = self.archinfo[archtag]
-            distroarchrelease = archinfo['distroarchrelease']
-            publisher = BinaryPackagePublisher(distroarchrelease)
-            for binary, bpdata in binarypackages:
-                publisher.publish(binary, bpdata, pocket)
-        log.info('done')
+    def publish_binarypackage(self, binarypackagerelease, binarypackagedata,
+                              archtag):
+        log.info('Publishing binary %s (%s) into %s for %s' %
+                 (binarypackagedata.package, binarypackagedata.version,
+                  self.distrorelease.name, archtag))
+        self.bppublisher.publish(binarypackagerelease, binarypackagedata)
+        self.imported_bins[archtag].append((binarypackagerelease,
+                                            binarypackagedata))
 
 
 class DistroHandler:
@@ -407,7 +392,7 @@ class DistroHandler:
         return ret
 
 
-class SourcePackageReleaseHandler:
+class SourcePackageHandler:
     """SourcePackageRelease Handler class
 
     This class has methods to make the sourcepackagerelease access
@@ -467,7 +452,7 @@ class SourcePackageReleaseHandler:
         # the binary import is started. Thusly since this source is
         # being imported "late" in the process, we publish it immediately
         # to make sure it doesn't get lost.
-        SourcePublisher(distrorelease).publish(spr, sp_data, self.pocket)
+        SourcePackagePublisher(distrorelease, self.pocket).publish(spr, sp_data)
         return spr
 
     def _getSourcePackageDataFromDSC(self, sp_name, sp_version,
@@ -525,7 +510,6 @@ class SourcePackageReleaseHandler:
 
     def _getSource(self, sourcepackagename, version, distrorelease):
         """Returns a sourcepackagerelease by its name and version."""
-        distributionID=distrorelease.distribution.id
         # XXX: we use the source package publishing tables here, but I
         # think that's a bit flawed. We should have a way of saying "my
         # distrorelease overlays the version namespace of that
@@ -539,7 +523,8 @@ class SourcePackageReleaseHandler:
                     sourcepackagerelease.id AND
                 sourcepackagepublishing.distrorelease = distrorelease.id AND
                 distrorelease.distribution = %s
-                """ % (sourcepackagename.id, quote(version), distributionID)
+                """ % (sourcepackagename.id, quote(version), 
+                       distrorelease.distribution.id)
         # XXX: this should really be a select DISTINCT. What we want to
         # know here is the set of source packages with this version that
         # was ever published into this archive.
@@ -618,15 +603,16 @@ class SourcePackageReleaseHandler:
         return spr
 
 
-class SourcePublisher:
+class SourcePackagePublisher:
     """Class to handle the sourcepackagerelease publishing process."""
 
-    def __init__(self, distrorelease):
+    def __init__(self, distrorelease, pocket):
         # Get the distrorelease where the sprelease will be published.
         self.distrorelease = distrorelease
+        self.pocket = pocket
         self.distro_handler = DistroHandler()
 
-    def publish(self, sourcepackagerelease, spdata, pocket):
+    def publish(self, sourcepackagerelease, spdata):
         """Create the publishing entry on db if does not exist."""
         # Check if the sprelease is already published and if so, just
         # report it.
@@ -645,7 +631,7 @@ class SourcePublisher:
 
         # Create the Publishing entry with status PENDING so that we can
         # republish this later into a Soyuz archive.
-        SecureSourcePackagePublishingHistory(
+        entry = SecureSourcePackagePublishingHistory(
             distrorelease=self.distrorelease.id,
             sourcepackagerelease=sourcepackagerelease.id,
             status=PackagePublishingStatus.PENDING,
@@ -653,11 +639,11 @@ class SourcePublisher:
             section=section.id,
             datecreated=nowUTC,
             datepublished=nowUTC,
-            pocket=pocket
+            pocket=self.pocket
             )
-        log.debug('SourcePackageRelease %s-%s published' % (
-            sourcepackagerelease.sourcepackagename.name,
-            sourcepackagerelease.version))
+        log.debug('Source package %s (%s) published' % (
+            entry.sourcepackagerelease.sourcepackagename.name,
+            entry.sourcepackagerelease.version))
 
     def _checkPublishing(self, sourcepackagerelease, distrorelease):
         """Query for the publishing entry"""
@@ -870,11 +856,12 @@ class BinaryPackageHandler:
 
 class BinaryPackagePublisher:
     """Binarypackage publisher class."""
-    def __init__(self, distroarchrelease):
+    def __init__(self, distroarchrelease, pocket):
         self.distroarchrelease = distroarchrelease
+        self.pocket = pocket
         self.distro_handler = DistroHandler()
 
-    def publish(self, binarypackage, bpdata, pocket):
+    def publish(self, binarypackage, bpdata):
         """Create the publishing entry on db if does not exist."""
         log.debug('Publishing BinaryPackage %s-%s' % (
             binarypackage.binarypackagename.name, binarypackage.version))
@@ -906,7 +893,7 @@ class BinaryPackagePublisher:
             status = PackagePublishingStatus.PENDING,
             datecreated = nowUTC,
             datepublished = nowUTC,
-            pocket = pocket,
+            pocket = self.pocket,
             datesuperseded = None,
             supersededby = None,
             datemadepending = None,
