@@ -138,13 +138,13 @@ def send_process_error_notification(to_addrs, subject, error_msg):
     simple_sendmail(get_bugmail_error_address(), to_addrs, subject, msg)
 
 
-def notify_errors_list(message, file_alias):
+def notify_errors_list(message, file_alias_url):
     """Sends an error to the Launchpad errors list."""
     template = get_email_template('notify-unhandled-email.txt')
     simple_sendmail(
         get_bugmail_error_address(), [config.launchpad.errors_address],
-        'Unhandled Email: %s' % file_alias.filename,
-        template % {'url': file_alias.url, 'error_msg': message})
+        'Unhandled Email: %s' % file_alias_url,
+        template % {'url': file_alias_url, 'error_msg': message})
 
 
 def generate_bug_add_email(bug):
