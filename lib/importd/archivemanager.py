@@ -172,9 +172,12 @@ class ArchiveManager(object):
         mirrorer = self._master.make_mirrorer(self._mirror)
         mirrorer.mirror(revision)
 
-    def mirrorBranch(self):
+    def mirrorBranch(self, logger):
         mirrorer = self._master.make_mirrorer(self._mirror)
-        mirrorer.mirror()
+        for line in mirrorer.iter_mirror(limit=self.version):
+            # XXX: currently, in importd and cscvs, progress verbosity is not
+            # at INFO level but at WARNING level. -- DavidAllouche 2005-11-16
+            logger.warning(line)
 
     def mirrorIsEmpty(self):
         """Is the mirror empty or non-existent?
