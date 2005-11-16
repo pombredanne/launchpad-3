@@ -115,33 +115,51 @@ class BranchAddView(SQLObjectAddView):
 
         
 class BranchPullListing(LaunchpadView):
-    """A listing of all the branches in the system that are pending-pull."""
+    """Listing of all the branches that the Supermirror should pull soon.
 
-    def branch_line(self, branch):
-        """Return the line in the listing for a single branch.
-        
+    The Supermirror periodically copies Bazaar branches from the internet. It
+    gets the list of branches to pull, and associated data, by loading and
+    parsing this page. This is only a transitional solution until the
+    Supermirror can query Launchpad directly through a xmlrpc interface.
+    """
+
+    def get_line_for_branch(self, branch):
+        """Format the information required to pull a single branch.
+
+        :type branch: `IBranch`
+        :rtype: unicode
+
         XXX: The product name mangling should be hooked into Navigation by
              Steve Alexander when working on that.
         """
         if branch.product is None:
-            product_name = "+junk"
+            product_name = '+junk'
         else:
             product_name = branch.product.name
-        return "%s %s %s %s" % (branch.url, branch.owner.name, product_name,
-                                branch.name)
+        return u'%s %s %s %s' % (branch.url, branch.owner.name, product_name,
+                                 branch.name)
 
     def branches_page(self, branches):
         """Return the full page for the supplied list of branches."""
-        lines = [self.branch_line(branch) + "\n" for branch in branches]
-        return "".join(lines)
+        lines = [self.get_line_for_branch(branch) for branch in branches]
+        if not lines:
+            return ''
+        else:
+            return '\n'.join(lines) + '\n'
 
-    def branches_to_pull(self):
-        """What branches need to be pulled at this point?."""
+    def get_branches_to_pull(self):
+        """The branches that currently need to be pulled.
+
+        :rtype: iterable of `IBranch`
+        """
         branch_set = getUtility(IBranchSet)
         return branch_set.get_supermirror_pull_queue()
 
     def render(self):
-        """See LaunchpadView.render."""
+        """Render a plaintext page with all branches that need pulling.
+
+        :see: overrides `LaunchpadView.render`.
+        """
         self.request.response.setHeader('Content-type', 'text/plain')
-        branches = self.branches_to_pull()
+        branches = self.get_branches_to_pull()
         return self.branches_page(branches)

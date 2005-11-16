@@ -3,6 +3,7 @@
 """Tests for BranchPullListing and related."""
 
 __metaclass__ = type
+
 import unittest
 from zope.testing.doctest import DocFileSuite, DocTestSuite
 
@@ -85,14 +86,16 @@ class TestBranchPullWithBranches(unittest.TestCase):
                                                  None, "james")
 
 
-    def test_branch_line(self):
-        self.assertEqual("http://foo/bar john product foo",
-                         self.view.branch_line(self.branch_with_product))
-        self.assertEqual("http://foo/gam mary a_product bar",
-                         self.view.branch_line(
-                            self.branch_with_another_product))
-        self.assertEqual("sftp://example.com james +junk quux",
-                         self.view.branch_line(self.branch_with_no_product))
+    def test_get_line_for_branch(self):
+        self.assertEqual(
+            "http://foo/bar john product foo",
+            self.view.get_line_for_branch(self.branch_with_product))
+        self.assertEqual(
+            "http://foo/gam mary a_product bar",
+            self.view.get_line_for_branch(self.branch_with_another_product))
+        self.assertEqual(
+            "sftp://example.com james +junk quux",
+            self.view.get_line_for_branch(self.branch_with_no_product))
 
     def test_branches_page(self):
         self.assertEqual("http://foo/bar john product foo\n"
@@ -116,7 +119,7 @@ class TestBranchPullWithBranches(unittest.TestCase):
 
 class TestBranchesToPullSample(LaunchpadFunctionalTestCase):
 
-    def test_branches_to_pull(self):
+    def test_get_branches_to_pull(self):
         from canonical.launchpad.database import Branch
         self.login()
         mock_request = MockRequest()
@@ -124,7 +127,7 @@ class TestBranchesToPullSample(LaunchpadFunctionalTestCase):
         view = browser.BranchPullListing(None, mock_request)
         # sample data gives 2 branches:
         expected_ids = set([15, 16, 17, 18, 19, 20, 21, 22, 23])
-        got_ids = set([branch.id for branch in view.branches_to_pull()])
+        got_ids = set([branch.id for branch in view.get_branches_to_pull()])
         self.assertEqual(expected_ids, got_ids)
         # now check refresh logic:
         # current logic - any branch with either no last mirrored time, or
@@ -135,9 +138,10 @@ class TestBranchesToPullSample(LaunchpadFunctionalTestCase):
         branch.sync()
 
         expected_ids = set([15, 16, 17, 18, 19, 20, 21, 22])
-        got_ids = set([branch.id for branch in view.branches_to_pull()])
+        got_ids = set([branch.id for branch in view.get_branches_to_pull()])
         self.assertEqual(expected_ids, got_ids)
-        # Should rollback here.
+        # As we've finished this test we dont care about what we have created
+        # in the database, if we could rollback that might be nice for clarity.
 
     def test_branch_pull_render(self):
         self.login()
