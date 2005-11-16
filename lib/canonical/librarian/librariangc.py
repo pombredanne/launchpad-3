@@ -3,6 +3,8 @@
 
 __metaclass__ = type
 
+import os.path
+
 from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.librarian.storage import _relFileLocation as relative_file_path
@@ -73,6 +75,7 @@ def delete_unreferenced_content(ztm):
     what their expires flag says.
     """
     ztm.begin()
+    cur = cursor()
     cur.execute("""
         SELECT LibraryFileContent.id
         FROM LibraryFileContent
@@ -80,22 +83,12 @@ def delete_unreferenced_content(ztm):
             ON LibraryFileContent.id = LibraryFileAlias.content
         WHERE LibraryFileAlias.content IS NULL
         """)
-    garbage_ids = cur.fetchall()
+    garbage_ids = [row[0] for row in cur.fetchall()]
     ztm.abort()
 
-    # Determine the directory where the librarian stores its files,
-    # and do a basic sanity check on it.
-    storage_root = config.librarian.server.root
-    if not os.path.isdir(os.path.join(storage_root, 'incoming')):
-        raise RuntimeError(
-                "Librarian file storage not found at %s" % storage_root
-                )
-
-    for garbage_id, deleted in cur.fetchall():
+    for garbage_id in garbage_ids:
         # Remove the file from disk, if it hasn't already been
-        path = os.path.join(
-                storage_root, relative_path(garbage_id)
-                )
+        path = get_file_path(garbage_id)
         if os.path.exists(path):
             log.info("Deleting %s", path)
             os.unlink(path)
@@ -103,10 +96,27 @@ def delete_unreferenced_content(ztm):
             log.info("%s already deleted", path)
 
         ztm.begin()
+        cur = cursor()
         # Delete old LibraryFileContent entries
         log.info("Deleting LibraryFileContent %d", garbage_id)
         cur.execute("""
-            DELETE FROM LibraryFileContent WHERE id = %(garbage_id)s)
+            DELETE FROM LibraryFileContent WHERE id = %(garbage_id)s
             """, vars())
         ztm.commit()
+
+
+def get_file_path(content_id):
+    """Return the physical file path to the corresponding LibraryFileContent id
+    """
+    assert isinstance(content_id, int), 'Invalid content_id %r' % (content_id,)
+    storage_root = config.librarian.server.root
+    # Do a basic sanity check.
+    if not os.path.isdir(os.path.join(storage_root, 'incoming')):
+        raise RuntimeError(
+                "Librarian file storage not found at %s" % storage_root
+                )
+    path = os.path.join(
+            storage_root, relative_file_path(content_id)
+            )
+    return path
 
