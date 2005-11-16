@@ -196,23 +196,30 @@ class BugTask(SQLBase, BugTaskMixin):
     def asEmailHeaderValue(self):
         """See canonical.launchpad.interfaces.IBugTask."""
         # Calculate an appropriate display value for the assignee.
-        try:
-            assignee_email = self.assignee.preferredemail.email
-        except AttributeError:
-            # There appears to be either no assignee, or an assignee with no
-            # preferred email.
-            assignee_email = 'None'
+        if self.assignee:
+            if self.assignee.preferredemail:
+                assignee_value = self.assignee.preferredemail.email
+            else:
+                # There is an assignee with no preferredemail, so we'll
+                # "degrade" to the assignee.name. This might happen for teams
+                # that don't have associated emails or when a bugtask was
+                # imported from an external source and had its assignee set
+                # automatically, even though the assignee may not even know they
+                # have an account in Launchpad. :)
+                assignee_value = self.assignee.name
+        else:
+            assignee_value = 'None'
 
         # Calculate an appropriate display value for the priority.
-        try:
+        if self.priority:
             priority_value = self.priority.title
-        except AttributeError:
+        else:
             priority_value = 'None'
 
         # Calculate an appropriate display value for the sourcepackage.
-        try:
+        if self.sourcepackagename:
             sourcepackagename_value = self.sourcepackagename.name
-        except AttributeError:
+        else:
             # There appears to be no sourcepackagename associated with this
             # task.
             sourcepackagename_value = 'None'
@@ -231,39 +238,34 @@ class BugTask(SQLBase, BugTaskMixin):
             component = currentrelease.component.name
 
         if IUpstreamBugTask.providedBy(self):
-            return (
-                ('product=%(productname)s; status=%(status)s; '
-                 'priority=%(priority)s; assignee=%(assignee)s;') %
-                {'productname': self.target.name,
-                 'status': self.status.title,
-                 'priority': priority_value,
-                 'assignee': assignee_email})
+            header_value = 'product=%s;' %  self.target.name
         elif IDistroBugTask.providedBy(self):
-            return (
-                ('distribution=%(distroname)s; '
-                 'sourcepackage=%(sourcepackagename)s; '
-                 'component=%(componentname)s; status=%(status)s; '
-                 'priority=%(priority)s; assignee=%(assignee)s;') %
+            header_value = ((
+                'distribution=%(distroname)s; '
+                'sourcepackage=%(sourcepackagename)s; '
+                'component=%(componentname)s;') %
                 {'distroname': self.distribution.name,
                  'sourcepackagename': sourcepackagename_value,
-                 'componentname': component,
-                 'status': self.status.title,
-                 'priority': priority_value,
-                 'assignee': assignee_email})
+                 'componentname': component})
         elif IDistroReleaseBugTask.providedBy(self):
-            return (
-                ('distribution=%(distroname)s; '
-                 'release=%(distroreleasename)s; '
-                 'sourcepackage=%(sourcepackagename)s; '
-                 'component=%(componentname)s; status=%(status)s; '
-                 'priority=%(priority)s; assignee=%(assignee)s;') %
+            header_value = ((
+                'distribution=%(distroname)s; '
+                'distrorelease=%(distroreleasename)s; '
+                'sourcepackage=%(sourcepackagename)s; '
+                'component=%(componentname)s;') %
                 {'distroname': self.distrorelease.distribution.name,
                  'distroreleasename': self.distrorelease.name,
                  'sourcepackagename': sourcepackagename_value,
-                 'componentname': component,
-                 'status': self.status.title,
-                 'priority': priority_value,
-                 'assignee': assignee_email})
+                 'componentname': component})
+
+        header_value += ((
+            ' status=%(status)s; priority=%(priority)s; '
+            'assignee=%(assignee)s;') %
+            {'status': self.status.title,
+             'priority': priority_value,
+             'assignee': assignee_value})
+
+        return header_value
 
     @property
     def statusdisplayhtml(self):

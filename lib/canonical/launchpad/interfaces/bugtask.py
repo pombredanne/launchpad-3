@@ -130,8 +130,14 @@ class IBugTask(IHasDateCreated):
     def asEmailHeaderValue(self):
         """Return a value suitable for an email header value for this bugtask.
 
-        This allows users to create mail filters to organize their Malone
-        bugmail in a way that's convenient for them.
+        The return value is a single line of arbitrary length.
+
+        For an upstream task, this value might look like:
+
+          product=firefox; status=New; priority=None; assignee=None;
+
+        See doc/bugmail-headers.txt for a complete explanation and more
+        examples.
         """
 
 

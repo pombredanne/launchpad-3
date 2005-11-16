@@ -16,9 +16,7 @@ import canonical.launchpad
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IBugDelta, IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
-from canonical.launchpad.mail import (
-    sendmail, simple_sendmail, do_paranoid_email_content_validation,
-    encode_address_field)
+from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.components.bugtask import BugTaskDelta
 from canonical.launchpad.helpers import contactEmailAddresses
@@ -517,33 +515,18 @@ def send_bug_notification(bug, user, subject, body, to_addrs=None,
 
     from_addr = get_bugmail_from_address(user)
 
-    do_paranoid_email_content_validation(
-        from_addr=from_addr, to_addrs=to_addrs, subject=subject, body=body)
-
-    # Construct the message, including the appropriate headers. We have to
-    # create this message directly in this method (rather than calling, for
-    # example, simple_sendmail) because we want to be able to add the
-    # X-Malone-Bug header potentially multiple times to the message, which
-    # simple_sendmail's API does not account for.
-    msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
-    msg['From'] = encode_address_field(from_addr)
-    msg['Subject'] = subject
-    for k,v in headers.items():
-        del msg[k]
-        msg[k] = v
-
     # Add a header for each task on this bug, to help users organize their
     # incoming mail in a way that's convenient for them.
-    bugtasks = bug.bugtasks
-    for bugtask in bugtasks:
-        msg["X-Malone-Bug"] = bugtask.asEmailHeaderValue()
+    x_malone_bug_values = []
+    for bugtask in bug.bugtasks:
+        x_malone_bug_values.append(bugtask.asEmailHeaderValue())
+
+    headers["X-Malone-Bug"] = x_malone_bug_values
 
     for to_addr in to_addrs:
-        # Remove the previous To header, if there was one.
-        del msg["To"]
-        msg['To'] = encode_address_field(to_addr)
-
-        sendmail(msg)
+        simple_sendmail(
+            from_addr=from_addr, to_addrs=to_addr, subject=subject, body=body,
+            headers=headers)
 
 def send_bug_edit_notification(bug_delta):
     """Send a notification email about a bug that was modified.

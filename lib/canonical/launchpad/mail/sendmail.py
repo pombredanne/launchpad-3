@@ -11,9 +11,7 @@ messaging settings -- stub 2004-10-21
 
 """
 
-__all__ = [
-    'sendmail', 'encode_address_field', 'do_paranoid_email_content_validation',
-    'simple_sendmail', 'raw_sendmail']
+__all__ = ['sendmail', 'simple_sendmail', 'raw_sendmail']
 
 import sets
 from email.Utils import make_msgid, formatdate, parseaddr, formataddr
@@ -83,17 +81,27 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
     """Send an email from from_addr to to_addrs with the subject and body
     provided. to_addrs can be a list, tuple, or ASCII/Unicode string.
 
-    Arbitrary headers can be set using the headers parameter.
+    Arbitrary headers can be set using the headers parameter. If the value for a
+    given key in the headers dict is a list or tuple, the header will be added
+    to the message once for each value in the list.
 
     Returns the Message-Id.
     """
+    if not zisinstance(to_addrs, (list, tuple)):
+        to_addrs = [to_addrs]
+
     do_paranoid_email_content_validation(
         from_addr=from_addr, to_addrs=to_addrs, subject=subject, body=body)
 
     msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
-    for k,v in headers.items():
-        del msg[k]
-        msg[k] = v
+    # The header_body_values may be a list or tuple of values, so we will add a
+    # header once for each value provided for that header. (X-Malone-Bug, for
+    # example, may often be set more than once for a bugmail.)
+    for header, header_body_values in headers.items():
+        if not zisinstance(header_body_values, (list, tuple)):
+            header_body_values = [header_body_values]
+        for header_body_value in header_body_values:
+            msg[header] = header_body_value
     msg['To'] = ','.join([encode_address_field(addr) for addr in to_addrs])
     msg['From'] = encode_address_field(from_addr)
     msg['Subject'] = subject
