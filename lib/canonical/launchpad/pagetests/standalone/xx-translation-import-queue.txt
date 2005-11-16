@@ -1,0 +1,196 @@
+Check to be sure that upstream projects can use Rosetta to submit their
+initial template uploads.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+series/1.0/+translations-upload HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Here you can upload either a single file...
+
+Time to do the upload...
+
+  >>> import canonical.launchpad
+  >>> import os.path
+  >>> test_file_name = os.path.join(
+  ...     os.path.dirname(canonical.launchpad.__file__),
+  ...     'pagetests/translation-import-queue/test.tar.gz')
+  >>> tarball = open(test_file_name)
+  >>> print http(r"""
+  ... POST /products/firefox/+series/1.0/+translations-upload HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 522
+  ... Content-Type: multipart/form-data; boundary=---------------------------1318994232199907263719102121
+  ... Referer: http://localhost:9000/products/firefox/+series/1.0/+translations-upload
+  ... 
+  ... -----------------------------1318994232199907263719102121
+  ... Content-Disposition: form-data; name="file"; filename="test.tar.gz"
+  ... Content-Type: application/x-gzip
+  ... %s
+  ... -----------------------------1318994232199907263719102121
+  ... Content-Disposition: form-data; name="TRANSLATIONS-UPLOAD"
+  ... 
+  ... Request Upload
+  ... -----------------------------1318994232199907263719102121--
+  ... """ % tarball.read())
+  HTTP/1.1 200 Ok
+  ...Upload new translation resources for Mozilla Firefox Series: Mozilla Firefox...
+  ...Thank you for your upload. 1 files from the tarball will be reviewed soon by an admin...
+
+We check now that the upload is available from the translation import queue page.
+
+  >>> print http(r"""
+  ... GET /rosetta/imports HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...po/es.po...
+  ...Mozilla Firefox Series: Mozilla Firefox...
+  ...Download</a>]
+            </td>
+            <td>
+  <BLANKLINE>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+  ...
+
+As an admin, the same page should give us extra rights to edit imports and
+thus, the link should appear.
+
+  >>> print http(r"""
+  ... GET /rosetta/imports HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  ...<input type="checkbox" name="entry-1" />
+  ...Carlos Perelló Marín...
+  ...po/es.po...
+  ...Mozilla Firefox Series: Mozilla Firefox...
+  ...Download...
+            </td>
+            <td>
+  <BLANKLINE>
+                [<a href="http://localhost:9000/rosetta/imports/1">Edit</a>]
+  <BLANKLINE>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+  ...
+
+As an admin, we should be able to block requests.
+
+  >>> print http(r"""
+  ... POST /rosetta/imports HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 29
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Referer: http://localhost:9000/rosetta/imports
+  ... 
+  ... entry-1=on&block_review=Block""")
+  HTTP/1.1 200 Ok
+  ...1 item was blocked...
+  ...There are no pending files to be imported into Rosetta...
+
+And of course, it should appear as blocked.
+
+  >>> print http(r"""
+  ... GET /rosetta/imports/+blocked HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Referer: http://localhost:9000/rosetta/imports
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...This is a listing of all translation resources that were blocked to be...
+  ...<input type="checkbox" name="entry-1" />
+  ...Carlos Perelló Marín...
+  ...po/es.po...
+  ...Mozilla Firefox Series: Mozilla Firefox...
+  ...Download...
+  ...Edit...
+
+Now, we should be able to unblock it.
+
+  >>> print http(r"""
+  ... POST /rosetta/imports/+blocked HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 26
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Referer: http://localhost:9000/rosetta/imports/+blocked
+  ... 
+  ... entry-1=on&unblock=Unblock""")
+  HTTP/1.1 200 Ok
+  ...Translation files blocked from being imported...
+  ...1 item was unblocked...
+  ...There are no files being blocked...
+
+And it should appear as pending to be imported.
+
+  >>> print http(r"""
+  ... GET /rosetta/imports HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...po/es.po...
+  ...Mozilla Firefox Series: Mozilla Firefox...
+  ...Download</a>]
+            </td>
+            <td>
+  <BLANKLINE>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+  ...
+
+Now, we attach a new file to an already existing translation resource.
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 362
+  ... Content-Type: multipart/form-data; boundary=---------------------------13161753624926250560039312
+  ... Referer: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload
+  ... 
+  ... -----------------------------13161753624926250560039312
+  ... Content-Disposition: form-data; name="file"; filename="evolution.pot"
+  ... Content-Type: text/x-gettext-translation-template
+  ... 
+  ... # foo
+  ... 
+  ... -----------------------------13161753624926250560039312
+  ... Content-Disposition: form-data; name="UPLOAD"
+  ... 
+  ... Upload
+  ... -----------------------------13161753624926250560039312--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Upload a new version of Template "evolution-2.2" in ubuntu hoary package "evolution"...
+  ...Thank you for your upload. The template content will appear in Rosetta in a few minutes...
+
+Now the import queue should have two entries, latest one will be ready to
+be imported because the import was associated directly.
+
+  >>> print http(r"""
+  ... GET /rosetta/imports HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...<input type="checkbox" name="entry-2" />
+  ...Carlos Perelló Marín...
+  ...po/evolution-2.2.pot...
+  ...evolution in ubuntu hoary...
+  ...Template "evolution-2.2" in ubuntu hoary package "evolution"...
+  ...Download...
+  ...Edit...
+  ...<input type="checkbox" name="entry-1" />
+  ...po/es.po...
+  ...Mozilla Firefox Series: Mozilla Firefox...
+  ...Download</a>]
+            </td>
+            <td>
+  <BLANKLINE>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+  ...

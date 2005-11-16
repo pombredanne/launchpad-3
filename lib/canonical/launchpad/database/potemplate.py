@@ -807,34 +807,49 @@ class POTemplateSet:
             # The POTemplate belongs to a distribution and it could come from
             # another package that the one it's linked at the moment so we
             # first check to find it at IPOTemplate.from_sourcepackagename
-            try:
-                return POTemplate.selectOne(
-                    productseries=productseries,
-                    distrorelease=distrorelease,
-                    from_sourcepackagename=sourcepackagename,
-                    path=path)
-            except SQLObjectNotFound:
+            potemplate = POTemplate.selectOne('''
+                    POTemplate.distrorelease = %s AND
+                    POTemplate.from_sourcepackagename = %s AND
+                    POTemplate.path = %s''' % sqlvalues(
+                        distrorelease.id,
+                        sourcepackagename.id,
+                        path)
+                    )
+            if potemplate is not None:
                 # There is no potemplate in that 'path' and
                 # 'from_sourcepackagename' so we do a search using the usual
                 # sourcepackagename.
-                pass
+                return potemplate
 
-            try:
-                return POTemplate.selectOne(
-                    productseries=productseries,
-                    distrorelease=distrorelease,
-                    sourcepackagename=sourcepackagename,
-                    path=path)
-            except SQLObjectNotFound:
-                if productseries is None:
-                    message = (
-                        'There is no POTemplate at %s for %s that comes from'
-                        ' %s' % (
-                            sourcepackagename.name, distrorelease.name, path)
-                        )
-                else:
-                    message = (
-                        'There is no POTemplate at %s that comes from %s' % (
-                            productseries.title, path)
-                        )
-                raise NotFoundError(message)
+            potemplate = POTemplate.selectOne('''
+                    POTemplate.distrorelease = %s AND
+                    POTemplate.sourcepackagename = %s AND
+                    POTemplate.path = %s''' % sqlvalues(
+                        distrorelease.id,
+                        sourcepackagename.id,
+                        path)
+                    )
+
+            if potemplate is None:
+                raise NotFoundError(
+                    'There is no POTemplate at %s for %s that comes from'
+                    ' %s' % (
+                        sourcepackagename.name, distrorelease.name, path)
+                    )
+            else:
+                return potemplate
+        else:
+            potemplate = POTemplate.selectOne('''
+                    POTemplate.productseries = %s AND
+                    POTemplate.path = %s''' % sqlvalues(
+                        productseries.id,
+                        path)
+                    )
+
+            if potemplate is None:
+                raise NotFoundError(
+                    'There is no POTemplate at %s that comes from %s' % (
+                        productseries.title, path)
+                    )
+            else:
+                return potemplate
