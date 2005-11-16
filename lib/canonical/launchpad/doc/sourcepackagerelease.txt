@@ -70,7 +70,7 @@ It's time to check the upload function.
    >>> import canonical.launchpad
    >>> import os.path
    >>> from canonical.launchpad.interfaces import ITranslationImportQueueSet
-   >>> translation_import_queue_set = getUtility(ITranslationImportQueueSet()
+   >>> translation_import_queue_set = getUtility(ITranslationImportQueueSet)
    >>> client = getUtility(ILibrarianClient)
 
 We need a test tarball uploaded into librarian to run this test.

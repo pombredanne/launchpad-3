@@ -58,7 +58,7 @@
                tal:attributes="href string:${entry/importer/fmt:url}"
                >Mark Shuttleworth</a>
           </td>
-          <td tal:content="entry/dateimport/fmt:datetime">
+          <td tal:content="entry/dateimported/fmt:datetime">
             date
           </td>
           <td>
@@ -137,7 +137,7 @@
                tal:attributes="href string:${entry/importer/fmt:url}"
                >Mark Shuttleworth</a>
           </td>
-          <td tal:content="entry/dateimport/fmt:datetime">
+          <td tal:content="entry/dateimported/fmt:datetime">
             date
           </td>
           <td>
