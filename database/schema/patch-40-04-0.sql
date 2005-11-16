@@ -6,7 +6,7 @@ CREATE TABLE TranslationImportQueue(
   path              text NOT NULL,
   content           integer REFERENCES LibraryFileAlias(id) NOT NULL,
   importer          integer NOT NULL REFERENCES Person(id),
-  dateimport        timestamp without time zone NOT NULL DEFAULT
+  dateimported      timestamp without time zone NOT NULL DEFAULT
                                (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
   distrorelease     integer REFERENCES DistroRelease(id),
   sourcepackagename integer REFERENCES SourcePackageName(id),
@@ -40,14 +40,9 @@ ALTER TABLE POTemplate ADD CONSTRAINT valid_from_sourcepackagename CHECK (source
 
 -- join path and filename, then drop filename column
 UPDATE POTemplate SET path=REPLACE(path || '/' || filename, '//', '/') WHERE filename IS NOT NULL;
--- We need a join of the path and filename fields before removing that column.
 ALTER TABLE POTemplate DROP COLUMN filename;
 
 ALTER TABLE POFile ADD COLUMN from_sourcepackagename integer REFERENCES SourcePackageName(id);
 ALTER TABLE POFile RENAME COLUMN filename TO path;
 
---How would we define a constraint check that would be something like?:
---ALTER TABLE POFile ADD CONSTRAINT valid_fromsourcepackagename CHECK (potemplate.sourcepackagename IS NOT NULL OR fromsourcepackagename IS NULL);
---The idea is that the POFile.fromsourcepackagename cannot be not null unless POFile.potemplate.sourcepackagename is not null.
-
-INSERT INTO LaunchpadDatabaseRevision VALUES (25,99,0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (40,04,0);

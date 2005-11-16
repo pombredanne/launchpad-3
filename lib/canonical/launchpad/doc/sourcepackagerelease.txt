@@ -62,5 +62,38 @@ Check if we can use its utility class:
 
    >>> from canonical.launchpad.interfaces import (
    ...    ISourcePackageReleaseSet) 
-   
+
    >>> spr_util = getUtility(ISourcePackageReleaseSet)
+
+It's time to check the upload function.
+
+   >>> import canonical.launchpad
+   >>> import os.path
+   >>> from canonical.launchpad.interfaces import ITranslationImportQueueSet
+   >>> translation_import_queue_set = getUtility(ITranslationImportQueueSet()
+   >>> client = getUtility(ILibrarianClient)
+
+We need a test tarball uploaded into librarian to run this test.
+
+   >>> test_file_name = os.path.join(
+   ...     os.path.dirname(canonical.launchpad.__file__),
+   ...     'pagetests/standalone/test.tar.gz')
+   >>> file = open(test_file_name)
+   >>> alias = client.addFile(
+   ...     name='test.tar.gz',
+   ...     file=file,
+   ...     contentType='application/x-gtar')
+
+Before the upload, the queue should be empty.
+
+   >>> len(translation_import_queue_set)
+   0
+
+Now we do the upload.
+
+   >>> spr_test.attachTranslationFiles(alias, True)
+
+And the queue should have a new entry.
+
+   >>> len(translation_import_queue_set)
+   1

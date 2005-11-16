@@ -1202,7 +1202,7 @@ COMMENT ON TABLE TranslationImportQueue IS 'Queue with translatable resources pe
 COMMENT ON COLUMN TranslationImportQueue.path IS 'The path (included the filename) where this file was stored when we imported it.';
 COMMENT ON COLUMN TranslationImportQueue.content IS 'The file content that is being imported.';
 COMMENT ON COLUMN TranslationImportQueue.importer IS 'The person that did the import.';
-COMMENT ON COLUMN TranslationImportQueue.dateimport IS 'The timestamp when the import was done.';
+COMMENT ON COLUMN TranslationImportQueue.dateimported IS 'The timestamp when the import was done.';
 COMMENT ON COLUMN TranslationImportQueue.distrorelease IS 'The distribution release related to this import.';
 COMMENT ON COLUMN TranslationImportQueue.sourcepackagename IS 'The source package name related to this import.';
 COMMENT ON COLUMN TranslationImportQueue.productseries IS 'The product series related to this import.';

@@ -28,7 +28,7 @@ class TranslationImportQueue(SQLBase):
         notNull=False)
     importer = ForeignKey(foreignKey='Person', dbName='importer',
         notNull=True)
-    dateimport = UtcDateTimeCol(dbName='dateimport', notNull=True,
+    dateimported = UtcDateTimeCol(dbName='dateimported', notNull=True,
         default=DEFAULT)
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
         dbName='sourcepackagename', notNull=False, default=None)
@@ -128,7 +128,7 @@ class TranslationImportQueue(SQLBase):
         pofile_or_potemplate.path = self.path
         attach_object = ICanAttachRawFileData(pofile_or_potemplate)
         attach_object.attachRawFileDataAsFileAlias(
-            self.content, self.is_published, self.importer, self.dateimport)
+            self.content, self.is_published, self.importer, self.dateimported)
 
         # The import is noted now, so we should remove this entry from the
         # queue.

@@ -106,7 +106,7 @@ class TranslationImportQueueView(GeneralFormView):
             # Point to the right path.
             potemplate.path = self.context.path
             # Set the real import date.
-            IRawFileData(potemplate).daterawimport = self.context.dateimport
+            IRawFileData(potemplate).daterawimport = self.context.dateimported
 
             if language is None:
                 # We can remove the element from the queue as it was a direct
