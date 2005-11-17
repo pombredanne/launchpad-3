@@ -24,7 +24,7 @@ IMailHandler. The name of the utility is the domain that's handled.
 Let's create some utilities which keep track of which mails they
 handle, and register them for some domains:
 
-    >>> from canonical.launchpad.interfaces import IMailHandler
+    >>> from canonical.launchpad.interfaces import IMailHandler, IProductSet
     >>> from zope.interface import implements
     >>> from canonical.config import config
     >>> class MockHandler:
@@ -156,6 +156,70 @@ the To and CC headers will be ignored:
 
     >>> msgid in foo_handler.handledMails
     False
+
+DB exceptions
+-------------
+
+If something goes wrongs in the handler, a DB exception can be raised,
+leaving the database in a bad state. If that happens a traceback should
+be printed, and the mail should be deleted from the queue.
+
+Let's create and register a handler which violates a DB constraint:
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> class DBExceptionRaiser:
+    ...     implements(IMailHandler)
+    ...     def process(self, mail, to_addr, filealias):
+    ...         firefox = getUtility(IProductSet)['firefox']
+    ...         firefox.name = 'invalid name'
+    ...         flush_database_updates()
+
+    >>> ztapi.provideUtility(IMailHandler, DBExceptionRaiser(), 'except.com')
+
+Now we send a mail to the handler, which will cause an exception:
+
+    >>> exception_raiser = """From: Foo Bar <foo.bar@canonical.com>
+    ... To: something@except.com
+    ... X-Original-To: something@except.com
+    ... Subject: Raise an exception
+    ...
+    ... This part is not important.
+    ... """
+    >>> raw_sendmail(
+    ...     'foo.bar@canonical.com', ['something@exception.com'],
+    ...     exception_raiser)
+    '...'
+    >>> transaction.commit()
+
+We send another mail as well, in order to make sure that it gets
+processed as well:
+
+    >>> msg = read_test_message('signed_detached.txt')
+    >>> msg.replace_header('To', '123@foo.com')
+    >>> msgid = '<%s>' % sendmail(msg)
+    >>> transaction.commit()
+
+
+If we call handleMail(), we'll see some useful error messages printed
+out:
+
+    >>> handleMail(transaction)
+    ERROR:...:An exception was raised inside the handler: http://...
+    ERROR: new row for relation "product" violates check constraint "valid_name"
+    <BLANKLINE>
+    UPDATE Product SET name = 'invalid name' WHERE id = 4
+    WARNING...
+
+
+The second mail we sent got handled despite the exception:
+
+    >>> msgid in foo_handler.handledMails
+    True
+
+There are no mails left in the mail box:
+
+    >>> len(stub.test_emails)
+    0
 
 Handling bounces
 ----------------

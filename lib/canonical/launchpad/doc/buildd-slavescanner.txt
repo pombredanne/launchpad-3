@@ -153,14 +153,18 @@ Let's create a bunch of mock slaves for testing the Builder State Handler:
   ...     def status(self):
   ...         raise xmlrpclib.Fault
 
+
+Make ensurePresent() always return True, it teoretically means the
+slave has the requested file in cache.
+
   >>> class OkSlave:
   ...     def status(self):
   ...         return ('BuilderStatus.IDLE',)
   ...     def ensurepresent(self, sha1, url):
-  ...         print 'OkSlave has everithing !!! avoid file transfers'
+  ...         print 'OkSlave has everything'
   ...         return True
   ...     def build(self, buildid, buildtype, chroot, filemap, args):
-  ...         print 'OkSlaves BUILDING !!!'
+  ...         print 'OkSlaves BUILDING'
 
   >>> class BuildingSlave:
   ...     def status(self):
@@ -209,7 +213,7 @@ Let's create a bunch of mock slaves for testing the Builder State Handler:
   >>> builder4 = MockBuilder('Missed Dependency build', 
   ...                        WaitingSlave('BuildStatus.DEPFAIL'))
 
-  >>> builder5 = MockBuilder('Bad CHROOT', 
+  >>> builder5 = MockBuilder('Bad Chroot', 
   ...                        WaitingSlave('BuildStatus.CHROOTFAIL'))
 
   >>> builder6 = MockBuilder('I am out of order', 
@@ -320,12 +324,12 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
   >>> bqItem4.build.buildstate.title
   'Manual dependency wait'
 
-  WAITING - CHROOTFAIL -> the CHROOT for this distrorelease is damage, nor
+  WAITING - CHROOTFAIL -> the Chroot for this distrorelease is damage, nor
   builder, but right state stored in Build entry:
 
   >>> bqItem5 = MockBuildQueue(1, builder5, MockBuild())
   >>> buildergroup.updateBuild(bqItem5, librarian)
-  CRITICAL:root:***** Bad CHROOT is CHROOTWAIT *****
+  CRITICAL:root:***** Bad Chroot is CHROOTWAIT *****
   >>> assert bqItem5.build.builder is not None
   >>> assert bqItem5.build.datebuilt is not None
   >>> assert bqItem5.build.buildduration is not None
@@ -477,7 +481,7 @@ the available builder slaves at moment.
   >>> for proc, queueItems in byproc.iteritems():
   ...     bm.dispatchByProcessor(proc, queueItems)
 
-Create a totally bogus but usable CHROOT 
+Create a totally bogus but usable Chroot 
 
   >>> from canonical.lp import dbschema
   >>> from canonical.launchpad.database import LibraryFileAlias
@@ -487,16 +491,16 @@ Create a totally bogus but usable CHROOT
   >>> p = PocketChroot(distroarchreleaseID=archrelease.id,
   ...                  pocket=pocket, chroot=chroot)
 
-Fix some BuildQueue missed attributes
+Initialize BuildQueue missing attributes for building: 
 
   >>> bqItem3.version = 'Demo'
   >>> bqItem3.archrelease = archrelease
 
-Resquest a Slave Build process:
+Request a Slave Build process:
 
   >>> bm.startBuild(buildergroup, builder2, bqItem3, pocket)
-  OkSlave has everithing !!! avoid file transfers
-  OkSlaves BUILDING !!!
+  OkSlave has everything
+  OkSlaves BUILDING
 
 See OkSlave() class implementation for further details
 
