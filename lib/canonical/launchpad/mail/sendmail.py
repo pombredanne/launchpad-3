@@ -63,8 +63,6 @@ def do_paranoid_email_content_validation(from_addr, to_addrs, subject, body):
     """
     # XXX: These checks need to be migrated upstream if this bug
     # still exists in modern Z3 -- StuartBishop 20050319
-    if zisinstance(to_addrs, basestring):
-        to_addrs = [to_addrs]
     assert (zisinstance(to_addrs, (list, tuple, sets.Set, set))
             and len(to_addrs) > 0), 'Invalid To: %r' % (to_addrs,)
     assert zisinstance(from_addr, basestring), \
@@ -87,7 +85,7 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
 
     Returns the Message-Id.
     """
-    if not zisinstance(to_addrs, (list, tuple)):
+    if zisinstance(to_addrs, basestring):
         to_addrs = [to_addrs]
 
     do_paranoid_email_content_validation(
