@@ -396,6 +396,34 @@ Let's take on the upstream task as well:
     >>> print upstream_task.assignee.displayname
     Sample Person
 
+    >>> stub.test_emails = []
+
+Most of the time it's not necessary to give the 'affects' command,
+though. It tries to guess which bug task the user wanted to edit.
+
+If there's only one task, that task will be edited. So if we simply send
+a 'status' command to bug seven, the single upstream task will be
+edited:
+
+    >>> login('foo.bar@canonical.com')
+    >>> bug_seven = getUtility(IBugSet).get(7)
+    >>> len(bug_seven.bugtasks)
+    1
+    >>> submit_commands(bug_seven, 'status accepted')
+    >>> evolution_task = bug_seven.bugtasks[0]
+    >>> print evolution_task.status.name
+    ACCEPTED
+
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> print msg['Subject']
+    [Bug 7]...
+    >>> print msg.get_payload(decode=True)
+    Public bug report changed:
+    ...
+        Status: New => Accepted
+    <BLANKLINE>
+
 
 Error Handling
 --------------

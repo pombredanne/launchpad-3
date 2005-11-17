@@ -13,9 +13,10 @@ from canonical.launchpad.pathlookup.exceptions import PathStepNotFoundError
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.interfaces import (
         IProduct, IDistribution, IDistroRelease, IPersonSet,
-        ISourcePackage, IBugEmailCommand, IBugEditEmailCommand, IBugSet,
-        ILaunchBag, IBugTaskSet, BugTaskSearchParams, IBugTarget,
-        IMessageSet, IDistributionSourcePackage, EmailProcessingError)
+        ISourcePackage, IBugEmailCommand, IBugTaskEmailCommand,
+        IBugEditEmailCommand, IBugTaskEditEmailCommand, IBugSet, ILaunchBag,
+        IBugTaskSet, BugTaskSearchParams, IBugTarget, IMessageSet,
+        IDistributionSourcePackage, EmailProcessingError)
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import ISQLObjectCreatedEvent
@@ -271,10 +272,10 @@ class TitleEmailCommand(EditEmailCommand):
 class AffectsEmailCommand(EditEmailCommand):
     """Either creates a new task, or edits an existing task."""
 
-    implements(IBugEditEmailCommand)
+    implements(IBugTaskEmailCommand)
     _subCommandNames = ['status', 'severity', 'assignee']
 
-    def execute(self, bug, current_event):
+    def execute(self, bug):
         """See IEmailCommand."""
         try:
             path = self.string_args.pop(0)
@@ -378,7 +379,7 @@ class AffectsEmailCommand(EditEmailCommand):
 class AssigneeEmailCommand(EmailCommand):
     """Assigns someone to the bug."""
 
-    implements(IBugEditEmailCommand)
+    implements(IBugTaskEditEmailCommand)
 
     _numberOfArguments = 1
 
@@ -408,7 +409,7 @@ class DBSchemaEditEmailCommand(EditEmailCommand):
             dbschema = FooDBSchema
     """
 
-    implements(IBugEditEmailCommand)
+    implements(IBugTaskEditEmailCommand)
 
     _numberOfArguments = 1
 

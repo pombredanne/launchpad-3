@@ -10,8 +10,11 @@ from zope.exceptions import NotFoundError
 
 from canonical.launchpad.helpers import Snapshot
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IMessageSet, IBugEmailCommand, IBug, IMailHandler,
-    IBugMessageSet, BugCreationConstraintsError, EmailProcessingError)
+    ILaunchBag, IMessageSet, IBugEmailCommand, IBugTaskEmailCommand,
+    IBugEditEmailCommand, IBugTaskEditEmailCommand, IBug, IBugTask,
+    IMailHandler, IBugMessageSet, BugCreationConstraintsError,
+    EmailProcessingError, IUpstreamBugTask, IDistroBugTask,
+    IDistroReleaseBugTask)
 from canonical.launchpad.mail.commands import emailcommands
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
@@ -42,6 +45,38 @@ def get_edited_fields(modified_event, another_event):
     if ISQLObjectModifiedEvent.providedBy(another_event):
         edited_fields += another_event.edited_fields
     return edited_fields
+
+
+def get_bugtask_type(bugtask):
+    """Returns the specific IBugTask interface the the bugtask provides.
+
+        >>> from canonical.launchpad.interfaces import (
+        ...     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
+        >>> from zope.interface import classImplementsOnly
+        >>> class BugTask:
+        ...     pass
+
+        >>> classImplementsOnly(BugTask, IUpstreamBugTask)
+        >>> get_bugtask_type(BugTask()) #doctest: +ELLIPSIS
+        <...IUpstreamBugTask>
+
+        >>> classImplementsOnly(BugTask, IDistroBugTask)
+        >>> get_bugtask_type(BugTask()) #doctest: +ELLIPSIS
+        <...IDistroBugTask>
+
+        >>> classImplementsOnly(BugTask, IDistroReleaseBugTask)
+        >>> get_bugtask_type(BugTask()) #doctest: +ELLIPSIS
+        <...IDistroReleaseBugTask>
+    """
+    bugtask_interfaces = [
+        IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask
+        ]
+    for interface in bugtask_interfaces:
+        if interface.providedBy(bugtask):
+            return interface
+    # The bugtask didn't provide any specific interface.
+    raise TypeError(
+        'No specific bugtask interface was provided by %r' % bugtask)
 
 
 class IncomingEmailError(Exception):
@@ -108,11 +143,14 @@ class MaloneHandler:
 
         bug = None
         bug_event = None
+        bugtask = None
+        bugtask_event = None
+        bugtask_snapshot = None
         try:
             while len(commands) > 0:
                 command = commands.pop(0)
                 try:
-                    if IBugEmailCommand.providedBy(command):   
+                    if IBugEmailCommand.providedBy(command):
                         if bug_event is not None:
                             notify(bug_event)
                             bug_event = None
@@ -130,7 +168,20 @@ class MaloneHandler:
                             notify(SQLObjectCreatedEvent(bugmessage))
                             add_comment_to_bug = False
                         bug_snapshot = Snapshot(bug, providing=IBug)
-                    else:
+                    elif IBugTaskEmailCommand.providedBy(command):
+                        if bugtask_event is not None:
+                            notify(bugtask_event)
+                            bugtask_event = None
+                            bugtask_snapshot = None
+                        bugtask, bugtask_event = command.execute(bug)
+                        if (bugtask_snapshot is None and
+                            ISQLObjectModifiedEvent.providedBy(bugtask_event)):
+                            bugtask_snapshot = (
+                                bugtask_event.object_before_modification)
+                        elif bugtask_snapshot is None:
+                            bugtask_snapshot = Snapshot(
+                                bugtask, providing=IBugTask)
+                    elif IBugEditEmailCommand.providedBy(command):
                         ob, ob_event = command.execute(bug, bug_event)
                         # The bug can be edited by several commands. Let's wait
                         # firing off the event until all commands related to
@@ -143,6 +194,25 @@ class MaloneHandler:
                                     ob_event, bug_event)
                                 bug_event = SQLObjectModifiedEvent(
                                     bug, bug_snapshot, edited_fields)
+                    elif IBugTaskEditEmailCommand.providedBy(command):
+                        if bugtask is None and len(bug.bugtasks) == 1:
+                            bugtask = bug.bugtasks[0]
+                            bugtask_snapshot = Snapshot(
+                                bugtask, providing=get_bugtask_type(bugtask))
+                        ob, ob_event = command.execute(bugtask, bugtask_event)
+                        # The bug task can be edited by several
+                        # commands. Let's wait firing off the event
+                        # until all commands related to the bug task
+                        # have been executed.
+                        if ob_event is not None:
+                            if ob != bugtask:
+                                notify(ob_event)
+                            elif ISQLObjectModifiedEvent.providedBy(ob_event):
+                                edited_fields = get_edited_fields(
+                                    ob_event, bugtask_event)
+                                bugtask_event = SQLObjectModifiedEvent(
+                                    bugtask, bugtask_snapshot, edited_fields)
+
                 except EmailProcessingError, error:
                     raise IncomingEmailError(str(error))
 
@@ -151,6 +221,8 @@ class MaloneHandler:
                     notify(bug_event)
                 except BugCreationConstraintsError, error:
                     raise IncomingEmailError(str(error))
+            if bugtask_event is not None:
+                notify(bugtask_event)
 
         except IncomingEmailError, error:
             transaction.abort()
