@@ -23,6 +23,7 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.lp.dbschema import EmailAddressStatus, LoginTokenType
 from canonical.lp.dbschema import GPGKeyAlgorithm
 
+from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logInPerson
 from canonical.launchpad.webapp import canonical_url, GetitemNavigation
@@ -153,13 +154,13 @@ class ResetPasswordView(BaseLoginTokenView):
         self.formProcessed = True
         self.context.destroySelf()
 
-        # Need to flush all changes we made, so subsequent queries we make
-        # with this transaction will see this changes and thus they'll be
-        # displayed on the page that calls this method.
-        flush_database_updates()
-
         if form.get('logmein'):
             self.logInPersonByEmail(self.context.email)
+
+        self.request.response.addInfoNotification(
+                _('Your password has successfully been reset'))
+        self.request.response.redirect(canonical_url(
+                self.context.requester))
 
 
 class ValidateEmailView(BaseLoginTokenView):
@@ -186,10 +187,21 @@ class ValidateEmailView(BaseLoginTokenView):
 
             if self.context.tokentype == LoginTokenType.VALIDATEEMAIL:
                 self.markEmailAddressAsValidated()
+                self.request.response.addInfoNotification(
+                        _('Email address successfully confirmed'))
             else:
                 self.validateGpg()
+                if self.successfullyProcessed():
+                    self.request.response.addInfoNotification(
+                            _(self.infomessage))
+                else:
+                    return
         elif self.context.tokentype == LoginTokenType.VALIDATETEAMEMAIL:
             self.setTeamContactAddress()
+            self.request.response.addInfoNotification(
+                    _('Contact email address validated successfully'))
+
+        self.request.response.redirect(canonical_url(self.context.requester))
 
     def setTeamContactAddress(self):
         """Set the new email address as the team's contact email address.
@@ -461,6 +473,21 @@ class MergePeopleView(BaseLoginTokenView):
         self.formProcessed = True
         if self.validateRequesterPassword(self.request.form.get("password")):
             self._doMerge()
+            if self.mergeCompleted: 
+                self.request.response.addInfoNotification(
+                        _('The merge you requested was concluded with success. '
+                          'Now, everything that was owned by the duplicated ' 
+                          'account should be owned by your user account.'))
+            else:
+                self.request.response.addInfoNotification(
+                        _('The email address %s have been assigned to you, but '
+                          'the dupe account you selected still have more ' 
+                          'registered email addresses. In order to actually ' 
+                          'complete the merge, you have to prove that you have '
+                          'access to all email addresses of that account.' %
+                          self.context.email))
+            self.request.response.redirect(
+                    canonical_url(self.context.requester))
             self.context.destroySelf()
 
     def _doMerge(self):
