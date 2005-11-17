@@ -4,8 +4,13 @@ from zope.interface import Interface, Attribute
 
 __metaclass__ = type
 
-__all__ = ('RawFileBusy', 'RawFileAttachFailed', 'RawFileFetchFailed',
-    'ICanAttachRawFileData', 'IRawFileData')
+__all__ = [
+    'RawFileBusy',
+    'RawFileAttachFailed',
+    'RawFileFetchFailed',
+    'ICanAttachRawFileData',
+    'IRawFileData'
+    ]
 
 from canonical.database.constants import UTC_NOW
 

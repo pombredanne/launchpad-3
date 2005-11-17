@@ -165,6 +165,10 @@ class TranslationImportQueueSet:
 
         return self.get(idnumber)
 
+    def __len__(self):
+        """See ITranslationImportQueueSet."""
+        return TranslationImportQueue.select().count()
+
     def addOrUpdateEntry(self, path, content, is_published, importer,
         sourcepackagename=None, distrorelease=None, productseries=None):
         """See ITranslationImportQueueSet."""

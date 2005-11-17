@@ -252,8 +252,6 @@ class SecureSourcePackagePublishingHistory(SQLBase):
                      cls).selectBy(*args, **kwargs)
 
 
-
-
 class SecureBinaryPackagePublishingHistory(SQLBase):
     """A binary package publishing record."""
 

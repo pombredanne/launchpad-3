@@ -221,20 +221,23 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
         """
 
     def poFilesToImport():
-        """Returns all PO files from this POTemplate that have a rawfile 
-        pending of import into Rosetta."""
+        """Return all PO files from this POTemplate that have a rawfile 
+        pending of import into Rosetta.
+        """
 
     def getPOFileByPath(path):
         """Get the PO file of the given path.
 
-        Raises NotFoundError if there is no such POFile."""
+        Raise NotFoundError if there is no such POFile.
+        """
 
     def getPOFileByLang(language_code, variant=None):
         """Get the PO file of the given language and (potentially)
         variant. If no variant is specified then the translation
         without a variant is given.
 
-        Raises NotFoundError if there is no such POFile."""
+        Raise NotFoundError if there is no such POFile.
+        """
 
     def queryPOFileByLang(language_code, variant=None):
         """Return a PO file for this PO template in the given language, if
@@ -261,7 +264,7 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
         """Create and return a new po file in the given language. The
         variant is optional.
 
-        Raises LanguageNotFound if the language does not exist in the
+        Raise LanguageNotFound if the language does not exist in the
         database.
         """
 
@@ -269,7 +272,7 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
         """Get a POFile for the given language and optional variant, and if
         none exists then return a DummyPOFile.
 
-        Raises LanguageNotFound if the language does not exist in the
+        Raise LanguageNotFound if the language does not exist in the
         database. This method is designed to be used by traversal code in
         the case of a GET request (read-only). Instead of creating a PO file
         just because someone is LOOKING at an empty pofile, we would just

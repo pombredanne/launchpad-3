@@ -100,6 +100,9 @@ class ISourcePackageRelease(Interface):
         'is_published' indicates if the imported files are already published by
         upstream.
         'importer' is the person that did the import.
+
+        raise DownloadFailed if we are not able to fetch the file from
+        'tarball_alias'.
         """
 
 

@@ -37,10 +37,10 @@
       <thead>
         <tr>
           <th></th>
+          <th>Origin</th>
+          <th>Path</th>
           <th>Uploader</th>
           <th>Ignored since</th>
-          <th>Path</th>
-          <th>Origin</th>
           <th></th>
           <th></th>
         </tr>
@@ -53,17 +53,6 @@
                    tal:attributes="name string:entry-${entry/id}" />
           </td>
           <td>
-            <a tal:content="entry/importer/browsername"
-               tal:attributes="href string:${entry/importer/fmt:url}"
-               >Mark Shuttleworth</a>
-          </td>
-          <td tal:content="entry/dateimported/fmt:datetime">
-            date
-          </td>
-          <td>
-            <span tal:content="entry/path">po/foo.pot</span>
-          </td>
-          <td>
             <a tal:condition="entry/sourcepackage"
                tal:content="entry/sourcepackage/title"
                tal:attributes="href string:${entry/sourcepackage/fmt:url}"
@@ -72,6 +61,17 @@
                tal:content="entry/productseries/title"
                tal:attributes="href string:${entry/productseries/fmt:url}"
                >Evolution Series: MAIN</a>
+          </td>
+          <td>
+            <span tal:content="entry/path">po/foo.pot</span>
+          </td>
+          <td>
+            <a tal:content="entry/importer/browsername"
+               tal:attributes="href string:${entry/importer/fmt:url}"
+               >Mark Shuttleworth</a>
+          </td>
+          <td tal:content="entry/dateimported/fmt:datetime">
+            date
           </td>
           <td>
             [<a tal:attributes="href string:${entry/content/url}">Download</a>]

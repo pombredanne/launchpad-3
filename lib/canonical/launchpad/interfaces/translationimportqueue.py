@@ -98,6 +98,9 @@ class ITranslationImportQueueSet(Interface):
         raised.
         """
 
+    def __len__():
+        """Return the number of entries in the queue, included the blocked."""
+
     def addOrUpdateEntry(path, content, is_published, importer,
         sourcepackagename=None, distrorelease=None, productseries=None):
         """Return a new or updated entry of the import queue.

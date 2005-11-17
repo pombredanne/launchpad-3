@@ -4,6 +4,8 @@ __metaclass__ = type
 __all__ = ['SourcePackageRelease', 'SourcePackageReleaseSet']
 
 import sets
+import tarfile
+from StringIO import StringIO
 from urllib2 import URLError
 
 from zope.interface import implements
@@ -206,12 +208,8 @@ class SourcePackageRelease(SQLBase):
         """See ISourcePackageRelease."""
         client = getUtility(ILibrarianClient)
 
-        try:
-            tarball_file = client.getFileByAlias(tarball_alias)
-        except DownloadFailed, e:
-            return
-
-        tarball = tarfile.open('', 'r', tarball_file)
+        tarball_file = client.getFileByAlias(tarball_alias)
+        tarball = tarfile.open('', 'r', StringIO(tarball_file.read()))
 
         # Get the list of files to attach.
         files = []
@@ -233,7 +231,7 @@ class SourcePackageRelease(SQLBase):
             translation_import_queue_set.addOrUpdateEntry(
                 file, content, is_published, importer,
                 sourcepackagename=self.sourcepackagename,
-                distrorelease=self.uploaddistrorelase)
+                distrorelease=self.uploaddistrorelease)
 
 
 class SourcePackageReleaseSet:

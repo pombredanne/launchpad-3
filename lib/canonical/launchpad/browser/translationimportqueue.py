@@ -83,6 +83,7 @@ class TranslationImportQueueView(GeneralFormView):
 
         if (sourcepackagename is not None and
             self.context.sourcepackagename is not None):
+            # Got another sourcepackagename from the form, we will use it.
             destination_sourcepackagename = sourcepackagename
         else:
             destination_sourcepackagename = self.context.sourcepackagename

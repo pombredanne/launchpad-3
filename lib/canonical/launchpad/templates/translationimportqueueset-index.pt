@@ -36,11 +36,11 @@
       <thead>
         <tr>
           <th></th>
-          <th>Uploader</th>
-          <th>Waiting since</th>
-          <th>Published</th>
-          <th>Path</th>
           <th>Origin</th>
+          <th>Path</th>
+          <th>Uploader</th>
+          <th>Uploaded on</th>
+          <th>Published</th>
           <th>Import into</th>
           <th></th>
           <th></th>
@@ -48,6 +48,19 @@
       </thead>
       <tbody>
         <tr tal:repeat="entry view/readyToImport">
+          <td>
+            <a tal:condition="entry/sourcepackage"
+               tal:content="entry/sourcepackage/title"
+               tal:attributes="href string:${entry/sourcepackage/fmt:url}"
+               >evolution in Ubuntu Hoary</a>
+            <a tal:condition="entry/productseries"
+               tal:content="entry/productseries/title"
+               tal:attributes="href string:${entry/productseries/fmt:url}"
+               >Evolution Series: MAIN</a>
+          </td>
+          <td>
+            <span tal:content="entry/path">po/foo.pot</span>
+          </td>
           <td>
             <input type="checkbox"
                    tal:condition="entry/required:launchpad.Edit"
@@ -63,19 +76,6 @@
           </td>
           <td>
             <span tal:content="entry/is_published">True</span>
-          </td>
-          <td>
-            <span tal:content="entry/path">po/foo.pot</span>
-          </td>
-          <td>
-            <a tal:condition="entry/sourcepackage"
-               tal:content="entry/sourcepackage/title"
-               tal:attributes="href string:${entry/sourcepackage/fmt:url}"
-               >evolution in Ubuntu Hoary</a>
-            <a tal:condition="entry/productseries"
-               tal:content="entry/productseries/title"
-               tal:attributes="href string:${entry/productseries/fmt:url}"
-               >Evolution Series: MAIN</a>
           </td>
           <td>
             <a tal:content="entry/import_into/title"
@@ -116,11 +116,11 @@
       <thead>
         <tr>
           <th></th>
-          <th>Uploader</th>
-          <th>Waiting since</th>
-          <th>Published</th>
-          <th>Path</th>
           <th>Origin</th>
+          <th>Path</th>
+          <th>Uploader</th>
+          <th>Imported on</th>
+          <th>Published</th>
           <th></th>
           <th></th>
         </tr>
@@ -133,6 +133,19 @@
                    tal:attributes="name string:entry-${entry/id}" />
           </td>
           <td>
+            <a tal:condition="entry/sourcepackage"
+               tal:content="entry/sourcepackage/title"
+               tal:attributes="href string:${entry/sourcepackage/fmt:url}"
+               >evolution in Ubuntu Hoary</a>
+            <a tal:condition="entry/productseries"
+               tal:content="entry/productseries/title"
+               tal:attributes="href string:${entry/productseries/fmt:url}"
+               >Evolution Series: MAIN</a>
+          </td>
+          <td>
+            <span tal:content="entry/path">po/foo.pot</span>
+          </td>
+          <td>
             <a tal:content="entry/importer/browsername"
                tal:attributes="href string:${entry/importer/fmt:url}"
                >Mark Shuttleworth</a>
@@ -142,19 +155,6 @@
           </td>
           <td>
             <span tal:content="entry/is_published">True</span>
-          </td>
-          <td>
-            <span tal:content="entry/path">po/foo.pot</span>
-          </td>
-          <td>
-            <a tal:condition="entry/sourcepackage"
-               tal:content="entry/sourcepackage/title"
-               tal:attributes="href string:${entry/sourcepackage/fmt:url}"
-               >evolution in Ubuntu Hoary</a>
-            <a tal:condition="entry/productseries"
-               tal:content="entry/productseries/title"
-               tal:attributes="href string:${entry/productseries/fmt:url}"
-               >Evolution Series: MAIN</a>
           </td>
           <td>
             [<a tal:attributes="href string:${entry/content/url}">Download</a>]

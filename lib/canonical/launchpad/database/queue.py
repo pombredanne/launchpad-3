@@ -22,6 +22,8 @@ from canonical.launchpad.interfaces import (
     IDistroReleaseQueue, IDistroReleaseQueueBuild, IDistroReleaseQueueSource,
     IDistroReleaseQueueCustom, NotFoundError)
 
+from canonical.librarian.interfaces import DownloadFailed
+
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
@@ -256,8 +258,15 @@ class DistroReleaseQueueCustom(SQLBase):
 
     def publish_ROSETTA_TRANSLATIONS(self, logger=None):
         """See IDistroReleaseQueueCustom."""
+        # XXX: dsilvers: 20051115: We should be able to get a
+        # sourcepackagerelease directly.
         sourcepackagerelease = (
             self.distroreleasequeue.builds[0].build.sourcepackagerelease)
         # Attach the translation tarball. It's always published.
-        sourcepackagerelease.attachTranslationFiles(libraryfilealias, True)
-
+        try:
+            sourcepackagerelease.attachTranslationFiles(
+                self.libraryfilealias, True)
+        except DownloadFailed:
+            if logger is not None:
+                debug(logger, "Unable to fetch %s to import it into Rosetta" %
+                    self.libraryfilealias.url)
