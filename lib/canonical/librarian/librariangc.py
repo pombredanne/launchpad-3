@@ -105,6 +105,70 @@ def delete_unreferenced_content(ztm):
         ztm.commit()
 
 
+def delete_unreferenced_aliases(ztm):
+    """Delete unreferenced LibraryFileAliases and their LibraryFileContent
+
+    Note that *all* LibraryFileAliases referencing a given LibraryFileContent
+    must be unreferenced for them to be deleted - a single reference will keep
+    the whole set alive.
+    """
+    log.info("Deleting unreferenced LibraryFileAliases")
+
+    # Generate a set of all our LibraryFileContent ids, except for ones
+    # with expiry dates not yet reached (these lurk in the database until
+    # expired) and those that have been accessed in the last week (currently
+    # in use, so leave them lurking a while longer)
+    ztm.begin()
+    cur = cursor()
+    cur.execute("""
+        SELECT c.id
+        FROM LibraryFileContent AS c, LibraryFileAlias AS a
+        WHERE c.id = a.content
+        GROUP BY c.id
+        HAVING (max(expires) IS NULL OR max(expires)
+                < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - '1 week'::interval
+                )
+            AND (max(last_accessed) IS NULL OR max(last_accessed)
+                < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - '1 week'::interval
+                )
+        """
+    content_ids = set(row[0] for row in cur.fetchall())
+    ztm.abort()
+    log.info(
+        "Found %d LibraryFileContent entries possibly unreferenced",
+        len(content_ids)
+        )
+
+    # Determine what columns link to LibraryFileAlias
+    ztm.begin()
+    cur = cursor()
+    # references = [(table, column), ...]
+    references = [
+        tuple(ref[:2]) for ref in listReferences(cur, 'libraryfilealias', 'id')
+        ]
+    assert len(references) > 10, 'Database introspection returned nonsence'
+    ztm.abort()
+    log.info("Found %d columns referencing LibraryFileAlias", len(references))
+
+    # Remove all referenced LibraryFileContent ids from content_ids
+    for table, column in references:
+        ztm.begin()
+        cur = cursor()
+        cur.execute("SELECT DISTINCT %(column)s FROM %(table)s" % vars())
+        referenced_ids = set(row[0] for row in cur.fetchall())
+        ztm.abort()
+        log.debug(
+                "Found %d distinct LibraryFileAlias references in %s(%s)",
+                len(referenced_ids), table, column
+                )
+        content_ids.difference_update(referenced_ids)
+        log.debug(
+                "Now only %d LibraryFileContents possibly unreferenced",
+                len(content_ids)
+                )
+
+
+
 def get_file_path(content_id):
     """Return the physical file path to the corresponding LibraryFileContent id
     """
