@@ -16,11 +16,12 @@ from canonical.launchpad.database import (
 from importd.bzrsync import BzrSync
 from importd.tests import helpers, TestUtil
 
-# Bolierplate to get getUtility(ILaunchpadCelebrities) working in BzrSync.
+# Boilerplate to get getUtility(ILaunchpadCelebrities) working in BzrSync.
 from canonical.launchpad.interfaces import ILaunchpadCelebrities, IPersonSet
 from canonical.launchpad.utilities import LaunchpadCelebrities
 from canonical.launchpad.database import PersonSet
-from zope.app.tests.placelesssetup import setUp, tearDown
+from zope.app.tests.placelesssetup import setUp as zopePlacelessSetUp
+from zope.app.tests.placelesssetup import tearDown as zopePlacelessTearDown
 from zope.app.tests import ztapi
 
 
@@ -36,14 +37,14 @@ class TestBzrSync(helpers.WebserverTestCase):
         self.setUpDBBranch()
         self.setUpAuthor()
 
-        # Bolierplate to get getUtility(ILaunchpadCelebrities) working
+        # Boilerplate to get getUtility(ILaunchpadCelebrities) working
         # inside BzrSync.
-        setUp()
+        zopePlacelessSetUp()
         ztapi.provideUtility(ILaunchpadCelebrities, LaunchpadCelebrities())
         ztapi.provideUtility(IPersonSet, PersonSet())
 
     def tearDown(self):
-        tearDown()
+        zopePlacelessTearDown()
         helpers.WebserverTestCase.tearDown(self)
 
     def setUpBzrBranch(self):

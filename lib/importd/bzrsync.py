@@ -1,22 +1,23 @@
 #!/usr/bin/python
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-"""
-This module/script is able to import data from a bzr branch
-into the Launchpad database.
-"""
+"""Import version control metadata from a Bazaar2 branch into the database."""
 
 __metaclass__ = type
-__all__ = ["BzrSync"]
 
+__all__ = [
+    "BranchIdError",
+    "BzrSync",
+    ]
 
 import sys
 import os
 import logging
 from datetime import datetime
+
 from pytz import UTC
 from sqlobject import SQLObjectNotFound
-
+from zope.component import getUtility
 from bzrlib.branch import Branch as BzrBranch
 from bzrlib.errors import NoSuchRevision
 
@@ -25,14 +26,19 @@ from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.database import (
     Person, Branch, Revision, RevisionNumber, RevisionParent, RevisionAuthor)
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
-from zope.component import getUtility
+
+
+class BranchIdError(Exception):
+    """The requested branch id was not found in the database.
+
+    Raised by BzrSync when the provided branch id was not found in the
+    database.
+    """
+    pass
 
 
 class BzrSync:
-    """Class to import bzr branches into the database
-
-    The purpose of this class is to import data from a bzr branch
-    into the Launchpad database.
+    """Import version control metadata from Bazaar2 branches into the database.
     """
 
     def __init__(self, trans_manager, branch_id, logger=None):
@@ -40,24 +46,22 @@ class BzrSync:
         try:
             self.db_branch = Branch.get(branch_id)
         except SQLObjectNotFound:
-            raise KeyError, "Branch not found"
+            raise BranchIdError("Branch not found: id=%d" % branch_id)
         self.bzr_branch = BzrBranch.open(self.db_branch.url)
         self.bzr_history = self.bzr_branch.revision_history()
         self._seen_ids = set()
         self._admin = getUtility(ILaunchpadCelebrities).admin
-
         if logger is None:
             logger = logging.getLogger(self.__class__.__name__)
         self.logger = logger
 
     def syncHistory(self, doparents=True):
-        """Load all revisions for the branch history
+        """Import all revisions in the branch's revision-history.
 
-        If doparents is true, synchronize also parents not in the history.
+        :param doparents: If true, also import parents of imported revisions.
         """
-
-        self.logger.info("Synchronizing history for branch: %s"
-                         % self.db_branch.url)
+        self.logger.info(
+            "synchronizing history for branch: %s" % self.db_branch.url)
 
         # Keep track if something was actually loaded in the database.
         didsomething = False
@@ -75,20 +79,21 @@ class BzrSync:
         return didsomething
 
     def syncRevision(self, revision_id, pending_parents=None):
-        """Load revision with the given revision_id
+        """Import the revision with the given revision_id.
 
-        If pending_parents is a list, information about the revision
-        parents will be appended to the list, so that they may be
-        processed later by syncPendingParents().
+        :param revision_id: GUID of the revision to import.
+        :type revision_id: str
+        :param pending_parents: append GUID of revision parents to that list,
+            for subsequent processing by `syncPendingParents`.
+        :type pending_parents: list or None
         """
-
         # Prevent the same revision from being synchronized twice.
         # This may happen when processing parents, for instance.
         if revision_id in self._seen_ids:
             return False
         self._seen_ids.add(revision_id)
-        
-        self.logger.info("Synchronizing revision: %s" % revision_id)
+
+        self.logger.info("synchronizing revision: %s" % revision_id)
 
         # If didsomething is True, new information was found and
         # loaded into the database.
@@ -154,7 +159,9 @@ class BzrSync:
     def syncPendingParents(self, pending_parents, recurse=True):
         """Load parents with the information provided by syncRevision()
 
-        If recurse is true, parents of parents will be loaded as well.
+        :param pending_parents: GUIDs of revisions to import.
+        :type pending_parents: iterable of str
+        :param recurse: If true, parents of parents will be loaded as well.
         """
         # Keep track if something was actually loaded in the database.
         didsomething = False
@@ -193,7 +200,6 @@ class BzrSync:
 def main(branch_id):
     # Load branch with the given branch_id.
     trans_manager = initZopeless(dbuser="importd")
-
     status = 0
 
     # Prepare logger
@@ -213,9 +219,9 @@ def main(branch_id):
 
     try:
         bzrsync = BzrSync(trans_manager, branch_id, logger)
-    except KeyError, e:
+    except BranchIdError, exception:
         # Branch not found
-        logger.error(unicode(e.args[0]))
+        logger.error(unicode(exception.args[0]))
         status = 1
     else:
         bzrsync.syncHistory()
