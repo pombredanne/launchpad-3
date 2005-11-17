@@ -15,10 +15,11 @@ from canonical.launchpad.interfaces import (
         IProduct, IDistribution, IDistroRelease, IPersonSet,
         ISourcePackage, IBugEmailCommand, IBugEditEmailCommand, IBugSet,
         ILaunchBag, IBugTaskSet, BugTaskSearchParams, IBugTarget,
-        IMessageSet, IDistributionSourcePackage)
+        IMessageSet, IDistributionSourcePackage, EmailProcessingError)
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import ISQLObjectCreatedEvent
+from canonical.launchpad.mailnotification import get_email_template
 
 from canonical.lp.dbschema import BugTaskStatus, BugTaskSeverity
 
@@ -57,8 +58,6 @@ def normalize_arguments(string_args):
     return result
 
 
-#XXX: Make the email commands raise a more specific error than ValueError.
-#     -- Bjorn Tillenius, 2005-08-18
 class EmailCommand:
     """Represents a command.
 
@@ -73,13 +72,13 @@ class EmailCommand:
         self._subCommandsToBeExecuted = []
 
     def _ensureNumberOfArguments(self):
-        """Checks that the number of arguments is correct.
+        """Check that the number of arguments is correct.
 
-        A ValueError is raise if not.
+        Raise an EmailProcessingError 
         """
         if self._numberOfArguments is not None:
             if self._numberOfArguments != len(self.string_args):
-                raise ValueError(
+                raise EmailProcessingError(
                     "'%s' expects exactly %s argument(s)." % (
                         self.name, self._numberOfArguments))
 
@@ -117,6 +116,10 @@ class BugEmailCommand(EmailCommand):
                 owner=getUtility(ILaunchBag).user,
                 filealias=filealias,
                 parsed_message=parsed_msg)
+            if message.contents.strip() == '':
+                 raise EmailProcessingError(
+                    get_email_template('no-affects-target-on-submit.txt'))
+
             bug = getUtility(IBugSet).createBug(
                 msg=message,
                 title=message.title,
@@ -171,7 +174,7 @@ class PrivateEmailCommand(EditEmailCommand):
         elif private_arg == 'no':
             return {'private': False}
         else:
-            raise ValueError("'private' expects either 'yes' or 'no'")
+            raise EmailProcessingError("'private' expects either 'yes' or 'no'")
 
 
 class SubscribeEmailCommand(EmailCommand):
@@ -194,7 +197,7 @@ class SubscribeEmailCommand(EmailCommand):
                 person_term = valid_person_vocabulary.getTermByToken(
                     person_name_or_email)
             except LookupError:
-                raise ValueError(
+                raise EmailProcessingError(
                     "Couldn't find a person with the specified name or email:"
                     " %s" % person_name_or_email)
             person = person_term.value
@@ -202,7 +205,7 @@ class SubscribeEmailCommand(EmailCommand):
             # Subscribe the sender of the email.
             person = getUtility(ILaunchBag).user
         else:
-            raise ValueError(
+            raise EmailProcessingError(
                 "'subscribe' commands expects at most two arguments."
                 " Got %s: %s" % (len(string_args), ' '.join(string_args)))
 
@@ -236,7 +239,7 @@ class UnsubscribeEmailCommand(EmailCommand):
                 person_term = valid_person_vocabulary.getTermByToken(
                     person_name_or_email)
             except LookupError:
-                raise ValueError(
+                raise EmailProcessingError(
                     "Couldn't find a person with the specified name or email:"
                     " %s" % person_name_or_email)
             person = person_term.value
@@ -244,7 +247,7 @@ class UnsubscribeEmailCommand(EmailCommand):
             # Subscribe the sender of the email.
             person = getUtility(ILaunchBag).user
         else:
-            raise ValueError(
+            raise EmailProcessingError(
                 "'subscribe' commands expects at most one arguments."
                 " Got %s: %s" % (len(string_args), ' '.join(string_args)))
 
@@ -276,12 +279,12 @@ class AffectsEmailCommand(EditEmailCommand):
         try:
             path = self.string_args.pop(0)
         except IndexError:
-            raise ValueError(
+            raise EmailProcessingError(
                 "'affects' command requires at least one argument.")
         try:
             path_target = get_object(path, path_only=True)
         except PathStepNotFoundError, error:
-            raise ValueError(
+            raise EmailProcessingError(
                 "'%s' couldn't be found in command 'affects %s'" % (
                     error.step, path))
         if ISourcePackage.providedBy(path_target):
@@ -336,13 +339,13 @@ class AffectsEmailCommand(EditEmailCommand):
             try:
                 subcmd_arg = self.string_args.pop(0)
             except IndexError:
-                raise ValueError(
+                raise EmailProcessingError(
                     "'affects' sub command '%s' requires at least"
                     " one argument." % subcmd_name)
             try:
                 command = emailcommands.get(subcmd_name, [subcmd_arg])
             except NoSuchCommand:
-                raise ValueError(
+                raise EmailProcessingError(
                     "'affects' got an unexpected argument: %s" % subcmd_name)
             args.update(command.convertArguments())
         return args
@@ -386,7 +389,7 @@ class AssigneeEmailCommand(EmailCommand):
         try:
             person_term = valid_person_vocabulary.getTermByToken(person_name)
         except LookupError:
-            raise ValueError(
+            raise EmailProcessingError(
                     "Couldn't find a person named '%s' in 'assignee %s'" % (
                         person_name, person_name))
 
@@ -417,7 +420,7 @@ class DBSchemaEditEmailCommand(EditEmailCommand):
         except KeyError:
             possible_values = ', '.join(
                 [item.name.lower() for item in self.dbschema.items])
-            raise ValueError(
+            raise EmailProcessingError(
                     "'%s' expects any of: %s" % (self.name, possible_values))
 
 
@@ -433,6 +436,7 @@ class SeverityEmailCommand(DBSchemaEditEmailCommand):
 
 class NoSuchCommand(KeyError):
     """A command with the given name couldn't be found."""
+
 
 class EmailCommands:
     """A collection of email commands."""

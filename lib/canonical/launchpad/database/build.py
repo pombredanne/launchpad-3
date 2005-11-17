@@ -87,13 +87,13 @@ class Build(SQLBase):
     def build_icon(self):
         """See IBuild"""
         icon_map = {
-            BuildStatus.NEEDSBUILD.value : "/++resource++build-success",
-            BuildStatus.FULLYBUILT.value : "/++resource++build-success",
-            BuildStatus.FAILEDTOBUILD.value : "/++resource++build-failure",
-            BuildStatus.MANUALDEPWAIT.value : "/++resource++build-failure",
-            BuildStatus.CHROOTWAIT.value : "/++resource++build-failure",
+            BuildStatus.NEEDSBUILD: "/++resource++build-success",
+            BuildStatus.FULLYBUILT: "/++resource++build-success",
+            BuildStatus.FAILEDTOBUILD: "/++resource++build-failure",
+            BuildStatus.MANUALDEPWAIT: "/++resource++build-failure",
+            BuildStatus.CHROOTWAIT: "/++resource++build-failure",
             }
-        return icon_map[self.buildstate.value]
+        return icon_map[self.buildstate]
 
     @property
     def distributionsourcepackagerelease(self):
