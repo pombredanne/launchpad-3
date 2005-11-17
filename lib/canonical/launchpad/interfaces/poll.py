@@ -263,10 +263,11 @@ class IPollOption(Interface):
 
     title = TextLine(
         title=_('Title'),
-        description=_('The title of this option. A single brief sentence that '
-        'summarises the outcome for which people are voting if '
-        'they select this option.'),
-        required=False, readonly=False)
+        description=_(
+            'The title of this option. A single brief sentence that '
+            'summarises the outcome for which people are voting if '
+            'they select this option.'),
+        required=True, readonly=False)
 
     active = Bool(
         title=_('Is this option active?'), required=True, readonly=False,
