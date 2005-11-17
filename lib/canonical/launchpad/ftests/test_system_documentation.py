@@ -6,8 +6,11 @@ lib/canonical/launchpad/doc.
 
 import unittest
 import os
-from canonical.functional import FunctionalDocFileSuite
+
+from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
 import sqlos.connection
+
+from canonical.functional import FunctionalDocFileSuite
 from canonical.launchpad.ftests.harness import \
         LaunchpadTestSetup, LaunchpadZopelessTestSetup, \
         _disconnect_sqlos, _reconnect_sqlos
@@ -19,6 +22,8 @@ from canonical.launchpad.ftests import login, ANONYMOUS, logout
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 
 here = os.path.dirname(os.path.realpath(__file__))
+
+default_optionflags = REPORT_NDIFF | NORMALIZE_WHITESPACE | ELLIPSIS
 
 def setGlobs(test):
     test.globs['ANONYMOUS'] = ANONYMOUS
@@ -83,7 +88,9 @@ def importdTearDown(test):
 special = {
 
     # No setup or teardown at all, since it is demonstrating these features.
-    'testing.txt': DocFileSuite('../doc/testing.txt'),
+    'testing.txt': DocFileSuite(
+            '../doc/testing.txt', optionflags=default_optionflags
+            ),
 
     # And these tests want minimal environments too.
     'enumcol.txt': DocFileSuite('../doc/enumcol.txt'),

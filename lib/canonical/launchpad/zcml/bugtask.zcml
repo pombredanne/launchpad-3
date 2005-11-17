@@ -501,26 +501,6 @@
         <allow interface="canonical.launchpad.interfaces.IBugTaskDelta" />
     </content>
 
-    <!-- BugTasksReport -->
-    <!-- TODO: figure out why we need to give explicit attributes instead of
-               using set_schema-->
-    <content class="canonical.launchpad.database.BugTasksReport">
-        <allow interface="canonical.launchpad.interfaces.IBugTasksReport" />
-        <require
-            permission="zope.Public"
-            set_attributes="user minseverity minpriority showclosed" />
-    </content>
-
-    <securedutility
-        class="canonical.launchpad.database.BugTasksReport"
-        provides="canonical.launchpad.interfaces.IBugTasksReport">
-        <allow interface="canonical.launchpad.interfaces.IBugTasksReport" />
-    </securedutility>
-
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IBugTasksReport"
-        name="+index" />
-
   </facet>
 
 </configure>

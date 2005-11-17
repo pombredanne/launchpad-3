@@ -235,9 +235,10 @@ class Publisher(object):
                 # XXX: dsilvers: As above, this needs to be integrated into
                 # the database at some point.
                 # bug 3900
+                unpocketed_release = distrorelease.split('-')[0]
                 extra_extra_overrides = os.path.join(
                     self._config.miscroot,
-                    "more-extra.override.%s.main" % (distrorelease))
+                    "more-extra.override.%s.main" % (unpocketed_release))
                 if os.path.exists(extra_extra_overrides):
                     eef = open(extra_extra_overrides, "r")
                     extras = {}

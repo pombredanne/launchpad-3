@@ -132,7 +132,7 @@
             <th>Created</th>
             <th>Started</th>
             <th>Result</th>
-            <th>BuildLog</th>
+            <th>Build log</th>
             <th>Duration</th>
         </tr>
         <tr tal:repeat="build view/lastBuilds">

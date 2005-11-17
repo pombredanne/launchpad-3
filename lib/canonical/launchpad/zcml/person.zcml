@@ -599,4 +599,9 @@
         template="../templates/people-portlet-about.pt" />
   </browser:pages>
 </facet>
+
+<adapter for="canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal"
+    provides="canonical.launchpad.interfaces.IPerson"
+    factory="canonical.launchpad.components.person.personFromPrincipal" />
+
 </configure>

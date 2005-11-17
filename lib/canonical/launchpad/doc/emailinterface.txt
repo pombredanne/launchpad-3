@@ -439,7 +439,7 @@ Now we try to submit a bug on a distribution that doesn't exist:
     ... There's a nasty bug in Foo.
     ...  affects /distros/foo"""
     >>> process_email(submit_mail_distro_not_found)
-   
+
 Again no bug was filed, and an error mail was sent:
 
     >>> transaction.commit()
@@ -453,6 +453,36 @@ Again no bug was filed, and an error mail was sent:
     ...
     'foo' couldn't be found in command 'affects /distros/foo'
     ...
+
+
+Let's send an empty unsigned mail to new@malone:
+
+    >>> submit_empty = """From: test@canonical.com
+    ... To: new@malone
+    ... Date: Fri Jun 17 10:20:27 BST 2005
+    ... Subject: An empty mail
+    ...
+    ... """
+    >>> process_email(submit_empty)
+
+This causes an error message to be sent to the submitter:
+
+    >>> transaction.commit()
+    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    >>> error_mail = email.message_from_string(raw_message)
+
+    >>> print error_mail.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    An error...
+    ...
+    Error message:
+    ...
+    An error occurred while processing your mail to create a new bug. You
+    didn't specify on what you want to file a bug on. A new bug has to
+    affect either a product or a distribution. Please use the 'affects'
+    command in order to specify on what you want to file a bug on. For
+    example, in order to file a bug on Malone itself, use:
+    ...
+
 
     >>> LibrarianTestSetup().tearDown()
 

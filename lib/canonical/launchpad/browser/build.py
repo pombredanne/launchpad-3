@@ -66,3 +66,20 @@ class BuildRecordsView:
             return result.count()
         return None
 
+    def getFailed(self):
+        """Return the builds entries failed to build for the context object."""
+        return self.context.getBuildRecords(status=BuildStatus.FAILEDTOBUILD)
+
+    @property
+    def number_failed(self):
+        """Return the number of build entries failures for the context object.
+
+        If no result is available return None.
+        """
+        result = self.context.getBuildRecords(status=BuildStatus.FAILEDTOBUILD,
+                                              limit=0)
+        if result:
+            return result.count()
+        return None
+
+

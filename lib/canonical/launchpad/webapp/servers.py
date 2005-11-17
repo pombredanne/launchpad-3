@@ -13,7 +13,6 @@ from zope.server.http.commonaccesslogger import CommonAccessLogger
 import zope.publisher.publish
 
 import canonical.launchpad.layers
-from canonical.publication import LaunchpadBrowserPublication
 from zope.publisher.browser import BrowserRequest
 #from zope.publisher.http import HTTPRequest
 import zope.publisher.publish
@@ -143,6 +142,7 @@ class HTTPPublicationRequestFactory:
     _browser_methods = 'GET', 'POST', 'HEAD'
 
     def __init__(self, db):
+        from canonical.publication import LaunchpadBrowserPublication
         ## self._http = HTTPPublication(db)
         self._browser = LaunchpadBrowserPublication(db)
 
