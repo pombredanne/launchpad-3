@@ -32,11 +32,9 @@
 
   <div tal:condition="view/searchrequested">
 
-    <h3>Found <span tal:replace="view/matches"/> results.</h3>
-
-    <div tal:condition="view/batchnav/prevBatchURL">
-       <a tal:attributes="href view/batchnav/prevBatchURL"><b><< Prev</b></a>
-    </div>
+    <tal:navigation
+      replace="structure view/batchnav/@@+navigation-links"
+      tal:condition="view/batch"/>
 
     <ul class="sources" tal:condition="view/batch">
       <li tal:repeat="dsp view/batch">
@@ -75,9 +73,9 @@
       </li>
     </ul>
 
-    <div tal:condition="view/batchnav/nextBatchURL">
-       <a tal:attributes="href view/batchnav/nextBatchURL"><b>Next >></b></a>
-    </div>
+    <tal:navigation
+      replace="structure view/batchnav/@@+navigation-links"
+      tal:condition="view/batch"/>
      
     <tal:no_matches condition="not: view/searchresults">
 
