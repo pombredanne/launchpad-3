@@ -41,12 +41,9 @@
         software that supports the standard <abbr>PO</abbr> file format.
       </p>
       <p>
-        To register software for translation in Rosetta, first
-        <a href="/products">register it in Launchpad</a> if it is not there
-        already. Once that&rsquo;s done, e-mail
-        <a href="http://lists.canonical.com/mailman/listinfo/rosetta-users">the
-        Rosetta mailing list</a> and ask the Rosetta admins to import the
-        upstream translation templates and resource files.
+        To register software for translation in Rosetta, follow the
+        instructions noted at <a href="https://wiki.ubuntu.com/RosettaFAQ">
+        RosettaFAQ</a>
       </p>
 
 </div>
