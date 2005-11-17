@@ -154,7 +154,12 @@ def delete_unreferenced_aliases(ztm):
     for table, column in references:
         ztm.begin()
         cur = cursor()
-        cur.execute("SELECT DISTINCT %(column)s FROM %(table)s" % vars())
+        cur.execute("""
+            SELECT DISTINCT LibraryFileContent.id
+            FROM LibraryFileContent, LibraryFileAlias, %(table)s
+            WHERE LibraryFileContent.id = LibraryFileAlias.content
+                AND LibraryFileAlias.id = %(table)s.%(column)s
+            """ % vars())
         referenced_ids = set(row[0] for row in cur.fetchall())
         ztm.abort()
         log.debug(
