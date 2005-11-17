@@ -10,11 +10,18 @@ import os
 
 from bzrlib.branch import Branch as BzrBranch
 
-from canonical.launchpad.database import (Branch, Revision, RevisionNumber,
-                                          RevisionParent, RevisionAuthor)
+from canonical.launchpad.database import (
+    Branch, Revision, RevisionNumber, RevisionParent, RevisionAuthor)
 
 from importd.bzrsync import BzrSync
 from importd.tests import helpers, TestUtil
+
+# Bolierplate to get getUtility(ILaunchpadCelebrities) working in BzrSync.
+from canonical.launchpad.interfaces import ILaunchpadCelebrities, IPersonSet
+from canonical.launchpad.utilities import LaunchpadCelebrities
+from canonical.launchpad.database import PersonSet
+from zope.app.tests.placelesssetup import setUp, tearDown
+from zope.app.tests import ztapi
 
 
 class TestBzrSync(helpers.WebserverTestCase):
@@ -29,7 +36,14 @@ class TestBzrSync(helpers.WebserverTestCase):
         self.setUpDBBranch()
         self.setUpAuthor()
 
+        # Bolierplate to get getUtility(ILaunchpadCelebrities) working
+        # inside BzrSync.
+        setUp()
+        ztapi.provideUtility(ILaunchpadCelebrities, LaunchpadCelebrities())
+        ztapi.provideUtility(IPersonSet, PersonSet())
+
     def tearDown(self):
+        tearDown()
         helpers.WebserverTestCase.tearDown(self)
 
     def setUpBzrBranch(self):
@@ -41,13 +55,14 @@ class TestBzrSync(helpers.WebserverTestCase):
 
     def setUpDBBranch(self):
         self.trans_manager.begin()
+        randomownerid = 1
         self.db_branch = Branch(name="test",
                                 url=self.bzr_branch_url,
                                 home_page=None,
                                 title="Test branch",
                                 summary="Branch for testing",
                                 product=None,
-                                owner=1)
+                                owner=randomownerid)
         self.trans_manager.commit()
 
     def setUpAuthor(self):
