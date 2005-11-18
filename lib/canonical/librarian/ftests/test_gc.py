@@ -152,14 +152,14 @@ class TestLibrarianGarbageCollection(TestCase):
         # LibraryFileContent
         librariangc.merge_duplicates(self.ztm)
 
-        # Flag one of our LibraryFileAliase as being recently accessed
+        # Flag one of our LibraryFileAliases as being recently accessed
         self.ztm.begin()
         f1 = LibraryFileAlias.get(self.f1_id)
         f1.last_accessed = UTC_NOW
         del f1
         self.ztm.commit()
 
-        # Delete unreferenced LibraryFileAliase. This should remove neither
+        # Delete unreferenced LibraryFileAliases. This should remove neither
         # of our example aliases, as one of them was accessed recently
         librariangc.delete_unreferenced_aliases(self.ztm)
 
@@ -167,6 +167,66 @@ class TestLibrarianGarbageCollection(TestCase):
         self.ztm.begin()
         LibraryFileAlias.get(self.f1_id)
         LibraryFileAlias.get(self.f2_id)
+
+    def testDeleteUnreferencedAndWellExpiredAliases(self):
+        # LibraryFileAliases can be removed after they have expired
+
+        # Merge the duplicates. Both our aliases now point to the same
+        # LibraryFileContent
+        librariangc.merge_duplicates(self.ztm)
+
+        # Flag one of our LibraryFileAliases with an expiry date in the past
+        self.ztm.begin()
+        f1 = LibraryFileAlias.get(self.f1_id)
+        past = datetime.now().replace(tzinfo=utc) - timedelta(days=30)
+        f1.expires = past
+        del f1
+        self.ztm.commit()
+
+        # Delete unreferenced LibraryFileAliases. This should remove out
+        # example aliases, as one is unreferenced with a NULL expiry and
+        # the other is unreferenced with an expiry in the past.
+        librariangc.delete_unreferenced_aliases(self.ztm)
+
+        # Make sure both our example files are gone
+        self.ztmbegin()
+        try:
+            LibraryFileAlias.get(self.f1_id, None)
+            self.fail("LibraryFileAlias %d was not removed" % self.f1_id)
+        except SQLObjectNotFound:
+            pass
+        try:
+            LibraryFileAlias.get(self.f2_id, None)
+            self.fail("LibraryFileAlias %d was not removed" % self.f2_id)
+        except SQLObjectNotFound:
+            pass
+
+    def testDoneDeleteUnreferencedButNotExpiredAliases(self):
+        # LibraryFileAliases can be removed only after they have expired.
+        # If an explicit expiry is set and in recent past (currently up to
+        # one week ago), the files hang around.
+
+        # Merge the duplicates. Both our aliases now point to the same
+        # LibraryFileContent
+        librariangc.merge_duplicates(self.ztm)
+
+        # Flag one of our LibraryFileAliases with an expiry date in the future
+        self.ztm.begin()
+        f1 = LibraryFileAlias.get(self.f1_id)
+        recent_past = datetime.now().replace(tzinfo=utc) - timedelta(days=2)
+        f1.expires = recent_past
+        del f1
+        self.ztm.commit()
+
+        # Delete unreferenced LibraryFileAliases. This should remove out
+        # example aliases, as one is unreferenced with a NULL expiry and
+        # the other is unreferenced with an expiry in the past.
+        librariangc.delete_unreferenced_aliases(self.ztm)
+
+        # Make sure both our example files are still there
+        self.ztmbegin()
+        LibraryFileAlias.get(self.f1_id, None)
+        LibraryFileAlias.get(self.f2_id, None)
 
     def testDeleteUnreferencedContent(self):
         # Merge the duplicates. This creates an unreferenced LibraryFileContent
