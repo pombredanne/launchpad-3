@@ -19,8 +19,8 @@ from canonical.librarian.client import LibrarianClient
 from canonical.launchpad.database import LibraryFileAlias, LibraryFileContent
 from canonical.lp import initZopeless
 from canonical.config import config
-from canonical.database.sqlbase import cursor
-from canonical.database.sqlbase  import SQLObjectNotFound
+from canonical.database.sqlbase import cursor, SQLObjectNotFound
+from canonical.database.constants  import UTC_NOW
 
 class MockLogger:
     def error(self, *args, **kw):
@@ -144,6 +144,29 @@ class TestLibrarianGarbageCollection(TestCase):
             self.fail("LibraryFileAlias %d was not removed" % self.f2_id)
         except SQLObjectNotFound:
             pass
+
+    def testDeleteUnreferrencedAliases2(self):
+        # Don't delete LibraryFileAliases accessed recently
+
+        # Merge the duplicates. Both our aliases now point to the same
+        # LibraryFileContent
+        librariangc.merge_duplicates(self.ztm)
+
+        # Flag one of our LibraryFileAliase as being recently accessed
+        self.ztm.begin()
+        f1 = LibraryFileAlias.get(self.f1_id)
+        f1.last_accessed = UTC_NOW
+        del f1
+        self.ztm.commit()
+
+        # Delete unreferenced LibraryFileAliase. This should remove neither
+        # of our example aliases, as one of them was accessed recently
+        librariangc.delete_unreferenced_aliases(self.ztm)
+
+        # Make sure both our example files are still there
+        self.ztm.begin()
+        LibraryFileAlias.get(self.f1_id)
+        LibraryFileAlias.get(self.f2_id)
 
     def testDeleteUnreferencedContent(self):
         # Merge the duplicates. This creates an unreferenced LibraryFileContent
