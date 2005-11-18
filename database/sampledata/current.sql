@@ -134,21 +134,23 @@ INSERT INTO gpgkey (id, "owner", keyid, fingerprint, active, algorithm, keysize)
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'gpgkey'::pg_catalog.regclass;
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'archuserid'::pg_catalog.regclass;
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'revisionauthor'::pg_catalog.regclass;
 
-INSERT INTO archuserid (id, person, archuserid) VALUES (1, 1, 'mark.shuttleworth');
-INSERT INTO archuserid (id, person, archuserid) VALUES (2, 11, 'steve.alexander');
-INSERT INTO archuserid (id, person, archuserid) VALUES (3, 10, 'alexander.limi');
-INSERT INTO archuserid (id, person, archuserid) VALUES (4, 8, 'james.blackwell');
-INSERT INTO archuserid (id, person, archuserid) VALUES (5, 9, 'christian.reis');
-INSERT INTO archuserid (id, person, archuserid) VALUES (6, 4, 'colin.watson');
-INSERT INTO archuserid (id, person, archuserid) VALUES (7, 5, 'scott.james.remnant');
-INSERT INTO archuserid (id, person, archuserid) VALUES (8, 7, 'andrew.bennetts');
-INSERT INTO archuserid (id, person, archuserid) VALUES (9, 3, 'dave.miller');
-INSERT INTO archuserid (id, person, archuserid) VALUES (10, 6, 'jeff.waugh');
+INSERT INTO revisionauthor (id, name) VALUES (1, 'mark.shuttleworth');
+INSERT INTO revisionauthor (id, name) VALUES (2, 'steve.alexander');
+INSERT INTO revisionauthor (id, name) VALUES (3, 'alexander.limi');
+INSERT INTO revisionauthor (id, name) VALUES (4, 'james.blackwell');
+INSERT INTO revisionauthor (id, name) VALUES (5, 'christian.reis');
+INSERT INTO revisionauthor (id, name) VALUES (6, 'colin.watson');
+INSERT INTO revisionauthor (id, name) VALUES (7, 'scott.james.remnant');
+INSERT INTO revisionauthor (id, name) VALUES (8, 'andrew.bennetts');
+INSERT INTO revisionauthor (id, name) VALUES (9, 'dave.miller');
+INSERT INTO revisionauthor (id, name) VALUES (10, 'jeff.waugh');
+INSERT INTO revisionauthor (id, name) VALUES (11, 'Sample Committer <test@canonical.com>');
+INSERT INTO revisionauthor (id, name) VALUES (12, 'foo <foo@localhost>');
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'archuserid'::pg_catalog.regclass;
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'revisionauthor'::pg_catalog.regclass;
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'wikiname'::pg_catalog.regclass;
@@ -685,13 +687,6 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'productcvsmodule'::p
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'productcvsmodule'::pg_catalog.regclass;
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'productbkbranch'::pg_catalog.regclass;
-
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'productbkbranch'::pg_catalog.regclass;
-
-
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'productsvnmodule'::pg_catalog.regclass;
 
 
@@ -699,203 +694,52 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'productsvnmodule'::p
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'productsvnmodule'::pg_catalog.regclass;
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'archarchive'::pg_catalog.regclass;
-
-INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (1, 'mozilla@arch.ubuntu.com', 'Mozilla', 'text', false, NULL);
-INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (2, 'thunderbird@arch.ubuntu.com', 'Thunderbid', 'text', false, NULL);
-INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (3, 'twisted@arch.ubuntu.com', 'Twisted', 'text', false, NULL);
-INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (4, 'bugzilla@arch.ubuntu.com', 'Bugzilla', 'text', false, NULL);
-INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (5, 'arch@arch.ubuntu.com', 'Arch', 'text', false, NULL);
-INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (6, 'kiwi2@arch.ubuntu.com', 'Kiwi2', 'text', false, NULL);
-INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (7, 'plone@arch.ubuntu.com', 'Plone', 'text', false, NULL);
-INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (8, 'gnome@arch.ubuntu.com', 'GNOME', 'The GNOME Project', false, NULL);
-INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (9, 'iso-codes@arch.ubuntu.com', 'iso-codes', 'The iso-codes', false, NULL);
-INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (10, 'alsa-utils@bazaar.ubuntu.com', 'alsa-utils upstream imports', 'Imports of ALSA utilites upstream CVS and releases', true, 1);
-INSERT INTO archarchive (id, name, title, description, visible, "owner") VALUES (11, 'scott@ubuntu.com--2005', 'Scott James Remnant''s 2005 Ubuntu archive', 'Ubuntu work done by Scott James Remnant during 2005', true, 5);
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'archarchive'::pg_catalog.regclass;
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'archarchivelocation'::pg_catalog.regclass;
-
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'archarchivelocation'::pg_catalog.regclass;
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'archarchivelocationsigner'::pg_catalog.regclass;
-
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'archarchivelocationsigner'::pg_catalog.regclass;
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'archnamespace'::pg_catalog.regclass;
-
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (1, 1, 'mozilla', NULL, NULL, true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (2, 2, 'tunderbird', NULL, NULL, true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (3, 3, 'twisted', NULL, NULL, true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (4, 4, 'bugzila', NULL, NULL, true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (5, 5, 'arch', NULL, NULL, true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (6, 6, 'kiwi2', NULL, NULL, true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (7, 7, 'plone', NULL, NULL, true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (8, 8, 'gnome', 'evolution', '2.0', false);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (9, 9, 'iso-codes', 'iso-codes', '0.35', false);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (10, 1, 'mozilla', 'release', '0.9.2', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (11, 1, 'mozilla', 'release', '0.9.1', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (12, 1, 'mozilla', 'release', '0.9', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (13, 1, 'mozilla', 'release', '0.8', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (14, 8, 'evolution', 'MAIN', '0', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (15, 10, 'alsa-utils', 'release', '1.0.8', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (16, 10, 'alsa-utils', 'release', '1.0.9a', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (17, 10, 'alsa-utils', 'orig', '1.0.8', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (18, 10, 'alsa-utils', 'diff', '1.0.8', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (19, 10, 'alsa-utils', 'packaging', '1.0.8', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (20, 10, 'alsa-utils', 'move-asound-state-to-var', '1.0.8', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (21, 10, 'alsa-utils', 'debian-alsaconf-idmode', '1.0.8', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (22, 10, 'alsa-utils', 'debian-alsaconf-paths', '1.0.8', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (23, 10, 'alsa-utils', 'debian-alsaconf-noclear', '1.0.8', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (24, 10, 'alsa-utils', 'debian-alsaconf-modprobe-driver', '1.0.8', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (25, 10, 'alsa-utils', 'debian-alsaconf-force-stop-driver', '1.0.8', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (26, 10, 'alsa-utils', 'debian-alsaconf-improve-intro', '1.0.8', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (27, 10, 'alsa-utils', 'debian-alsaconf-cfgfile', '1.0.8', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (28, 10, 'alsa-utils', 'debian-alsaconf-nodup', '1.0.8', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (29, 10, 'alsa-utils', 'orig', '1.0.9a', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (30, 10, 'alsa-utils', 'diff', '1.0.9a', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (31, 10, 'alsa-utils', 'packaging', '1.0.9a', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (32, 10, 'alsa-utils', 'move-asound-state-to-var', '1.0.9a', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (33, 10, 'alsa-utils', 'alsaconf-safe-tmp', '1.0.9a', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (34, 10, 'alsa-utils', 'debian-alsaconf-idmode', '1.0.9a', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (35, 10, 'alsa-utils', 'debian-alsaconf-paths', '1.0.9a', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (36, 10, 'alsa-utils', 'debian-alsaconf-noclear', '1.0.9a', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (37, 10, 'alsa-utils', 'debian-alsaconf-modprobe-driver', '1.0.9a', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (38, 10, 'alsa-utils', 'debian-alsaconf-unload-modules', '1.0.9a', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (39, 10, 'alsa-utils', 'debian-alsaconf-improve-intro', '1.0.9a', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (40, 10, 'alsa-utils', 'debian-alsaconf-nodup', '1.0.9a', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (41, 10, 'alsa-utils', 'debian-alsaconf-modprobe-ignoreinstall', '1.0.9a', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (45, 11, 'alsa-utils', 'packaging', '1.0.9a', true);
-INSERT INTO archnamespace (id, archarchive, category, branch, "version", visible) VALUES (51, 11, 'alsa-utils', 'debian-alsaconf-modprobe-driver', '1.0.9a', true);
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'archnamespace'::pg_catalog.regclass;
-
-
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'branch'::pg_catalog.regclass;
 
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (1, 1, 'Mozilla Firefox 0.9.1', 'text', 1, 4);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (2, 2, 'Mozilla Thunderbird 0.9.1', 'text', 11, 8);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (3, 3, 'Python Twisted 0.9.1', 'text', 7, NULL);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (4, 4, 'Bugzila 0.9.1', 'text', 3, NULL);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (5, 5, 'Arch 0.9.1', 'text', 8, NULL);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (6, 6, 'Kiwi2 0.9.1', 'text', 9, NULL);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (7, 7, 'Plone 0.9.1', 'text', 10, NULL);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (8, 8, 'Evolution 2.0', 'text', 13, 5);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (9, 9, 'Iso-codes 0.35', 'text', 13, 7);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (10, 10, 'Mozilla Firefox 0.9.2', 'text', 1, 4);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (11, 11, 'Mozilla Firefox 0.9.1', 'text', 1, 4);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (12, 12, 'Mozilla Firefox 0.9', 'text', 1, 4);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (13, 13, 'Mozilla Firefox 0.8', 'text', 1, 4);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (14, 14, 'Evolution HEAD', 'text', 1, 5);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (15, 15, 'alsa-utils 1.0.8 upstream release', 'Upstream release import of alsa-utils 1.0.8', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (16, 16, 'alsa-utils 1.0.9a upstream release', 'Upstream release import of alsa-utils 1.0.9a', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (83, 17, '', '', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (84, 18, '', '', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (85, 19, '', '', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (86, 20, '', '', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (87, 21, '', '', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (88, 22, '', '', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (89, 23, '', '', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (90, 24, '', '', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (91, 25, '', '', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (92, 26, '', '', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (93, 27, '', '', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (94, 28, '', '', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (95, 29, '', '', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (96, 30, '', '', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (97, 31, '', '', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (98, 32, '', '', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (99, 33, '', '', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (100, 34, '', '', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (101, 35, '', '', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (102, 36, '', '', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (103, 37, '', '', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (104, 38, '', '', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (105, 39, '', '', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (106, 40, '', '', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (107, 41, '', '', 1, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (108, 45, '', '', 5, 15);
-INSERT INTO branch (id, archnamespace, title, description, "owner", product) VALUES (109, 51, '', '', 5, 15);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at) VALUES (1, 'Mozilla Firefox 0.9.1', 'text', 1, 4, 1, 'mozilla@arch.ubuntu.com_mozilla--MAIN--0', NULL, false, NULL, NULL, false, 'http://bazaar.ubuntu.com/mozilla@arch.ubuntu.com/mozilla--MAIN--0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at) VALUES (2, 'Mozilla Thunderbird 0.9.1', 'Bazaar import of the Mozilla Thunderbird CVS mainline.', 11, 8, 1, 'thunderbird@arch.ubuntu.com_thunderbird--MAIN--0', NULL, false, NULL, NULL, false, 'http://bazaar.ubuntu.com/thunderbird@arch.ubuntu.com/thunderbird--MAIN--0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, 4);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at) VALUES (3, 'Python Twisted 0.9.1', 'Bazaar import of the Twisted SVN trunk.', 7, NULL, 3, 'twisted@arch.ubuntu.com_twisted--trunk--0', NULL, false, NULL, NULL, false, 'http://bazaar.ubuntu.com/twisted@arch.ubuntu.com/twisted--trunk--0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at) VALUES (4, 'Bugzila 0.9.1', 'text', 3, NULL, NULL, 'bugzilla@arch.ubuntu.com_bugzila--MAIN--0', NULL, false, NULL, NULL, false, 'http://bazaar.ubuntu.com/bugzilla@arch.ubuntu.com/bugzila--MAIN--0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at) VALUES (5, 'Arch 0.9.1', 'text', 8, NULL, NULL, 'arch@arch.ubuntu.com_arch--devel--1.0', NULL, false, NULL, NULL, false, 'http://bazaar.ubuntu.com/arch@arch.ubuntu.com/arch--devel--1.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at) VALUES (6, 'Kiwi2 0.9.1', 'text', 9, NULL, NULL, 'kiwi2@arch.ubuntu.com_kiwi2--MAIN--0', NULL, false, NULL, NULL, false, 'http://bazaar.ubuntu.com/kiwi2@arch.ubuntu.com/kiwi2--MAIN--0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at) VALUES (7, 'Plone 0.9.1', 'text', 10, NULL, NULL, 'plone@arch.ubuntu.com_plone--trunk--0', NULL, false, NULL, NULL, false, 'http://bazaar.ubuntu.com/plone@arch.ubuntu.com/plone--trunk--0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at) VALUES (8, 'Evolution 2.0', 'text', 13, 5, NULL, 'gnome@arch.ubuntu.com_gnome--evolution--2.0', NULL, false, NULL, NULL, false, 'http://bazaar.ubuntu.com/gnome@arch.ubuntu.com/gnome--evolution--2.0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at) VALUES (9, 'Iso-codes 0.35', 'text', 13, 7, NULL, 'iso-codes@arch.ubuntu.com_iso-codes--iso-codes--0.35', NULL, false, NULL, NULL, false, 'http://bazaar.ubuntu.com/iso-codes@arch.ubuntu.com/iso-codes--iso-codes--0.35', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at) VALUES (10, 'Mozilla Firefox 0.9.2', 'text', 1, 4, NULL, 'mozilla@arch.ubuntu.com_mozilla--release--0.9.2', NULL, false, NULL, NULL, false, 'http://bazaar.ubuntu.com/mozilla@arch.ubuntu.com/mozilla--release--0.9.2', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, 1);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at) VALUES (11, 'Mozilla Firefox 0.9.1', 'text', 1, 4, NULL, 'mozilla@arch.ubuntu.com_mozilla--release--0.9.1', NULL, false, NULL, NULL, false, 'http://bazaar.ubuntu.com/mozilla@arch.ubuntu.com/mozilla--release--0.9.1', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, 2);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at) VALUES (12, 'Mozilla Firefox 0.9', 'text', 1, 4, NULL, 'mozilla@arch.ubuntu.com_mozilla--release--0.9', NULL, false, NULL, NULL, false, 'http://bazaar.ubuntu.com/mozilla@arch.ubuntu.com/mozilla--release--0.9', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, 3);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at) VALUES (13, 'Mozilla Firefox 0.8', 'text', 1, 4, NULL, 'mozilla@arch.ubuntu.com_mozilla--release--0.8', NULL, false, NULL, NULL, false, 'http://bazaar.ubuntu.com/mozilla@arch.ubuntu.com/mozilla--release--0.8', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at) VALUES (14, 'Evolution HEAD', 'text', 1, 5, NULL, 'gnome@arch.ubuntu.com_evolution--MAIN--0', NULL, false, NULL, NULL, false, 'http://bazaar.ubuntu.com/gnome@arch.ubuntu.com/evolution--MAIN--0', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at) VALUES (15, 'GNOME Terminal Mainline', 'Main branch of development for GNOME Terminal. Stable branches are based on that one.', 12, 6, NULL, 'main', NULL, false, 'http://example.com/gnome-terminal', NULL, false, 'http://example.com/gnome-terminal/main', NULL, 30, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at) VALUES (16, 'GNOME Terminal 2.6 Releases', 'Release branch of GNOME Terminal for the GNOME 2.6 environment.', 12, 6, NULL, '2.6', NULL, false, 'http://example.com/gnome-terminal/', NULL, false, 'http://example.com/gnome-terminal/2.6', NULL, 50, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at) VALUES (17, 'GNOME Terminal 2.4 Releases', 'Obsolete branch for GNOME 2.4 releases of GNOME Terminal.', 12, 6, NULL, '2.4', NULL, false, NULL, NULL, false, 'http://example.com/gnome-terminal/2.4', NULL, 80, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at) VALUES (18, 'Klingon support in GNOME Terminal', 'Experimental feature branch for developping and testing Klingon support in GNOME Terminal.', 12, 6, 12, 'klingon', NULL, false, 'http://trekkies.example.com/k12n', NULL, false, 'http://trekkies.example.com/gnome-terminal/klingon', NULL, 10, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at) VALUES (19, 'Slowing GNOME Terminal scrolling', 'Feature branch for slowing down the scrolling of text in GNOME Terminal.', 12, 6, 12, 'slowness', NULL, false, NULL, NULL, false, 'http://users.example.com/gnome-terminal/slowness', NULL, 70, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at) VALUES (20, 'Ubuntu Junk Code', 'Sample junk branch.', 12, NULL, 17, 'junk.dev', NULL, false, NULL, NULL, false, 'http://localhost:8000/a', NULL, 10, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at) VALUES (21, 'Junk Code Contributions', 'Contribute code to the junk branch.', 12, NULL, 12, 'junk.contrib', NULL, false, NULL, NULL, false, 'http://localhost:8000/b', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, NULL, NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at) VALUES (22, 'Python twisted feature', 'Feature branch for twisted.', 7, NULL, 4, 'feature', NULL, false, NULL, NULL, false, 'http://not.launchpad.server.com/', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, '2005-03-09 15:45:00', 0, false, 'http://bazaar.launchpad.net/~user/+junk/feature', NULL);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, branch_product_name, product_locked, home_page, branch_home_page, home_page_locked, url, whiteboard, lifecycle_status, landing_target, current_delta_url, current_conflicts_url, current_diff_adds, current_diff_deletes, stats_updated, current_activity, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, cache_url, started_at) VALUES (23, 'Another Python twisted feature', 'Another Feature branch for twisted.', 7, NULL, 4, 'feature2', NULL, false, NULL, NULL, false, 'http://whynot.launchpad.server.com/', NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, false, 'http://bazaar.launchpad.net/~user/+junk/feature2', NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'branch'::pg_catalog.regclass;
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'changeset'::pg_catalog.regclass;
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'revision'::pg_catalog.regclass;
 
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (1, 10, '2005-03-09 15:45:00', 'base-0', 'Import of Mozilla Firefox 0.9.2', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (2, 11, '2005-03-09 15:50:00', 'base-0', 'Import of Mozilla Firefox 0.9.1', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (3, 12, '2005-03-09 15:55:00', 'base-0', 'Import of Mozilla Firefox 0.9', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (4, 15, '2005-09-15 09:35:37.496879', 'base-0', 'Import of alsa-utils 1.0.8', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (5, 16, '2005-09-15 09:36:07.561267', 'base-0', 'tag of alsa-utils@bazaar.ubuntu.com/alsa-utils--release--1.0.8--base-0', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (6, 16, '2005-09-15 09:36:12.939539', 'patch-1', 'Import of alsa-utils 1.0.9a', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (7, 83, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (8, 84, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (9, 85, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (10, 86, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (11, 87, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (12, 88, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (13, 89, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (14, 90, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (15, 91, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (16, 92, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (17, 93, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (18, 94, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (19, 95, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (20, 96, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (21, 97, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (22, 98, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (23, 99, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (24, 100, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (25, 101, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (26, 102, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (27, 103, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (28, 104, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (29, 105, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (30, 106, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (31, 107, '2005-09-15 11:15:58.590053', 'base-0', 'Imported something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (32, 96, '2005-09-15 11:39:02.11211', 'patch-1', 'Updated something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (33, 97, '2005-09-15 11:39:10.592695', 'patch-1', 'Updated something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (34, 108, '2005-09-15 11:47:28.961834', 'base-0', 'Tag of ubuntu source', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (35, 109, '2005-09-15 11:47:33.527519', 'base-0', 'Tag of ubuntu source', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (36, 108, '2005-09-15 11:47:42.99696', 'patch-1', 'Scott changed something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (37, 109, '2005-09-15 11:47:46.07592', 'patch-1', 'Scott changed something', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (38, 108, '2005-09-15 11:48:45.449073', 'patch-2', 'Scott changed something again', NULL, NULL);
-INSERT INTO changeset (id, branch, datecreated, name, logmessage, archid, gpgkey) VALUES (39, 109, '2005-09-15 11:48:48.584052', 'patch-2', 'Scott changed something again', NULL, NULL);
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (1, '2005-03-09 15:45:00', 'Import of Mozilla Firefox 0.9.2', 1, NULL, 1, 'mozilla@arch.ubuntu.com/mozilla--release--0.9.2--base-0', '2005-03-09 15:40:00');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (2, '2005-03-09 15:50:00', 'Import of Mozilla Firefox 0.9.1', 1, NULL, 1, 'mozilla@arch.ubuntu.com/mozilla--release--0.9.1--base-0', '2005-03-09 15:45:00');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (3, '2005-03-09 15:55:00', 'Import of Mozilla Firefox 0.9', 1, NULL, 1, 'mozilla@arch.ubuntu.com/mozilla--release--0.9--base-0', '2005-03-09 15:50:00');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (4, '2005-10-31 17:21:47.38177', 'initial import (empty)', 11, NULL, 25, 'test@canonical.com-20051031165248-6f1bb97973c2b4f4', '2005-10-31 11:52:48.37692');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (5, '2005-10-31 17:21:47.66327', 'add foo', 11, NULL, 25, 'test@canonical.com-20051031165338-5f2f3d6b10bb3bf0', '2005-10-31 11:53:38.324658');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (6, '2005-10-31 17:21:47.701102', 'fix a bug', 11, NULL, 25, 'test@canonical.com-20051031165532-3113df343e494daa', '2005-10-31 11:55:32.559368');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (7, '2005-10-31 17:21:47.745231', 'merge new feature', 11, NULL, 25, 'test@canonical.com-20051031165901-43b9644ec2eacc4e', '2005-10-31 11:59:01.742211');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (8, '2005-10-31 17:21:47.786347', 'resolve criss-cross', 12, NULL, 25, 'foo@localhost-20051031170239-5fce7d6bd3f01efc', '2005-10-31 12:02:39.750015');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (9, '2005-10-31 17:21:47.82293', 'fix bug in bar', 12, NULL, 25, 'foo@localhost-20051031170357-1301ad6d387feb23', '2005-10-31 12:03:57.157495');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (10, '2005-10-31 17:21:47.917914', 'add a new feature', 12, NULL, 25, 'foo@localhost-20051031165758-48acedf2b6a2e898', '2005-10-31 11:57:58.936419');
+INSERT INTO revision (id, date_created, log_body, revision_author, gpgkey, "owner", revision_id, revision_date) VALUES (11, '2005-10-31 17:21:47.954856', 'merge foo bugfix', 12, NULL, 25, 'foo@localhost-20051031170008-098959758bf79803', '2005-10-31 12:00:08.648379');
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'changeset'::pg_catalog.regclass;
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'changesetfilename'::pg_catalog.regclass;
-
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'changesetfilename'::pg_catalog.regclass;
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'changesetfile'::pg_catalog.regclass;
-
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'changesetfile'::pg_catalog.regclass;
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'changesetfilehash'::pg_catalog.regclass;
-
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'changesetfilehash'::pg_catalog.regclass;
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'revision'::pg_catalog.regclass;
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'branchrelationship'::pg_catalog.regclass;
@@ -8682,6 +8526,60 @@ INSERT INTO sprintspecification (id, sprint, specification, status, whiteboard) 
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sprintspecification'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'branchmessage'::pg_catalog.regclass;
+
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'branchmessage'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'revisionparent'::pg_catalog.regclass;
+
+INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (1, 0, 5, 'test@canonical.com-20051031165248-6f1bb97973c2b4f4');
+INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (2, 0, 6, 'test@canonical.com-20051031165338-5f2f3d6b10bb3bf0');
+INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (3, 0, 7, 'test@canonical.com-20051031165532-3113df343e494daa');
+INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (4, 1, 7, 'foo@localhost-20051031165758-48acedf2b6a2e898');
+INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (5, 0, 8, 'foo@localhost-20051031170008-098959758bf79803');
+INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (6, 1, 8, 'test@canonical.com-20051031165901-43b9644ec2eacc4e');
+INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (7, 0, 9, 'foo@localhost-20051031170239-5fce7d6bd3f01efc');
+INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (8, 0, 10, 'test@canonical.com-20051031165338-5f2f3d6b10bb3bf0');
+INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (9, 0, 11, 'foo@localhost-20051031165758-48acedf2b6a2e898');
+INSERT INTO revisionparent (id, "sequence", revision, parent_id) VALUES (10, 1, 11, 'test@canonical.com-20051031165532-3113df343e494daa');
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'revisionparent'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'revisionnumber'::pg_catalog.regclass;
+
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (1, 1, 10, 1);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (2, 1, 11, 2);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (3, 1, 12, 3);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (4, 1, 20, 4);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (5, 2, 20, 5);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (6, 3, 20, 6);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (7, 4, 20, 7);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (8, 5, 20, 8);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (9, 6, 20, 9);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (10, 1, 21, 4);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (11, 2, 21, 5);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (12, 3, 21, 10);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (13, 4, 21, 11);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (14, 5, 21, 8);
+INSERT INTO revisionnumber (id, "sequence", branch, revision) VALUES (15, 6, 21, 9);
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'revisionnumber'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'branchsubscription'::pg_catalog.regclass;
+
+INSERT INTO branchsubscription (id, person, branch) VALUES (1, 12, 20);
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'branchsubscription'::pg_catalog.regclass;
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distrocomponentuploader'::pg_catalog.regclass;

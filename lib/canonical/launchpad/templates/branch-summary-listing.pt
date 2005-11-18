@@ -1,20 +1,21 @@
+<p>
 <img src="/++resource++lock_icon.gif" />
-<b tal:content="context/title"></b>
+<b><a tal:attributes="href context/fmt:url" tal:content="context/title">Mozilla Thunderbird 0.9.1</a></b>
 - <img src="/++resource++user.gif" />
-  <a class="dummy">Foo Bar</a><br />
-
-<span class="dummy">
+  <a tal:condition="not: context/author"
+     tal:attributes="href context/owner/fmt:url"
+     tal:content="context/owner/browsername">Owner</a>
+  <a tal:condition="context/author"
+     tal:attributes="href context/author/fmt:url"
+     tal:content="context/author/browsername">Author</a>
+  <br />
+<span tal:replace="context/summary">
   This branch has a summary like this, it's a very simple description of
   what the branch does.
-  35 patches, 1477 lines.
-  Status: Ready<br />
-  <img src="/++resource++favorite_icon.gif" />
-  <img src="/++resource++favorite_icon.gif" />
-  <img src="/++resource++favorite_icon.gif" />
-  <img src="/++resource++favorite_icon.gif" />
-  31 changes in the past month - 3 comments<br />
-  <a href="http://wiki.launchpad.net/">http://wiki.launchpad.net</a>
 </span>
-
-<hr />
-
+<br>
+<span tal:replace="context/revision_count">35</span> revisions,
+<span tal:replace="view/count_revisions">31</span> in the past month.<br />
+<a tal:attributes="href context/home_page"
+   tal:content="context/home_page">http://wiki.launchpad.net</a>
+</p>

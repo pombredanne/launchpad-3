@@ -202,7 +202,14 @@ class IPerson(IHasSpecifications):
     ircnicknames = Attribute("List of IRC nicknames of this Person.")
     jabberids = Attribute("List of Jabber IDs of this Person.")
     packages = Attribute("A Selection of SourcePackageReleases")
-    branches = Attribute("The branches for a person.")
+    branches = Attribute("All branches related to this persion. "
+        "They might be registered, authored or subscribed by this person.")
+    authored_branches = Attribute("The branches whose author is this person.")
+    registered_branches = Attribute(
+        "The branches whose owner is this person and which either have no"
+        "author or an author different from this person.")
+    subscribed_branches = Attribute("Branches to which this person "
+        "subscribes.")
     maintainerships = Attribute("This person's Maintainerships")
     activities = Attribute("Karma")
     myactivememberships = Attribute(
@@ -328,6 +335,12 @@ class IPerson(IHasSpecifications):
 
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
+
+    def getBranch(product_name, branch_name):
+        """The branch associated to this person and product with this name.
+
+        The product_name may be None.
+        """
 
     def isTeam():
         """True if this Person is actually a Team, otherwise False."""
