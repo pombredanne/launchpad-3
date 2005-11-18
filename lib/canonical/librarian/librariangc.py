@@ -8,11 +8,19 @@ import os.path
 from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.librarian.storage import _relFileLocation as relative_file_path
+from canonical.database.postgresql import listReferences
 
 log = None
 
 def merge_duplicates(ztm):
-    """Merge duplicate LibraryFileContent rows"""
+    """Merge duplicate LibraryFileContent rows
+    
+    This is the first step in a full garbage collection run. We assume files
+    are identical if their sha1 hashes and filesizes are identical. For every
+    duplicate detected, we make all LibraryFileAlias entries point to one of
+    them and delete the unnecessary duplicates from the filesystem and the
+    database.
+    """
 
     # Get a list of all (sha1, filesize) that are duplicated in
     # LibraryFileContent
@@ -66,47 +74,15 @@ def merge_duplicates(ztm):
         ztm.commit()
 
 
-def delete_unreferenced_content(ztm):
-    """Delete LibraryFileContent entries and their disk files that are
-    not referenced by any LibraryFileAlias entries.
-
-    Note that a LibraryFileContent can only be accessed through a
-    LibraryFileAlias, so all entries in this state are garbage no matter
-    what their expires flag says.
-    """
-    ztm.begin()
-    cur = cursor()
-    cur.execute("""
-        SELECT LibraryFileContent.id
-        FROM LibraryFileContent
-        LEFT OUTER JOIN LibraryFileAlias
-            ON LibraryFileContent.id = LibraryFileAlias.content
-        WHERE LibraryFileAlias.content IS NULL
-        """)
-    garbage_ids = [row[0] for row in cur.fetchall()]
-    ztm.abort()
-
-    for garbage_id in garbage_ids:
-        # Remove the file from disk, if it hasn't already been
-        path = get_file_path(garbage_id)
-        if os.path.exists(path):
-            log.info("Deleting %s", path)
-            os.unlink(path)
-        else:
-            log.info("%s already deleted", path)
-
-        ztm.begin()
-        cur = cursor()
-        # Delete old LibraryFileContent entries
-        log.info("Deleting LibraryFileContent %d", garbage_id)
-        cur.execute("""
-            DELETE FROM LibraryFileContent WHERE id = %(garbage_id)s
-            """, vars())
-        ztm.commit()
-
-
 def delete_unreferenced_aliases(ztm):
     """Delete unreferenced LibraryFileAliases and their LibraryFileContent
+
+    This is the second step in a full garbage collection sweep. We determine
+    which LibraryFileContent entries are not being referenced by other objects
+    in the database. If we find one that is not reachable in any way, we
+    remove all its corresponding LibraryFileAlias records from the database
+    if they are all expired (expiry in the past or NULL), and none have been
+    recently accessed (last_access over one week in the past).
 
     Note that *all* LibraryFileAliases referencing a given LibraryFileContent
     must be unreferenced for them to be deleted - a single reference will keep
@@ -131,7 +107,7 @@ def delete_unreferenced_aliases(ztm):
             AND (max(last_accessed) IS NULL OR max(last_accessed)
                 < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - '1 week'::interval
                 )
-        """
+        """)
     content_ids = set(row[0] for row in cur.fetchall())
     ztm.abort()
     log.info(
@@ -172,6 +148,81 @@ def delete_unreferenced_aliases(ztm):
                 len(content_ids)
                 )
 
+    # Delete unreferenced LibraryFileAliases. Note that this will raise a
+    # database exception if we screwed up and attempt to delete an alias that
+    # is still referenced.
+    for content_id in content_ids:
+        ztm.begin()
+        cur = cursor()
+        # First a sanity check to ensure we arn't removing anything we
+        # shouldn't be.
+        cur.execute("""
+            SELECT COUNT(*)
+            FROM LibraryFileAlias
+            WHERE content=%(content_id)s
+                AND (
+                    expires + '1 week'::interval
+                        > CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                    OR last_accessed + '1 week'::interval
+                        > CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                    )
+            """, vars())
+        log.info(
+                "Deleting all LibraryFileAlias references to "
+                "LibraryFileContent %d", content_id
+                )
+        cur.execute("""
+            DELETE FROM LibraryFileAlias WHERE content=%(content_id)s
+            """, vars())
+        ztm.commit()
+
+
+def delete_unreferenced_content(ztm):
+    """Delete LibraryFileContent entries and their disk files that are
+    not referenced by any LibraryFileAlias entries.
+
+    Note that a LibraryFileContent can only be accessed through a
+    LibraryFileAlias, so all entries in this state are garbage no matter
+    what their expires flag says.
+    """
+    ztm.begin()
+    cur = cursor()
+    cur.execute("""
+        SELECT LibraryFileContent.id
+        FROM LibraryFileContent
+        LEFT OUTER JOIN LibraryFileAlias
+            ON LibraryFileContent.id = LibraryFileAlias.content
+        WHERE LibraryFileAlias.content IS NULL
+        """)
+    garbage_ids = [row[0] for row in cur.fetchall()]
+    ztm.abort()
+
+    for garbage_id in garbage_ids:
+        ztm.begin()
+        cur = cursor()
+
+        # Delete old LibraryFileContent entries. Note that this will fail
+        # if we screwed up and still have LibraryFileAlias entries referencing
+        # it.
+        log.info("Deleting LibraryFileContent %d", garbage_id)
+        cur.execute("""
+            DELETE FROM LibraryFileContent WHERE id = %(garbage_id)s
+            """, vars())
+
+        # Remove the file from disk, if it hasn't already been
+        path = get_file_path(garbage_id)
+        if os.path.exists(path):
+            log.info("Deleting %s", path)
+            os.unlink(path)
+        else:
+            log.info("%s already deleted", path)
+
+        # And commit the database changes. It may be possible for this to
+        # fail in rare cases, leaving a record in the DB with no corresponding
+        # file on disk, but that is OK as it will all be tidied up next run,
+        # and the file is unreachable anyway so nothing will attempt to
+        # access it between now and the next garbage collection run.
+        ztm.commit()
 
 
 def get_file_path(content_id):

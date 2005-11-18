@@ -1179,42 +1179,42 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'libraryfilealias'::pg_catalog.regclass;
 
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (1, 1, 'netapplet-1.0.0.tar.gz', 'application/x-gtar', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (2, 1, 'netapplet_1.0.0.orig.tar.gz', 'application/x-gtar', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (3, 2, 'firefox-0.9.2.tar.gz', 'application/x-gtar', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (4, 3, 'evolution-1.0.tar.gz', 'application/x-gtar', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (5, 5, 'netapplet.pot', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (6, 6, 'pmount.pot', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (7, 7, 'evolution-2.2.pot', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (8, 8, 'evolution-2.2.pot', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (9, 9, 'pkgconf-mozilla.pot', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (10, 10, 'hr.po', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (11, 11, 'ca.po', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (12, 12, 'nb.po', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (13, 13, 'cs.po', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (14, 14, 'es_ES.po', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (15, 15, 'de.po', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (16, 16, 'fr.po', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (17, 17, 'it_IT.po', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (18, 18, 'es.po', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (19, 19, 'fr.po', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (20, 20, 'pt_BR.po', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (21, 21, 'ja.po', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (22, 22, 'es.po', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (23, 23, 'nl.po', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (24, 24, 'cs.po', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (25, 25, 'da.po', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (26, 26, 'fi.po', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (27, 27, 'gl.po', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (28, 28, 'lt.po', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (29, 29, 'it.po', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (30, 30, 'tr.po', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (31, 31, 'de.po', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (32, 32, 'es.po', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (33, 33, 'es.po', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (34, 34, 'evolution-2.2-test.pot', 'application/x-po', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (35, 35, 'Ubuntu-High-Pri-2005-08-01.csv', 'text/plain', NULL, NULL);
-INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (36, 36, 'foo.txt', 'text/plain', NULL, NULL);
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (1, 1, 'netapplet-1.0.0.tar.gz', 'application/x-gtar', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (2, 1, 'netapplet_1.0.0.orig.tar.gz', 'application/x-gtar', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (3, 2, 'firefox-0.9.2.tar.gz', 'application/x-gtar', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (4, 3, 'evolution-1.0.tar.gz', 'application/x-gtar', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (5, 5, 'netapplet.pot', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (6, 6, 'pmount.pot', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (7, 7, 'evolution-2.2.pot', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (8, 8, 'evolution-2.2.pot', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (9, 9, 'pkgconf-mozilla.pot', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (10, 10, 'hr.po', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (11, 11, 'ca.po', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (12, 12, 'nb.po', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (13, 13, 'cs.po', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (14, 14, 'es_ES.po', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (15, 15, 'de.po', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (16, 16, 'fr.po', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (17, 17, 'it_IT.po', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (18, 18, 'es.po', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (19, 19, 'fr.po', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (20, 20, 'pt_BR.po', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (21, 21, 'ja.po', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (22, 22, 'es.po', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (23, 23, 'nl.po', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (24, 24, 'cs.po', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (25, 25, 'da.po', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (26, 26, 'fi.po', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (27, 27, 'gl.po', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (28, 28, 'lt.po', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (29, 29, 'it.po', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (30, 30, 'tr.po', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (31, 31, 'de.po', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (32, 32, 'es.po', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (33, 33, 'es.po', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (34, 34, 'evolution-2.2-test.pot', 'application/x-po', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (35, 35, 'Ubuntu-High-Pri-2005-08-01.csv', 'text/plain', NULL, '2005-11-11 10:58:40.664824');
+INSERT INTO libraryfilealias (id, content, filename, mimetype, expires, last_accessed) VALUES (36, 36, 'foo.txt', 'text/plain', NULL, '2005-11-11 10:58:40.664824');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'libraryfilealias'::pg_catalog.regclass;
@@ -6091,15 +6091,6 @@ INSERT INTO bugmessage (id, bug, message) VALUES (11, 8, 14);
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bugmessage'::pg_catalog.regclass;
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'cverefobsolete'::pg_catalog.regclass;
-
-INSERT INTO cverefobsolete (id, bug, cveref, title, datecreated, "owner", cvestate) VALUES (1, 1, '1999-8979', 'Firefox crashes all the time', '2005-08-03 12:05:41.746447', 16, 2);
-INSERT INTO cverefobsolete (id, bug, cveref, title, datecreated, "owner", cvestate) VALUES (2, 2, '1999-2345', 'Possible data loss', '2005-08-22 13:53:57.046296', 12, 1);
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'cverefobsolete'::pg_catalog.regclass;
-
-
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'karma'::pg_catalog.regclass;
 
 INSERT INTO karma (id, datecreated, person, "action") VALUES (1, '2025-07-05 05:24:07.409248', 12, 1);
@@ -6138,22 +6129,22 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'bugtask'::pg_catalog.regclass;
 
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (1, 1, 1, NULL, NULL, NULL, NULL, 10, 30, 20, 5, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.910183', 12, NULL, NULL, NULL, '', 'ubuntu (upstream)');
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (2, 1, 4, NULL, NULL, NULL, NULL, 10, 10, 20, 1, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.910878', 12, NULL, NULL, NULL, '', 'firefox (upstream)');
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (3, 2, 1, NULL, NULL, NULL, NULL, 10, 20, 20, NULL, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.908491', 12, NULL, NULL, NULL, '', 'ubuntu (upstream)');
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (4, 1, NULL, 3, NULL, 1, NULL, 20, 40, 20, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.79024', 12, NULL, NULL, NULL, '', 'mozilla-firefox (debian)');
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (5, 2, NULL, 3, NULL, 1, NULL, 20, 40, 20, 12, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.824591', 12, NULL, NULL, 'Upstream said that they won''t bother fixing it.', '''fix'':8C ''won'':5C ''said'':2C ''bother'':7C ''upstream'':1C', 'mozilla-firefox (debian)');
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (6, 3, NULL, 3, NULL, 1, NULL, 10, 20, 30, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.825533', 16, NULL, NULL, NULL, '', 'mozilla-firefox (debian)');
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (13, 4, 4, NULL, NULL, NULL, NULL, 10, 30, 30, NULL, '2005-01-14 17:20:12.820778', '2005-01-14 17:20:12.820778', 12, NULL, NULL, NULL, '', 'firefox (upstream)');
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (14, 5, 4, NULL, NULL, NULL, NULL, 10, 30, 50, 12, '2005-01-14 17:27:03.702622', '2005-01-14 17:27:03.702622', 12, NULL, NULL, 'The status explanation is useful to provide task specific information.', '''use'':5C ''task'':8C ''explan'':3C ''inform'':10C ''provid'':7C ''specif'':9C ''status'':2C', 'firefox (upstream)');
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (15, 6, 4, NULL, NULL, NULL, NULL, 10, 30, 40, NULL, '2005-01-14 17:35:39.548665', '2005-01-14 17:35:39.548665', 12, NULL, NULL, NULL, '', 'firefox (upstream)');
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (16, 5, NULL, NULL, 1, 1, NULL, 10, 30, 30, NULL, '2005-07-13 14:43:02.452716', '2005-07-13 14:43:02.452716', 12, NULL, NULL, NULL, '', 'mozilla-firefox (Ubuntu Warty)');
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (17, 1, NULL, 1, NULL, 1, NULL, 10, 30, 30, NULL, '2005-08-04 01:15:48.241836', '2005-08-04 01:15:48.241836', 16, NULL, NULL, NULL, '', 'mozilla-firefox (ubuntu)');
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (18, 3, NULL, NULL, 6, 1, NULL, 10, 30, 30, NULL, '2005-08-10 16:30:32.295049', '2005-08-10 16:30:32.295049', 12, NULL, NULL, NULL, '', 'mozilla-firefox (Debian Woody)');
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (19, 3, NULL, NULL, 7, 1, NULL, 10, 30, 30, NULL, '2005-08-10 16:30:47.448639', '2005-08-10 16:30:47.448639', 12, NULL, NULL, NULL, '', 'mozilla-firefox (Debian Sarge)');
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (20, 2, NULL, NULL, 6, 1, NULL, 10, 30, 30, NULL, '2005-08-22 13:54:57.840344', '2005-08-22 13:54:57.840344', 12, NULL, NULL, NULL, '', 'mozilla-firefox (Debian Woody)');
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (21, 7, 5, NULL, NULL, NULL, NULL, 10, NULL, 30, 16, '2005-10-14 15:12:29.602117', '2005-10-14 15:12:29.602117', 16, NULL, NULL, NULL, '', 'evolution (upstream)');
-INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (22, 8, NULL, 3, NULL, 1, NULL, 30, NULL, 30, 16, '2005-10-28 09:10:17.13237', '2005-10-28 09:10:17.13237', 12, NULL, NULL, NULL, '', 'mozilla-firefox (debian)');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (1, 1, 1, NULL, NULL, NULL, NULL, 10, 30, 20, 5, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.910183', 12, NULL, NULL, NULL, '''ubuntu'':1B ''upstream'':2B', 'ubuntu (upstream)');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (2, 1, 4, NULL, NULL, NULL, NULL, 10, 10, 20, 1, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.910878', 12, NULL, NULL, NULL, '''firefox'':1B ''upstream'':2B', 'firefox (upstream)');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (3, 2, 1, NULL, NULL, NULL, NULL, 10, 20, 20, NULL, '2004-10-11 11:07:20.330975', '2004-11-13 03:49:22.908491', 12, NULL, NULL, NULL, '''ubuntu'':1B ''upstream'':2B', 'ubuntu (upstream)');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (4, 1, NULL, 3, NULL, 1, NULL, 20, 40, 20, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.79024', 12, NULL, NULL, NULL, '''debian'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (debian)');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (5, 2, NULL, 3, NULL, 1, NULL, 20, 40, 20, 12, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.824591', 12, NULL, NULL, 'Upstream said that they won''t bother fixing it.', '''fix'':12C ''won'':9C ''said'':6C ''bother'':11C ''debian'':4B ''firefox'':3B ''mozilla'':2B ''upstream'':5C ''mozilla-firefox'':1B', 'mozilla-firefox (debian)');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (6, 3, NULL, 3, NULL, 1, NULL, 10, 20, 30, NULL, '2004-10-11 11:07:20.584746', '2004-11-13 03:49:22.825533', 16, NULL, NULL, NULL, '''debian'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (debian)');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (13, 4, 4, NULL, NULL, NULL, NULL, 10, 30, 30, NULL, '2005-01-14 17:20:12.820778', '2005-01-14 17:20:12.820778', 12, NULL, NULL, NULL, '''firefox'':1B ''upstream'':2B', 'firefox (upstream)');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (14, 5, 4, NULL, NULL, NULL, NULL, 10, 30, 50, 12, '2005-01-14 17:27:03.702622', '2005-01-14 17:27:03.702622', 12, NULL, NULL, 'The status explanation is useful to provide task specific information.', '''use'':7C ''task'':10C ''explan'':5C ''inform'':12C ''provid'':9C ''specif'':11C ''status'':4C ''firefox'':1B ''upstream'':2B', 'firefox (upstream)');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (15, 6, 4, NULL, NULL, NULL, NULL, 10, 30, 40, NULL, '2005-01-14 17:35:39.548665', '2005-01-14 17:35:39.548665', 12, NULL, NULL, NULL, '''firefox'':1B ''upstream'':2B', 'firefox (upstream)');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (16, 5, NULL, NULL, 1, 1, NULL, 10, 30, 30, NULL, '2005-07-13 14:43:02.452716', '2005-07-13 14:43:02.452716', 12, NULL, NULL, NULL, '''warti'':5B ''ubuntu'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Ubuntu Warty)');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (17, 1, NULL, 1, NULL, 1, NULL, 10, 30, 30, NULL, '2005-08-04 01:15:48.241836', '2005-08-04 01:15:48.241836', 16, NULL, NULL, NULL, '''ubuntu'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (ubuntu)');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (18, 3, NULL, NULL, 6, 1, NULL, 10, 30, 30, NULL, '2005-08-10 16:30:32.295049', '2005-08-10 16:30:32.295049', 12, NULL, NULL, NULL, '''woodi'':5B ''debian'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Debian Woody)');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (19, 3, NULL, NULL, 7, 1, NULL, 10, 30, 30, NULL, '2005-08-10 16:30:47.448639', '2005-08-10 16:30:47.448639', 12, NULL, NULL, NULL, '''sarg'':5B ''debian'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Debian Sarge)');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (20, 2, NULL, NULL, 6, 1, NULL, 10, 30, 30, NULL, '2005-08-22 13:54:57.840344', '2005-08-22 13:54:57.840344', 12, NULL, NULL, NULL, '''woodi'':5B ''debian'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (Debian Woody)');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (21, 7, 5, NULL, NULL, NULL, NULL, 10, NULL, 30, 16, '2005-10-14 15:12:29.602117', '2005-10-14 15:12:29.602117', 16, NULL, NULL, NULL, '''evolut'':1B ''upstream'':2B', 'evolution (upstream)');
+INSERT INTO bugtask (id, bug, product, distribution, distrorelease, sourcepackagename, binarypackagename, status, priority, severity, assignee, dateassigned, datecreated, "owner", milestone, bugwatch, statusexplanation, fti, targetnamecache) VALUES (22, 8, NULL, 3, NULL, 1, NULL, 30, NULL, 30, 16, '2005-10-28 09:10:17.13237', '2005-10-28 09:10:17.13237', 12, NULL, NULL, NULL, '''debian'':4B ''firefox'':3B ''mozilla'':2B ''mozilla-firefox'':1B', 'mozilla-firefox (debian)');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bugtask'::pg_catalog.regclass;
@@ -8414,65 +8405,6 @@ INSERT INTO specificationfeedback (id, specification, reviewer, requester, queue
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'specificationfeedback'::pg_catalog.regclass;
 
 
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'manifestancestry'::pg_catalog.regclass;
-
-INSERT INTO manifestancestry (id, parent, child) VALUES (1, 2, 1);
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'manifestancestry'::pg_catalog.regclass;
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'ticket'::pg_catalog.regclass;
-
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (1, 11, 'Firefox cannot render Bank Site', 'Hello, I''m trying to access http://www.citibank.com/ and the page is not rendering correctly. Is there a setting I can use to get it right? Thanks.', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 18:46:07.392021', '2005-09-05 18:46:07.392021', NULL, NULL, NULL, NULL, NULL, NULL, '''m'':8B ''get'':28B ''set'':23B ''tri'':9B ''use'':26B ''bank'':4A ''page'':15B ''site'':5A ''hello'':6B ''right'':30B ''thank'':31B ''access'':11B ''cannot'':2A ''render'':3A,18B ''correct'':19B ''firefox'':1A ''www.citibank.com'':12B');
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (2, 12, 'Problem showing the SVG demo on W3C site', 'Hi! I''m trying to learn about SVG but I can''t get it to work at all in firefox. Maybe there is a plugin? Help! Thanks.', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 18:47:27.657124', '2005-09-05 18:47:27.657124', NULL, NULL, NULL, NULL, NULL, NULL, '''m'':11B ''hi'':9B ''get'':21B ''svg'':4A,16B ''tri'':12B ''w3c'':7A ''demo'':5A ''help'':34B ''mayb'':29B ''show'':2A ''site'':8A ''work'':24B ''learn'':14B ''thank'':35B ''plugin'':33B ''firefox'':28B ''problem'':1A');
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (3, 16, 'Firefox is slow and consumes too much RAM', 'I''m running on a 486 with 32 MB ram. And Firefox is slow! What should I do?', NULL, 16, NULL, 1, 1, 50, 10, '2005-09-05 19:46:22.786269', '2005-09-05 19:46:22.786269', NULL, NULL, '2005-09-05 20:00:58.913139', '2005-09-05 20:00:58.913139', '2005-09-05 20:00:58.913139', NULL, '''m'':10B ''32'':16B ''mb'':17B ''486'':14B ''ram'':8A,18B ''run'':11B ''much'':7A ''slow'':3A,22B ''consum'':5A ''firefox'':1A,20B');
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (4, 16, 'Firefox loses focus and gets stuck', 'Every now and then I can''t type anything in the fields on a web form, and I have to click my mouse in the URL bar. Is that normal?', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 20:03:10.967079', '2005-09-05 20:03:10.967079', NULL, NULL, NULL, NULL, NULL, NULL, '''bar'':33B ''get'':5A ''url'':32B ''web'':21B ''form'':22B ''lose'':2A ''mous'':29B ''type'':14B ''anyth'':15B ''click'':27B ''everi'':7B ''field'':18B ''focus'':3A ''stuck'':6A ''normal'':36B ''firefox'':1A');
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (5, 12, 'Installation failed', 'I can''t install Ubuntu, it fails to find my CD-ROM drive.', NULL, NULL, NULL, 1, NULL, 10, 10, '2005-10-13 09:08:27.006633', '2005-10-13 09:08:27.006633', NULL, NULL, NULL, NULL, NULL, NULL, '''cd'':14B ''rom'':15B ''fail'':2A,9B ''find'':11B ''drive'':16B ''cd-rom'':13B ''instal'':1A,6B ''ubuntu'':7B');
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (6, 12, 'Newly installed plug-in doesn''t seem to be used', 'I''ve installed a new plug-in in Firefox, but it doesn''t seem to be used.', NULL, 16, 4, NULL, NULL, 30, 10, '2005-10-14 12:24:14.271257', '2005-10-14 12:24:14.271257', NULL, NULL, '2005-10-14 12:25:21.508923', '2005-10-14 12:25:21.508923', NULL, NULL, '''ve'':13B ''new'':16B ''use'':11A,29B ''plug'':4A,18B ''seem'':8A,26B ''doesn'':6A,24B ''newli'':1A ''instal'':2A,14B ''firefox'':21B ''plug-in'':3A,17B');
-INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (7, 16, 'Slow system', 'I get really poor hard drive performance.', NULL, 12, NULL, 1, NULL, 30, 10, '2005-10-14 13:27:35.664194', '2005-10-14 13:27:35.664194', NULL, NULL, '2005-10-14 13:28:11.554476', '2005-10-14 13:28:11.554476', NULL, NULL, '''get'':4B ''hard'':7B ''poor'':6B ''slow'':1A ''drive'':8B ''realli'':5B ''system'':2A ''perform'':9B');
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'ticket'::pg_catalog.regclass;
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'ticketbug'::pg_catalog.regclass;
-
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'ticketbug'::pg_catalog.regclass;
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'ticketreopening'::pg_catalog.regclass;
-
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'ticketreopening'::pg_catalog.regclass;
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'ticketsubscription'::pg_catalog.regclass;
-
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'ticketsubscription'::pg_catalog.regclass;
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'ticketmessage'::pg_catalog.regclass;
-
-INSERT INTO ticketmessage (id, ticket, message) VALUES (1, 6, 12);
-INSERT INTO ticketmessage (id, ticket, message) VALUES (2, 7, 13);
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'ticketmessage'::pg_catalog.regclass;
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'bountymessage'::pg_catalog.regclass;
-
-
-
-UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bountymessage'::pg_catalog.regclass;
-
-
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'shippingrun'::pg_catalog.regclass;
 
 INSERT INTO shippingrun (id, datecreated, sentforshipping, csvfile) VALUES (1, '2005-08-01 18:38:24.526648', false, 35);
@@ -8577,6 +8509,57 @@ INSERT INTO standardshipitrequest (id, quantityx86, quantityppc, quantityamd64, 
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'standardshipitrequest'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'ticket'::pg_catalog.regclass;
+
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (1, 11, 'Firefox cannot render Bank Site', 'Hello, I''m trying to access http://www.citibank.com/ and the page is not rendering correctly. Is there a setting I can use to get it right? Thanks.', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 18:46:07.392021', '2005-09-05 18:46:07.392021', NULL, NULL, NULL, NULL, NULL, NULL, '''m'':8B ''get'':28B ''set'':23B ''tri'':9B ''use'':26B ''bank'':4A ''page'':15B ''site'':5A ''hello'':6B ''right'':30B ''thank'':31B ''access'':11B ''cannot'':2A ''render'':3A,18B ''correct'':19B ''firefox'':1A ''www.citibank.com'':12B');
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (2, 12, 'Problem showing the SVG demo on W3C site', 'Hi! I''m trying to learn about SVG but I can''t get it to work at all in firefox. Maybe there is a plugin? Help! Thanks.', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 18:47:27.657124', '2005-09-05 18:47:27.657124', NULL, NULL, NULL, NULL, NULL, NULL, '''m'':11B ''hi'':9B ''get'':21B ''svg'':4A,16B ''tri'':12B ''w3c'':7A ''demo'':5A ''help'':34B ''mayb'':29B ''show'':2A ''site'':8A ''work'':24B ''learn'':14B ''thank'':35B ''plugin'':33B ''firefox'':28B ''problem'':1A');
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (3, 16, 'Firefox is slow and consumes too much RAM', 'I''m running on a 486 with 32 MB ram. And Firefox is slow! What should I do?', NULL, 16, NULL, 1, 1, 50, 10, '2005-09-05 19:46:22.786269', '2005-09-05 19:46:22.786269', NULL, NULL, '2005-09-05 20:00:58.913139', '2005-09-05 20:00:58.913139', '2005-09-05 20:00:58.913139', NULL, '''m'':10B ''32'':16B ''mb'':17B ''486'':14B ''ram'':8A,18B ''run'':11B ''much'':7A ''slow'':3A,22B ''consum'':5A ''firefox'':1A,20B');
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (4, 16, 'Firefox loses focus and gets stuck', 'Every now and then I can''t type anything in the fields on a web form, and I have to click my mouse in the URL bar. Is that normal?', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 20:03:10.967079', '2005-09-05 20:03:10.967079', NULL, NULL, NULL, NULL, NULL, NULL, '''bar'':33B ''get'':5A ''url'':32B ''web'':21B ''form'':22B ''lose'':2A ''mous'':29B ''type'':14B ''anyth'':15B ''click'':27B ''everi'':7B ''field'':18B ''focus'':3A ''stuck'':6A ''normal'':36B ''firefox'':1A');
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (5, 12, 'Installation failed', 'I can''t install Ubuntu, it fails to find my CD-ROM drive.', NULL, NULL, NULL, 1, NULL, 10, 10, '2005-10-13 09:08:27.006633', '2005-10-13 09:08:27.006633', NULL, NULL, NULL, NULL, NULL, NULL, '''cd'':14B ''rom'':15B ''fail'':2A,9B ''find'':11B ''drive'':16B ''cd-rom'':13B ''instal'':1A,6B ''ubuntu'':7B');
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (6, 12, 'Newly installed plug-in doesn''t seem to be used', 'I''ve installed a new plug-in in Firefox, but it doesn''t seem to be used.', NULL, 16, 4, NULL, NULL, 30, 10, '2005-10-14 12:24:14.271257', '2005-10-14 12:24:14.271257', NULL, NULL, '2005-10-14 12:25:21.508923', '2005-10-14 12:25:21.508923', NULL, NULL, '''ve'':13B ''new'':16B ''use'':11A,29B ''plug'':4A,18B ''seem'':8A,26B ''doesn'':6A,24B ''newli'':1A ''instal'':2A,14B ''firefox'':21B ''plug-in'':3A,17B');
+INSERT INTO ticket (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti) VALUES (7, 16, 'Slow system', 'I get really poor hard drive performance.', NULL, 12, NULL, 1, NULL, 30, 10, '2005-10-14 13:27:35.664194', '2005-10-14 13:27:35.664194', NULL, NULL, '2005-10-14 13:28:11.554476', '2005-10-14 13:28:11.554476', NULL, NULL, '''get'':4B ''hard'':7B ''poor'':6B ''slow'':1A ''drive'':8B ''realli'':5B ''system'':2A ''perform'':9B');
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'ticket'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'ticketbug'::pg_catalog.regclass;
+
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'ticketbug'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'ticketreopening'::pg_catalog.regclass;
+
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'ticketreopening'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'ticketsubscription'::pg_catalog.regclass;
+
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'ticketsubscription'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'ticketmessage'::pg_catalog.regclass;
+
+INSERT INTO ticketmessage (id, ticket, message) VALUES (1, 6, 12);
+INSERT INTO ticketmessage (id, ticket, message) VALUES (2, 7, 13);
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'ticketmessage'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'bountymessage'::pg_catalog.regclass;
+
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bountymessage'::pg_catalog.regclass;
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'cve'::pg_catalog.regclass;
@@ -8684,6 +8667,23 @@ INSERT INTO sprintspecification (id, sprint, specification, status, whiteboard) 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sprintspecification'::pg_catalog.regclass;
 
 
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'cverefobsolete'::pg_catalog.regclass;
+
+INSERT INTO cverefobsolete (id, bug, cveref, title, datecreated, "owner", cvestate) VALUES (1, 1, '1999-8979', 'Firefox crashes all the time', '2005-08-03 12:05:41.746447', 16, 2);
+INSERT INTO cverefobsolete (id, bug, cveref, title, datecreated, "owner", cvestate) VALUES (2, 2, '1999-2345', 'Possible data loss', '2005-08-22 13:53:57.046296', 12, 1);
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'cverefobsolete'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'manifestancestry'::pg_catalog.regclass;
+
+INSERT INTO manifestancestry (id, parent, child) VALUES (1, 2, 1);
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'manifestancestry'::pg_catalog.regclass;
+
+
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distrocomponentuploader'::pg_catalog.regclass;
 
 INSERT INTO distrocomponentuploader (id, distribution, component, uploader) VALUES (1, 1, 1, 17);
@@ -8735,7 +8735,11 @@ INSERT INTO karmacategory (id, name, title, summary) VALUES (7, 'support', 'Supp
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'karmacategory'::pg_catalog.regclass;
 
 
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'maintainership_bak'::pg_catalog.regclass;
 
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'maintainership_bak'::pg_catalog.regclass;
 
 
 

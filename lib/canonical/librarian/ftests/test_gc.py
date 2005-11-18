@@ -7,6 +7,8 @@ __metaclass__ = type
 import os.path
 from cStringIO import StringIO
 from unittest import TestCase, TestSuite, makeSuite
+from datetime import datetime, timedelta
+from pytz import utc
 
 from zope.component import getUtility
 
@@ -14,10 +16,11 @@ from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.launchpad.ftests.harness import LaunchpadTestSetup
 from canonical.librarian import librariangc
 from canonical.librarian.client import LibrarianClient
-from canonical.launchpad.database import LibraryFileAlias
+from canonical.launchpad.database import LibraryFileAlias, LibraryFileContent
 from canonical.lp import initZopeless
 from canonical.config import config
 from canonical.database.sqlbase import cursor
+from canonical.database.sqlbase  import SQLObjectNotFound
 
 class MockLogger:
     def error(self, *args, **kw):
@@ -58,24 +61,34 @@ class TestLibrarianGarbageCollection(TestCase):
         LibraryFileAlias each. Return the two LibraryFileAlias ids as a
         tuple.
         """
-        # Connect to the database as a user with file upload privileges
-        ztm = initZopeless(dbuser=config.launchpad.dbuser, implicitBegin=False)
+        # Connect to the database as a user with file upload privileges,
+        # in this case the PostgreSQL default user who happens to be an
+        # administrator on launchpad development boxes.
+        ztm = initZopeless(dbuser='', implicitBegin=False)
 
         ztm.begin()
         # Add some duplicate files
         content = 'This is some content'
         f1_id = self.client.addFile(
-                'foo.txt', len(content), StringIO(content), 'text/plain'
+                'foo.txt', len(content), StringIO(content), 'text/plain',
                 )
         f1 = LibraryFileAlias.get(f1_id)
         f2_id = self.client.addFile(
-                'foo.txt', len(content), StringIO(content), 'text/plain'
+                'foo.txt', len(content), StringIO(content), 'text/plain',
                 )
         f2 = LibraryFileAlias.get(f2_id)
 
         # Make sure they really are duplicates
         self.failIfEqual(f1_id, f2_id)
         self.failIfEqual(f1.contentID, f2.contentID)
+
+        # Set the last accessed time into the past so they will be garbage
+        # collected
+        past = datetime.now() - timedelta(days=30)
+        past = past.replace(tzinfo=utc)
+        f1.last_accessed = past
+        f2.last_accessed = past
+
         del f1
         del f2
 
@@ -97,6 +110,40 @@ class TestLibrarianGarbageCollection(TestCase):
         f1 = LibraryFileAlias.get(self.f1_id)
         f2 = LibraryFileAlias.get(self.f2_id)
         self.failUnlessEqual(f1.contentID, f2.contentID)
+
+    def testDeleteUnreferencedAliases(self):
+        self.ztm.begin()
+
+        # Confirm that our sample files are there.
+        f1 = LibraryFileAlias.get(self.f1_id)
+        f2 = LibraryFileAlias.get(self.f2_id)
+        # Grab the content IDs related to these unreferenced LibraryFileAliases
+        c1_id = f1.contentID
+        c2_id = f2.contentID
+        del f1, f2
+        self.ztm.abort()
+
+        # Delete unreferenced aliases
+        librariangc.delete_unreferenced_aliases(self.ztm)
+
+        # This should have committed
+        self.ztm.begin()
+
+        # Confirm that the LibaryFileContents are still there
+        c1 = LibraryFileContent.get(c1_id)
+        c2 = LibraryFileContent.get(c2_id)
+
+        # But the LibraryFileAliases should be gone
+        try:
+            LibraryFileAlias.get(self.f1_id, None)
+            self.fail("LibraryFileAlias %d was not removed" % self.f1_id)
+        except SQLObjectNotFound:
+            pass
+        try:
+            LibraryFileAlias.get(self.f2_id, None)
+            self.fail("LibraryFileAlias %d was not removed" % self.f2_id)
+        except SQLObjectNotFound:
+            pass
 
     def testDeleteUnreferencedContent(self):
         # Merge the duplicates. This creates an unreferenced LibraryFileContent
