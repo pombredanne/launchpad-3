@@ -1,7 +1,4 @@
-Support request added by %(submitter)s:
+New support request #%(ticket_id)s on %(target_name)s:
 %(ticket_url)s
 
-%(ticket_info)s
-
-------------------------------- Comment -------------------------------
 %(comment)s

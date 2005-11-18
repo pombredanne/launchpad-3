@@ -37,29 +37,24 @@ distribution, and one to the submitter of the ticket, Sample Person:
     >>> maintainer_notification['To']
     'support@ubuntu.com'
     >>> maintainer_notification['Subject']
-    "New support request #8: Can't install Ubuntu"
+    "[Support #8]: Can't install Ubuntu"
 
     >>> submitter_notification['To']
     'test@canonical.com'
     >>> submitter_notification['Subject']
-    "New support request #8: Can't install Ubuntu"
+    "[Support #8]: Can't install Ubuntu"
     >>> notification_body = submitter_notification.get_payload()
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Support request added by Sample Person:
+    New support request #8 on ubuntu:
     http://.../distros/ubuntu/+ticket/8
     <BLANKLINE>
-             Summary: Can't install Ubuntu
-        Distribution: ubuntu
-    <BLANKLINE>
-    ------------------------------- Comment -------------------------------
     I insert the install CD in the CD-ROM drive, but it won't boot.
     <BLANKLINE>
 
     >>> stub.test_emails = []
 
 Let's simulate that the no-priv answers the support ticket. This
-involves creating a new message, and to set the status to ANSWERED,
-let's do that:
+involves creating a new message, and to set the status to ANSWERED:
 
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
     >>> from canonical.launchpad.helpers import Snapshot
@@ -86,16 +81,16 @@ As before, two copies of the notification got sent:
     ...     ]
     >>> edit_notification = notifications[0]
     >>> edit_notification['Subject']
-    "Modified support request #8: Can't install Ubuntu"
+    "[Support #8]: Re: Can't install Ubuntu"
 
     >>> notification_body = edit_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Support request modified by No Privileges Person:
+    Support request #8 on ubuntu changed:
     http://.../distros/ubuntu/+ticket/8
     <BLANKLINE>
               Status: New => Answered
     <BLANKLINE>
-    ------------------------------- Comment -------------------------------
+    Comment:
     You have to change the boot order in the BIOS.
     <BLANKLINE>
     

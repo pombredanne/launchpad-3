@@ -965,23 +965,11 @@ def send_ticket_notification(ticket_event, subject, body):
 
 def notify_ticket_added(ticket, event):
     """Notify the submitter and maintainers of the newly added ticket."""
-    subject = 'New support request #%s: %s' % (ticket.id, ticket.title)
-
-    info_fields= [('Summary', ticket.title)]
-    if IDistribution.providedBy(ticket.target):
-        info_fields.append(('Distribution', ticket.target.displayname))
-    elif IProduct.providedBy(ticket.target):
-        info_fields.append(('Product', ticket.target.displayname))
-    else:
-        raise AssertionError('Unknown ticket target: %r' % ticket.target)
-
-    ticket_info = '\n'.join(['%16s: %s' % (title, value)
-                             for title, value in info_fields])
-
+    subject = '[Support #%s]: %s' % (ticket.id, ticket.title)
     body = get_email_template('ticket_added.txt') % {
-        'submitter': ticket.owner.displayname,
+        'target_name': ticket.target.displayname,
+        'ticket_id': ticket.id,
         'ticket_url': canonical_url(ticket),
-        'ticket_info': ticket_info,
         'comment': ticket.description}
 
     send_ticket_notification(event, subject, body)
@@ -989,28 +977,32 @@ def notify_ticket_added(ticket, event):
 
 def notify_ticket_modified(ticket, event):
     """Notify the relevant people that a ticket has been modifed."""
-    subject = 'Modified support request #%s: %s' % (ticket.id, ticket.title)
-
-    info_fields = []
     old_ticket = event.object_before_modification
-    if ticket.status != old_ticket.status:
-        info_fields.append(('Status', '%s => %s' % (
-            old_ticket.status.title, ticket.status.title)))
-    ticket_info = '\n'.join(['%16s: %s' % (title, value)
-                             for title, value in info_fields])
     new_comments = set(ticket.messages).difference(old_ticket.messages)
     nr_of_new_comments = len(new_comments)
     if len(new_comments) == 0:
+        comment_subject = ticket.title
         comment_text = '(No comment was given.)'
     elif len(new_comments) == 1:
         comment = new_comments.pop()
+        comment_subject = comment.subject
         comment_text = comment.contents
     else:
         raise AssertionError(
             "There shouldn't be more than one comment for a notification.")
 
+    subject = '[Support #%s]: %s' % (ticket.id, comment_subject)
+
+    info_fields = []
+    if ticket.status != old_ticket.status:
+        info_fields.append(('Status', '%s => %s' % (
+            old_ticket.status.title, ticket.status.title)))
+    ticket_info = '\n'.join(['%16s: %s' % (title, value)
+                             for title, value in info_fields])
+
     body = get_email_template('ticket_modified.txt') % {
-        'editor': event.user.displayname,
+        'ticket_id': ticket.id,
+        'target_name': ticket.target.displayname,
         'ticket_url': canonical_url(ticket),
         'modifications': ticket_info,
         'comment': comment_text}

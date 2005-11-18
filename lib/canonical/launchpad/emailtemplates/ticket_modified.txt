@@ -1,7 +1,7 @@
-Support request modified by %(editor)s:
+Support request #%(ticket_id)s on %(target_name)s changed:
 %(ticket_url)s
 
 %(modifications)s
 
-------------------------------- Comment -------------------------------
+Comment:
 %(comment)s
