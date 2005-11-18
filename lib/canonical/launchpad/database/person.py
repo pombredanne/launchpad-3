@@ -35,11 +35,11 @@ from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, ITeamMembership, ITeamParticipation,
     ITeamMembershipSet, IEmailAddress, IWikiName, IIrcID, IArchUserID,
     IJabberID, IIrcIDSet, IArchUserIDSet, ISSHKeySet, IJabberIDSet,
-    IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IMaintainershipSet,
-    IEmailAddressSet, ISourcePackageReleaseSet, IPasswordEncryptor,
-    ICalendarOwner, UBUNTU_WIKI_URL, ISignedCodeOfConductSet,
-    ILoginTokenSet, KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken,
-    NotFoundError, IKarmaSet, IKarmaCacheSet, IBugTaskSet)
+    IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IEmailAddressSet,
+    IPasswordEncryptor, ICalendarOwner, UBUNTU_WIKI_URL,
+    ISignedCodeOfConductSet, ILoginTokenSet, KEYSERVER_QUERY_URL,
+    EmailAddressAlreadyTaken, NotFoundError, IKarmaSet, IKarmaCacheSet,
+    IBugTaskSet)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -48,7 +48,10 @@ from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.karma import (
     KarmaAction, Karma, KarmaCategory)
 from canonical.launchpad.database.shipit import ShippingRequest
+from canonical.launchpad.database.sourcepackagerelease import (
+    SourcePackageRelease)
 
+from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
     TeamMembershipStatus, GPGKeyAlgorithm, LoginTokenType,
@@ -763,20 +766,32 @@ class Person(SQLBase):
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id)
 
-    @property
-    def maintainerships(self):
+    def maintainedPackages(self):
         """See IPerson."""
-        maintainershipsutil = getUtility(IMaintainershipSet)
-        return maintainershipsutil.getByPersonID(self.id)
+        querystr = """
+            sourcepackagerelease.maintainer = %d AND
+            sourcepackagerelease.sourcepackagename = sourcepackagename.id
+            """ % self.id
+        return SourcePackageRelease.select(
+            querystr,
+            orderBy='SourcePackageName.name',
+            clauseTables=['SourcePackageName'])
+
+    def uploadedButNotMaintainedPackages(self):
+        """See IPerson."""
+        querystr = """
+            sourcepackagerelease.creator = %d AND
+            sourcepackagerelease.maintainer != %d AND
+            sourcepackagerelease.sourcepackagename = sourcepackagename.id
+            """ % (self.id, self.id)
+        return SourcePackageRelease.select(
+            querystr,
+            orderBy='SourcePackageName.name',
+            clauseTables=['SourcePackageName'])
 
     @property
-    def packages(self):
+    def is_ubuntite(self):
         """See IPerson."""
-        sprutil = getUtility(ISourcePackageReleaseSet)
-        return sprutil.getByCreatorID(self.id)
-
-    @property
-    def ubuntite(self):
         sigset = getUtility(ISignedCodeOfConductSet)
         lastdate = sigset.getLastAcceptedDate()
 
@@ -788,13 +803,16 @@ class Person(SQLBase):
 
     @property
     def activesignatures(self):
+        """See IPerson."""
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         return sCoC_util.searchByUser(self.id)
 
     @property
     def inactivesignatures(self):
+        """See IPerson."""
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         return sCoC_util.searchByUser(self.id, active=False)
+
 
 class PersonSet:
     """The set of persons."""

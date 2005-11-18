@@ -313,3 +313,33 @@ Searching only for Teams based on their names or email addresses:
 ...     emails = [email.email for email in emailset.getByPerson(person)]
 ...     (person.displayname, person.name, emails)
 (u'Ubuntu Translators', u'ubuntu-translators', [])
+
+
+Packages related to a person
+----------------------------
+
+To obtain the packages a person is related to, we should use the
+maintainedPackages() and uploadedButNotMaintainedPackages() methods of
+IPersonSet. The former will return all SourcePackageReleases a person is
+listed as the Maintainer, while the latter will return all
+SourcePackageReleases that a person created (uploaded) but is not the
+Maintainer.
+
+>>> sabdfl = personset.getByName('sabdfl')
+>>> for sprelease in sabdfl.maintainedPackages():
+...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
+...            sprelease.version)
+(u'alsa-utils', u'Debian Sid', u'1.0.9a-4')
+(u'alsa-utils', u'Ubuntu Warty', u'1.0.8-1ubuntu1')
+(u'evolution', u'Ubuntu Hoary', u'1.0')
+(u'mozilla-firefox', u'Ubuntu Hoary', u'0.9')
+(u'netapplet', u'Ubuntu Warty', u'0.99.6-1')
+(u'netapplet', u'Ubuntu Hoary', u'1.0-1')
+(u'pmount', u'Ubuntu Hoary', u'0.1-2')
+(u'pmount', u'Ubuntu Hoary', u'0.1-1')
+
+>>> for sprelease in sabdfl.uploadedButNotMaintainedPackages():
+...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
+...            sprelease.version)
+(u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
+
