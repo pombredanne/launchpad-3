@@ -516,11 +516,11 @@ def send_bug_notification(bug, user, subject, body, to_addrs=None,
 
     # Add a header for each task on this bug, to help users organize their
     # incoming mail in a way that's convenient for them.
-    x_malone_bug_values = []
+    x_launchpad_bug_values = []
     for bugtask in bug.bugtasks:
-        x_malone_bug_values.append(bugtask.asEmailHeaderValue())
+        x_launchpad_bug_values.append(bugtask.asEmailHeaderValue())
 
-    headers["X-Malone-Bug"] = x_malone_bug_values
+    headers["X-Launchpad-Bug"] = x_launchpad_bug_values
 
     for to_addr in to_addrs:
         simple_sendmail(
