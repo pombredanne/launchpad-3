@@ -4,7 +4,10 @@
 __metaclass__ = type
 
 
+import sys
+import os
 import os.path
+from subprocess import Popen, PIPE, STDOUT
 from cStringIO import StringIO
 from unittest import TestCase, TestSuite, makeSuite
 from datetime import datetime, timedelta
@@ -89,15 +92,14 @@ class TestLibrarianGarbageCollection(TestCase):
         f1.last_accessed = past
         f2.last_accessed = past
 
-        del f1
-        del f2
+        del f1, f2
 
         ztm.commit()
         ztm.uninstall()
 
         return f1_id, f2_id
 
-    def testMergeDuplicates(self):
+    def test_MergeDuplicates(self):
         # Merge the duplicates
         librariangc.merge_duplicates(self.ztm)
 
@@ -111,7 +113,7 @@ class TestLibrarianGarbageCollection(TestCase):
         f2 = LibraryFileAlias.get(self.f2_id)
         self.failUnlessEqual(f1.contentID, f2.contentID)
 
-    def testDeleteUnreferencedAliases(self):
+    def test_DeleteUnreferencedAliases(self):
         self.ztm.begin()
 
         # Confirm that our sample files are there.
@@ -145,7 +147,7 @@ class TestLibrarianGarbageCollection(TestCase):
         except SQLObjectNotFound:
             pass
 
-    def testDeleteUnreferrencedAliases2(self):
+    def test_DeleteUnreferrencedAliases2(self):
         # Don't delete LibraryFileAliases accessed recently
 
         # Merge the duplicates. Both our aliases now point to the same
@@ -172,7 +174,7 @@ class TestLibrarianGarbageCollection(TestCase):
         LibraryFileAlias.get(self.f1_id)
         LibraryFileAlias.get(self.f2_id)
 
-    def testDeleteUnreferencedAndWellExpiredAliases(self):
+    def test_DeleteUnreferencedAndWellExpiredAliases(self):
         # LibraryFileAliases can be removed after they have expired
 
         # Merge the duplicates. Both our aliases now point to the same
@@ -205,7 +207,7 @@ class TestLibrarianGarbageCollection(TestCase):
         except SQLObjectNotFound:
             pass
 
-    def testDoneDeleteUnreferencedButNotExpiredAliases(self):
+    def test_DoneDeleteUnreferencedButNotExpiredAliases(self):
         # LibraryFileAliases can be removed only after they have expired.
         # If an explicit expiry is set and in recent past (currently up to
         # one week ago), the files hang around.
@@ -236,7 +238,7 @@ class TestLibrarianGarbageCollection(TestCase):
         LibraryFileAlias.get(self.f1_id, None)
         LibraryFileAlias.get(self.f2_id, None)
 
-    def testDeleteUnreferencedContent(self):
+    def test_DeleteUnreferencedContent(self):
         # Merge the duplicates. This creates an unreferenced LibraryFileContent
         librariangc.merge_duplicates(self.ztm)
 
@@ -285,7 +287,7 @@ class TestLibrarianGarbageCollection(TestCase):
                 len(results), 0, 'Too many results %r' % (results,)
                 )
  
-    def testDeleteUnreferencedContent2(self):
+    def test_DeleteUnreferencedContent2(self):
         # Like testDeleteUnreferencedContent, except that the file is
         # removed from disk before attempting to remove the unreferenced
         # LibraryFileContent. Because an unreferenced file is removed from
@@ -346,6 +348,40 @@ class TestLibrarianGarbageCollection(TestCase):
         self.failUnlessEqual(
                 len(results), 0, 'Too many results %r' % (results,)
                 )
+
+    def test_cronscript(self):
+        script_path = os.path.join(
+                config.root, 'cronscripts', 'librarian-gc.py'
+                )
+        cmd = [sys.executable, script_path, '-q']
+        process = Popen(cmd, stdout=PIPE, stderr=STDOUT, stdin=PIPE)
+        (script_output, _empty) = process.communicate()
+        self.failUnlessEqual(process.returncode, 0)
+        self.failUnlessEqual(script_output, '')
+
+        # Make sure that our example files have been garbage collected
+        self.ztm.begin()
+        try:
+            LibraryFileAlias.get(self.f1_id)
+            self.fail("LibraryFileAlias %d was not removed" % self.f1_id)
+        except SQLObjectNotFound:
+            pass
+        try:
+            LibraryFileAlias.get(self.f2_id)
+            self.fail("LibraryFileAlias %d was not removed" % self.f2_id)
+        except SQLObjectNotFound:
+            pass
+
+        # And make sure stuff that *is* referenced remains
+        LibraryFileAlias.get(2)
+        cur = cursor()
+        cur.execute("SELECT count(*) FROM LibraryFileAlias")
+        count = cur.fetchone()[0]
+        self.failIfEqual(count, 0)
+        cur.execute("SELECT count(*) FROM LibraryFileContent")
+        count = cur.fetchone()[0]
+        self.failIfEqual(count, 0)
+
  
 def test_suite():
     suite = TestSuite()
