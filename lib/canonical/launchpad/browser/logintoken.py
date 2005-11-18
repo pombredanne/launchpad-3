@@ -73,11 +73,12 @@ class BaseLoginTokenView:
         self.request = request
         self.context = context
         self.errormessage = ""
-        self.formProcessed = False
 
-    def successfullyProcessed(self):
-        """Return True if the form was processed without any errors."""
-        return self.formProcessed and not self.errormessage
+    def success(self, message):
+        assert not self.errormessage
+        self.request.response.addInfoNotification(message)
+        self.request.response.redirect(canonical_url(
+                self.context.requester))
 
     def validateRequesterPassword(self, password):
         """Return True if <password> is the same as the requester's password.
@@ -156,23 +157,18 @@ class ResetPasswordView(BaseLoginTokenView):
         encryptor = getUtility(IPasswordEncryptor)
         password = encryptor.encrypt(password)
         naked_person.password = password
-        self.formProcessed = True
         self.context.destroySelf()
 
         if form.get('logmein'):
             self.logInPersonByEmail(self.context.email)
 
-        self.request.response.addInfoNotification(
-                _('Your password has successfully been reset'))
-        self.request.response.redirect(canonical_url(
-                self.context.requester))
+        self.success(_('Your password has successfully been reset'))
 
 
 class ValidateEmailView(BaseLoginTokenView):
 
     def __init__(self, context, request):
         BaseLoginTokenView.__init__(self, context, request)
-        self.infomessage = ""
 
     def processForm(self):
         """Process the action specified by the LoginToken.
@@ -183,13 +179,9 @@ class ValidateEmailView(BaseLoginTokenView):
         if self.request.method != "POST":
             return
 
-        self.formProcessed = True
         if self.context.tokentype == LoginTokenType.VALIDATETEAMEMAIL:
             self.setTeamContactAddress()
-            self.request.response.addInfoNotification(
-                _('Contact email address validated successfully'))
-            self.request.response.redirect(
-                canonical_url(self.context.requester))
+            self.success(_('Contact email address validated successfully'))
             return
 
         password = self.request.form.get("password")
@@ -198,17 +190,11 @@ class ValidateEmailView(BaseLoginTokenView):
 
         if self.context.tokentype == LoginTokenType.VALIDATEEMAIL:
             self.markEmailAddressAsValidated()
-            self.request.response.addInfoNotification(
-                _('Email address successfully confirmed'))
+            self.success_('Email address successfully confirmed'))
         elif self.context.tokentype == LoginTokenType.VALIDATEGPG:
             self.validateGpg()
         elif self.context.tokentype == LoginTokenType.VALIDATESIGNONLYGPG:
             self.validateSignOnlyGpg()
-
-        if self.successfullyProcessed():
-            self.request.response.addInfoNotification(_(self.infomessage))
-            self.request.response.redirect(
-                canonical_url(self.context.requester))
 
     def setTeamContactAddress(self):
         """Set the new email address as the team's contact email address.
@@ -382,12 +368,9 @@ class ValidateEmailView(BaseLoginTokenView):
         if lpkey:
             lpkey.active = True
             lpkey.can_encrypt = can_encrypt
-            self.infomessage = (
-                'The key %s was successfully revalidated. '
-                '<a href="%s/+editgpgkeys">See more Information</a>'
-                % (lpkey.displayname, person_url))
-            self.formProcessed = True
-
+            self.success('The key %s was successfully revalidated. '
+                         '<a href="%s/+editgpgkeys">See more Information</a>'
+                         % (lpkey.displayname, person_url))
             logintokenset.deleteByFingerprintAndRequester(fingerprint,
                                                           requester)
             return
@@ -404,10 +387,8 @@ class ValidateEmailView(BaseLoginTokenView):
 
         logintokenset.deleteByFingerprintAndRequester(fingerprint, requester)
 
-        self.infomessage = (
+        infomessage = (
             "The key %s was successfully validated. " % (lpkey.displayname))
-
-        self.formProcessed = True
 
         guessed, hijacked = self._guessGPGEmails(key.emails)
 
@@ -415,7 +396,7 @@ class ValidateEmailView(BaseLoginTokenView):
             # build email list
             emails = ' '.join([email.email for email in guessed]) 
 
-            self.infomessage += (
+            infomessage += (
                 '<p>Some e-mail addresses were found in your key but are '
                 'not registered with Launchpad:<code>%s</code>. If you '
                 'want to use these addressess with Launchpad, you need to '
@@ -425,7 +406,7 @@ class ValidateEmailView(BaseLoginTokenView):
         if len(hijacked):
             # build email list
             emails = ' '.join([email.email for email in hijacked]) 
-            self.infomessage += (
+            infomessage += (
                 "<p>Also some of them were registered into another "
                 "account(s):<code>%s</code>. Those accounts, probably "
                 "already belong to you, in this case you should be able to "
@@ -433,6 +414,8 @@ class ValidateEmailView(BaseLoginTokenView):
                 "current account.</p>"
                 % emails
                 )
+
+        self.success(infomessage)
 
     def _guessGPGEmails(self, uids):
         """Figure out which emails from the GPG UIDs are unknown in LP
@@ -551,24 +534,21 @@ class MergePeopleView(BaseLoginTokenView):
         # Merge requests must have a valid user account (one with a preferred
         # email) as requester.
         assert self.context.requester.preferredemail is not None
-        self.formProcessed = True
         if self.validateRequesterPassword(self.request.form.get("password")):
             self._doMerge()
             if self.mergeCompleted: 
-                self.request.response.addInfoNotification(
+                self.success(
                         _('The merge you requested was concluded with success. '
                           'Now, everything that was owned by the duplicated ' 
                           'account should be owned by your user account.'))
             else:
-                self.request.response.addInfoNotification(
+                self.success(
                         _('The email address %s have been assigned to you, but '
                           'the dupe account you selected still have more ' 
                           'registered email addresses. In order to actually ' 
                           'complete the merge, you have to prove that you have '
                           'access to all email addresses of that account.' %
                           self.context.email))
-            self.request.response.redirect(
-                    canonical_url(self.context.requester))
             self.context.destroySelf()
 
     def _doMerge(self):
