@@ -73,9 +73,16 @@ class BaseLoginTokenView:
         self.request = request
         self.context = context
         self.errormessage = ""
+        self.successfullyProcessed = False
 
     def success(self, message):
+        """Indicate to the user that the token has been successfully processed
+
+        This involves adding a notification message, and redirecting the
+        user to their Launchpad page.
+        """
         assert not self.errormessage
+        self.successfullyProcessed = True
         self.request.response.addInfoNotification(message)
         self.request.response.redirect(canonical_url(
                 self.context.requester))
@@ -190,7 +197,7 @@ class ValidateEmailView(BaseLoginTokenView):
 
         if self.context.tokentype == LoginTokenType.VALIDATEEMAIL:
             self.markEmailAddressAsValidated()
-            self.success_('Email address successfully confirmed'))
+            self.success(_('Email address successfully confirmed'))
         elif self.context.tokentype == LoginTokenType.VALIDATEGPG:
             self.validateGpg()
         elif self.context.tokentype == LoginTokenType.VALIDATESIGNONLYGPG:
