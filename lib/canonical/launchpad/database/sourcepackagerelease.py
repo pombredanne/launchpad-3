@@ -1,7 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['SourcePackageRelease', 'SourcePackageReleaseSet']
+__all__ = ['SourcePackageRelease']
 
 import sets
 
@@ -17,8 +17,7 @@ from canonical.lp.dbschema import (
     EnumCol, SourcePackageUrgency, SourcePackageFormat,
     SourcePackageFileType, BuildStatus, TicketStatus)
 
-from canonical.launchpad.interfaces import (
-    ISourcePackageRelease, ISourcePackageReleaseSet)
+from canonical.launchpad.interfaces import ISourcePackageRelease
 
 from canonical.launchpad.database.binarypackagerelease import (
      BinaryPackageRelease)
@@ -215,28 +214,4 @@ class SourcePackageRelease(SQLBase):
         return Build.selectOneBy(sourcepackagereleaseID=self.id,
                                  distroarchreleaseID=distroarchrelease.id)
 
-
-class SourcePackageReleaseSet:
-
-    implements(ISourcePackageReleaseSet)
-
-    def getByCreator(self, creator):
-        """See ISourcePackageReleaseSet."""
-        querystr = """sourcepackagerelease.creator = %d AND
-                      sourcepackagerelease.sourcepackagename =
-                      sourcepackagename.id""" % creator.id
-        return SourcePackageRelease.select(
-            querystr,
-            orderBy='SourcePackageName.name',
-            clauseTables=['SourcePackageName'])
-
-    def getByMaintainer(self, maintainer):
-        """See ISourcePackageReleaseSet."""
-        querystr = """sourcepackagerelease.maintainer = %d AND
-                      sourcepackagerelease.sourcepackagename = 
-                      sourcepackagename.id""" % maintainer.id
-        return SourcePackageRelease.select(
-            querystr,
-            orderBy='SourcePackageName.name',
-            clauseTables=['SourcePackageName'])
 

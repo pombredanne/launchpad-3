@@ -4,10 +4,7 @@
 
 __metaclass__ = type
 
-__all__ = [
-    'ISourcePackageRelease',
-    'ISourcePackageReleaseSet',
-    ]
+__all__ = ['ISourcePackageRelease']
 
 from zope.schema import TextLine
 from zope.interface import Interface, Attribute
@@ -97,13 +94,4 @@ class ISourcePackageRelease(Interface):
 
         Return None if not found.
         """
-
-
-class ISourcePackageReleaseSet(Interface):
-
-    def getByCreator(creator):
-        """Return all SourcePackageReleases created by this person."""
-
-    def getByMaintainer(maintainer):
-        """Return all SourcePackageReleases maintained by this person."""
 

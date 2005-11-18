@@ -643,6 +643,15 @@ class PersonView:
         return self._groupSourcePackageReleasesByName(
             self.context.uploadedButNotMaintainedPackages())
 
+    class SourcePackageReleasesByName:
+        """A class to hold a sourcepackagename and a list of
+        sourcepackagereleases of that sourcepackagename.
+        """
+
+        def __init__(self, name, releases):
+            self.name = name
+            self.releases = releases
+
     def _groupSourcePackageReleasesByName(self, sourcepackagereleases):
         """Return a list of SourcePackageReleasesByName objects ordered by
         SourcePackageReleasesByName.name.
@@ -651,17 +660,11 @@ class PersonView:
         sourcepackagename and a list containing all sourcepackagereleases of
         that sourcepackagename.
         """
-        class SourcePackageReleasesByName:
-            name = ""
-            releases = []
-
         allreleasesbyallnames = []
         keyfunc = lambda sprelease: sprelease.name
         for key, group in itertools.groupby(sourcepackagereleases, keyfunc):
-            spreleasesbyname = SourcePackageReleasesByName()
-            spreleasesbyname.name = key
-            spreleasesbyname.releases = list(group)
-            allreleasesbyallnames.append(spreleasesbyname)
+            allreleasesbyallnames.append(
+                self.SourcePackageReleasesByName(key, list(group)))
         return sorted(allreleasesbyallnames, key=lambda s: s.name)
 
     def no_bounties(self):
