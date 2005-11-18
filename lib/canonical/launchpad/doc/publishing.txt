@@ -1,0 +1,44 @@
+SourcePackagePublishingHistory
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+This class provides public access to publishing records via a SQL view.
+
+ >>> from canonical.launchpad.database import SourcePackagePublishingHistory
+
+Select a publishing record from the sampledata (pmount is a
+interesting one):
+
+ >>> spph = SourcePackagePublishingHistory.get(8)
+ >>> spph.sourcepackagerelease.name, spph.distrorelease.name
+ (u'pmount', u'hoary')
+
+Verify if the object follows its interface contracts:
+
+ >>> from canonical.launchpad.interfaces import (
+ ...     ISourcePackageRelease, IDistroRelease,
+ ...     ISourcePackagePublishingHistory,
+ ...     ISourcePackage,
+ ...     IDistributionSourcePackageRelease)
+
+ >>> ISourcePackagePublishingHistory.providedBy(spph)
+ True
+
+ >>> IDistroRelease.providedBy(spph.distrorelease)
+ True
+
+ >>> ISourcePackageRelease.providedBy(spph.sourcepackagerelease)
+ True
+
+ >>> ISourcePackageRelease.providedBy(spph.supersededby)
+ True
+
+ >>> IDistributionSourcePackageRelease.providedBy(
+ ...     spph.meta_sourcepackagerelease)
+ True
+
+ >>> IDistributionSourcePackageRelease.providedBy(spph.meta_supersededby)
+ True
+
+ >>> ISourcePackage.providedBy(spph.meta_sourcepackage)
+ True
+

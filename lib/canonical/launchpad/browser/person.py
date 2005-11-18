@@ -24,6 +24,7 @@ __all__ = [
     'PersonAssignedBugTaskSearchListingView',
     'ReportedBugTaskSearchListingView',
     'BugTasksOnMaintainedSoftwareSearchListingView',
+    'SubscribedBugTaskSearchListingView',
     'PersonRdfView',
     'PersonView',
     'TeamJoinView',
@@ -228,7 +229,7 @@ class PersonBugsMenu(ApplicationMenu):
 
     facet = 'bugs'
 
-    links = ['assignedbugs', 'softwarebugs', 'reportedbugs']
+    links = ['assignedbugs', 'softwarebugs', 'reportedbugs', 'subscribedbugs']
 
     def assignedbugs(self):
         text = 'Bugs Assigned'
@@ -242,6 +243,9 @@ class PersonBugsMenu(ApplicationMenu):
         text = 'Bugs Reported'
         return Link('+reportedbugs', text, icon='bugs')
 
+    def subscribedbugs(self):
+        text = 'Bugs Subscribed'
+        return Link('+subscribedbugs', text, icon='bugs')
 
 
 class PersonSpecsMenu(ApplicationMenu):
@@ -313,17 +317,6 @@ class CommonMenuLinks:
         text = 'Edit Home Page'
         return Link(target, text, icon='edit')
 
-    def common_edithackergotchi(self):
-        target = '+edithackergotchi'
-        text = 'Edit Hackergotchi'
-        return Link(target, text, icon='edit')
-
-    @enabled_with_permission('launchpad.Admin')
-    def common_editemblem(self):
-        target = '+editemblem'
-        text = 'Edit Emblem'
-        return Link(target, text, icon='edit')
-
     def common_packages(self):
         target = '+packages'
         text = 'Packages'
@@ -336,8 +329,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     usedfor = IPerson
     facet = 'overview'
     links = ['karma', 'common_edit', 'common_edithomepage',
-             'common_edithackergotchi',
-             'common_editemblem', 'editsshkeys', 'editgpgkeys',
+             'common_edithackergotchi', 'editsshkeys', 'editgpgkeys',
              'codesofconduct', 'administer', 'common_packages']
 
     def karma(self):
@@ -364,6 +356,11 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         summary = 'Used for the Supermirror, and when maintaining packages'
         return Link(target, text, summary, icon='edit')
 
+    def common_edithackergotchi(self):
+        target = '+edithackergotchi'
+        text = 'Edit Hackergotchi'
+        return Link(target, text, icon='edit')
+
     def codesofconduct(self):
         target = '+codesofconduct'
         text = 'Codes of Conduct'
@@ -382,9 +379,9 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['common_edit', 'common_edithomepage', 'common_edithackergotchi',
-             'common_editemblem', 'members', 'editemail', 'polls',
-             'joinleave', 'reassign', 'common_packages']
+    links = ['common_edit', 'common_edithomepage', 'common_editemblem',
+             'members', 'editemail', 'polls', 'joinleave', 'reassign',
+             'common_packages']
 
     @enabled_with_permission('launchpad.Admin')
     def reassign(self):
@@ -393,6 +390,11 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         summary = 'Change the owner of the team'
         # alt="(Change owner)"
         return Link(target, text, summary, icon='edit')
+
+    def common_editemblem(self):
+        target = '+editemblem'
+        text = 'Edit Emblem'
+        return Link(target, text, icon='edit')
 
     def members(self):
         target = '+members'
@@ -403,17 +405,6 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+polls'
         text = 'Show Polls'
         return Link(target, text, icon='info')
-
-    def teamhierarchy(self):
-        # XXX: removed because of bug https://launchpad.net/malone/bugs/2435
-        #      that i cannot see at the moment.
-        #      SteveAlexander / Salgado, 2005-09-21
-        target = '+teamhierarchy'
-        text = 'Team Hierarchy'
-        summary = (
-            'Which teams are members of %s, and which teams %s is a member of'
-            % (self.context.browsername, self.context.browsername))
-        return Link(target, text, summary, icon='people')
 
     @enabled_with_permission('launchpad.Edit')
     def editemail(self):
@@ -600,6 +591,14 @@ class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
     def doNotShowAssignee(self):
         """Should we not show the assignee in the list of results?"""
         return True
+
+
+class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
+    """All bugs someone is subscribed to."""
+
+    def getExtraSearchParams(self):
+        return {'status': any(*BUGTASK_STATUS_OPEN), 
+                'subscriber': self.context}
 
 
 class PersonView:
@@ -1176,10 +1175,8 @@ class PersonHackergotchiView(GeneralFormView):
                 file=StringIO(hackergotchi),
                 contentType=content_type)
             self.context.hackergotchi = hkg
+        self._nextURL = canonical_url(self.context)
         return 'Success'
-
-    def nextURL(self):
-        return canonical_url(self.context)
 
 
 class TeamJoinView(PersonView):

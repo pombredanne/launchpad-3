@@ -7,12 +7,15 @@ import time
 import warnings
 
 from zope.interface import implements
+from zope.app.rdb import ZopeConnection
 
 from psycopgda.adapter import PsycopgAdapter
 import psycopg
 
 from canonical.config import config
 from canonical.database.interfaces import IRequestExpired
+from canonical.database.sqlbase import connect
+from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
 
 __all__ = [
     'LaunchpadDatabaseAdapter',
@@ -26,9 +29,30 @@ class LaunchpadDatabaseAdapter(PsycopgAdapter):
     """A subclass of PsycopgAdapter that performs some additional
     connection setup.
     """
+    implements(ILaunchpadDatabaseAdapter)
 
-    def _connection_factory(self):
-        connection = PsycopgAdapter._connection_factory(self)
+    def __init__(self, dsn=None):
+        """Ignore dsn"""
+        super(LaunchpadDatabaseAdapter, self).__init__('dbi://')
+
+    def connect(self, _dbuser=None):
+        """See zope.app.rdb.interfaces.IZopeDatabaseAdapter
+
+        We pass the database user through to avoid having to keep state
+        using a thread local.
+        """
+        if not self.isConnected():
+            self._v_connection = ZopeConnection(
+                self._connection_factory(_dbuser=_dbuser), self)
+
+    def _connection_factory(self, _dbuser=None):
+        """Override method provided by PsycopgAdapter to pull
+        connection settings from the config file
+        """
+        self._registerTypes()
+        if _dbuser is None:
+            _dbuser = config.launchpad.dbuser
+        connection = connect(_dbuser, config.dbname)
 
         if config.launchpad.db_statement_timeout is not None:
             cursor = connection.cursor()
@@ -37,6 +61,19 @@ class LaunchpadDatabaseAdapter(PsycopgAdapter):
             connection.commit()
 
         return ConnectionWrapper(connection)
+
+    def readonly(self):
+        """See ILaunchpadDatabaseAdapter"""
+        cursor = self._v_connection.cursor()
+        cursor.execute('SET TRANSACTION READ ONLY')
+
+    def switchUser(self, dbuser=None):
+        """See ILaunchpadDatabaseAdapter"""
+        # We have to disconnect and reconnect as we may not be running
+        # as a user with privileges to issue 'SET SESSION AUTHORIZATION'
+        # commands.
+        self.disconnect()
+        self.connect(_dbuser=dbuser)
 
 
 _local = threading.local()

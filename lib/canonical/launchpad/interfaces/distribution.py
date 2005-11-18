@@ -140,6 +140,12 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         distribution, or None.
         """
 
+    def getSourcePackageRelease(sourcepackagerelease):
+        """Returns an IDistributionSourcePackageRelease
+
+        Receives a sourcepackagerelease.
+        """
+
     def ensureRelatedBounty(bounty):
         """Ensure that the bounty is linked to this distribution. Return
         None.

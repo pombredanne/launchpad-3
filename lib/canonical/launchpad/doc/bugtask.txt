@@ -316,7 +316,8 @@ For a distribution:
 
 For a person:
 
-    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.database.sqlbase import (
+    ...     flush_database_updates, flush_database_caches)
     >>> foobar = personset.get(16)
     >>> evolution_sourcepackage = sourcepackagenameset.queryByName('evolution')
     >>> ubuntu_evolution_task = bugtaskset.createTask(
@@ -328,6 +329,12 @@ For a person:
     ...                              orderby='targetname')
     >>> [bugtask.targetname for bugtask in foobar.searchTasks(params)]
     [u'evolution (ubuntu)', u'evolution (upstream)', u'mozilla-firefox (debian)', u'mozilla-firefox (ubuntu)']
+
+It's also possible to search bugs that a person is subscribed to:
+    
+    >>> params = BugTaskSearchParams(user=None, subscriber=foobar)
+    >>> [bugtask.bug.id for bugtask in foobar.searchTasks(params)]
+    [7]
 
 To provide null-matching search criteria, use canonical.launchpad.searchbuilder.NULL:
 
@@ -749,6 +756,56 @@ An IBugTask can be adapted to an IBug.
    >>> bug.title
    u'Firefox does not support SVG'
 
+The targetnamecache attribute of BugTask
+----------------------------------------
+
+The BugTask table has this targetnamecache attribute which stores a computed
+value to allow us to sort and search on that value without having to do lots
+of SQL joins. This cached value gets updated daily by the
+update-bugtask-targetnamecaches cronscript and whenever the bugtask is changed.
+Of course, it's also computed and set when a bugtask is created.
+
+    >>> upstream_task = bugtaskset.createTask(
+    ...     bug=bug_one, product=netapplet, owner=sabdfl,
+    ...     status=STATUS_NEW, priority=PRIORITY_MEDIUM,
+    ...     severity=SEVERITY_NORMAL)
+    >>> upstream_task.targetname
+    u'netapplet (upstream)'
+
+    >>> thunderbird = productset.get(8)
+    >>> upstream_task_id = upstream_task.id
+    >>> upstream_task.product = thunderbird
+    >>> upstream_task.targetname
+    u'thunderbird (upstream)'
+
+    >>> thunderbird.name = 'thunderbird-ng'
+
+    # XXX: This flush_database_updates() shouldn't be needed because we
+    # already have the transaction.commit() here, but without it
+    # (flush_database_updates), the cronscript won't see the thunderbird name
+    # change. See https://launchpad.net/products/launchpad/+bug/3989 for more
+    # information.
+    >>> flush_database_updates()
+    >>> transaction.commit()
+
+    >>> import subprocess
+    >>> process = subprocess.Popen(
+    ...     'cronscripts/update-bugtask-targetnamecaches.py -q', shell=True,
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    >>> (out, err) = process.communicate()
+    >>> out, err
+    ('', '')
+    >>> process.returncode
+    0
+
+    # XXX: If we don't call flush_database_caches() here, we won't see the
+    # changes made by the cronscript in objects we already have cached.
+    >>> flush_database_caches()
+    >>> transaction.commit()
+
+    >>> bugtaskset.get(upstream_task_id).targetname
+    u'thunderbird-ng (upstream)'
+
 Handling IntegrityError and ProgrammingError
 --------------------------------------------
 
@@ -776,21 +833,3 @@ ProgrammingError
     <BLANKLINE>
     INSERT INTO BugTask ...
 
-The targetnamecache attribute of BugTask
-----------------------------------------
-
-The BugTask table has this targetnamecache attribute which stores a computed
-value to allow us to sort and search on that value without having to do lots
-of SQL joins. This cached value gets updated daily by the
-update-bugtask-targetnamecaches cronscript and whenever the bugtask is change.
-Of course, it's also computed and set when a bugtask is created.
-
-    >>> import subprocess
-    >>> process = subprocess.Popen(
-    ...     'cronscripts/update-bugtask-targetnamecaches.py -q', shell=True,
-    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    >>> (out, err) = process.communicate()
-    >>> out, err
-    ('', '')
-    >>> process.returncode
-    0
