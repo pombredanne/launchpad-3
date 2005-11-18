@@ -155,6 +155,10 @@ class TestLibrarianGarbageCollection(TestCase):
         # Flag one of our LibraryFileAliases as being recently accessed
         self.ztm.begin()
         f1 = LibraryFileAlias.get(self.f1_id)
+        recent_past = (
+                datetime.now().replace(tzinfo=utc)
+                - timedelta(days=6, hours=23)
+                )
         f1.last_accessed = UTC_NOW
         del f1
         self.ztm.commit()
@@ -183,13 +187,13 @@ class TestLibrarianGarbageCollection(TestCase):
         del f1
         self.ztm.commit()
 
-        # Delete unreferenced LibraryFileAliases. This should remove out
+        # Delete unreferenced LibraryFileAliases. This should remove our
         # example aliases, as one is unreferenced with a NULL expiry and
         # the other is unreferenced with an expiry in the past.
         librariangc.delete_unreferenced_aliases(self.ztm)
 
         # Make sure both our example files are gone
-        self.ztmbegin()
+        self.ztm.begin()
         try:
             LibraryFileAlias.get(self.f1_id, None)
             self.fail("LibraryFileAlias %d was not removed" % self.f1_id)
@@ -210,21 +214,25 @@ class TestLibrarianGarbageCollection(TestCase):
         # LibraryFileContent
         librariangc.merge_duplicates(self.ztm)
 
-        # Flag one of our LibraryFileAliases with an expiry date in the future
+        # Flag one of our LibraryFileAliases with an expiry date in the
+        # recent past.
         self.ztm.begin()
         f1 = LibraryFileAlias.get(self.f1_id)
-        recent_past = datetime.now().replace(tzinfo=utc) - timedelta(days=2)
+        recent_past = (
+                datetime.now().replace(tzinfo=utc)
+                - timedelta(days=6, hours=23)
+                )
         f1.expires = recent_past
         del f1
         self.ztm.commit()
 
-        # Delete unreferenced LibraryFileAliases. This should remove out
+        # Delete unreferenced LibraryFileAliases. This should not remove our
         # example aliases, as one is unreferenced with a NULL expiry and
-        # the other is unreferenced with an expiry in the past.
+        # the other is unreferenced with an expiry in the recent past.
         librariangc.delete_unreferenced_aliases(self.ztm)
 
         # Make sure both our example files are still there
-        self.ztmbegin()
+        self.ztm.begin()
         LibraryFileAlias.get(self.f1_id, None)
         LibraryFileAlias.get(self.f2_id, None)
 
@@ -282,9 +290,10 @@ class TestLibrarianGarbageCollection(TestCase):
         # removed from disk before attempting to remove the unreferenced
         # LibraryFileContent. Because an unreferenced file is removed from
         # disk before the db row is removed, it is possible that the
-        # db removal fails. This is fine, as the next gc run will attempt
-        # it again and nothing can use unreferenced files anyway. This
-        # test ensures that this works.
+        # db removal fails (eg. an exception was raised on COMMIT).
+        # This is fine, as the next gc run will attempt it again and
+        # nothing can use unreferenced files anyway. This test ensures
+        # that this all works.
 
         # Merge the duplicates. This creates an unreferenced LibraryFileContent
         librariangc.merge_duplicates(self.ztm)
