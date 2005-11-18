@@ -93,4 +93,17 @@ As before, two copies of the notification got sent:
     Comment:
     You have to change the boot order in the BIOS.
     <BLANKLINE>
-    
+
+    >>> stub.test_emails = []
+
+If we trigger a modification event, even though no changes worth
+notifying about was made, no notification is sent:
+
+    >>> unmodified_ticket = Snapshot(ubuntu_ticket, providing=ITicket)
+    >>> ubuntu_ticket.mark_resolved(no_priv) # The ticket is already resolved.
+    >>> notify(SQLObjectModifiedEvent(
+    ...     ubuntu_ticket, unmodified_ticket, ['status']))
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    0

@@ -978,9 +978,20 @@ def notify_ticket_added(ticket, event):
 def notify_ticket_modified(ticket, event):
     """Notify the relevant people that a ticket has been modifed."""
     old_ticket = event.object_before_modification
+
+    info_fields = []
+    if ticket.status != old_ticket.status:
+        info_fields.append(('Status', '%s => %s' % (
+            old_ticket.status.title, ticket.status.title)))
+    ticket_info = '\n'.join(['%16s: %s' % (title, value)
+                             for title, value in info_fields])
+
     new_comments = set(ticket.messages).difference(old_ticket.messages)
     nr_of_new_comments = len(new_comments)
     if len(new_comments) == 0:
+        if len(info_fields) == 0:
+            # No interesting changes were made.
+            return
         comment_subject = ticket.title
         comment_text = '(No comment was given.)'
     elif len(new_comments) == 1:
@@ -993,12 +1004,6 @@ def notify_ticket_modified(ticket, event):
 
     subject = '[Support #%s]: %s' % (ticket.id, comment_subject)
 
-    info_fields = []
-    if ticket.status != old_ticket.status:
-        info_fields.append(('Status', '%s => %s' % (
-            old_ticket.status.title, ticket.status.title)))
-    ticket_info = '\n'.join(['%16s: %s' % (title, value)
-                             for title, value in info_fields])
 
     body = get_email_template('ticket_modified.txt') % {
         'ticket_id': ticket.id,
