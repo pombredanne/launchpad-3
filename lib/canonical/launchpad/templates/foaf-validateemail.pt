@@ -47,10 +47,6 @@
       </form>
     </div>
 
-    <div tal:condition="view/successfullyProcessed">
-      <h1>E-mail address successfully confirmed</h1>
-    </div>
-
 </div>
 
 

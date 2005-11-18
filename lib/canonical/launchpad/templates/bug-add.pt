@@ -7,10 +7,6 @@
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
-        <h1 metal:fill-slot="heading">
-          Report a bug about
-          <tal:thing content="context/title" />
-        </h1>
 
         <p metal:fill-slot="extra_info">
           Before reporting a bug, please ensure it hasn&#8217;t
