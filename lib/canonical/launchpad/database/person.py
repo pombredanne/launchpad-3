@@ -2,12 +2,10 @@
 
 __metaclass__ = type
 __all__ = [
-    'Person', 'PersonSet', 'EmailAddress', 'EmailAddressSet',
-    'GPGKey', 'GPGKeySet', 'SSHKey', 'SSHKeySet', 'ArchUserID',
-    'ArchUserIDSet', 'WikiName', 'WikiNameSet', 'JabberID',
-    'JabberIDSet', 'IrcID', 'IrcIDSet', 'TeamMembership',
-    'TeamMembershipSet', 'TeamParticipation'
-    ]
+    'Person', 'PersonSet', 'EmailAddress', 'EmailAddressSet', 'GPGKey',
+    'GPGKeySet', 'SSHKey', 'SSHKeySet', 'WikiName', 'WikiNameSet', 'JabberID',
+    'JabberIDSet', 'IrcID', 'IrcIDSet', 'TeamMembership', 'TeamMembershipSet',
+    'TeamParticipation']
 
 import itertools
 import sets
@@ -33,8 +31,8 @@ from canonical.database import postgresql
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, ITeamMembership, ITeamParticipation,
-    ITeamMembershipSet, IEmailAddress, IWikiName, IIrcID, IArchUserID,
-    IJabberID, IIrcIDSet, IArchUserIDSet, ISSHKeySet, IJabberIDSet,
+    ITeamMembershipSet, IEmailAddress, IWikiName, IIrcID,
+    IJabberID, IIrcIDSet, ISSHKeySet, IJabberIDSet,
     IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IMaintainershipSet,
     IEmailAddressSet, ISourcePackageReleaseSet, IPasswordEncryptor,
     ICalendarOwner, UBUNTU_WIKI_URL, ISignedCodeOfConductSet,
@@ -48,6 +46,7 @@ from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.karma import (
     KarmaAction, Karma, KarmaCategory)
 from canonical.launchpad.database.shipit import ShippingRequest
+from canonical.launchpad.database.branch import Branch
 
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
@@ -110,7 +109,11 @@ class Person(SQLBase):
                             intermediateTable='PersonLanguage')
 
     # relevant joins
-    branches = MultipleJoin('Branch', joinColumn='owner')
+    authored_branches = MultipleJoin(
+        'Branch', joinColumn='author',orderBy='-id')
+    subscribed_branches = RelatedJoin(
+        'Branch', joinColumn='person', otherColumn='branch',
+        intermediateTable='BranchSubscription', orderBy='-id')
     ownedBounties = MultipleJoin('Bounty', joinColumn='owner',
         orderBy='id')
     reviewerBounties = MultipleJoin('Bounty', joinColumn='reviewer',
@@ -281,6 +284,38 @@ class Person(SQLBase):
         ret = sorted(ret, key=lambda a: a.datecreated)
         ret.reverse()
         return ret[:quantity]
+
+    @property
+    def branches(self):
+        """See IPerson."""
+        S = set(self.authored_branches)
+        S.update(self.registered_branches)
+        S.update(self.subscribed_branches)
+        def by_reverse_id(branch):
+            return -branch.id
+        return sorted(S, key=by_reverse_id)
+
+    @property
+    def registered_branches(self):
+        """See IPerson."""
+        return Branch.select('owner=%d AND (author!=%d OR author is NULL)'
+                             % (self.id, self.id), orderBy='-id')
+
+    def getBranch(self, product_name, branch_name):
+        """See IPerson."""
+        # import here to work around a circular import problem
+        from canonical.launchpad.database import Product
+
+        if product_name is None:
+            return Branch.selectOne(
+                'owner=%d AND product is NULL AND name=%s'
+                % (self.id, quote(branch_name)))
+        else:
+            product = Product.selectOneBy(name=product_name)
+            if product is None:
+                return None
+            return Branch.selectOneBy(
+                ownerID=self.id, productID=product.id, name=branch_name)
 
     def isTeam(self):
         """See IPerson."""
@@ -1528,22 +1563,6 @@ class SSHKeySet:
             return SSHKey.get(id)
         except SQLObjectNotFound:
             return default
-
-
-class ArchUserID(SQLBase):
-    implements(IArchUserID)
-
-    _table = 'ArchUserID'
-
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
-    archuserid = StringCol(dbName='archuserid', notNull=True)
-
-
-class ArchUserIDSet:
-    implements(IArchUserIDSet)
-
-    def new(self, personID, archuserid):
-        return ArchUserID(personID=personID, archuserid=archuserid)
 
 
 class WikiName(SQLBase):

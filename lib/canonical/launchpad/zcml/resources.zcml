@@ -29,6 +29,7 @@
     <resource name="up" file="../images/arrowUp.gif" />
     <resource name="blue-bar.png" file="../images/blue-bar.png" />
     <resource name="bounty" file="../images/bounty.jpg" />
+    <resource name="branch" file="../images/info.png" />
     <resource name="bug" file="../images/bug.png" />
     <resource name="bug-high" file="../images/bug-high.png" />
     <resource name="bug-low" file="../images/bug-low.png" />
