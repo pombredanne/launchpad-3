@@ -997,23 +997,27 @@ def notify_ticket_modified(ticket, event):
     """Notify the relevant people that a ticket has been modifed."""
     old_ticket = event.object_before_modification
 
-    ticket_changes_text = get_ticket_changes_text(ticket, old_ticket)
+    body = get_ticket_changes_text(ticket, old_ticket)
 
     new_comments = set(ticket.messages).difference(old_ticket.messages)
     nr_of_new_comments = len(new_comments)
     if len(new_comments) == 0:
-        if not ticket_changes_text:
-            # No interesting changes were made.
-            return
         comment_subject = ticket.title
-        comment_text = '(No comment was given)'
     elif len(new_comments) == 1:
         comment = new_comments.pop()
         comment_subject = comment.subject
-        comment_text = comment.contents
+        if body:
+            # There should be a blank line between the changes and the
+            # comment.
+            body += '\n\n'
+        body += 'Comment:\n%s' % comment.contents
     else:
         raise AssertionError(
             "There shouldn't be more than one comment for a notification.")
+
+    if not body:
+        # No interesting changes were made.
+        return
 
     subject = '[Support #%s]: %s' % (ticket.id, comment_subject)
 
@@ -1022,6 +1026,5 @@ def notify_ticket_modified(ticket, event):
         'ticket_id': ticket.id,
         'target_name': ticket.target.displayname,
         'ticket_url': canonical_url(ticket),
-        'modifications': ticket_changes_text,
-        'comment': comment_text}
+        'body': body}
     send_ticket_notification(event, subject, body)

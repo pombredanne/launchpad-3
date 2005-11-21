@@ -136,8 +136,5 @@ bug that has been linked to the request:
         Linked to bug: #9
         http://.../malone/bugs/9
     <BLANKLINE>
-    Comment:
-    (No comment was given)
-    <BLANKLINE>
 
     >>> stub.test_emails = []
