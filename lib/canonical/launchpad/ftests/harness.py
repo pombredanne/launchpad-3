@@ -16,6 +16,7 @@ from sqlos.interfaces import IConnectionName
 from canonical.config import config
 from canonical.database.sqlbase import SQLBase, ZopelessTransactionManager
 from canonical.lp import initZopeless
+from canonical.launchpad.ftests import login, ANONYMOUS, logout
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
 
 import sqlos
@@ -108,7 +109,7 @@ class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
         super(LaunchpadFunctionalTestSetup, self).setUp()
         FunctionalTestSetup().setUp()
         _reconnect_sqlos(self.dbuser)
-        
+
     def tearDown(self):
         FunctionalTestSetup().tearDown()
         _disconnect_sqlos()
@@ -136,12 +137,29 @@ class LaunchpadTestCase(unittest.TestCase):
 
 
 class LaunchpadFunctionalTestCase(unittest.TestCase):
+
+    def login(self, user=None):
+        """Login the current zope request as user.
+        
+        If no user is provided, ANONYMOUS is used.
+        """
+        if user is None:
+            user = ANONYMOUS
+        login(user)
+        self.__logged_in = True
+
     def setUp(self):
+        unittest.TestCase.setUp(self)
         LaunchpadFunctionalTestSetup().setUp()
         self.zodb_db = FunctionalTestSetup().db
+        self.__logged_in = False
 
     def tearDown(self):
+        if self.__logged_in:
+            logout()
+            self.__logged_in = False
         LaunchpadFunctionalTestSetup().tearDown()
+        unittest.TestCase.tearDown(self)
 
     def connect(self):
         return LaunchpadFunctionalTestSetup().connect()

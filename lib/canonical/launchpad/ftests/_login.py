@@ -36,7 +36,7 @@ def logout():
     """Tear down after login(...), ending the current interaction.
 
     Note that this is done automatically in
-    canonical.functional.FunctionalTestSetup's tearDown method so you
-    generally won't need to call this.
+    canonical.launchpad.ftest.LaunchpadFunctionalTestCase's tearDown method so
+    you generally won't need to call this.
     """
     endInteraction()
