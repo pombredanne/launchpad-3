@@ -112,7 +112,7 @@ class ITicket(IHasOwner, IMessageTarget):
 
     def accept():
         """Mark this ticket as accepted.
-        
+
         This can only be done to NEW tickets. It will usually be done when
         the first message for the ticket is received from someone other than
         the requester (owner).  Doing so will also set the dateaccepted.
@@ -120,7 +120,7 @@ class ITicket(IHasOwner, IMessageTarget):
 
     def reject(rejector):
         """Mark this ticket as rejected.
-        
+
         This can only be done to tickets that are not CLOSED or ANSWERED. It
         will remember the dateclosed (rejection is the same as closing,
         effectively). It will also store this as the dateanswered, and it
@@ -137,18 +137,18 @@ class ITicket(IHasOwner, IMessageTarget):
     # subscription-related methods
     def subscribe(person):
         """Subscribe this person to the ticket."""
-        
+
     def unsubscribe(person):
         """Remove the person's subscription to this ticket."""
 
     # bug linking
-    def linkBug(bug_number):
-        """Link this ticket to the given bug number, returning the
+    def linkBug(bug):
+        """Link this ticket to the given bug, returning the
         TicketBug.
         """
 
-    def unLinkBug(bug_number):
-        """Remove any link to this bug number."""
+    def unLinkBug(bug):
+        """Remove any link to this bug."""
 
 
 # Interfaces for containers
