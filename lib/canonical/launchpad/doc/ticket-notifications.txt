@@ -88,7 +88,7 @@ As before, two copies of the notification got sent:
     Support request #8 on ubuntu changed:
     http://.../distros/ubuntu/+ticket/8
     <BLANKLINE>
-              Status: New => Answered
+        Status: New => Answered
     <BLANKLINE>
     Comment:
     You have to change the boot order in the BIOS.
@@ -107,3 +107,37 @@ notifying about was made, no notification is sent:
     >>> transaction.commit()
     >>> len(stub.test_emails)
     0
+
+If we create a bug from the support request, it will be reported as a
+bug that has been linked to the request:
+
+    >>> unmodified_ticket = Snapshot(ubuntu_ticket, providing=ITicket)
+    >>> bug = unmodified_ticket.target.createBug(
+    ...     no_priv, unmodified_ticket.title, unmodified_ticket.description)
+    >>> unmodified_ticket.linkBug(bug)
+    <TicketBug...>
+    >>> notify(SQLObjectModifiedEvent(
+    ...     ubuntu_ticket, unmodified_ticket, ['bugs']))
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    2
+
+    >>> notifications = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    >>> edit_notification = notifications[0]
+    >>> notification_body = edit_notification.get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Support request #8 on ubuntu changed:
+    http://.../distros/ubuntu/+ticket/8
+    <BLANKLINE>
+        Linked to bug: #9
+        http://.../malone/bugs/9
+    <BLANKLINE>
+    Comment:
+    (No comment was given)
+    <BLANKLINE>
+
+    >>> stub.test_emails = []

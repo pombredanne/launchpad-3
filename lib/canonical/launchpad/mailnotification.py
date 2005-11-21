@@ -975,25 +975,38 @@ def notify_ticket_added(ticket, event):
     send_ticket_notification(event, subject, body)
 
 
+def get_ticket_changes_text(ticket, old_ticket):
+    """Return a textual representation of the changes."""
+    indent = 4*' '
+    info_fields = []
+    if ticket.status != old_ticket.status:
+        info_fields.append(indent + 'Status: %s => %s' % (
+            old_ticket.status.title, ticket.status.title))
+
+    old_bugs = set(old_ticket.bugs)
+    bugs = set(ticket.bugs)
+    for linked_bug in bugs.difference(old_bugs):
+        info_fields.append(indent + 'Linked to bug: #%s' % linked_bug.id)
+        info_fields.append(indent + canonical_url(linked_bug))
+
+    ticket_changes = '\n'.join(info_fields)
+    return ticket_changes
+
+
 def notify_ticket_modified(ticket, event):
     """Notify the relevant people that a ticket has been modifed."""
     old_ticket = event.object_before_modification
 
-    info_fields = []
-    if ticket.status != old_ticket.status:
-        info_fields.append(('Status', '%s => %s' % (
-            old_ticket.status.title, ticket.status.title)))
-    ticket_info = '\n'.join(['%16s: %s' % (title, value)
-                             for title, value in info_fields])
+    ticket_changes_text = get_ticket_changes_text(ticket, old_ticket)
 
     new_comments = set(ticket.messages).difference(old_ticket.messages)
     nr_of_new_comments = len(new_comments)
     if len(new_comments) == 0:
-        if len(info_fields) == 0:
+        if not ticket_changes_text:
             # No interesting changes were made.
             return
         comment_subject = ticket.title
-        comment_text = '(No comment was given.)'
+        comment_text = '(No comment was given)'
     elif len(new_comments) == 1:
         comment = new_comments.pop()
         comment_subject = comment.subject
@@ -1009,6 +1022,6 @@ def notify_ticket_modified(ticket, event):
         'ticket_id': ticket.id,
         'target_name': ticket.target.displayname,
         'ticket_url': canonical_url(ticket),
-        'modifications': ticket_info,
+        'modifications': ticket_changes_text,
         'comment': comment_text}
     send_ticket_notification(event, subject, body)
