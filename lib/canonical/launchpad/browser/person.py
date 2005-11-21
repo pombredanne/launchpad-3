@@ -664,7 +664,7 @@ class PersonView:
         keyfunc = lambda sprelease: sprelease.name
         for key, group in itertools.groupby(sourcepackagereleases, keyfunc):
             allreleasesbyallnames.append(
-                self.SourcePackageReleasesByName(key, list(group)))
+                PersonView.SourcePackageReleasesByName(key, list(group)))
         return sorted(allreleasesbyallnames, key=lambda s: s.name)
 
     def no_bounties(self):
