@@ -177,7 +177,7 @@
         schema="canonical.launchpad.interfaces.IProduct"
         class="canonical.launchpad.browser.ProductEditView"
         label="Edit Upstream Product Details"
-        fields="project name displayname title summary description homepageurl
+        fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl screenshotsurl
                 downloadurl programminglang"
         permission="launchpad.Edit"
@@ -393,7 +393,7 @@
         for="canonical.launchpad.interfaces.IProductSet"
         schema="canonical.launchpad.interfaces.IProduct"
         label="Register an Upstream Open Source Product"
-        fields="project name displayname title summary description homepageurl
+        fields="name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl screenshotsurl
                 downloadurl programminglang"
         content_factory="canonical.launchpad.database.Product"

@@ -16,10 +16,6 @@ Test that the page to add a new product works.
   ... Content-Type: multipart/form-data; boundary=---------------------------43746069110828506211603039137
   ... 
   ... -----------------------------43746069110828506211603039137
-  ... Content-Disposition: form-data; name="field.project"
-  ... 
-  ... mozilla
-  ... -----------------------------43746069110828506211603039137
   ... Content-Disposition: form-data; name="field.name"
   ... 
   ... testing
@@ -81,16 +77,12 @@ Test that the page to add a new product works.
   ...Register an Upstream Open Source Product...
 
 
-Test if we can see the page of the added product and tests if we can see the
-Project.
-
   >>> print http(r"""
   ... GET /products/testing HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...This is a Test Product...
-  ...<h4>The Mozilla Project:</h4>...
 
 
 Tests if the validator is working for the URL fields
