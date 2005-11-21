@@ -225,6 +225,9 @@ class Ticket(SQLBase):
                 # unsubscribe the ticket owner from the bug
                 bug.unsubscribe(self.owner)
                 TicketBug.delete(buglink.id)
+                # XXX: We shouldn't return the object that we just
+                #      deleted from the db.
+                #      -- Bjorn Tillenius, 2005-11-21
                 return buglink
 
 
