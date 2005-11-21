@@ -17,7 +17,7 @@ Verify if the object follows its interface contracts:
  >>> from canonical.launchpad.interfaces import (
  ...     ISourcePackageRelease, IDistroRelease,
  ...     ISourcePackagePublishingHistory,
- ...     IDistributionSourcePackage,
+ ...     ISourcePackage,
  ...     IDistributionSourcePackageRelease)
 
  >>> ISourcePackagePublishingHistory.providedBy(spph)
@@ -39,6 +39,6 @@ Verify if the object follows its interface contracts:
  >>> IDistributionSourcePackageRelease.providedBy(spph.meta_supersededby)
  True
 
- >>> IDistributionSourcePackage.providedBy(spph.meta_sourcepackage)
+ >>> ISourcePackage.providedBy(spph.meta_sourcepackage)
  True
 

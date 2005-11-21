@@ -29,7 +29,7 @@ EMPTY_DBNAME=launchpad_empty
 # the first two CREATEs commented out (plpythonu stuff)
 REV=40
 BASELINE=launchpad-${REV}-00-0.sql
-MD5SUM=bddd3295e9c95ca1702155ea71978387  launchpad-40-00-0.sql
+MD5SUM=38f4499b444fcbef5b0348980e36c76c  launchpad-40-00-0.sql
 default: all
 
 # NB. Yes - we run fti.py twice. This should be fixed sometime, but

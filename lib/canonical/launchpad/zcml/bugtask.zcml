@@ -43,7 +43,7 @@
                         maintainer maintainer_displayname targetname
                         title related_tasks statusdisplayhtml statuselsewhere
                         setStatusFromDebbugs setSeverityFromDebbugs
-                        updateTargetNameCache" />
+                        updateTargetNameCache asEmailHeaderValue" />
         <require
             permission="launchpad.Edit"
             set_attributes="product sourcepackagename distribution
