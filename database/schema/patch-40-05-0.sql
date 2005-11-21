@@ -201,4 +201,4 @@ ALTER TABLE Revision ADD CONSTRAINT revision_gpgkey_fk
     FOREIGN KEY (gpgkey) REFERENCES GPGKey;
 
 -- Shazzham!
-INSERT INTO LaunchpadDatabaseRevision VALUES (25, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (40, 5, 0);
