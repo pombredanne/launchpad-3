@@ -47,8 +47,7 @@ class TranslationImportQueueURL:
 
 
 class TranslationImportQueueView(GeneralFormView):
-    """This view handles the view part of the admin interface for the
-    translation import queue.
+    """The view part of the admin interface for the translation import queue.
     """
 
     def __init__(self, context, request):
@@ -58,7 +57,14 @@ class TranslationImportQueueView(GeneralFormView):
         GeneralFormView.__init__(self, context, request)
 
     def initialize(self):
-        """Useful initialization for this view class."""
+        """Set the fields that will be showed based on the 'context' values.
+
+        If the context comes from a productseries, the sourcepackagename
+        chooser is hidden.
+        If the 'context.path' field ends with the string '.pot', it notes that
+        the context is related with a '.pot' file, so we hide the language and
+        variant fields as are useless here.
+        """
         self.fieldNames = ['sourcepackagename', 'potemplatename', 'path',
             'language', 'variant']
 
@@ -96,8 +102,8 @@ class TranslationImportQueueView(GeneralFormView):
         try:
             potemplate = potemplate_subset[potemplatename.name]
         except NotFoundError:
-            # The POTemplate does not exists. In this case we don't care if
-            # the file is a .pot or a .po file, we can use both as the base
+            # The POTemplate does not exist. In this case we don't care if
+            # the file is a .pot or a .po file, we can use either as the base
             # template.
             potemplate = potemplate_subset.new(
                 potemplatename,
@@ -113,7 +119,7 @@ class TranslationImportQueueView(GeneralFormView):
                 # We can remove the element from the queue as it was a direct
                 # import into an IPOTemplate.
                 translationimportqueue_set.remove(self.context.id)
-                return 'Your changes has been done.'
+                return 'You associated the queue item with a PO Template.'
 
         if language is None:
             try:
@@ -133,12 +139,10 @@ class TranslationImportQueueView(GeneralFormView):
                 # a link to the IPOFile and wait for it.
                 self.context.pofile = pofile
 
-        return 'Your changes has been done.'
+        return 'You associated the queue item with a PO File.'
 
     def nextURL(self):
-        """Return the URL of the main queue so the form submission forwards
-        there.
-        """
+        """Return the URL of the main import queue at 'rosetta/imports'."""
         translationimportqueue_set = getUtility(ITranslationImportQueueSet)
         return canonical_url(translationimportqueue_set)
 
@@ -170,6 +174,10 @@ class TranslationImportQueueSetView(LaunchpadView):
         """Useful initialization for this view class."""
         self.alerts = []
         self.notices = []
+        self.form = self.request.form
+
+        # Process the form.
+        self.processForm()
 
     @property
     def has_things_to_import(self):
@@ -188,183 +196,144 @@ class TranslationImportQueueSetView(LaunchpadView):
         return False
 
     def readyToImport(self):
-        """Return the set of entries that can be imported directly."""
+        """Iterate the entries that can be imported directly."""
         for entry in self.context.getEntries():
             if entry.import_into is not None:
                 yield entry
 
     def pendingReview(self):
-        """Return the set of entries that need manually review."""
+        """Iterate the entries that need manually review."""
         for entry in self.context.getEntries():
             if entry.import_into is None:
                 yield entry
 
-    def submitForm(self):
-        """Called from the page template to do any processing needed if a form
-        was submitted with the request."""
+    def processForm(self):
+        """Block or remove entries from the queue based on the selection of
+        the form.
+        """
+        if self.request.method != 'POST' or self.user is None:
+            # The form was not submitted or the user is not logged in.
+            return
 
-        if self.request.method == 'POST' and self.user is not None:
-            if 'remove_import' in self.request.form:
-                self.remove()
-            elif "block_import" in self.request.form:
-                self.block()
-            elif 'remove_review' in self.request.form:
-                self.remove()
-            elif "block_review" in self.request.form:
-                self.block()
-            elif 'remove_blocked' in self.request.form:
-                self.remove()
-            elif "unblock" in self.request.form:
-                self.unblock()
+        self.form_entries = []
+
+        for item in self.form:
+            if item.startswith('entry-'):
+                # It's an item to remove
+                try:
+                    common, id_string = item.split('-')
+                    # The id is an integer
+                    id = int(id_string)
+                except ValueError:
+                    # We got an item with more than one '-' char or with an id
+                    # that is not a number, that means that someone is playing
+                    # badly with our system so it's safe to just ignore the
+                    # request.
+                    raise AssertionError(
+                        'Ignored your request because is broken.')
+                self.form_entries.append(id)
+
+        dispatch_table = {
+            'remove_import': self.remove,
+            'block_import': self.block,
+            'remove_review': self.remove,
+            'block_review': self.block,
+            'remove_blocked': self.remove,
+            'unblock': self.unblock
+            }
+        dispatch_to = [(key, method)
+                        for key, method in dispatch_table
+                        if key in self.form
+                      ]
+        if len(dispatch_to) != 1:
+            raise AssertionError(
+                "There should be only one command in the form",
+                dispatch_to)
+        key, method = dispatch_to[0]
+        method()
 
     def remove(self):
-        """Handle a form submission to remove items ready to be imported."""
+        """Handle a form submission to remove items ready to be imported.
+
+        It expects the list of items ids at self.form_entries
+        """
+        # The user must be logged in.
+        assert self.user is not None
+
         removed = 0
-        ignored = 0
-        broken = 0
-        for item in self.request.form:
-            if item.startswith('entry-'):
-                # It's an item to remove
-                try:
-                    common, id_string = item.split('-')
-                    # The id is an integer
-                    id = int(id_string)
-                except ValueError:
-                    # We got an item with more than one '-' char or with an id
-                    # that is not a number, that means that someone is playing
-                    # badly with our system so it's safe to just ignore the
-                    # request.
-                    broken += 1
-                    continue
-
-                entry = self.context.get(id)
-                if self.user.inTeam(entry.importer):
-                    # Do the removal.
-                    self.context.remove(id)
-                    removed += 1
-                else:
-                    # The user was not the importer so we ignore the request.
-                    ignored += 1
-
+        for id in self.form_entries:
+            entry = self.context.get(id)
+            if self.user.inTeam(entry.importer):
+                # Do the removal.
+                self.context.remove(id)
+                removed += 1
+            else:
+                # The user was not the importer and that means that is a
+                # broken request.
+                raise AssertionError(
+                    'Ignored your request to remove some items, because'
+                    'they are not yours.')
 
         # Notifications.
-        if broken == 1:
-            self.alerts.append('A broken request was detected and ignored.')
-        elif broken > 1:
-            self.alerts.append(
-                '%d broken requests were detected and were ignored.' % broken)
-        if ignored == 1:
-            self.alerts.append(
-                '%d item removal was ignored becasue is not yours.' % ignored)
-        elif ignored > 1:
-            self.alerts.append(
-                '%d item removals were ignored because aren\'t yours.' %
-                    ignored)
         if removed == 1:
-            self.notices.append('%d item was removed.' % removed)
+            self.notices.append('Removed %d item.' % removed)
         elif removed > 1:
-            self.notices.append('%d items were removed.' % removed)
+            self.notices.append('Removed %d items.' % removed)
 
     def block(self):
-        """Handle a form submission to block items to be imported."""
-        blocked = 0
-        ignored = 0
-        broken = 0
-        for item in self.request.form:
-            if item.startswith('entry-'):
-                # It's an item to remove
-                try:
-                    common, id_string = item.split('-')
-                    # The id is an integer
-                    id = int(id_string)
-                except ValueError:
-                    # We got an item with more than one '-' char or with an id
-                    # that is not a number, that means that someone is playing
-                    # badly with our system so it's safe to just ignore the
-                    # request.
-                    broken += 1
-                    continue
+        """Handle a form submission to block items to be imported.
 
-                celebrities = getUtility(ILaunchpadCelebrities)
-                # Only admins or Rosetta experts will be able to block
-                # imports:
-                if (self.user.inTeam(celebrities.admin) or
-                    self.user.inTeam(celebrities.rosetta_expert)):
-                    # Block it.
-                    entry = self.context.get(id)
-                    entry.block()
-                    blocked += 1
-                else:
-                    # The user does not have the needed permissions to do
-                    # this.
-                    ignored += 1
+        It expects the list of items ids at self.form_entries
+        """
+        blocked = 0
+        for item in self.form_entries:
+            celebrities = getUtility(ILaunchpadCelebrities)
+            # Only admins or Rosetta experts will be able to block
+            # imports:
+            if (self.user.inTeam(celebrities.admin) or
+                self.user.inTeam(celebrities.rosetta_expert)):
+                # Block it.
+                entry = self.context.get(id)
+                entry.block()
+                blocked += 1
+            else:
+                # The user does not have the needed permissions to do
+                # this.
+                raise AssertionError(
+                    'Ignored your request to block some items, because'
+                    'they are not yours.')
 
         # Notifications.
-        if broken == 1:
-            self.alerts.append('A broken request was detected and ignored.')
-        elif broken > 1:
-            self.alerts.append(
-                '%d broken requests were detected and were ignored.' % broken)
-        if ignored == 1:
-            self.alerts.append(
-                '%d item removal was ignored becasue is not yours.' % ignored)
-        elif ignored > 1:
-            self.alerts.append(
-                '%d item removals were ignored because aren\'t yours.' %
-                    ignored)
         if blocked == 1:
-            self.notices.append('%d item was blocked.' % blocked)
+            self.notices.append('Blocked %d item.' % blocked)
         elif blocked > 1:
-            self.notices.append('%d items were blocked.' % blocked)
+            self.notices.append('Blocked %d items.' % blocked)
 
     def unblock(self):
-        """Handle a form submission to unblock items to be imported."""
-        unblocked = 0
-        ignored = 0
-        broken = 0
-        for item in self.request.form:
-            if item.startswith('entry-'):
-                # It's an item to remove
-                try:
-                    common, id_string = item.split('-')
-                    # The id is an integer
-                    id = int(id_string)
-                except ValueError:
-                    # We got an item with more than one '-' char or with an id
-                    # that is not a number, that means that someone is playing
-                    # badly with our system so it's safe to just ignore the
-                    # request.
-                    broken += 1
-                    continue
+        """Handle a form submission to unblock items to be imported.
 
-                celebrities = getUtility(ILaunchpadCelebrities)
-                # Only admins or Rosetta experts will be able to unblock
-                # imports:
-                if (self.user.inTeam(celebrities.admin) or
-                    self.user.inTeam(celebrities.rosetta_expert)):
-                    # Unblock it.
-                    entry = self.context.get(id)
-                    entry.block(False)
-                    unblocked += 1
-                else:
-                    # The user does not have the needed permissions to do
-                    # this.
-                    ignored += 1
+        It expects the list of items ids at self.form_entries
+        """
+        unblocked = 0
+        for item in self.form_entries:
+            celebrities = getUtility(ILaunchpadCelebrities)
+            # Only admins or Rosetta experts will be able to unblock
+            # imports:
+            if (self.user.inTeam(celebrities.admin) or
+                self.user.inTeam(celebrities.rosetta_expert)):
+                # Unblock it.
+                entry = self.context.get(id)
+                entry.block(False)
+                unblocked += 1
+            else:
+                # The user does not have the needed permissions to do
+                # this.
+                raise AssertionError(
+                    'Ignored your request to block some items, because'
+                    'they are not yours.')
 
         # Notifications.
-        if broken == 1:
-            self.alerts.append('A broken request was detected and ignored.')
-        elif broken > 1:
-            self.alerts.append(
-                '%d broken requests were detected and were ignored.' % broken)
-        if ignored == 1:
-            self.alerts.append(
-                '%d item removal was ignored becasue is not yours.' % ignored)
-        elif ignored > 1:
-            self.alerts.append(
-                '%d item removals were ignored because aren\'t yours.' %
-                    ignored)
         if unblocked == 1:
-            self.notices.append('%d item was unblocked.' % unblocked)
+            self.notices.append('Unblocked %d item.' % unblocked)
         elif unblocked > 1:
-            self.notices.append('%d items were unblocked.' % unblocked)
+            self.notices.append('Unblocked %d items.' % unblocked)
