@@ -32,6 +32,7 @@
           <input type="checkbox" name="DEACTIVATE_GPGKEY"
                  tal:attributes="value key/id"/>
           <span tal:replace="key/displayname">KEY</span>
+          <tal:block condition="not:key/can_encrypt">(sign only)</tal:block>
         </label>
       </div>
 
@@ -54,7 +55,7 @@
         <label tal:repeat="fingerprint context/pendinggpgkeys">
           <input type="checkbox" name="REMOVE_GPGTOKEN"
                  tal:attributes="value fingerprint"/>
-                 <span tal:replace="fingerprint">TOKEN</span>
+          <span tal:replace="fingerprint">TOKEN</span>
         </label>
       </div>
 
@@ -77,7 +78,8 @@
         <label>
         <input type="checkbox" name="REVALIDATE_GPGKEY"
                tal:attributes="value key/id"/>
-               <span tal:replace="key/displayname">KEY</span>
+          <span tal:replace="key/displayname">KEY</span>
+          <tal:block condition="not:key/can_encrypt">(sign only)</tal:block>
         </label>
       </div>
       <input type="submit" value="Revalidate Key" />

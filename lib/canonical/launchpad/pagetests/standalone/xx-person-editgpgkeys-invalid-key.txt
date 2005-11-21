@@ -16,10 +16,6 @@ Imports and setup of stub keyserver:
 
 The following keys are used in these tests:
 
-  pub   1024D/17B05A8F 2005-10-12
-        Key fingerprint = 447D BF38 C4F9 C4ED 7522  46B7 7D88 9137 17B0 5A8F
-  uid                  Sign Only <sign.only@canonical.com>
-
   pub   1024D/AACCD97C 2005-10-12 [revoked: 2005-10-12]
         Key fingerprint = 84D2 05F0 3E1E 6709 6CB5  4E26 2BE8 3793 AACC D97C
   uid                  Revoked Key <revoked.key@canonical.com>
@@ -61,24 +57,6 @@ Attempts to claim an expired GPG key also fail:
   Content-Type: text/html;charset=utf-8
   ...
   ...The key 046C6D63 cannot be validated because it has expired...
-  ...
-
-
-The current key import process fails for sign-only keys.  We print an
-appropriate error message in this case:
-
-  >>> print http(r"""
-  ... POST /people/name12/+editgpgkeys HTTP/1.1
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: ...
-  ... Content-Type: application/x-www-form-urlencoded
-  ... 
-  ... action=claim_gpg&fingerprint=447DBF38C4F9C4ED752246B77D88913717B05A8F""")
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  ...
-  ...Launchpad does not currently support validation of sign-only GPG keys...
   ...
 
 
