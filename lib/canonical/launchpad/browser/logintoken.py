@@ -76,12 +76,13 @@ class BaseLoginTokenView:
         self.successfullyProcessed = False
 
     def success(self, message):
-        """Indicate to the user that the token has been successfully processed
+        """Indicate to the user that the token has been successfully processed.
 
         This involves adding a notification message, and redirecting the
         user to their Launchpad page.
         """
-        assert not self.errormessage
+        assert not self.errormessage, \
+               'token processing can not succeed with an error message set'
         self.successfullyProcessed = True
         self.request.response.addInfoNotification(message)
         self.request.response.redirect(canonical_url(
@@ -169,7 +170,7 @@ class ResetPasswordView(BaseLoginTokenView):
         if form.get('logmein'):
             self.logInPersonByEmail(self.context.email)
 
-        self.success(_('Your password has successfully been reset'))
+        self.success(_('Your password has been reset successfully'))
 
 
 class ValidateEmailView(BaseLoginTokenView):
@@ -257,7 +258,7 @@ class ValidateEmailView(BaseLoginTokenView):
         if not key:
             return
 
-        self._activateGPGKey(key, can_encrypt=False)
+        self._activateGPGKey(key, can_encrypt=True)
 
     def validateSignOnlyGpg(self):
         """Validate a gpg key."""
@@ -314,6 +315,12 @@ class ValidateEmailView(BaseLoginTokenView):
 
 
     def _getGPGKey(self):
+        """Look up the PGP key for this login token.
+
+        If the key can not be retrieved from the keyserver, the key
+        has been revoked or expired, None is returned and
+        self.errormessage is set appropriately.
+        """
         logintokenset = getUtility(ILoginTokenSet)
         gpghandler = getUtility(IGPGHandler)
 

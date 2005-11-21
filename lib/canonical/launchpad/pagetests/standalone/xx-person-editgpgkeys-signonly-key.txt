@@ -151,6 +151,41 @@ The key validation does not succeed with this key:
 
 
 
+Next we try proceeding using a message with an invalid signature (in
+this case, a truncated signature):
+
+  >>> signedcontent = """
+  ... -----BEGIN PGP SIGNED MESSAGE-----
+  ... Hash: SHA1
+  ... 
+  ... Please register 447DBF38C4F9C4ED752246B77D88913717B05A8F to the
+  ... Launchpad user name12.  2005-04-01 12:00:00 UTC
+  ... -----BEGIN PGP SIGNATURE-----
+  ... Version: GnuPG v1.4.1 (GNU/Linux)
+  ... 
+  ... """
+
+The key validation does not succeed with this key:
+
+  >>> import urllib
+  >>> print http(r"""
+  ... POST %s HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ...
+  ... password=test&signedcontent=%s&SUBMIT_CHANGES=Submit"""
+  ... % (path, urllib.quote(signedcontent)))
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <title>Validate Sign-Only GPG Key</title>
+  ...
+  ...Launchpad could not verify your signature: Invocation of op_verify: No data...
+  ...
+
+
 Below is the clear-signed version of the message we are required to
 sign, signed with the correct key:
 
