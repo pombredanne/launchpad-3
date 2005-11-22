@@ -11,7 +11,13 @@
             permission="zope.Public"
             interface="zope.app.errorservice.interfaces.ILocalErrorReportingService"
             />
-        </content>
+    </content>
+
+    <content class="canonical.launchpad.webapp.errorlog.ErrorReport">
+        <allow
+            interface="canonical.launchpad.webapp.interfaces.ILaunchpadErrorReport"
+            />
+    </content>
 
     <serviceType
         id="ErrorLogging"
