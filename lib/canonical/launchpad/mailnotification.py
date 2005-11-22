@@ -986,14 +986,20 @@ def get_ticket_changes_text(ticket, old_ticket):
     old_bugs = set(old_ticket.bugs)
     bugs = set(ticket.bugs)
     for linked_bug in bugs.difference(old_bugs):
-        info_fields.append(indent + 'Linked to bug: #%s' % linked_bug.id)
-        info_fields.append(indent + canonical_url(linked_bug))
+        info_fields.append(
+            indent + 'Linked to bug: #%s\n' % linked_bug.id +
+            indent + canonical_url(linked_bug))
     for unlinked_bug in old_bugs.difference(bugs):
         info_fields.append(
-            indent + 'Removed link to bug: #%s' % unlinked_bug.id)
-        info_fields.append(indent + canonical_url(unlinked_bug))
+            indent + 'Removed link to bug: #%s\n' % unlinked_bug.id +
+            indent + canonical_url(unlinked_bug))
 
-    ticket_changes = '\n'.join(info_fields)
+    if ticket.title != old_ticket.title:
+        info_fields.append('Summary changed to:\n%s' % ticket.title)
+    if ticket.description != old_ticket.description:
+        info_fields.append('Description changed to:\n%s' % ticket.description)
+
+    ticket_changes = '\n\n'.join(info_fields)
     return ticket_changes
 
 

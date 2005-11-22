@@ -114,7 +114,7 @@ bug that has been linked to the request:
     >>> unmodified_ticket = Snapshot(ubuntu_ticket, providing=ITicket)
     >>> bug = unmodified_ticket.target.createBug(
     ...     no_priv, unmodified_ticket.title, unmodified_ticket.description)
-    >>> unmodified_ticket.linkBug(bug)
+    >>> ubuntu_ticket.linkBug(bug)
     <TicketBug...>
     >>> notify(SQLObjectModifiedEvent(
     ...     ubuntu_ticket, unmodified_ticket, ['bugs']))
@@ -142,7 +142,7 @@ bug that has been linked to the request:
 And if we remove the link again, we get:
 
     >>> unmodified_ticket = Snapshot(ubuntu_ticket, providing=ITicket)
-    >>> unmodified_ticket.unLinkBug(bug)
+    >>> ubuntu_ticket.unLinkBug(bug)
     <TicketBug...>
     >>> notify(SQLObjectModifiedEvent(
     ...     ubuntu_ticket, unmodified_ticket, ['bugs']))
@@ -167,3 +167,37 @@ And if we remove the link again, we get:
 
     >>> stub.test_emails = []
 
+Edits to the title and description also causes notifications to be sent:
+
+    >>> unmodified_ticket = Snapshot(ubuntu_ticket, providing=ITicket)
+    >>> ubuntu_ticket.title = 'Better Title'
+    >>> ubuntu_ticket.description = """A better description.
+    ...
+    ... The description spans more than one line."""
+    >>> notify(SQLObjectModifiedEvent(
+    ...     ubuntu_ticket, unmodified_ticket, ['title', 'description']))
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    2
+
+    >>> notifications = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    >>> edit_notification = notifications[0]
+    >>> notification_body = edit_notification.get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Support request #8 on ubuntu changed:
+    http://.../distros/ubuntu/+ticket/8
+    <BLANKLINE>
+    Summary changed to:
+    Better Title
+    <BLANKLINE>
+    Description changed to:
+    A better description.
+    <BLANKLINE>
+    The description spans more than one line.
+    <BLANKLINE>
+
+    >>> stub.test_emails = []
