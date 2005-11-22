@@ -752,8 +752,7 @@ Now we change the target of a bug that's already marked as a dupe and check if t
     *** This bug is no longer a duplicate of bug 5 ***
     <BLANKLINE>
     *** This bug has been marked a duplicate of bug 3 ***
-    <BLANKLINE>
-    <BLANKLINE>
+    ...
 
     >>> stub.test_emails = []
 
