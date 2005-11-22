@@ -44,7 +44,8 @@ These two actions didn't generate any notification mails:
     >>> len(stub.test_emails)
     0
 
-However, reopen a request will cause a notification to be sent:
+However, if we reopen a request, it will cause a notification to be
+sent:
 
     >>> login('foo.bar@canonical.com')
     >>> request = TestRequest(form={'reopen': ''})
