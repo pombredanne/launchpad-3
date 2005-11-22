@@ -56,7 +56,7 @@ However, reopen a request will cause a notification to be sent:
 
     >>> transaction.commit()
     >>> len(stub.test_emails)
-    2
+    1
 
     >>> import email
     >>> notifications = [
@@ -83,7 +83,7 @@ As well as if we reject it:
 
     >>> transaction.commit()
     >>> len(stub.test_emails)
-    2
+    1
 
     >>> notifications = [
     ...     email.message_from_string(raw_message)
@@ -108,7 +108,7 @@ If we create a bug, a "Linked to bug" notification is sent:
 
     >>> transaction.commit()
     >>> len(stub.test_emails)
-    2
+    1
 
     >>> notifications = [
     ...     email.message_from_string(raw_message)
@@ -135,7 +135,7 @@ line a bug, we'll get a similar notification like above:
 
     >>> transaction.commit()
     >>> len(stub.test_emails)
-    2
+    1
 
     >>> notifications = [
     ...     email.message_from_string(raw_message)
@@ -161,7 +161,7 @@ Let's take a look at the '+unlinkbug' page as well:
 
     >>> transaction.commit()
     >>> len(stub.test_emails)
-    2
+    1
 
     >>> notifications = [
     ...     email.message_from_string(raw_message)
@@ -192,7 +192,7 @@ To edit the title and description of a bug, +edit is used.
 
     >>> transaction.commit()
     >>> len(stub.test_emails)
-    2
+    1
 
     >>> notifications = [
     ...     email.message_from_string(raw_message)
@@ -240,7 +240,7 @@ And now we can change the status to Answered:
 
     >>> transaction.commit()
     >>> len(stub.test_emails)
-    2
+    1
 
     >>> notifications = [
     ...     email.message_from_string(raw_message)
@@ -274,7 +274,7 @@ same view:
 
     >>> transaction.commit()
     >>> len(stub.test_emails)
-    2
+    1
 
     >>> notifications = [
     ...     email.message_from_string(raw_message)

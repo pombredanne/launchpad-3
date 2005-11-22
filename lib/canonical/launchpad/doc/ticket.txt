@@ -32,6 +32,13 @@ Create a ticket:
     >>> firefox_ticket.target == firefox
     True
 
+The submitter, Sample Person, got subscribed to the ticket:
+
+    >>> sample_person in [
+    ...     subscription.person
+    ...     for subscription in firefox_ticket.subscriptions]
+    True
+
 See all the tickets:
 
     >>> [(ticket.id, ticket.title) for ticket in firefox.tickets()]
@@ -69,6 +76,13 @@ Create a ticket:
     >>> ubuntu_ticket = ubuntu.newTicket(
     ...     sample_person, "Ubuntu ticket", "Unable to use Ubuntu")
     >>> ubuntu_ticket.target == ubuntu
+    True
+
+The submitter, Sample Person, got subscribed to the ticket:
+
+    >>> sample_person in [
+    ...     subscription.person
+    ...     for subscription in ubuntu_ticket.subscriptions]
     True
 
 See all the tickets:
@@ -112,6 +126,13 @@ Create a ticket:
     ...     sample_person, "Ubuntu Firefox ticket",
     ...     "Unable to use Firefox in Ubuntu.")
     >>> firefox_package_ticket.target == ubuntu
+    True
+
+The submitter, Sample Person, got subscribed to the ticket:
+
+    >>> sample_person in [
+    ...     subscription.person
+    ...     for subscription in firefox_package_ticket.subscriptions]
     True
 
 See all the tickets:

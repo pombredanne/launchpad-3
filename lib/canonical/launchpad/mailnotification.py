@@ -944,27 +944,22 @@ def notify_join_request(event):
 
 
 def send_ticket_notification(ticket_event, subject, body):
-    """Sends a ticket notification to the relevant people.
-
-    The relevant people are:
-
-        * The submitter of the ticket
-        * The assignee of the ticket
-        * The maintainer of the ticket's target
-        * All subscribers of the ticket
-    """
+    """Sends a ticket notification to the ticket's subscribers."""
     from_addr = get_bugmail_from_address(ticket_event.user)
     ticket = ticket_event.object
 
     sent_addrs = set()
-    for notified_person in ticket.owner, ticket.target.owner:
+    subscribers = [subscription.person
+                   for subscription in ticket.subscriptions]
+    for notified_person in subscribers:
         for address in contactEmailAddresses(notified_person):
             if address not in sent_addrs:
                 simple_sendmail(from_addr, address, subject, body)
+                sent_addrs.add(address)
 
 
 def notify_ticket_added(ticket, event):
-    """Notify the submitter and maintainers of the newly added ticket."""
+    """Notify the subscribers of the newly added ticket."""
     subject = '[Support #%s]: %s' % (ticket.id, ticket.title)
     body = get_email_template('ticket_added.txt') % {
         'target_name': ticket.target.displayname,
@@ -1004,7 +999,7 @@ def get_ticket_changes_text(ticket, old_ticket):
 
 
 def notify_ticket_modified(ticket, event):
-    """Notify the relevant people that a ticket has been modifed."""
+    """Notify the subscribers that a ticket has been modifed."""
     old_ticket = event.object_before_modification
 
     body = get_ticket_changes_text(ticket, old_ticket)

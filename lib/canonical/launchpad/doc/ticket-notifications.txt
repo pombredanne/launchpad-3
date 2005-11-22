@@ -21,29 +21,24 @@ In order for the mails to be sent, we need to commit the transaction:
     >>> import transaction
     >>> transaction.commit()
 
-Two copies of the notification got sent, one to the owner of the Ubuntu
-distribution, and one to the submitter of the ticket, Sample Person:
+The notifications get sent to the ticket's subscribers. Initially, only
+the submitter, Sample Person, is subscribed to it:
 
     >>> from canonical.launchpad.mail import stub
     >>> len(stub.test_emails)
-    2
+    1
 
     >>> import email
     >>> notifications = [
     ...     email.message_from_string(raw_message)
     ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
     ...     ]
-    >>> maintainer_notification, submitter_notification = notifications
-    >>> maintainer_notification['To']
-    'support@ubuntu.com'
-    >>> maintainer_notification['Subject']
-    "[Support #8]: Can't install Ubuntu"
-
-    >>> submitter_notification['To']
+    >>> add_notification = notifications[0]
+    >>> add_notification['To']
     'test@canonical.com'
-    >>> submitter_notification['Subject']
+    >>> add_notification['Subject']
     "[Support #8]: Can't install Ubuntu"
-    >>> notification_body = submitter_notification.get_payload()
+    >>> notification_body = add_notification.get_payload()
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     New support request #8 on ubuntu:
     http://.../distros/ubuntu/+ticket/8
@@ -54,11 +49,17 @@ distribution, and one to the submitter of the ticket, Sample Person:
     >>> stub.test_emails = []
 
 Let's simulate that the no-priv answers the support ticket. This
-involves creating a new message, and to set the status to ANSWERED:
+involves creating a new message, and to set the status to ANSWERED. We
+also subscribe the Ubuntu Team, so that they get notified about the
+changes as well:
 
     >>> from canonical.launchpad.event import SQLObjectModifiedEvent
     >>> from canonical.launchpad.helpers import Snapshot
-    >>> from canonical.launchpad.interfaces import ITicket
+    >>> from canonical.launchpad.interfaces import ITicket, IPersonSet
+
+    >>> ubuntu_team = getUtility(IPersonSet).getByName('name17')
+    >>> ubuntu_ticket.subscribe(ubuntu_team)
+    <TicketSubscription...>
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(ILaunchBag).user
     >>> unmodified_ticket = Snapshot(ubuntu_ticket, providing=ITicket)
@@ -69,7 +70,8 @@ involves creating a new message, and to set the status to ANSWERED:
     >>> notify(SQLObjectModifiedEvent(
     ...     ubuntu_ticket, unmodified_ticket, ['messages', 'status']))
 
-As before, two copies of the notification got sent:
+Now two copies of the notification got sent, one to Sample Person, and
+one to Ubuntu Team:
 
     >>> transaction.commit()
     >>> len(stub.test_emails)
