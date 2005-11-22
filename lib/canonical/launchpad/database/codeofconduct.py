@@ -249,10 +249,11 @@ class SignedCodeOfConductSet:
                     'does not match.' % (gpg.owner.displayname,
                                          user.displayname))
         
-        if gpg.revoked:
-            return ('The GPG key used to sign (%s) is revoked. Please repair '
-                    'it in the global keyring before proceed.'
-                    % gpg.displayname)
+        if not gpg.active:
+            return ('The GPG key used to sign (%s) has been deactivated. '
+                    'Please <a href="%s/+editgpgkeys">reactivate</a> it '
+                    'again before proceeding.'
+                    % (gpg.displayname, canonical_url(user)))
 
         # recover the current CoC release
         coc = CodeOfConduct(getUtility(ICodeOfConductConf).currentrelease)

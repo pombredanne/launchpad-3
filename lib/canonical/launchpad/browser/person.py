@@ -1011,16 +1011,6 @@ class PersonView:
                 "(using <kbd>gpg --genkey</kbd>) and repeat the previous "
                 "process to find and import the new key." % key.keyid)
 
-        # XXX: jamesh 20051012
-        # This code will change once we have support for validating
-        # sign-only keys.
-        if not key.can_encrypt:
-            return (
-                "Launchpad does not currently support validation of "
-                "sign-only GPG keys.  If you add an encryption subkey "
-                "(using <kbd>gpg --edit-key</kbd>) and upload your key "
-                "again, you should be able to import the key.")
-
         self._validateGPG(key)
 
         return ('A message has been sent to <code>%s</code>, encrypted with '
@@ -1152,13 +1142,18 @@ class PersonView:
         preferredemail = bag.user.preferredemail.email
         login = bag.login
 
+        if key.can_encrypt:
+            tokentype = LoginTokenType.VALIDATEGPG
+        else:
+            tokentype = LoginTokenType.VALIDATESIGNONLYGPG
+        
         token = logintokenset.new(self.context, login,
                                   preferredemail,
-                                  LoginTokenType.VALIDATEGPG,
+                                  tokentype,
                                   fingerprint=key.fingerprint)
 
         appurl = self.request.getApplicationURL()
-        token.sendGPGValidationRequest(appurl, key, encrypt=True)
+        token.sendGPGValidationRequest(appurl, key)
 
     def processPasswordChangeForm(self):
         if self.request.method != 'POST':
