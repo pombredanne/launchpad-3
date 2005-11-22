@@ -65,10 +65,11 @@ class ILoginToken(Interface):
     def sendEmailValidationRequest(appurl):
         """Send an email message with a magic URL to validate self.email."""
 
-    def sendGPGValidationRequest(appurl, fingerprint=None):
+    def sendGPGValidationRequest(appurl, key):
         """Send an email message with a magic URL to validate gpg key.
         if fingerprint is set send encrypted email.
         """
+
 
 class ILoginTokenSet(Interface):
     """The set of LoginTokens."""

@@ -1451,6 +1451,8 @@ class GPGKey(SQLBase):
 
     active = BoolCol(dbName='active', notNull=True)
 
+    can_encrypt = BoolCol(dbName='can_encrypt', notNull=False)
+
     @property
     def keyserverURL(self):
         return KEYSERVER_QUERY_URL + self.fingerprint
@@ -1459,23 +1461,17 @@ class GPGKey(SQLBase):
     def displayname(self):
         return '%s%s/%s' % (self.keysize, self.algorithm.title, self.keyid)
 
-    # XXX cprov 20050705
-    # keep a property to avoid untested issues in other compoenents
-    # that i'm not aware
-    @property
-    def revoked(self):
-        return not self.active
-
 
 class GPGKeySet:
     implements(IGPGKeySet)
 
     def new(self, ownerID, keyid, fingerprint, keysize,
-            algorithm, active=True):
+            algorithm, active=True, can_encrypt=False):
         """See IGPGKeySet"""
         return GPGKey(owner=ownerID, keyid=keyid,
                       fingerprint=fingerprint, keysize=keysize,
-                      algorithm=algorithm, active=active)
+                      algorithm=algorithm, active=active,
+                      can_encrypt=can_encrypt)
 
     def get(self, key_id, default=None):
         """See IGPGKeySet"""
