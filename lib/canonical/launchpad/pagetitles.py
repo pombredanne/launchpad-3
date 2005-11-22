@@ -286,6 +286,8 @@ default_editform = 'Default "Edit" Page'
 
 distribution_allpackages = ContextTitle('All packages in %s')
 
+distribution_bugcontact = ContextTitle('Edit Bug Contact for %s')
+
 distribution_cvereport = ContextTitle('CVE Reports for %s')
 
 distribution_members = ContextTitle('%s distribution members')

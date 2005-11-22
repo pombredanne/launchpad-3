@@ -62,6 +62,8 @@ class Distribution(SQLBase):
     description = StringCol(notNull=True)
     domainname = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    bugcontact = ForeignKey(
+        dbName='bugcontact', foreignKey='Person', notNull=True)
     members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
     translationgroup = ForeignKey(dbName='translationgroup',
         foreignKey='TranslationGroup', notNull=False, default=None)

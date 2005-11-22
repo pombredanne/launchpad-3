@@ -9,6 +9,7 @@ __all__ = [
     'DistributionView',
     'DistributionSetView',
     'DistributionSetAddView',
+    'DistributionBugContactEditView'
     ]
 
 from zope.component import getUtility
@@ -22,9 +23,10 @@ from canonical.launchpad.interfaces import (
     NotFoundError)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
+from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
-    GetitemNavigation, stepthrough, stepto)
+    GetitemNavigation, stepthrough, stepto, canonical_url)
 
 
 class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -94,11 +96,15 @@ class DistributionOverviewMenu(ApplicationMenu):
     usedfor = IDistribution
     facet = 'overview'
     links = ['search', 'allpkgs', 'milestone_add', 'members', 'edit',
-             'reassign', 'addrelease']
+             'editbugcontact', 'reassign', 'addrelease']
 
     def edit(self):
         text = 'Edit Details'
         return Link('+edit', text, icon='edit')
+
+    def editbugcontact(self):
+        text = 'Edit Bug Contact'
+        return Link('+editbugcontact', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
@@ -280,3 +286,28 @@ class DistributionSetAddView(AddView):
     def nextURL(self):
         return self._nextURL
 
+
+class DistributionBugContactEditView(SQLObjectEditView):
+    """Browser view for editing the distribution bug contact."""
+    def changed(self):
+        """Redirect to the distribution page."""
+        distribution = self.context
+        contact_email = None
+
+        if distribution.bugcontact:
+            contact_email = distribution.bugcontact.preferredemail.email
+
+        if contact_email:
+            # The bug contact was set to a new person or team.
+            self.request.response.addNotification(
+                "Successfully changed the distribution bug contact to %s" %
+                contact_email)
+        else:
+            # The bug contact was set to noone.
+            self.request.response.addNotification(
+                "Successfully cleared the distribution bug contact. This "
+                "means that there is no longer a distro-wide contact for "
+                "bugmail. You can, of course, set a distribution bug "
+                "contact again whenever you want to.")
+
+        self.request.response.redirect(canonical_url(distribution))

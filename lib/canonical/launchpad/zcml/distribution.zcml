@@ -13,7 +13,7 @@
             permission="launchpad.Edit"
             set_attributes="displayname title summary description
                             translationgroup translationpermission
-                            members owner"
+                            members owner bugcontact"
             />
     </content>
 
@@ -219,6 +219,18 @@
         permission="launchpad.Edit"
         template="../templates/distribution-memberteam.pt"
         lp:url="/distros/$Distribution.name/+selectmemberteam" />
+
+    <browser:editform
+        name="+editbugcontact"
+        for="canonical.launchpad.interfaces.IDistribution"
+        schema="canonical.launchpad.interfaces.IDistribution"
+        class="canonical.launchpad.browser.distribution.DistributionBugContactEditView"
+        facet="overview"
+        fields="bugcontact"
+        label="Edit Bug Contact"
+        permission="launchpad.Edit"
+        template="../templates/distribution-bugcontact.pt"
+        lp:url="/distros/$Distribution.name/+bugcontact" />
 
     <browser:editform
         name="+changetranslators"
