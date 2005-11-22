@@ -185,7 +185,7 @@ class BuildSet:
                 IN(Build.q.distroarchreleaseID, archrelease_ids))
             )                                  
 
-    def getBuildsForBuilder(self, builder, limit=10):
+    def getBuildsForBuilder(self, builder):
         """See IBuildSet"""
-        return Build.select("builder=%s" % sqlvalues(builder.id), limit=limit,
+        return Build.select("builder=%s" % sqlvalues(builder.id),
                             orderBy="-datebuilt")

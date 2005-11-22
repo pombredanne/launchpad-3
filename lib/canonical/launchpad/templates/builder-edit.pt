@@ -2,11 +2,13 @@
       lang="en"
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
-   <body>
-   <div metal:fill-slot="main">
+<body>
+   
+  <div metal:fill-slot="main">
      <div metal:use-macro="context/@@launchpad_editform/editform"/>
-   </div>
-   </body>
- </html>
+  </div>
+
+</body>
+</html>
 
 

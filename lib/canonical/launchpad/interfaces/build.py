@@ -90,11 +90,10 @@ class IBuildSet(Interface):
         Pending means that buildstatus is NEEDSBUILDING.
         """
 
-    def getBuildsForBuilder(builder, limit=10):
+    def getBuildsForBuilder(builder):
         """Return the build records touched by builder
 
         Returns an SelectResult, ordered by datebuild (descending)
-        Return up to 'limit' results.
         """
 
 

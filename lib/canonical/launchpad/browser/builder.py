@@ -4,8 +4,12 @@
 
 __metaclass__ = type
 
-__all__ = ['BuilderSetNavigation', 'BuildFarmFacets', 'BuilderFacets',
-           'BuilderSetAddView', 'BuilderView']
+__all__ = ['BuilderSetNavigation',
+           'BuildFarmFacets',
+           'BuilderFacets',
+           'BuilderOverviewMenu',
+           'BuilderSetAddView',
+           'BuilderView']
 
 import datetime
 import pytz
@@ -17,13 +21,16 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent
+from canonical.lp.z3batching import Batch
+from canonical.lp.batching import BatchNavigator
 
 from canonical.launchpad.interfaces import (
     IPerson, IBuilderSet, IBuilder, IBuildSet
     )
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, GetitemNavigation, stepthrough)
+    StandardLaunchpadFacets, GetitemNavigation, stepthrough, Link,
+    ApplicationMenu)
 
 
 class BuilderSetNavigation(GetitemNavigation):
@@ -56,6 +63,25 @@ class BuilderFacets(StandardLaunchpadFacets):
     usedfor = IBuilder
 
 
+class BuilderOverviewMenu(ApplicationMenu):
+    """Overview Menu for Builder Page."""
+    usedfor = IBuilder
+    facet = 'overview'
+    links = ['edit', 'mode', 'cancel']
+
+    def edit(self):
+        text = 'Edit Details'
+        return Link('+edit', text, icon='edit')
+
+    def mode(self):
+        text = 'Change Mode'
+        return Link('+mode', text, icon='edit')
+
+    def cancel(self):
+        text = 'Cancel Current Job'
+        return Link('+cancel', text, icon='edit')
+
+
 class BuilderView:
     """Default Builder view class
 
@@ -82,11 +108,16 @@ class BuilderView:
         return '<p>Cancel (%s). Not implemented yet</p>' % builder_id
 
     def lastBuilds(self):
-        """Wrap up the IBuilderSet.lastBuilds method."""
-        # XXX cprov 20050823
-        # recover the number of items from the UI
-        return getUtility(IBuildSet).getBuildsForBuilder(self.context)
+        """Wrap up the IBuilderSet.lastBuilds method
 
+        Returns and setup the results as a default batched list.
+        """
+        builds = getUtility(IBuildSet).getBuildsForBuilder(self.context)
+        self.batch = Batch(list(builds),
+                           int(self.request.get('batch_start', 0)))
+        self.batchnav = BatchNavigator(self.batch, self.request)
+
+        return self.batch
 
 class BuilderSetAddView(AddView):
     """Builder add view

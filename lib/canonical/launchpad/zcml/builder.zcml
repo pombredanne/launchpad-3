@@ -73,7 +73,7 @@
 
     <browser:menus
         module="canonical.launchpad.browser.builder"
-        classes="BuilderFacets" />
+        classes="BuilderFacets BuilderOverviewMenu" />
 
     <browser:url
         for="canonical.launchpad.interfaces.IBuilder"
@@ -87,11 +87,13 @@
         class="canonical.launchpad.browser.BuilderView">
         <browser:page
             template="../templates/builder-index.pt"
+            facet="overview"
             name="+index"
             lp:url="+builds/$name/+index" />
         <browser:page
             template="../templates/builder-cancel.pt"
             name="+cancel"
+            facet="overview"
             lp:url="+builds/$name/+cancel" />
     </browser:pages>
 
@@ -99,7 +101,7 @@
         for="canonical.launchpad.interfaces.IBuilder"
         permission="zope.Public">
         <browser:page
-            template="../templates/portlet-builder-details.pt"
+            template="../templates/builder-portlet-details.pt"
             name="+portlet-details"
             lp:url="+builds/$buildername/+portlet-details" />
     </browser:pages>
@@ -109,6 +111,7 @@
         for="canonical.launchpad.interfaces.IBuilder"
         schema="canonical.launchpad.interfaces.IBuilder"
         label="Edit Builder Details:"
+        facet="overview"
         fields="name title description processor url trusted manual owner"
         permission="launchpad.Edit"
         template="../templates/builder-edit.pt"
@@ -120,6 +123,7 @@
         for="canonical.launchpad.interfaces.IBuilder"
         schema="canonical.launchpad.interfaces.IBuilder"
         label="Change Builder Mode:"
+        facet="overview"
         fields="manual"
         permission="launchpad.Edit"
         template="../templates/builder-mode.pt"

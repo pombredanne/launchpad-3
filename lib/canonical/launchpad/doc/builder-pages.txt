@@ -18,7 +18,9 @@ Let's instantiate the view for +index:
   >>> builder_view.now().isoformat()
   '...'
   
-  >>> builder_view.lastBuilds().count()
+XXX cprov 20051121: lastBuilds() returns a Batching instance,
+                    is there a more reliable way to test it ?
+  >>> len(builder_view.lastBuilds())
   3
 
 Let's instantiate the view for +cancel:
