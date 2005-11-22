@@ -143,9 +143,7 @@ class ITicket(IHasOwner, IMessageTarget):
 
     # bug linking
     def linkBug(bug):
-        """Link this ticket to the given bug, returning the
-        TicketBug.
-        """
+        """Link this ticket to the given bug, returning the TicketBug."""
 
     def unLinkBug(bug):
         """Remove any link to this bug."""
