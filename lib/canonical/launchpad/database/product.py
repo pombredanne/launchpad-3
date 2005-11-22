@@ -49,6 +49,8 @@ class Product(SQLBase):
         foreignKey="Project", dbName="project", notNull=False, default=None)
     owner = ForeignKey(
         foreignKey="Person", dbName="owner", notNull=True)
+    bugcontact = ForeignKey(
+        dbName='bugcontact', foreignKey='Person', notNull=True)
     name = StringCol(
         dbName='name', notNull=True, alternateID=True, unique=True)
     displayname = StringCol(dbName='displayname', notNull=True)

@@ -598,6 +598,8 @@ potemplatenames_index = 'Template names in Launchpad'
 
 product_add = 'Register a product with Launchpad'
 
+product_bugcontact = ContextTitle('Edit Bug Contact for %s')
+
 product_bugs = ContextDisplayName('%s upstream bug reports')
 
 product_branches = ContextDisplayName('%s\'s code branches in Launchpad')

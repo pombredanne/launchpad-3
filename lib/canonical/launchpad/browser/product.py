@@ -21,7 +21,8 @@ __all__ = [
     'ProductSeriesAddView',
     'ProductRdfView',
     'ProductSetView',
-    'ProductAddView'
+    'ProductAddView',
+    'ProductBugContactEditView'
     ]
 
 from warnings import warn
@@ -154,13 +155,17 @@ class ProductOverviewMenu(ApplicationMenu):
     usedfor = IProduct
     facet = 'overview'
     links = [
-        'edit', 'reassign', 'distributions', 'packages', 'series_add',
-        'branch_add', 'milestone_add', 'launchpad_usage', 'rdf', 'administer'
-        ]
+        'edit', 'editbugcontact', 'reassign', 'distributions', 'packages',
+        'series_add', 'branch_add', 'milestone_add', 'launchpad_usage', 'rdf',
+        'administer']
 
     def edit(self):
         text = 'Edit Product Details'
         return Link('+edit', text, icon='edit')
+
+    def editbugcontact(self):
+        text = 'Edit Bug Contact'
+        return Link('+editbugcontact', text, icon='edit')
 
     def reassign(self):
         text = 'Change Maintainer'
@@ -621,3 +626,27 @@ class ProductAddView(AddView):
     def nextURL(self):
         return self._nextURL
 
+
+class ProductBugContactEditView(SQLObjectEditView):
+    """Browser view class for editing the product bug contact."""
+    def changed(self):
+        """Redirect to the product page with a success message."""
+        product = self.context
+        contact_email = None
+
+        if product.bugcontact:
+            contact_email = product.bugcontact.preferredemail.email
+
+        if contact_email:
+            # The bug contact was set to a new person or team.
+            self.request.response.addNotification(
+                "Successfully changed the bug contact to %s" % contact_email)
+        else:
+            # The bug contact was set to noone.
+            self.request.response.addNotification(
+                "Successfully cleared the bug contact. This means that there "
+                "is no longer a contact address that will receive all bugmail "
+                "for this product. You can, of course, set the bug contact "
+                "again at any time.")
+
+        self.request.response.redirect(canonical_url(product))

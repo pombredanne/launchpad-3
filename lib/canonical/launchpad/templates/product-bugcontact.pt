@@ -25,11 +25,10 @@
 
     <div metal:fill-slot="extra_info" class="documentDescription">
       The bug contact is a person or team that receives notification of ALL new
-      bugs opened for this distribution, and any changes to those bug reports
+      bugs opened for this product, and any changes to those bug reports
       (e.g. comments, status, etc.) The bug contact can be unsubscribed from
       individual bug reports.
     </div>
-
   </div>
 
 </div>

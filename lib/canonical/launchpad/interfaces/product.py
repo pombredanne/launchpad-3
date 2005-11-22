@@ -49,6 +49,13 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
         description=_("""Product owner, it can either a valid Person or Team
             inside Launchpad context."""))
 
+    bugcontact = Choice(
+        title=_("Bug Contact"),
+        description=_(
+            "The person or team who will receive all bugmail for this "
+            "product"),
+        required=False, vocabulary='ValidPersonOrTeam')
+
     name = TextLine(
         title=_('Name'),
         constraint=name_validator,
