@@ -5,10 +5,13 @@
 __metaclass__ = type
 
 __all__ = ['BuilderSetNavigation',
-           'BuildFarmFacets',
+           'BuilderSetFacets',
+           'BuilderSetOverviewMenu',
+           'BuilderSetView',
+           'BuilderSetAddView',
+           'BuilderNavigation',
            'BuilderFacets',
            'BuilderOverviewMenu',
-           'BuilderSetAddView',
            'BuilderView']
 
 import datetime
@@ -30,12 +33,15 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, stepthrough, Link,
-    ApplicationMenu)
+    ApplicationMenu, enabled_with_permission)
 
 
 class BuilderSetNavigation(GetitemNavigation):
-
+    """Navigation methods for IBuilderSet."""
     usedfor = IBuilderSet
+
+    def breadcrumb(self):
+        return 'Build Farm'
 
     @stepthrough('+build')
     def traverse_build(self, name):
@@ -49,7 +55,15 @@ class BuilderSetNavigation(GetitemNavigation):
             return None
 
 
-class BuildFarmFacets(StandardLaunchpadFacets):
+class BuilderNavigation(GetitemNavigation):
+    """Navigation methods for IBuilder."""
+    usedfor = IBuilder
+
+    def breadcrumb(self):
+        return self.context.title
+
+
+class BuilderSetFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IBuilderSet."""
     enable_only = ['overview']
 
@@ -63,36 +77,63 @@ class BuilderFacets(StandardLaunchpadFacets):
     usedfor = IBuilder
 
 
+class BuilderSetOverviewMenu(ApplicationMenu):
+    """Overview Menu for IBuilderSet."""
+    usedfor = IBuilderSet
+    facet = 'overview'
+    links = ['add']
+
+    @enabled_with_permission('launchpad.Admin')
+    def add(self):
+        text = 'Add New Builder'
+        return Link('+new', text, icon='add')
+
+
 class BuilderOverviewMenu(ApplicationMenu):
-    """Overview Menu for Builder Page."""
+    """Overview Menu for IBuilder."""
     usedfor = IBuilder
     facet = 'overview'
     links = ['edit', 'mode', 'cancel']
 
+    @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Edit Details'
         return Link('+edit', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def mode(self):
         text = 'Change Mode'
         return Link('+mode', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def cancel(self):
         text = 'Cancel Current Job'
         return Link('+cancel', text, icon='edit')
 
 
-class BuilderView:
-    """Default Builder view class
-
-    Implements useful actions and colect useful set for the pagetemplate.
-    """
-    __used_for__ = IBuilder
+class CommonView:
+    """Common methods used in this file."""
 
     def now(self):
         """Offers the timestamp for page rendering."""
         UTC = pytz.timezone('UTC')
         return datetime.datetime.now(UTC)
+
+
+class BuilderSetView(CommonView):
+    """Default BuilderSet view class
+
+    Implements useful actions and colect useful set for the pagetemplate.
+    """
+    __used_for__ = IBuilderSet
+
+
+class BuilderView(CommonView):
+    """Default Builder view class
+
+    Implements useful actions and colect useful set for the pagetemplate.
+    """
+    __used_for__ = IBuilder
 
     def cancelBuildJob(self):
         """Cancel curent job in builder."""
@@ -118,6 +159,7 @@ class BuilderView:
         self.batchnav = BatchNavigator(self.batch, self.request)
 
         return self.batch
+
 
 class BuilderSetAddView(AddView):
     """Builder add view

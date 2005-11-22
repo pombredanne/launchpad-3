@@ -9,12 +9,15 @@
     <meta http-equiv="refresh" content="300">
 </metal:block>
 
-    <div metal:fill-slot="body">
+  <div metal:fill-slot="main">
+
       <h1>Build machines for Launchpad</h1>
-      <p>
+ 
+      <p class="highlighted">
         The Launchpad build farm works tirelessly to compile packages,
         performing checks on them and generating several distribution formats.
       </p>
+
       <table class="listing" width="100%">
       <thead>
         <tr>
@@ -28,12 +31,9 @@
         <tal:builder repeat="builder context/getBuilders">
           <tr>
             <td>
-              <a tal:attributes="href string:${builder/name}"
-                ><img
-                alt=""
-                src=""
-                >
-                <span tal:replace="builder/name">harry</span>
+              <a tal:attributes="href builder/fmt:url">
+                 <img alt="[builder]" src="/++resource++info" />
+                 <span tal:replace="builder/name" />
               </a>
             </td>
             <td tal:content="builder/processor/title">LOCATION</td>
@@ -41,23 +41,18 @@
             <td tal:content="builder/status">STATUS</td>
           </tr>
           <tr>
-            <td
-              class="discreet"
-              colspan="6"
-            >
+            <td class="discreet" colspan="6">
               <span tal:replace="builder/url">http://localhost:8221/</span>
               &#8212;
               <span tal:replace="builder/description">Description.</span>
             </td>
           </tr>
-          </tal:builder>
+        </tal:builder>
       </tbody>
       </table>
-      <ul>
-        <li class="add">
-          <a href="+new">Add Machine&hellip;</a>
-        </li>
-      </ul>
-    </div>
-  </body>
+
+      <p class="discreet">Last updated <span tal:replace="view/now"/></p>
+
+  </div>
+</body>
 </html>

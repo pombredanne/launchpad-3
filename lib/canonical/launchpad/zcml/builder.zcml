@@ -13,7 +13,6 @@
         <allow interface="canonical.launchpad.interfaces.IBuilderSet" />
     </securedutility>
 
-    <!-- BuildFarm -->
     <browser:url
         for="canonical.launchpad.interfaces.IBuilderSet"
         path_expression="string:+builds"
@@ -26,7 +25,7 @@
 
     <browser:menus
         module="canonical.launchpad.browser.builder"
-        classes="BuildFarmFacets" />
+        classes="BuilderSetFacets BuilderSetOverviewMenu" />
 
     <browser:navigation
         module="canonical.launchpad.browser"
@@ -35,10 +34,12 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IBuilderSet"
-        permission="zope.Public">
+        permission="zope.Public"
+        class="canonical.launchpad.browser.BuilderSetView">
         <browser:page
             template="../templates/builders.pt"
             name="+index"
+            facet="overview"        
             lp:url="+builds/+index" />
     </browser:pages>
 
@@ -52,6 +53,7 @@
         class="canonical.launchpad.browser.BuilderSetAddView"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
+        facet="overview"
         lp:url="+builds/+new">
         <browser:widget 
             field="owner" 
@@ -74,6 +76,11 @@
     <browser:menus
         module="canonical.launchpad.browser.builder"
         classes="BuilderFacets BuilderOverviewMenu" />
+
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BuilderNavigation"
+        />
 
     <browser:url
         for="canonical.launchpad.interfaces.IBuilder"

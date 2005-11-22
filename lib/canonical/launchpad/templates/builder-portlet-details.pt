@@ -4,6 +4,8 @@
 
      <b>Name</b>: <span tal:replace="context/title"/><br/>
 
+     <b>Architecture</b>: <span tal:replace="context/processor/title"/><br/>
+
      <b>Location</b>: <span tal:replace="context/url"/><br/>
 
      <b>Trusted</b>: <span tal:replace="context/trusted"/><br/>
