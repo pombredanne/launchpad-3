@@ -1007,6 +1007,8 @@ def sanitiseFingerprint(fpr):
 
     >>> sanitiseFingerprint('C858 2652 1A6E F6A6 037B  B3F7 9FF2 583E 681B 6469')
     'C85826521A6EF6A6037BB3F79FF2583E681B6469'
+    >>> sanitiseFingerprint('c858 2652 1a6e f6a6 037b  b3f7 9ff2 583e 681b 6469')
+    'C85826521A6EF6A6037BB3F79FF2583E681B6469'
     >>> sanitiseFingerprint('681B 6469')
     False
 
@@ -1016,6 +1018,9 @@ def sanitiseFingerprint(fpr):
     """
     # replace the white spaces
     fpr = fpr.replace(' ', '')
+
+    # convert to upper case
+    fpr = fpr.upper()
 
     if not valid_fingerprint(fpr):
         return False
