@@ -11,6 +11,7 @@ __all__ = [
     'PersonBugsMenu',
     'PersonSpecsMenu',
     'PersonSupportMenu',
+    'PersonCodeMenu',
     'PersonOverviewMenu',
     'TeamOverviewMenu',
     'BaseListView',
@@ -64,7 +65,7 @@ from canonical.launchpad.interfaces import (
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet,
-    ITeamMembershipSubset, IPollSet)
+    ITeamMembershipSubset, IPollSet, NotFoundError)
 
 from canonical.launchpad.browser.bugtask import (
     BugTaskSearchListingView, BUGTASK_STATUS_OPEN)
@@ -93,6 +94,30 @@ class PersonNavigation(Navigation, CalendarTraversalMixin):
 
     def breadcrumb(self):
         return self.context.displayname
+
+    @stepto('+branch')
+    def traverse_branch(self):
+        """Branch of this person for the specified product and branch names.
+
+        For example:
+
+        * '/people/ddaa/+branch/bazaar/devel' points to the branch whose owner
+          name is 'ddaa', whose product name is 'bazaar', and whose branch name
+          is 'devel'.
+
+        * '/people/sabdfl/+branch/+junk/junkcode' points to the branch whose
+          owner name is 'sabdfl', with no associated product, and whose branch
+          name is 'junkcode'.
+        """
+        stepstogo = self.request.stepstogo
+        product_name = stepstogo.consume()
+        branch_name = stepstogo.consume()
+        if product_name is not None and branch_name is not None:
+            if product_name == '+junk':
+                return self.context.getBranch(None, branch_name)
+            else:
+                return self.context.getBranch(product_name, branch_name)
+        raise NotFoundError
 
 
 class TeamNavigation(Navigation, CalendarTraversalMixin):
@@ -155,54 +180,44 @@ class PersonFacets(StandardLaunchpadFacets):
     usedfor = IPerson
 
     enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
-                   'translations', 'calendar']
+                   'translations', 'calendar', 'code']
+
+    links = StandardLaunchpadFacets.links + ['code']
 
     def overview(self):
-        target = ''
         text = 'Overview'
         summary = 'General information about %s' % self.context.browsername
-        return Link(target, text, summary)
+        return Link('', text, summary)
 
     def bugs(self):
         # XXX: Soon the +assignedbugs and +reportedbugs pages of IPerson will
         # be merged into a single +bugs page, and I'll fix the target here.
         # -- GuilhermeSalgado, 2005-07-29
-        target = '+assignedbugs'
         text = 'Bugs'
         summary = (
-            'Bug reports that %s is involved with' % self.context.browsername
-        )
-        return Link(target, text, summary)
+            'Bug reports that %s is involved with' % self.context.browsername)
+        return Link('+assignedbugs', text, summary)
 
     def support(self):
-        target = '+tickets'
         text = 'Support'
         summary = (
             'Support requests that %s is involved with' %
             self.context.browsername)
-        return Link(target, text, summary)
+        return Link('+tickets', text, summary)
 
     def specifications(self):
-        target = '+specs'
         text = 'Specifications'
         summary = (
             'Feature specifications that %s is involved with' %
             self.context.browsername)
-        return Link(target, text, summary)
+        return Link('+specs', text, summary)
 
     def bounties(self):
-        target = '+bounties'
         text = 'Bounties'
         summary = (
             'Bounty offers that %s is involved with' % self.context.browsername
             )
-        return Link(target, text, summary)
-
-    def code(self):
-        target = '+branches'
-        text = 'Code'
-        summary = 'Branches and revisions by %s' % self.context.browsername
-        return Link(target, text, summary)
+        return Link('+bounties', text, summary)
 
     def translations(self):
         target = '+translations'
@@ -213,14 +228,18 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link(target, text, summary)
 
     def calendar(self):
-        target = '+calendar'
         text = 'Calendar'
         summary = (
             u'%s\N{right single quotation mark}s scheduled events' %
             self.context.browsername)
         # only link to the calendar if it has been created
         enabled = ICalendarOwner(self.context).calendar is not None
-        return Link(target, text, summary, enabled=enabled)
+        return Link('+calendar', text, summary, enabled=enabled)
+
+    def code(self):
+        text = 'Code'
+        summary = 'Branches and revisions by %s' % self.context.browsername
+        return Link('+branches', text, summary)
 
 
 class PersonBugsMenu(ApplicationMenu):
@@ -303,6 +322,29 @@ class PersonSupportMenu(ApplicationMenu):
     def subscribed(self):
         text = 'Tickets Subscribed'
         return Link('+subscribedtickets', text, icon='ticket')
+
+
+class PersonCodeMenu(ApplicationMenu):
+
+    usedfor = IPerson
+    facet = 'code'
+    links = ['authored', 'registered', 'subscribed', 'add']
+
+    def authored(self):
+        text = 'Show Authored Branches'
+        return Link('+authoredbranches', text, icon='branch')
+
+    def registered(self):
+        text = 'Show Registered Branches'
+        return Link('+registeredbranches', text, icon='branch')
+
+    def subscribed(self):
+        text = 'Show Subscribed Branches'
+        return Link('+subscribedbranches', text, icon='branch')
+
+    def add(self):
+        text = 'Add Bazaar Branch'
+        return Link('+addbranch', text, icon='add')
 
 
 class CommonMenuLinks:
@@ -969,16 +1011,6 @@ class PersonView:
                 "(using <kbd>gpg --genkey</kbd>) and repeat the previous "
                 "process to find and import the new key." % key.keyid)
 
-        # XXX: jamesh 20051012
-        # This code will change once we have support for validating
-        # sign-only keys.
-        if not key.can_encrypt:
-            return (
-                "Launchpad does not currently support validation of "
-                "sign-only GPG keys.  If you add an encryption subkey "
-                "(using <kbd>gpg --edit-key</kbd>) and upload your key "
-                "again, you should be able to import the key.")
-
         self._validateGPG(key)
 
         return ('A message has been sent to <code>%s</code>, encrypted with '
@@ -1110,13 +1142,18 @@ class PersonView:
         preferredemail = bag.user.preferredemail.email
         login = bag.login
 
+        if key.can_encrypt:
+            tokentype = LoginTokenType.VALIDATEGPG
+        else:
+            tokentype = LoginTokenType.VALIDATESIGNONLYGPG
+        
         token = logintokenset.new(self.context, login,
                                   preferredemail,
-                                  LoginTokenType.VALIDATEGPG,
+                                  tokentype,
                                   fingerprint=key.fingerprint)
 
         appurl = self.request.getApplicationURL()
-        token.sendGPGValidationRequest(appurl, key, encrypt=True)
+        token.sendGPGValidationRequest(appurl, key)
 
     def processPasswordChangeForm(self):
         if self.request.method != 'POST':

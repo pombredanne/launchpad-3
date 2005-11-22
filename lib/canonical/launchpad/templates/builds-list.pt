@@ -42,7 +42,7 @@
             <th>Built</th>
             <th>Builder</th>
             <th>Result</th>
-            <th>BuildLog</th>
+            <th>Build log</th>
             <th>Duration</th>
         </tr>
         <tr tal:repeat="build view/getBuilt">
@@ -71,7 +71,72 @@
             <td>
               <tal:block condition="build/buildlog">
                 <a tal:attributes="href build/buildlog/url">
-                  <img alt="[BuildLog]" src="/++resource++info" />
+                  <img alt="[Build log]" src="/++resource++info" />
+                </a>
+              </tal:block>
+              <tal:block condition="not:build/buildlog">
+                 <img alt="[Unavailable Info]" src="/++resource++stop" />
+              </tal:block>
+            </td>
+            <td>
+              <span tal:replace="build/buildduration/fmt:approximateduration"
+              >4 minutes</span>
+            </td>
+        </tr>
+      </table>
+
+
+    <h2>Failed to Build</h2>
+
+    <p> There are <span tal:replace="view/number_failed"/> sources
+    failed to build.</p>
+
+     <table class="listing" tal:condition="view/number_failed">
+        <tr class="thead">
+            <th>Source Package</th>
+            <th>Distribution Release / Architecture</th>
+            <th>Created</th>
+            <th>Built</th>
+            <th>Builder</th>
+            <th>Result</th>
+            <th>Build log</th>
+            <th>Duration</th>
+        </tr>
+        <tr tal:repeat="build view/getFailed">
+            <td>
+              <a tal:attributes="href build/fmt:url">
+                 <img alt="[package]" src="/++resource++package-binary" />
+                 <span tal:replace="build/title">NAME</span>
+              </a>
+            </td>
+            <td>
+              <a tal:content="build/distroarchrelease/distrorelease/title"
+                 tal:attributes="href build/distroarchrelease/distrorelease/fmt:url"
+                 title="To show the Distribution Release, click here."/> /
+              <a tal:content="build/distroarchrelease/title"
+                 tal:attributes="href build/distroarchrelease/fmt:url"
+                 title="To show the Distribution Architecture Release, click here."/>
+            </td>
+            <td tal:content="build/datecreated/fmt:datetime">CREATED</td>
+            <td tal:content="build/datebuilt/fmt:datetime">BUILT</td>
+            <td>
+              <tal:block condition="build/builder">
+                <a tal:content="build/builder/title"
+                   tal:attributes="href build/builder/fmt:url"
+                   title="To show the Builder, click here."/>
+              </tal:block>
+              <tal:block condition="not:build/builder">
+                <img alt="[Unavailable Info]" src="/++resource++stop" />
+              </tal:block>
+            </td>
+            <td>
+              <img tal:attributes="alt build/buildstate/name; 
+                                   src build/build_icon" />
+            </td>
+            <td>
+              <tal:block condition="build/buildlog">
+                <a tal:attributes="href build/buildlog/url">
+                  <img alt="[Build log]" src="/++resource++info" />
                 </a>
               </tal:block>
               <tal:block condition="not:build/buildlog">

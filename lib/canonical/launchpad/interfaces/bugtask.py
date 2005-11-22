@@ -127,6 +127,20 @@ class IBugTask(IHasDateCreated):
         example, an IDistribution is renamed.
         """
 
+    def asEmailHeaderValue(self):
+        """Return a value suitable for an email header value for this bugtask.
+
+        The return value is a single line of arbitrary length, so header folding
+        should be done by the callsite, as needed.
+
+        For an upstream task, this value might look like:
+
+          product=firefox; status=New; priority=None; assignee=None;
+
+        See doc/bugmail-headers.txt for a complete explanation and more
+        examples.
+        """
+
 
 class INullBugTask(IBugTask):
     """A marker interface for an IBugTask that doesn't exist in a context.

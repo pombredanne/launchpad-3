@@ -461,8 +461,8 @@ def generate_bug_comment_email(bug_comment):
     return (subject, body)
 
 
-def send_bug_notification(bug, user, subject, body,
-                          to_addrs=None, headers=None):
+def send_bug_notification(bug, user, subject, body, to_addrs=None,
+                          headers=None):
     """Sends a bug notification.
 
     :bug: The bug the notification concerns.
@@ -487,6 +487,11 @@ def send_bug_notification(bug, user, subject, body,
     if to_addrs is None:
         to_addrs = get_cc_list(bug)
 
+    if not to_addrs:
+        # No recipients for this email means there's no point generating an
+        # email.
+        return
+
     if ('Message-Id' not in headers or
             headers['Message-Id'] != bug.initial_message.rfc822msgid):
         # It's not the initial, message. Let's add the inital message id
@@ -507,10 +512,21 @@ def send_bug_notification(bug, user, subject, body,
         headers["Reply-To"] = get_bugmail_replyto_address(bug)
     if "Sender" not in headers:
         headers["Sender"] = config.bounce_address
-    from_addr = get_bugmail_from_address(user)
-    for to_addr in to_addrs:
-        simple_sendmail(from_addr, to_addr, subject, body, headers=headers)
 
+    from_addr = get_bugmail_from_address(user)
+
+    # Add a header for each task on this bug, to help users organize their
+    # incoming mail in a way that's convenient for them.
+    x_malone_bug_values = []
+    for bugtask in bug.bugtasks:
+        x_malone_bug_values.append(bugtask.asEmailHeaderValue())
+
+    headers["X-Malone-Bug"] = x_malone_bug_values
+
+    for to_addr in to_addrs:
+        simple_sendmail(
+            from_addr=from_addr, to_addrs=to_addr, subject=subject, body=body,
+            headers=headers)
 
 def send_bug_edit_notification(bug_delta):
     """Send a notification email about a bug that was modified.
@@ -686,8 +702,8 @@ def notify_bug_added(bug, event):
     subject, body = generate_bug_add_email(bug)
 
     send_bug_notification(
-            bug, event.user, subject, body,
-            headers={'Message-Id': bug.initial_message.rfc822msgid})
+        bug, event.user, subject, body,
+        headers={'Message-Id': bug.initial_message.rfc822msgid})
 
 
 def notify_bug_modified(modified_bug, event):
