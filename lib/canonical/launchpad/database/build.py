@@ -86,12 +86,13 @@ class Build(SQLBase):
     @property
     def build_icon(self):
         """See IBuild"""
+
         icon_map = {
-            BuildStatus.NEEDSBUILD: "/++resource++build-success",
+            BuildStatus.NEEDSBUILD: "",
             BuildStatus.FULLYBUILT: "/++resource++build-success",
             BuildStatus.FAILEDTOBUILD: "/++resource++build-failure",
-            BuildStatus.MANUALDEPWAIT: "/++resource++build-failure",
-            BuildStatus.CHROOTWAIT: "/++resource++build-failure",
+            BuildStatus.MANUALDEPWAIT: "",
+            BuildStatus.CHROOTWAIT: "",
             }
         return icon_map[self.buildstate]
 
@@ -188,7 +189,7 @@ class BuildSet:
         """See IBuildSet."""
         status_clause = ''
         if status:
-            status_clause = "AND buildstate=%" % sqlvalues(status)
+            status_clause = "AND buildstate=%s" % sqlvalues(status)
 
         return Build.select(
             "builder=%s %s" % (builder_id, status_clause),

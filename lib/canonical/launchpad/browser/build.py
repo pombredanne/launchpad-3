@@ -37,15 +37,35 @@ class BuildFacets(StandardLaunchpadFacets):
 class BuildRecordsView:
     __used_for__ = IHasBuildRecords
 
-    def getBuilds(self):
-        """Setup a batched build list"""
+    def setupBuildList(self):
+        """Setup a batched build records list.
 
-        builds = self.context.getBuildRecords()
-        self.batch = Batch(list(builds),
-                           int(self.request.get('batch_start', 0)))
+        Return None, so use tal:condition="not: view/setupBuildList" to
+        invoke it in template.
+        """
+        # recover selected build state
+        self.state = self.request.get('build_state', '')
+
+        # map state text tag back to dbschema
+        state_map = {
+            '': None,
+            'pending': BuildStatus.NEEDSBUILD,
+            'built': BuildStatus.FULLYBUILT,
+            'failed': BuildStatus.FAILEDTOBUILD,
+            'depwait': BuildStatus.MANUALDEPWAIT,
+            'chrootwait': BuildStatus.CHROOTWAIT,
+            }
+
+        # request context build records according the selected state
+        builds = self.context.getBuildRecords(state_map[self.state])
+
+        # recover batch page
+        start = int(self.request.get('batch_start', 0))
+
+        # setup the batched list to present
+        self.batch = Batch(list(builds), start)
         self.batchnav = BatchNavigator(self.batch, self.request)
 
-        return self.batch
 
     def showBuilderInfo(self):
         """Control the presentation o builder information.
@@ -54,4 +74,5 @@ class BuildRecordsView:
         in its result list (ommited in builder-index page only)
         """
         return True
+
 

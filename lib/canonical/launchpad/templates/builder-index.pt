@@ -23,7 +23,7 @@
       <table class="listing">
         <tr class="thead">
           <th>Build</th>
-          <th>Created</th>
+          <th>Requestedd</th>
           <th>Started</th>
           <th colspan="2">Duration So Far</th>
         </tr>
@@ -64,6 +64,8 @@
       </table>
 
       </div>
+
+      <h2>Recently Builds</h2>
 
       <div tal:replace="structure context/@@+builds-list"/>    
 

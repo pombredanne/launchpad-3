@@ -5,6 +5,8 @@ Builder View Classes and Pages
   >>> from zope.component import queryView
   >>> from zope.publisher.browser import TestRequest
   >>> from canonical.launchpad.interfaces import IBuilderSet
+  >>> from canonical.lp.interfaces import IBatchNavigator
+
   >>> builder = getUtility(IBuilderSet).get(1)
 
 Get a "mock" request:
@@ -18,11 +20,20 @@ Let's instantiate the view for +index:
   >>> builder_view.now().isoformat()
   '...'
   
-XXX cprov 20051121: getBuilds() returns a Batching instance,
+  setupBuildList, build a batched list of build records and store it
+  in view.batch, also store the batch navigator in view.batchnav. it
+  simply returns None:
+
+  >>> builder_view.setupBuildList()
+
+XXX cprov 20051121: view.batch is a Batching instance,
                     is there a more reliable way to test it ?
 
-  >>> len(builder_view.getBuilds())
+  >>> len(builder_view.batch)
   3
+
+  >>> IBatchNavigator.providedBy(builder_view.batchnav)
+  True  
 
 Let's instantiate the view for +cancel:
 

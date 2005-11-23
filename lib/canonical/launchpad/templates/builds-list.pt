@@ -1,6 +1,40 @@
-<div class="builds_list" tal:condition="view/getBuilds">
+<div class="builds_list" tal:condition="not: view/setupBuildList">
     
-    <h2>Build Jobs</h2>
+     <table>
+       <tr>
+         <th><label>Build State:</label></th>
+         <td>
+          <form name="build_records_state" action="" method="GET">       
+
+          <select name="build_state" size="1">
+
+            <option tal:attributes="selected python: view.state == ''"
+                    value="">All</option>
+
+            <option tal:condition="view/showBuilderInfo"
+                    tal:attributes="selected python: view.state == 'pending'"
+                    value="pending">Pending Build</option>
+
+            <option tal:attributes="selected python: view.state == 'built'"
+                    value="built">Successfully Built</option>
+
+            <option tal:attributes="selected python: view.state == 'failed'"
+                    value="failed">Failed Build</option>
+
+            <option tal:attributes="selected python: view.state == 'depwait'"
+                    value="depwait">Waiting Dependency</option>
+
+            <option tal:attributes="selected python: view.state == 'chrootwait'"
+                    value="chrootwait">Waiting Chroot</option>
+
+          </select>
+
+          <input type="submit" name="update" value="Update" />  
+
+          </form>
+         </td>
+       </tr>
+     </table>
 
      <tal:navigation
           replace="structure view/batchnav/@@+navigation-links"
@@ -26,7 +60,7 @@
             <td tal:content="build/datecreated/fmt:datetime">REQUESTED</td>
 
 	    <tal:pending condition="not: build/datebuilt">
-            <td colspan="5">Pending</td>
+            <td colspan="5" align="center">PENDING</td>
             </tal:pending>
 
             <tal:built condition="build/datebuilt">
@@ -62,6 +96,12 @@
             </tal:built>
         </tr>
       </table>
+
+      <div tal:condition="not: view/batch">
+        <img src="/++resource++alert" />
+        No <span tal:replace="view/state"/> builds for
+        <span tal:replace="context/title"/>.
+      </div>
 
       <tal:navigation
            replace="structure view/batchnav/@@+navigation-links"
