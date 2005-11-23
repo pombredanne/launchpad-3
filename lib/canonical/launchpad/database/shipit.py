@@ -289,16 +289,14 @@ class ShippingRequestSet:
         if recipient_text:
             recipient_text = recipient_text.lower()
             queries.append("""
-                ShippingRequest.fti @@ ftq(%s) OR recipient IN 
-                    (
-                    SELECT Person.id FROM Person 
-                        WHERE Person.fti @@ ftq(%s)
-                    UNION
-                    SELECT EmailAddress.person FROM EmailAddress
-                        WHERE lower(EmailAddress.email) LIKE %s
-                    )
+                (Person.id = ShippingRequest.recipient AND
+                 Emailaddress.person = ShippingRequest.recipient AND
+                 (Person.fti @@ ftq(%s) OR
+                  ShippingRequest.fti @@ ftq(%s) OR
+                  lower(EmailAddress.email) LIKE %s)
+                )
                 """ % sqlvalues(recipient_text, recipient_text,
-                                recipient_text + '%'))
+                                recipient_text + '%%'))
             clauseTables = ['Person', 'EmailAddress']
 
         if omit_cancelled:
