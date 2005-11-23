@@ -701,6 +701,8 @@ class FormattersAPI:
         same logical line if the following conditions hold:
           1. the first line is between 60 and 80 characters long
           2. the second line does not begin with whitespace.
+          3. the second line does not begin with '>' (commonly used for
+             reply quoting in emails).
         """
         paragraph = []
         continue_logical_line = False
@@ -718,7 +720,8 @@ class FormattersAPI:
             # continue the run of text if the last line was between 60
             # and 80 characters, and this line doesn't begin with
             # whitespace.
-            if continue_logical_line and not line[0].isspace():
+            if continue_logical_line and not (line[0].isspace() or
+                                              line[0] == '>'):
                 paragraph[-1] += '\n' + line
             else:
                 paragraph.append(line)
