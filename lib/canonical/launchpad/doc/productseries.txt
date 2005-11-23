@@ -1,0 +1,73 @@
+ProductSeries
+=============
+
+A Launchpad product models a single piece of software. However for release
+management purposes, a product often has to be split in several discrete
+entities which must be considered separately for packaging, translations,
+version control, etc. The components of products are ProductSeries.
+
+>>> from zope.component import getUtility
+>>> from zope.interface.verify import verifyObject
+>>> from canonical.launchpad.interfaces import (
+...     IProductSeries, IProductSet, IProductSeriesSet, NotFoundError)
+>>> from canonical.database.sqlbase import flush_database_updates
+
+First, get a product that has some ProductSeries in the sample data.
+
+>>> productset = getUtility(IProductSet)
+>>> firefox = productset['firefox']
+
+A ProductSeries can be retrieved by database ID using the ProductSeriesSet
+utility.
+
+>>> seriesset = getUtility(IProductSeriesSet)
+>>> milestones = seriesset.get(1)
+
+Verify that the resulting object correctly implements and provides the
+IProductSeries interface.
+
+>>> verifyObject(IProductSeries, milestones)
+True
+>>> IProductSeries.providedBy(milestones)
+True
+
+And verify that it looks like the series we think it should be.
+
+>>> milestones.product == firefox
+True
+>>> milestones.name
+u'milestones'
+
+Another way to get a ProductSeries, is to ask the associated product with the
+series name.
+
+>>> onedotzero = firefox.getSeries('1.0')
+
+Let's verify that's giving us a reasonable object.
+
+>>> verifyObject(IProductSeries, onedotzero)
+True
+>>> IProductSeries.providedBy(onedotzero)
+True
+>>> onedotzero.product == firefox
+True
+>>> onedotzero.name
+u'1.0'
+
+It's also possible to ask a product for all its associated series.
+
+>>> series = firefox.serieslist
+>>> series == [onedotzero, milestones]
+True
+
+New ProductSeries are created using Product.newSeries.
+
+>>> displayname = "Firefox Emacs Port"
+>>> summary = "Experimental port of Firefox to the Emacs operating system."
+>>> emacs = firefox.newSeries('emacs', displayname, summary)
+
+Let's check that the new series is properly associated to its product.
+
+>>> flush_database_updates()
+>>> firefox.getSeries('emacs') == emacs
+True

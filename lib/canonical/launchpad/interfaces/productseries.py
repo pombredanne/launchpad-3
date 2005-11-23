@@ -8,6 +8,7 @@ __all__ = [
     'IProductSeries',
     'IProductSeriesSource',
     'IProductSeriesSourceAdmin',
+    'IProductSeriesSet',
     'IProductSeriesSourceSet',
     ]
 
@@ -183,6 +184,13 @@ class IProductSeriesSourceAdmin(Interface):
 
     def enableAutoSync():
         """enable this series RCS for automatic baz syncronisation"""
+
+
+class IProductSeriesSet(Interface):
+    """The set of all ProductSeries."""
+
+    def get(series_id):
+        """Get a IProductSeries by its database id."""
 
 
 class IProductSeriesSourceSet(Interface):

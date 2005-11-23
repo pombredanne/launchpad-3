@@ -238,6 +238,21 @@
           height="5" />
     </browser:addform>
 
+    <!-- ProductSeriesSet -->
+    <content class="canonical.launchpad.database.ProductSeriesSet">
+        <allow interface="canonical.launchpad.interfaces.IProductSeriesSet" />
+        <require
+            permission="zope.Public"
+            set_schema="canonical.launchpad.interfaces.IProductSeriesSet"
+        />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.ProductSeriesSet"
+        provides="canonical.launchpad.interfaces.IProductSeriesSet">
+        <allow interface="canonical.launchpad.interfaces.IProductSeriesSet" />
+    </securedutility>
+
     <!-- ProductSeriesSourceSet. Note this is only used by -->
     <content class="canonical.launchpad.database.ProductSeriesSourceSet">
         <allow interface="canonical.launchpad.interfaces.IProductSeriesSourceSet" />
