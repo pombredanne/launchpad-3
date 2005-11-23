@@ -33,7 +33,7 @@ from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
     IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, NotFoundError,
-    ILaunchpadCelebrities)
+    ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage)
 
 
 debbugsstatusmap = {'open': BugTaskStatus.NEW,
@@ -192,6 +192,80 @@ class BugTask(SQLBase, BugTaskMixin):
         """See canonical.launchpad.interfaces.IBugTask."""
         if self.targetnamecache != self._calculate_targetname():
             self.targetnamecache = self._calculate_targetname()
+
+    def asEmailHeaderValue(self):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        # Calculate an appropriate display value for the assignee.
+        if self.assignee:
+            if self.assignee.preferredemail:
+                assignee_value = self.assignee.preferredemail.email
+            else:
+                # There is an assignee with no preferredemail, so we'll
+                # "degrade" to the assignee.name. This might happen for teams
+                # that don't have associated emails or when a bugtask was
+                # imported from an external source and had its assignee set
+                # automatically, even though the assignee may not even know they
+                # have an account in Launchpad. :)
+                assignee_value = self.assignee.name
+        else:
+            assignee_value = 'None'
+
+        # Calculate an appropriate display value for the priority.
+        if self.priority:
+            priority_value = self.priority.title
+        else:
+            priority_value = 'None'
+
+        # Calculate an appropriate display value for the sourcepackage.
+        if self.sourcepackagename:
+            sourcepackagename_value = self.sourcepackagename.name
+        else:
+            # There appears to be no sourcepackagename associated with this
+            # task.
+            sourcepackagename_value = 'None'
+
+        # Calculate an appropriate display value for the component, if the
+        # target looks like some kind of source package.
+        component = 'None'
+        currentrelease = None
+        if ISourcePackage.providedBy(self.target):
+            currentrelease = self.target.currentrelease
+        if IDistributionSourcePackage.providedBy(self.target):
+            if self.target.currentrelease:
+                currentrelease = self.target.currentrelease.sourcepackagerelease
+
+        if currentrelease:
+            component = currentrelease.component.name
+
+        if IUpstreamBugTask.providedBy(self):
+            header_value = 'product=%s;' %  self.target.name
+        elif IDistroBugTask.providedBy(self):
+            header_value = ((
+                'distribution=%(distroname)s; '
+                'sourcepackage=%(sourcepackagename)s; '
+                'component=%(componentname)s;') %
+                {'distroname': self.distribution.name,
+                 'sourcepackagename': sourcepackagename_value,
+                 'componentname': component})
+        elif IDistroReleaseBugTask.providedBy(self):
+            header_value = ((
+                'distribution=%(distroname)s; '
+                'distrorelease=%(distroreleasename)s; '
+                'sourcepackage=%(sourcepackagename)s; '
+                'component=%(componentname)s;') %
+                {'distroname': self.distrorelease.distribution.name,
+                 'distroreleasename': self.distrorelease.name,
+                 'sourcepackagename': sourcepackagename_value,
+                 'componentname': component})
+
+        header_value += ((
+            ' status=%(status)s; priority=%(priority)s; '
+            'assignee=%(assignee)s;') %
+            {'status': self.status.title,
+             'priority': priority_value,
+             'assignee': assignee_value})
+
+        return header_value
 
     @property
     def statusdisplayhtml(self):

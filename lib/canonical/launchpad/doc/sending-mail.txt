@@ -30,6 +30,28 @@ Now let's look at the sent email:
     >>> msg.get_payload(decode=True)
     'Content'
 
+To make a header appear more than once in the sent message (e.g.
+X-Launchpad-Bug), you can pass a headers dict whose keys are the header names
+and whose values are the header body values. If a value is a list or a tuple,
+the header will appear more than once in the output message.
+
+    >>> msgid = simple_sendmail(
+    ...     from_addr=u'foo.bar@canonical.com',
+    ...     to_addrs=u'test@canonical.com',
+    ...     subject=u'Subject',
+    ...     body=u'Content',
+    ...     headers={
+    ...         'X-Foo': "test", 'X-Bar': ["first value", "second value"]})
+
+    >>> transaction.commit()
+
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg["X-Foo"]
+    'test'
+    >>> msg.get_all("X-Bar")
+    ['first value', 'second value']
+
 All its input can be unicode strings, which will be encoded to ascii
 strings suitable in emails. Let's try to send an email with non-ascii
 characters:

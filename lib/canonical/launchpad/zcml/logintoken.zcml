@@ -52,6 +52,14 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.ILoginToken"
+        name="+validatesignonlygpg"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ValidateEmailView"
+        template="../templates/foaf-validatesignonlygpg.pt"
+        lp:url="token/$token/+validatesignonlygpg" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.ILoginToken"
         name="+resetpassword"
         permission="zope.Public"
         class="canonical.launchpad.browser.ResetPasswordView"
