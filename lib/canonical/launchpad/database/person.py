@@ -808,7 +808,7 @@ class Person(SQLBase):
             """ % self.id
         return SourcePackageRelease.select(
             querystr,
-            orderBy='SourcePackageName.name',
+            orderBy=['SourcePackageName.name', 'SourcePackageRelease.id'],
             clauseTables=['SourcePackageName'])
 
     def uploadedButNotMaintainedPackages(self):
@@ -820,7 +820,7 @@ class Person(SQLBase):
             """ % (self.id, self.id)
         return SourcePackageRelease.select(
             querystr,
-            orderBy='SourcePackageName.name',
+            orderBy=['SourcePackageName.name', 'SourcePackageRelease.id'],
             clauseTables=['SourcePackageName'])
 
     @property

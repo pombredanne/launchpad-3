@@ -329,14 +329,14 @@ Maintainer.
 >>> for sprelease in sabdfl.maintainedPackages():
 ...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
 ...            sprelease.version)
-(u'alsa-utils', u'Debian Sid', u'1.0.9a-4')
 (u'alsa-utils', u'Ubuntu Warty', u'1.0.8-1ubuntu1')
+(u'alsa-utils', u'Debian Sid', u'1.0.9a-4')
 (u'evolution', u'Ubuntu Hoary', u'1.0')
 (u'mozilla-firefox', u'Ubuntu Hoary', u'0.9')
-(u'netapplet', u'Ubuntu Warty', u'0.99.6-1')
 (u'netapplet', u'Ubuntu Hoary', u'1.0-1')
-(u'pmount', u'Ubuntu Hoary', u'0.1-2')
+(u'netapplet', u'Ubuntu Warty', u'0.99.6-1')
 (u'pmount', u'Ubuntu Hoary', u'0.1-1')
+(u'pmount', u'Ubuntu Hoary', u'0.1-2')
 
 >>> for sprelease in sabdfl.uploadedButNotMaintainedPackages():
 ...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
