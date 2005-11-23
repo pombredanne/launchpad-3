@@ -30,10 +30,10 @@ Now let's look at the sent email:
     >>> msg.get_payload(decode=True)
     'Content'
 
-To make a header appear more than once in the sent message (e.g. X-Malone-Bug),
-you can pass a headers dict whose keys are the header names and whose values
-are the header body values. If a value is a list or a tuple, the header will
-appear more than once in the output message.
+To make a header appear more than once in the sent message (e.g.
+X-Launchpad-Bug), you can pass a headers dict whose keys are the header names
+and whose values are the header body values. If a value is a list or a tuple,
+the header will appear more than once in the output message.
 
     >>> msgid = simple_sendmail(
     ...     from_addr=u'foo.bar@canonical.com',
