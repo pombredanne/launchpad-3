@@ -20,6 +20,7 @@ __all__ = ['DigestMismatchError', 'LibrarianStorage', 'LibraryFileUpload',
 class DigestMismatchError(Exception):
     """The given digest doesn't match the SHA-1 digest of the file"""
 
+
 class DuplicateFileIDError(Exception):
     """Given File ID already exists"""
 
@@ -138,11 +139,13 @@ class LibraryFileUpload(object):
                 raise
         os.rename(self.tmpfilepath, location)
 
+
 def _sameFile(path1, path2):
     file1 = open(path1, 'rb')
     file2 = open(path2, 'rb')
-
-    chunksIter = iter(lambda: (file1.read(4096), file2.read(4096)), ('', ''))
+    
+    blk = 1024 * 64
+    chunksIter = iter(lambda: (file1.read(blk), file2.read(blk)), ('', ''))
     for chunk1, chunk2 in chunksIter:
         if chunk1 != chunk2:
             return False
