@@ -46,7 +46,7 @@
             <th>Requested</th>
             <th>Built</th>
             <th tal:condition="view/showBuilderInfo">Builder</th>
-            <th>Result</th>
+            <th>State</th>
             <th>Build log</th>
             <th>Duration</th>
         </tr>

@@ -23,7 +23,7 @@
       <table class="listing">
         <tr class="thead">
           <th>Build</th>
-          <th>Requestedd</th>
+          <th>Requested</th>
           <th>Started</th>
           <th colspan="2">Duration So Far</th>
         </tr>
@@ -49,7 +49,7 @@
           <td>&#8212;</td>
           <td>&#8212;</td>
           <td>
-            <img alt="[idle]" src="/++resource++idle" />
+            <img alt="[idle]" src="" />
             <span tal:replace="context/status">STATUS</span>
           </td>
         </tr>

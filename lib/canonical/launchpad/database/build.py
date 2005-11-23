@@ -75,13 +75,12 @@ class Build(SQLBase):
     @property
     def title(self):
         """See IBuild"""
-        return '%s build of %s %s in %s %s (%s)' % (
+        return '%s build of %s %s in %s %s' % (
             self.distroarchrelease.architecturetag,
             self.sourcepackagerelease.name,
             self.sourcepackagerelease.version,
             self.distroarchrelease.distrorelease.distribution.name,
-            self.distroarchrelease.distrorelease.name,
-            self.datecreated.strftime('%Y-%m-%d'))
+            self.distroarchrelease.distrorelease.name)
 
     @property
     def build_icon(self):

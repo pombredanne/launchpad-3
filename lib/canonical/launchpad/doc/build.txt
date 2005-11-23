@@ -28,7 +28,7 @@ Let's check the complex properties of a build object.
   u'warty'
 
   >>> firefox_build.title
-  u'i386 build of mozilla-firefox 0.9 in ubuntu warty (2004-09-27)'
+  u'i386 build of mozilla-firefox 0.9 in ubuntu warty'
 
   >>> firefox_build.build_icon
   '/++resource++build-success'
