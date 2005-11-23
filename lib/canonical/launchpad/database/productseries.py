@@ -1,7 +1,14 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['ProductSeries', 'ProductSeriesSet', 'ProductSeriesSourceSet']
+
+__all__ = [
+    'ProductSeries',
+    'ProductSeriesSet',
+    'ProductSeriesSubset',
+    'ProductSeriesSourceSet',
+    ]
+
 
 import datetime
 import sets
@@ -16,7 +23,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 # canonical imports
 from canonical.launchpad.interfaces import (
     IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin,
-    IProductSeriesSet, IProductSeriesSourceSet, NotFoundError)
+    IProductSeriesSet, IProductSeriesSubset, IProductSeriesSourceSet,
+    NotFoundError)
 
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
@@ -203,22 +211,18 @@ class ProductSeries(SQLBase):
         return self.importstatus == ImportStatus.TESTFAILED
 
 
-class ProductSeriesSet:
-    # XXX: this is in fact a subset of product series
-    implements(IProductSeriesSet)
+class ProductSeriesSubset:
+    """See IProductSeriesSubset."""
 
-    def __init__(self, product=None):
+    implements(IProductSeriesSubset)
+
+    def __init__(self, product):
         self.product = product
 
     def __iter__(self):
-        if self.product:
-            return iter(ProductSeries.selectBy(productID=self.product.id))
-        return iter(ProductSeries.select())
+        return iter(ProductSeries.selectBy(productID=self.product.id))
 
     def __getitem__(self, name):
-        if not self.product:
-            raise AssertionError(
-                'ProductSeriesSet not initialised with product.')
         series = ProductSeries.selectOneBy(productID=self.product.id,
                                            name=name)
         if series is None:

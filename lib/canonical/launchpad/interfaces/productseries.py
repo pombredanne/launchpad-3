@@ -9,8 +9,10 @@ __all__ = [
     'IProductSeriesSource',
     'IProductSeriesSourceAdmin',
     'IProductSeriesSet',
+    'IProductSeriesSubset',
     'IProductSeriesSourceSet',
     ]
+
 
 from zope.schema import  Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
@@ -185,7 +187,7 @@ class IProductSeriesSourceAdmin(Interface):
         """enable this series RCS for automatic baz syncronisation"""
 
 
-class IProductSeriesSet(Interface):
+class IProductSeriesSubset(Interface):
     """A set of ProductSeries objects for a specific product."""
 
     def __iter__():

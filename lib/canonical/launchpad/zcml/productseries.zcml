@@ -36,7 +36,7 @@
 
     <browser:navigation
         module="canonical.launchpad.browser"
-        classes="ProductSeriesNavigation ProductSeriesSetNavigation"
+        classes="ProductSeriesNavigation ProductSeriesSubsetNavigation"
         />
 
     <browser:url
@@ -238,32 +238,26 @@
           height="5" />
     </browser:addform>
 
-    <!-- ProductSeriesSet -->
-    <content class="canonical.launchpad.database.ProductSeriesSet">
-        <allow interface="canonical.launchpad.interfaces.IProductSeriesSet" />
+    <!-- ProductSeriesSubset -->
+    <content class="canonical.launchpad.database.ProductSeriesSubset">
+        <allow interface="canonical.launchpad.interfaces.IProductSeriesSubset" />
         <require
             permission="zope.Public"
-            set_schema="canonical.launchpad.interfaces.IProductSeriesSet"
+            set_schema="canonical.launchpad.interfaces.IProductSeriesSubset"
         />
     </content>
 
-    <securedutility
-        class="canonical.launchpad.database.ProductSeriesSet"
-        provides="canonical.launchpad.interfaces.IProductSeriesSet">
-        <allow interface="canonical.launchpad.interfaces.IProductSeriesSet" />
-    </securedutility>
-
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IProductSeriesSet"
+        for="canonical.launchpad.interfaces.IProductSeriesSubset"
         name="+index" />
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IProductSeriesSet"
+        for="canonical.launchpad.interfaces.IProductSeriesSubset"
         layer="canonical.launchpad.layers.BazaarLayer"
         name="+bazaar-index" />
 
     <browser:pages
-        for="canonical.launchpad.interfaces.IProductSeriesSet"
+        for="canonical.launchpad.interfaces.IProductSeriesSubset"
         facet="overview"
         permission="zope.Public">
         <browser:page
