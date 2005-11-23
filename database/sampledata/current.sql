@@ -928,7 +928,7 @@ INSERT INTO distribution (id, name, title, description, domainname, "owner", luc
 approach to Linux Distribution that includes regular releases, and a
 simplified single-CD installation system.', 'ubuntulinux.org', 17, NULL, 'ubuntu', 'Ubuntu is a new
 approach to Linux Distribution that includes regular releases, and a
-simplified single-CD installation system.', 1, NULL, 1, NULL, NULL);
+simplified single-CD installation system.', 17, NULL, 1, NULL, NULL);
 INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a
 commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, NULL, 'redhat', 'Red Hat is a
 commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1, NULL, NULL);
@@ -6111,7 +6111,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'maintainership'::pg_catalog.regclass;
 
-INSERT INTO maintainership (id, distribution, sourcepackagename, maintainer) VALUES (1, 3, 1, 1);
+INSERT INTO maintainership (id, distribution, sourcepackagename, maintainer) VALUES (1, 3, 1, 52);
 INSERT INTO maintainership (id, distribution, sourcepackagename, maintainer) VALUES (2, 1, 9, 1);
 INSERT INTO maintainership (id, distribution, sourcepackagename, maintainer) VALUES (3, 1, 14, 1);
 

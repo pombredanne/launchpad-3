@@ -381,8 +381,8 @@ The maintainer of an upstream task is simply the Product.owner:
 The maintainer of a distribution task is the source package maintainer:
 
     >>> bugtask = bugtaskset.get(4)
-    >>> bugtask.maintainer.id
-    1
+    >>> bugtask.maintainer.name
+    u'no-priv'
 
 or None, if the task is not yet assigned to a specific source
 package. So, borrowing the distro task we filed earlier:
@@ -569,11 +569,11 @@ and mark one of the Firefox bugs private:
     >>> transaction.commit()
 
 If we now login as someone who was neither implicitly nor explicitly subscribed
-to this bug, e.g. No Privileges Person, they will not be able to access or set
+to this bug, e.g. Helge, they will not be able to access or set
 properties of the bugtask.
 
-    >>> login("no-priv@canonical.com")
-    >>> mr_no_privs = getUtility(ILaunchBag).user
+    >>> login("kreutzm@itp.uni-hannover.de")
+    >>> helge = getUtility(ILaunchBag).user
 
     >>> bug_upstream_firefox_no_svg_support.status
     Traceback (most recent call last):
@@ -585,12 +585,11 @@ properties of the bugtask.
       ...
     Unauthorized: ('status', 'launchpad.Edit')
 
-The private bugs will be invisible to No Privileges Person in the search
-results:
+The private bugs will be invisible to Helge in the search results:
 
     >>> params = BugTaskSearchParams(
     ...     status=any(STATUS_NEW, STATUS_ACCEPTED),
-    ...     orderby="id", user=mr_no_privs)
+    ...     orderby="id", user=helge)
     >>> bugtasks = upstream_mozilla.searchTasks(params)
     >>> print bugtasks.count()
     3
@@ -598,11 +597,10 @@ results:
     >>> print sorted(bug_ids)
     [4, 5, 6]
 
-Likewise when the No Privileges Person tries to do a search on tasks
-maintained by Foo Bar.
+Likewise when Helge tries to do a search on tasks maintained by Foo Bar.
 
     >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
-    ...     foobar, user=mr_no_privs)
+    ...     foobar, user=helge)
     >>> [bugtask.bug.id for bugtask in foobar_maintained_tasks]
     [2]
 
