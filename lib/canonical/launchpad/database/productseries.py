@@ -4,8 +4,6 @@ __metaclass__ = type
 
 __all__ = [
     'ProductSeries',
-    'ProductSeriesSet',
-    'ProductSeriesSubset',
     'ProductSeriesSourceSet',
     ]
 
@@ -23,8 +21,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 # canonical imports
 from canonical.launchpad.interfaces import (
     IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin,
-    IProductSeriesSet, IProductSeriesSubset, IProductSeriesSourceSet,
-    NotFoundError)
+    IProductSeriesSourceSet, NotFoundError)
 
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
@@ -209,25 +206,6 @@ class ProductSeries(SQLBase):
     def autoTestFailed(self):
         """Has the series source failed automatic testing by roomba?"""
         return self.importstatus == ImportStatus.TESTFAILED
-
-
-class ProductSeriesSubset:
-    """See IProductSeriesSubset."""
-
-    implements(IProductSeriesSubset)
-
-    def __init__(self, product):
-        self.product = product
-
-    def __iter__(self):
-        return iter(ProductSeries.selectBy(productID=self.product.id))
-
-    def __getitem__(self, name):
-        series = ProductSeries.selectOneBy(productID=self.product.id,
-                                           name=name)
-        if series is None:
-            raise NotFoundError(name)
-        return series
 
 
 class ProductSeriesSourceSet:

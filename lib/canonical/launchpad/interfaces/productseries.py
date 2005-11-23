@@ -8,8 +8,6 @@ __all__ = [
     'IProductSeries',
     'IProductSeriesSource',
     'IProductSeriesSourceAdmin',
-    'IProductSeriesSet',
-    'IProductSeriesSubset',
     'IProductSeriesSourceSet',
     ]
 
@@ -185,18 +183,6 @@ class IProductSeriesSourceAdmin(Interface):
 
     def enableAutoSync():
         """enable this series RCS for automatic baz syncronisation"""
-
-
-class IProductSeriesSubset(Interface):
-    """A set of ProductSeries objects for a specific product."""
-
-    def __iter__():
-        """Return an interator over the ProductSeries', constrained by
-        self.product."""
-
-    def __getitem__(name):
-        """Return a specific ProductSeries, by name, constrained by the
-        self.product."""
 
 
 class IProductSeriesSourceSet(Interface):
