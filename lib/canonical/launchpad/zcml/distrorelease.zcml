@@ -91,6 +91,7 @@
       template="../templates/object-pots.pt" />
     <browser:page
       name="+builds"
+      facet="overview"
       template="../templates/distrorelease-builds.pt"
       lp:url="/distros/$distribution/$distrorelease/+builds"
       />

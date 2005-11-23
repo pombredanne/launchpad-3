@@ -442,23 +442,21 @@ class SourcePackage:
         """See canonical.launchpad.interfaces.ISourcePackage."""
         return not self.__eq__(other)
 
-    def getBuildRecords(self, status=None, limit=10):
+    def getBuildRecords(self, status=None):
         """See IHasBuildRecords"""
+        status_clause = ''
         if status:
-            status_clause = "Build.buildstate=%s" % sqlvalues(status)
-        else:
-            status_clause = "Build.builder is not NULL"
+            status_clause = "AND Build.buildstate=%s" % sqlvalues(status)
 
         querytxt = """
             Build.sourcepackagerelease = SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishingHistory.distrorelease = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id AND
+                SourcePackageRelease.id 
             """ % sqlvalues(self.sourcepackagename.id, self.distrorelease.id)
         querytxt += status_clause
         return Build.select(querytxt,
             clauseTables=['SourcePackageRelease',
                           'SourcePackagePublishingHistory'],
-            limit=limit,
             orderBy="-datebuilt")

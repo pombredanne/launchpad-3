@@ -46,6 +46,7 @@
           lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+portlets-details"/>
       <browser:page
           name="+builds"
+          facet="overview"
           template="../templates/distroarchrelease-builds.pt"
           lp:url="/distros/$Distribution/$Distrorelease/$Archtag/+builds"/>
       <browser:page

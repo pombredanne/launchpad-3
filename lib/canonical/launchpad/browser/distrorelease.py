@@ -79,7 +79,7 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
     usedfor = IDistroRelease
     facet = 'overview'
     links = ['search', 'support', 'packaging', 'edit', 'reassign',
-             'addport', 'admin']
+             'addport', 'admin', 'builds']
 
     def edit(self):
         text = 'Edit Details'
@@ -112,6 +112,10 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
     def admin(self):
         text = 'Administer'
         return Link('+admin', text, icon='edit')
+
+    def builds(self):
+        text = 'View Builds'
+        return Link('+builds', text, icon='info')        
 
 
 class DistroReleaseBugsMenu(ApplicationMenu):

@@ -94,7 +94,7 @@ class DistributionOverviewMenu(ApplicationMenu):
     usedfor = IDistribution
     facet = 'overview'
     links = ['search', 'allpkgs', 'milestone_add', 'members', 'edit',
-             'reassign', 'addrelease']
+             'reassign', 'addrelease', 'builds']
 
     def edit(self):
         text = 'Edit Details'
@@ -126,6 +126,9 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'Add Release'
         return Link('+addrelease', text, icon='add')
 
+    def builds(self):
+        text = 'View Builds'
+        return Link('+builds', text, icon='info')        
 
 class DistributionBugsMenu(ApplicationMenu):
 

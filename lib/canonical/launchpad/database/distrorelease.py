@@ -385,7 +385,7 @@ class DistroRelease(SQLBase):
         return [BinaryPackageRelease.get(pubrecord.binarypackagerelease)
                 for pubrecord in result]
 
-    def getBuildRecords(self, status=None, limit=10):
+    def getBuildRecords(self, status=None):
         """See IHasBuildRecords"""
         # find out the distroarchrelease in question
         arch_ids = ','.join(
@@ -396,14 +396,13 @@ class DistroRelease(SQLBase):
             return None
 
         # specific status or simply worked
+        status_clause = ''
         if status:
-            status_clause = "buildstate=%s" % sqlvalues(status)
-        else:
-            status_clause = "builder is not NULL"
+            status_clause = "AND buildstate=%s" % sqlvalues(status)
 
         return Build.select(
-            "distroarchrelease IN (%s) AND %s" % (arch_ids, status_clause),
-            limit=limit, orderBy="-datebuilt")
+            "distroarchrelease IN (%s) %s" % (arch_ids, status_clause),
+            orderBy="-datebuilt")
 
     def createUploadedSourcePackageRelease(self, sourcepackagename,
             version, maintainer, dateuploaded, builddepends,

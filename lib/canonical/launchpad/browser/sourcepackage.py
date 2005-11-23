@@ -96,7 +96,7 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     usedfor = ISourcePackage
     facet = 'overview'
-    links = ['hct', 'changelog', 'buildlog']
+    links = ['hct', 'changelog', 'buildlog', 'builds']
 
     def hct(self):
         text = structured(
@@ -111,6 +111,10 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     def upstream(self):
         return Link('+packaging', 'Edit Upstream Link', icon='edit')
+
+    def builds(self):
+        text = 'View Builds'
+        return Link('+builds', text, icon='info')        
 
 
 class SourcePackageBugsMenu(ApplicationMenu):

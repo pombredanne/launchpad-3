@@ -118,7 +118,6 @@ class Build(SQLBase):
                 return binpkg
         raise IndexError, 'No binary package "%s" in build' % name
 
-
     def createBinaryPackageRelease(self, binarypackagename, version,
                                    summary, description,
                                    binpackageformat, component,
@@ -184,8 +183,13 @@ class BuildSet:
             AND(Build.q.buildstate==BuildStatus.NEEDSBUILD,
                 IN(Build.q.distroarchreleaseID, archrelease_ids))
             )                                  
+        
+    def getBuildsForBuilder(self, builder_id, status=None):
+        """See IBuildSet."""
+        status_clause = ''
+        if status:
+            status_clause = "AND buildstate=%" % sqlvalues(status)
 
-    def getBuildsForBuilder(self, builder):
-        """See IBuildSet"""
-        return Build.select("builder=%s" % sqlvalues(builder.id),
-                            orderBy="-datebuilt")
+        return Build.select(
+            "builder=%s %s" % (builder_id, status_clause),
+            orderBy="-datebuilt")

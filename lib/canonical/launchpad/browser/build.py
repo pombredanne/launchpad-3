@@ -10,6 +10,9 @@ __all__ = [
     'BuildRecordsView',
     ]
 
+from canonical.lp.z3batching import Batch
+from canonical.lp.batching import BatchNavigator
+
 from canonical.lp.dbschema import BuildStatus
 
 from canonical.launchpad.interfaces import IHasBuildRecords
@@ -34,52 +37,21 @@ class BuildFacets(StandardLaunchpadFacets):
 class BuildRecordsView:
     __used_for__ = IHasBuildRecords
 
-    def getBuilt(self):
-        """Return the build entries built within the context object."""
-        return self.context.getBuildRecords(status=BuildStatus.FULLYBUILT)
+    def getBuilds(self):
+        """Setup a batched build list"""
 
-    @property
-    def number_built(self):
-        """Return the number of build entries built for context object.
+        builds = self.context.getBuildRecords()
+        self.batch = Batch(list(builds),
+                           int(self.request.get('batch_start', 0)))
+        self.batchnav = BatchNavigator(self.batch, self.request)
 
-        If no result is available return None.
+        return self.batch
+
+    def showBuilderInfo(self):
+        """Control the presentation o builder information.
+
+        It allows the callsite to control if they want or not builder column
+        in its result list (ommited in builder-index page only)
         """
-        result = self.context.getBuildRecords(status=BuildStatus.FULLYBUILT,
-                                              limit=0)
-        if result:
-            return result.count()
-        return None
-
-    def getPending(self):
-        """Return the builds entries pending build for the context object."""
-        return self.context.getBuildRecords(status=BuildStatus.NEEDSBUILD)
-
-    @property
-    def number_pending(self):
-        """Return the number of build entries pending for the context object.
-
-        If no result is available return None.
-        """
-        result = self.context.getBuildRecords(status=BuildStatus.NEEDSBUILD,
-                                              limit=0)
-        if result:
-            return result.count()
-        return None
-
-    def getFailed(self):
-        """Return the builds entries failed to build for the context object."""
-        return self.context.getBuildRecords(status=BuildStatus.FAILEDTOBUILD)
-
-    @property
-    def number_failed(self):
-        """Return the number of build entries failures for the context object.
-
-        If no result is available return None.
-        """
-        result = self.context.getBuildRecords(status=BuildStatus.FAILEDTOBUILD,
-                                              limit=0)
-        if result:
-            return result.count()
-        return None
-
+        return True
 

@@ -39,7 +39,7 @@ class DistroArchReleaseFacets(StandardLaunchpadFacets):
 class DistroArchReleaseContextMenu(ContextMenu):
 
     usedfor = IDistroArchRelease
-    links = ['packagesearch', 'admin']
+    links = ['packagesearch', 'admin', 'builds']
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
@@ -49,6 +49,10 @@ class DistroArchReleaseContextMenu(ContextMenu):
     def packagesearch(self):
         text = 'Search Packages'
         return Link('+search', text, icon='search')
+
+    def builds(self):
+        text = 'View Builds'
+        return Link('+builds', text, icon='info')        
 
 
 class DistroArchReleaseView(BuildRecordsView):

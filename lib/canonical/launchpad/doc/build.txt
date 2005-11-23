@@ -89,10 +89,10 @@ We can find builds given a source package release and architecture tag.
   >>> bs.getBuildBySRAndArchtag(20,'i386').count()
   2
 
-We can find recent builds for a given distrorelease.
+We can find recent and pending builds for a given distrorelease.
 
   >>> hoary.getBuildRecords().count()
-  1
+  2
 
 Or for a given distroarchrelease.
 
@@ -101,14 +101,14 @@ Or for a given distroarchrelease.
   u'The Hoary Hedgehog Release for i386 (x86)'
 
   >>> hoaryi386.getBuildRecords().count()
-  1
+  2
 
 And we can find builds for a given distribution by type.
 
   >>> from canonical.lp.dbschema import BuildStatus
 
   >>> ubuntu.getBuildRecords().count()
-  3
+  4
 
   >>> L = list(ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT))
   >>> len(L)

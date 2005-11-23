@@ -15,6 +15,7 @@ import urllib2
 import pytz
 
 from zope.interface import implements
+from zope.component import getUtility
 
 # SQLObject/SQLBase
 from sqlobject import (
@@ -25,7 +26,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import (
-    IBuilder, IBuilderSet, IBuildQueue, IBuildQueueSet, NotFoundError
+    IBuilder, IBuilderSet, IBuildQueue, IBuildQueueSet, NotFoundError,
+    IHasBuildRecords, IBuildSet
     )
 
 from canonical.lp.dbschema import EnumCol, BuildStatus
@@ -46,7 +48,8 @@ class BuilderSlave(xmlrpclib.Server):
                                                 "/filecache/"+sha_sum))
 
 class Builder(SQLBase):
-    implements(IBuilder)
+
+    implements(IBuilder, IHasBuildRecords)
     _table = 'Builder'
 
     processor = ForeignKey(dbName='processor', foreignKey='Processor', 
@@ -94,6 +97,10 @@ class Builder(SQLBase):
         self.builderok = False
         self.failnotes = reason
 
+    def getBuildRecords(self, status=None):
+        """See IHasBuildRecords."""
+        return getUtility(IBuildSet).getBuildsForBuilder(self.id, status)
+        
 
 class BuilderSet(object):
     """See IBuilderSet"""

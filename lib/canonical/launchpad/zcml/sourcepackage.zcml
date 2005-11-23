@@ -94,6 +94,7 @@
             lp:url="/distros/ubuntu/hoary/+sources/evolution/+buildlog" />
         <browser:page
             name="+builds"
+            facet="overview"
             template="../templates/sourcepackage-builds.pt"
             lp:url="/distros/$distribution/$distrorelease/+sources/$sourcepackagename/+builds" />
         <browser:page

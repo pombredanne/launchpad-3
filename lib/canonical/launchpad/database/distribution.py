@@ -305,7 +305,7 @@ class Distribution(SQLBase):
         raise NotFoundError(filename)
 
 
-    def getBuildRecords(self, status=None, limit=10):
+    def getBuildRecords(self, status=None):
         """See IHasBuildRecords"""
         # Find out the distroarchreleases in question.
         ids_list = []
@@ -322,15 +322,14 @@ class Distribution(SQLBase):
         if not arch_ids:
             return None
 
-        # Specific status or simply touched by a builder.
+        # Specific status.
+        status_clause = ''
         if status:
-            status_clause = "buildstate=%s" % sqlvalues(status)
-        else:
-            status_clause = "builder is not NULL"
+            status_clause = "AND buildstate=%s" % sqlvalues(status)
 
         return Build.select(
-            "distroarchrelease IN (%s) AND %s" % (arch_ids, status_clause), 
-            limit=limit, orderBy="-datebuilt")
+            "distroarchrelease IN (%s) %s" % (arch_ids, status_clause), 
+            orderBy="-datebuilt")
 
     def removeOldCacheItems(self):
         """See IDistribution."""

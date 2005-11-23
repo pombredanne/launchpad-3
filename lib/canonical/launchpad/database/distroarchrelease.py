@@ -147,17 +147,16 @@ class DistroArchRelease(SQLBase):
         return DistroArchReleaseBinaryPackage(
             self, name)
 
-    def getBuildRecords(self, status=None, limit=10):
+    def getBuildRecords(self, status=None):
         """See IHasBuildRecords"""
         # specific status or simply touched.
+        status_clause = ''
         if status:
-            status_clause = "buildstate=%s" % sqlvalues(status)
-        else:
-            status_clause = "builder is not NULL"
+            status_clause = "AND buildstate=%s" % sqlvalues(status)
 
         return Build.select(
-            "distroarchrelease=%s AND %s" % (self.id, status_clause),
-            limit=limit, orderBy="-datebuilt"
+            "distroarchrelease=%s %s" % (self.id, status_clause),
+            orderBy="-datebuilt"
             )
 
     def getReleasedPackages(self, name, pocket=None):

@@ -89,24 +89,19 @@ class IBuildSet(Interface):
 
         Pending means that buildstatus is NEEDSBUILDING.
         """
+    def getBuildsForBuilder(builder_id, status=None):
+        """Return build records touched by a builder.
 
-    def getBuildsForBuilder(builder):
-        """Return the build records touched by builder
-
-        Returns an SelectResult, ordered by datebuild (descending)
+        If 'status' is ommited return all records.
         """
-
 
 class IHasBuildRecords(Interface):
     """An Object that has build records"""
 
-    def getBuildRecords(status=None, limit=10):
+    def getBuildRecords(status=None):
         """Return build records owned by the object.
 
         The optional 'status' argument selects build records in a specific
-        state. If the 'status' argument is omitted, it returns the 'worked'
-        entries. A 'worked' entry is one that has been touched by a builder.
-        That is, where 'builder is not NULL'.
-
-        At most 'limit' results are returned.
+        state. If the 'status' argument is omitted, it returns the all
+        entries.
         """

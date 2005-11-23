@@ -18,9 +18,10 @@ Let's instantiate the view for +index:
   >>> builder_view.now().isoformat()
   '...'
   
-XXX cprov 20051121: lastBuilds() returns a Batching instance,
+XXX cprov 20051121: getBuilds() returns a Batching instance,
                     is there a more reliable way to test it ?
-  >>> len(builder_view.lastBuilds())
+
+  >>> len(builder_view.getBuilds())
   3
 
 Let's instantiate the view for +cancel:

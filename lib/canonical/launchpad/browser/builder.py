@@ -27,6 +27,8 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
+from canonical.launchpad.browser.build import BuildRecordsView
+
 from canonical.launchpad.interfaces import (
     IPerson, IBuilderSet, IBuilder, IBuildSet
     )
@@ -128,7 +130,7 @@ class BuilderSetView(CommonView):
     __used_for__ = IBuilderSet
 
 
-class BuilderView(CommonView):
+class BuilderView(CommonView, BuildRecordsView):
     """Default Builder view class
 
     Implements useful actions and colect useful set for the pagetemplate.
@@ -148,18 +150,9 @@ class BuilderView(CommonView):
         # Auto Build System, getting slave building something sane. 
         return '<p>Cancel (%s). Not implemented yet</p>' % builder_id
 
-    def lastBuilds(self):
-        """Wrap up the IBuilderSet.lastBuilds method
-
-        Returns and setup the results as a default batched list.
-        """
-        builds = getUtility(IBuildSet).getBuildsForBuilder(self.context)
-        self.batch = Batch(list(builds),
-                           int(self.request.get('batch_start', 0)))
-        self.batchnav = BatchNavigator(self.batch, self.request)
-
-        return self.batch
-
+    def showBuilderInfo(self):
+        """Hide Builder info, see BuildRecordsView for further details"""
+        return False
 
 class BuilderSetAddView(AddView):
     """Builder add view
