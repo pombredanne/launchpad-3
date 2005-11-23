@@ -190,7 +190,7 @@ class IProductSeriesSet(Interface):
     """The set of all ProductSeries."""
 
     def get(series_id):
-        """Get a IProductSeries by its database id."""
+        """Get a ProductSeries by its database id."""
 
 
 class IProductSeriesSourceSet(Interface):
