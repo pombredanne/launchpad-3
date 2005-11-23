@@ -534,7 +534,7 @@ class IPersonSet(Interface):
     def __getitem__(personid):
         """Return the person with the given id.
 
-        Raise KeyError if there is no such person.
+        Raise NotFoundError if there is no such person.
         """
     
     def topPeople():
