@@ -15,7 +15,7 @@ __all__ = ['DigestMismatchError', 'LibrarianStorage', 'LibraryFileUpload',
            'DuplicateFileIDError',
            # _relFileLocation needed by other modules in this package.
            # Listed here to keep the import facist happy
-           '_relFileLocation']
+           '_relFileLocation', '_sameFile']
 
 class DigestMismatchError(Exception):
     """The given digest doesn't match the SHA-1 digest of the file"""

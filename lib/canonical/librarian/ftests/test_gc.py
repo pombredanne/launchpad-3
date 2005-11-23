@@ -48,10 +48,34 @@ class TestLibrarianGarbageCollection(TestCase):
 
         self.f1_id, self.f2_id = self._makeDupes()
 
+        # Make sure the files exist. We do this in setup, because we
+        # need to use the get_file_path method later in the setup and we
+        # want to be sure it is working correctly.
+        path = librariangc.get_file_path(self.f1_id)
+        self.failUnless(os.path.exists(path), "Librarian uploads failed")
+
         # Connect to the database as a user with file upload privileges
         self.ztm = initZopeless(
                 dbuser=config.librarian.gc.dbuser, implicitBegin=False
                 )
+
+        # A value we use in a number of tests
+        self.recent_past = (
+                datetime.utcnow().replace(tzinfo=utc)
+                - timedelta(days=6, hours=23)
+                )
+
+        # Make sure that every file the database knows about exists on disk.
+        # We manually remove them for tests that need to cope with missing
+        # library items.
+        self.ztm.begin()
+        cur = cursor()
+        cur.execute("SELECT id FROM LibraryFileContent")
+        for content_id in (row[0] for row in cur.fetchall()):
+            path = librariangc.get_file_path(content_id)
+            if not os.path.exists(path):
+                open(path, 'w').write('whatever')
+        self.ztm.abort()
 
     def tearDown(self):
         LibrarianTestSetup().tearDown()
@@ -81,13 +105,13 @@ class TestLibrarianGarbageCollection(TestCase):
                 )
         f2 = LibraryFileAlias.get(f2_id)
 
-        # Make sure they really are duplicates
+        # Make sure the duplicates really are distinct
         self.failIfEqual(f1_id, f2_id)
         self.failIfEqual(f1.contentID, f2.contentID)
 
         # Set the last accessed time into the past so they will be garbage
         # collected
-        past = datetime.now() - timedelta(days=30)
+        past = datetime.utcnow() - timedelta(days=30)
         past = past.replace(tzinfo=utc)
         f1.last_accessed = past
         f2.last_accessed = past
@@ -136,18 +160,10 @@ class TestLibrarianGarbageCollection(TestCase):
         c2 = LibraryFileContent.get(c2_id)
 
         # But the LibraryFileAliases should be gone
-        try:
-            LibraryFileAlias.get(self.f1_id, None)
-            self.fail("LibraryFileAlias %d was not removed" % self.f1_id)
-        except SQLObjectNotFound:
-            pass
-        try:
-            LibraryFileAlias.get(self.f2_id, None)
-            self.fail("LibraryFileAlias %d was not removed" % self.f2_id)
-        except SQLObjectNotFound:
-            pass
+        self.assertRaises(SQLObjectNotFound, LibraryFileAlias.get, self.f1_id)
+        self.assertRaises(SQLObjectNotFound, LibraryFileAlias.get, self.f2_id)
 
-    def test_DeleteUnreferrencedAliases2(self):
+    def test_DeleteUnreferencedAliases2(self):
         # Don't delete LibraryFileAliases accessed recently
 
         # Merge the duplicates. Both our aliases now point to the same
@@ -157,11 +173,7 @@ class TestLibrarianGarbageCollection(TestCase):
         # Flag one of our LibraryFileAliases as being recently accessed
         self.ztm.begin()
         f1 = LibraryFileAlias.get(self.f1_id)
-        recent_past = (
-                datetime.now().replace(tzinfo=utc)
-                - timedelta(days=6, hours=23)
-                )
-        f1.last_accessed = UTC_NOW
+        f1.last_accessed = self.recent_past
         del f1
         self.ztm.commit()
 
@@ -184,7 +196,7 @@ class TestLibrarianGarbageCollection(TestCase):
         # Flag one of our LibraryFileAliases with an expiry date in the past
         self.ztm.begin()
         f1 = LibraryFileAlias.get(self.f1_id)
-        past = datetime.now().replace(tzinfo=utc) - timedelta(days=30)
+        past = datetime.utcnow().replace(tzinfo=utc) - timedelta(days=30)
         f1.expires = past
         del f1
         self.ztm.commit()
@@ -196,16 +208,8 @@ class TestLibrarianGarbageCollection(TestCase):
 
         # Make sure both our example files are gone
         self.ztm.begin()
-        try:
-            LibraryFileAlias.get(self.f1_id, None)
-            self.fail("LibraryFileAlias %d was not removed" % self.f1_id)
-        except SQLObjectNotFound:
-            pass
-        try:
-            LibraryFileAlias.get(self.f2_id, None)
-            self.fail("LibraryFileAlias %d was not removed" % self.f2_id)
-        except SQLObjectNotFound:
-            pass
+        self.assertRaises(SQLObjectNotFound, LibraryFileAlias.get, self.f1_id)
+        self.assertRaises(SQLObjectNotFound, LibraryFileAlias.get, self.f2_id)
 
     def test_DoneDeleteUnreferencedButNotExpiredAliases(self):
         # LibraryFileAliases can be removed only after they have expired.
@@ -220,11 +224,7 @@ class TestLibrarianGarbageCollection(TestCase):
         # recent past.
         self.ztm.begin()
         f1 = LibraryFileAlias.get(self.f1_id)
-        recent_past = (
-                datetime.now().replace(tzinfo=utc)
-                - timedelta(days=6, hours=23)
-                )
-        f1.expires = recent_past
+        f1.expires = self.recent_past
         del f1
         self.ztm.commit()
 
@@ -290,9 +290,12 @@ class TestLibrarianGarbageCollection(TestCase):
     def test_DeleteUnreferencedContent2(self):
         # Like testDeleteUnreferencedContent, except that the file is
         # removed from disk before attempting to remove the unreferenced
-        # LibraryFileContent. Because an unreferenced file is removed from
-        # disk before the db row is removed, it is possible that the
-        # db removal fails (eg. an exception was raised on COMMIT).
+        # LibraryFileContent.
+        #
+        # Because the garbage collector will remove an unreferenced file from
+        # disk before it commits the database changes, it is possible that the
+        # db removal will fail (eg. an exception was raised on COMMIT) leaving
+        # the rows untouched in the database but no file on disk.
         # This is fine, as the next gc run will attempt it again and
         # nothing can use unreferenced files anyway. This test ensures
         # that this all works.
@@ -361,16 +364,8 @@ class TestLibrarianGarbageCollection(TestCase):
 
         # Make sure that our example files have been garbage collected
         self.ztm.begin()
-        try:
-            LibraryFileAlias.get(self.f1_id)
-            self.fail("LibraryFileAlias %d was not removed" % self.f1_id)
-        except SQLObjectNotFound:
-            pass
-        try:
-            LibraryFileAlias.get(self.f2_id)
-            self.fail("LibraryFileAlias %d was not removed" % self.f2_id)
-        except SQLObjectNotFound:
-            pass
+        self.assertRaises(SQLObjectNotFound, LibraryFileAlias.get, self.f1_id)
+        self.assertRaises(SQLObjectNotFound, LibraryFileAlias.get, self.f2_id)
 
         # And make sure stuff that *is* referenced remains
         LibraryFileAlias.get(2)

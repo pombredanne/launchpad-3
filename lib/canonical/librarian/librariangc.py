@@ -3,11 +3,13 @@
 
 __metaclass__ = type
 
+import sys
 import os.path
 
 from canonical.config import config
 from canonical.database.sqlbase import cursor
 from canonical.librarian.storage import _relFileLocation as relative_file_path
+from canonical.librarian.storage import _sameFile
 from canonical.database.postgresql import listReferences
 
 log = None
@@ -56,6 +58,34 @@ def merge_duplicates(ztm):
                 "Found duplicate LibraryFileContents %s",
                 ' '.join(dupes)
                 )
+
+        # Make sure the first file exists on disk. Don't merge if it
+        # doesn't. This shouldn't happen, so we don't try and cope - just
+        # report and skip.
+        dupe1_id = int(dupes[0])
+        dupe1_path = get_file_path(dupe1_id)
+        if not os.path.exists(dupe1_path):
+            log.error(
+                    "LibraryFileContent %d data is missing (%s)",
+                    dupe1_id, dupe1_path
+                    )
+            continue
+
+        # Do a manual check that they really are identical, because we
+        # employ paranoids. And we might as well cope with someone breaking
+        # SHA1 enough that it becomes possible to create a SHA1 collision
+        # with an identical filesize to an existing file. Which is pretty
+        # unlikely. Where did I leave my tin foil hat?
+        for dupe2_id in (int(dupe) for dupe in dupes[1:]):
+            dupe2_path = get_file_path(dupe2_id)
+            if not _sameFile(dupe1_path, dupe2_path):
+                log.error(
+                        "SHA-1 collision found. LibraryFileContent %d and "
+                        "%d have the same SHA1 and filesize, but are not "
+                        "byte-for-byte identical.",
+                        dupe1_id, dupe2_id
+                        )
+                sys.exit(1)
 
         # Update all the LibraryFileAlias entries to point to a single
         # LibraryFileContent
@@ -122,7 +152,7 @@ def delete_unreferenced_aliases(ztm):
     references = [
         tuple(ref[:2]) for ref in listReferences(cur, 'libraryfilealias', 'id')
         ]
-    assert len(references) > 10, 'Database introspection returned nonsence'
+    assert len(references) > 10, 'Database introspection returned nonsense'
     ztm.abort()
     log.info("Found %d columns referencing LibraryFileAlias", len(references))
 
@@ -154,7 +184,7 @@ def delete_unreferenced_aliases(ztm):
     for content_id in content_ids:
         ztm.begin()
         cur = cursor()
-        # First a sanity check to ensure we arn't removing anything we
+        # First a sanity check to ensure we aren't removing anything we
         # shouldn't be.
         cur.execute("""
             SELECT COUNT(*)
@@ -167,6 +197,7 @@ def delete_unreferenced_aliases(ztm):
                         > CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
                     )
             """, vars())
+        assert cur.fetchone()[0] == 0, "Logic error - sanity check failed"
         log.info(
                 "Deleting all LibraryFileAlias references to "
                 "LibraryFileContent %d", content_id
@@ -228,7 +259,9 @@ def delete_unreferenced_content(ztm):
 def get_file_path(content_id):
     """Return the physical file path to the corresponding LibraryFileContent id
     """
-    assert isinstance(content_id, int), 'Invalid content_id %r' % (content_id,)
+    assert isinstance(content_id, (int, long)), 'Invalid content_id %r' % (
+            content_id,
+            )
     storage_root = config.librarian.server.root
     # Do a basic sanity check.
     if not os.path.isdir(os.path.join(storage_root, 'incoming')):
