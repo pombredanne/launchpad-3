@@ -8,7 +8,7 @@ from zope.interface import implements
 from zope.event import notify
 from zope.exceptions import NotFoundError
 
-from canonical.launchpad.helpers import Snapshot
+from canonical.launchpad.helpers import Snapshot, is_maintainer
 from canonical.launchpad.interfaces import (
     ILaunchBag, IMessageSet, IBugEmailCommand, IBugTaskEmailCommand,
     IBugEditEmailCommand, IBugTaskEditEmailCommand, IBug, IBugTask,
@@ -77,6 +77,21 @@ def get_bugtask_type(bugtask):
     # The bugtask didn't provide any specific interface.
     raise TypeError(
         'No specific bugtask interface was provided by %r' % bugtask)
+
+
+def guess_bugtask(bug, person):
+    """Guess which bug task the person intended to edit.
+
+    Return None if no bug task could be guessed.
+    """
+    if len(bug.bugtasks) == 1:
+        return bug.bugtasks[0]
+    else:
+        for bugtask in bug.bugtasks:
+            if bugtask.product and is_maintainer(bugtask.product, person):
+                return bugtask
+
+    return None
 
 
 class IncomingEmailError(Exception):
@@ -195,8 +210,9 @@ class MaloneHandler:
                                 bug_event = SQLObjectModifiedEvent(
                                     bug, bug_snapshot, edited_fields)
                     elif IBugTaskEditEmailCommand.providedBy(command):
-                        if bugtask is None and len(bug.bugtasks) == 1:
-                            bugtask = bug.bugtasks[0]
+                        if bugtask is None:
+                            bugtask = guess_bugtask(
+                                bug, getUtility(ILaunchBag).user)
                             bugtask_snapshot = Snapshot(
                                 bugtask, providing=get_bugtask_type(bugtask))
                         ob, ob_event = command.execute(bugtask, bugtask_event)

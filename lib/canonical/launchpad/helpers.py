@@ -424,17 +424,19 @@ class RosettaWriteTarFile:
             self.add_file(filename, files[filename])
 
 
-def is_maintainer(owned_object):
-    """Is the logged in user the maintainer of this thing?
+def is_maintainer(owned_object, person=None):
+    """Is the person the maintainer of this thing?
 
+    If no person is provided, the logged in user is used.
     owned_object provides IHasOwner.
     """
     if not IHasOwner.providedBy(owned_object):
         raise TypeError(
             "Object %r doesn't provide IHasOwner" % repr(owned_object))
-    launchbag = getUtility(ILaunchBag)
-    if launchbag.user is not None:
-        return launchbag.user.inTeam(owned_object.owner)
+    if person is None:
+        person = getUtility(ILaunchBag).user
+    if person is not None:
+        return person.inTeam(owned_object.owner)
     else:
         return False
 

@@ -376,7 +376,7 @@ class AffectsEmailCommand(EditEmailCommand):
         return bugtask
 
 
-class AssigneeEmailCommand(EmailCommand):
+class AssigneeEmailCommand(EditEmailCommand):
     """Assigns someone to the bug."""
 
     implements(IBugTaskEditEmailCommand)
