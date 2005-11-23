@@ -15,7 +15,7 @@
 
     <content class="canonical.launchpad.webapp.errorlog.ErrorReport">
         <allow
-            interface="canonical.launchpad.webapp.interfaces.ILaunchpadErrorReport"
+            interface="canonical.launchpad.webapp.interfaces.IErrorReport"
             />
     </content>
 

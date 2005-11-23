@@ -20,13 +20,14 @@ from zope.security.checker import ProxyFactory, NamesChecker
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.webapp.interfaces import ILaunchpadErrorReport
+from canonical.launchpad.webapp.interfaces import (
+    IErrorReport, IErrorReportRequest)
 
 UTC = pytz.timezone('UTC')
 
 
 class ErrorReport:
-    implements(ILaunchpadErrorReport)
+    implements(IErrorReport)
 
     def __init__(self, id, type, value, time, tb_text, tb_html,
                  username, url, req_vars):
@@ -42,9 +43,13 @@ class ErrorReport:
 
     @property
     def req_html(self):
-        result = []
+        result = ['<table class="listing">',
+                  '<thead><tr><th>Name</th><th>Value</th></tr></thead>'
+                  '<tbody>']
+        
         for key, value in self.req_vars:
-            result.append('%s: %s<br />' % (key, value))
+            result.append('<tr><td>%s</td><td>%s</td></tr>' % (key, value))
+        result.append('</tbody></table>')
         return '\n'.join(result)
 
     def __repr__(self):
@@ -237,6 +242,8 @@ class ErrorReportingService:
                                 username, strurl, req_vars)
             entry.write(open(filename, 'wb'))
 
+            request.setOopsId(oopsid)
+
             if self.copy_to_zlog:
                 self._do_copy_to_zlog(now, strtype, str(url), info)
         finally:
@@ -285,3 +292,12 @@ globalErrorUtility = ProxyFactory(
     NamesChecker(ILocalErrorReportingService.names())
     )
 
+
+class ErrorReportRequest:
+    implements(IErrorReportRequest)
+
+    oopsid = None
+
+    def setOopsId(self, oopsid):
+        """See IErrorReportRequest"""
+        self.oopsid = oopsid

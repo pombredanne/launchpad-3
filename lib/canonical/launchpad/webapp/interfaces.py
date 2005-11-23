@@ -239,7 +239,7 @@ class INotificationResponse(Interface):
         are preserved.
         """
  
-class ILaunchpadErrorReport(Interface):
+class IErrorReport(Interface):
     id = Attribute('the name of this error report')
     type = Attribute('the type of the exception that occurred')
     value = Attribute('the value of the exception that occurred')
@@ -251,3 +251,15 @@ class ILaunchpadErrorReport(Interface):
     req_vars = Attribute('the request variables')
     req_html = Attribute('the request variables, as HTML')
 
+
+class IErrorReportRequest(Interface):
+
+    oopsid = Attribute('an identifier for the exception, or None if no '
+                       'exception has occurred')
+
+    def setOopsId(oopsid):
+        '''Set the oops ID for this request.
+
+        This should be called if an unhandled exception occurs, to
+        store the identifier for error report.
+        '''
