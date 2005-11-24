@@ -90,3 +90,18 @@ InvalidSignature will be raised:
     Traceback (most recent call last):
       ...
     InvalidSignature:...
+
+Before the signature is verified, the signed text's line endings should
+be canonicalised to \r\n. signed_canonicalised.txt contains a signature
+that will fail to verify unless this is done:
+
+    >>> msg = read_test_message('signed_canonicalised.txt')
+    >>> principal = authenticateEmail(msg)
+    >>> principal is not None
+    True
+    >>> name, addr = email.Utils.parseaddr(msg['From'])
+    >>> from_user = getUtility(IPersonSet).getByEmail(addr)
+    >>> launchbag.user == from_user
+    True
+    >>> launchbag.login
+    'test@canonical.com'

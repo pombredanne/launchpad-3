@@ -7,6 +7,7 @@ from logging import getLogger
 from cStringIO import StringIO as cStringIO
 from email.Utils import getaddresses, parseaddr
 import email.Errors
+import re
 
 import transaction
 from zope.component import getUtility, queryUtility
@@ -18,6 +19,26 @@ from canonical.launchpad.helpers import (setupInteraction,
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.mail.signedmessage import SignedMessage
 from canonical.launchpad.mailnotification import notify_errors_list
+
+
+non_canonicalised_line_endings = re.compile('((?<!\r)\n)|(\r(?!\n))')
+
+
+def canonicalise_line_endings(text):
+    r"""Canonicalise the line endings to '\r\n'.
+
+        >>> canonicalise_line_endings('\n\nfoo\nbar\rbaz\r\n')
+        '\r\n\r\nfoo\r\nbar\r\nbaz\r\n'
+
+        >>> canonicalise_line_endings('\r\rfoo\r\nbar\rbaz\n')
+        '\r\n\r\nfoo\r\nbar\r\nbaz\r\n'
+
+        >>> canonicalise_line_endings('\r\nfoo\r\nbar\nbaz\r')
+        '\r\nfoo\r\nbar\r\nbaz\r\n'
+    """
+    if non_canonicalised_line_endings.search(text):
+        text = non_canonicalised_line_endings.sub('\r\n', text)
+    return text
 
 
 class InvalidSignature(Exception):
@@ -50,7 +71,8 @@ def authenticateEmail(mail):
 
     person = IPerson(principal)
     gpghandler = getUtility(IGPGHandler)
-    sig = gpghandler.verifySignature(signed_content, signature)
+    sig = gpghandler.verifySignature(
+        canonicalise_line_endings(signed_content), signature)
     if sig is None:
         # verifySignature failed to verify the signature.
         raise InvalidSignature("Signature couldn't be verified.")
