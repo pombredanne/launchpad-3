@@ -1,13 +1,13 @@
 Malone Bugmail Headers
 ======================
 
-X-Malone-Bug
-============
+X-Launchpad-Bug
+===============
 
-The volume of bugmail a Malone user receives can quickly overwhelm their
-Inbox. To help make life easier, Malone provides the X-Malone-Bug header which
-allow users to filter, sort and otherwise manipulate Malone bugmail based on the
-tasks attached to the bug.
+The volume of bugmail a Malone user receives can quickly overwhelm their Inbox.
+To help make life easier, Malone provides the X-Launchpad-Bug header which
+allow users to filter, sort and otherwise manipulate Malone bugmail based on
+the tasks attached to the bug.
 
 BugTask -> Email Header Value
 -----------------------------
