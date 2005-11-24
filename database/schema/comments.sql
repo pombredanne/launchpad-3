@@ -174,6 +174,7 @@ COMMENT ON COLUMN Product.releaseroot IS 'The URL to the directory which holds u
 COMMENT ON COLUMN Product.calendar IS 'The calendar associated with this product.';
 COMMENT ON COLUMN Product.official_rosetta IS 'Whether or not this product upstream uses Rosetta for its official translation team and coordination. This is a useful indicator in terms of whether translations in Rosetta for this upstream will quickly move upstream.';
 COMMENT ON COLUMN Product.official_malone IS 'Whether or not this product upstream uses Malone for an official bug tracker. This is useful to help indicate whether or not people are likely to pick up on bugs registered in Malone.';
+COMMENT ON COLUMN Product.bugcontact IS 'Person who will be automatically subscribed to bugs targetted to this product';
 
 
 /* ProductLabel */
@@ -505,6 +506,7 @@ generating archives for this distribution';
 COMMENT ON COLUMN Distribution.members IS 'Person or team with upload and commit priviledges relating to this distribution. Other rights may be assigned to this role in the future.';
 COMMENT ON COLUMN Distribution.translationgroup IS 'The translation group that is responsible for all translation work in this distribution.';
 COMMENT ON COLUMN Distribution.translationpermission IS 'The level of openness of this distribution\'s translation process. The enum lists different approaches to translation, from the very open (anybody can edit any translation in any language) to the completely closed (only designated translators can make any changes at all).';
+COMMENT ON COLUMN Distribution.bugcontact IS 'Person who will be automatically subscribed to every bug targeted to this distribution.';
 
 /* DistroRelease */
 
@@ -1188,3 +1190,7 @@ COMMENT ON COLUMN Language.pluralforms IS 'The number of plural forms this langu
 COMMENT ON COLUMN Language.pluralexpression IS 'The plural expression for this language, as used by gettext';
 COMMENT ON COLUMN Language.visible IS 'Whether this language should usually be visible or not';
 COMMENT ON COLUMN Language.direction IS 'The direction that text is written in this language';
+
+-- PackageBugContact
+COMMENT ON TABLE PackageBugContact IS 'Defines the bug contact for a given sourcepackage in a given distribution. The bug contact will be automatically subscribed to every bug filed on this sourcepackage in this distribution.';
+
