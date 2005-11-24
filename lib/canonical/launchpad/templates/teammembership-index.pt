@@ -8,7 +8,7 @@
 
 <metal:macros fill-slot="bogus">
   <metal:macro define-macro="person">
-      <a tal:attributes="href string:/people/${context/person/name}"
+      <a tal:attributes="href context/person/fmt:url"
         tal:content="string: ${context/person/browsername}
                              (${context/person/name})"></a>
   </metal:macro>

@@ -28,8 +28,8 @@
       <i tal:condition="not: context/timezone">None given</i><br />
 
       <b>Ubuntero:</b>
-      <tal:block condition="context/ubuntite">Yes</tal:block>
-      <tal:block condition="not: context/ubuntite">Not yet</tal:block>
+      <tal:block condition="context/is_ubuntite">Yes</tal:block>
+      <tal:block condition="not: context/is_ubuntite">Not yet</tal:block>
       <br />
 
       <b>Karma:</b>
@@ -44,7 +44,7 @@
       <a tal:attributes="href context/fmt:url"
          tal:content="context/name">sabdfl</a><br />
       <b>Team Owner:</b><br />
-      <a tal:attributes="href string:../${context/teamowner/name}"
+      <a tal:attributes="href context/teamowner/fmt:url"
          tal:content="context/teamowner/browsername">sabdfl</a><br />
 
       <tal:block condition="context/teamdescription">
