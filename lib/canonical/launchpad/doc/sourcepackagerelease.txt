@@ -57,10 +57,3 @@ Verify the 'meta_binary' attribute:
    >>> IDistroReleaseBinaryPackage.providedBy(spr_test.meta_binaries[0])
    True
 
-
-Check if we can use its utility class:
-
-   >>> from canonical.launchpad.interfaces import (
-   ...    ISourcePackageReleaseSet) 
-   
-   >>> spr_util = getUtility(ISourcePackageReleaseSet)

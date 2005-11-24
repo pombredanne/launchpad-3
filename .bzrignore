@@ -1,3 +1,4 @@
+.tags
 launchpad.log
 launchpad-access.log
 configs/+config-overrides.zcml
@@ -18,3 +19,5 @@ sourcecode/sqlos
 sourcecode/zope
 ./botmaster
 ./tags
+database/schema/diagrams/*.ps
+database/schema/diagrams/*.dot

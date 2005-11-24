@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 
+import re
 import os.path
 import itertools
 import sets
@@ -147,6 +148,26 @@ def notify_errors_list(message, file_alias_url):
         template % {'url': file_alias_url, 'error_msg': message})
 
 
+def add_bugmail_footer_to_body(body):
+    """Add the bugmail footer to a bugmail message body.
+
+    :body: A string of arbitrary length.
+
+    This footer is used to explain why a user is receiving this bugmail. We will
+    always make sure there is one blank line, and only one blank line, before
+    the message footer.
+    """
+    # Make sure the body always ends with exactly one blank line followed by the
+    # footer, to make it easy to read.
+    body = re.sub(r"\s*$", "\n\n", body, re.MULTILINE)
+
+    return body + (
+        "-- \n"
+        "You are receiving this message because you are on the Cc list of this "
+        "bug,\nor are a member of a team that is, or you are assigned to fix "
+        "it.")
+
+
 def generate_bug_add_email(bug):
     """Generate a new bug notification from the given IBug.
 
@@ -200,6 +221,8 @@ def generate_bug_add_email(bug):
     mailwrapper = MailWrapper(width=72)
     body += u"Description:\n%s" % mailwrapper.format(description)
 
+    body = add_bugmail_footer_to_body(body)
+
     return (subject, body)
 
 
@@ -233,11 +256,11 @@ def generate_bug_edit_email(bug_delta):
             body += (
                 u"*** This bug is no longer a duplicate of bug %d ***\n\n" %
                 old_bug_dupe.id)
-        if new_bug_dupe is not None: 
+        if new_bug_dupe is not None:
             body += (
                 u"*** This bug has been marked a duplicate of bug %d ***\n\n" %
                 new_bug_dupe.id)
-    
+
 
     if bug_delta.title is not None:
         body += u"Summary changed to:\n"
@@ -405,31 +428,10 @@ def generate_bug_edit_email(bug_delta):
                     u"Assignee", assignee.name, assignee.preferredemail.email)
             body += u"%15s: %s" % (u"Status", added_bugtask.status.title)
 
+    # Append a footer that explains why the recipient is receiving this email.
+    body = add_bugmail_footer_to_body(body)
+
     return (subject, body)
-
-
-def _get_task_change_row(label, oldval_display, newval_display):
-    """Return a row formatted for display in task change info."""
-    return u"%(label)15s: %(oldval)s => %(newval)s\n" % {
-        'label' : label.capitalize(),
-        'oldval' : oldval_display,
-        'newval' : newval_display}
-
-
-def _get_task_change_values(task_change, displayattrname):
-    """Return the old value and the new value for a task field change."""
-    oldval = task_change.get('old')
-    newval = task_change.get('new')
-
-    oldval_display = None
-    newval_display = None
-
-    if oldval:
-        oldval_display = getattr(oldval, displayattrname)
-    if newval:
-        newval_display = getattr(newval, displayattrname)
-
-    return (oldval_display, newval_display)
 
 
 def generate_bug_comment_email(bug_comment):
@@ -457,7 +459,33 @@ def generate_bug_comment_email(bug_comment):
                'comment' : comment_wrapper.format(
                     bug_comment.message.contents)})
 
+    body = add_bugmail_footer_to_body(body)
+
     return (subject, body)
+
+
+def _get_task_change_row(label, oldval_display, newval_display):
+    """Return a row formatted for display in task change info."""
+    return u"%(label)15s: %(oldval)s => %(newval)s\n" % {
+        'label' : label.capitalize(),
+        'oldval' : oldval_display,
+        'newval' : newval_display}
+
+
+def _get_task_change_values(task_change, displayattrname):
+    """Return the old value and the new value for a task field change."""
+    oldval = task_change.get('old')
+    newval = task_change.get('new')
+
+    oldval_display = None
+    newval_display = None
+
+    if oldval:
+        oldval_display = getattr(oldval, displayattrname)
+    if newval:
+        newval_display = getattr(newval, displayattrname)
+
+    return (oldval_display, newval_display)
 
 
 def send_bug_notification(bug, user, subject, body, to_addrs=None,
