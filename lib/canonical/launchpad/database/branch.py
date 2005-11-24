@@ -147,8 +147,7 @@ class BranchSet:
 
     def __iter__(self):
         """See IBranchSet."""
-        for branch in Branch.select():
-            yield branch
+        return iter(Branch.select())
 
     def new(self, name, owner, product, url, title,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,

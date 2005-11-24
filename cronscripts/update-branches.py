@@ -34,17 +34,11 @@ def parse_options(args):
     parser.add_option("-l", "--lockfile", dest="lockfilename",
         default=default_lock_file,
         help="The file the script should use to lock the process.")
-    parser.add_option("-p", "--urlprefix",
-        help="URL to which branch ids will be appended to define the"
-             "branch url")
 
     # Add the verbose/quiet options.
     logger_options(parser)
 
     (options, args) = parser.parse_args(args)
-
-    if not options.urlprefix:
-        sys.exit("error: --urlprefix option not provided")
 
     return options
 
@@ -70,14 +64,16 @@ def main(argv):
     try:
         # Setup zcml machinery to be able to use getUtility
         execute_zcml_for_scripts()
-        ztm = initZopeless(dbuser="importd")
+        ztm = initZopeless(dbuser=config.branchupdater.dbuser)
 
         logger_object.debug('Starting branches update')
+
+        prefixurl = config.branchupdater.prefixurl
 
         branchset = getUtility(IBranchSet)
 
         for branch in branchset:
-            branch_url = "%s/%d" % (options.urlprefix, branch.id)
+            branch_url = "%s/%d" % (prefixurl, branch.id)
             try:
                 bzrsync = BzrSync(ztm, branch.id, branch_url, logger_object)
             except NotBranchError:
