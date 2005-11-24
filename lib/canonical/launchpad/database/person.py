@@ -1186,6 +1186,13 @@ class PersonSet:
             ''' % vars())
         skip.append(('ticketsubscription', 'person'))
 
+        # Update PackageBugContact entries
+        cur.execute('''
+            UPDATE PackageBugContact SET bugcontact=%(to_id)s
+            WHERE bugcontact=%(from_id)s
+            ''', vars())
+        skip.append(('packagebugcontact', 'bugcontact'))
+
         # Update the SpecificationFeedback entries that will not conflict
         # and trash the rest.
         
