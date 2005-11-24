@@ -31,12 +31,6 @@
         classes="DistributionNavigation"
         />
 
-    <browser:url
-        for="canonical.launchpad.interfaces.IDistroRelease"
-        path_expression="name"
-        attribute_to_parent="distribution"
-        />
-
     <browser:pages
         for="canonical.launchpad.interfaces.IDistribution"
         class="canonical.launchpad.browser.BugTaskSearchListingView"

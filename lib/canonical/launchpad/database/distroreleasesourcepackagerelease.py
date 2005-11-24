@@ -14,11 +14,9 @@ from canonical.launchpad.interfaces import IDistroReleaseSourcePackageRelease
 
 from canonical.database.sqlbase import sqlvalues
 
-from canonical.lp.dbschema import PackagePublishingStatus
-
 from canonical.launchpad.database.build import Build
-from canonical.launchpad.database.publishing import \
-    SourcePackagePublishingHistory, SourcePackagePublishing
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishingHistory)
 
 
 class DistroReleaseSourcePackageRelease:
