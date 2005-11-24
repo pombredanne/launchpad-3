@@ -92,10 +92,29 @@ InvalidSignature will be raised:
     InvalidSignature:...
 
 Before the signature is verified, the signed text's line endings should
-be canonicalised to \r\n. signed_canonicalised.txt contains a signature
-that will fail to verify unless this is done:
+be canonicalised to \r\n. In order to ensure that the line endings in
+signed_canonicalised.txt are not already '\r\n', we recreate the test
+message.
 
+    >>> from canonical.launchpad.mail import SignedMessage
     >>> msg = read_test_message('signed_canonicalised.txt')
+    >>> msg_lines = msg.as_string().splitlines()
+    >>> msg = email.message_from_string(
+    ...     '\n'.join(msg_lines), _class=SignedMessage)
+
+    >>> from canonical.launchpad.interfaces import IGPGHandler
+    >>> getUtility(IGPGHandler).getVerifiedSignature(
+    ...     msg.signedContent, msg.signature)
+    Traceback (most recent call last):
+    ...
+    GPGVerificationError: Bad signature
+
+    >>> sig = getUtility(IGPGHandler).getVerifiedSignature(
+    ...     msg.signedContent.replace('\n', '\r\n'), msg.signature)
+    <...PymeSignature...>
+
+authenticateEmail() doesn't have any problems verifying the signature:
+
     >>> principal = authenticateEmail(msg)
     >>> principal is not None
     True

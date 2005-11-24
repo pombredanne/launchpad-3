@@ -21,6 +21,8 @@ from canonical.launchpad.mail.signedmessage import SignedMessage
 from canonical.launchpad.mailnotification import notify_errors_list
 
 
+# Match '\n' and '\r' line endings. That is, all '\r' that are not
+# followed by a # '\n', and all '\n' that are not preceded by a '\r'.
 non_canonicalised_line_endings = re.compile('((?<!\r)\n)|(\r(?!\n))')
 
 
