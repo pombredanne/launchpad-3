@@ -205,6 +205,7 @@ class Bug:
         return self._attachments
 
     def mapSeverity(self, bugtask):
+        """Set a Launchpad bug task's severity based on this bug's severity."""
         bugtask.severity = {
             'blocker': BugTaskSeverity.CRITICAL,
             'critical': BugTaskSeverity.CRITICAL,
@@ -216,6 +217,7 @@ class Bug:
             }.get(self.bug_severity, BugTaskSeverity.NORMAL)
 
     def mapPriority(self, bugtask):
+        """Set a Launchpad bug task's priority based on this bug's priority."""
         bugtask.priority = {
             'P1': BugTaskPriority.HIGH,
             'P2': BugTaskPriority.MEDIUM,
@@ -225,6 +227,18 @@ class Bug:
             }.get(self.priority, BugTaskPriority.MEDIUM)
 
     def mapStatus(self, bugtask):
+        """Set a Launchpad bug task's status based on this bug's status.
+
+        If the bug is in the RESOLVED, VERIFIED or CLOSED states, the
+        bug resolution is also taken into account when mapping the
+        status.
+
+        If the bug is marked WONTFIX, set the bug task's priority to
+        WONTFIX.
+
+        Additional information about the bugzilla status is appended
+        to the bug task's status explanation.
+        """
         if self.bug_status == 'ASSIGNED':
             bugtask.status = BugTaskStatus.ACCEPTED
         elif self.bug_status == 'NEEDINFO':
@@ -281,7 +295,9 @@ class Bugzilla:
 
     def person(self, bugzilla_id):
         """Get the Launchpad person corresponding to the given Bugzilla ID"""
-        if bugzilla_id == 0: return None
+        # Bugzilla treats a user ID of 0 as a NULL
+        if bugzilla_id == 0:
+            return None
 
         # Try and get the person using a cache of the mapping.  We
         # check to make sure the person still exists and has not been
@@ -293,7 +309,7 @@ class Bugzilla:
                 person = self.personset[launchpad_id]
                 if person.merged is not None:
                     person = None
-            except KeyError:
+            except NotFoundError:
                 pass
 
         # look up the person
@@ -308,8 +324,8 @@ class Bugzilla:
             # Bugzilla one.
             emailaddr = self.emailset.getByEmail(email)
             assert emailaddr is not None
-            if person.preferredemail is None:
-                person.preferredemail = emailaddr
+            if person.preferredemail != emailaddr:
+                person.validateAndEnsurePreferredEmail(emailaddr)
                 
             self.person_mapping[bugzilla_id] = person.id
 
@@ -471,14 +487,18 @@ class Bugzilla:
 
             # if we created a watch, and there is an upstream product,
             # create a new task and link it to the watch.
-            if len(watches) > 0 and product:
-                upstreamtask = self.bugtaskset.createTask(lp_bug,
-                                                          product=product,
-                                                          owner=lp_bug.owner)
-                upstreamtask.datecreated = bug.creation_ts
-                upstreamtask.bugwatch = watches[0]
+            if len(watches) > 0:
+                if product:
+                    upstreamtask = self.bugtaskset.createTask(
+                        lp_bug, product=product, owner=lp_bug.owner)
+                    upstreamtask.datecreated = bug.creation_ts
+                    upstreamtask.bugwatch = watches[0]
+                else:
+                    logger.warning('Could not find upstream product to link '
+                                   'bug %d to', lp_bug.id)
 
-        # XXX: translate milestone linkage
+        # XXX: 20051124 jamesh
+        # translate milestone linkage
 
         # import attachments
         for (attach_id, creation_ts, description, mimetype, ispatch,
@@ -517,6 +537,14 @@ class Bugzilla:
         return lp_bug
 
     def processDuplicates(self, trans):
+        """Mark Launchpad bugs as duplicates based on Bugzilla duplicates.
+
+        Launchpad bug A will be marked as a duplicate of bug B if:
+         * bug A watches bugzilla bug A'
+         * bug B watches bugzilla bug B'
+         * bug A' is a duplicate of bug B'
+         * bug A is not currently a duplicate of any other bug.
+        """
         logger.info('Processing duplicate bugs')
         bugmap = {}
         def getlpbug(bugid):

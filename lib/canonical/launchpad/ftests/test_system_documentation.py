@@ -69,6 +69,7 @@ def librarianSetUp(test):
 def librarianTearDown(test):
     LibrarianTestSetup().tearDown()
     tearDown(test)
+    
 
 # Files that have special needs can construct their own suite
 special = {

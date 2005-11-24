@@ -114,7 +114,7 @@ it to return:
   >>> from canonical.launchpad.scripts import bugzilla
   >>> LibrarianTestSetup().setUp()
 
-Some setup, including the creation of a bug tracker record:
+Get a reference to the Ubuntu bug tracker, and log in:
 
   >>> login('test@canonical.com')
   >>> bugtracker = getUtility(ILaunchpadCelebrities).ubuntu_bugzilla
@@ -227,13 +227,9 @@ package, so gets filed directly against the distribution.  Some things
 to notice:
 
  * A Launchpad account is created for new.user@canonical.com as a side
-   effect of the import.
+   effect of the import, because they are subscribed to the bug.
  * The "RESOLVED WONTFIX" status is converted to a status of REJECTED
    and a priority of WONTFIX
-
-Notice that the import also creates a Launchpad account for "New
-Person" as a side effect, since that person was subscribed to the
-Bugzilla bug.
 
   >>> print getUtility(IPersonSet).getByEmail('new.user@canonical.com')
   None
@@ -444,7 +440,11 @@ Status Mapping
   VERIFIED       REJECTED
   CLOSED         REJECTED
 
-If the bug has been resolved, the resoltuion will affect the status:
+(note that RESOLVED, VERIFIED and CLOSED have been mapped to REJECTED
+here because the Bugzilla resolution is set to WONTFIX).
+
+
+If the bug has been resolved, the resolution will affect the status:
 
   >>> bug.priority = 'P2'
   >>> bug.bug_status = 'RESOLVED'
