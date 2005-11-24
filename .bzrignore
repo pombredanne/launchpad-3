@@ -19,3 +19,5 @@ sourcecode/sqlos
 sourcecode/zope
 ./botmaster
 ./tags
+database/schema/diagrams/*.ps
+database/schema/diagrams/*.dot
