@@ -2,12 +2,10 @@
 
 __metaclass__ = type
 __all__ = [
-    'Person', 'PersonSet', 'EmailAddress', 'EmailAddressSet',
-    'GPGKey', 'GPGKeySet', 'SSHKey', 'SSHKeySet', 'ArchUserID',
-    'ArchUserIDSet', 'WikiName', 'WikiNameSet', 'JabberID',
-    'JabberIDSet', 'IrcID', 'IrcIDSet', 'TeamMembership',
-    'TeamMembershipSet', 'TeamParticipation'
-    ]
+    'Person', 'PersonSet', 'EmailAddress', 'EmailAddressSet', 'GPGKey',
+    'GPGKeySet', 'SSHKey', 'SSHKeySet', 'WikiName', 'WikiNameSet', 'JabberID',
+    'JabberIDSet', 'IrcID', 'IrcIDSet', 'TeamMembership', 'TeamMembershipSet',
+    'TeamParticipation']
 
 import itertools
 import sets
@@ -33,13 +31,12 @@ from canonical.database import postgresql
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, ITeamMembership, ITeamParticipation,
-    ITeamMembershipSet, IEmailAddress, IWikiName, IIrcID, IArchUserID,
-    IJabberID, IIrcIDSet, IArchUserIDSet, ISSHKeySet, IJabberIDSet,
-    IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IMaintainershipSet,
-    IEmailAddressSet, ISourcePackageReleaseSet, IPasswordEncryptor,
-    ICalendarOwner, UBUNTU_WIKI_URL, ISignedCodeOfConductSet,
-    ILoginTokenSet, KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken,
-    NotFoundError, IKarmaSet, IKarmaCacheSet, IBugTaskSet)
+    ITeamMembershipSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
+    IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet, ISSHKey,
+    IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner,
+    UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
+    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, NotFoundError, IKarmaSet,
+    IKarmaCacheSet, IBugTaskSet)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -48,6 +45,10 @@ from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.karma import (
     KarmaAction, Karma, KarmaCategory)
 from canonical.launchpad.database.shipit import ShippingRequest
+from canonical.launchpad.database.sourcepackagerelease import (
+    SourcePackageRelease)
+
+from canonical.launchpad.database.branch import Branch
 
 from canonical.lp.dbschema import (
     EnumCol, SSHKeyType, EmailAddressStatus, TeamSubscriptionPolicy,
@@ -110,7 +111,11 @@ class Person(SQLBase):
                             intermediateTable='PersonLanguage')
 
     # relevant joins
-    branches = MultipleJoin('Branch', joinColumn='owner')
+    authored_branches = MultipleJoin(
+        'Branch', joinColumn='author',orderBy='-id')
+    subscribed_branches = RelatedJoin(
+        'Branch', joinColumn='person', otherColumn='branch',
+        intermediateTable='BranchSubscription', orderBy='-id')
     ownedBounties = MultipleJoin('Bounty', joinColumn='owner',
         orderBy='id')
     reviewerBounties = MultipleJoin('Bounty', joinColumn='reviewer',
@@ -281,6 +286,38 @@ class Person(SQLBase):
         ret = sorted(ret, key=lambda a: a.datecreated)
         ret.reverse()
         return ret[:quantity]
+
+    @property
+    def branches(self):
+        """See IPerson."""
+        S = set(self.authored_branches)
+        S.update(self.registered_branches)
+        S.update(self.subscribed_branches)
+        def by_reverse_id(branch):
+            return -branch.id
+        return sorted(S, key=by_reverse_id)
+
+    @property
+    def registered_branches(self):
+        """See IPerson."""
+        return Branch.select('owner=%d AND (author!=%d OR author is NULL)'
+                             % (self.id, self.id), orderBy='-id')
+
+    def getBranch(self, product_name, branch_name):
+        """See IPerson."""
+        # import here to work around a circular import problem
+        from canonical.launchpad.database import Product
+
+        if product_name is None:
+            return Branch.selectOne(
+                'owner=%d AND product is NULL AND name=%s'
+                % (self.id, quote(branch_name)))
+        else:
+            product = Product.selectOneBy(name=product_name)
+            if product is None:
+                return None
+            return Branch.selectOneBy(
+                ownerID=self.id, productID=product.id, name=branch_name)
 
     def isTeam(self):
         """See IPerson."""
@@ -763,20 +800,32 @@ class Person(SQLBase):
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id)
 
-    @property
-    def maintainerships(self):
+    def maintainedPackages(self):
         """See IPerson."""
-        maintainershipsutil = getUtility(IMaintainershipSet)
-        return maintainershipsutil.getByPersonID(self.id)
+        querystr = """
+            sourcepackagerelease.maintainer = %d AND
+            sourcepackagerelease.sourcepackagename = sourcepackagename.id
+            """ % self.id
+        return SourcePackageRelease.select(
+            querystr,
+            orderBy=['SourcePackageName.name', 'SourcePackageRelease.id'],
+            clauseTables=['SourcePackageName'])
+
+    def uploadedButNotMaintainedPackages(self):
+        """See IPerson."""
+        querystr = """
+            sourcepackagerelease.creator = %d AND
+            sourcepackagerelease.maintainer != %d AND
+            sourcepackagerelease.sourcepackagename = sourcepackagename.id
+            """ % (self.id, self.id)
+        return SourcePackageRelease.select(
+            querystr,
+            orderBy=['SourcePackageName.name', 'SourcePackageRelease.id'],
+            clauseTables=['SourcePackageName'])
 
     @property
-    def packages(self):
+    def is_ubuntite(self):
         """See IPerson."""
-        sprutil = getUtility(ISourcePackageReleaseSet)
-        return sprutil.getByCreatorID(self.id)
-
-    @property
-    def ubuntite(self):
         sigset = getUtility(ISignedCodeOfConductSet)
         lastdate = sigset.getLastAcceptedDate()
 
@@ -788,13 +837,16 @@ class Person(SQLBase):
 
     @property
     def activesignatures(self):
+        """See IPerson."""
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         return sCoC_util.searchByUser(self.id)
 
     @property
     def inactivesignatures(self):
+        """See IPerson."""
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         return sCoC_util.searchByUser(self.id, active=False)
+
 
 class PersonSet:
     """The set of persons."""
@@ -1134,6 +1186,13 @@ class PersonSet:
             ''' % vars())
         skip.append(('ticketsubscription', 'person'))
 
+        # Update PackageBugContact entries
+        cur.execute('''
+            UPDATE PackageBugContact SET bugcontact=%(to_id)s
+            WHERE bugcontact=%(from_id)s
+            ''', vars())
+        skip.append(('packagebugcontact', 'bugcontact'))
+
         # Update the SpecificationFeedback entries that will not conflict
         # and trash the rest.
         
@@ -1416,6 +1475,8 @@ class GPGKey(SQLBase):
 
     active = BoolCol(dbName='active', notNull=True)
 
+    can_encrypt = BoolCol(dbName='can_encrypt', notNull=False)
+
     @property
     def keyserverURL(self):
         return KEYSERVER_QUERY_URL + self.fingerprint
@@ -1424,23 +1485,17 @@ class GPGKey(SQLBase):
     def displayname(self):
         return '%s%s/%s' % (self.keysize, self.algorithm.title, self.keyid)
 
-    # XXX cprov 20050705
-    # keep a property to avoid untested issues in other compoenents
-    # that i'm not aware
-    @property
-    def revoked(self):
-        return not self.active
-
 
 class GPGKeySet:
     implements(IGPGKeySet)
 
     def new(self, ownerID, keyid, fingerprint, keysize,
-            algorithm, active=True):
+            algorithm, active=True, can_encrypt=False):
         """See IGPGKeySet"""
         return GPGKey(owner=ownerID, keyid=keyid,
                       fingerprint=fingerprint, keysize=keysize,
-                      algorithm=algorithm, active=active)
+                      algorithm=algorithm, active=active,
+                      can_encrypt=can_encrypt)
 
     def get(self, key_id, default=None):
         """See IGPGKeySet"""
@@ -1528,22 +1583,6 @@ class SSHKeySet:
             return SSHKey.get(id)
         except SQLObjectNotFound:
             return default
-
-
-class ArchUserID(SQLBase):
-    implements(IArchUserID)
-
-    _table = 'ArchUserID'
-
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
-    archuserid = StringCol(dbName='archuserid', notNull=True)
-
-
-class ArchUserIDSet:
-    implements(IArchUserIDSet)
-
-    def new(self, personID, archuserid):
-        return ArchUserID(personID=personID, archuserid=archuserid)
 
 
 class WikiName(SQLBase):

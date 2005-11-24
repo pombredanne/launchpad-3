@@ -2,16 +2,65 @@ Go to the page to add a new project.
 
   >>> print http(r"""
   ... GET /projects/+new HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...Register a Project With Launchpad...
 
-Add a new project.
+Testing if the validator is working for the URL field.
+Add a new project without the http://
 
   >>> print http(r"""
   ... POST /projects/+new HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: ...
+  ... Content-Type: multipart/form-data; boundary=---------------------------43746069110828506211603039137
+  ... Referer: http://localhost:9000/projects/+new
+  ... Content-Type: multipart/form-data; boundary=---------------------------43746069110828506211603039137
+  ... 
+  ... -----------------------------43746069110828506211603039137
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... apache
+  ... -----------------------------43746069110828506211603039137
+  ... Content-Disposition: form-data; name="field.displayname"
+  ... 
+  ... the Apache Project
+  ... -----------------------------43746069110828506211603039137
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... The Apache Project
+  ... -----------------------------43746069110828506211603039137
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... The Apache Project
+  ... -----------------------------43746069110828506211603039137
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... The Apache Project.
+  ... -----------------------------43746069110828506211603039137
+  ... Content-Disposition: form-data; name="field.homepageurl"
+  ... 
+  ... www.apache.org
+  ... -----------------------------43746069110828506211603039137
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------43746069110828506211603039137--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...An error occured...
+  ...
+  ...Not a valid URL...
+  ...
+
+
+Now we add a new project.
+
+  >>> print http(r"""
+  ... POST /projects/+new HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: ...
   ... Content-Type: multipart/form-data; boundary=---------------------------43746069110828506211603039137
   ... Referer: http://localhost:9000/projects/+new
@@ -58,7 +107,7 @@ Now see the new project.
 
   >>> print http(r"""
   ... GET /projects/apache HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Referer: http://localhost:9000/projects/+new
   ... """)
   HTTP/1.1 200 Ok

@@ -1,0 +1,82 @@
+= Bazaar Revisions =
+
+Branches are collection of revisions, and a revision can exist independently
+from any branch. Revisions are created automatically by scanning branches, they
+have no creation interface and Launchpad cannot create or modify them.
+
+== Creating revisions ==
+
+XXX: Revisions have an owner attribute. As a convention, the owner of a
+Revision is always the Launchpad Admins team. The Revision.owner attribute will
+be removed soon. -- DavidAllouche 2005-10-08
+
+>>> from canonical.launchpad.database import Person
+>>> admins = Person.selectOneBy(name='admins')
+
+The creator of a revision is identified by a RevisionAuthor. A RevisionAuthor
+is not a person because that is only an informational attribute, and even if we
+trust it, there's really no simple way to map that reliably to persons.
+
+>>> from canonical.launchpad.database import RevisionAuthor
+>>> author = RevisionAuthor(name='ddaa@localhost')
+>>> author.name
+u'ddaa@localhost'
+
+The log-body of a revision is the commit message of that revision.
+
+>>> log_body_1 = "Initial import"
+>>> log_body_2 = "Fix froboizer"
+
+The revision-id is the globally unique id used by the revision control. For
+native Bazaar2 revisions it's a GUID, for Bazaar2 imports it's a string based
+on the Arch revision id.
+
+>>> revision_id_1 = "Arch-1:ddaa@example.com/junk--devel--base-0"
+>>> revision_id_2 = "some random unique string, we do not care, really"
+
+The revision_date is the commit date recorded by the revision control system,
+while the date_created is the time when the database record was created.
+
+>>> from datetime import datetime
+>>> from pytz import UTC
+>>> date = datetime(2005, 3, 8, 12, 0, tzinfo=UTC)
+>>> from canonical.launchpad.database import Revision
+>>> revision_1 = Revision(owner=admins, log_body=log_body_1,
+...     revision_author=author, revision_id=revision_id_1, revision_date=date)
+
+== Ancestors ==
+
+Bazaar revisions can have multiple ancestors, the "leftmost" ancestor is the
+revision that was used as a base when committing, other ancestors are used to
+record merges. All revisions except initial imports have at least one ancestor.
+
+Ancestors are accessed through their revision_id without using a foreign key so
+we can represent revision whose at least one ancestor is a ghost revision.
+
+>>> revision_2 = Revision(owner=admins, log_body=log_body_2,
+...     revision_author=author, revision_id=revision_id_2, revision_date=date)
+
+>>> from canonical.launchpad.database import RevisionParent
+>>> rev2_parent = RevisionParent(sequence=0, revision=revision_2,
+...                              parent_id=revision_1.revision_id)
+
+== Revision numbers ==
+
+Revisions are associated to branches through the RevisionNumber table. A given
+revision may appear in different positions in different branches thanks to
+Bazaar2 converge-on-pull logic.
+
+>>> from canonical.launchpad.database import Branch
+>>> branch = Branch.get(1)
+>>> branch.revision_history
+[] 
+
+RevisionNumber does not have a creation interface, like for Revision, new
+records are only created by a non-zope batch job.
+
+>>> from canonical.launchpad.database import RevisionNumber
+>>> junkcode_sql = Branch.selectOneBy(name='junkcode')
+>>> rev_no_1 = RevisionNumber(sequence=1, branch=branch, revision=revision_1)
+>>> rev_no_2 = RevisionNumber(sequence=2, branch=branch, revision=revision_2)
+>>> rev_no_1.branch == rev_no_2.branch == branch
+True

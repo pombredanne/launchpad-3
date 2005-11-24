@@ -1,30 +1,28 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['SourcePackageRelease', 'SourcePackageReleaseSet']
+__all__ = ['SourcePackageRelease']
 
 import sets
-from urllib2 import URLError
 
 from zope.interface import implements
-from zope.component import getUtility
 
 from sqlobject import StringCol, ForeignKey, MultipleJoin
 
 from canonical.launchpad.helpers import shortlist
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
     EnumCol, SourcePackageUrgency, SourcePackageFormat,
-    SourcePackageFileType, BuildStatus)
+    SourcePackageFileType, BuildStatus, TicketStatus)
 
-from canonical.launchpad.interfaces import (
-    ISourcePackageRelease, ISourcePackageReleaseSet)
+from canonical.launchpad.interfaces import ISourcePackageRelease
 
 from canonical.launchpad.database.binarypackagerelease import (
      BinaryPackageRelease)
 
+from canonical.launchpad.database.ticket import Ticket
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishing)
@@ -78,6 +76,11 @@ class SourcePackageRelease(SQLBase):
         return self.sourcepackagename.name
 
     @property
+    def sourcepackage(self):
+        """See ISourcePackageRelease."""
+        return self.uploaddistrorelease.getSourcePackage(self.name)
+
+    @property
     def title(self):
         return '%s - %s' % (self.sourcepackagename.name, self.version)
 
@@ -120,6 +123,18 @@ class SourcePackageRelease(SQLBase):
                 return release
         else:
             return None
+
+    @property
+    def open_tickets_count(self):
+        """See ISourcePackageRelease."""
+        results = Ticket.select("""
+            status IN (%s, %s) AND
+            distribution = %s AND
+            sourcepackagename = %s
+            """ % sqlvalues(TicketStatus.NEW, TicketStatus.OPEN,
+                            self.uploaddistrorelease.distribution.id,
+                            self.sourcepackagename.id))
+        return results.count()
 
     @property
     def binaries(self):
@@ -199,17 +214,4 @@ class SourcePackageRelease(SQLBase):
         return Build.selectOneBy(sourcepackagereleaseID=self.id,
                                  distroarchreleaseID=distroarchrelease.id)
 
-
-class SourcePackageReleaseSet:
-
-    implements(ISourcePackageReleaseSet)
-
-    def getByCreatorID(self, personID):
-        querystr = """sourcepackagerelease.creator = %d AND
-                      sourcepackagerelease.sourcepackagename = 
-                        sourcepackagename.id""" % personID
-        return SourcePackageRelease.select(
-            querystr,
-            orderBy='SourcePackageName.name',
-            clauseTables=['SourcePackageRelease', 'SourcePackageName'])
 

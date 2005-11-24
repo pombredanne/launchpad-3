@@ -158,6 +158,16 @@ class LaunchpadView(UserAttributeCache):
         return self.index
 
     def render(self):
+        """Return the body of the response.
+        
+        If the mime type of request.response starts with text/, then
+        the result of this method is encoded to the charset of
+        request.response. If there is no charset, it is encoded to 
+        utf8. Otherwise, the result of this method is treated as bytes.
+
+        XXX: Steve Alexander says this is a convenient lie. That is, its
+        not quite right, but good enough for most uses.
+        """
         return self.template()
 
     def __call__(self):
