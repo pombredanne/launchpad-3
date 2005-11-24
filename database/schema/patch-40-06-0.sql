@@ -16,5 +16,8 @@ ALTER TABLE Product ADD COLUMN bugcontact INT REFERENCES Person(id);
 CREATE INDEX distribution_bugcontact_idx ON Distribution(bugcontact);
 CREATE INDEX product_bugcontact_idx ON Product(bugcontact);
 
+-- Drop an obsolete table
+DROP TABLE cverefobsolete;
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (40, 6, 0);
 
