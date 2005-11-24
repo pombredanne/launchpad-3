@@ -13,6 +13,7 @@ from sqlobject import SQLObjectNotFound
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import IDistributionSourcePackage
+
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet

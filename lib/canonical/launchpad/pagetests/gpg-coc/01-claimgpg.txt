@@ -110,11 +110,11 @@ Validate UID and consequently import the Key.
   ... Content-Type: application/x-www-form-urlencoded
   ... 
   ... password=test&SUBMIT_CHANGES=Submit""" % path)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
+  HTTP/1.1 303 See Other
   ...
-  ...1024D/DFD20543...
+  Location: http://localhost:9000/people/name12?lpnotification...
+  ...
+  ...info-notification">The key 1024D/DFD20543 was successfully validated...
   ...
 
 Certify the key is imported
@@ -177,6 +177,18 @@ wasn't added.
       <input type="submit" value="Remove" name="REMOVE_UNVALIDATED" />
       <input type="submit" value="Confirm" name="VALIDATE" />
   ... 
+
+
+Verify that the key was imported with the "can encrypt" flag set:
+
+  >>> from canonical.launchpad.database import GPGKey
+  >>> key = GPGKey.selectOneBy(
+  ...     fingerprint='A419AE861E88BC9E04B9C26FBA2B9389DFD20543')
+  >>> print key.owner.name
+  name12
+  >>> print key.can_encrypt
+  True
+
 
 Kill stub KeyServer
   

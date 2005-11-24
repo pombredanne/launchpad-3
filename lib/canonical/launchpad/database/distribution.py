@@ -19,6 +19,8 @@ from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.distributionbounty import DistributionBounty
 from canonical.launchpad.database.distributionsourcepackage import (
     DistributionSourcePackage)
+from canonical.launchpad.database.distributionsourcepackagerelease import (
+    DistributionSourcePackageRelease)
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from canonical.launchpad.database.distrorelease import DistroRelease
@@ -213,6 +215,10 @@ class Distribution(SQLBase):
             except SQLObjectNotFound:
                 return None
         return DistributionSourcePackage(self, sourcepackagename)
+
+    def getSourcePackageRelease(self, sourcepackagerelease):
+        """See IDistribution."""
+        return DistributionSourcePackageRelease(self, sourcepackagerelease)
 
     def specifications(self, sort=None, quantity=None):
         """See IHasSpecifications."""

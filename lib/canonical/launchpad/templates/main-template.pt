@@ -19,10 +19,13 @@
 <body>
   <table class="header" style="width: 100%;">
     <tr>
-      <td
-        class="hierarchy"
-        tal:content="structure context/@@+breadcrumbs"
-      />
+      <td class="hierarchy">
+        <img
+          alt=""
+          src="/@@/launchpad.png"
+          style="vertical-align: bottom;"
+        />
+        <tal:hierarchy content="structure context/@@+breadcrumbs" />
       <td
         class="login"
         tal:content="structure context/@@login_status"
@@ -30,11 +33,6 @@
     </tr>
   </table>
   <h2 class="lpcontext">
-    <img
-      style="float: left;"
-      src="/@@/launchpad.png"
-      alt=""
-    />
     <metal:block
       define-slot="titleheader"
       tal:content="context/title | default"

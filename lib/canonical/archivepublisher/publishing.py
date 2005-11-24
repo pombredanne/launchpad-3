@@ -235,11 +235,11 @@ class Publisher(object):
                 # XXX: dsilvers: As above, this needs to be integrated into
                 # the database at some point.
                 # bug 3900
+                unpocketed_release = distrorelease.split('-')[0]
                 extra_extra_overrides = os.path.join(
                     self._config.miscroot,
-                    "more-extra.override.%s.main" % (distrorelease))
-                if (os.path.exists(extra_extra_overrides) and
-                    component == "main"):
+                    "more-extra.override.%s.main" % (unpocketed_release))
+                if os.path.exists(extra_extra_overrides):
                     eef = open(extra_extra_overrides, "r")
                     extras = {}
                     for line in eef:
@@ -640,6 +640,13 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                 all_files.add(file_stub + ".gz")
                 all_files.add(file_stub + ".bz2")
                 all_files.add(os.path.join(component, architecture, "Release"))
+                di_file_stub = os.path.join(component, "debian-installer",
+                                            architecture, file_stub)
+
+                for suffix in ('', '.gz', '.bz2'):
+                    if os.path.exists(di_file_stub+suffix):
+                        all_files.add(di_file_stub+suffix)
+                        
                 f = open(os.path.join(self._config.distsroot, full_name,
                                       component, architecture, "Release"), "w")
                 contents = """Archive: %s

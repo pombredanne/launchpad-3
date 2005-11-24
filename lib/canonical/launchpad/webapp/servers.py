@@ -13,7 +13,6 @@ from zope.server.http.commonaccesslogger import CommonAccessLogger
 import zope.publisher.publish
 
 import canonical.launchpad.layers
-from canonical.publication import LaunchpadBrowserPublication
 from zope.publisher.browser import BrowserRequest
 #from zope.publisher.http import HTTPRequest
 import zope.publisher.publish
@@ -143,6 +142,7 @@ class HTTPPublicationRequestFactory:
     _browser_methods = 'GET', 'POST', 'HEAD'
 
     def __init__(self, db):
+        from canonical.publication import LaunchpadBrowserPublication
         ## self._http = HTTPPublication(db)
         self._browser = LaunchpadBrowserPublication(db)
 
@@ -195,6 +195,18 @@ class PMDBHTTPServer(PublisherHTTPServer):
             raise
 
 
+class InternalHTTPLayerRequestFactory(HTTPPublicationRequestFactory):
+    """RequestFactory that sets the InternalHTTPLayer on a request."""
+
+    def __call__(self, input_stream, output_steam, env):
+        """See zope.app.publication.interfaces.IPublicationRequestFactory"""
+        request = HTTPPublicationRequestFactory.__call__(
+            self, input_stream, output_steam, env)
+        canonical.launchpad.layers.setFirstLayer(
+            request, canonical.launchpad.layers.InternalHTTPLayer)
+        return request
+
+
 http = ServerType(
     PublisherHTTPServer,
     HTTPPublicationRequestFactory,
@@ -216,3 +228,9 @@ debughttp = ServerType(
     8082,
     True)
 
+internalhttp = ServerType(
+    PublisherHTTPServer,
+    InternalHTTPLayerRequestFactory,
+    CommonAccessLogger,
+    8083,
+    True)

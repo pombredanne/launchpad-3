@@ -52,13 +52,22 @@
 
         <ul>
           <li tal:repeat="pastorder view/user/pastShipItRequests">
-            <span tal:replace="pastorder/daterequested/fmt:date" />:
-            <span tal:replace="pastorder/totalCDs" /> CDs 
-            <span tal:condition="pastorder/cancelled">(cancelled)</span>
+            <span tal:replace="pastorder/totalCDs" /> CDs requested in
+            <span tal:replace="pastorder/daterequested/fmt:date" />.
+            <span tal:condition="pastorder/cancelled">This request was
+              cancelled, so no CDs were shipped.</span>
             <tal:block tal:condition="not: pastorder/cancelled">
-              <span tal:condition="pastorder/shipment">(sent to shipping
-                company)</span>
-              <span tal:condition="pastorder/isDenied">(denied)</span>
+              <tal:shipped condition="pastorder/shipment">
+                <span tal:replace="pastorder/totalapprovedCDs" />
+                CDs approved and sent to the shipping company in 
+                <span tal:replace="pastorder/shipment/shippingrun/datecreated/fmt:date" />.
+                <strong>Please note orders usually take from 4 to 6 weeks to
+                  deliver, depending on the country of shipping.</strong>
+              </tal:shipped>
+              <tal:not-shipped condition="not: pastorder/shipment">
+                <span tal:condition="pastorder/isDenied">This request was
+                  not approved, so no CDs were shipped.</span>
+              </tal:not-shipped>
             </tal:block>
           </li>
         </ul>
@@ -355,6 +364,7 @@
             <input 
               tal:attributes="value view/phone|order/phone|nothing"
               type="text" name="phone" size="16" maxlength="16" />
+            <span class="formHelp">(required)</span>
           </td>
         </tr>
       </table>

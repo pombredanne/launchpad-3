@@ -30,6 +30,8 @@ _ = MessageIDFactory('launchpad')
 
 class ISpecification(IHasOwner):
     """The core bounty description."""
+    # FIXME: This docstring is incorrect. Bug #4122
+    # -- David Allouche 2005-09-05
 
     # id = Int(title=_('Specification ID'), required=True, readonly=True)
     name = TextLine(
