@@ -27,6 +27,12 @@
     classes="DistroReleaseNavigation"
     />
 
+  <browser:url
+    for="canonical.launchpad.interfaces.IDistroRelease"
+    path_expression="name"
+    attribute_to_parent="distribution"
+    />
+
   <browser:menus
     module="canonical.launchpad.browser.distrorelease"
     classes="DistroReleaseFacets DistroReleaseOverviewMenu
