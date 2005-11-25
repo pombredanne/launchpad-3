@@ -109,18 +109,18 @@ message.
     ...
     GPGVerificationError: Bad signature
 
-    >>> sig = getUtility(IGPGHandler).getVerifiedSignature(
+    >>> getUtility(IGPGHandler).getVerifiedSignature(
     ...     msg.signedContent.replace('\n', '\r\n'), msg.signature)
     <...PymeSignature...>
 
 authenticateEmail() doesn't have any problems verifying the signature:
 
-    >>> principal = authenticateEmail(msg)
-    >>> principal is not None
-    True
-    >>> name, addr = email.Utils.parseaddr(msg['From'])
-    >>> from_user = getUtility(IPersonSet).getByEmail(addr)
-    >>> launchbag.user == from_user
-    True
-    >>> launchbag.login
-    'test@canonical.com'
+    >>> from canonical.launchpad.interfaces import IPerson
+    >>> for line_ending in '\n', '\r\n':
+    ...     msg = email.message_from_string(
+    ...         line_ending.join(msg_lines), _class=SignedMessage)
+    ...     principal = authenticateEmail(msg)
+    ...     authenticated_person = IPerson(principal)
+    ...     print authenticated_person.preferredemail.email
+    test@canonical.com
+    test@canonical.com
