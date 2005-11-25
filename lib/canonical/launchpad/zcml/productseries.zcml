@@ -184,6 +184,7 @@
         name="+review"
         for="canonical.launchpad.interfaces.IProductSeries"
         schema="canonical.launchpad.interfaces.IProductSeries"
+        class="canonical.launchpad.browser.ProductSeriesReviewView"
         facet="overview"
         label="Review Product Series Details"
         fields="product name"

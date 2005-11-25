@@ -7,7 +7,8 @@ __all__ = ['ProductSeriesNavigation',
            'ProductSeriesContextMenu',
            'ProductSeriesView',
            'ProductSeriesRdfView',
-           'ProductSeriesSourceSetView']
+           'ProductSeriesSourceSetView',
+           'ProductSeriesReviewView']
 
 import re
 import urllib
@@ -28,10 +29,24 @@ from canonical.launchpad.interfaces import (
     IPerson, ICountry, IPOTemplateSet, ILaunchpadCelebrities, ILaunchBag,
     ISourcePackageNameSet, validate_url, IProductSeries, IProductSeriesSet)
 from canonical.launchpad.browser.potemplate import POTemplateView
+from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     ContextMenu, Link, enabled_with_permission, Navigation, GetitemNavigation,
-    stepto)
+    stepto, canonical_url)
 
+from canonical.launchpad import _
+
+class ProductSeriesReviewView(SQLObjectEditView):
+    def changed(self):
+        """Redirect to the productseries page.
+
+        We need this because people can now change productseries'
+        product and name, and this will make their canonical_url to
+        change too.         
+        """
+        self.request.response.addInfoNotification( 
+            _('This ProductSeries has been changed'))
+        self.request.response.redirect(canonical_url(self.context))
 
 class ProductSeriesNavigation(Navigation):
 

@@ -1,0 +1,30 @@
+Foo Bar changes the productseries named 'failedbranch' from the product a52dec
+to bazaar. Also changes the name of the productseries to 'newname'.
+  >>> print http(r"""
+  ... POST /products/a52dec/+series/failedbranch/+review HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------10572808480422220968425074
+  ... 
+  ... -----------------------------10572808480422220968425074
+  ... Content-Disposition: form-data; name="field.product"
+  ... 
+  ... bazaar
+  ... -----------------------------10572808480422220968425074
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... newname
+  ... -----------------------------10572808480422220968425074
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------10572808480422220968425074--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/products/bazaar/+series/newname...
+
+  >>> print http(r"""
+  ... GET /products/bazaar/+series/newname HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
