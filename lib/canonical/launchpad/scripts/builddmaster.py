@@ -493,13 +493,10 @@ class BuilderGroup:
                     out_file.close()
 
             uploader_argv = list(self.upload_cmdline)
-            try:
-                while uploader_argv.index("BUILDID"):
-                    uploader_argv[uploader_argv.index("BUILDID")] = str(
-                        queueItem.build.id)
-            except ValueError:
-                # Assume this is "not in list" and swallow it
-                pass
+
+            while 'BUILDID' in uploader_argv:
+                uploader_argv[uploader_argv.index("BUILDID")] = str(
+                    queueItem.build.id)
                 
             uploader_argv.append(temp_dir)
 
