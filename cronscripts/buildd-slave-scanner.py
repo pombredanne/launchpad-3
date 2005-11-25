@@ -30,7 +30,7 @@ def doSlaveScan(logger):
     """Proceed the Slave Scanning Process."""    
     
     # setup a transaction manager
-    tm = initZopeless(config.builddmaster.dbuser='fiera')
+    tm = initZopeless(config.builddmaster.dbuser)
 
     buildMaster = BuilddMaster(logger, tm,
                                config.builddmaster.uploader.split())

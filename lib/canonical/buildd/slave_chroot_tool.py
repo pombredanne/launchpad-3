@@ -23,6 +23,9 @@ def execute(cmd):
     if os.system(cmd) != 0:
         raise OSError("Command %s failed" % cmd)
 
+def affirmed(response):
+    return response in ('y', 'yes', 'happy', 'gay', '')
+
 class SlaveChrootBuilder:
     """Manage the process of building a chroot."""
 
@@ -191,7 +194,7 @@ class SlaveChrootBuilder:
 
         print "Happy to repack? [Y]"
         yesno = sys.stdin.readline().strip().lower()
-        if yesno in ('y', 'yes', 'happy', 'gay', ''):
+        if affirmed(yesno):
             print "Preparing chroot tarball..."
             execute("sudo tar -C %s -cjf "
                     "chroot-%s-%s-%s.tar.bz2 chroot-autobuild" %(
@@ -203,7 +206,7 @@ class SlaveChrootBuilder:
         print "Cleaning up..."
         execute(self.bin+"/remove-build %s" % self.buildid)
         
-        if yesno in ('y', 'yes', 'happy', 'gay', ''):
+        if affirmed(yesno):
             print "Constructed chroot-%s-%s-%s.tar.bz2" % (
                 self.config['chroot']['distribution'],
                 self.config['chroot']['distrorelease'],
@@ -232,14 +235,14 @@ def do_intervene(chroottar):
     execute(slavebin+"/umount-chroot chroot-tool")
     print "Happy to repack? [Y]"
     yesno = sys.stdin.readline().strip().lower()
-    if yesno in ('y', 'yes', 'happy', 'gay', ''):
+    if affirmed(yesno):
         print "Re-packing..."
         execute("sudo tar -C $HOME/build-chroot-tool -cjf %s chroot-autobuild" %
                 chroottar)
         execute("sudo chown $USER %s" % chroottar)
     print "Cleaning up..."
     execute(slavebin+"/remove-build chroot-tool")
-    if yesno in ('y', 'yes', 'happy', 'gay', ''):
+    if affirmed(yesno):
         print "Done, updated %s" % chroottar
     else:
         print "Done, did not update %s" % chroottar

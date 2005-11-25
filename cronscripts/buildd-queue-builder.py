@@ -30,7 +30,7 @@ def rebuildQueue(log):
     """Look for and initialise new build jobs."""
     
     # setup a transaction manager
-    tm = initZopeless(config.builddmaster.dbuser='fiera')
+    tm = initZopeless(config.builddmaster.dbuser)
     
     buildMaster = BuilddMaster(log, tm,
                                config.builddmaster.uploader.split())

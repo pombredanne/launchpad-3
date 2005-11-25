@@ -460,7 +460,17 @@
 
     <sectiontype name="builddmaster">
         <key name="dbuser" datatype="string" required="yes" />
-        <key name="uploader" datatype="string" required="yes" />
+        <key name="uploader" datatype="string" required="yes">
+            <description>
+                This is the command invoked by the buildd master when it wants
+                to process a package upload into the launchpad. The buildd
+                master splits the command on spaces so no escaping is allowed.
+                If the token BUILDID is present, the build master will replace
+                it with the ID of the build record for the upload.
+                The build master will append the directory containing the files
+                to the command before executing it.
+            </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="canonical">
