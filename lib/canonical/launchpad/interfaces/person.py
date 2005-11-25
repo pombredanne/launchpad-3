@@ -22,12 +22,15 @@ __all__ = [
     'EmailAddressAlreadyTaken'
     ]
 
+from textwrap import dedent
+
 from zope.schema import (
     Choice, Datetime, Int, Text, TextLine, Password, ValidationError, Bytes)
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 from zope.i18nmessageid import MessageIDFactory
 
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.interfaces.specificationtarget import (
@@ -69,9 +72,9 @@ class PersonNameField(TextLine):
 
         person = getUtility(IPersonSet).getByName(value, ignore_merged=False)
         if person is not None:
-            raise NameAlreadyTaken(_(
-                "The name %s is already in use." % value))
-
+            raise LaunchpadValidationError(_(dedent("""
+                The name %s is already in use.
+                """ % value)))
 
 class IPerson(IHasSpecifications):
     """A Person."""
