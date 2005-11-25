@@ -2,11 +2,11 @@ Malone's Email Interface
 ========================
 
 Malone has an email interface, with which you may submit new bugs, add
-comments, and editing bugs. The email interface has a number of
-different command. Commands can be interleaved within a comment, so in
-order to distinguish them from the comment, the commands have to be
-indented with at least one space or tab character. The available
-commands are described later on.
+comments, and edit bugs. The email interface has a number of different
+commands. Commands can be interleaved within a comment, so in order to
+distinguish them from the comment, the commands have to be indented with
+at least one space or tab character. The available commands are
+described later on.
 
 Submit a new bug
 ----------------
@@ -38,7 +38,7 @@ Let's take an example where we file a bug on Firefox:
     ... To: new@bugs.launchpad.ubuntu.com
     ... Date: Fri Jun 17 10:20:23 BST 2005
     ... Subject: A bug in Firefox
-    ... 
+    ...
     ... There is a bug in Firefox.
     ...
     ...  affects /products/firefox"""
@@ -52,7 +52,7 @@ to sign each email, we'll create a class which fakes a signed email:
     >>> class SignedMessage(email.Message.Message):
     ...     def signedMessage(self):
     ...         return self
-    ...     signedMessage = property(signedMessage) 
+    ...     signedMessage = property(signedMessage)
 
 And since we'll pass the email directly to the correct handler,
 we'll have to authenticate the user manually:
@@ -66,7 +66,7 @@ bug got submitted correctly:
     >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
     >>> from canonical.launchpad.mail.handlers import MaloneHandler
     >>> handler = MaloneHandler()
-    >>> def process_email(raw_mail): 
+    >>> def process_email(raw_mail):
     ...     msg = email.message_from_string(raw_mail, _class=SignedMessage)
     ...     if not msg.has_key('Message-Id'):
     ...         msg['Message-Id'] = email.Utils.make_msgid()
@@ -85,7 +85,7 @@ bug got submitted correctly:
     ...     msg = email.message_from_string(raw_message)
     ...     bug_nr = int(msg['Subject'].split()[1][:-1])
     ...     return bugset.get(bug_nr)
-    >>> bug = get_latest_added_bug() 
+    >>> bug = get_latest_added_bug()
 
     >>> print bug.title
     A bug in Firefox
@@ -126,12 +126,12 @@ this:
     ... To: new@bugs.canonical.com
     ... Date: Fri Jun 17 10:20:23 BST 2005
     ... Subject: A bug in Debian's Evolution package
-    ... 
+    ...
     ... There's a bug in Debian.
     ...  affects /distros/debian/evolution
     ... """
     >>> process_email(submit_mail)
-    >>> bug = get_latest_added_bug() 
+    >>> bug = get_latest_added_bug()
 
     >>> print bug.title
     A bug in Debian's Evolution package
@@ -260,7 +260,7 @@ quotes. Example:
     >>> print bug_four.title
     New title
 
-Just a quick check that the whitespace will be preserved in the title:
+Whitespace will be preserved in the title:
 
     >>> submit_commands('title "New             title"')
     >>> print bug_four.title #doctest: -NORMALIZE_WHITESPACE
@@ -306,7 +306,7 @@ be subscribed. Examples:
 
 unsubscribe [$name|$email]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Unsubscribes yourself or someone else from the bug. 
+Unsubscribes yourself or someone else from the bug.
 If you don't specify a name or email, the sender of the email will be
 unsubscribed. Examples:
 
@@ -358,7 +358,7 @@ We can change the assignee, status, and severity using the sub
 commands. It's possible to have these sub commands on separate lines:
 
     >>> submit_commands('affects /distros/debian severity critical',
-    ...                 'status accepted', 'assignee test@canonical.com')
+    ...     'status accepted', 'assignee test@canonical.com', 'priority high')
 
     >>> len(bug_four.bugtasks)
     2
@@ -369,6 +369,8 @@ commands. It's possible to have these sub commands on separate lines:
     ACCEPTED
     >>> print debian_task.assignee.displayname
     Sample Person
+    >>> print debian_task.priority.name
+    HIGH
 
 To set which source package the bug affects, we use:
 
@@ -381,8 +383,10 @@ To set which source package the bug affects, we use:
 
 Let's take on the upstream task as well:
 
-    >>> submit_commands('affects /products/firefox severity critical',
-    ...                 'status accepted', 'assignee test@canonical.com')
+    >>> submit_commands(
+    ...     'affects /products/firefox severity critical',
+    ...     'status accepted', 'assignee test@canonical.com',
+    ...     'priority high')
 
     >>> len(bug_four.bugtasks)
     3
@@ -393,7 +397,8 @@ Let's take on the upstream task as well:
     ACCEPTED
     >>> print upstream_task.assignee.displayname
     Sample Person
-
+    >>> print upstream_task.priority.name
+    HIGH
 
 Error Handling
 --------------
