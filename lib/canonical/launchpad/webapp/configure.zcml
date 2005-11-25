@@ -276,7 +276,7 @@
         provides="zope.app.session.interfaces.IClientIdManager"
         />
     <utility
-        component="canonical.launchpad.webapp.session.datacontainer"
+        component="canonical.launchpad.webapp.pgsession.data_container"
         provides="zope.app.session.interfaces.ISessionDataContainer"
         />
 
