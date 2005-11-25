@@ -45,7 +45,7 @@ class ProductSeriesReviewView(SQLObjectEditView):
         change too.         
         """
         self.request.response.addInfoNotification( 
-            _('This ProductSeries has been changed'))
+            _('This Serie has been changed'))
         self.request.response.redirect(canonical_url(self.context))
 
 class ProductSeriesNavigation(Navigation):

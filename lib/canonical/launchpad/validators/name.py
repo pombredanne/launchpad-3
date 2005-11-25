@@ -20,7 +20,7 @@ def valid_name(name):
     such as binary packages or arch branches where naming conventions already
     exists, so they may use their own specialized name validators
     """
-    pat = r"^[a-z0-9][a-z0-9\+\.\-]*$"
+    pat = r"^[a-z0-9][a-z0-9\+\.\-]+$"
     if re.match(pat, name):
         return True
     return False
