@@ -35,6 +35,13 @@ class BuildFacets(StandardLaunchpadFacets):
 
 
 class BuildRecordsView:
+    """Base class used to present objects that contains build records.
+    
+    It retrieves the UI build_state selector action and setup a proper
+    batched list with the requested results. See further UI details in
+    template/builds-list.pt and callsite details in Builder, Distribution,
+    DistroRelease, DistroArchRelease and SourcePackage view classes.
+    """
     __used_for__ = IHasBuildRecords
 
     def setupBuildList(self):
@@ -63,15 +70,15 @@ class BuildRecordsView:
         start = int(self.request.get('batch_start', 0))
 
         # setup the batched list to present
-        self.batch = Batch(list(builds), start)
+        self.batch = Batch(builds, start)
         self.batchnav = BatchNavigator(self.batch, self.request)
 
 
     def showBuilderInfo(self):
         """Control the presentation o builder information.
 
-        It allows the callsite to control if they want or not builder column
-        in its result list (ommited in builder-index page only)
+        It allows the callsite to control if they want a builder column
+        in its result table or not. It's only ommited in builder-index page.
         """
         return True
 

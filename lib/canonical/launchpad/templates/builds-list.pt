@@ -29,7 +29,7 @@
 
           </select>
 
-          <input type="submit" name="update" value="Update" />  
+          <input type="submit" value="Update" />  
 
           </form>
          </td>
