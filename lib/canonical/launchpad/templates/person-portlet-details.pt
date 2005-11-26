@@ -44,7 +44,7 @@
       <a tal:attributes="href context/fmt:url"
          tal:content="context/name">sabdfl</a><br />
       <b>Team Owner:</b><br />
-      <a tal:attributes="href string:../${context/teamowner/name}"
+      <a tal:attributes="href context/teamowner/fmt:url"
          tal:content="context/teamowner/browsername">sabdfl</a><br />
 
       <tal:block condition="context/teamdescription">
