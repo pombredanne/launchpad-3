@@ -1,0 +1,36 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+  <div metal:fill-slot="main" tal:define="can_reset context/can_be_reseted">
+                   
+    <h1>Reset <span tal:replace="context/title"/></h1>
+ 
+    <div tal:define="message view/reset_build" 
+         tal:condition="can_reset">
+
+      <div class="portalMessage" tal:condition="message" 
+           tal:content="structure message"/>
+
+      <div tal:condition="not: message">
+        <p><dfn tal:content="context/title">BUILD</dfn> is  
+           <span tal:replace="context/buildstate/title"/>.</p>
+	<p>Are you sure ?</p> 
+
+        <form name="RESET" action="" method="POST">
+          <input name="RESET" type="hidden" value="1"/>
+          <input type="submit" value="Reset Build"/>
+        </form>
+      </div> 
+   </div>
+
+   <div class="portalMessage" tal:condition="not: can_reset">
+     <p><dfn tal:content="context/title">BUILD</dfn> is already reseted.</p>
+   </div>
+
+  </div>
+</body>
+</html>
