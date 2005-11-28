@@ -22,6 +22,9 @@ signed_re = re.compile(
     '-----END PGP SIGNATURE-----)',
     re.DOTALL)
 
+# Lines that start with '-' are escaped with '- '.
+dash_escaped = re.compile('^- ', re.MULTILINE)
+
 class SignedMessage(email.Message.Message):
     """Provides easy access to signed content and the signature"""
     implements(ISignedMessage)
@@ -49,7 +52,8 @@ class SignedMessage(email.Message.Message):
             if match is not None:
                 # Add a new line so that a message with no headers will
                 # be created.
-                signed_content = "\n" + match.group(1)
+                signed_content_unescaped = "\n" + match.group(1)
+                signed_content = dash_escaped.sub('', signed_content_unescaped)
                 signature = match.group(2)
 
         if signed_content is not None:
