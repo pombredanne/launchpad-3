@@ -12,6 +12,8 @@ from canonical.librarian.storage import _relFileLocation as relative_file_path
 from canonical.librarian.storage import _sameFile
 from canonical.database.postgresql import listReferences
 
+BATCH_SIZE = 1
+
 log = None
 
 def merge_duplicates(ztm):
@@ -183,7 +185,7 @@ def delete_unreferenced_aliases(ztm):
             """ % vars())
         referenced_ids = set(row[0] for row in cur.fetchall())
         ztm.abort()
-        log.debug(
+        log.info(
                 "Found %d distinct LibraryFileAlias references in %s(%s)",
                 len(referenced_ids), table, column
                 )
@@ -197,9 +199,9 @@ def delete_unreferenced_aliases(ztm):
     # database exception if we screwed up and attempt to delete an alias that
     # is still referenced.
     content_ids = list(content_ids)
-    for i in range(0, len(content_ids), 100):
+    for i in range(0, len(content_ids), BATCH_SIZE):
         in_content_ids = ','.join(
-                (str(content_id) for content_id in content_ids[i:i+100])
+                (str(content_id) for content_id in content_ids[i:i+BATCH_SIZE])
                 )
         ztm.begin()
         cur = cursor()
@@ -219,7 +221,7 @@ def delete_unreferenced_aliases(ztm):
         assert cur.fetchone()[0] == 0, "Logic error - sanity check failed"
         log.info(
                 "Deleting all LibraryFileAlias references to "
-                "LibraryFileContents %d", in_content_ids
+                "LibraryFileContents %s", in_content_ids
                 )
         cur.execute("""
             DELETE FROM LibraryFileAlias WHERE content IN (%(in_content_ids)s)
@@ -247,9 +249,9 @@ def delete_unreferenced_content(ztm):
     garbage_ids = [row[0] for row in cur.fetchall()]
     ztm.abort()
 
-    for i in range(0, len(garbage_ids), 100):
+    for i in range(0, len(garbage_ids), BATCH_SIZE):
         in_garbage_ids = ','.join(
-            (str(garbage_id) for garbage_id in garbage_ids[i:i+100])
+            (str(garbage_id) for garbage_id in garbage_ids[i:i+BATCH_SIZE])
             )
         ztm.begin()
         cur = cursor()
@@ -262,7 +264,7 @@ def delete_unreferenced_content(ztm):
             DELETE FROM LibraryFileContent WHERE id in (%s)
             """ % in_garbage_ids)
 
-        for garbage_id in garbage_ids[i:i+100]:
+        for garbage_id in garbage_ids[i:i+BATCH_SIZE]:
             # Remove the file from disk, if it hasn't already been
             path = get_file_path(garbage_id)
             if os.path.exists(path):
