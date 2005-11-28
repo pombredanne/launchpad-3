@@ -50,7 +50,7 @@ def merge_duplicates(ztm):
             SELECT id
             FROM LibraryFileContent
             WHERE sha1=%(sha1)s AND filesize=%(filesize)s
-            ORDER BY deleted, datecreated
+            ORDER BY deleted, -datecreated
             """, vars())
         dupes = [str(row[0]) for row in cur.fetchall()]
 
@@ -66,11 +66,17 @@ def merge_duplicates(ztm):
         # production but the actual librarian contents has not.
         dupe1_id = int(dupes[0])
         dupe1_path = get_file_path(dupe1_id)
-        if config.name != 'staging' and not os.path.exists(dupe1_path):
-            log.error(
-                    "LibraryFileContent %d data is missing (%s)",
-                    dupe1_id, dupe1_path
-                    )
+        if not os.path.exists(dupe1_path):
+            if config.name == 'staging':
+                log.debug(
+                        "LibraryFileContent %d data is missing (%s)",
+                        dupe1_id, dupe1_path
+                        )
+            else:
+                log.error(
+                        "LibraryFileContent %d data is missing (%s)",
+                        dupe1_id, dupe1_path
+                        )
             ztm.abort()
             continue
 
