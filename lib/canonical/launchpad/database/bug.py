@@ -149,23 +149,19 @@ class Bug(SQLBase):
                 if task.assignee is not None:
                     emails.update(contactEmailAddresses(task.assignee))
 
-                if task.product is not None:
-                    owner = task.product.owner
-                    emails.update(contactEmailAddresses(owner))
-                else:
-                    if task.sourcepackagename is not None:
-                        if task.distribution is not None:
-                            distribution = task.distribution
-                        else:
-                            distribution = task.distrorelease.distribution
+                if task.sourcepackagename is not None:
+                    if task.distribution is not None:
+                        distribution = task.distribution
+                    else:
+                        distribution = task.distrorelease.distribution
 
-                        maintainership = Maintainership.selectOneBy(
-                            sourcepackagenameID = task.sourcepackagename.id,
-                            distributionID = distribution.id)
+                    maintainership = Maintainership.selectOneBy(
+                        sourcepackagenameID = task.sourcepackagename.id,
+                        distributionID = distribution.id)
 
-                        if maintainership is not None:
-                            maintainer = maintainership.maintainer
-                            emails.update(contactEmailAddresses(maintainer))
+                    if maintainership is not None:
+                        maintainer = maintainership.maintainer
+                        emails.update(contactEmailAddresses(maintainer))
 
         emails.update(contactEmailAddresses(self.owner))
         emails = list(emails)
@@ -317,7 +313,7 @@ class BugSet(BugSetBase):
             bug task will be created
 
         """
-        # make sure that the factory has been passed enough information
+        # Make sure that the factory has been passed enough information.
         if comment is description is msg is None:
             raise ValueError(
                 'createBug requires a comment, msg, or description')
@@ -325,7 +321,7 @@ class BugSet(BugSetBase):
         # make sure we did not get TOO MUCH information
         assert (comment is None or msg is None), "Too much information"
 
-        # create the bug comment if one was given
+        # Create the bug comment if one was given.
         if comment:
             rfc822msgid = make_msgid('malonedeb')
             msg = Message(subject=title, distribution=distribution,
@@ -333,7 +329,7 @@ class BugSet(BugSetBase):
             MessageChunk(
                 messageID=msg.id, sequence=1, content=comment, blobID=None)
 
-        # extract the details needed to create the bug and optional msg
+        # Extract the details needed to create the bug and optional msg.
         if not description:
             description = msg.contents
 
@@ -345,16 +341,21 @@ class BugSet(BugSetBase):
             description=description, private=private,
             owner=owner.id, datecreated=datecreated)
 
-        BugSubscription(person=owner.id, bug=bug.id)
+        bug.subscribe(owner)
 
-        # link the bug to the message
+        # Link the bug to the message.
         BugMessage(bug=bug, message=msg)
 
-        # create the task on a product if one was passed
+        # Create the task on a product if one was passed.
         if product:
             BugTask(bug=bug, product=product, owner=owner)
 
-        # create the task on a source package name if one was passed
+            # If a product bug contact has been provided, subscribe that contact
+            # to all public bugs.
+            if product.bugcontact and not bug.private:
+                bug.subscribe(product.bugcontact)
+
+        # Create the task on a source package name if one was passed.
         if distribution:
             BugTask(
                 bug=bug,
@@ -363,6 +364,9 @@ class BugSet(BugSetBase):
                 binarypackagename=binarypackagename,
                 owner=owner)
 
+            # If a distribution bug contact has been provided, subscribe that
+            # contact to all public bugs.
+            if distribution.bugcontact and not bug.private:
+                bug.subscribe(distribution.bugcontact)
+
         return bug
-
-

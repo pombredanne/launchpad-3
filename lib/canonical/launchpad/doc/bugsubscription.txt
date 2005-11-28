@@ -42,7 +42,7 @@ notification email on a bug, call
 IBug.notificationRecipientAddresses().
 
    >>> bug.notificationRecipientAddresses()
-   [u'mark@hbd.com', u'support@ubuntu.com', u'test@canonical.com']
+   [u'mark@hbd.com', u'test@canonical.com']
 
 To find out if someone is already explicitly subscribed to a bug, call
 IBug.isSubscribed, passing in an IPerson:
@@ -70,3 +70,52 @@ IBug.subscribe and IBug.unsubscribe:
     >>> 16 in subscriptions
     True
 
+Automatic Subscriptions on Bug Creation
+=======================================
+
+When a new bug is opened, the following people are automatically added as
+explicit Cc subscribers to the bug:
+
+  * the bug reporter
+
+  * the distribution bug contact, if there is one
+
+  * the product bug contact, if there is one
+
+  * the package bug contact, if there is one
+
+Let's have a look at an example for a distribution bug:
+
+XXX: Brad Bollenbach, 2005-11-25: This part is a dirty sampledata hack until I
+change the real sample data. IF YOU'RE A CODE REVIEWER READING THIS I SUCK.
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet).get(1)
+    >>> sample_person = personset.get(12)
+    >>> ubuntu.bugcontact = sample_person
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+
+    >>> new_bug = getUtility(IBugSet).createBug(
+    ...     title="a test bug", comment="a test description",
+    ...     owner=foobar, distribution=ubuntu)
+
+    >>> sorted(new_bug.notificationRecipientAddresses())
+    [u'foo.bar@canonical.com', u'test@canonical.com']
+
+Another example, this time for an upstream:
+
+XXX: Brad Bollenbach, 2005-11-25: This part is a dirty sampledata hack until I
+change the real sample data. IF YOU'RE A CODE REVIEWER READING THIS I SUCK.
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> sabdfl = personset.get(1)
+    >>> firefox = getUtility(IProductSet).get(4)
+    >>> firefox.bugcontact = sabdfl
+
+    >>> new_bug = getUtility(IBugSet).createBug(
+    ...     title="a test bug", comment="a test description",
+    ...     owner=foobar, product=firefox)
+
+    >>> sorted(new_bug.notificationRecipientAddresses())
+    [u'foo.bar@canonical.com', u'mark@hbd.com']
