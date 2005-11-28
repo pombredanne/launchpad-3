@@ -196,7 +196,11 @@ def delete_unreferenced_aliases(ztm):
     # Delete unreferenced LibraryFileAliases. Note that this will raise a
     # database exception if we screwed up and attempt to delete an alias that
     # is still referenced.
-    for content_id in content_ids:
+    content_ids = list(content_ids)
+    for i in range(0, len(content_ids), 100):
+        in_content_ids = ','.join(
+                (str(content_id) for content_id in content_ids[i:i+100])
+                )
         ztm.begin()
         cur = cursor()
         # First a sanity check to ensure we aren't removing anything we
@@ -204,22 +208,22 @@ def delete_unreferenced_aliases(ztm):
         cur.execute("""
             SELECT COUNT(*)
             FROM LibraryFileAlias
-            WHERE content=%(content_id)s
+            WHERE content in (%(in_content_ids)s)
                 AND (
                     expires + '1 week'::interval
                         > CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
                     OR last_accessed + '1 week'::interval
                         > CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
                     )
-            """, vars())
+            """ % vars())
         assert cur.fetchone()[0] == 0, "Logic error - sanity check failed"
         log.info(
                 "Deleting all LibraryFileAlias references to "
-                "LibraryFileContent %d", content_id
+                "LibraryFileContents %d", in_content_ids
                 )
         cur.execute("""
-            DELETE FROM LibraryFileAlias WHERE content=%(content_id)s
-            """, vars())
+            DELETE FROM LibraryFileAlias WHERE content IN (%(in_content_ids)s)
+            """ % vars())
         ztm.commit()
 
 
@@ -243,6 +247,7 @@ def delete_unreferenced_content(ztm):
     garbage_ids = [row[0] for row in cur.fetchall()]
     ztm.abort()
 
+    for i in range(0, len(garbage_ids), 100)
     for garbage_id in garbage_ids:
         ztm.begin()
         cur = cursor()
