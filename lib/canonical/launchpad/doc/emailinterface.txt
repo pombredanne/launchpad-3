@@ -425,7 +425,7 @@ edited:
     Public bug report changed:
     ...
         Status: New => Accepted
-    <BLANKLINE>
+    ...
 
 If the bug has more than one bug task, we try to guess which bug task
 the user wanted to edit. We apply the following heuristics for choosing
@@ -456,7 +456,7 @@ The user is a bug contact of the upstream product
     Public bug report changed:
     ...
         Status: New => Accepted
-    <BLANKLINE>
+    ...
 
 
 Error Handling
