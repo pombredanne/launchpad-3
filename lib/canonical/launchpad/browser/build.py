@@ -76,7 +76,7 @@ class BuildView(LaunchpadView):
         return '<p>Build Record reseted.</p>'
         
 
-class BuildRecordsView:
+class BuildRecordsView(LaunchpadView):
     __used_for__ = IHasBuildRecords
 
     def getBuilt(self):
