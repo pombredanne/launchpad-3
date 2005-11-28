@@ -116,7 +116,7 @@ class UserDetailsStorageMixin(object):
         # postgres to optimise the query as much as possible (approx 10x faster
         # according to my tests with EXPLAIN on the production database).
         select = '''
-            SELECT Person.id, Person.displayname, Person.password,
+            SELECT Person.id, Person.displayname, Person.name, Person.password,
                    Wikiname.wikiname
             FROM Person '''
 
@@ -173,7 +173,7 @@ class UserDetailsStorageMixin(object):
         row = list(row)
         assert isinstance(row[1], unicode)
 
-        passwordDigest = row[2]
+        passwordDigest = row[3]
         if passwordDigest:
             salt = saltFromDigest(passwordDigest)
         else:
@@ -204,7 +204,7 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
     def _getUserInteraction(self, transaction, loginID):
         row = self._getPerson(transaction, loginID)
         try:
-            personID, displayname, passwordDigest, wikiname, salt = row
+            personID, displayname, name, passwordDigest, wikiname, salt = row
         except TypeError:
             # No-one found
             return {}
@@ -231,7 +231,7 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
     def _authUserInteraction(self, transaction, loginID, sshaDigestedPassword):
         row = self._getPerson(transaction, loginID)
         try:
-            personID, displayname, passwordDigest, wikiname, salt = row
+            personID, displayname, name, passwordDigest, wikiname, salt = row
         except TypeError:
             # No-one found
             return {}
@@ -409,7 +409,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     def _getUserInteraction(self, transaction, loginID):
         row = self._getPerson(transaction, loginID)
         try:
-            personID, displayname, passwordDigest, wikiname = row
+            personID, displayname, name, passwordDigest, wikiname = row
         except TypeError:
             # No-one found
             return {}
@@ -423,6 +423,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         return {
             'id': personID,
             'displayname': displayname,
+            'name': name,
             'emailaddresses': emailaddresses,
             'wikiname': wikiname,
             'teams': self._getTeams(transaction, personID),
@@ -451,7 +452,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     def _authUserInteraction(self, transaction, loginID, password):
         row = self._getPerson(transaction, loginID)
         try:
-            personID, displayname, passwordDigest, wikiname = row
+            personID, displayname, name, passwordDigest, wikiname = row
         except TypeError:
             # No-one found
             return {}
@@ -468,6 +469,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
 
         return {
             'id': personID,
+            'name': name,
             'displayname': displayname,
             'emailaddresses': emailaddresses,
             'wikiname': wikiname,
