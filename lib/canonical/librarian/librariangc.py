@@ -45,12 +45,15 @@ def merge_duplicates(ztm):
         sha1 = sha1.encode('US-ASCII') # Can't pass Unicode to execute (yet)
 
         # Get a list of our dupes, making sure that the first in the
-        # list is not deleted if possible.
+        # list is not deleted if possible. Where multiple non-deleted
+        # files exist, we return the most recently added one first, because
+        # this is the version most likely to exist on the staging server
+        # (it should be irrelevant on production).
         cur.execute("""
             SELECT id
             FROM LibraryFileContent
             WHERE sha1=%(sha1)s AND filesize=%(filesize)s
-            ORDER BY deleted, datecreated
+            ORDER BY deleted, datecreated DESC
             """, vars())
         dupes = [str(row[0]) for row in cur.fetchall()]
 
@@ -60,15 +63,24 @@ def merge_duplicates(ztm):
                 )
 
         # Make sure the first file exists on disk. Don't merge if it
-        # doesn't. This shouldn't happen, so we don't try and cope - just
-        # report and skip.
+        # doesn't. This shouldn't happen on production, so we don't try
+        # and cope - just report and skip. However, on staging this will
+        # be more common because database records has been synced from
+        # production but the actual librarian contents has not.
         dupe1_id = int(dupes[0])
         dupe1_path = get_file_path(dupe1_id)
         if not os.path.exists(dupe1_path):
-            log.error(
-                    "LibraryFileContent %d data is missing (%s)",
-                    dupe1_id, dupe1_path
-                    )
+            if config.name == 'staging':
+                log.debug(
+                        "LibraryFileContent %d data is missing (%s)",
+                        dupe1_id, dupe1_path
+                        )
+            else:
+                log.error(
+                        "LibraryFileContent %d data is missing (%s)",
+                        dupe1_id, dupe1_path
+                        )
+            ztm.abort()
             continue
 
         # Do a manual check that they really are identical, because we
@@ -78,13 +90,16 @@ def merge_duplicates(ztm):
         # unlikely. Where did I leave my tin foil hat?
         for dupe2_id in (int(dupe) for dupe in dupes[1:]):
             dupe2_path = get_file_path(dupe2_id)
-            if not _sameFile(dupe1_path, dupe2_path):
+            # Check paths exist, because on staging they may not!
+            if (os.path.exists(dupe2_path)
+                and not _sameFile(dupe1_path, dupe2_path)):
                 log.error(
                         "SHA-1 collision found. LibraryFileContent %d and "
                         "%d have the same SHA1 and filesize, but are not "
                         "byte-for-byte identical.",
                         dupe1_id, dupe2_id
                         )
+                ztm.abort()
                 sys.exit(1)
 
         # Update all the LibraryFileAlias entries to point to a single
@@ -98,7 +113,7 @@ def merge_duplicates(ztm):
         cur.execute("""
             UPDATE LibraryFileAlias SET content=%(prime_id)s
             WHERE content in (%(other_ids)s)
-            """, vars())
+            """ % vars())
 
         log.debug("Committing")
         ztm.commit()
