@@ -7,6 +7,8 @@ __metaclass__ = type
 __all__ = [
     'BuildNavigation',
     'BuildFacets',
+    'BuildOverviewMenu',
+    'BuildView',
     'BuildRecordsView',
     ]
 
@@ -17,7 +19,8 @@ from canonical.launchpad.interfaces import IHasBuildRecords
 from canonical.launchpad.interfaces import IBuild
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, GetitemNavigation, stepthrough)
+    StandardLaunchpadFacets, Link, GetitemNavigation, stepthrough,
+    ApplicationMenu, LaunchpadView, enabled_with_permission)
 
 
 class BuildNavigation(GetitemNavigation):
@@ -30,6 +33,48 @@ class BuildFacets(StandardLaunchpadFacets):
 
     usedfor = IBuild
 
+class BuildOverviewMenu(ApplicationMenu):
+    """Overview menu for build records """
+    usedfor = IBuild
+    facet = 'overview'
+    links = ['changes', 'buildlog', 'reset']
+
+    def changes(self):
+        text = 'View Changes'
+        return Link('+changes', text, icon='info')
+
+    def buildlog(self):
+        text = 'View Buildlog'
+        return Link('+buildlog', text, icon='info')
+
+    @enabled_with_permission('launchpad.Admin')
+    def reset(self):
+        """Only enabled for build records that are resetable."""
+        text = 'Reset Build'
+        return Link('+reset', text, icon='edit',
+                    enabled=self.context.is_resetable)
+
+
+class BuildView(LaunchpadView):
+    """Auxiliary view class for IBuild"""
+    __used_for__ = IBuild
+
+    def reset_build(self):
+        """Check user confirmation and perform the build record reset."""
+        # dismiss if builder is not resetable and return a user warn.
+        if not self.context.is_resetable:
+            return '<p>Build Record is already reseted.</p>'
+
+        # retrieve user confirmation
+        action = self.request.form.get('RESET', None)
+        # no action, return None to present the form again
+        if not action:
+            return None
+
+        # invoke context method to reset the build record
+        self.context.reset()
+        return '<p>Build Record reseted.</p>'
+        
 
 class BuildRecordsView:
     __used_for__ = IHasBuildRecords

@@ -26,7 +26,7 @@
 
     <browser:menus
         module="canonical.launchpad.browser.build"
-        classes="BuildFacets" />
+        classes="BuildFacets BuildOverviewMenu" />
 
     <browser:navigation
         module="canonical.launchpad.browser.build"
@@ -38,14 +38,17 @@
       permission="zope.Public">
       <browser:page 
         name="+index"
+	facet="overview"
         template="../templates/build-index.pt"
         />
       <browser:page 
         name="+changes"
+	facet="overview"
         template="../templates/build-changes.pt"
         />
       <browser:page 
         name="+buildlog"
+	facet="overview"
         template="../templates/build-buildlog.pt"
         />
       <browser:page
@@ -55,6 +58,17 @@
       <browser:page
         name="+portlet-details"
         template="../templates/build-portlet-details.pt"
+        />
+    </browser:pages>
+
+    <browser:pages 
+      for="canonical.launchpad.interfaces.IBuild"
+      class="canonical.launchpad.browser.BuildView"
+      permission="launchpad.Admin">
+      <browser:page 
+        name="+reset"
+	facet="overview"
+        template="../templates/build-reset.pt"
         />
     </browser:pages>
 

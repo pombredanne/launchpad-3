@@ -37,6 +37,31 @@ Let's check the complex properties of a build object.
   >>> firefox_build.buildlog.url
   'http://localhost:58000/34/evolution-2.2-test.pot'
 
+  >>> firefox_build.is_resetable
+  False
+
+
+  >>> import transaction
+  >>> transaction.commit()
+
+  >>> resetable_build = Build.get(9)
+  >>> resetable_build.title
+  u'i386 build of pmount 0.1-1 in ubuntu warty (2005-10-01)'
+
+  >>> resetable_build.buildstate.title
+  'Failed to build'
+
+  >>> resetable_build.is_resetable
+  True
+
+  >>> resetable_build.builder.name
+  u'bob'
+  
+  >>> resetable_build.reset()
+
+  >>> resetable_build.builder is None
+  True
+
 Initialize all the required arguments to create a binary package for a
 given build record entry.
 
