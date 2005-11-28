@@ -11,10 +11,6 @@
 
         <h1>Edit the plural forms for this pofile</h1>
 
-        <div class="portalMessage"
-             tal:condition="view/status_message"
-             tal:content="structure view/status_message">Successful</div>
-
         <form action="+edit" method="POST" enctype="multipart/form-data">
 
         <fieldset>

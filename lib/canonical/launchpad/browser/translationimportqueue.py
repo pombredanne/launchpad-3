@@ -5,32 +5,32 @@
 __metaclass__ = type
 
 __all__ = [
+    'TranslationImportQueueEntryNavigation',
+    'TranslationImportQueueEntryURL',
+    'TranslationImportQueueEntryView',
+    'TranslationImportQueueContextMenu',
     'TranslationImportQueueNavigation',
-    'TranslationImportQueueURL',
     'TranslationImportQueueView',
-    'TranslationImportQueueSetContextMenu',
-    'TranslationImportQueueSetNavigation',
-    'TranslationImportQueueSetView',
     ]
 
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    ITranslationImportQueue, ITranslationImportQueueSet, ICanonicalUrlData,
-    ILaunchpadCelebrities, ITranslationImportQueueEdition, IPOTemplateSet,
+    ITranslationImportQueueEntry, ITranslationImportQueue, ICanonicalUrlData,
+    ILaunchpadCelebrities, IEditTranslationImportQueueEntry, IPOTemplateSet,
     IRawFileData, RawFileBusy, NotFoundError)
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, ContextMenu, Link, canonical_url)
 from canonical.launchpad.webapp.generalform import GeneralFormView
 
 
-class TranslationImportQueueNavigation(GetitemNavigation):
+class TranslationImportQueueEntryNavigation(GetitemNavigation):
 
-    usedfor = ITranslationImportQueue
+    usedfor = ITranslationImportQueueEntry
 
 
-class TranslationImportQueueURL:
+class TranslationImportQueueEntryURL:
     implements(ICanonicalUrlData)
 
     def __init__(self, context):
@@ -43,10 +43,10 @@ class TranslationImportQueueURL:
 
     @property
     def inside(self):
-        return getUtility(ITranslationImportQueueSet)
+        return getUtility(ITranslationImportQueue)
 
 
-class TranslationImportQueueView(GeneralFormView):
+class TranslationImportQueueEntryView(GeneralFormView):
     """The view part of the admin interface for the translation import queue.
     """
 
@@ -57,13 +57,13 @@ class TranslationImportQueueView(GeneralFormView):
         GeneralFormView.__init__(self, context, request)
 
     def initialize(self):
-        """Set the fields that will be showed based on the 'context' values.
+        """Set the fields that will be shown based on the 'context' values.
 
         If the context comes from a productseries, the sourcepackagename
         chooser is hidden.
-        If the 'context.path' field ends with the string '.pot', it notes that
+        If the 'context.path' field ends with the string '.pot', it means that
         the context is related with a '.pot' file, so we hide the language and
-        variant fields as are useless here.
+        variant fields as they are useless here.
         """
         self.fieldNames = ['sourcepackagename', 'potemplatename', 'path',
             'language', 'variant']
@@ -81,7 +81,7 @@ class TranslationImportQueueView(GeneralFormView):
     def process(self, potemplatename, path=None, sourcepackagename=None,
         language=None, variant=None):
         """Process the form we got from the submission."""
-        translationimportqueue_set = getUtility(ITranslationImportQueueSet)
+        translationimportqueue_set = getUtility(ITranslationImportQueue)
 
         if path and self.context.path != path:
             # The Rosetta Expert decided to change the path of the file.
@@ -143,17 +143,17 @@ class TranslationImportQueueView(GeneralFormView):
 
     def nextURL(self):
         """Return the URL of the main import queue at 'rosetta/imports'."""
-        translationimportqueue_set = getUtility(ITranslationImportQueueSet)
+        translationimportqueue_set = getUtility(ITranslationImportQueue)
         return canonical_url(translationimportqueue_set)
 
 
-class TranslationImportQueueSetNavigation(GetitemNavigation):
+class TranslationImportQueueNavigation(GetitemNavigation):
 
-    usedfor = ITranslationImportQueueSet
+    usedfor = ITranslationImportQueue
 
 
-class TranslationImportQueueSetContextMenu(ContextMenu):
-    usedfor = ITranslationImportQueueSet
+class TranslationImportQueueContextMenu(ContextMenu):
+    usedfor = ITranslationImportQueue
     links = ['overview', 'blocked']
 
     def overview(self):
@@ -167,13 +167,11 @@ class TranslationImportQueueSetContextMenu(ContextMenu):
         return Link(target, text)
 
 
-class TranslationImportQueueSetView(LaunchpadView):
+class TranslationImportQueueView(LaunchpadView):
     """View class used for Translation Import Queue management."""
 
     def initialize(self):
         """Useful initialization for this view class."""
-        self.alerts = []
-        self.notices = []
         self.form = self.request.form
 
         # Process the form.
@@ -182,28 +180,26 @@ class TranslationImportQueueSetView(LaunchpadView):
     @property
     def has_things_to_import(self):
         """Return whether there are things ready to import or not."""
-        for entry in self.context.getEntries():
-            if entry.import_into is not None:
-                return True
+        for entry in self.getReadyToImport():
+            return True
         return False
 
     @property
     def has_pending_reviews(self):
         """Return whether there are things pending to review or not."""
-        for entry in self.context.getEntries():
-            if entry.import_into is None:
-                return True
+        for entry in self.getPendingReview():
+            return True
         return False
 
-    def readyToImport(self):
+    def getReadyToImport(self):
         """Iterate the entries that can be imported directly."""
-        for entry in self.context.getEntries():
+        for entry in self.context.iterEntries():
             if entry.import_into is not None:
                 yield entry
 
-    def pendingReview(self):
+    def getPendingReview(self):
         """Iterate the entries that need manually review."""
-        for entry in self.context.getEntries():
+        for entry in self.context.iterEntries():
             if entry.import_into is None:
                 yield entry
 
@@ -234,106 +230,110 @@ class TranslationImportQueueSetView(LaunchpadView):
                 self.form_entries.append(id)
 
         dispatch_table = {
-            'remove_import': self.remove,
-            'block_import': self.block,
-            'remove_review': self.remove,
-            'block_review': self.block,
-            'remove_blocked': self.remove,
-            'unblock': self.unblock
+            'remove_import': (self._remove, 'Removed %d items.'),
+            'block_import': (self._block, 'Blocked %d items.'),
+            'remove_review': (self._remove, 'Removed %d items.'),
+            'block_review': (self._block, 'Blocked %d items.'),
+            'remove_blocked': (self._remove, 'Removed %d items.'),
+            'unblock': (self._unblock, 'Unblocked %d items.')
             }
-        dispatch_to = [(key, method)
-                        for key, method in dispatch_table
+        dispatch_to = [(key, callback_arguments)
+                        for key,callback_arguments in dispatch_table.items()
                         if key in self.form
                       ]
         if len(dispatch_to) != 1:
             raise AssertionError(
                 "There should be only one command in the form",
                 dispatch_to)
-        key, method = dispatch_to[0]
-        method()
+        key, callback_arguments = dispatch_to[0]
+        method, message = callback_arguments
+        self.do_stuff_across_form_entries(method, message)
 
-    def remove(self):
-        """Handle a form submission to remove items ready to be imported.
+    def do_stuff_across_form_entries(self, action, message_notification):
+        """Handle a form submission and executes the given 'action' with every
+        entry.
 
-        It expects the list of items ids at self.form_entries
+        'action' is a callable function that gets an ITranslationImportItem as
+        an argument.
+        'message_notification' is a string that will be showed to the user if
+        the action was successful done. I can have an integer argument to note
+        the amount of items that executed the 'action'.
         """
         # The user must be logged in.
         assert self.user is not None
 
-        removed = 0
+        actions_executed = 0
         for id in self.form_entries:
             entry = self.context.get(id)
-            if self.user.inTeam(entry.importer):
-                # Do the removal.
-                self.context.remove(id)
-                removed += 1
-            else:
-                # The user was not the importer and that means that is a
-                # broken request.
-                raise AssertionError(
-                    'Ignored your request to remove some items, because'
-                    'they are not yours.')
+            action(entry)
+            actions_executed += 1
 
         # Notifications.
-        if removed == 1:
-            self.notices.append('Removed %d item.' % removed)
-        elif removed > 1:
-            self.notices.append('Removed %d items.' % removed)
+        if removed > 0:
+            self.response.addInfoNotification(message_notification %
+                actions_executed)
 
-    def block(self):
+    def _remove(self, item):
+        """Handle a form submission to remove items ready to be imported.
+
+        It expects the list of items ids at self.form_entries
+        """
+        # XXX Carlos Perello Marin 20051124: We should not check the
+        # permissions here but use the standard security system. Please, look
+        # at https://launchpad.net/products/rosetta/+bug/4814 bug for more
+        # details.
+        if self.user.inTeam(item.importer):
+            # Do the removal.
+            self.context.remove(id)
+        else:
+            # The user was not the importer and that means that is a
+            # broken request.
+            raise AssertionError(
+                'Ignored your request to remove some items, because'
+                ' they are not yours.')
+
+    def _block(self, item):
         """Handle a form submission to block items to be imported.
 
         It expects the list of items ids at self.form_entries
         """
-        blocked = 0
-        for item in self.form_entries:
-            celebrities = getUtility(ILaunchpadCelebrities)
-            # Only admins or Rosetta experts will be able to block
-            # imports:
-            if (self.user.inTeam(celebrities.admin) or
-                self.user.inTeam(celebrities.rosetta_expert)):
-                # Block it.
-                entry = self.context.get(id)
-                entry.block()
-                blocked += 1
-            else:
-                # The user does not have the needed permissions to do
-                # this.
-                raise AssertionError(
-                    'Ignored your request to block some items, because'
-                    'they are not yours.')
+        # XXX Carlos Perello Marin 20051124: We should not check the
+        # permissions here but use the standard security system. Please, look
+        # at https://launchpad.net/products/rosetta/+bug/4814 bug for more
+        # details.
+        celebrities = getUtility(ILaunchpadCelebrities)
+        # Only admins or Rosetta experts will be able to block
+        # imports:
+        if (self.user.inTeam(celebrities.admin) or
+            self.user.inTeam(celebrities.rosetta_expert)):
+            # Block it.
+            entry.setBlocked()
+        else:
+            # The user does not have the needed permissions to do
+            # this.
+            raise AssertionError(
+                'Ignored your request to block some items, because'
+                ' they are not yours.')
 
-        # Notifications.
-        if blocked == 1:
-            self.notices.append('Blocked %d item.' % blocked)
-        elif blocked > 1:
-            self.notices.append('Blocked %d items.' % blocked)
-
-    def unblock(self):
+    def _unblock(self, item):
         """Handle a form submission to unblock items to be imported.
 
         It expects the list of items ids at self.form_entries
         """
-        unblocked = 0
-        for item in self.form_entries:
-            celebrities = getUtility(ILaunchpadCelebrities)
-            # Only admins or Rosetta experts will be able to unblock
-            # imports:
-            if (self.user.inTeam(celebrities.admin) or
-                self.user.inTeam(celebrities.rosetta_expert)):
-                # Unblock it.
-                entry = self.context.get(id)
-                entry.block(False)
-                unblocked += 1
-            else:
-                # The user does not have the needed permissions to do
-                # this.
-                raise AssertionError(
-                    'Ignored your request to block some items, because'
-                    'they are not yours.')
-
-        # Notifications.
-        if unblocked == 1:
-            self.notices.append('Unblocked %d item.' % unblocked)
-        elif unblocked > 1:
-            self.notices.append('Unblocked %d items.' % unblocked)
+        # XXX Carlos Perello Marin 20051124: We should not check the
+        # permissions here but use the standard security system. Please, look
+        # at https://launchpad.net/products/rosetta/+bug/4814 bug for more
+        # details.
+        celebrities = getUtility(ILaunchpadCelebrities)
+        # Only admins or Rosetta experts will be able to unblock
+        # imports:
+        if (self.user.inTeam(celebrities.admin) or
+            self.user.inTeam(celebrities.rosetta_expert)):
+            # Unblock it.
+            entry.setBlocked(False)
+        else:
+            # The user does not have the needed permissions to do
+            # this.
+            raise AssertionError(
+                'Ignored your request to block some items, because'
+                ' they are not yours.')

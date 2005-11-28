@@ -1,7 +1,7 @@
 -- Quieten things down...
 SET client_min_messages=ERROR;
 
-CREATE TABLE TranslationImportQueue(
+CREATE TABLE TranslationImportQueueEntry(
   id                serial NOT NULL PRIMARY KEY,
   path              text NOT NULL,
   content           integer REFERENCES LibraryFileAlias(id) NOT NULL,
@@ -11,8 +11,8 @@ CREATE TABLE TranslationImportQueue(
   distrorelease     integer REFERENCES DistroRelease(id),
   sourcepackagename integer REFERENCES SourcePackageName(id),
   productseries     integer REFERENCES ProductSeries(id),
-  blocked           boolean NOT NULL DEFAULT FALSE,
-  is_published       boolean NOT NULL,
+  is_blocked        boolean NOT NULL DEFAULT FALSE,
+  is_published      boolean NOT NULL,
   pofile            integer REFERENCES POFile(id),
   potemplate        integer REFERENCES POTemplate(id),
   CONSTRAINT        valid_link CHECK (
@@ -23,7 +23,7 @@ CREATE TABLE TranslationImportQueue(
                  ((pofile IS NULL) <> (potemplate IS NULL)))
 );
 
-CREATE UNIQUE INDEX unique_entry_per_importer ON TranslationImportQueue (
+CREATE UNIQUE INDEX unique_entry_per_importer ON TranslationImportQueueEntry (
                         importer,
                         path,
                         (COALESCE(distrorelease, -1)),

@@ -2,7 +2,6 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
-    xmlns:zope="http://namespaces.zope.org/zope"
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
 
@@ -91,29 +90,6 @@
         permission="launchpad.AnyPerson"
         template="../templates/pofile-translate.pt"
         class="canonical.launchpad.browser.POFileView"
-        />
-
-    <!--
-    XXX
-    These two views are for backwards compatibility. They should be
-    removed after a month or two.
-     - Dafydd Harries 2005/06/24
-    -->
-
-    <browser:page
-        name="+po"
-        for="canonical.launchpad.interfaces.IPOFile"
-        permission="launchpad.AnyPerson"
-        class="canonical.launchpad.browser.ExportCompatibilityView"
-        attribute="__call__"
-        />
-
-    <browser:page
-        name="+mo"
-        for="canonical.launchpad.interfaces.IPOFile"
-        permission="launchpad.AnyPerson"
-        class="canonical.launchpad.browser.ExportCompatibilityView"
-        attribute="__call__"
         />
 
     <browser:page

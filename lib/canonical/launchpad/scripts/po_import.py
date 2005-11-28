@@ -10,8 +10,12 @@ import time
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces import (IPOTemplateSet, IPOFileSet,
-    IPOFile, IPOTemplate, ITranslationImportQueueSet)
+from canonical.launchpad.interfaces import (
+    IPOTemplateSet, IPOFileSet, IPOFile, IPOTemplate, ITranslationImportQueue)
+
+class UnsupportedFileType(NotImplementedError):
+    """Raised when we get a file to import that we don't support."""
+    pass
 
 class ImportProcess:
     """Import .po and .pot files attached to Rosetta."""
@@ -91,18 +95,17 @@ class ImportProcess:
             yield pofile
 
     def fetchFromImportQueue(self):
-        """Iterates over the Import Queue and moves the imports to the know
+        """For each item in the import queue, move it into the associated
         IPOFile or IPOTemplate objects.
 
-        If there were objects in the queue, return True, if it's empty,
-        return False.
+        Return True if any queue items were processed, otherwise False.
         """
-        importqueue = getUtility(ITranslationImportQueueSet)
+        importqueue = getUtility(ITranslationImportQueue)
         potemplateset = getUtility(IPOTemplateSet)
         there_are_things_to_import = False
-        for file in importqueue.getEntries():
-            if not (file.path.endswith('.po') or file.path.endswith('.pot')):
-                raise NotImplementedError('Unknown file: %s' % file.path)
+        for file in importqueue.iterEntries():
+            if not file.path.endswith('.po') and not file.path.endswith('.pot'):
+                raise UnsupportedFileType('Unknown file: %s' % file.path)
             distrorelease = file.distrorelease
             productseries = file.productseries
             if sourcepackage is not None:
@@ -124,9 +127,8 @@ class ImportProcess:
             if file.path.endswith('.po'):
                 # It's a .po import
                 for template in potemplate_subset:
-                    try:
-                        pofile = template.getPOFileByPath(file.path)
-                    except NotFoundError:
+                    pofile = template.getPOFileByPath(file.path)
+                    if pofile is None:
                         # There is no pofile for that path in this template
                         continue
                     try:
@@ -142,10 +144,8 @@ class ImportProcess:
                     break
             else:
                 # It's a .pot import
-                try:
-                    potemplate = potemplate_subset.getPOTemplateByPath(
-                        file.path)
-                except NotFoundError:
+                potemplate = potemplate_subset.getPOTemplateByPath(file.path)
+                if potemplate is None:
                     # The .pot file is new, needs manually handling.
                     continue
                 try:
@@ -187,7 +187,7 @@ class ImportProcess:
                     # There are new files to be imported.
                     continue
                 else:
-                    # No pending imports in the queue. Exit the script.
+                    # No pending imports in the queue. Exit the loop.
                     break
 
             # object could be a POTemplate or a POFile but both

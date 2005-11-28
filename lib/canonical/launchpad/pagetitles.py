@@ -921,9 +921,9 @@ template_new = 'EXAMPLE NEW TITLE'
 translationgroup = ContextTitle('Rosetta Translation Group: %s')
 translationgroups = 'Rosetta Translation Groups'
 
-translationimportqueue_index = 'Translation Import Queue Entry'
-translationimportqueueset_index = 'Translation Import Queue'
-translationimportqueueset_blocked = 'Translation Import Queue - Blocked'
+translationimportqueueentry_index = 'Translation Import Queue Entry'
+translationimportqueue_index = 'Translation Import Queue'
+translationimportqueue_blocked = 'Translation Import Queue - Blocked'
 
 # ul_main_template is probably obselete
 

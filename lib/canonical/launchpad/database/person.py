@@ -1280,14 +1280,15 @@ class PersonSet:
             ''' % vars())
         skip.append(('posubmission', 'person'))
 
-        # Update only the TranslationImportQueue that will not conflict
+        # Update only the TranslationImportQueueEntry that will not conflict
         # and trash the rest
         cur.execute('''
-            UPDATE TranslationImportQueue
+            UPDATE TranslationImportQueueEntry
             SET importer=%(to_id)d
             WHERE importer=%(from_id)d AND id NOT IN (
                 SELECT a.id
-                FROM TranslationImportQueue AS a, TranslationImportQueue AS b
+                FROM TranslationImportQueueEntry AS a,
+                     TranslationImportQueueEntry AS b
                 WHERE a.importer = %(from_id)d AND b.importer = %(to_id)d
                 AND a.distrorelease = b.distrorelease
                 AND a.sourcepackagename = b.sourcepackagename
@@ -1296,9 +1297,9 @@ class PersonSet:
                 )
             ''' % vars())
         cur.execute('''
-            DELETE FROM TranslationImportQueue WHERE importer=%(from_id)d
+            DELETE FROM TranslationImportQueueEntry WHERE importer=%(from_id)d
             ''' % vars())
-        skip.append(('translationimportqueue', 'importer'))
+        skip.append(('translationimportqueueentry', 'importer'))
 
         # Sanity check. If we have a reference that participates in a
         # UNIQUE index, it must have already been handled by this point.

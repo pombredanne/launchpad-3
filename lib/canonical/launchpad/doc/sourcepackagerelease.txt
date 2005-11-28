@@ -72,9 +72,9 @@ It's time to check the upload function.
    >>> import canonical.launchpad
    >>> import os.path
    >>> import transaction
-   >>> from canonical.launchpad.interfaces import ITranslationImportQueueSet
+   >>> from canonical.launchpad.interfaces import ITranslationImportQueue
    >>> from canonical.librarian.interfaces import ILibrarianClient
-   >>> translation_import_queue_set = getUtility(ITranslationImportQueueSet)
+   >>> translation_import_queue = getUtility(ITranslationImportQueue)
    >>> client = getUtility(ILibrarianClient)
 
 We need a test tarball uploaded into librarian to run this test.
@@ -97,7 +97,7 @@ We need the commit to see the upload.
 
 Before the upload, the queue should be empty.
 
-   >>> len(translation_import_queue_set)
+   >>> len(translation_import_queue)
    0
 
 Now we do the upload.
@@ -110,7 +110,7 @@ The commit is needed to see the new entries
 
 And the queue should have a new entry.
 
-   >>> len(translation_import_queue_set)
+   >>> len(translation_import_queue)
    1
 
    >>> LibrarianTestSetup().tearDown()

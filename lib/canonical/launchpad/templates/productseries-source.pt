@@ -13,8 +13,8 @@
               <tal:processform condition="view/editSource" omit-tag="" />
 
               <h1>Upstream Source Import</h1>
-              
-              <p tal:condition="not:view/errormsgs">
+
+              <p tal:condition="not:view/has_errors">
                 Once you enter the details of the
                 <abbr title="revision control system">RCS</abbr>
                 you use for this product series,
@@ -23,13 +23,9 @@
                 This lets distributors share code with you more efficiently,
                 and also allows distributed upstream development.
               </p>
-  
-              <div tal:repeat="errmsg view/errormsgs" tal:omit-tag>
-                <p class="portalMessage" tal:content="errmsg" />
-              </div>
 
               <form method="post" name="mf">
-  
+
                 <h2>Package in Ubuntu,
                   <span tal:replace="view/curr_ubuntu_release/title">
                     The Hoary Hedgehog Release

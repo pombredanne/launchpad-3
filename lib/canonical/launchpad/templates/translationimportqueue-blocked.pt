@@ -7,27 +7,14 @@
 
 <div metal:fill-slot="main">
 
-  <tal:block condition="view/submitForm" />
-
   <h1>Translation files blocked from being imported</h1>
-
-  <p tal:repeat="alert view/alerts"
-    class="portalMessage"
-    tal:content="alert">
-    Notification Message
-  </p>
-  <p tal:repeat="notice view/notices"
-    class="portalMessage"
-    tal:content="notice">
-    Notification Message
-  </p>
 
   <tal:block condition="context/hasBlockedEntries">
   <div class="documentDescription">
-    This is a listing of all translation resources that were blocked to be
-    imported by a Rosetta Expert. Usually, this is due automatic imports into
-    Rosetta that imports some files that are not needed. If you have any
-    comment/question about them, please contact <a
+    These are the translation resources that need to be checked by
+    a Rosetta Expert before they will be imported.  This happens when
+    an automatic import includes some files that are not needed.  If you have
+    any comments or questions then contact <a
     href="mailto:rosetta@launchpad.net">Rosetta Experts</a>.
   </div>
 
@@ -46,7 +33,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr tal:repeat="entry context/getBlockedEntries">
+        <tr tal:repeat="entry context/iterBlockedEntries">
           <td>
             <input type="checkbox"
                    tal:condition="entry/required:launchpad.Edit"

@@ -23,7 +23,7 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     ISourcePackageRelease, ISourcePackageReleaseSet,
-    ILaunchpadCelebrities, ITranslationImportQueueSet)
+    ILaunchpadCelebrities, ITranslationImportQueue)
 
 from canonical.launchpad.database.binarypackagerelease import (
      BinaryPackageRelease)
@@ -212,24 +212,23 @@ class SourcePackageRelease(SQLBase):
         tarball = tarfile.open('', 'r', StringIO(tarball_file.read()))
 
         # Get the list of files to attach.
-        files = []
-        for name in tarball.getnames():
-            if name.startswith('source/') or name.startswith('./source/'):
-                if name.endswith('.pot') or name.endswith('.po'):
-                    files.append(name)
+        filenames = [name for name in tarball.getnames()
+                     if name.startswith('source/') or name.startswith('./source/')
+                     if name.endswith('.pot') or name.endswith('.po')
+                     ]
 
         if importer is None:
             importer = getUtility(ILaunchpadCelebrities).rosetta_expert
 
-        translation_import_queue_set = getUtility(ITranslationImportQueueSet)
+        translation_import_queue_set = getUtility(ITranslationImportQueue)
 
         # Attach all files
-        for file in files:
+        for filename in filenames:
             # Fetch the file
-            content = tarball.extractfile(file).read()
+            content = tarball.extractfile(filename).read()
             # Add it to the queue.
             translation_import_queue_set.addOrUpdateEntry(
-                file, content, is_published, importer,
+                filename, content, is_published, importer,
                 sourcepackagename=self.sourcepackagename,
                 distrorelease=self.uploaddistrorelease)
 

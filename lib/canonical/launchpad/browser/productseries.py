@@ -29,7 +29,7 @@ from canonical.launchpad.helpers import (
 from canonical.launchpad.interfaces import (
     IPerson, ICountry, IPOTemplateSet, ILaunchpadCelebrities, ILaunchBag,
     ISourcePackageNameSet, validate_url, IProductSeries, IProductSeriesSet,
-    ITranslationImportQueueSet)
+    ITranslationImportQueue)
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.webapp import (
     ContextMenu, Link, enabled_with_permission, Navigation, GetitemNavigation,
@@ -153,7 +153,6 @@ class ProductSeriesView(object):
         self.request = request
         self.form = request.form
         self.user = getUtility(ILaunchBag).user
-        self.errormsgs = []
         self.displayname = self.context.displayname
         self.summary = self.context.summary
         self.rcstype = self.context.rcstype
@@ -168,6 +167,7 @@ class ProductSeriesView(object):
         self.targetarchbranch = self.context.targetarchbranch
         self.targetarchversion = self.context.targetarchversion
         self.name = self.context.name
+        self.has_errors = False
         if self.context.product.project:
             self.default_targetarcharchive = self.context.product.project.name
             self.default_targetarcharchive += '@bazaar.ubuntu.com'
@@ -255,7 +255,9 @@ class ProductSeriesView(object):
                 self.releasefileglob) or None
         if self.releaseroot:
             if not validate_release_root(self.releaseroot):
-                self.errormsgs.append('Invalid release root URL')
+                self.request.response.addErrorNotification(
+                    'Invalid release root URL')
+                self.has_errors = True
                 return
         self.context.name = self.name
         self.context.summary = self.summary
@@ -276,10 +278,11 @@ class ProductSeriesView(object):
         if form.get("Update RCS Details", None) is None:
             return
         if self.context.syncCertified() and not fromAdmin:
-            self.errormsgs.append(
+            self.request.response.addErrorNotification(
                     'This Source is has been certified and is now '
                     'unmodifiable.'
                     )
+            self.has_errors = True
             return
         # get the form content, defaulting to what was there
         rcstype=form.get("rcstype", None)
@@ -298,24 +301,35 @@ class ProductSeriesView(object):
         if rcstype == 'cvs':
             if not (self.cvsroot and self.cvsmodule and self.cvsbranch):
                 if not fromAdmin:
-                    self.errormsgs.append('Please give valid CVS details')
+                    self.request.response.addErrorNotification(
+                        'Please give valid CVS details')
+                    self.has_errors = True
                 return
             if not validate_cvs_branch(self.cvsbranch):
-                self.errormsgs.append('Your CVS branch name is invalid.')
+                self.request.response.addErrorNotification(
+                    'Your CVS branch name is invalid.')
+                self.has_errors = True
                 return
             if not validate_cvs_root(self.cvsroot, self.cvsmodule):
-                self.errormsgs.append('Your CVS root and module are invalid.')
+                self.request.response.addErrorNotification(
+                    'Your CVS root and module are invalid.')
+                self.has_errors = True
                 return
             if self.svnrepository:
-                self.errormsgs.append('Please remove the SVN repository.')
+                self.request.response.addErrorNotification(
+                    'Please remove the SVN repository.')
+                self.has_errors = True
                 return
         elif rcstype == 'svn':
             if not validate_svn_repo(self.svnrepository):
-                self.errormsgs.append('Please give valid SVN server details')
+                self.request.response.addErrorNotification(
+                    'Please give valid SVN server details')
+                self.has_errors = True
                 return
             if (self.cvsroot or self.cvsmodule or self.cvsbranch):
-                self.errormsgs.append(
+                self.request.response.addErrorNotification(
                     'Please remove the CVS repository details.')
+                self.has_errors = True
                 return
         oldrcstype = self.context.rcstype
         self.context.rcstype = self.rcstype
@@ -349,7 +363,9 @@ class ProductSeriesView(object):
                 self.releasefileglob) or None
         if self.releaseroot:
             if not validate_release_root(self.releaseroot):
-                self.errormsgs.append('Invalid release root URL')
+                self.request.response.addErrorNotification(
+                    'Invalid release root URL')
+                self.has_errors = True
                 return
         # look for admin changes and retrieve those
         self.cvsroot = form.get('cvsroot', self.cvsroot) or None
@@ -367,20 +383,28 @@ class ProductSeriesView(object):
             'targetarchversion', self.targetarchversion).strip() or None
         # validate arch target details
         if not pybaz.NameParser.is_archive_name(self.targetarcharchive):
-            self.errormsgs.append('Invalid target Arch archive name.')
+            self.request.response.addErrorNotification(
+                'Invalid target Arch archive name.')
+            self.has_errors = True
         if not pybaz.NameParser.is_category_name(self.targetarchcategory):
-            self.errormsgs.append('Invalid target Arch category.')
+            self.request.response.addErrorNotification(
+                'Invalid target Arch category.')
+            self.has_errors = True
         if not pybaz.NameParser.is_branch_name(self.targetarchbranch):
-            self.errormsgs.append('Invalid target Arch branch name.')
+            self.request.response.addErrorNotification(
+                'Invalid target Arch branch name.')
+            self.has_errors = True
         if not pybaz.NameParser.is_version_id(self.targetarchversion):
-            self.errormsgs.append('Invalid target Arch version id.')
+            self.request.response.addErrorNotification(
+                'Invalid target Arch version id.')
+            self.has_errors = True
 
         # possibly resubmit for testing
         if self.context.autoTestFailed() and form.get('resetToAutotest', False):
             self.context.importstatus = ImportStatus.TESTING
 
         # Return if there were any errors, so as not to update anything.
-        if self.errormsgs:
+        if self.has_errors:
             return
         # update the database
         self.context.targetarcharchive = self.targetarcharchive
@@ -412,14 +436,17 @@ class ProductSeriesView(object):
             return
         # make sure we have a person to work with
         if self.user is None:
-            self.errormsgs.append('Please log in first!')
+            self.request.response.addErrorNotification('Please log in first!')
+            self.has_errors = True
             return
         # see if the name that is given is a real source package name
         spns = getUtility(ISourcePackageNameSet)
         try:
             spn = spns[ubuntupkg]
         except NotFoundError:
-            self.errormsgs.append('Invalid source package name %s' % ubuntupkg)
+            self.request.response.addErrorNotification(
+                'Invalid source package name %s' % ubuntupkg)
+            self.has_errors = True
             return
         # set the packaging record for this productseries in the current
         # ubuntu release. if none exists, one will be created
@@ -436,8 +463,6 @@ class ProductSeriesView(object):
         """Handle a form submission to change the contents of the template."""
         # check that we are processing the correct form, and that
         # it has been POST'ed
-        self.alerts = []
-        self.notices = []
         form = self.form
         if not form.get("TRANSLATIONS-UPLOAD", None)=="Request Upload":
             return
@@ -448,28 +473,31 @@ class ProductSeriesView(object):
 
         if not isinstance(file, FileUpload):
             if file == '':
-                self.alerts.append('Please, select a file to upload.')
+                self.request.response.addErrorNotification(
+                    "Ignored your upload because you didn't select a file to"
+                    " upload.")
             else:
                 # XXX: Carlos Perello Marin 2004/12/30
-                # Epiphany seems to have an aleatory bug with upload forms (or
-                # perhaps it's launchpad because I never had problems with
-                # bugzilla). The fact is that some uploads don't work and we
-                # get a unicode object instead of a file-like object in
-                # "file". We show an error if we see that behaviour. For more
-                # info, look at bug #116.
-                self.alerts.append(
-                    'There was an unknown error in uploading your file.')
+                # Epiphany seems to have an unpredictable bug with upload
+                # forms (or perhaps it's launchpad because I never had
+                # problems with bugzilla). The fact is that some uploads don't
+                # work and we get a unicode object instead of a file-like
+                # object in "file". We show an error if we see that behaviour.
+                # For more info, look at bug #116.
+                self.request.response.addErrorNotification(
+                    "The upload failed because there was a problem receiving"
+                    " the data.")
             return
 
         filename = file.filename
         content = file.read()
 
         if len(content) == 0:
-            self.alerts.append(
-                'Sorry, the uploaded file is empty. Upload ignored.')
+            self.request.response.addWarningNotification(
+                "Ignored your upload because the uploaded file is empty.")
             return
 
-        translation_import_queue_set = getUtility(ITranslationImportQueueSet)
+        translation_import_queue_set = getUtility(ITranslationImportQueue)
 
         if filename.endswith('.pot') or filename.endswith('.po'):
             # Add it to the queue.
@@ -477,7 +505,7 @@ class ProductSeriesView(object):
                 filename, content, True, self.user,
                 productseries=self.context)
 
-            self.notices.append(
+            self.request.response.addInfoNotification(
                 'Thank you for your upload. The file content will be'
                 ' reviewed soon by an admin and then imported into Rosetta.'
                 ' You can track its status from the <a href="%s">Translation'
@@ -491,7 +519,7 @@ class ProductSeriesView(object):
                 productseries=self.context)
 
             if num > 0:
-                self.notices.append(
+                self.request.response.addInfoNotification(
                     'Thank you for your upload. %d files from the tarball'
                     ' will be reviewed soon by an admin and then imported'
                     ' into Rosetta. You can track its status from the'
@@ -499,15 +527,13 @@ class ProductSeriesView(object):
                         num,
                         canonical_url(translation_import_queue_set)))
             else:
-                self.alerts.append(
-                    'The tarball you uploaded does not contain any file'
-                    ' that would be imported into Rosetta. Your request has'
-                    ' been ignored.')
-
+                self.request.response.addWarningNotification(
+                    "Nothing has happened. The tarball you uploaded does not"
+                    " contain any file that the system can understand.")
         else:
-            self.alerts.append(
-                'The file you uploaded was not recognised as a file that '
-                'can be imported. Your request has been ignored.')
+            self.request.response.addWarningNotification(
+                "Ignored your upload because the file you uploaded was not"
+                " recognised as a file that can be imported.")
 
 
 class ProductSeriesRdfView(object):

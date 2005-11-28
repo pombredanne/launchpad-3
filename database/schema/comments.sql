@@ -1192,17 +1192,16 @@ COMMENT ON COLUMN Language.pluralexpression IS 'The plural expression for this l
 COMMENT ON COLUMN Language.visible IS 'Whether this language should usually be visible or not';
 COMMENT ON COLUMN Language.direction IS 'The direction that text is written in this language';
 
--- TranslationImportQueue
-COMMENT ON TABLE TranslationImportQueue IS 'Queue with translatable resources pending to be imported into Rosetta.';
-COMMENT ON COLUMN TranslationImportQueue.path IS 'The path (included the filename) where this file was stored when we imported it.';
-COMMENT ON COLUMN TranslationImportQueue.content IS 'The file content that is being imported.';
-COMMENT ON COLUMN TranslationImportQueue.importer IS 'The person that did the import.';
-COMMENT ON COLUMN TranslationImportQueue.dateimported IS 'The timestamp when the import was done.';
-COMMENT ON COLUMN TranslationImportQueue.distrorelease IS 'The distribution release related to this import.';
-COMMENT ON COLUMN TranslationImportQueue.sourcepackagename IS 'The source package name related to this import.';
-COMMENT ON COLUMN TranslationImportQueue.productseries IS 'The product series related to this import.';
-COMMENT ON COLUMN TranslationImportQueue.blocked IS 'If this flag is set, the row should be blocked and not imported.';
-COMMENT ON COLUMN TranslationImportQueue.is_published IS 'Notes whether is a published upload.';
-COMMENT ON COLUMN TranslationImportQueue.pofile IS 'Link to the POFile where this import will end.';
-COMMENT ON COLUMN TranslationImportQueue.potemplate IS 'Link to the POTemplate where this import will end.';
-
+-- TranslationImportQueueEntry
+COMMENT ON TABLE TranslationImportQueueEntry IS 'Queue with translatable resources pending to be imported into Rosetta.';
+COMMENT ON COLUMN TranslationImportQueueEntry.path IS 'The path (included the filename) where this file was stored when we imported it.';
+COMMENT ON COLUMN TranslationImportQueueEntry.content IS 'The file content that is being imported.';
+COMMENT ON COLUMN TranslationImportQueueEntry.importer IS 'The person that did the import.';
+COMMENT ON COLUMN TranslationImportQueueEntry.dateimported IS 'The timestamp when the import was done.';
+COMMENT ON COLUMN TranslationImportQueueEntry.distrorelease IS 'The distribution release related to this import.';
+COMMENT ON COLUMN TranslationImportQueueEntry.sourcepackagename IS 'The source package name related to this import.';
+COMMENT ON COLUMN TranslationImportQueueEntry.productseries IS 'The product series related to this import.';
+COMMENT ON COLUMN TranslationImportQueueEntry.is_blocked IS 'If this flag is set, the row should be blocked and not imported.';
+COMMENT ON COLUMN TranslationImportQueueEntry.is_published IS 'Notes whether is a published upload.';
+COMMENT ON COLUMN TranslationImportQueueEntry.pofile IS 'Link to the POFile where this import will end.';
+COMMENT ON COLUMN TranslationImportQueueEntry.potemplate IS 'Link to the POTemplate where this import will end.';

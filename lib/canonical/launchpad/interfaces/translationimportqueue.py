@@ -9,15 +9,25 @@ _ = MessageIDFactory('launchpad')
 __metaclass__ = type
 
 __all__ = [
+    'EntryBlocked',
+    'EntryFileNameError',
+    'ITranslationImportQueueEntry',
     'ITranslationImportQueue',
-    'ITranslationImportQueueSet',
-    'ITranslationImportQueueEdition',
+    'IEditTranslationImportQueueEntry',
     ]
 
-class ITranslationImportQueue(Interface):
+class EntryBlocked(ValueError):
+    """The given entry is blocked."""
+    pass
+
+class EntryFileNameError(ValueError):
+    """The filename of the entry is not valid."""
+    pass
+
+class ITranslationImportQueueEntry(Interface):
     """An entry of the Translation Import Queue."""
 
-    id = Attribute('The item ID')
+    id = Attribute('The entry ID')
 
     path = TextLine(
         title=_("Path"),
@@ -50,13 +60,6 @@ class ITranslationImportQueue(Interface):
         required=False,
         vocabulary="SourcePackageName")
 
-    ignore = Bool(
-        title=_("Ignore this import request?"),
-        description=_(
-            "If checked, this import will not be imported ever."),
-        required=True,
-        default=False)
-
     is_published = Bool(
         title=_("This import comes from a published file"),
         description=_(
@@ -64,113 +67,119 @@ class ITranslationImportQueue(Interface):
         required=True,
         default=False)
 
-    content = Attribute("The file content.")
+    content = Attribute(
+        "An ILibraryFileAlias reference with the file content. Must be not"
+        " None.")
 
     sourcepackage = Attribute("The sourcepackage associated with this entry.")
 
-    import_into = Attribute("The Object where this entry will be imported.")
+    import_into = Attribute("The Object where this entry will be imported. Is"
+        " None if we don't know where to import it.")
 
     def attachToPOFileOrPOTemplate(pofile_or_potemplate):
-        """Move the imported file into the given IPOFile or IPOTemplate.
+        """Attach the imported file into the given IPOFile or IPOTemplate.
 
-        Raise the ValueError exception if the given argument is not an IPOFile
-        or an IPOTemplate or if the argument is not for the same
-        sourcepackage/productseries.
+        Raise the EntryBlocked exception if the entry is blocked.
+        Raise EntryFileNameError exception if the filename does not end with
+        .po or .pot.
         """
 
-    def block(value=True):
+    def setBlocked(value=True):
         """Set this object as being (or nor) importable."""
 
     def getFileContent():
         """Return the imported file content as a stream."""
 
 
-class ITranslationImportQueueSet(Interface):
+class ITranslationImportQueue(Interface):
     """A set of files to be imported into Rosetta."""
 
     def __iter__():
         """Iterate over all entries in the queue."""
 
     def __getitem__(id):
-        """Return the ITranslationImportQueue with the given id.
+        """Return the ITranslationImportQueueEntry with the given id.
 
         If there is not entries with that id, the NotFoundError exception is
         raised.
         """
 
     def __len__():
-        """Return the number of entries in the queue, included the blocked."""
+        """Return the number of entries in the queue, including blocked
+        entries.
+        """
 
     def addOrUpdateEntry(path, content, is_published, importer,
         sourcepackagename=None, distrorelease=None, productseries=None):
         """Return a new or updated entry of the import queue.
 
-        'path' is the path, with the filename, of the file imported.
-        'content' is the file content.
-        'is_published' indicates if the imported file is already published by
-        upstream.
-        'importer' is the person that did the import.
-        'sourcepackagename' is the link of this import with source package.
-        'distrorelease' is the link of this import with a distribution.
-        'productseries' is the link of this import with a product branch.
-        'sourcepackagename' + 'distrorelease' and 'productseries' are exclusive,
-        we must have only one combination of them.
+        :path: is the path, with the filename, of the file imported.
+        :content: is the file content.
+        :is_published: indicates if the imported file is already published by
+            upstream.
+        :importer: is the person that did the import.
+        :sourcepackagename: is the link of this import with source package.
+        :distrorelease: is the link of this import with a distribution.
+        :productseries: is the link of this import with a product branch.
+        :sourcepackagename: + :distrorelease: and :productseries: are exclusive,
+            we must have only one combination of them.
         """
 
     def addOrUpdateEntriesFromTarball(content, is_published, importer,
         sourcepackagename=None, distrorelease=None, productseries=None):
-        """Add all .po or .pot files from the tarball at 'content'.
+        """Add all .po or .pot files from the tarball at :content:.
 
-        'content' is a tarball stream.
-        'is_published' indicates if the imported file is already published by
-        upstream.
-        'importer' is the person that did the import.
-        'sourcepackagename' is the link of this import with source package.
-        'distrorelease' is the link of this import with a distribution.
-        'productseries' is the link of this import with a product branch.
-        'sourcepackagename' + 'distrorelease' and 'productseries' are exclusive,
-        we must have only one combination of them.
+        :content: is a tarball stream.
+        :is_published: indicates if the imported file is already published by
+            upstream.
+        :importer: is the person that did the import.
+        :sourcepackagename: is the link of this import with source package.
+        :distrorelease: is the link of this import with a distribution.
+        :productseries: is the link of this import with a product branch.
+        :sourcepackagename: + :distrorelease: and :productseries: are exclusive,
+            we must have only one combination of them.
+
         Return the number of files attached.
         """
 
-    def getEntries(include_ignored=False):
+    def iterEntries(include_blocked=False):
         """Iterate over the entries in the queue.
 
-        If the 'include_ignored' flag is True all entries are returned, if
-        it's False only the ones with 'ignore'= False are returned.
+        If the 'include_blocked' flag is True all entries are returned, if
+        it's False only the ones with 'is_blocked'= False are returned.
         """
 
-    def getEntriesForProductSeries(productseries):
-        """Return a set of ITranslationImportQueue objects that are related to
-        the given IProductSeries.
+    def iterEntriesForProductSeries(productseries):
+        """Iterate over a set of ITranslationImportQueueEntry objects that are
+        related to the given IProductSeries.
         """
 
-    def getEntriesForDistroReleaseAndSourcePackageName(distrorelease,
+    def iterEntriesForDistroReleaseAndSourcePackageName(distrorelease,
         sourcepackagename):
-        """Return a set of ITranslationImportQueue objects that are related to
-        the given distrorelease and sourcepackagename.
+        """Iterate over a set of ITranslationImportQueueEntry objects that are
+        related to the given distrorelease and sourcepackagename.
         """
 
     def hasBlockedEntries():
         """Return whether there are blocked entries in the queue or not."""
 
-    def getBlockedEntries():
-        """Return the set of ITranslationImportQueue objects that are set as
-        blocked to be imported.
+    def iterBlockedEntries():
+        """Iterate over a set of ITranslationImportQueueEntry objects that are set
+        as blocked to be imported.
         """
 
     def get(id):
-        """Return the ITranslationImportQueue with the given id.
+        """Return the ITranslationImportQueueEntry with the given id.
 
-        If there is not entries with that id, the NotFoundError exception is
+        If there is not entries with that :id:, the NotFoundError exception is
         raised.
         """
 
     def remove(id):
-        """Remove the item referered by 'id' from the queue."""
+        """Remove the entry with the given :id: from the queue."""
 
 
-class ITranslationImportQueueEdition(Interface):
+class IEditTranslationImportQueueEntry(Interface):
     """Set of widgets needed to moderate an entry on the imports queue."""
 
     potemplatename = Choice(

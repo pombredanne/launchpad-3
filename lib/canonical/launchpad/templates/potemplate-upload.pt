@@ -11,10 +11,6 @@
 
         <h1>Upload a new version of <span tal:replace="context/title" /></h1>
 
-        <div class="portalMessage"
-             tal:condition="view/status_message"
-             tal:content="structure view/status_message">Successful</div>
-
         <p>
         Here you can upload either a single PO template (<code>.pot</code>) or
         a tar file containing a PO template and a set of PO files

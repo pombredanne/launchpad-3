@@ -310,13 +310,10 @@ class POTemplate(SQLBase, RosettaStats):
 
     def getPOFileByPath(self, path):
         """See IPOTemplate."""
-        pofile = POFile.selectOne("""
+        return POFile.selectOne("""
             POFile.potemplate = %s AND
             POFile.path %s
             """ % sqlvalues(self.id, path))
-        if pofile is None:
-            raise NotFoundError(path)
-        return pofile
 
     def getPOFileByLang(self, language_code, variant=None):
         """See IPOTemplate."""
@@ -327,7 +324,7 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             raise TypeError('Variant must be None or unicode.')
 
-        pofile = POFile.selectOne("""
+        return POFile.selectOne("""
             POFile.potemplate = %d AND
             POFile.language = Language.id AND
             POFile.variant %s AND
@@ -336,44 +333,43 @@ class POTemplate(SQLBase, RosettaStats):
                    variantspec,
                    quote(language_code)),
             clauseTables=['Language'])
-        if pofile is None:
-            raise NotFoundError(language_code)
-        return pofile
-
-    def queryPOFileByLang(self, language_code, variant=None):
-        try:
-            pofile = self.getPOFileByLang(language_code, variant)
-            return pofile
-        except NotFoundError:
-            return None
 
     def messageCount(self):
+        """See IRosettaStats."""
         return self.messagecount
 
     def currentCount(self, language):
-        try:
-            return self.getPOFileByLang(language).currentCount()
-        except NotFoundError:
+        """See IRosettaStats."""
+        pofile = self.getPOFileByLang(language)
+        if pofile is None:
             return 0
+        else:
+            return pofile.currentCount()
 
     def updatesCount(self, language):
-        try:
-            return self.getPOFileByLang(language).updatesCount()
-        except NotFoundError:
+        """See IRosettaStats."""
+        pofile = self.getPOFileByLang(language)
+        if pofile is None:
             return 0
+        else:
+            pofile.updatesCount()
 
     def rosettaCount(self, language):
-        try:
-            return self.getPOFileByLang(language).rosettaCount()
-        except NotFoundError:
+        """See IRosettaStats."""
+        pofile = self.getPOFileByLang(language)
+        if pofile is None:
             return 0
+        else:
+            pofile.rosettaCount()
 
     def hasMessageID(self, messageID):
+        """See IPOTemplate."""
         results = POTMsgSet.selectBy(
             potemplateID=self.id, primemsgid_ID=messageID.id)
         return results.count() > 0
 
     def hasPluralMessage(self):
+        """See IPOTemplate."""
         results = POMsgIDSighting.select('''
             POMsgIDSighting.pluralform = %s AND
             POMsgIDSighting.potmsgset = POTMsgSet.id AND
@@ -397,7 +393,7 @@ class POTemplate(SQLBase, RosettaStats):
     def getOrCreatePOFile(self, language_code, variant=None, owner=None):
         """See IPOTemplate."""
         # see if one exists already
-        existingpo = self.queryPOFileByLang(language_code, variant)
+        existingpo = self.getPOFileByLang(language_code, variant)
         if existingpo is not None:
             return existingpo
 
@@ -452,7 +448,7 @@ class POTemplate(SQLBase, RosettaStats):
     def getPOFileOrDummy(self, language_code, variant=None, owner=None):
         """See IPOTemplate."""
         # see if one exists already
-        existingpo = self.queryPOFileByLang(language_code, variant)
+        existingpo = self.getPOFileByLang(language_code, variant)
         if existingpo is not None:
             return existingpo
 
@@ -677,7 +673,11 @@ class POTemplateSubset:
 
     def __getitem__(self, name):
         """See IPOTemplateSubset."""
-        return self.getPOTemplateByName(name)
+        potemplate = self.getPOTemplateByName(name)
+        if potemplate is None:
+            raise NotFoundError(name)
+        else:
+            return potemplate
 
     @property
     def title(self):
@@ -716,25 +716,19 @@ class POTemplateSubset:
         if self.query is None:
             query = 'POTemplate.potemplatename = %d' % ptn.id
         else:
-            query = '%s AND POTemplate.potemplatename = %d' % (self.query,
-                ptn.id)
+            query = '%s AND POTemplate.potemplatename = %d' % (
+                self.query, ptn.id)
 
-        result = POTemplate.selectOne(query, clauseTables=self.clausetables)
-        if result is None:
-            raise NotFoundError(name)
-        return result
+        return POTemplate.selectOne(query, clauseTables=self.clausetables)
 
-    def getByPath(self, path):
+    def getPOTemplateByPath(self, path):
         """See IPOTemplateSubset."""
         if self.query is None:
             query = 'POTemplate.path = %s' % path
         else:
             query = '%s POTemplate.path = %s' % (self.query, path)
 
-        result = POTemplate.selectOne(query, clauseTables=self.clausetables)
-        if result is None:
-            raise NotFoundError(path)
-        return result
+        return POTemplate.selectOne(query, clauseTables=self.clausetables)
 
 
 class POTemplateSet:
@@ -784,7 +778,7 @@ class POTemplateSet:
         sourcepackagename):
         """See IPOTemplateSet."""
         if distrorelease is None or sourcepackage is None:
-            raise RunTimeError(
+            raise AssertionError(
                 'distrorelease and sourcepackage must be not None.')
 
         return POTemplateSubset(
@@ -803,7 +797,14 @@ class POTemplateSet:
     def getPOTemplateByPathAndOrigin(self, path, productseries=None,
         distrorelease=None, sourcepackagename=None):
         """See IPOTemplateSet."""
-        if sourcepackagename is not None:
+        if productseries is not None:
+            return POTemplate.selectOne('''
+                    POTemplate.productseries = %s AND
+                    POTemplate.path = %s''' % sqlvalues(
+                        productseries.id,
+                        path)
+                    )
+        elif sourcepackagename is not None:
             # The POTemplate belongs to a distribution and it could come from
             # another package that the one it's linked at the moment so we
             # first check to find it at IPOTemplate.from_sourcepackagename
@@ -821,7 +822,7 @@ class POTemplateSet:
                 # sourcepackagename.
                 return potemplate
 
-            potemplate = POTemplate.selectOne('''
+            return POTemplate.selectOne('''
                     POTemplate.distrorelease = %s AND
                     POTemplate.sourcepackagename = %s AND
                     POTemplate.path = %s''' % sqlvalues(
@@ -829,27 +830,7 @@ class POTemplateSet:
                         sourcepackagename.id,
                         path)
                     )
-
-            if potemplate is None:
-                raise NotFoundError(
-                    'There is no POTemplate at %s for %s that comes from'
-                    ' %s' % (
-                        sourcepackagename.name, distrorelease.name, path)
-                    )
-            else:
-                return potemplate
         else:
-            potemplate = POTemplate.selectOne('''
-                    POTemplate.productseries = %s AND
-                    POTemplate.path = %s''' % sqlvalues(
-                        productseries.id,
-                        path)
-                    )
-
-            if potemplate is None:
-                raise NotFoundError(
-                    'There is no POTemplate at %s that comes from %s' % (
-                        productseries.title, path)
-                    )
-            else:
-                return potemplate
+            raise AssertionError(
+                'Either productseries or sourcepackagename arguments must be'
+                ' not None.')

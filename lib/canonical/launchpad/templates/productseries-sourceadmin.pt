@@ -14,8 +14,8 @@
   <tal:processform condition="view/adminSource" omit-tag="" />
 
               <h1>Register an upstream branch for importing</h1>
-              
-              <p tal:condition="not:view/errormsgs">
+
+              <p tal:condition="not:view/has_errors">
                 Once you enter the details of the
                 <abbr title="revision control system">RCS</abbr>
                 you use for this product series,
@@ -24,10 +24,6 @@
                 This lets distributors share code with you more efficiently,
                 and also allows distributed upstream development.
               </p>
-
-  <div tal:repeat="errmsg view/errormsgs" tal:omit-tag>
-  <p class="portalMessage" tal:content="errmsg" />
-  </div>
 
               <form method="post">
   

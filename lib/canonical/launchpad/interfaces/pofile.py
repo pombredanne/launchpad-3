@@ -70,8 +70,7 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
         "is used for this pofile. This is inherited from the product, "
         "project and/or distro in which the pofile is found.")
 
-    fuzzy_count = Attribute("The number of 'fuzzy' messages in this"
-        " po file.")
+    fuzzy_count = Attribute("The number of 'fuzzy' messages in this po file.")
 
     from_sourcepackagename = Attribute("The source package this pofile"
         " comes from (set it only if it's different from the"
@@ -248,7 +247,7 @@ class IPOFileSet(Interface):
         """Return an IPOFile that is stored at 'path' in source code and
            came from the given arguments.
 
-        Raise NotFoundError exception if there is not such IPOTemplate.
+        Return None if there is not such IPOFile.
         """
 
 

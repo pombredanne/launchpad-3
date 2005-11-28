@@ -1,9 +1,10 @@
 # Copyright 2005 Canonical Ltd. All rights reserved.
 
 __metaclass__ = type
-__all__ = ['TranslationImportQueue', 'TranslationImportQueueSet']
+__all__ = ['TranslationImportQueueEntry', 'TranslationImportQueue']
 
 import tarfile
+import os.path
 from StringIO import StringIO
 from zope.interface import implements
 from zope.component import getUtility
@@ -12,16 +13,17 @@ from sqlobject import SQLObjectNotFound, StringCol, ForeignKey, BoolCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import DEFAULT
-from canonical.launchpad.interfaces import (ITranslationImportQueue,
-    ITranslationImportQueueSet, NotFoundError, IPOFile, IPOFileSet,
-    IPOTemplateSet, ICanAttachRawFileData)
+from canonical.launchpad.interfaces import (
+    ITranslationImportQueueEntry, ITranslationImportQueue, IPOFile,
+    IPOFileSet, IPOTemplateSet, ICanAttachRawFileData, EntryFileNameError,
+    NotFoundError, EntryBlocked)
 from canonical.launchpad.database import SourcePackage
 from canonical.librarian.interfaces import ILibrarianClient
 
-class TranslationImportQueue(SQLBase):
-    implements(ITranslationImportQueue)
+class TranslationImportQueueEntry(SQLBase):
+    implements(ITranslationImportQueueEntry)
 
-    _table = 'TranslationImportQueue'
+    _table = 'TranslationImportQueueEntry'
 
     path = StringCol(dbName='path', notNull=True)
     content = ForeignKey(foreignKey='LibraryFileAlias', dbName='content',
@@ -36,7 +38,7 @@ class TranslationImportQueue(SQLBase):
         dbName='distrorelease', notNull=False, default=None)
     productseries = ForeignKey(foreignKey='ProductSeries',
         dbName='productseries', notNull=False, default=None)
-    blocked = BoolCol(dbName='blocked', notNull=True, default=False)
+    is_blocked = BoolCol(dbName='is_blocked', notNull=True, default=False)
     is_published = BoolCol(dbName='is_published', notNull=True)
     pofile = ForeignKey(foreignKey='POFile', dbName='pofile',
         notNull=False, default=None)
@@ -45,7 +47,7 @@ class TranslationImportQueue(SQLBase):
 
     @property
     def sourcepackage(self):
-        """See ITranslationImportQueue."""
+        """See ITranslationImportQueueEntry."""
         if self.sourcepackagename is None or self.distrorelease is None:
             return None
 
@@ -53,9 +55,9 @@ class TranslationImportQueue(SQLBase):
 
     @property
     def import_into(self):
-        """See ITranslationImportQueue."""
-        # First check if a Rosetta Expert choosed already where this file
-        # should be attached
+        """See ITranslationImportQueueEntry."""
+        # First check if a Rosetta Expert chose already where this file should
+        # be attached
         if self.pofile is not None:
             return self.pofile
         if self.potemplate is not None:
@@ -65,64 +67,51 @@ class TranslationImportQueue(SQLBase):
         if self.path.endswith('.pot'):
             # It's an IPOTemplate
             potemplate_set = getUtility(IPOTemplateSet)
-            try:
-                return potemplate_set.getPOTemplateByPathAndOrigin(
-                    self.path, productseries=self.productseries,
-                    distrorelease=self.distrorelease,
-                    sourcepackagename=self.sourcepackagename)
-            except NotFoundError:
-                return None
+            return potemplate_set.getPOTemplateByPathAndOrigin(
+                self.path, productseries=self.productseries,
+                distrorelease=self.distrorelease,
+                sourcepackagename=self.sourcepackagename)
         elif self.path.endswith('.po'):
             # It's an IPOFile
             pofile_set = getUtility(IPOFileSet)
-            try:
-                return pofile_set.getPOFileByPathAndOrigin(
-                    self.path, productseries=self.productseries,
-                    distrorelease=self.distrorelease,
-                    sourcepackagename=self.sourcepackagename)
-            except NotFoundError:
-                return None
+            return pofile_set.getPOFileByPathAndOrigin(
+                self.path, productseries=self.productseries,
+                distrorelease=self.distrorelease,
+                sourcepackagename=self.sourcepackagename)
         else:
             # Unknow import so we don't know where to import it.
             return None
 
     def attachToPOFileOrPOTemplate(self, pofile_or_potemplate):
-        """See ITranslationImportQueue."""
-        if self.blocked:
-            raise ValueError(
-                'This entry cannot be imported. It has the blocked flag set')
+        """See ITranslationImportQueueEntry."""
+        if self.is_blocked:
+            raise EntryBlocked(
+                'This entry cannot be imported. It has the is_blocked flag set')
         if IPOFile.providedBy(pofile_or_potemplate):
             if not self.path.lower().endswith('.po'):
-                raise ValueError(
+                raise EntryFileNameError(
                     'The %s file cannot be imported as a PO file' % self.path)
             potemplate = pofile_or_potemplate.potemplate
 
         elif IPOTemplate.providedBy(pofile_or_potemplate):
             if not (self.path.lower().endswith('.po') or
                     self.path.lower().endswith('.pot')):
-                raise ValueError(
+                raise EntryFileNameError(
                     'The %s file cannot be imported as a PO/POT file' %
                         self.path)
             potemplate = pofile_or_potemplate
-        if ((potemplate.distrorelease is not None and
-             self.distrorelease is not None and
-             potemplate.distrorelease.id != self.distrorelease.id) or
-            (potemplate.distrorelease is None and
-             potemplate.distrorelease != self.distrorelease) or
-            (potemplate.sourcepackagename is not None and
-             self.sourcepackagename is not None and
-             potemplate.sourcepackagename.id != self.sourcepackagename.id) or
-            (potemplate.sourcepackagename is None and
-             potemplate.sourcepackagename != self.sourcepackagename) or
-            (potemplate.productseries is not None and
-             self.productseries is not None and
-             potemplate.productseries.id != self.productseries.id) or
-            (potemplate.productseries is None and
-             potemplate.productseries != self.productseries)):
+        else:
+            raise AssertionError(
+                'Unknow object %s' % pofile_or_potemplate)
+        if ((potemplate.distrorelease != self.distrorelease) or
+            ((potemplate.sourcepackagename != self.sourcepackagename) and
+             (potemplate.fromsourcepackagename != self.sourcepackagename)) or
+            (potemplate.productseries != self.productseries)):
             # The given pofile is not for the same product/sourcepackage were
             # this file comes from.
-            raise ValueError('The given pofile is not for this files\''
-                ' product/sourcepackage.')
+            raise AssertionError(
+                "The given pofile is not for this files'"
+                " product/sourcepackage.")
 
         # Update the fields of the given object
         pofile_or_potemplate.path = self.path
@@ -132,63 +121,61 @@ class TranslationImportQueue(SQLBase):
 
         # The import is noted now, so we should remove this entry from the
         # queue.
-        TranslationImportQueue.delete(self.id)
+        TranslationImportQueueEntry.delete(self.id)
 
-    def block(self, value=True):
-        """See ITranslationImportQueue."""
-        self.blocked = value
+    def setBlocked(self, value=True):
+        """See ITranslationImportQueueEntry."""
+        self.is_blocked = value
         # Sync it so future queries get this change.
         self.sync()
 
     def getFileContent(self):
-        """See ITranslationImportQueue."""
+        """See ITranslationImportQueueEntry."""
         client = getUtility(ILibrarianClient)
-
         return client.getFileByAlias(self.content.id).read()
 
 
-class TranslationImportQueueSet:
-    implements(ITranslationImportQueueSet)
+class TranslationImportQueue:
+    implements(ITranslationImportQueue)
 
     def __iter__(self):
-        """See ITranslationImportQueueSet."""
-        for entry in self.getEntries(include_blocked=True):
-            yield entry
+        """See ITranslationImportQueue."""
+        return self.iterEntries(include_blocked=True)
 
     def __getitem__(self, id):
-        """See ITranslationImportQueueSet."""
+        """See ITranslationImportQueue."""
         try:
             idnumber = int(id)
         except ValueError:
-            raise NotFoundError("Unable to locate an entry in the translation"
-                " import queue with ID %s" % id)
+            raise NotFoundError(id)
 
         return self.get(idnumber)
 
     def __len__(self):
-        """See ITranslationImportQueueSet."""
-        return TranslationImportQueue.select().count()
+        """See ITranslationImportQueue."""
+        return TranslationImportQueueEntry.select().count()
 
     def addOrUpdateEntry(self, path, content, is_published, importer,
         sourcepackagename=None, distrorelease=None, productseries=None):
-        """See ITranslationImportQueueSet."""
+        """See ITranslationImportQueue."""
         if ((sourcepackagename is not None or distrorelease is not None) and
             productseries is not None):
-            raise ValueError('The productseries argument cannot be not None'
-                ' if sourcepackagename or distrorelease is also not None.')
+            raise AssertionError(
+                'The productseries argument cannot be not None if'
+                ' sourcepackagename or distrorelease is also not None.')
         if (sourcepackagename is None and distrorelease is None and
             productseries is None):
-            raise ValueError('Any of sourcepackagename, distrorelease or'
+            raise AssertionError('Any of sourcepackagename, distrorelease or'
                 ' productseries must be not None.')
 
         if content is None or content == '':
-            raise ValueError('The content cannot be empty')
+            raise AssertionError('The content cannot be empty')
 
         if path is None or path == '':
-            raise ValueError('The path cannot be empty')
+            raise AssertionError('The path cannot be empty')
 
         # Upload the file into librarian.
-        filename = path.split('/')[-1]
+        filename = os.path.basename(path)
         size = len(content)
         file = StringIO(content)
         client = getUtility(ILibrarianClient)
@@ -201,18 +188,18 @@ class TranslationImportQueueSet:
         # Check if we got already this request from this user.
         if sourcepackagename is not None:
             # The import is related with a sourcepackage and a distribution.
-            entry = TranslationImportQueue.selectOne(
-                "TranslationImportQueue.path = %s AND"
-                " TranslationImportQueue.importer = %s AND"
-                " TranslationImportQueue.sourcepackagename = %s AND"
-                " TranslationImportQueue.distrorelease = %s" % sqlvalues(
+            entry = TranslationImportQueueEntry.selectOne(
+                "TranslationImportQueueEntry.path = %s AND"
+                " TranslationImportQueueEntry.importer = %s AND"
+                " TranslationImportQueueEntry.sourcepackagename = %s AND"
+                " TranslationImportQueueEntry.distrorelease = %s" % sqlvalues(
                     path, importer.id, sourcepackagename.id, distrorelease.id)
                 )
         else:
-            entry = TranslationImportQueue.selectOne(
-                "TranslationImportQueue.path = %s AND"
-                " TranslationImportQueue.importer = %s AND"
-                " TranslationImportQueue.productseries = %s" % sqlvalues(
+            entry = TranslationImportQueueEntry.selectOne(
+                "TranslationImportQueueEntry.path = %s AND"
+                " TranslationImportQueueEntry.importer = %s AND"
+                " TranslationImportQueueEntry.productseries = %s" % sqlvalues(
                     path, importer.id, productseries.id)
                 )
 
@@ -224,7 +211,7 @@ class TranslationImportQueueSet:
             return entry
         else:
             # It's a new row.
-            entry = TranslationImportQueue(path=path, content=alias,
+            entry = TranslationImportQueueEntry(path=path, content=alias,
                 importer=importer, sourcepackagename=sourcepackagename,
                 distrorelease=distrorelease, productseries=productseries,
                 is_published=is_published)
@@ -232,7 +219,7 @@ class TranslationImportQueueSet:
 
     def addOrUpdateEntriesFromTarball(self, content, is_published, importer,
         sourcepackagename=None, distrorelease=None, productseries=None):
-        """See ITranslationImportQueueSet."""
+        """See ITranslationImportQueue."""
 
         tarball = tarfile.open('', 'r', StringIO(content))
         names = tarball.getnames()
@@ -250,52 +237,41 @@ class TranslationImportQueueSet:
 
         return len(files)
 
-    def getEntries(self, include_blocked=False):
-        """See ITranslationImportQueueSet."""
+    def iterEntries(self, include_blocked=False):
+        """See ITranslationImportQueue."""
         if include_blocked == True:
-            res = TranslationImportQueue.select()
+            res = TranslationImportQueueEntry.select()
         else:
-            res = TranslationImportQueue.select('blocked = FALSE')
-        for entry in res:
-            yield entry
+            res = TranslationImportQueueEntry.select('is_blocked = FALSE')
+        return res
 
-    def getEntriesForProductSeries(self, productseries):
-        """See ITranslationImportQueueSet."""
-        res = TranslationImportQueue.selectBy(productseriesID=productseries.id)
-        for entry in res:
-            yield entry
+    def iterEntriesForProductSeries(self, productseries):
+        """See ITranslationImportQueue."""
+        return TranslationImportQueueEntry.selectBy(productseriesID=productseries.id)
 
-    def getEntriesForDistroReleaseAndSourcePackageName(self, distrorelease,
+    def iterEntriesForDistroReleaseAndSourcePackageName(self, distrorelease,
         sourcepackagename):
-        """See ITranslationImportQueueSet."""
-        res = TranslationImportQueue.selectBy(
+        """See ITranslationImportQueue."""
+        return TranslationImportQueueEntry.selectBy(
             distroreleaseID=distrorelease.id,
             sourcepackagenameID=sourcepackagename.id)
-        for entry in res:
-            yield entry
 
     def hasBlockedEntries(self):
-        """See ITranslationImportQueueSet."""
-        res = TranslationImportQueue.select('blocked = TRUE')
-        if res.count() > 0:
-            return True
-        else:
-            return False
+        """See ITranslationImportQueue."""
+        res = TranslationImportQueueEntry.select('is_blocked = TRUE')
+        return res.count() > 0
 
-    def getBlockedEntries(self):
-        """See ITranslationImportQueueSet."""
-        res = TranslationImportQueue.select('blocked = TRUE')
-        for entry in res:
-            yield entry
+    def iterBlockedEntries(self):
+        """See ITranslationImportQueue."""
+        return TranslationImportQueueEntry.select('is_blocked = TRUE')
 
     def get(self, id):
-        """See ITranslationImportQueueSet."""
+        """See ITranslationImportQueue."""
         try:
-            return TranslationImportQueue.get(id)
+            return TranslationImportQueueEntry.get(id)
         except SQLObjectNotFound:
-            raise NotFoundError("Unable to locate an entry in the translation"
-                " import queue with ID %s" % str(id))
+            raise NotFoundError(str(id))
 
     def remove(self, id):
-        """See ITranslationImportQueueSet."""
-        TranslationImportQueue.delete(id)
+        """See ITranslationImportQueue."""
+        TranslationImportQueueEntry.delete(id)

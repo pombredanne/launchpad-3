@@ -95,14 +95,14 @@ class ISourcePackageRelease(Interface):
     def attachTranslationFiles(tarball_alias, is_published, importer=None):
         """Attach a tarball with translations to be imported into Rosetta.
 
-        'tarball_alias' is a Librarian alias that references to a tarball with
-        translations.
-        'is_published' indicates if the imported files are already published by
-        upstream.
-        'importer' is the person that did the import.
+        :tarball_alias: is a Librarian alias that references to a tarball with
+            translations.
+        :is_published' indicates if the imported files are already published by
+            upstream.
+        :importer' is the person that did the import.
 
         raise DownloadFailed if we are not able to fetch the file from
-        'tarball_alias'.
+            :tarball_alias:.
         """
 
 

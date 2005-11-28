@@ -27,11 +27,6 @@
       relevant Ubuntu package.
     </p>
 
-    <p tal:repeat="msg view/errormsgs" class="portalMessage"
-       tal:content="msg">
-       Error Message Here
-    </p>
-
     <p class="portalMessage"
        tal:condition="not:request/lp:person">
        Please log in to edit the mapping from this product branch to its

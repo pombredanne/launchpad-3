@@ -148,8 +148,8 @@ class POFile(SQLBase, RosettaStats):
                         notNull=False,
                         default=None)
     path = StringCol(dbName='path',
-                         notNull=False,
-                         default=None)
+                     notNull=False,
+                     default=None)
     exportfile = ForeignKey(foreignKey='LibraryFileAlias',
                             dbName='exportfile',
                             notNull=False,
@@ -929,29 +929,18 @@ class POFileSet:
     def getPOFileByPathAndOrigin(self, path, productseries=None,
         distrorelease=None, sourcepackagename=None):
         """See IPOFileSet."""
-        pofile = None
-        message = None
-
         if productseries is not None:
-            results = POFile.select('''
+            return POFile.selectOne('''
                 POFile.path = %s AND
                 POFile.potemplate = POTemplate.id AND
                 POTemplate.productseries = %s''' % sqlvalues(
                     path, productseries.id),
                 clauseTables=['POTemplate'])
-            if results.count() == 1:
-                pofile = results[0]
-            else:
-                message = (
-                    'There is no POTemplate at %s that comes from %s' % (
-                        productseries.title, path)
-                    )
-
         elif sourcepackagename is not None:
             # The POTemplate belongs to a distribution and it could come from
-            # another package that the one it's linked at the moment so we
-            # first check to find it at IPOTemplate.fromsourcepackagename
-            results = POFile.select('''
+            # another package that the one it's linked to, so we first check
+            # to find it at IPOTemplate.fromsourcepackagename
+            pofile = POFile.selectOne('''
                 POFile.path = %s AND
                 POFile.potemplate = POTemplate.id AND
                 POTemplate.distrorelease = %s AND
@@ -959,34 +948,20 @@ class POFileSet:
                     path, distrorelease.id, sourcepackagename.id),
                 clauseTables=['POTemplate'])
 
-            if results.count() == 1:
-                pofile = results[0]
-            else:
-                # There is no pofile in that 'path' and
-                # 'fromsourcepackagename' so we do a search using the usual
-                # sourcepackagename.
-                results = POFile.select('''
-                    POFile.path = %s AND
-                    POFile.potemplate = POTemplate.id AND
-                    POTemplate.distrorelease = %s AND
-                    POTemplate.sourcepackagename = %s''' % sqlvalues(
-                        path, distrorelease.id, sourcepackagename.id),
-                    clauseTables=['POTemplate'])
+            if pofile is not None:
+                return pofile
 
-                if results.count() == 1:
-                    pofile = results[0]
-                else:
-                    message = (
-                        'There is no POTemplate at %s for %s that comes from'
-                        ' %s' % (
-                            sourcepackagename.name, distrorelease.name, path)
-                        )
+            # There is no pofile in that 'path' and
+            # 'fromsourcepackagename' so we do a search using the usual
+            # sourcepackagename.
+            return POFile.selectOne('''
+                POFile.path = %s AND
+                POFile.potemplate = POTemplate.id AND
+                POTemplate.distrorelease = %s AND
+                POTemplate.sourcepackagename = %s''' % sqlvalues(
+                    path, distrorelease.id, sourcepackagename.id),
+                clauseTables=['POTemplate'])
         else:
-            message = ('Either productrelease or distrorelease and'
-                ' sourcepackagename must not be None.')
-
-        if pofile is None:
-            raise NotFoundError(message)
-        else:
-            return pofile
-
+            raise AssertionError(
+                'Either productseries or sourcepackagename arguments must be'
+                ' not None.')

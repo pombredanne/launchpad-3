@@ -228,7 +228,7 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
     def getPOFileByPath(path):
         """Get the PO file of the given path.
 
-        Raise NotFoundError if there is no such POFile.
+        Return None if there is no such IPOFile.
         """
 
     def getPOFileByLang(language_code, variant=None):
@@ -236,12 +236,8 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
         variant. If no variant is specified then the translation
         without a variant is given.
 
-        Raise NotFoundError if there is no such POFile.
+        Return None if there is no such POFile.
         """
-
-    def queryPOFileByLang(language_code, variant=None):
-        """Return a PO file for this PO template in the given language, if
-        it exists, or None if it does not."""
 
     def hasMessageID(msgid):
         """Check whether a message set with the given message ID exists within
@@ -326,6 +322,18 @@ class IPOTemplateSubset(Interface):
     def new(potemplatename, title, contents, owner):
         """Create a new template for the context of this Subset."""
 
+    def getPOTemplateByName(name):
+        """Return the IPOTemplate from this subset that has the given name.
+
+        Return None if there is not such IPOTemplate.
+        """
+
+    def getPOTemplateByPath(path):
+        """Return the IPOTemplate from this subset that has the given path.
+
+        Return None if there is not such IPOTemplate.
+        """
+
 
 class IPOTemplateSet(Interface):
     """A set of PO templates."""
@@ -353,7 +361,7 @@ class IPOTemplateSet(Interface):
         """Return an IPOTemplate that is stored at 'path' in source code and
            came from the given arguments.
 
-        Raise NotFoundError exception if there is not such IPOTemplate.
+        Return None if there is not such IPOTemplate.
         """
 
 

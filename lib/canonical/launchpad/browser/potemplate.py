@@ -24,7 +24,7 @@ from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, IPOExportRequestSet,
     IPersonSet, RawFileAttachFailed, ICanonicalUrlData, ILaunchpadCelebrities,
-    ILaunchBag, IPOFileSet, IPOTemplateSubset, ITranslationImportQueueSet)
+    ILaunchBag, IPOFileSet, IPOTemplateSubset, ITranslationImportQueue)
 from canonical.launchpad.browser.pofile import (
     POFileView, BaseExportView, POFileAppMenus)
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -40,8 +40,13 @@ class POTemplateNavigation(Navigation):
     def traverse(self, name):
         user = getUtility(ILaunchBag).user
         if self.request.method in ['GET', 'HEAD']:
+            # IF it's just a query, get a real IPOFile or use a fake one so we
+            # don't create new IPOFiles just because someone is browsing the
+            # web.
             return self.context.getPOFileOrDummy(name, owner=user)
         elif self.request.method == 'POST':
+            # If it's a post, get a real IPOFile or create a new one so we can
+            # store the posted data.
             return self.context.getOrCreatePOFile(name, owner=user)
         else:
             raise AssertionError('We only know about GET, HEAD, and POST')
@@ -110,7 +115,6 @@ class POTemplateView:
         self.request_languages = helpers.request_languages(self.request)
         self.description = self.context.potemplatename.description
         self.user = getUtility(ILaunchBag).user
-        self.status_message = None
 
     def num_messages(self):
         N = self.context.messageCount()
@@ -140,8 +144,8 @@ class POTemplateView:
         languages.sort(lambda a, b: cmp(a.englishname, b.englishname))
 
         for language in languages:
-            pofile = self.context.queryPOFileByLang(language.code)
-            if not pofile:
+            pofile = self.context.getPOFileByLang(language.code)
+            if pofile is None:
                 pofileset = getUtility(IPOFileSet)
                 pofile = pofileset.getDummy(self.context, language)
             yield POFileView(pofile, self.request)
@@ -161,63 +165,64 @@ class POTemplateView:
 
         if not isinstance(file, FileUpload):
             if file == '':
-                self.status_message = 'Please, select a file to upload.'
+                self.request.response.addErrorNotification(
+                    "Ignored your upload because you didn't select a file to"
+                    " upload.")
             else:
                 # XXX: Carlos Perello Marin 2004/12/30
-                # Epiphany seems to have an aleatory bug with upload forms (or
-                # perhaps it's launchpad because I never had problems with
-                # bugzilla). The fact is that some uploads don't work and we
-                # get a unicode object instead of a file-like object in
-                # "file". We show an error if we see that behaviour. For more
-                # info, look at bug #116.
-                self.status_message = (
-                    'There was an unknown error in uploading your file.')
+                # Epiphany seems to have an unpredictable bug with upload
+                # forms (or perhaps it's launchpad because I never had
+                # problems with bugzilla). The fact is that some uploads don't
+                # work and we get a unicode object instead of a file-like
+                # object in "file". We show an error if we see that behaviour.
+                # For more info, look at bug #116.
+                self.request.response.addErrorNotification(
+                    "The upload failed because there was a problem receiving"
+                    " the data.")
             return
 
         filename = file.filename
         content = file.read()
 
         if len(content) == 0:
-            self.status_message = (
-                'Sorry, the uploaded file is empty. Upload ignored.')
+            self.request.response.addWarningNotification(
+                "Ignored your upload because the uploaded file is empty.")
             return
 
-        translation_import_queue_set = getUtility(ITranslationImportQueueSet)
+        translation_import_queue = getUtility(ITranslationImportQueue)
 
         if filename.endswith('.pot'):
             # Add it to the queue.
-            translation_import_queue_set.addOrUpdateEntry(
+            translation_import_queue.addOrUpdateEntry(
                 self.context.path, content, True, self.user,
                 sourcepackagename=self.context.sourcepackagename,
                 distrorelease=self.context.distrorelease,
                 productseries=self.context.productseries)
 
-            self.status_message = (
-                'Thank you for your upload. The template content will appear'
-                ' in Rosetta in a few minutes.')
+            self.request.response.addInfoNotification(
+                "Your upload worked. The template's content will appear in"
+                "Rosetta in a few minutes.")
 
         elif helpers.is_tar_filename(filename):
             # Add the whole tarball to the import queue.
-            num = translation_import_queue_set.addOrUpdateEntriesFromTarball(
+            num = translation_import_queue.addOrUpdateEntriesFromTarball(
                 content, True, self.user,
                 sourcepackagename=self.context.sourcepackagename,
                 distrorelease=self.context.distrorelease,
                 productseries=self.context.productseries)
 
             if num > 0:
-                self.status_message = (
-                    'Thank you for your upload. %d files from the tarball'
+                self.request.response.addInfoNotification(
+                    'Your upload worked. %d files from the tarball'
                     ' will be imported into Rosetta in a few minutes.' % num)
             else:
-                self.status_message = (
-                    'The tarball you uploaded does not contain any file'
-                    ' that would be imported into Rosetta. Your request has'
-                    ' been ignored.')
-
+                self.request.response.addWarningNotification(
+                    "Nothing has happened. The tarball you uploaded does not"
+                    " contain any file that the system can understand.")
         else:
-            self.status_message = (
-                'The file you uploaded was not recognised as a file that '
-                'can be imported. Your request has been ignored.')
+            self.request.response.addWarningNotification(
+                "Ignored your upload because the file you uploaded was not"
+                " recognised as a file that can be imported.")
 
 
 class POTemplateEditView(POTemplateView, SQLObjectEditView):
@@ -322,11 +327,8 @@ class POTemplateExportView(BaseExportView):
                     code = key
                     variant = None
 
-                try:
-                    pofile = self.context.getPOFileByLang(code, variant)
-                except KeyError:
-                    pass
-                else:
+                pofile = self.context.getPOFileByLang(code, variant)
+                if pofile is not None:
                     pofiles.append(pofile)
         else:
             self.errorMessage = (
