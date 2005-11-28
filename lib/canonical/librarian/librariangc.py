@@ -104,7 +104,7 @@ def merge_duplicates(ztm):
         cur.execute("""
             UPDATE LibraryFileAlias SET content=%(prime_id)s
             WHERE content in (%(other_ids)s)
-            """, vars())
+            """ % vars())
 
         log.debug("Committing")
         ztm.commit()
