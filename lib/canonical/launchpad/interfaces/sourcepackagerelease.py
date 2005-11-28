@@ -4,10 +4,7 @@
 
 __metaclass__ = type
 
-__all__ = [
-    'ISourcePackageRelease',
-    'ISourcePackageReleaseSet',
-    ]
+__all__ = ['ISourcePackageRelease']
 
 from zope.schema import TextLine
 from zope.interface import Interface, Attribute
@@ -57,6 +54,12 @@ class ISourcePackageRelease(Interface):
     latest_build = Attribute("The latest build of this source package "
         "release, or None")
 
+    open_tickets_count = Attribute(
+        "The number of open support tickets on the distrorelease and "
+        "sourcepackagename of this SourcePackageRelease")
+    sourcepackage = Attribute(
+        "The magic SourcePackage for the sourcepackagename and "
+        "distrorelease of this object.")
     productrelease = Attribute("The best guess we have as to the Launchpad "
         "ProductRelease associated with this SourcePackageRelease.")
 
@@ -104,12 +107,3 @@ class ISourcePackageRelease(Interface):
         raise DownloadFailed if we are not able to fetch the file from
             :tarball_alias:.
         """
-
-
-class ISourcePackageReleaseSet(Interface):
-
-    def getByCreatorID(creatorID):
-        """Return an iterator over SourcePackageReleases created by this
-        person."""
-
-
