@@ -17,7 +17,8 @@ from canonical.launchpad.interfaces import IHasBuildRecords
 from canonical.launchpad.interfaces import IBuild
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, GetitemNavigation, stepthrough)
+    StandardLaunchpadFacets, Link, GetitemNavigation, stepthrough,
+    LaunchpadView)
 
 
 class BuildNavigation(GetitemNavigation):
@@ -31,7 +32,7 @@ class BuildFacets(StandardLaunchpadFacets):
     usedfor = IBuild
 
 
-class BuildRecordsView:
+class BuildRecordsView(LaunchpadView):
     __used_for__ = IHasBuildRecords
 
     def getBuilt(self):
