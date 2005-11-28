@@ -62,7 +62,7 @@ def merge_duplicates(ztm):
         # Make sure the first file exists on disk. Don't merge if it
         # doesn't. This shouldn't happen on production, so we don't try
         # and cope - just report and skip. However, on staging this will
-        # be common because database records has been synced from
+        # be more common because database records has been synced from
         # production but the actual librarian contents has not.
         dupe1_id = int(dupes[0])
         dupe1_path = get_file_path(dupe1_id)
