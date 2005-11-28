@@ -45,7 +45,10 @@ def merge_duplicates(ztm):
         sha1 = sha1.encode('US-ASCII') # Can't pass Unicode to execute (yet)
 
         # Get a list of our dupes, making sure that the first in the
-        # list is not deleted if possible.
+        # list is not deleted if possible. Where multiple non-deleted
+        # files exist, we return the most recently added one first, because
+        # this is the version most likely to exist on the staging server
+        # (it should be irrelevant on production).
         cur.execute("""
             SELECT id
             FROM LibraryFileContent
