@@ -60,11 +60,13 @@ def merge_duplicates(ztm):
                 )
 
         # Make sure the first file exists on disk. Don't merge if it
-        # doesn't. This shouldn't happen, so we don't try and cope - just
-        # report and skip.
+        # doesn't. This shouldn't happen on production, so we don't try
+        # and cope - just report and skip. However, on staging this will
+        # be common because database records has been synced from
+        # production but the actual librarian contents has not.
         dupe1_id = int(dupes[0])
         dupe1_path = get_file_path(dupe1_id)
-        if not os.path.exists(dupe1_path):
+        if config.name != 'staging' and not os.path.exists(dupe1_path):
             log.error(
                     "LibraryFileContent %d data is missing (%s)",
                     dupe1_id, dupe1_path
