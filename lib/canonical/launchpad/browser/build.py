@@ -35,7 +35,7 @@ class BuildFacets(StandardLaunchpadFacets):
     usedfor = IBuild
 
 
-class BuildRecordsView:
+class BuildRecordsView(LaunchpadView):
     """Base class used to present objects that contains build records.
     
     It retrieves the UI build_state selector action and setup a proper
