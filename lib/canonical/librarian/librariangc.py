@@ -50,7 +50,7 @@ def merge_duplicates(ztm):
             SELECT id
             FROM LibraryFileContent
             WHERE sha1=%(sha1)s AND filesize=%(filesize)s
-            ORDER BY deleted, -datecreated
+            ORDER BY deleted, datecreated DESC
             """, vars())
         dupes = [str(row[0]) for row in cur.fetchall()]
 
@@ -88,7 +88,7 @@ def merge_duplicates(ztm):
         for dupe2_id in (int(dupe) for dupe in dupes[1:]):
             dupe2_path = get_file_path(dupe2_id)
             # Check paths exist, because on staging they may not!
-            if (os.path.exists(dupe1_path) and os.path.exists(dupe2_path)
+            if (os.path.exists(dupe2_path)
                 and not _sameFile(dupe1_path, dupe2_path)):
                 log.error(
                         "SHA-1 collision found. LibraryFileContent %d and "
