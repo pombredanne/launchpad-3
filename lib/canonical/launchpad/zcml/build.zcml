@@ -38,17 +38,17 @@
       permission="zope.Public">
       <browser:page 
         name="+index"
-	facet="overview"
+        facet="overview"
         template="../templates/build-index.pt"
         />
       <browser:page 
         name="+changes"
-	facet="overview"
+        facet="overview"
         template="../templates/build-changes.pt"
         />
       <browser:page 
         name="+buildlog"
-	facet="overview"
+        facet="overview"
         template="../templates/build-buildlog.pt"
         />
       <browser:page
@@ -67,7 +67,7 @@
       permission="launchpad.Admin">
       <browser:page 
         name="+reset"
-	facet="overview"
+        facet="overview"
         template="../templates/build-reset.pt"
         />
     </browser:pages>
