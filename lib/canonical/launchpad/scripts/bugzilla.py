@@ -569,30 +569,31 @@ class Bugzilla:
 
         for (dupe_of, dupe) in self.backend.getDuplicates():
             # get the Launchpad bugs corresponding to the two Bugzilla bugs:
-            try:
-                trans.begin()
-                lpdupe_of = getlpbug(dupe_of)
-                lpdupe = getlpbug(dupe)
-                # if both bugs exist in Launchpad, and lpdupe is not already
-                # a duplicate, mark it as a duplicate of lpdupe_of.
-                if (lpdupe_of is not None and lpdupe is not None and
-                    lpdupe.duplicateof is None):
-                    logger.info('Marking %d as a duplicate of %d',
-                                lpdupe.id, lpdupe_of.id)
-                    lpdupe.duplicateof = lpdupe_of
-            except (SystemExit, KeyboardInterrupt):
-                raise
-            except:
-                logger.exception('Could not set up duplicate bug relationship')
-                trans.abort()
-            else:
-                trans.commit()
+            trans.begin()
+            lpdupe_of = getlpbug(dupe_of)
+            lpdupe = getlpbug(dupe)
+            # if both bugs exist in Launchpad, and lpdupe is not already
+            # a duplicate, mark it as a duplicate of lpdupe_of.
+            if (lpdupe_of is not None and lpdupe is not None and
+                lpdupe.duplicateof is None):
+                logger.info('Marking %d as a duplicate of %d',
+                            lpdupe.id, lpdupe_of.id)
+                lpdupe.duplicateof = lpdupe_of
+            trans.commit()
 
-    def importBugs(self, trans, **kws):
-        bugs = self.backend.findBugs(**kws)
+    def importBugs(self, trans, product=[], component=[], status=[]):
+        """Import Bugzilla bugs matching the given constraints.
+
+        Each of product, component and status gives a list of
+        products, components or statuses to limit the import to.  An
+        empty list matches all products, components or statuses.
+        """
+        bugs = self.backend.findBugs(product=product,
+                                     component=component,
+                                     status=status)
         for bug_id in bugs:
+            trans.begin()
             try:
-                trans.begin()
                 self.handleBug(bug_id)
             except (SystemExit, KeyboardInterrupt):
                 raise
