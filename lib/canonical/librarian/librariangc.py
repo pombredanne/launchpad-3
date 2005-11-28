@@ -247,26 +247,29 @@ def delete_unreferenced_content(ztm):
     garbage_ids = [row[0] for row in cur.fetchall()]
     ztm.abort()
 
-    for i in range(0, len(garbage_ids), 100)
-    for garbage_id in garbage_ids:
+    for i in range(0, len(garbage_ids), 100):
+        in_garbage_ids = ','.join(
+            (str(garbage_id) for garbage_id in garbage_ids[i:i+100])
+            )
         ztm.begin()
         cur = cursor()
 
         # Delete old LibraryFileContent entries. Note that this will fail
         # if we screwed up and still have LibraryFileAlias entries referencing
         # it.
-        log.info("Deleting LibraryFileContent %d", garbage_id)
+        log.info("Deleting LibraryFileContents %s", in_garbage_ids)
         cur.execute("""
-            DELETE FROM LibraryFileContent WHERE id = %(garbage_id)s
-            """, vars())
+            DELETE FROM LibraryFileContent WHERE id in (%s)
+            """ % in_garbage_ids)
 
-        # Remove the file from disk, if it hasn't already been
-        path = get_file_path(garbage_id)
-        if os.path.exists(path):
-            log.info("Deleting %s", path)
-            os.unlink(path)
-        else:
-            log.info("%s already deleted", path)
+        for garbage_id in garbage_ids[i:i+100]:
+            # Remove the file from disk, if it hasn't already been
+            path = get_file_path(garbage_id)
+            if os.path.exists(path):
+                log.info("Deleting %s", path)
+                os.unlink(path)
+            else:
+                log.info("%s already deleted", path)
 
         # And commit the database changes. It may be possible for this to
         # fail in rare cases, leaving a record in the DB with no corresponding
