@@ -69,6 +69,7 @@ def merge_duplicates(ztm):
                     "LibraryFileContent %d data is missing (%s)",
                     dupe1_id, dupe1_path
                     )
+            ztm.abort()
             continue
 
         # Do a manual check that they really are identical, because we
@@ -85,6 +86,7 @@ def merge_duplicates(ztm):
                         "byte-for-byte identical.",
                         dupe1_id, dupe2_id
                         )
+                ztm.abort()
                 sys.exit(1)
 
         # Update all the LibraryFileAlias entries to point to a single
