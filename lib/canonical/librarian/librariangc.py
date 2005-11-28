@@ -81,7 +81,9 @@ def merge_duplicates(ztm):
         # unlikely. Where did I leave my tin foil hat?
         for dupe2_id in (int(dupe) for dupe in dupes[1:]):
             dupe2_path = get_file_path(dupe2_id)
-            if not _sameFile(dupe1_path, dupe2_path):
+            # Check paths exist, because on staging they may not!
+            if (os.path.exists(dupe1_path) and os.path.exists(dupe2_path)
+                and not _sameFile(dupe1_path, dupe2_path)):
                 log.error(
                         "SHA-1 collision found. LibraryFileContent %d and "
                         "%d have the same SHA1 and filesize, but are not "
