@@ -257,7 +257,7 @@ class UnsubscribeEmailCommand(EmailCommand):
         return None, None
 
 
-class TitleEmailCommand(EditEmailCommand):
+class SummaryEmailCommand(EditEmailCommand):
     """Changes the title of the bug."""
 
     implements(IBugEditEmailCommand)
@@ -444,7 +444,7 @@ class EmailCommands:
     _commands = {
         'bug': BugEmailCommand,
         'private': PrivateEmailCommand,
-        'title': TitleEmailCommand,
+        'summary': SummaryEmailCommand,
         'subscribe': SubscribeEmailCommand,
         'unsubscribe': UnsubscribeEmailCommand,
         'affects': AffectsEmailCommand,

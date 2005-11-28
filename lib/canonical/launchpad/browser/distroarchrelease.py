@@ -58,10 +58,6 @@ class DistroArchReleaseContextMenu(ContextMenu):
 class DistroArchReleaseView(BuildRecordsView):
     """Default DistroArchRelease view class."""
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
 
 class DistroArchReleaseBinariesView:
 

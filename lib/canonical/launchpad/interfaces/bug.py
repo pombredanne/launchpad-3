@@ -47,10 +47,10 @@ class IBug(IMessageTarget):
         but have trouble remembering the bug number."""),
         constraint=name_validator)
     title = Title(
-        title=_('Title'), required=True,
+        title=_('Summary'), required=True,
         description=_("""A one-line summary of the problem."""))
     summary = Summary(
-        title=_('Summary'), required=False,
+        title=_('Short Description'), required=False,
         description=_("""A single paragraph
         description that should capture the essence of the bug, where it
         has been observed, and what triggers it."""))

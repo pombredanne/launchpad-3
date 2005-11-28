@@ -16,6 +16,8 @@ from zope.app.form.browser.add import AddView
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
+from canonical.lp.z3batching import Batch
+from canonical.lp.batching import BatchNavigator
 
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPerson, IPublishedPackageSet,
@@ -214,31 +216,47 @@ class DistributionTranslationsMenu(ApplicationMenu):
 class DistributionView(BuildRecordsView):
     """Default Distribution view class."""
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        form = self.request.form
-        self.text = form.get('text', None)
+    def initialize(self):
+        """Initialize template control fields.
+
+        Also check if the search action was invoked and setup a batched
+        list with the results if necessary.
+        """
+        # initialize control fields
         self.matches = 0
         self.detailed = True
-        self._results = None
+        self.search_requested = False
 
-        self.searchrequested = False
-        if self.text is not None and self.text != '':
-            self.searchrequested = True
+        # check if the user invoke search, if not dismiss 
+        self.text = self.request.form.get('text', None)
+        if not self.text:
+            return
 
-    def searchresults(self):
-        """Try to find the source packages in this distribution that match
-        the given text, then present those as a list. Cache previous results
-        so the search is only done once.
-        """
-        if self._results is None:
-            self._results = self.context.searchSourcePackages(self.text)
-        self.matches = len(self._results)
+        # setup a batched list with the results
+        self.search_requested = True
+        results = self.search_results()
+        start = int(self.request.get('batch_start', 0))
+        # store the results list length
+        self.matches = len(results)
+        # check if detailed list view is allowed for this result set.
+        self.check_detailed_view()
+        # since we are using the results length in the layout, we can save
+        # one query by passing this number to Batch initialization
+        self.batch = Batch(results, start, _listlength=self.matches)
+        self.batchnav = BatchNavigator(self.batch, self.request)
+
+    def check_detailed_view(self):
+        """Enable detailed list view only for sets smaller than 5 matches."""
         if self.matches > 5:
             self.detailed = False
-        return self._results
 
+    def search_results(self):
+        """Return IDistributionSourcePackages according given a text.
+
+        Try to find the source packages in this distribution that match
+        the given text.
+        """
+        return self.context.searchSourcePackages(self.text)
 
 class DistributionSetView:
 

@@ -157,17 +157,14 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
 
 class SourcePackageView(BuildRecordsView):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.user = getUtility(ILaunchBag).user
+    def initialize(self):
         # lets add a widget for the product series to which this package is
         # mapped in the Packaging table
         raw_field = IPackaging['productseries']
         bound_field = raw_field.bind(self.context)
         self.productseries_widget = zapi.getViewProviding(bound_field,
-            IInputWidget, request)
-        self.productseries_widget.setRenderedValue(context.productseries)
+            IInputWidget, self.request)
+        self.productseries_widget.setRenderedValue(self.context.productseries)
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
         self.languages = helpers.request_languages(self.request)
