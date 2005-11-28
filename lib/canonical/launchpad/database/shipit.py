@@ -299,7 +299,6 @@ class ShippingRequestSet:
                     )
                 """ % sqlvalues(recipient_text, recipient_text,
                                 recipient_text + '%'))
-            clauseTables = ['Person', 'EmailAddress']
 
         if omit_cancelled:
             queries.append("ShippingRequest.cancelled = FALSE")
@@ -315,8 +314,7 @@ class ShippingRequestSet:
             pass
 
         query = " AND ".join(queries)
-        return ShippingRequest.select(
-            query, distinct=True, clauseTables=clauseTables, orderBy=orderBy)
+        return ShippingRequest.select(query, distinct=True, orderBy=orderBy)
 
     def _getTypeBasedQuery(self, request_type, standard_type=None):
         """Return the SQL query to get all requests of a given type.
