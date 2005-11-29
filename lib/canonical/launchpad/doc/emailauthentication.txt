@@ -66,6 +66,21 @@ As well as signed multipart messages:
     >>> launchbag.login
     'foo.bar@canonical.com'
 
+When dealing with inline signatures, lines that begin with a '-'
+character in the signed content are escaped.
+
+    >>> msg = read_test_message('signed_dash_escaped.txt')
+    >>> principal = authenticateEmail(msg)
+    >>> principal is not None
+    True
+    >>> name, addr = email.Utils.parseaddr(msg['From'])
+    >>> from_user = getUtility(IPersonSet).getByEmail(addr)
+    >>> launchbag.user == from_user
+    True
+    >>> launchbag.login
+    'test@canonical.com'
+
+
 Since a GPG key can be associated with several addresses, the user to
 authenticate is extracted from the From header. If the key used to sign
 the email doesn't belong to that user, he won't be authenticated, as
