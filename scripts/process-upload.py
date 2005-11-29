@@ -37,6 +37,11 @@ def main():
     parser.add_option("-N", "--dry-run", action="store_true",
                       dest="dryrun", metavar="DRY_RUN", default=False,
                       help="Whether to treat this as a dry-run or not.")
+
+    parser.add_option("-M", "--no-mails", action="store_true",
+                      dest="nomails", metavar="NO_MAILS", default=False,
+                      help="Whether to suppress the sending of mails or not.")
+    
     global options
     (options, args) = parser.parse_args()
 
@@ -95,7 +100,7 @@ def send_mails(mails):
             log.debug("This will cause the sendmail() to assert.")
             print repr(mail_text)
         mail_message['X-Katie'] = "Launchpad actually"
-        if options.dryrun:
+        if options.dryrun or options.nomails:
             log.info("Would be sending a mail:")
             log.info("   Subject: %s" % mail_message['Subject'])
             log.info("   Recipients: %s" % mail_message['To'])
@@ -130,7 +135,7 @@ def process_upload(upload):
             log.info("Dry run, aborting the transaction for this upload.")
             ztm.abort()
         else:
-            log.info("Committing the transaction and any mails associated"
+            log.info("Committing the transaction and any mails associated "
                      "with this upload.")
             ztm.commit()
     finally:

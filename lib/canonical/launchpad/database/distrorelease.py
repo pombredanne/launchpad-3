@@ -565,13 +565,14 @@ class DistroRelease(SQLBase):
             distrorelease=self, owner=owner)
         return dar
 
-    def createQueueEntry(self, pocket,
+    def createQueueEntry(self, pocket, changesfile,
                          status=DistroReleaseQueueStatus.ACCEPTED):
         """See IDistroRelease."""
 
         return DistroReleaseQueue(distrorelease=self.id,
                                   pocket=pocket,
-                                  status=status)
+                                  status=status,
+                                  changesfile=changesfile)
 
     def getQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED):
         """See IDistroRelease."""

@@ -33,8 +33,8 @@ Your package contains new components which requires manual editing of
 the override file.  It is ok otherwise, so please be patient.  New
 packages are usually added to the overrides about once a week.
 
-You may have gotten the distrorelease wrong.  You'll may get warnings
-above if files already exist in other distrorelease.
+You may have gotten the distrorelease wrong.  If so, you may get warnings
+above if files already exist in other distroreleases.
 """
 
 accepted_template="""From: %(FROM)s

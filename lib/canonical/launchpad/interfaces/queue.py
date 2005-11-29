@@ -12,7 +12,7 @@ __all__ = [
     ]
 
 from zope.schema import Int
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
 _ = MessageIDFactory('launchpad')
@@ -35,6 +35,20 @@ class IDistroReleaseQueue(Interface):
     pocket = Int(
             title=_("The pocket"), required=True, readonly=False,
             )
+
+    changesfile = Attribute("The changes file associated with this upload")
+    changesfilename = Attribute("The filename of the changes file.")
+    
+    sources = Attribute("The queue sources associated with this queue item")
+    builds = Attribute("The queue builds associated with the queue item")
+
+    datecreated = Attribute("The date on which this queue was created.")
+
+    sourcepackagename = Attribute("The source package name for this item.")
+
+    sourceversion = Attribute("The source package version for this item")
+
+    age = Attribute("The age of this queue item. (now - datecreated)")
 
     def realiseUpload(logger=None):
         """Take this ACCEPTED upload and create the publishing records for it
