@@ -1456,7 +1456,7 @@ class PersonEditEmailsView:
         token.sendEmailValidationRequest(self.request.getApplicationURL())
 
         self.message = (
-                "An e-mail message was sent to '%s'. Follow the "
+                "An email message was sent to '%s'. Follow the "
                 "instructions in that message to confirm that the "
                 "address is yours." % newemail)
 
