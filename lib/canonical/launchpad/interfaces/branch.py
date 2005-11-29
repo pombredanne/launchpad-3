@@ -156,6 +156,21 @@ class IBranch(IHasOwner):
 class IBranchSet(Interface):
     """Interface representing the set of branches."""
 
+    def __getitem__(branch_id):
+        """Return the branch with the given id.
+
+        Raise NotFoundError if there is no such branch.
+        """
+
+    def get(branch_id, default=None):
+        """Return the branch with the given id.
+
+        Return the default value if there is no such branch.
+        """
+
+    def __iter__():
+        """Return an iterator that will go through all branches."""
+
     def new(name, owner, product, url, title,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, home_page=None):
@@ -163,3 +178,4 @@ class IBranchSet(Interface):
 
     def get_supermirror_pull_queue():
         """Get a list of branches the supermirror should pull now."""
+
