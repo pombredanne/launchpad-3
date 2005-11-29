@@ -138,6 +138,12 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
                                                 'justdave@bugzilla.org', ssha)
         self.assertEqual({}, userDict)
 
+    def test_nameInV2UserDict(self):
+        # V2 user dicts should have a 'name' field.
+        storage = DatabaseUserDetailsStorageV2(None)
+        userDict = storage._getUserInteraction(self.cursor, 'mark@hbd.com')
+        self.assertEqual('sabdfl', userDict['name'])
+
 
 class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
     # Tests that do some database writes (but makes sure to roll them back)
