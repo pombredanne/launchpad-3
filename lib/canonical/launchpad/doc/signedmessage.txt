@@ -42,6 +42,26 @@ Finally the signature can be accessed via msg.signature:
     =lNZi
     -----END PGP SIGNATURE-----
 
+If some lines in the signed content begin with a '-', that means that
+they have been dash escaped by the client. The dash escaping is done
+after the content has been signed, so the signed content should be
+unescaped.
+
+    >>> msg = read_test_message('signed_dash_escaped.txt')
+    >>> print msg.get_payload()
+    -----BEGIN PGP SIGNED MESSAGE-----
+    ...
+    - --
+    Sample Person
+    ...
+
+    >>> print msg.signedContent
+    Some signed content.
+    <BLANKLINE>
+    --
+    Sample Person
+
+
 It also works when the signature is detached, that is the message
 contains of two MIME parts, the signed text, and the signature:
 
