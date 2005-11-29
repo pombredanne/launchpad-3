@@ -120,23 +120,16 @@
 <!-- Primary Index -->
 <p><br />
 <br />
-Dumped on 2005-09-22</p>
+Dumped on 2005-11-24</p>
 <h1><a name="index" id="index">Index of database -
 launchpad_dev</a></h1>
 <ul>
 <li><a name="public.schema" id="public.schema">public</a></li>
 <li style="list-style: none">
 <ul>
-<li><a href="#public.table.archarchive">archarchive</a></li>
-<li><a href=
-"#public.table.archarchivelocation">archarchivelocation</a></li>
-<li><a href=
-"#public.table.archarchivelocationsigner">archarchivelocationsigner</a></li>
 <li><a href="#public.table.archconfig">archconfig</a></li>
 <li><a href=
 "#public.table.archconfigentry">archconfigentry</a></li>
-<li><a href="#public.table.archnamespace">archnamespace</a></li>
-<li><a href="#public.table.archuserid">archuserid</a></li>
 <li><a href=
 "#public.table.binarypackagefile">binarypackagefile</a></li>
 <li><a href=
@@ -157,8 +150,11 @@ launchpad_dev</a></h1>
 "#public.table.bountysubscription">bountysubscription</a></li>
 <li><a href="#public.table.branch">branch</a></li>
 <li><a href="#public.table.branchlabel">branchlabel</a></li>
+<li><a href="#public.table.branchmessage">branchmessage</a></li>
 <li><a href=
 "#public.table.branchrelationship">branchrelationship</a></li>
+<li><a href=
+"#public.table.branchsubscription">branchsubscription</a></li>
 <li><a href="#public.table.bug">bug</a></li>
 <li><a href="#public.table.bugactivity">bugactivity</a></li>
 <li><a href="#public.table.bugattachment">bugattachment</a></li>
@@ -184,32 +180,34 @@ launchpad_dev</a></h1>
 <li><a href="#public.table.calendarevent">calendarevent</a></li>
 <li><a href=
 "#public.table.calendarsubscription">calendarsubscription</a></li>
-<li><a href="#public.table.changeset">changeset</a></li>
-<li><a href="#public.table.changesetfile">changesetfile</a></li>
-<li><a href=
-"#public.table.changesetfilehash">changesetfilehash</a></li>
-<li><a href=
-"#public.table.changesetfilename">changesetfilename</a></li>
 <li><a href="#public.table.component">component</a></li>
 <li><a href=
 "#public.table.componentselection">componentselection</a></li>
 <li><a href="#public.table.country">country</a></li>
 <li><a href="#public.table.cve">cve</a></li>
 <li><a href="#public.table.cvereference">cvereference</a></li>
-<li><a href="#public.table.cverefobsolete">cverefobsolete</a></li>
 <li><a href=
 "#public.table.developmentmanifest">developmentmanifest</a></li>
 <li><a href="#public.table.distribution">distribution</a></li>
 <li><a href=
+"#public.table.distributionbounty">distributionbounty</a></li>
+<li><a href=
+"#public.table.distributionsourcepackagecache">distributionsourcepackagecache</a></li>
+<li><a href=
 "#public.table.distroarchrelease">distroarchrelease</a></li>
-<li><a href="#public.table.distrobounty">distrobounty</a></li>
+<li><a href=
+"#public.table.distrocomponentuploader">distrocomponentuploader</a></li>
 <li><a href="#public.table.distrorelease">distrorelease</a></li>
 <li><a href=
 "#public.table.distroreleaselanguage">distroreleaselanguage</a></li>
 <li><a href=
+"#public.table.distroreleasepackagecache">distroreleasepackagecache</a></li>
+<li><a href=
 "#public.table.distroreleasequeue">distroreleasequeue</a></li>
 <li><a href=
 "#public.table.distroreleasequeuebuild">distroreleasequeuebuild</a></li>
+<li><a href=
+"#public.table.distroreleasequeuecustom">distroreleasequeuecustom</a></li>
 <li><a href=
 "#public.table.distroreleasequeuesource">distroreleasequeuesource</a></li>
 <li><a href="#public.table.emailaddress">emailaddress</a></li>
@@ -219,6 +217,7 @@ launchpad_dev</a></h1>
 <li><a href="#public.table.karma">karma</a></li>
 <li><a href="#public.table.karmaaction">karmaaction</a></li>
 <li><a href="#public.table.karmacache">karmacache</a></li>
+<li><a href="#public.table.karmacategory">karmacategory</a></li>
 <li><a href="#public.table.label">label</a></li>
 <li><a href="#public.table.language">language</a></li>
 <li><a href=
@@ -243,6 +242,8 @@ launchpad_dev</a></h1>
 <li><a href="#public.table.mirrorcontent">mirrorcontent</a></li>
 <li><a href=
 "#public.table.mirrorsourcecontent">mirrorsourcecontent</a></li>
+<li><a href=
+"#public.table.packagebugcontact">packagebugcontact</a></li>
 <li><a href=
 "#public.table.packageselection">packageselection</a></li>
 <li><a href="#public.table.packaging">packaging</a></li>
@@ -272,8 +273,6 @@ launchpad_dev</a></h1>
 <li><a href=
 "#public.table.processorfamily">processorfamily</a></li>
 <li><a href="#public.table.product">product</a></li>
-<li><a href=
-"#public.table.productbkbranch">productbkbranch</a></li>
 <li><a href="#public.table.productbounty">productbounty</a></li>
 <li><a href=
 "#public.table.productbranchrelationship">productbranchrelationship</a></li>
@@ -297,6 +296,10 @@ launchpad_dev</a></h1>
 <li><a href=
 "#public.table.pushmirroraccess">pushmirroraccess</a></li>
 <li><a href="#public.table.requestedcds">requestedcds</a></li>
+<li><a href="#public.table.revision">revision</a></li>
+<li><a href="#public.table.revisionauthor">revisionauthor</a></li>
+<li><a href="#public.table.revisionnumber">revisionnumber</a></li>
+<li><a href="#public.table.revisionparent">revisionparent</a></li>
 <li><a href="#public.table.schema">schema</a></li>
 <li><a href="#public.table.section">section</a></li>
 <li><a href=
@@ -332,7 +335,7 @@ launchpad_dev</a></h1>
 <li><a href=
 "#public.table.specificationdependency">specificationdependency</a></li>
 <li><a href=
-"#public.table.specificationreview">specificationreview</a></li>
+"#public.table.specificationfeedback">specificationfeedback</a></li>
 <li><a href=
 "#public.table.specificationsubscription">specificationsubscription</a></li>
 <li><a href="#public.table.spokenin">spokenin</a></li>
@@ -363,18 +366,20 @@ launchpad_dev</a></h1>
 <li><a href="#public.table.translator">translator</a></li>
 <li><a href="#public.table.vote">vote</a></li>
 <li><a href="#public.table.votecast">votecast</a></li>
-<li><a href=
-"#public.view.vsourcepackageindistro">vsourcepackageindistro</a></li>
-<li><a href=
-"#public.view.vsourcepackagereleasepublishing">vsourcepackagereleasepublishing</a></li>
 <li><a href="#public.table.wikiname">wikiname</a></li>
 <li><a href="#public.function.is-person-integer">is_person( integer
 )</a></li>
 <li><a href="#public.function.is-person-text">is_person( text
 )</a></li>
+<li><a href=
+"#public.function.is-printable-ascii-text">is_printable_ascii( text
+)</a></li>
 <li><a href="#public.function.is-team-integer">is_team( integer
 )</a></li>
 <li><a href="#public.function.is-team-text">is_team( text
+)</a></li>
+<li><a href=
+"#public.function.plpgsql-validator-oid">plpgsql_validator( oid
 )</a></li>
 <li><a href=
 "#public.function.plpython-call-handler">plpython_call_handler(
@@ -603,501 +608,6 @@ ts2.tsvector )</a></li>
 <p>Standard public schema</p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.archarchive" id=
-"public.table.archarchive">archarchive</a></h2>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.archarchive Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>serial</td>
-<td><i>PRIMARY KEY</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>name</td>
-<td>text</td>
-<td><i>UNIQUE NOT NULL</i><br />
-<br />
-The archive name, usually in the format of an email address</td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>title</td>
-<td>text</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>description</td>
-<td>text</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>visible</td>
-<td>boolean</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.person">public.person.id</a></td>
-<td>owner</td>
-<td>integer</td>
-<td></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<p>Tables referencing this one via Foreign Key Constraints:</p>
-<ul>
-<li><a href=
-"#public.table.archarchivelocation">public.archarchivelocation</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.archnamespace">public.archnamespace</a></li>
-</ul>
-<!-- View Definition -->
-<!-- List off permissions -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to public.archarchive</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>group admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>group read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr0">
-<td>sourcerer</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>trebuchet</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.archarchivelocation" id=
-"public.table.archarchivelocation">archarchivelocation</a></h2>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.archarchivelocation Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>serial</td>
-<td><i>PRIMARY KEY</i></td>
-</tr>
-<tr class="tr1">
-<td><a href=
-"#public.table.archarchive">public.archarchive.id</a></td>
-<td>archive</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>archivetype</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>url</td>
-<td>text</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>gpgsigned</td>
-<td>boolean</td>
-<td><i>NOT NULL</i></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<p>Tables referencing this one via Foreign Key Constraints:</p>
-<ul>
-<li><a href=
-"#public.table.archarchivelocationsigner">public.archarchivelocationsigner</a></li>
-</ul>
-<!-- View Definition -->
-<!-- List off permissions -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to
-public.archarchivelocation</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>group admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>group read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.archarchivelocationsigner" id=
-"public.table.archarchivelocationsigner">archarchivelocationsigner</a></h2>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.archarchivelocationsigner Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td><a href=
-"#public.table.archarchivelocation">public.archarchivelocation.id</a></td>
-<td>archarchivelocation</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.gpgkey">public.gpgkey.id</a></td>
-<td>gpgkey</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<!-- View Definition -->
-<!-- List off permissions -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to
-public.archarchivelocationsigner</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>group admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>group read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.archconfig" id=
 "public.table.archconfig">archconfig</a></h2>
 <table width="100%" cellspacing="0" cellpadding="3">
@@ -1287,15 +797,13 @@ public</a></p>
 <td><i>NOT NULL</i></td>
 </tr>
 <tr class="tr0">
-<td><a href="#public.table.branch">public.branch.id</a> <a href=
-"#public.table.changeset">public.changeset.branch#1</a></td>
+<td><a href="#public.table.branch">public.branch.id</a></td>
 <td>branch</td>
 <td>integer</td>
 <td><i>NOT NULL</i></td>
 </tr>
 <tr class="tr1">
-<td><a href=
-"#public.table.changeset">public.changeset.id#1</a></td>
+<td></td>
 <td>changeset</td>
 <td>integer</td>
 <td></td>
@@ -1381,363 +889,6 @@ public.archconfigentry</caption>
 <center>&diams;</center>
 </td>
 <td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.archnamespace" id=
-"public.table.archnamespace">archnamespace</a></h2>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.archnamespace Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>serial</td>
-<td><i>PRIMARY KEY</i></td>
-</tr>
-<tr class="tr1">
-<td><a href=
-"#public.table.archarchive">public.archarchive.id</a></td>
-<td>archarchive</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>category</td>
-<td>text</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>branch</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>version</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>visible</td>
-<td>boolean</td>
-<td><i>NOT NULL</i></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<p>Tables referencing this one via Foreign Key Constraints:</p>
-<ul>
-<li><a href="#public.table.branch">public.branch</a></li>
-</ul>
-<!-- View Definition -->
-<!-- List off permissions -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to public.archnamespace</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>group admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>group read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>importd</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>sourcerer</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>trebuchet</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.archuserid" id=
-"public.table.archuserid">archuserid</a></h2>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.archuserid Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>serial</td>
-<td><i>PRIMARY KEY</i></td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.person">public.person.id</a></td>
-<td>person</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>archuserid</td>
-<td>text</td>
-<td><i>UNIQUE NOT NULL</i></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<p>Tables referencing this one via Foreign Key Constraints:</p>
-<ul>
-<li><a href="#public.table.changeset">public.changeset</a></li>
-</ul>
-<!-- View Definition -->
-<!-- List off permissions -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to public.archuserid</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>group admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>group read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
 <td></td>
 <td></td>
 <td></td>
@@ -1939,6 +1090,20 @@ public.binarypackagefile</caption>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr1">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -2262,6 +1427,10 @@ A lowercase name identifying one or more binarypackages</td>
 </ul>
 <ul>
 <li><a href=
+"#public.table.distroreleasepackagecache">public.distroreleasepackagecache</a></li>
+</ul>
+<ul>
+<li><a href=
 "#public.table.packageselection">public.packageselection</a></li>
 </ul>
 <ul>
@@ -2386,6 +1555,56 @@ public.binarypackagename</caption>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr1">
+<td>queued</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>statistician</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>targetnamecacheupdater</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -2685,6 +1904,30 @@ public.binarypackagepublishing</caption>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr1">
+<td>statistician</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -3203,7 +2446,7 @@ binarypackages on various architectures.</p>
 "#public.table.binarypackagename">public.binarypackagename.id</a></td>
 <td>binarypackagename</td>
 <td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i><br />
+<td><i>UNIQUE#1 UNIQUE#2 NOT NULL</i><br />
 <br />
 A reference to the name of the binary package</td>
 </tr>
@@ -3236,7 +2479,7 @@ A longer more detailed description of the binary package</td>
 <td><a href="#public.table.build">public.build.id</a></td>
 <td>build</td>
 <td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i><br />
+<td><i>UNIQUE#1 UNIQUE#2 NOT NULL</i><br />
 <br />
 The build in which this binarypackage was produced</td>
 </tr>
@@ -3388,6 +2631,13 @@ distroarchreleases which pertain.</td>
 <td>tsvector</td>
 <td></td>
 </tr>
+<tr class="tr1">
+<td></td>
+<td>datecreated</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL DEFAULT timezone('UTC'::text,
+('now'::text)::timestamp(6) with time zone)</i></td>
+</tr>
 </table>
 <!-- Constraint List -->
 <p>&nbsp;</p>
@@ -3399,7 +2649,7 @@ distroarchreleases which pertain.</td>
 </tr>
 <tr class="tr0">
 <td>valid_version</td>
-<td>CHECK (valid_debian_version("version"))</td>
+<td>CHECK (valid_debian_version(version))</td>
 </tr>
 </table>
 <!-- Foreign Key Discovery -->
@@ -3533,6 +2783,44 @@ public.binarypackagerelease</caption>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr1">
+<td>queued</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>statistician</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -3671,7 +2959,7 @@ it is open, closed, or withdrawn.</td>
 </ul>
 <ul>
 <li><a href=
-"#public.table.distrobounty">public.distrobounty</a></li>
+"#public.table.distributionbounty">public.distributionbounty</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -4091,44 +3379,215 @@ public</a></p>
 <th>Description</th>
 </tr>
 <tr class="tr0">
-<td></td>
+<td><a href=
+"#public.table.revisionnumber">public.revisionnumber.branch#1</a></td>
 <td>id</td>
 <td>serial</td>
 <td><i>PRIMARY KEY</i></td>
 </tr>
 <tr class="tr1">
-<td><a href=
-"#public.table.archnamespace">public.archnamespace.id</a></td>
-<td>archnamespace</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
 <td></td>
 <td>title</td>
 <td>text</td>
 <td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
-<td>description</td>
+<td>summary</td>
 <td>text</td>
 <td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td><a href="#public.table.person">public.person.id</a></td>
 <td>owner</td>
 <td>integer</td>
-<td></td>
+<td><i>NOT NULL</i></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td><a href="#public.table.product">public.product.id</a></td>
 <td>product</td>
 <td>integer</td>
 <td></td>
 </tr>
+<tr class="tr1">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>author</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>name</td>
+<td>text</td>
+<td><i>NOT NULL</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>branch_product_name</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>product_locked</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>home_page</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>branch_home_page</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>home_page_locked</td>
+<td>boolean</td>
+<td><i>DEFAULT false</i></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>url</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>whiteboard</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>lifecycle_status</td>
+<td>integer</td>
+<td><i>NOT NULL DEFAULT 1</i></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.branch">public.branch.id</a></td>
+<td>landing_target</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>current_delta_url</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>current_conflicts_url</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>current_diff_adds</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>current_diff_deletes</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>stats_updated</td>
+<td>timestamp without time zone</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>current_activity</td>
+<td>integer</td>
+<td><i>NOT NULL</i></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>last_mirrored</td>
+<td>timestamp without time zone</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>last_mirror_attempt</td>
+<td>timestamp without time zone</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>mirror_failures</td>
+<td>integer</td>
+<td><i>NOT NULL</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>pull_disabled</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>cache_url</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.revisionnumber">public.revisionnumber.id#1</a>
+<a href=
+"#public.table.revisionnumber">public.revisionnumber.id</a></td>
+<td>started_at</td>
+<td>integer</td>
+<td></td>
+</tr>
 </table>
 <!-- Constraint List -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.branch Constraints</caption>
+<tr>
+<th>Name</th>
+<th>Constraint</th>
+</tr>
+<tr class="tr0">
+<td>valid_branch_home_page</td>
+<td>CHECK (valid_absolute_url(branch_home_page))</td>
+</tr>
+<tr class="tr1">
+<td>valid_cache_url</td>
+<td>CHECK (valid_absolute_url(cache_url))</td>
+</tr>
+<tr class="tr0">
+<td>valid_current_conflicts_url</td>
+<td>CHECK (valid_absolute_url(current_conflicts_url))</td>
+</tr>
+<tr class="tr1">
+<td>valid_current_delta_url</td>
+<td>CHECK (valid_absolute_url(current_delta_url))</td>
+</tr>
+<tr class="tr0">
+<td>valid_home_page</td>
+<td>CHECK (valid_absolute_url(home_page))</td>
+</tr>
+<tr class="tr1">
+<td>valid_name</td>
+<td>CHECK (valid_branch_name(name))</td>
+</tr>
+<tr class="tr0">
+<td>valid_url</td>
+<td>CHECK (valid_absolute_url(url))</td>
+</tr>
+</table>
 <!-- Foreign Key Discovery -->
 <p>Tables referencing this one via Foreign Key Constraints:</p>
 <ul>
@@ -4136,14 +3595,22 @@ public</a></p>
 "#public.table.archconfigentry">public.archconfigentry</a></li>
 </ul>
 <ul>
+<li><a href="#public.table.branch">public.branch</a></li>
+</ul>
+<ul>
 <li><a href="#public.table.branchlabel">public.branchlabel</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.branchmessage">public.branchmessage</a></li>
 </ul>
 <ul>
 <li><a href=
 "#public.table.branchrelationship">public.branchrelationship</a></li>
 </ul>
 <ul>
-<li><a href="#public.table.changeset">public.changeset</a></li>
+<li><a href=
+"#public.table.branchsubscription">public.branchsubscription</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -4156,6 +3623,10 @@ public</a></p>
 <ul>
 <li><a href=
 "#public.table.productseries">public.productseries</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.revisionnumber">public.revisionnumber</a></li>
 </ul>
 <!-- View Definition -->
 <!-- List off permissions -->
@@ -4224,6 +3695,38 @@ public</a></p>
 </tr>
 <tr class="tr0">
 <td>group write</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>importd</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>launchpad</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -4437,6 +3940,145 @@ nextval('branchlabel_id_seq'::text)</i></td>
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.branchmessage" id=
+"public.table.branchmessage">branchmessage</a></h2>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.branchmessage Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.branch">public.branch.id</a></td>
+<td>branch</td>
+<td>integer</td>
+<td><i>NOT NULL</i></td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.message">public.message.id</a></td>
+<td>message</td>
+<td>integer</td>
+<td><i>NOT NULL</i></td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.branchmessage</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.branchrelationship" id=
 "public.table.branchrelationship">branchrelationship</a></h2>
 <table width="100%" cellspacing="0" cellpadding="3">
@@ -4553,6 +4195,150 @@ public.branchrelationship</caption>
 <center>&diams;</center>
 </td>
 <td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.branchsubscription" id=
+"public.table.branchsubscription">branchsubscription</a></h2>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.branchsubscription Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>person</td>
+<td>integer</td>
+<td><i>NOT NULL</i></td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.branch">public.branch.id</a></td>
+<td>branch</td>
+<td>integer</td>
+<td><i>NOT NULL</i></td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.branchsubscription</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -4784,10 +4570,6 @@ to see it</td>
 </ul>
 <ul>
 <li><a href="#public.table.bugwatch">public.bugwatch</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.cverefobsolete">public.cverefobsolete</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -5354,7 +5136,7 @@ and a CVE entry.</p>
 <td></td>
 </tr>
 <tr class="tr0">
-<td>group write</td>
+<td>launchpad</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -6674,7 +6456,7 @@ The general health of the bug, e.g. Accepted, Rejected, etc.</td>
 <td></td>
 <td>priority</td>
 <td>integer</td>
-<td><i>NOT NULL</i><br />
+<td><br />
 <br />
 The importance of fixing this bug.</td>
 </tr>
@@ -6758,6 +6540,15 @@ A place to store bug task specific information as free text</td>
 <td>fti</td>
 <td>tsvector</td>
 <td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>targetnamecache</td>
+<td>text</td>
+<td><br />
+<br />
+A cached value of the target name of this bugtask, to make it
+easier to sort and search on the target name.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -6881,6 +6672,20 @@ NULL::boolean END)</td>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr0">
+<td>targetnamecacheupdater</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -7525,12 +7330,53 @@ public</a></p>
 <center>&diams;</center>
 </td>
 </tr>
+<tr class="tr1">
+<td>queued</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>statistician</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.builder" id="public.table.builder">builder</a></h2>
+<p>Builder: This table stores the build-slave registry and status
+information as: name, url, trusted, builderok, builderaction,
+failnotes.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.builder Structure</caption>
 <tr>
@@ -7621,6 +7467,15 @@ etc.</td>
 The url to the build slave. There may be more than one build slave
 on a given host so this url includes the port number to use. The
 default port number for a build slave is 8221</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>manual</td>
+<td>boolean</td>
+<td><i>DEFAULT false</i><br />
+<br />
+Whether or not builder was manual mode, i.e., collect any result
+from the it, but do not dispach anything to it automatically.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -8495,663 +8350,6 @@ public.calendarsubscription</caption>
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.changeset" id=
-"public.table.changeset">changeset</a></h2>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.changeset Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>serial</td>
-<td><i>UNIQUE#2 UNIQUE#1 PRIMARY KEY</i></td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.branch">public.branch.id</a></td>
-<td>branch</td>
-<td>integer</td>
-<td><i>UNIQUE#2 UNIQUE#1 NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>datecreated</td>
-<td>timestamp without time zone</td>
-<td><i>NOT NULL DEFAULT timezone('UTC'::text,
-('now'::text)::timestamp(6) with time zone)</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>name</td>
-<td>text</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>logmessage</td>
-<td>text</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td><a href=
-"#public.table.archuserid">public.archuserid.id</a></td>
-<td>archid</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td><a href="#public.table.gpgkey">public.gpgkey.id</a></td>
-<td>gpgkey</td>
-<td>integer</td>
-<td></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<p>Tables referencing this one via Foreign Key Constraints:</p>
-<ul>
-<li><a href=
-"#public.table.archconfigentry">public.archconfigentry</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.changesetfile">public.changesetfile</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.manifestentry">public.manifestentry</a></li>
-</ul>
-<!-- View Definition -->
-<!-- List off permissions -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to public.changeset</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>group admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>group read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr0">
-<td>sourcerer</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>trebuchet</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.changesetfile" id=
-"public.table.changesetfile">changesetfile</a></h2>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.changesetfile Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>serial</td>
-<td><i>PRIMARY KEY</i></td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.changeset">public.changeset.id</a></td>
-<td>changeset</td>
-<td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td><a href=
-"#public.table.changesetfilename">public.changesetfilename.id</a></td>
-<td>changesetfilename</td>
-<td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>filecontents</td>
-<td>bytea</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>filesize</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<p>Tables referencing this one via Foreign Key Constraints:</p>
-<ul>
-<li><a href=
-"#public.table.changesetfilehash">public.changesetfilehash</a></li>
-</ul>
-<!-- View Definition -->
-<!-- List off permissions -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to public.changesetfile</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>group admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>group read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.changesetfilehash" id=
-"public.table.changesetfilehash">changesetfilehash</a></h2>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.changesetfilehash Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>serial</td>
-<td><i>PRIMARY KEY</i></td>
-</tr>
-<tr class="tr1">
-<td><a href=
-"#public.table.changesetfile">public.changesetfile.id</a></td>
-<td>changesetfile</td>
-<td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>hashalg</td>
-<td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>hash</td>
-<td>bytea</td>
-<td><i>NOT NULL</i></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<!-- View Definition -->
-<!-- List off permissions -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to
-public.changesetfilehash</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>group admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>group read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.changesetfilename" id=
-"public.table.changesetfilename">changesetfilename</a></h2>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.changesetfilename Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>serial</td>
-<td><i>PRIMARY KEY</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>filename</td>
-<td>text</td>
-<td><i>UNIQUE NOT NULL</i></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<p>Tables referencing this one via Foreign Key Constraints:</p>
-<ul>
-<li><a href=
-"#public.table.changesetfile">public.changesetfile</a></li>
-</ul>
-<!-- View Definition -->
-<!-- List off permissions -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to
-public.changesetfilename</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>group admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>group read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.component" id=
 "public.table.component">component</a></h2>
 <table width="100%" cellspacing="0" cellpadding="3">
@@ -9197,6 +8395,10 @@ public</a></p>
 <ul>
 <li><a href=
 "#public.table.componentselection">public.componentselection</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.distrocomponentuploader">public.distrocomponentuploader</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -9338,6 +8540,30 @@ public</a></p>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr1">
+<td>queued</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -9482,6 +8708,18 @@ public.componentselection</caption>
 <center>&diams;</center>
 </td>
 </tr>
+<tr class="tr0">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
@@ -9541,6 +8779,10 @@ public</a></p>
 </ul>
 <ul>
 <li><a href="#public.table.person">public.person</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.shippingrequest">public.shippingrequest</a></li>
 </ul>
 <ul>
 <li><a href="#public.table.spokenin">public.spokenin</a></li>
@@ -9649,6 +8891,18 @@ public</a></p>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr0">
+<td>shipit</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -9775,6 +9029,22 @@ addition or modification of references.</td>
 </th>
 </tr>
 <tr class="tr0">
+<td>cve</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -9798,7 +9068,7 @@ addition or modification of references.</td>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -9810,8 +9080,8 @@ addition or modification of references.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
-<td>group write</td>
+<tr class="tr1">
+<td>launchpad</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -9826,7 +9096,7 @@ addition or modification of references.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -9946,6 +9216,24 @@ in the CVE database.</td>
 </th>
 </tr>
 <tr class="tr0">
+<td>cve</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -9969,7 +9257,7 @@ in the CVE database.</td>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -9981,192 +9269,14 @@ in the CVE database.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
 <tr class="tr1">
-<td>postgres</td>
+<td>launchpad</td>
 <td>
 <center>&diams;</center>
 </td>
 <td>
 <center>&diams;</center>
 </td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.cverefobsolete" id=
-"public.table.cverefobsolete">cverefobsolete</a></h2>
-<p>OBSOLETE: THIS TABLE IS PARKED AND WILL BE DELETED IN FAVOUR OF
-THE NEW CVE TABLE. This table stores CVE references for bugs. CVE
-is a way of tracking security problems across multiple vendor
-products.</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.cverefobsolete Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>serial</td>
-<td><i>PRIMARY KEY</i></td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.bug">public.bug.id</a></td>
-<td>bug</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>cveref</td>
-<td>text</td>
-<td><i>NOT NULL</i><br />
-<br />
-This is the actual CVE number assigned to this specific
-problem.</td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>title</td>
-<td>text</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>datecreated</td>
-<td>timestamp without time zone</td>
-<td><i>DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6)
-with time zone)</i></td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.person">public.person.id</a></td>
-<td>owner</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-This refers to the person who created the entry.</td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>cvestate</td>
-<td>integer</td>
-<td><i>NOT NULL DEFAULT 1</i><br />
-<br />
-This is a dbschema enum which tells us the state (CVE or CAN) of
-the CVE problem report. It is defined in dbschema.CVEState</td>
-</tr>
-</table>
-<!-- Constraint List -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.cverefobsolete Constraints</caption>
-<tr>
-<th>Name</th>
-<th>Constraint</th>
-</tr>
-<tr class="tr0">
-<td>valid_cve</td>
-<td>CHECK (valid_cve(cveref))</td>
-</tr>
-</table>
-<!-- Foreign Key Discovery -->
-<!-- View Definition -->
-<!-- List off permissions -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to public.cverefobsolete</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>group admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>group read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -10174,20 +9284,6 @@ the CVE problem report. It is defined in dbschema.CVEState</td>
 <td></td>
 </tr>
 <tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -10521,6 +9617,36 @@ open (anybody can edit any translation in any language) to the
 completely closed (only designated translators can make any changes
 at all).</td>
 </tr>
+<tr class="tr0">
+<td></td>
+<td>uploadsender</td>
+<td>text</td>
+<td><br />
+<br />
+The email address (and name) of the default sender used by the
+upload processor. If NULL, we fall back to the default sender in
+the launchpad config.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>uploadadmin</td>
+<td>text</td>
+<td><br />
+<br />
+The email address (and name) of the default recipient used by the
+upload processor. This is essentially the upload admin for the
+distribution. If NULL, we fall back to the default recipient in the
+launchpad config.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>bugcontact</td>
+<td>integer</td>
+<td><br />
+<br />
+Person who will be automatically subscribed to every bug targeted
+to this distribution.</td>
+</tr>
 </table>
 <!-- Constraint List -->
 <p>&nbsp;</p>
@@ -10542,7 +9668,15 @@ at all).</td>
 </ul>
 <ul>
 <li><a href=
-"#public.table.distrobounty">public.distrobounty</a></li>
+"#public.table.distributionbounty">public.distributionbounty</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.distributionsourcepackagecache">public.distributionsourcepackagecache</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.distrocomponentuploader">public.distrocomponentuploader</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -10557,6 +9691,10 @@ at all).</td>
 </ul>
 <ul>
 <li><a href="#public.table.milestone">public.milestone</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.packagebugcontact">public.packagebugcontact</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -10609,6 +9747,18 @@ at all).</td>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>gina</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -10632,7 +9782,7 @@ at all).</td>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -10644,7 +9794,7 @@ at all).</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group write</td>
 <td>
 <center>&diams;</center>
@@ -10660,8 +9810,429 @@ at all).</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>poexport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>queued</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>statistician</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>targetnamecacheupdater</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>tickettracker</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>trebuchet</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.distributionbounty" id=
+"public.table.distributionbounty">distributionbounty</a></h2>
+<p>This table records a simple link between a bounty and a
+distribution. This bounty will be listed on the distribution web
+page, and the distribution will be mentioned on the bounty web
+page.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.distributionbounty Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.bounty">public.bounty.id</a></td>
+<td>bounty</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i></td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.distribution">public.distribution.id</a></td>
+<td>distribution</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i></td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.distributionbounty</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.distributionsourcepackagecache" id=
+"public.table.distributionsourcepackagecache">distributionsourcepackagecache</a></h2>
+<p>A cache of the text associated with binary and source packages
+in the distribution. This table allows for fast queries to find a
+source packagename that matches a given text.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.distributionsourcepackagecache Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.distribution">public.distribution.id</a></td>
+<td>distribution</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The distribution in which we are checking.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.sourcepackagename">public.sourcepackagename.id</a></td>
+<td>sourcepackagename</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The source package name for which we are caching details.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>name</td>
+<td>text</td>
+<td><br />
+<br />
+The source package name itself. This is just a copy of the value of
+sourcepackagename.name. We have it here so it can be part of the
+full text index.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>binpkgnames</td>
+<td>text</td>
+<td><br />
+<br />
+The binary package names of binary packages generated from these
+source packages across all architectures.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>binpkgsummaries</td>
+<td>text</td>
+<td><br />
+<br />
+The aggregated summaries of all the binary packages generated from
+these source packages in this distribution.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>binpkgdescriptions</td>
+<td>text</td>
+<td><br />
+<br />
+The aggregated description of all the binary packages generated
+from these source packages in this distribution.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>fti</td>
+<td>tsvector</td>
+<td></td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.distributionsourcepackagecache</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>launchpad</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -10697,37 +10268,19 @@ at all).</td>
 </td>
 </tr>
 <tr class="tr0">
-<td>sourcerer</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
 <td>statistician</td>
 <td>
 <center>&diams;</center>
 </td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>trebuchet</td>
 <td>
 <center>&diams;</center>
 </td>
-<td></td>
-<td></td>
-<td></td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -10794,12 +10347,36 @@ files... such as the "amd64" part of
 <td>integer</td>
 <td><i>NOT NULL</i></td>
 </tr>
+<tr class="tr1">
+<td></td>
+<td>official</td>
+<td>boolean</td>
+<td><i>NOT NULL</i><br />
+<br />
+Whether or not this architecture or "port" is an official release.
+If it is not official then you may not be able to install it or get
+all the packages for it.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>package_count</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+A cache of the number of binary packages published in this distro
+arch release. The count only includes packages published in the
+release pocket.</td>
+</tr>
 </table>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
 <p>Tables referencing this one via Foreign Key Constraints:</p>
 <ul>
 <li><a href="#public.table.build">public.build</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.distrorelease">public.distrorelease</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -10933,19 +10510,58 @@ public.distroarchrelease</caption>
 <center>&diams;</center>
 </td>
 </tr>
+<tr class="tr1">
+<td>queued</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>statistician</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.distrobounty" id=
-"public.table.distrobounty">distrobounty</a></h2>
-<p>This table records a simple link between a bounty and a
-distribution. This bounty will be listed on the distribution web
-page, and the distribution will be mentioned on the bounty web
-page.</p>
+"public.table.distrocomponentuploader" id=
+"public.table.distrocomponentuploader">distrocomponentuploader</a></h2>
+<p>DistroComponentUploader: A record of who can upload what to
+where. Distributions are permitted to have multiple components.
+Those components are often subject to different uploader
+constraints. This table represents those variable constraints by
+linking a team to a distribution,component tuple.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.distrobounty Structure</caption>
+<caption>public.distrocomponentuploader Structure</caption>
 <tr>
 <th>F-Key</th>
 <th>Name</th>
@@ -10959,17 +10575,31 @@ page.</p>
 <td><i>PRIMARY KEY</i></td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.bounty">public.bounty.id</a></td>
-<td>bounty</td>
-<td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i></td>
-</tr>
-<tr class="tr0">
 <td><a href=
 "#public.table.distribution">public.distribution.id</a></td>
 <td>distribution</td>
 <td>integer</td>
-<td><i>UNIQUE#1 NOT NULL</i></td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The distribution to which this upload permission applies.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.component">public.component.id</a></td>
+<td>component</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The component to which this upload permission applies.</td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>uploader</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The uploader(s) permitted to upload to the given component in the
+given distribution. This is commonly a team but may be a single
+person in the case of a simple distribution.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -10978,7 +10608,8 @@ page.</p>
 <!-- List off permissions -->
 <p>&nbsp;</p>
 <table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to public.distrobounty</caption>
+<caption>Permissions which apply to
+public.distrocomponentuploader</caption>
 <tr>
 <th>User</th>
 <th>
@@ -11040,7 +10671,7 @@ page.</p>
 <td></td>
 </tr>
 <tr class="tr0">
-<td>launchpad</td>
+<td>group write</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -11078,6 +10709,18 @@ page.</p>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr0">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -11148,24 +10791,6 @@ focus of the release or other related information.</td>
 <br />
 The version of the release. E.g. warty would be "4.10" and hoary
 would be "5.4"</td>
-</tr>
-<tr class="tr0">
-<td><a href="#public.table.schema">public.schema.id</a></td>
-<td>components</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The components which are considered valid within this
-distrorelease.</td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.schema">public.schema.id</a></td>
-<td>sections</td>
-<td>integer</td>
-<td><i>NOT NULL</i><br />
-<br />
-The sections which are considered valid within this
-distrorelease.</td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -11251,6 +10876,49 @@ DistroReleaseLanguage, and should never be updated separately. The
 total number of translation messages in this distro release, as per
 IRosettaStats.</td>
 </tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.distroarchrelease">public.distroarchrelease.id</a></td>
+<td>nominatedarchindep</td>
+<td>integer</td>
+<td><br />
+<br />
+This is the DistroArchRelease nominated to build architecture
+independent packages within this DistroRelase, it is mandatory for
+buildable distroreleases, i.e., Auto Build System will avoid to
+create build jobs for a DistroRelease with no nominatedarchindep,
+but the database model allow us to do it (for non-buildable
+DistroReleases). See further info in NominatedArchIndep
+specification.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>changeslist</td>
+<td>text</td>
+<td><br />
+<br />
+The email address (name name) of the changes announcement list for
+this distrorelease. If NULL, no announcement mail will be
+sent.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>binarycount</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+A cache of the number of distinct binary package names published in
+this distro release.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>sourcecount</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+A cache of the number of distinct source package names published in
+this distro release.</td>
+</tr>
 </table>
 <!-- Constraint List -->
 <p>&nbsp;</p>
@@ -11266,7 +10934,7 @@ IRosettaStats.</td>
 </tr>
 <tr class="tr1">
 <td>valid_version</td>
-<td>CHECK (sane_version("version"))</td>
+<td>CHECK (sane_version(version))</td>
 </tr>
 </table>
 <!-- Foreign Key Discovery -->
@@ -11293,6 +10961,10 @@ IRosettaStats.</td>
 <ul>
 <li><a href=
 "#public.table.distroreleaselanguage">public.distroreleaselanguage</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.distroreleasepackagecache">public.distroreleasepackagecache</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -11460,7 +11132,7 @@ IRosettaStats.</td>
 </td>
 </tr>
 <tr class="tr0">
-<td>sourcerer</td>
+<td>queued</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -11472,6 +11144,18 @@ IRosettaStats.</td>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>statistician</td>
 <td>
 <center>&diams;</center>
@@ -11485,6 +11169,18 @@ IRosettaStats.</td>
 <td></td>
 <td></td>
 </tr>
+<tr class="tr1">
+<td>targetnamecacheupdater</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
 <tr class="tr0">
 <td>trebuchet</td>
 <td>
@@ -11492,6 +11188,20 @@ IRosettaStats.</td>
 </td>
 <td></td>
 <td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -11525,13 +11235,13 @@ across an entire distrorelease.</p>
 "#public.table.distrorelease">public.distrorelease.id</a></td>
 <td>distrorelease</td>
 <td>integer</td>
-<td></td>
+<td><i>UNIQUE#1</i></td>
 </tr>
 <tr class="tr0">
 <td><a href="#public.table.language">public.language.id</a></td>
 <td>language</td>
 <td>integer</td>
-<td></td>
+<td><i>UNIQUE#1</i></td>
 </tr>
 <tr class="tr1">
 <td></td>
@@ -11695,7 +11405,229 @@ public.distroreleaselanguage</caption>
 <td>
 <center>&diams;</center>
 </td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.distroreleasepackagecache" id=
+"public.table.distroreleasepackagecache">distroreleasepackagecache</a></h2>
+<p>A cache of the text associated with binary packages in the
+distrorelease. This table allows for fast queries to find a binary
+packagename that matches a given text.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.distroreleasepackagecache Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.distrorelease">public.distrorelease.id</a></td>
+<td>distrorelease</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The distrorelease in which we are checking.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.binarypackagename">public.binarypackagename.id</a></td>
+<td>binarypackagename</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i><br />
+<br />
+The binary package name for which we are caching details.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>name</td>
+<td>text</td>
+<td><br />
+<br />
+The binary package name itself. This is just a copy of the value of
+binarypackagename.name. We have it here so it can be part of the
+full text index.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>summary</td>
+<td>text</td>
+<td><br />
+<br />
+A single summary for one of the binary packages of this name in
+this distrorelease. We could potentially have binary packages in
+different architectures with the same name and different summaries,
+so this is a way of collapsing to one arbitrarily-chosen one, for
+display purposes. The chances of actually having different
+summaries and descriptions is pretty small. It could happen,
+though, because of the way package superseding works when a package
+does not build on a specific architecture.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>description</td>
+<td>text</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>summaries</td>
+<td>text</td>
+<td><br />
+<br />
+The aggregated summaries of all the binary packages with this name
+in this distrorelease.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>descriptions</td>
+<td>text</td>
+<td><br />
+<br />
+The aggregated description of all the binary packages with this
+name in this distrorelease.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>fti</td>
+<td>tsvector</td>
+<td></td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.distroreleasepackagecache</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr0">
+<td>statistician</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -11741,7 +11673,15 @@ class in dbschema.py</td>
 <td><i>NOT NULL</i><br />
 <br />
 This integer field refers to the DistroRelease to which this upload
-is targetted</td>
+is targeted</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>pocket</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+This is the pocket the upload is targeted at.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -11750,6 +11690,10 @@ is targetted</td>
 <ul>
 <li><a href=
 "#public.table.distroreleasequeuebuild">public.distroreleasequeuebuild</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.distroreleasequeuecustom">public.distroreleasequeuecustom</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -11860,6 +11804,34 @@ public.distroreleasequeue</caption>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr0">
+<td>queued</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -12011,6 +11983,217 @@ public.distroreleasequeuebuild</caption>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr0">
+<td>queued</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.distroreleasequeuecustom" id=
+"public.table.distroreleasequeuecustom">distroreleasequeuecustom</a></h2>
+<p>An upload queue custom format upload. This table stores
+information pertaining to the custom upload formats in an
+in-progress package upload.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.distroreleasequeuecustom Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.distroreleasequeue">public.distroreleasequeue.id</a></td>
+<td>distroreleasequeue</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The queue item this refers to.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>customformat</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The format of this particular custom uploaded file.</td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.libraryfilealias">public.libraryfilealias.id</a></td>
+<td>libraryfilealias</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The actual file as a librarian alias.</td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.distroreleasequeuecustom</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>group write</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr0">
+<td>queued</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -12165,6 +12348,32 @@ public.distroreleasequeuesource</caption>
 <center>&diams;</center>
 </td>
 </tr>
+<tr class="tr0">
+<td>queued</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
@@ -12292,6 +12501,18 @@ casesensitive way, but must be case insensitivly unique.</td>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>karma</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>launchpad</td>
 <td>
 <center>&diams;</center>
@@ -12309,7 +12530,7 @@ casesensitive way, but must be case insensitivly unique.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>poexport</td>
 <td>
 <center>&diams;</center>
@@ -12321,7 +12542,7 @@ casesensitive way, but must be case insensitivly unique.</td>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -12344,6 +12565,32 @@ casesensitive way, but must be case insensitivly unique.</td>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr1">
+<td>tickettracker</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -12416,6 +12663,15 @@ dbschema.GPGKeyAlgorithms</td>
 Size of the key in bits, as reported by GPG. We may refuse to deal
 with keysizes &lt; 768 bits in the future.</td>
 </tr>
+<tr class="tr1">
+<td></td>
+<td>can_encrypt</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i><br />
+<br />
+Whether the key has been validated for use in encryption (as
+opposed to just signing)</td>
+</tr>
 </table>
 <!-- Constraint List -->
 <p>&nbsp;</p>
@@ -12437,14 +12693,10 @@ with keysizes &lt; 768 bits in the future.</td>
 <!-- Foreign Key Discovery -->
 <p>Tables referencing this one via Foreign Key Constraints:</p>
 <ul>
-<li><a href=
-"#public.table.archarchivelocationsigner">public.archarchivelocationsigner</a></li>
-</ul>
-<ul>
 <li><a href="#public.table.build">public.build</a></li>
 </ul>
 <ul>
-<li><a href="#public.table.changeset">public.changeset</a></li>
+<li><a href="#public.table.revision">public.revision</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -12560,6 +12812,20 @@ with keysizes &lt; 768 bits in the future.</td>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr0">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -13045,28 +13311,41 @@ performed it.</p>
 <td><i>PRIMARY KEY</i></td>
 </tr>
 <tr class="tr1">
-<td></td>
-<td>name</td>
-<td>integer</td>
-<td><i>UNIQUE NOT NULL</i><br />
-<br />
-The unique name of this action.</td>
-</tr>
-<tr class="tr0">
-<td></td>
+<td><a href=
+"#public.table.karmacategory">public.karmacategory.id</a></td>
 <td>category</td>
 <td>integer</td>
 <td><br />
 <br />
 A dbschema value used to group actions together.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>points</td>
 <td>integer</td>
 <td><br />
 <br />
 The number of points this action is worth of.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>name</td>
+<td>text</td>
+<td><i>UNIQUE NOT NULL</i><br />
+<br />
+The unique name of this action.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>title</td>
+<td>text</td>
+<td><i>NOT NULL</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>summary</td>
+<td>text</td>
+<td><i>NOT NULL</i></td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -13310,18 +13589,6 @@ person.</td>
 <td></td>
 </tr>
 <tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
 <td>karma</td>
 <td>
 <center>&diams;</center>
@@ -13335,6 +13602,185 @@ person.</td>
 <td>
 <center>&diams;</center>
 </td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.karmacategory" id=
+"public.table.karmacategory">karmacategory</a></h2>
+<p>A category of karma. This allows us to present an overall
+picture of the different areas where a user has been active.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.karmacategory Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>name</td>
+<td>text</td>
+<td><i>NOT NULL</i></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>title</td>
+<td>text</td>
+<td><i>NOT NULL</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>summary</td>
+<td>text</td>
+<td><i>NOT NULL</i></td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href="#public.table.karmaaction">public.karmaaction</a></li>
+</ul>
+<!-- View Definition -->
+<!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.karmacategory</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>karma</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -13552,6 +13998,7 @@ public</a></p>
 <h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.language" id=
 "public.table.language">language</a></h2>
+<p>A human language.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.language Structure</caption>
 <tr>
@@ -13570,37 +14017,57 @@ public</a></p>
 <td></td>
 <td>code</td>
 <td>text</td>
-<td><i>UNIQUE NOT NULL</i></td>
+<td><i>UNIQUE NOT NULL</i><br />
+<br />
+The ISO 639 code for this language</td>
 </tr>
 <tr class="tr0">
 <td></td>
 <td>englishname</td>
 <td>text</td>
-<td></td>
+<td><br />
+<br />
+The english name for this language</td>
 </tr>
 <tr class="tr1">
 <td></td>
 <td>nativename</td>
 <td>text</td>
-<td></td>
+<td><br />
+<br />
+The name of this language in the language itself</td>
 </tr>
 <tr class="tr0">
 <td></td>
 <td>pluralforms</td>
 <td>integer</td>
-<td></td>
+<td><br />
+<br />
+The number of plural forms this language has</td>
 </tr>
 <tr class="tr1">
 <td></td>
 <td>pluralexpression</td>
 <td>text</td>
-<td></td>
+<td><br />
+<br />
+The plural expression for this language, as used by gettext</td>
 </tr>
 <tr class="tr0">
 <td></td>
 <td>visible</td>
 <td>boolean</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+Whether this language should usually be visible or not</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>direction</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The direction that text is written in this language</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -13856,6 +14323,18 @@ public.launchpaddatabaserevision</caption>
 </th>
 </tr>
 <tr class="tr0">
+<td>PUBLIC</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -13879,7 +14358,7 @@ public.launchpaddatabaserevision</caption>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -13891,7 +14370,7 @@ public.launchpaddatabaserevision</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>group write</td>
 <td>
 <center>&diams;</center>
@@ -13907,7 +14386,7 @@ public.launchpaddatabaserevision</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -13940,7 +14419,7 @@ public</a></p>
 "public.table.launchpadstatistic">launchpadstatistic</a></h2>
 <p>A store of system-wide statistics or other integer values, keyed
 by names. The names are unique and the values can be any integer.
-Each field has a place to store the timestampt when it was last
+Each field has a place to store the timestamp when it was last
 updated, so it is possible to know how far out of date any given
 statistic is.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
@@ -14092,7 +14571,9 @@ public.launchpadstatistic</caption>
 <td>
 <center>&diams;</center>
 </td>
-<td></td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -14152,6 +14633,12 @@ The mime type of the file. E.g. "application/x-debian-package"</td>
 <td>timestamp without time zone</td>
 <td></td>
 </tr>
+<tr class="tr1">
+<td></td>
+<td>last_accessed</td>
+<td>timestamp without time zone</td>
+<td></td>
+</tr>
 </table>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
@@ -14166,6 +14653,10 @@ The mime type of the file. E.g. "application/x-debian-package"</td>
 </ul>
 <ul>
 <li><a href="#public.table.build">public.build</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.distroreleasequeuecustom">public.distroreleasequeuecustom</a></li>
 </ul>
 <ul>
 <li><a href="#public.table.message">public.message</a></li>
@@ -14190,6 +14681,9 @@ The mime type of the file. E.g. "application/x-debian-package"</td>
 <ul>
 <li><a href=
 "#public.table.productreleasefile">public.productreleasefile</a></li>
+</ul>
+<ul>
+<li><a href="#public.table.shippingrun">public.shippingrun</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -14356,11 +14850,51 @@ public.libraryfilealias</caption>
 </td>
 </tr>
 <tr class="tr0">
+<td>queued</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>shipit</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>sourcerer</td>
 <td>
 <center>&diams;</center>
 </td>
 <td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -14424,6 +14958,12 @@ The size of the file</td>
 <td><i>NOT NULL</i><br />
 <br />
 The SHA1 sum of the file's contents</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>deleted</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i></td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -14594,11 +15134,39 @@ public.libraryfilecontent</caption>
 </td>
 </tr>
 <tr class="tr0">
+<td>shipit</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>sourcerer</td>
 <td>
 <center>&diams;</center>
 </td>
 <td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -15540,7 +16108,8 @@ public</a></p>
 <td><i>PRIMARY KEY</i></td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.manifest">public.manifest.id#2</a></td>
+<td><a href="#public.table.manifest">public.manifest.id</a>
+<a href="#public.table.manifestentry">public.manifestentry.manifest#1</a></td>
 <td>manifest</td>
 <td>integer</td>
 <td><i>UNIQUE#2 UNIQUE#1 NOT NULL</i></td>
@@ -15552,15 +16121,13 @@ public</a></p>
 <td><i>UNIQUE#1 NOT NULL</i></td>
 </tr>
 <tr class="tr1">
-<td><a href="#public.table.branch">public.branch.id</a> <a href=
-"#public.table.changeset">public.changeset.branch#1</a></td>
+<td><a href="#public.table.branch">public.branch.id</a></td>
 <td>branch</td>
 <td>integer</td>
 <td></td>
 </tr>
 <tr class="tr0">
-<td><a href="#public.table.changeset">public.changeset.id</a>
-<a href="#public.table.changeset">public.changeset.id#1</a></td>
+<td><a href="#public.table.revision">public.revision.id</a></td>
 <td>changeset</td>
 <td>integer</td>
 <td></td>
@@ -15578,23 +16145,23 @@ public</a></p>
 <td><i>NOT NULL</i></td>
 </tr>
 <tr class="tr1">
-<td><a href=
-"#public.table.manifestentry">public.manifestentry.sequence#2</a></td>
-<td>patchon</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
 <td></td>
 <td>dirname</td>
 <td>text</td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>hint</td>
 <td>integer</td>
 <td><i>UNIQUE#2</i></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.manifestentry">public.manifestentry.sequence#1</a></td>
+<td>parent</td>
+<td>integer</td>
+<td></td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -15610,8 +16177,8 @@ public</a></p>
 <td>CHECK (("sequence" &gt; 0))</td>
 </tr>
 <tr class="tr1">
-<td>$2</td>
-<td>CHECK ((patchon &lt;&gt; "sequence"))</td>
+<td>manifestentry_parent_paradox</td>
+<td>CHECK ((parent &lt;&gt; "sequence"))</td>
 </tr>
 </table>
 <!-- Foreign Key Discovery -->
@@ -15848,6 +16415,10 @@ required to provide access to the original, undecoded message.</td>
 <ul>
 <li><a href=
 "#public.table.bountymessage">public.bountymessage</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.branchmessage">public.branchmessage</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -16887,6 +17458,155 @@ public.mirrorsourcecontent</caption>
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.packagebugcontact" id=
+"public.table.packagebugcontact">packagebugcontact</a></h2>
+<p>Defines the bug contact for a given sourcepackage in a given
+distribution. The bug contact will be automatically subscribed to
+every bug filed on this sourcepackage in this distribution.</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.packagebugcontact Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.distribution">public.distribution.id</a></td>
+<td>distribution</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.sourcepackagename">public.sourcepackagename.id</a></td>
+<td>sourcepackagename</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i></td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>bugcontact</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i></td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to
+public.packagebugcontact</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.packageselection" id=
 "public.table.packageselection">packageselection</a></h2>
 <table width="100%" cellspacing="0" cellpadding="3">
@@ -17557,13 +18277,7 @@ NULL))))</td>
 <!-- Foreign Key Discovery -->
 <p>Tables referencing this one via Foreign Key Constraints:</p>
 <ul>
-<li><a href="#public.table.archarchive">public.archarchive</a></li>
-</ul>
-<ul>
 <li><a href="#public.table.archconfig">public.archconfig</a></li>
-</ul>
-<ul>
-<li><a href="#public.table.archuserid">public.archuserid</a></li>
 </ul>
 <ul>
 <li><a href="#public.table.bounty">public.bounty</a></li>
@@ -17574,6 +18288,10 @@ NULL))))</td>
 </ul>
 <ul>
 <li><a href="#public.table.branch">public.branch</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.branchsubscription">public.branchsubscription</a></li>
 </ul>
 <ul>
 <li><a href="#public.table.bug">public.bug</a></li>
@@ -17608,10 +18326,6 @@ NULL))))</td>
 </ul>
 <ul>
 <li><a href=
-"#public.table.cverefobsolete">public.cverefobsolete</a></li>
-</ul>
-<ul>
-<li><a href=
 "#public.table.developmentmanifest">public.developmentmanifest</a></li>
 </ul>
 <ul>
@@ -17621,6 +18335,10 @@ NULL))))</td>
 <ul>
 <li><a href=
 "#public.table.distroarchrelease">public.distroarchrelease</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.distrocomponentuploader">public.distrocomponentuploader</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -17657,6 +18375,10 @@ NULL))))</td>
 </ul>
 <ul>
 <li><a href="#public.table.mirror">public.mirror</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.packagebugcontact">public.packagebugcontact</a></li>
 </ul>
 <ul>
 <li><a href="#public.table.packaging">public.packaging</a></li>
@@ -17710,6 +18432,9 @@ NULL))))</td>
 "#public.table.pushmirroraccess">public.pushmirroraccess</a></li>
 </ul>
 <ul>
+<li><a href="#public.table.revision">public.revision</a></li>
+</ul>
+<ul>
 <li><a href="#public.table.schema">public.schema</a></li>
 </ul>
 <ul>
@@ -17730,7 +18455,7 @@ NULL))))</td>
 </ul>
 <ul>
 <li><a href=
-"#public.table.specificationreview">public.specificationreview</a></li>
+"#public.table.specificationfeedback">public.specificationfeedback</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -17929,11 +18654,49 @@ NULL))))</td>
 </td>
 </tr>
 <tr class="tr1">
+<td>shipit</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>statistician</td>
 <td>
 <center>&diams;</center>
 </td>
 <td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>tickettracker</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -19836,11 +20599,11 @@ The name of this option.</td>
 </tr>
 <tr class="tr1">
 <td></td>
-<td>shortname</td>
+<td>title</td>
 <td>text</td>
 <td><i>UNIQUE#2 NOT NULL</i><br />
 <br />
-A short name for this option.</td>
+A short title for this option.</td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -20265,6 +21028,18 @@ public.pomsgidsighting</caption>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>poexport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -21864,6 +22639,18 @@ The flags associated with this set (like c-format).</td>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>poexport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -21887,7 +22674,7 @@ The flags associated with this set (like c-format).</td>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>statistician</td>
 <td>
 <center>&diams;</center>
@@ -22226,6 +23013,18 @@ unique.</td>
 <center>&diams;</center>
 </td>
 </tr>
+<tr class="tr1">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
@@ -22408,6 +23207,18 @@ public.processorfamily</caption>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr1">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -22681,6 +23492,15 @@ Whether or not this product upstream uses Malone for an official
 bug tracker. This is useful to help indicate whether or not people
 are likely to pick up on bugs registered in Malone.</td>
 </tr>
+<tr class="tr0">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>bugcontact</td>
+<td>integer</td>
+<td><br />
+<br />
+Person who will be automatically subscribed to bugs targetted to
+this product</td>
+</tr>
 </table>
 <!-- Constraint List -->
 <p>&nbsp;</p>
@@ -22705,10 +23525,6 @@ are likely to pick up on bugs registered in Malone.</td>
 </ul>
 <ul>
 <li><a href="#public.table.milestone">public.milestone</a></li>
-</ul>
-<ul>
-<li><a href=
-"#public.table.productbkbranch">public.productbkbranch</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -22871,6 +23687,30 @@ are likely to pick up on bugs registered in Malone.</td>
 <td></td>
 </tr>
 <tr class="tr0">
+<td>targetnamecacheupdater</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>tickettracker</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>trebuchet</td>
 <td>
 <center>&diams;</center>
@@ -22881,154 +23721,6 @@ are likely to pick up on bugs registered in Malone.</td>
 <td></td>
 <td></td>
 <td></td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.productbkbranch" id=
-"public.table.productbkbranch">productbkbranch</a></h2>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.productbkbranch Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>serial</td>
-<td><i>PRIMARY KEY</i></td>
-</tr>
-<tr class="tr1">
-<td><a href="#public.table.product">public.product.id</a></td>
-<td>product</td>
-<td>integer</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>locationurl</td>
-<td>text</td>
-<td><i>NOT NULL</i></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>weburl</td>
-<td>text</td>
-<td></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<!-- View Definition -->
-<!-- List off permissions -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to
-public.productbkbranch</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>group admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>group read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -23655,7 +24347,7 @@ Evolution 1.5.4.</p>
 <td></td>
 <td>version</td>
 <td>text</td>
-<td><i>NOT NULL</i><br />
+<td><i>UNIQUE#1 NOT NULL</i><br />
 <br />
 This is a text field containing the version string for this
 release, such as '1.2.4' or '2.0.38' or '7.4.3'.</td>
@@ -23706,7 +24398,7 @@ changelog.</td>
 "#public.table.productseries">public.productseries.id</a></td>
 <td>productseries</td>
 <td>integer</td>
-<td><i>NOT NULL</i><br />
+<td><i>UNIQUE#1 NOT NULL</i><br />
 <br />
 A pointer to the Product Series this release forms part of. Using a
 Product Series allows us to distinguish between releases on stable
@@ -23737,7 +24429,7 @@ in time.</td>
 </tr>
 <tr class="tr0">
 <td>valid_version</td>
-<td>CHECK (sane_version("version"))</td>
+<td>CHECK (sane_version(version))</td>
 </tr>
 </table>
 <!-- Foreign Key Discovery -->
@@ -25681,11 +26373,11 @@ SELECT binarypackagepublishing.id
 , binarypackagename.name AS binarypackagename
 , binarypackagerelease.summary AS binarypackagesummary
 , binarypackagerelease.description AS binarypackagedescription
-, binarypackagerelease."version" AS binarypackageversion
+, binarypackagerelease.version AS binarypackageversion
 , build.id AS build
 , build.datebuilt
 , sourcepackagerelease.id AS sourcepackagerelease
-, sourcepackagerelease."version" AS sourcepackagereleaseversion
+, sourcepackagerelease.version AS sourcepackagereleaseversion
 , sourcepackagename.name AS sourcepackagename
 , binarypackagepublishing.pocket
 , binarypackagerelease.fti AS binarypackagefti 
@@ -25780,6 +26472,18 @@ public.publishedpackageview</caption>
 </th>
 </tr>
 <tr class="tr0">
+<td>fiera</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -25803,7 +26507,7 @@ public.publishedpackageview</caption>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -25815,7 +26519,7 @@ public.publishedpackageview</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>group write</td>
 <td>
 <center>&diams;</center>
@@ -25831,7 +26535,7 @@ public.publishedpackageview</caption>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -26010,6 +26714,7 @@ public</a></p>
 <h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.requestedcds" id=
 "public.table.requestedcds">requestedcds</a></h2>
+<p>The requested CDs of a Shipping Request.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.requestedcds Structure</caption>
 <tr>
@@ -26029,37 +26734,51 @@ public</a></p>
 "#public.table.shippingrequest">public.shippingrequest.id</a></td>
 <td>request</td>
 <td>integer</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+The request itself.</td>
 </tr>
 <tr class="tr0">
 <td></td>
 <td>quantity</td>
 <td>integer</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+The number of CDs.</td>
 </tr>
 <tr class="tr1">
 <td></td>
 <td>flavour</td>
 <td>integer</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+The flavour of the distrorelease (e.g. EdUbuntu).</td>
 </tr>
 <tr class="tr0">
 <td></td>
 <td>distrorelease</td>
 <td>integer</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+The distrorelease of the CDs (e.g. Ubuntu Breezy).</td>
 </tr>
 <tr class="tr1">
 <td></td>
 <td>architecture</td>
 <td>integer</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+The architecture the CDs are meant to be installed on (e.g.
+x86).</td>
 </tr>
 <tr class="tr0">
 <td></td>
 <td>quantityapproved</td>
 <td>integer</td>
-<td></td>
+<td><br />
+<br />
+The number of CDs that were approved for shipping, in case the
+request was approved.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -26185,6 +26904,711 @@ public</a></p>
 <center>&diams;</center>
 </td>
 </tr>
+<tr class="tr0">
+<td>shipit</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.revision" id=
+"public.table.revision">revision</a></h2>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.revision Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>date_created</td>
+<td>timestamp without time zone</td>
+<td><i>NOT NULL DEFAULT timezone('UTC'::text,
+('now'::text)::timestamp(6) with time zone)</i></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>log_body</td>
+<td>text</td>
+<td><i>NOT NULL</i></td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.revisionauthor">public.revisionauthor.id</a></td>
+<td>revision_author</td>
+<td>integer</td>
+<td><i>NOT NULL</i></td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.gpgkey">public.gpgkey.id</a></td>
+<td>gpgkey</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.person">public.person.id</a></td>
+<td>owner</td>
+<td>integer</td>
+<td><i>NOT NULL</i></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>revision_id</td>
+<td>text</td>
+<td><i>UNIQUE NOT NULL</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>revision_date</td>
+<td>timestamp without time zone</td>
+<td></td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href=
+"#public.table.manifestentry">public.manifestentry</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.revisionnumber">public.revisionnumber</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.revisionparent">public.revisionparent</a></li>
+</ul>
+<!-- View Definition -->
+<!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.revision</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>importd</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>trebuchet</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.revisionauthor" id=
+"public.table.revisionauthor">revisionauthor</a></h2>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.revisionauthor Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>name</td>
+<td>text</td>
+<td><i>UNIQUE NOT NULL</i></td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href="#public.table.revision">public.revision</a></li>
+</ul>
+<!-- View Definition -->
+<!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.revisionauthor</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>importd</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.revisionnumber" id=
+"public.table.revisionnumber">revisionnumber</a></h2>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.revisionnumber Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>UNIQUE#2 PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>sequence</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i></td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.branch">public.branch.id</a></td>
+<td>branch</td>
+<td>integer</td>
+<td><i>UNIQUE#2 UNIQUE#1 NOT NULL</i></td>
+</tr>
+<tr class="tr1">
+<td><a href="#public.table.revision">public.revision.id</a></td>
+<td>revision</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i></td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href="#public.table.branch">public.branch</a></li>
+</ul>
+<!-- View Definition -->
+<!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.revisionnumber</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>importd</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+</table>
+<p><a href="#index">Index</a> - <a href="#public.schema">Schema
+public</a></p>
+<hr />
+<h2>Table: <a href="#public.schema">public</a>.<a name=
+"public.table.revisionparent" id=
+"public.table.revisionparent">revisionparent</a></h2>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>public.revisionparent Structure</caption>
+<tr>
+<th>F-Key</th>
+<th>Name</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>id</td>
+<td>serial</td>
+<td><i>PRIMARY KEY</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>sequence</td>
+<td>integer</td>
+<td><i>NOT NULL</i></td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.revision">public.revision.id</a></td>
+<td>revision</td>
+<td>integer</td>
+<td><i>UNIQUE#1 NOT NULL</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>parent_id</td>
+<td>text</td>
+<td><i>UNIQUE#1 NOT NULL</i></td>
+</tr>
+</table>
+<!-- Constraint List -->
+<!-- Foreign Key Discovery -->
+<!-- View Definition -->
+<!-- List off permissions -->
+<p>&nbsp;</p>
+<table width="100%" cellspacing="0" cellpadding="3">
+<caption>Permissions which apply to public.revisionparent</caption>
+<tr>
+<th>User</th>
+<th>
+<center>Select</center>
+</th>
+<th>
+<center>Insert</center>
+</th>
+<th>
+<center>Update</center>
+</th>
+<th>
+<center>Delete</center>
+</th>
+<th>
+<center>Reference</center>
+</th>
+<th>
+<center>Rule</center>
+</th>
+<th>
+<center>Trigger</center>
+</th>
+</tr>
+<tr class="tr0">
+<td>group admin</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
+<tr class="tr1">
+<td>group read</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>importd</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>launchpad</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>postgres</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+</tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
@@ -26251,10 +27675,6 @@ public</a></p>
 </table>
 <!-- Foreign Key Discovery -->
 <p>Tables referencing this one via Foreign Key Constraints:</p>
-<ul>
-<li><a href=
-"#public.table.distrorelease">public.distrorelease</a></li>
-</ul>
 <ul>
 <li><a href="#public.table.label">public.label</a></li>
 </ul>
@@ -26451,6 +27871,18 @@ public</a></p>
 </th>
 </tr>
 <tr class="tr0">
+<td>fiera</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>group admin</td>
 <td>
 <center>&diams;</center>
@@ -26474,7 +27906,7 @@ public</a></p>
 <center>&diams;</center>
 </td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>group read</td>
 <td>
 <center>&diams;</center>
@@ -26486,7 +27918,7 @@ public</a></p>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>group write</td>
 <td>
 <center>&diams;</center>
@@ -26502,7 +27934,7 @@ public</a></p>
 <td></td>
 <td></td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -26525,6 +27957,30 @@ public</a></p>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr1">
+<td>queued</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -26668,6 +28124,18 @@ public.sectionselection</caption>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr0">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -27008,6 +28476,20 @@ public.securebinarypackagepublishinghistory</caption>
 <center>&diams;</center>
 </td>
 </tr>
+<tr class="tr1">
+<td>queued</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
@@ -27337,6 +28819,20 @@ public.securesourcepackagepublishinghistory</caption>
 <center>&diams;</center>
 </td>
 </tr>
+<tr class="tr1">
+<td>queued</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
@@ -27344,6 +28840,9 @@ public</a></p>
 <h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.shipment" id=
 "public.table.shipment">shipment</a></h2>
+<p>A shipment is the link between a ShippingRequest and a
+ShippingRun. When a Shipment is created for a ShippingRequest, it
+gets locked and can't be changed anymore.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.shipment Structure</caption>
 <tr>
@@ -27362,40 +28861,57 @@ public</a></p>
 <td></td>
 <td>logintoken</td>
 <td>text</td>
-<td><i>UNIQUE</i></td>
+<td><i>UNIQUE NOT NULL</i><br />
+<br />
+A unique token used to identify users that come back after
+receiving CDs as part of an shock and awe campaign.</td>
 </tr>
 <tr class="tr0">
-<td></td>
+<td><a href=
+"#public.table.shippingrun">public.shippingrun.id</a></td>
 <td>shippingrun</td>
 <td>integer</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+The shippingrun to which this shipment belongs.</td>
 </tr>
 <tr class="tr1">
 <td></td>
 <td>dateshipped</td>
 <td>timestamp without time zone</td>
-<td><i>NOT NULL</i></td>
+<td><br />
+<br />
+The date when this shipment was shipped by the shipping
+company.</td>
 </tr>
 <tr class="tr0">
 <td></td>
 <td>shippingservice</td>
 <td>integer</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+The shipping service used for this shipment.</td>
 </tr>
 <tr class="tr1">
 <td></td>
 <td>trackingcode</td>
 <td>text</td>
-<td></td>
+<td><br />
+<br />
+A code used to track the shipment after it's shipped.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.shippingrequest">public.shippingrequest.id</a></td>
+<td>request</td>
+<td>integer</td>
+<td><i>UNIQUE</i><br />
+<br />
+A link to the ShippingRequest table.</td>
 </tr>
 </table>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
-<p>Tables referencing this one via Foreign Key Constraints:</p>
-<ul>
-<li><a href=
-"#public.table.shippingrequest">public.shippingrequest</a></li>
-</ul>
 <!-- View Definition -->
 <!-- List off permissions -->
 <p>&nbsp;</p>
@@ -27501,6 +29017,20 @@ public</a></p>
 <center>&diams;</center>
 </td>
 </tr>
+<tr class="tr0">
+<td>shipit</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
@@ -27508,6 +29038,7 @@ public</a></p>
 <h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.shippingrequest" id=
 "public.table.shippingrequest">shippingrequest</a></h2>
+<p>A shipping request made through ShipIt.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.shippingrequest Structure</caption>
 <tr>
@@ -27526,61 +29057,157 @@ public</a></p>
 <td><a href="#public.table.person">public.person.id</a></td>
 <td>recipient</td>
 <td>integer</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+The person who requested.</td>
 </tr>
 <tr class="tr0">
-<td><a href="#public.table.shipment">public.shipment.id</a></td>
-<td>shipment</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr1">
 <td><a href="#public.table.person">public.person.id</a></td>
 <td>whoapproved</td>
 <td>integer</td>
-<td></td>
+<td><br />
+<br />
+The person who approved this.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>cancelled</td>
 <td>boolean</td>
-<td><i>NOT NULL DEFAULT false</i></td>
+<td><i>NOT NULL DEFAULT false</i><br />
+<br />
+Is this request cancelled?</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td><a href="#public.table.person">public.person.id</a></td>
 <td>whocancelled</td>
 <td>integer</td>
-<td></td>
+<td><br />
+<br />
+The person who cancelled this.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>daterequested</td>
 <td>timestamp without time zone</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+The date this request was made.</td>
 </tr>
-<tr class="tr1">
+<tr class="tr0">
 <td></td>
 <td>approved</td>
 <td>boolean</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>shockandawe</td>
-<td>integer</td>
-<td></td>
+<td><br />
+<br />
+Is this request approved? A value of NULL means it's pending
+approval.</td>
 </tr>
 <tr class="tr1">
+<td><a href=
+"#public.table.shockandawe">public.shockandawe.id</a></td>
+<td>shockandawe</td>
+<td>integer</td>
+<td><br />
+<br />
+The Shock and Awe program that generated this request, in case this
+is part of a SA program.</td>
+</tr>
+<tr class="tr0">
 <td></td>
 <td>reason</td>
 <td>text</td>
-<td></td>
+<td><br />
+<br />
+A comment from the requester explaining why he want the CDs.</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td></td>
 <td>highpriority</td>
 <td>boolean</td>
-<td><i>NOT NULL DEFAULT false</i></td>
+<td><i>NOT NULL DEFAULT false</i><br />
+<br />
+Is this a high priority request?</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>recipientdisplayname</td>
+<td>text</td>
+<td><i>NOT NULL</i><br />
+<br />
+Used as the recipient's name when a request is made by a ShipIt
+admin in behalf of someone else</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>addressline1</td>
+<td>text</td>
+<td><i>NOT NULL</i><br />
+<br />
+The address (first line) to which this request should be
+shipped.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>addressline2</td>
+<td>text</td>
+<td><br />
+<br />
+The address (second line) to which this request should be
+shipped.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>organization</td>
+<td>text</td>
+<td><br />
+<br />
+The organization requesting the CDs.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>city</td>
+<td>text</td>
+<td><i>NOT NULL</i><br />
+<br />
+The city to which this request should be shipped.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>province</td>
+<td>text</td>
+<td><br />
+<br />
+The province to which this request should be shipped.</td>
+</tr>
+<tr class="tr0">
+<td><a href="#public.table.country">public.country.id</a></td>
+<td>country</td>
+<td>integer</td>
+<td><i>NOT NULL</i><br />
+<br />
+The country to which this request should be shipped.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>postcode</td>
+<td>text</td>
+<td><br />
+<br />
+The postcode to which this request should be shipped.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>phone</td>
+<td>text</td>
+<td><br />
+<br />
+The phone number of the requester.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>fti</td>
+<td>tsvector</td>
+<td></td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -27595,12 +29222,24 @@ public</a></p>
 <td>is_person</td>
 <td>CHECK (is_person(recipient))</td>
 </tr>
+<tr class="tr1">
+<td>printable_addresses</td>
+<td>CHECK (is_printable_ascii((((((((COALESCE(recipientdisplayname,
+''::text) || COALESCE(addressline1, ''::text)) ||
+COALESCE(addressline2, ''::text)) || COALESCE(organization,
+''::text)) || COALESCE(city, ''::text)) || COALESCE(province,
+''::text)) || COALESCE(postcode, ''::text)) || COALESCE(phone,
+''::text))))</td>
+</tr>
 </table>
 <!-- Foreign Key Discovery -->
 <p>Tables referencing this one via Foreign Key Constraints:</p>
 <ul>
 <li><a href=
 "#public.table.requestedcds">public.requestedcds</a></li>
+</ul>
+<ul>
+<li><a href="#public.table.shipment">public.shipment</a></li>
 </ul>
 <!-- View Definition -->
 <!-- List off permissions -->
@@ -27708,6 +29347,20 @@ public.shippingrequest</caption>
 <center>&diams;</center>
 </td>
 </tr>
+<tr class="tr0">
+<td>shipit</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
@@ -27715,6 +29368,8 @@ public</a></p>
 <h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.shippingrun" id=
 "public.table.shippingrun">shippingrun</a></h2>
+<p>A shipping run is a set of shipments that are sent to the
+shipping company in the same date.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>public.shippingrun Structure</caption>
 <tr>
@@ -27733,11 +29388,35 @@ public</a></p>
 <td></td>
 <td>datecreated</td>
 <td>timestamp without time zone</td>
-<td><i>NOT NULL</i></td>
+<td><i>NOT NULL</i><br />
+<br />
+The date this shipping run was created.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>sentforshipping</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i><br />
+<br />
+The exported file was sent to the shipping company already?</td>
+</tr>
+<tr class="tr1">
+<td><a href=
+"#public.table.libraryfilealias">public.libraryfilealias.id</a></td>
+<td>csvfile</td>
+<td>integer</td>
+<td><i>UNIQUE</i><br />
+<br />
+A csv file with all requests of this shipping run, to be sent to
+the shipping company.</td>
 </tr>
 </table>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href="#public.table.shipment">public.shipment</a></li>
+</ul>
 <!-- View Definition -->
 <!-- List off permissions -->
 <p>&nbsp;</p>
@@ -27843,6 +29522,22 @@ public</a></p>
 <center>&diams;</center>
 </td>
 </tr>
+<tr class="tr0">
+<td>shipit</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
@@ -27892,6 +29587,11 @@ The description of the Shock And Awe program</td>
 </table>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
+<p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href=
+"#public.table.shippingrequest">public.shippingrequest</a></li>
+</ul>
 <!-- View Definition -->
 <!-- List off permissions -->
 <p>&nbsp;</p>
@@ -28468,7 +30168,15 @@ A lowercase name identifying one or more sourcepackages</td>
 </ul>
 <ul>
 <li><a href=
+"#public.table.distributionsourcepackagecache">public.distributionsourcepackagecache</a></li>
+</ul>
+<ul>
+<li><a href=
 "#public.table.maintainership">public.maintainership</a></li>
+</ul>
+<ul>
+<li><a href=
+"#public.table.packagebugcontact">public.packagebugcontact</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -28606,7 +30314,55 @@ public.sourcepackagename</caption>
 </td>
 </tr>
 <tr class="tr1">
+<td>queued</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>sourcerer</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>statistician</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>targetnamecacheupdater</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>tickettracker</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -28623,6 +30379,20 @@ public.sourcepackagename</caption>
 <center>&diams;</center>
 </td>
 <td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -28937,7 +30707,31 @@ public.sourcepackagepublishing</caption>
 <td></td>
 </tr>
 <tr class="tr0">
+<td>statistician</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
 <td>trebuchet</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td>uploader</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -29649,7 +31443,7 @@ dbschema.SourcePackageFormat</td>
 </tr>
 <tr class="tr0">
 <td>valid_version</td>
-<td>CHECK (valid_debian_version("version"))</td>
+<td>CHECK (valid_debian_version(version))</td>
 </tr>
 </table>
 <!-- Foreign Key Discovery -->
@@ -29796,6 +31590,18 @@ public.sourcepackagerelease</caption>
 </td>
 </tr>
 <tr class="tr1">
+<td>queued</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>sourcerer</td>
 <td>
 <center>&diams;</center>
@@ -29809,12 +31615,38 @@ public.sourcepackagerelease</caption>
 <td></td>
 <td></td>
 </tr>
+<tr class="tr1">
+<td>statistician</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
 <tr class="tr0">
 <td>trebuchet</td>
 <td>
 <center>&diams;</center>
 </td>
 <td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr1">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
 <td></td>
 <td></td>
 <td></td>
@@ -30021,6 +31853,20 @@ public.sourcepackagereleasefile</caption>
 <td></td>
 <td></td>
 </tr>
+<tr class="tr1">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
@@ -30185,7 +32031,7 @@ in.</td>
 <td></td>
 <td>priority</td>
 <td>integer</td>
-<td><i>NOT NULL</i><br />
+<td><i>NOT NULL DEFAULT 5</i><br />
 <br />
 An enum that gives the implementation priority (low, medium, high,
 emergency) of the feature defined in this specification.</td>
@@ -30194,7 +32040,7 @@ emergency) of the feature defined in this specification.</td>
 <td></td>
 <td>specurl</td>
 <td>text</td>
-<td><i>UNIQUE NOT NULL</i><br />
+<td><i>UNIQUE</i><br />
 <br />
 The URL where the specification itself can be found. This is
 usually a wiki page somewhere.</td>
@@ -30209,6 +32055,42 @@ As long as the specification is somewhere else (i.e. not in
 Launchpad) it will be useful to have a place to hold some arbitrary
 message or status flags that have meaning to the project, not
 Launchpad. This whiteboard is just the place for it.</td>
+</tr>
+<tr class="tr0">
+<td><a href=
+"#public.table.specification">public.specification.id</a></td>
+<td>superseded_by</td>
+<td>integer</td>
+<td><br />
+<br />
+The specification which replaced this specification.</td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>needs_discussion</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT true</i><br />
+<br />
+Whether or not this specification requires further discussion at
+this sprint. This is used as part of the scheduling algorithm.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>direction_approved</td>
+<td>boolean</td>
+<td><i>NOT NULL DEFAULT false</i></td>
+</tr>
+<tr class="tr1">
+<td></td>
+<td>man_days</td>
+<td>integer</td>
+<td></td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>delivery</td>
+<td>integer</td>
+<td><i>NOT NULL</i></td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -30234,16 +32116,24 @@ NULL)))</td>
 NULL)))</td>
 </tr>
 <tr class="tr1">
+<td>specification_not_self_superseding</td>
+<td>CHECK ((superseded_by &lt;&gt; id))</td>
+</tr>
+<tr class="tr0">
 <td>valid_name</td>
 <td>CHECK (valid_name(name))</td>
 </tr>
-<tr class="tr0">
+<tr class="tr1">
 <td>valid_url</td>
 <td>CHECK (valid_absolute_url(specurl))</td>
 </tr>
 </table>
 <!-- Foreign Key Discovery -->
 <p>Tables referencing this one via Foreign Key Constraints:</p>
+<ul>
+<li><a href=
+"#public.table.specification">public.specification</a></li>
+</ul>
 <ul>
 <li><a href=
 "#public.table.specificationbug">public.specificationbug</a></li>
@@ -30254,7 +32144,7 @@ NULL)))</td>
 </ul>
 <ul>
 <li><a href=
-"#public.table.specificationreview">public.specificationreview</a></li>
+"#public.table.specificationfeedback">public.specificationfeedback</a></li>
 </ul>
 <ul>
 <li><a href=
@@ -30683,12 +32573,12 @@ public.specificationdependency</caption>
 public</a></p>
 <hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
-"public.table.specificationreview" id=
-"public.table.specificationreview">specificationreview</a></h2>
+"public.table.specificationfeedback" id=
+"public.table.specificationfeedback">specificationfeedback</a></h2>
 <p>A table representing a review request of a specification, from
 one user to another, with an optional message.</p>
 <table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.specificationreview Structure</caption>
+<caption>public.specificationfeedback Structure</caption>
 <tr>
 <th>F-Key</th>
 <th>Name</th>
@@ -30718,9 +32608,9 @@ The person who has been asked to do the review.</td>
 </tr>
 <tr class="tr1">
 <td><a href="#public.table.person">public.person.id</a></td>
-<td>requestor</td>
+<td>requester</td>
 <td>integer</td>
-<td><i>NOT NULL</i><br />
+<td><i>UNIQUE#1 NOT NULL</i><br />
 <br />
 The person who made the request.</td>
 </tr>
@@ -30730,7 +32620,7 @@ The person who made the request.</td>
 <td>text</td>
 <td><br />
 <br />
-An optional text message for the reviewer, from the requestor.</td>
+An optional text message for the reviewer, from the requester.</td>
 </tr>
 </table>
 <!-- Constraint List -->
@@ -30740,7 +32630,7 @@ An optional text message for the reviewer, from the requestor.</td>
 <p>&nbsp;</p>
 <table width="100%" cellspacing="0" cellpadding="3">
 <caption>Permissions which apply to
-public.specificationreview</caption>
+public.specificationfeedback</caption>
 <tr>
 <th>User</th>
 <th>
@@ -31561,6 +33451,24 @@ which specs are going to be discussed at which sprint.</p>
 <td>integer</td>
 <td><i>UNIQUE#1 NOT NULL</i></td>
 </tr>
+<tr class="tr1">
+<td></td>
+<td>status</td>
+<td>integer</td>
+<td><i>NOT NULL DEFAULT 30</i><br />
+<br />
+Whether or not the spec has been approved on the agenda for this
+sprint.</td>
+</tr>
+<tr class="tr0">
+<td></td>
+<td>whiteboard</td>
+<td>text</td>
+<td><br />
+<br />
+A place to store comments specifically related to this spec being
+on the agenda of this meeting.</td>
+</tr>
 </table>
 <!-- Constraint List -->
 <!-- Foreign Key Discovery -->
@@ -31638,7 +33546,9 @@ public.sprintspecification</caption>
 <td>
 <center>&diams;</center>
 </td>
-<td></td>
+<td>
+<center>&diams;</center>
+</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -32339,6 +34249,20 @@ public.teamparticipation</caption>
 <center>&diams;</center>
 </td>
 </tr>
+<tr class="tr0">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
@@ -32464,7 +34388,7 @@ request upstream too".</td>
 <td><i>NOT NULL DEFAULT timezone('UTC'::text,
 ('now'::text)::timestamp(6) with time zone)</i><br />
 <br />
-The date we last saw a comment from the requestor (owner).</td>
+The date we last saw a comment from the requester (owner).</td>
 </tr>
 <tr class="tr1">
 <td></td>
@@ -32474,7 +34398,7 @@ The date we last saw a comment from the requestor (owner).</td>
 <br />
 The date we "confirmed" or "accepted" this support request. It is
 usually set to the date of the first response by someone other than
-the requestor. This allows us to track the time between first
+the requester. This allows us to track the time between first
 request and first response.</td>
 </tr>
 <tr class="tr0">
@@ -32494,7 +34418,7 @@ contract SLA commitment.</td>
 <td><br />
 <br />
 The date we last saw a comment from somebody other than the
-requestor.</td>
+requester.</td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -32503,7 +34427,7 @@ requestor.</td>
 <td><br />
 <br />
 The date this ticket was last "answered", in the sense of receiving
-a comment from someone other than the requestor that they
+a comment from someone other than the requester that they
 considered sufficient to close the ticket.</td>
 </tr>
 <tr class="tr1">
@@ -32512,7 +34436,7 @@ considered sufficient to close the ticket.</td>
 <td>timestamp without time zone</td>
 <td><br />
 <br />
-The date the requestor marked this ticket CLOSED.</td>
+The date the requester marked this ticket CLOSED.</td>
 </tr>
 <tr class="tr0">
 <td></td>
@@ -32673,6 +34597,18 @@ NULL)))</td>
 <td>
 <center>&diams;</center>
 </td>
+</tr>
+<tr class="tr0">
+<td>tickettracker</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
@@ -33778,7 +35714,7 @@ public.translationgroup</caption>
 <td></td>
 </tr>
 <tr class="tr1">
-<td>poexport</td>
+<td>poattach</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -33790,7 +35726,7 @@ public.translationgroup</caption>
 <td></td>
 </tr>
 <tr class="tr0">
-<td>poimport</td>
+<td>poexport</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -33802,6 +35738,18 @@ public.translationgroup</caption>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>poimport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -33974,7 +35922,7 @@ group.</td>
 <td></td>
 </tr>
 <tr class="tr1">
-<td>poexport</td>
+<td>poattach</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -33986,7 +35934,7 @@ group.</td>
 <td></td>
 </tr>
 <tr class="tr0">
-<td>poimport</td>
+<td>poexport</td>
 <td>
 <center>&diams;</center>
 </td>
@@ -33998,6 +35946,18 @@ group.</td>
 <td></td>
 </tr>
 <tr class="tr1">
+<td>poimport</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="tr0">
 <td>postgres</td>
 <td>
 <center>&diams;</center>
@@ -34358,571 +36318,6 @@ The poll in which this person voted.</td>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
 <hr />
-<h2>View: <a href="#public.schema">public</a>.<a name=
-"public.view.vsourcepackageindistro" id=
-"public.view.vsourcepackageindistro">vsourcepackageindistro</a></h2>
-<p>This view allows us to answer the question: what source packages
-have releases in a certain distribution. This is an interesting
-case of where a view can actually solve a problem that SQLObject
-can't -- there is no way of doing this query (that I see at least)
-in regular sqlos because there is no DISTINCT and no way to filter
-things without iterating in Python (which generates N queries and
-we don't want to go down that route).</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.vsourcepackageindistro Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>manifest</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>format</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>sourcepackagename</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>name</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>distrorelease</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>distribution</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>status</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>pocket</td>
-<td>integer</td>
-<td></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<!-- View Definition -->
-<pre>
-SELECT sourcepackagerelease.id
-, sourcepackagerelease.manifest
-, sourcepackagerelease.format
-, sourcepackagerelease.sourcepackagename
-, sourcepackagename.name
-, sourcepackagepublishing.distrorelease
-, distrorelease.distribution
-, sourcepackagepublishing.status
-, sourcepackagepublishing.pocket 
-FROM (
-     (
-           (sourcepackagepublishing 
-              JOIN sourcepackagerelease 
-                ON (
-                       (sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id)
-                 )
-           )
-        JOIN distrorelease 
-          ON (
-                 (sourcepackagepublishing.distrorelease = distrorelease.id)
-           )
-     )
-  JOIN sourcepackagename 
-    ON (
-           (sourcepackagerelease.sourcepackagename = sourcepackagename.id)
-     )
-);
-</pre>
-<!-- List off permissions -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to
-public.vsourcepackageindistro</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>group admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>group read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr0">
-<td>sourcerer</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
-<h2>View: <a href="#public.schema">public</a>.<a name=
-"public.view.vsourcepackagereleasepublishing" id=
-"public.view.vsourcepackagereleasepublishing">vsourcepackagereleasepublishing</a></h2>
-<p>This view simplifies a lot of queries relating to publishing and
-is for use as a replacement for SourcePackageRelease (I actually
-intend to move it to a subclass of SourcePackageRelease, because
-using a View in place of a real table is bizarre).</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>public.vsourcepackagereleasepublishing Structure</caption>
-<tr>
-<th>F-Key</th>
-<th>Name</th>
-<th>Type</th>
-<th>Description</th>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>id</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>name</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>maintainer</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>publishingstatus</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>datepublished</td>
-<td>timestamp without time zone</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>distrorelease</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>componentname</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>architecturehintlist</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>version</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>creator</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>format</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>manifest</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>section</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>component</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>changelog</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>builddepends</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>builddependsindep</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>urgency</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>dateuploaded</td>
-<td>timestamp without time zone</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>dsc</td>
-<td>text</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>dscsigningkey</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td></td>
-<td>uploaddistrorelease</td>
-<td>integer</td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td></td>
-<td>sourcepackagename</td>
-<td>integer</td>
-<td></td>
-</tr>
-</table>
-<!-- Constraint List -->
-<!-- Foreign Key Discovery -->
-<!-- View Definition -->
-<pre>
-SELECT DISTINCT sourcepackagerelease.id
-, sourcepackagename.name
-, maintainership.maintainer
-, sourcepackagepublishing.status AS publishingstatus
-, sourcepackagepublishing.datepublished
-, sourcepackagepublishing.distrorelease
-, component.name AS componentname
-, sourcepackagerelease.architecturehintlist
-, sourcepackagerelease."version"
-, sourcepackagerelease.creator
-, sourcepackagerelease.format
-, sourcepackagerelease.manifest
-, sourcepackagerelease.section
-, sourcepackagerelease.component
-, sourcepackagerelease.changelog
-, sourcepackagerelease.builddepends
-, sourcepackagerelease.builddependsindep
-, sourcepackagerelease.urgency
-, sourcepackagerelease.dateuploaded
-, sourcepackagerelease.dsc
-, sourcepackagerelease.dscsigningkey
-, sourcepackagerelease.uploaddistrorelease
-, sourcepackagerelease.sourcepackagename 
-FROM (
-     (
-           (
-                 (
-                       (sourcepackagepublishing 
-                          JOIN sourcepackagerelease 
-                            ON (
-                                   (sourcepackagepublishing.sourcepackagerelease = sourcepackagerelease.id)
-                             )
-                       )
-                    JOIN sourcepackagename 
-                      ON (
-                             (sourcepackagerelease.sourcepackagename = sourcepackagename.id)
-                       )
-                 )
-              JOIN distrorelease 
-                ON (
-                       (sourcepackagepublishing.distrorelease = distrorelease.id)
-                 )
-           )
-        JOIN component 
-          ON (
-                 (sourcepackagepublishing.component = component.id)
-           )
-     )
-LEFT JOIN maintainership 
-    ON (
-           (
-                 (sourcepackagerelease.sourcepackagename = maintainership.sourcepackagename)
-               AND (distrorelease.distribution = maintainership.distribution)
-           )
-     )
-)
-ORDER BY sourcepackagerelease.id
-, sourcepackagename.name
-, maintainership.maintainer
-, sourcepackagepublishing.status
-, sourcepackagepublishing.datepublished
-, sourcepackagepublishing.distrorelease
-, component.name
-, sourcepackagerelease.architecturehintlist
-, sourcepackagerelease."version"
-, sourcepackagerelease.creator
-, sourcepackagerelease.format
-, sourcepackagerelease.manifest
-, sourcepackagerelease.section
-, sourcepackagerelease.component
-, sourcepackagerelease.changelog
-, sourcepackagerelease.builddepends
-, sourcepackagerelease.builddependsindep
-, sourcepackagerelease.urgency
-, sourcepackagerelease.dateuploaded
-, sourcepackagerelease.dsc
-, sourcepackagerelease.dscsigningkey
-, sourcepackagerelease.uploaddistrorelease
-, sourcepackagerelease.sourcepackagename;
-</pre>
-<!-- List off permissions -->
-<p>&nbsp;</p>
-<table width="100%" cellspacing="0" cellpadding="3">
-<caption>Permissions which apply to
-public.vsourcepackagereleasepublishing</caption>
-<tr>
-<th>User</th>
-<th>
-<center>Select</center>
-</th>
-<th>
-<center>Insert</center>
-</th>
-<th>
-<center>Update</center>
-</th>
-<th>
-<center>Delete</center>
-</th>
-<th>
-<center>Reference</center>
-</th>
-<th>
-<center>Rule</center>
-</th>
-<th>
-<center>Trigger</center>
-</th>
-</tr>
-<tr class="tr0">
-<td>group admin</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-<tr class="tr1">
-<td>group read</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr0">
-<td>group write</td>
-<td>
-<center>&diams;</center>
-</td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="tr1">
-<td>postgres</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-<td>
-<center>&diams;</center>
-</td>
-</tr>
-</table>
-<p><a href="#index">Index</a> - <a href="#public.schema">Schema
-public</a></p>
-<hr />
 <h2>Table: <a href="#public.schema">public</a>.<a name=
 "public.table.wikiname" id=
 "public.table.wikiname">wikiname</a></h2>
@@ -35086,6 +36481,20 @@ public</a></p>
 <center>&diams;</center>
 </td>
 </tr>
+<tr class="tr1">
+<td>uploader</td>
+<td>
+<center>&diams;</center>
+</td>
+<td>
+<center>&diams;</center>
+</td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+</tr>
 </table>
 <p><a href="#index">Index</a> - <a href="#public.schema">Schema
 public</a></p>
@@ -35113,6 +36522,24 @@ table</p>
 </pre>
 <hr />
 <h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.is-printable-ascii-text" id=
+"public.function.is-printable-ascii-text">is_printable_ascii( text
+)</a></h2>
+<h3>Returns: boolean</h3>
+<h3>Language: PLPYTHONU</h3>
+<p>True if the string is pure printable US-ASCII</p>
+<pre>
+    import re, string
+    try:
+        text = args[0].decode("ASCII")
+    except UnicodeError:
+        return False
+    if re.search(r"^[%s]*$" % re.escape(string.printable), text) is None:
+        return False
+    return True
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
 "public.function.is-team-integer" id=
 "public.function.is-team-integer">is_team( integer )</a></h2>
 <h3>Returns: boolean</h3>
@@ -35130,6 +36557,16 @@ table</p>
 <p>True if the given name identifies a team in the Person table</p>
 <pre>
     SELECT count(*)&gt;0 FROM Person WHERE name=$1 AND teamowner IS NOT NULL;
+</pre>
+<hr />
+<h2>Function: <a href="#public.schema">public</a>.<a name=
+"public.function.plpgsql-validator-oid" id=
+"public.function.plpgsql-validator-oid">plpgsql_validator( oid
+)</a></h2>
+<h3>Returns: void</h3>
+<h3>Language: C</h3>
+<pre>
+plpgsql_validator
 </pre>
 <hr />
 <h2>Function: <a href="#public.schema">public</a>.<a name=
@@ -35200,7 +36637,7 @@ uppercase and @</p>
 <pre>
     import re
     name = args[0]
-    pat = r"^(?i)[a-z0-9][a-z0-9\+\.\-\@]+$"
+    pat = r"^(?i)[a-z0-9][a-z0-9\+\.\-\@_]+$"
     if re.match(pat, name):
         return 1
     return 0
@@ -35250,7 +36687,7 @@ text )</a></h2>
     import re
     m = re.search("""^(?ix)
         ([0-9]+:)?
-        ([0-9][a-z0-9+:.~-]*?)
+        ([0-9a-z][a-z0-9+:.~-]*?)
         (-[a-z0-9+.~]+)?
         $""", args[0])
     if m is None:
@@ -35805,9 +37242,9 @@ ts2</a></p>
         query = args[0].decode('utf8').lower()
         ## plpy.debug('1 query is %s' % repr(query))
 
-        # Convert &amp;, |, ! and : symbols to whitespace since they have
+        # Convert &amp;, |, !, : and \ symbols to whitespace since they have
         # special meaning to tsearch2
-        query = re.sub(r"[\&amp;\|\!\:]+", " ", query)
+        query = re.sub(r"[\&amp;\|\!\:\\]+", " ", query)
         ## plpy.debug('2 query is %s' % repr(query))
 
         # Convert AND, OR and NOT to tsearch2 punctuation
@@ -35967,9 +37404,9 @@ date.</p>
         query = args[0].decode('utf8').lower()
         ## plpy.debug('1 query is %s' % repr(query))
 
-        # Convert &amp;, |, ! and : symbols to whitespace since they have
+        # Convert &amp;, |, !, : and \ symbols to whitespace since they have
         # special meaning to tsearch2
-        query = re.sub(r"[\&amp;\|\!\:]+", " ", query)
+        query = re.sub(r"[\&amp;\|\!\:\\]+", " ", query)
         ## plpy.debug('2 query is %s' % repr(query))
 
         # Convert AND, OR and NOT to tsearch2 punctuation

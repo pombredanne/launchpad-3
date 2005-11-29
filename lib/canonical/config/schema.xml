@@ -176,6 +176,15 @@
         <key name="logfile" datatype="string" required="no" default="-" />
     </sectiontype>
 
+    <sectiontype name="librarian_gc">
+        <key name="dbuser" datatype="string" default="librariangc">
+            <description>
+                The user the librarian-gc.py garbage collection script connects
+                as.
+            </description>
+        </key>
+    </sectiontype>
+
     <sectiontype name="librarian">
         <key name="dbuser" datatype="string" default="librarian" />
 
@@ -227,6 +236,8 @@
         </key>
 
         <section name="*" type="librarian_server" attribute="server"
+            required="no" />
+        <section name="*" type="librarian_gc" attribute="gc"
             required="no" />
     </sectiontype>
 
