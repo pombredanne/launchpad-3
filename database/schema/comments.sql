@@ -1204,6 +1204,6 @@ COMMENT ON COLUMN ShipItReport.csvfile IS 'A csv file with the report';
 
 -- Continent
 COMMENT ON TABLE Continent IS 'A continent in this huge world.';
-COMMENT ON TABLE Continent.code IS 'A two-letter code for a continent.';
-COMMENT ON TABLE Continent.name IS 'The name of the continent.';
+COMMENT ON COLUMN Continent.code IS 'A two-letter code for a continent.';
+COMMENT ON COLUMN Continent.name IS 'The name of the continent.';
 
