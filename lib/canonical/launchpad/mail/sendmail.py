@@ -93,8 +93,8 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
 
     msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
     # The header_body_values may be a list or tuple of values, so we will add a
-    # header once for each value provided for that header. (X-Malone-Bug, for
-    # example, may often be set more than once for a bugmail.)
+    # header once for each value provided for that header. (X-Launchpad-Bug,
+    # for example, may often be set more than once for a bugmail.)
     for header, header_body_values in headers.items():
         if not zisinstance(header_body_values, (list, tuple)):
             header_body_values = [header_body_values]
