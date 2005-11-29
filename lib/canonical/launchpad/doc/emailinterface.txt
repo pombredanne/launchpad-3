@@ -11,12 +11,12 @@ commands are described later on.
 Submit a new bug
 ----------------
 
-In order to submit a new bug you send a GPG signed  email to
+In order to submit a new bug you send a GPG signed email to
 new@malone-domain. Note that you have to have registered your key in
-Launchpad as well. The subject of the email will be used as the title of
-the bug, and the body will be used as the description. In the body of
-the email you have tell on what you file a bug, either a product or
-a distribution. You do so by issuing an 'affects' command. The simplest
+Launchpad as well. The subject of the email will be used as the summary
+of the bug, and the body will be used as the description. In the body of
+the email you have tell on what you file a bug, either a product or a
+distribution. You do so by issuing an 'affects' command. The simplest
 case is either:
 
     affects /products/$product_name
@@ -158,9 +158,9 @@ includes commands, the email has to be GPG signed.
     ... Message-Id: <yada-yada-test1>
     ... Subject: New comment to bug 1
     ...
-    ... Adding a comment via the email system. Let's change the title as
-    ... well:
-    ...     title "Better title"
+    ... Adding a comment via the email system. Let's change the summary
+    ... as well:
+    ...     summary "Better summary"
     ...
     ... /Sample Person
     ... """
@@ -174,7 +174,7 @@ includes commands, the email has to be GPG signed.
     >>> added_message in bug_one.messages
     True
     >>> print bug_one.title
-    Better title
+    Better summary
 
 If the message doesn't have a Reference or In-Reply-To header, the
 parent will be set to the bug's initial message.
@@ -199,12 +199,12 @@ For that you can send mails to edit@malone-domain.
     ... Subject: Not important
     ...
     ...     bug 4
-    ...     title "Changed title"
+    ...     summary "Changed summary"
     ...
     ... It won't break if we write some stuff here.
     ...
     ...     bug 5
-    ...     title "Nicer title"
+    ...     summary "Nicer summary"
     ... """
 
     >>> process_email(edit_mail)
@@ -217,12 +217,12 @@ No comments were added to the bugs:
     >>> len(bug_five.messages) == bug_five_comments
     True
 
-And the titles were changed:
+And the summaries were changed:
 
     >>> print bug_four.title
-    Changed title
+    Changed summary
     >>> print bug_five.title
-    Nicer title
+    Nicer summary
 
 
 Commands
@@ -250,20 +250,20 @@ Switches what bug you want to edit. Example:
 
     bug 42
 
-title "$title"
-^^^^^^^^^^^^^^
-Changes the title of the bug. The title has to be enclosed in
+summary "$summary"
+^^^^^^^^^^^^^^^^^^
+Changes the summary of the bug. The title has to be enclosed in
 quotes. Example:
 
-    >>> submit_commands(bug_four, 'title "New title"')
+    >>> submit_commands(bug_four, 'summary "New summary"')
     >>> print bug_four.title
-    New title
+    New summary
 
-Just a quick check that the whitespace will be preserved in the title:
+Just a quick check that the whitespace will be preserved in the summary:
 
-    >>> submit_commands(bug_four, 'title "New             title"')
+    >>> submit_commands(bug_four, 'summary "New             summary"')
     >>> print bug_four.title #doctest: -NORMALIZE_WHITESPACE
-    New             title
+    New             summary
 
 private yes|no
 ^^^^^^^^^^^^^^

@@ -83,7 +83,7 @@
     <option value="-severity,-priority"
             tal:attributes="selected python:orderby == '-severity,-priority'">severity, then priority</option>
     <option value="title"
-            tal:attributes="selected python:orderby == 'title'">title</option>
+            tal:attributes="selected python:orderby == 'title'">summary</option>
     <option value="milestone"
             tal:attributes="selected python:orderby == 'milestone'">milestone</option>
     <option tal:condition="view/shouldShowTargetName|nothing"
