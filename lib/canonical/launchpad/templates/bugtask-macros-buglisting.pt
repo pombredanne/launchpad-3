@@ -102,11 +102,14 @@
 
   <tal:resultslist condition="not: task_batch_navigator/batch">
     <br />
-    No matching results found. Would you like to
-    <a href="#"
-       tal:attributes="href string:${context/fmt:url}/+filebug;
-                       title string:Report a bug on ${context/displayname}">
-                       open a new bug?</a>
+    No matching results found. 
+    <tal:block condition="not: view/_personContext">
+      Would you like to
+      <a href="#"
+         tal:attributes="href string:${context/fmt:url}/+filebug;
+                         title string:Report a bug on ${context/displayname}">
+                         open a new bug?</a>
+    </tal:block>
   </tal:resultslist>
 
   <script>
