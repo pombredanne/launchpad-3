@@ -3,8 +3,12 @@
 __metaclass__ = type
 __all__ = ['StandardShipItRequest', 'StandardShipItRequestSet',
            'ShippingRequest', 'ShippingRequestSet', 'RequestedCDs',
-           'Shipment', 'ShipmentSet', 'ShippingRun', 'ShippingRunSet']
+           'Shipment', 'ShipmentSet', 'ShippingRun', 'ShippingRunSet',
+           'ShipItReport', 'ShipItReportSet']
 
+from StringIO import StringIO
+import csv
+from datetime import timedelta
 import random
 
 from zope.interface import implements
@@ -13,9 +17,10 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol, AND)
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues, cursor
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.launchpad.helpers import intOrZero, make_mondays_between
 
 from canonical.lp.dbschema import (
         ShipItDistroRelease, ShipItArchitecture, ShipItFlavour, EnumCol,
@@ -24,7 +29,8 @@ from canonical.launchpad.interfaces import (
         IStandardShipItRequest, IStandardShipItRequestSet, IShippingRequest,
         IRequestedCDs, IShippingRequestSet, ShippingRequestStatus,
         ILaunchpadCelebrities, IShipment, IShippingRun, IShippingRunSet,
-        IShipmentSet, ShippingRequestPriority)
+        IShipmentSet, ShippingRequestPriority, IShipItReport, IShipItReportSet)
+from canonical.launchpad.database.country import Country
 
 
 class RequestedCDsDescriptor:
@@ -364,6 +370,156 @@ class ShippingRequestSet:
 
         return query
 
+    def _getRequestedCDCount(self, country=None, approved=False):
+        """Return the number of Requested CDs for each architecture.
+        
+        If country is not None, then consider only CDs requested by people on
+        that country.
+        
+        If approved is True, then we return the number of CDs that were
+        approved, which may differ from the number of requested CDs.
+        """
+        attr_to_sum_on = 'quantity'
+        if approved:
+            attr_to_sum_on = 'quantityapproved'
+        quantities = {}
+        for arch in ShipItArchitecture.items:
+            query_str = """
+                shippingrequest.id = shipment.request AND
+                shippingrequest.id = requestedcds.request AND
+                requestedcds.architecture = %s""" % sqlvalues(arch)
+            if country is not None:
+                query_str += (" AND shippingrequest.country = %s" 
+                              % sqlvalues(country.id))
+            requests = ShippingRequest.select(
+                query_str, clauseTables=['RequestedCDs', 'Shipment'])
+            quantities[arch] = intOrZero(requests.sum(attr_to_sum_on))
+        return quantities
+
+    def generateCountryBasedReport(self):
+        """See IShippingRequestSet"""
+        csv_file = StringIO()
+        csv_writer = csv.writer(csv_file)
+        header = ['Country', 'Shipped x86 CDs', 'Shipped AMD64 CDs',
+                  'Shipped PPC CDs', 'Normal-prio shipments', 
+                  'High-prio shipments', 'Average request size',
+                  'Percentage of requested CDs that were approved',
+                  'Percentage of total shipped CDs', 'Continent']
+        csv_writer.writerow(header)
+        all_shipped_cds = sum(self._getRequestedCDCount(approved=True).values())
+        for country in Country.select():
+            base_query = (
+                "shippingrequest.country = %s AND "
+                "shippingrequest.id = shipment.request" % sqlvalues(country.id))
+            clauseTables = ['Shipment']
+            total_shipped_requests = ShippingRequest.select(
+                base_query, clauseTables=clauseTables).count()
+            if not total_shipped_requests:
+                continue
+            
+            shipped_cds_per_arch = self._getRequestedCDCount(
+                country=country, approved=True)
+            requested_cds_per_arch = self._getRequestedCDCount(
+                country=country, approved=False)
+
+            high_prio_orders = ShippingRequest.select(
+                base_query + " AND highpriority = TRUE",
+                clauseTables=clauseTables)
+            high_prio_count = intOrZero(high_prio_orders.count())
+
+            normal_prio_orders = ShippingRequest.select(
+                base_query + " AND highpriority = FALSE",
+                clauseTables=clauseTables)
+            normal_prio_count = intOrZero(normal_prio_orders.count())
+
+            shipped_cds = sum(shipped_cds_per_arch.values())
+            requested_cds = sum(requested_cds_per_arch.values())
+            average_request_size = shipped_cds / total_shipped_requests
+            percentage_of_approved = float(shipped_cds) / float(requested_cds)
+            percentage_of_total = float(shipped_cds) / float(all_shipped_cds)
+
+            row = [country.name, shipped_cds_per_arch[ShipItArchitecture.X86],
+                   shipped_cds_per_arch[ShipItArchitecture.AMD64],
+                   shipped_cds_per_arch[ShipItArchitecture.PPC],
+                   normal_prio_count, high_prio_count,
+                   average_request_size,
+                   "%d%%" % (percentage_of_approved * 100),
+                   "%d%%" % (percentage_of_total * 100),
+                   country.continent.name]
+            csv_writer.writerow(row)
+        csv_file.seek(0)
+        return csv_file
+
+    def generateWeekBasedReport(self, start_date, end_date):
+        """See IShippingRequestSet"""
+        csv_file = StringIO()
+        csv_writer = csv.writer(csv_file)
+        header = ['Year', 'Week number', 'Requests', 'Requested X86 CDs',
+                  'Requested AMD64 CDs', 'Requested PPC CDs']
+        csv_writer.writerow(header)
+
+        base_query = """
+            SELECT 
+              COUNT(shippingrequest.id), 
+              SUM(r1.quantity),
+              SUM(r2.quantity), 
+              SUM(r3.quantity)
+            FROM 
+              shippingrequest, 
+              requestedcds AS r1, 
+              requestedcds AS r2,
+              requestedcds AS r3 
+            WHERE 
+              r1.request = r2.request AND 
+              r2.request = r3.request AND 
+              r3.request = shippingrequest.id AND
+              r1.architecture = %s AND
+              r2.architecture = %s AND
+              r3.architecture = %s
+            """ % sqlvalues(ShipItArchitecture.X86, ShipItArchitecture.AMD64,
+                            ShipItArchitecture.PPC)
+        cur = cursor()
+        for monday_date in make_mondays_between(start_date, end_date):
+            date_filter = (
+                " AND shippingrequest.daterequested BETWEEN %s AND %s"
+                % sqlvalues(monday_date, monday_date + timedelta(days=7)))
+            query_str = base_query + date_filter
+            cur.execute(query_str)
+            requests, x86cds, amdcds, ppccds = cur.fetchone()
+            year, weeknum, weekday = monday_date.isocalendar()
+            row = [year, weeknum, requests, x86cds, amdcds, ppccds]
+            csv_writer.writerow(row)
+
+        csv_file.seek(0)
+        return csv_file
+
+    def generateShipmentSizeBasedReport(self):
+        """See IShippingRequestSet"""
+        csv_file = StringIO()
+        csv_writer = csv.writer(csv_file)
+        header = ['Number of CDs', 'Number of Shipments']
+        csv_writer.writerow(header)
+        query_str = """
+            SELECT shipment_size, COUNT(request_id) AS shipments
+            FROM
+            (
+                SELECT shippingrequest.id AS request_id, 
+                       SUM(quantityapproved) AS shipment_size
+                FROM requestedcds, shippingrequest, shipment
+                WHERE requestedcds.request = shippingrequest.id AND
+                      shippingrequest.id = shipment.request
+                GROUP BY shippingrequest.id
+            )
+            AS TMP GROUP BY shipment_size ORDER BY shipment_size
+            """
+        cur = cursor()
+        cur.execute(query_str)
+        for shipment_size, shipments in cur.fetchall():
+            csv_writer.writerow([shipment_size, shipments])
+
+        csv_file.seek(0)
+        return csv_file
+
 
 class RequestedCDs(SQLBase):
     """See IRequestedCDs"""
@@ -516,3 +672,28 @@ class ShippingRunSet:
         """See IShippingRunSet"""
         return ShippingRun.select(ShippingRun.q.sentforshipping==True)
 
+
+class ShipItReport(SQLBase):
+    """See IShipItReport"""
+
+    implements(IShipItReport)
+    _defaultOrder = ['-datecreated', 'id']
+    _table = 'ShipItReport'
+
+    datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    csvfile = ForeignKey(
+        dbName='csvfile', foreignKey='LibraryFileAlias', notNull=True)
+
+
+class ShipItReportSet:
+    """See IShipItReportSet"""
+
+    implements(IShipItReportSet)
+
+    def new(self, csvfile):
+        """See IShipItReportSet"""
+        return ShipItReport(csvfile=csvfile)
+
+    def getAll(self):
+        """See IShipItReportSet"""
+        return ShipItReport.select()
