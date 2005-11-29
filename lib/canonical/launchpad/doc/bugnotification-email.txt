@@ -125,7 +125,7 @@ returns the subject and body of the email, as a tuple.
     Public bug report changed:
     http://.../bugs/2
     <BLANKLINE>
-    Title changed to:
+    Summary changed to:
         the new title
     Description changed to:
         a new description that is quite long. but the nice thing is that the
@@ -155,7 +155,7 @@ Another edit, this time the summary:
     Public bug report changed:
     http://www.example.com/bugs/2
     <BLANKLINE>
-    Summary changed to:
+    Short description changed to:
         this summary isn't particularly short is it? after all, what kind of
         summary is so long that it needs to be wrapped?
     <BLANKLINE>

@@ -148,13 +148,11 @@ class DistroReleaseSpecificationsMenu(ApplicationMenu):
 
 class DistroReleaseView(BuildRecordsView):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    def initialize(self):
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
         self.languages = helpers.request_languages(self.request)
-        self.text = request.form.get('text')
+        self.text = self.request.form.get('text')
         self.matches = 0
         self._results = None
 
