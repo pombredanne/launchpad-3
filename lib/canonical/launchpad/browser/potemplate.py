@@ -30,7 +30,7 @@ from canonical.launchpad.browser.pofile import (
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
-    GetitemNavigation, Navigation)
+    GetitemNavigation, Navigation, LaunchpadView)
 
 
 class POTemplateNavigation(Navigation):
@@ -107,14 +107,14 @@ class POTemplateSubsetView:
         return self.request.response.redirect('../+translations')
 
 
-class POTemplateView:
+class POTemplateView(LaunchpadView):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    def initialize(self):
+        """Get the requested languages and submit the form."""
         self.request_languages = helpers.request_languages(self.request)
         self.description = self.context.potemplatename.description
-        self.user = getUtility(ILaunchBag).user
+
+        self.submitForm()
 
     def num_messages(self):
         N = self.context.messageCount()
@@ -148,7 +148,10 @@ class POTemplateView:
             if pofile is None:
                 pofileset = getUtility(IPOFileSet)
                 pofile = pofileset.getDummy(self.context, language)
-            yield POFileView(pofile, self.request)
+            pofileview = POFileView(pofile, self.request)
+            # Initialize the view.
+            pofileview.initialize()
+            yield pofileview
 
     def submitForm(self):
         """Called from the page template to do any processing needed if a form
@@ -201,7 +204,7 @@ class POTemplateView:
 
             self.request.response.addInfoNotification(
                 "Your upload worked. The template's content will appear in"
-                "Rosetta in a few minutes.")
+                " Rosetta in a few minutes.")
 
         elif helpers.is_tar_filename(filename):
             # Add the whole tarball to the import queue.

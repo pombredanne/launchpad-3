@@ -32,7 +32,7 @@ it.
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... 
-  ... ubuntupkg=pmount&setubuntupkg=Update""")
+  ... ubuntupkg=pmount&set_ubuntu_pkg=Update""")
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
@@ -51,7 +51,7 @@ OK, if that worked, we better set it back to where it was so we resotre Balance 
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... 
-  ... ubuntupkg=evolution&setubuntupkg=Update""")
+  ... ubuntupkg=evolution&set_ubuntu_pkg=Update""")
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
@@ -90,7 +90,7 @@ the current ubuntu distrorelease.
   ... Content-Length: 37
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... ubuntupkg=mozilla&setubuntupkg=Update""")
+  ... ubuntupkg=mozilla&set_ubuntu_pkg=Update""")
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8

@@ -11,8 +11,6 @@
           <tr>
             <td style="width: 75%; padding-right: 1em;">
 
-  <tal:processform condition="view/adminSource" omit-tag="" />
-
               <h1>Register an upstream branch for importing</h1>
 
               <p tal:condition="not:view/has_errors">
@@ -307,7 +305,7 @@
     It is used to verify that the correct form was posted.
   </tal:x>
   <input type="submit"
-     name="Update RCS Details"
+     name="admin_productseries_source"
      value="Update RCS Details" />
 
   </div>

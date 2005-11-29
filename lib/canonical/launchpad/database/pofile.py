@@ -939,12 +939,12 @@ class POFileSet:
         elif sourcepackagename is not None:
             # The POTemplate belongs to a distribution and it could come from
             # another package that the one it's linked to, so we first check
-            # to find it at IPOTemplate.fromsourcepackagename
+            # to find it at IPOTemplate.from_sourcepackagename
             pofile = POFile.selectOne('''
                 POFile.path = %s AND
                 POFile.potemplate = POTemplate.id AND
                 POTemplate.distrorelease = %s AND
-                POTemplate.fromsourcepackagename = %s''' % sqlvalues(
+                POTemplate.from_sourcepackagename = %s''' % sqlvalues(
                     path, distrorelease.id, sourcepackagename.id),
                 clauseTables=['POTemplate'])
 
@@ -952,7 +952,7 @@ class POFileSet:
                 return pofile
 
             # There is no pofile in that 'path' and
-            # 'fromsourcepackagename' so we do a search using the usual
+            # 'from_sourcepackagename' so we do a search using the usual
             # sourcepackagename.
             return POFile.selectOne('''
                 POFile.path = %s AND

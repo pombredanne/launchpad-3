@@ -7,8 +7,6 @@
 
 <div metal:fill-slot="main">
 
-     <tal:dummy condition="view/submitForm" />
-
         <h1>Upload a new version of <span tal:replace="context/title" /></h1>
 
         <p>

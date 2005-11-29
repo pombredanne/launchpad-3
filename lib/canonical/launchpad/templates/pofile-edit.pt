@@ -7,8 +7,6 @@
 
 <div metal:fill-slot="main">
 
-     <tal:dummy condition="view/submitForm" />
-
         <h1>Edit the plural forms for this pofile</h1>
 
         <form action="+edit" method="POST" enctype="multipart/form-data">

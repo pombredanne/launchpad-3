@@ -133,22 +133,16 @@ class POFileView(LaunchpadView):
     MAX_COUNT = 100
     DEFAULT_SHOW = 'all'
 
-    def __init__(self, context, request):
-        import pdb
-        pdb.set_trace()
-
     def initialize(self):
-        import pdb
-        pdb.set_trace()
         self.form = self.request.form
         self.language_name = self.context.language.englishname
-        self.header = POHeader(msgstr=context.header)
+        self.header = POHeader(msgstr=self.context.header)
         self.header.updateDict()
         self.URL = '%s/+translate' % self.context.language.code
         self._table_index_value = 0
         self.pluralFormCounts = None
-        potemplate = context.potemplate
-        self.is_editor = context.canEditTranslations(self.user)
+        potemplate = self.context.potemplate
+        self.is_editor = self.context.canEditTranslations(self.user)
         self.second_lang_code = self.form.get('alt', None)
         if self.second_lang_code is None:
             second_lang = self.context.language.alt_suggestion_language

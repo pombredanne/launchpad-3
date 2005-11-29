@@ -15,8 +15,6 @@
 
 <div metal:fill-slot="main">
 
-  <tal:block condition="view/translationsUpload" />
-
   <h1>Upload new translation resources for <span tal:replace="context/title" />
   </h1>
 
@@ -40,7 +38,8 @@
       <tr>
         <th></th>
         <td>
-          <input name="TRANSLATIONS-UPLOAD" type="submit" value="Request Upload"/>
+          <input name="translations_upload" type="submit"
+                 value="Request Upload"/>
         </td>
       </tr>
     </table>

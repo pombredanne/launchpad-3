@@ -175,8 +175,8 @@ class ITranslationImportQueue(Interface):
         raised.
         """
 
-    def remove(id):
-        """Remove the entry with the given :id: from the queue."""
+    def remove(entry):
+        """Remove the given :entry: from the queue."""
 
 
 class IEditTranslationImportQueueEntry(Interface):

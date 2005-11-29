@@ -8,6 +8,7 @@ import tarfile
 from StringIO import StringIO
 
 from zope.interface import implements
+from zope.component import getUtility
 
 from sqlobject import StringCol, ForeignKey, MultipleJoin
 

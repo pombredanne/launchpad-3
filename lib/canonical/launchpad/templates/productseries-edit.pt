@@ -9,13 +9,6 @@
 
 <div metal:fill-slot="main">
 
-    <tal:x condition="nothing">
-      <!--This tal:dummy block never turns into HTML, but it triggers the edit
-    method on the ProductSeriesView class. This checks to see if a form has been
-    submitted to it, and if so updates the product.-->
-    </tal:x>
-    <tal:dummy condition="view/edit" />
-
     <h1>Edit "<span
     tal:content="context/displayname">$ProductSeries.displayname</span>"
     Release Series Details</h1>
@@ -108,7 +101,7 @@
                    tal:attributes="value context/releasefileglob" />
 
         </div>
-        
+
         <div class="formControls">
 
             <tal:comment condition="nothing">
@@ -118,7 +111,7 @@
             </tal:comment>
 
             <input type="submit"
-                   name="Update"
+                   name="edit_productseries"
                    value="Update Series" />
 
         </div>

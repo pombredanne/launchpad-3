@@ -17,8 +17,6 @@
 
 <div metal:fill-slot="main">
 
-<div tal:condition="view/setCurrentUbuntuPackage" />
-
     <h1>Ubuntu Packaging</h1>
 
     <p class="documentDescription">
@@ -66,8 +64,8 @@
 
           <input type="text" name="ubuntupkg" size="30"
                  value="" tal:attributes="value view/curr_ubuntu_pkgname" />
-          
-          <input type="submit" name="setubuntupkg" value="Update">
+
+          <input type="submit" name="set_ubuntu_pkg" value="Update">
 
         </div>
 

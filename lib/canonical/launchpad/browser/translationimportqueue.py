@@ -118,7 +118,7 @@ class TranslationImportQueueEntryView(GeneralFormView):
             if language is None:
                 # We can remove the element from the queue as it was a direct
                 # import into an IPOTemplate.
-                translationimportqueue_set.remove(self.context.id)
+                translationimportqueue_set.remove(self.context)
                 return 'You associated the queue item with a PO Template.'
 
         if language is None:
@@ -269,22 +269,19 @@ class TranslationImportQueueView(LaunchpadView):
             actions_executed += 1
 
         # Notifications.
-        if removed > 0:
-            self.response.addInfoNotification(message_notification %
+        if actions_executed > 0:
+            self.request.response.addInfoNotification(message_notification %
                 actions_executed)
 
     def _remove(self, item):
-        """Handle a form submission to remove items ready to be imported.
-
-        It expects the list of items ids at self.form_entries
-        """
+        """Remove the given item from the queue."""
         # XXX Carlos Perello Marin 20051124: We should not check the
         # permissions here but use the standard security system. Please, look
         # at https://launchpad.net/products/rosetta/+bug/4814 bug for more
         # details.
         if self.user.inTeam(item.importer):
             # Do the removal.
-            self.context.remove(id)
+            self.context.remove(item)
         else:
             # The user was not the importer and that means that is a
             # broken request.
@@ -293,10 +290,7 @@ class TranslationImportQueueView(LaunchpadView):
                 ' they are not yours.')
 
     def _block(self, item):
-        """Handle a form submission to block items to be imported.
-
-        It expects the list of items ids at self.form_entries
-        """
+        """Block the given item."""
         # XXX Carlos Perello Marin 20051124: We should not check the
         # permissions here but use the standard security system. Please, look
         # at https://launchpad.net/products/rosetta/+bug/4814 bug for more
@@ -307,7 +301,7 @@ class TranslationImportQueueView(LaunchpadView):
         if (self.user.inTeam(celebrities.admin) or
             self.user.inTeam(celebrities.rosetta_expert)):
             # Block it.
-            entry.setBlocked()
+            item.setBlocked()
         else:
             # The user does not have the needed permissions to do
             # this.
@@ -316,10 +310,7 @@ class TranslationImportQueueView(LaunchpadView):
                 ' they are not yours.')
 
     def _unblock(self, item):
-        """Handle a form submission to unblock items to be imported.
-
-        It expects the list of items ids at self.form_entries
-        """
+        """Unblock the given item."""
         # XXX Carlos Perello Marin 20051124: We should not check the
         # permissions here but use the standard security system. Please, look
         # at https://launchpad.net/products/rosetta/+bug/4814 bug for more
@@ -330,7 +321,7 @@ class TranslationImportQueueView(LaunchpadView):
         if (self.user.inTeam(celebrities.admin) or
             self.user.inTeam(celebrities.rosetta_expert)):
             # Unblock it.
-            entry.setBlocked(False)
+            item.setBlocked(False)
         else:
             # The user does not have the needed permissions to do
             # this.

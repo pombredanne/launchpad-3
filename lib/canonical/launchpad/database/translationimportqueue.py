@@ -272,6 +272,6 @@ class TranslationImportQueue:
         except SQLObjectNotFound:
             raise NotFoundError(str(id))
 
-    def remove(self, id):
+    def remove(self, entry):
         """See ITranslationImportQueue."""
-        TranslationImportQueueEntry.delete(id)
+        TranslationImportQueueEntry.delete(entry.id)
