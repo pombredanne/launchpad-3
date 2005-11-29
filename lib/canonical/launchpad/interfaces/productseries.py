@@ -8,9 +8,9 @@ __all__ = [
     'IProductSeries',
     'IProductSeriesSource',
     'IProductSeriesSourceAdmin',
-    'IProductSeriesSet',
     'IProductSeriesSourceSet',
     ]
+
 
 from zope.schema import  Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
@@ -183,18 +183,6 @@ class IProductSeriesSourceAdmin(Interface):
 
     def enableAutoSync():
         """enable this series RCS for automatic baz syncronisation"""
-
-
-class IProductSeriesSet(Interface):
-    """A set of ProductSeries objects for a specific product."""
-
-    def __iter__():
-        """Return an interator over the ProductSeries', constrained by
-        self.product."""
-
-    def __getitem__(name):
-        """Return a specific ProductSeries, by name, constrained by the
-        self.product."""
 
 
 class IProductSeriesSourceSet(Interface):

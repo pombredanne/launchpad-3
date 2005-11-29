@@ -37,6 +37,9 @@ Sample Person and Foo Bar:
     >>> messages = [email.message_from_string(raw_msg)
     ...             for from_addr, to_addrs, raw_msg in test_emails
     ...             if 'test@canonical.com' in to_addrs]
+    >>> print messages[0]['Subject']
+    Your Launchpad support request #6 on Mozilla Firefox has been answered
+
     >>> print messages[0].get_payload() #doctest: -NORMALIZE_WHITESPACE
     Sample,
     <BLANKLINE>

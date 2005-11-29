@@ -578,7 +578,7 @@ class ShippingRequestsView:
 
     submitted = False
     selectedStatus = 'pending'
-    selectedType = 'custom'
+    selectedType = 'any'
     recipient_text = ''
 
     def standardShipItRequests(self):
