@@ -125,6 +125,8 @@ class TeamNavigation(Navigation, CalendarTraversalMixin):
 
     usedfor = ITeam
 
+    redirection("+bugs", "+assignedbugs")
+
     def breadcrumb(self):
         return smartquote('"%s" team') % self.context.displayname
 
