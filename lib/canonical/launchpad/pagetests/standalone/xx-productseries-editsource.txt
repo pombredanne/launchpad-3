@@ -81,12 +81,8 @@ Test if we can add the FTP Details
 
   >>> print http(r"""
   ... POST /products/alsa-utils/+series/main/+source HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.5
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 247
   ... Content-Type: application/x-www-form-urlencoded
-  ... Cookie: launchpad=EpbuFfCBaSPss2dUGaUN6Q6BIRg1FJeTKy2ooAhFj3KfIGN7a5OiMo
-  ... Referer: http://localhost:9000/products/alsa-utils/+series/main/+source
   ... 
   ... ubuntupkg=&rcstype=cvs&cvsroot=%3Apserver%3Aanonymous%40anoncvs.gnome.org%3A%2Fcvs%2Falsa&cvsmodule=alsa-utils&cvsbranch=alsa&releaseroot=ftp%3A%2F%2Fwww.mozilla.org%2Fpub%2Falsa&releasefileglob=alsa.*.src.tgz&Update+RCS+Details=Update+RCS+Details""")
   HTTP/1.1 303 See Other
@@ -99,12 +95,8 @@ And we test if we can edit again changing the RCS
 
   >>> print http(r"""
   ... POST /products/alsa-utils/+series/main/+source HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.5
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: 189
   ... Content-Type: application/x-www-form-urlencoded
-  ... Cookie: launchpad=EpbuFfCBaSPss2dUGaUN6Q6BIRg1FJeTKy2ooAhFj3KfIGN7a5OiMo
-  ... Referer: http://localhost:9000/products/alsa-utils/+series/main/+source
   ... 
   ... ubuntupkg=alsa-utils&rcstype=svn&svnrepository=svn%3A%2F%2Falsa.com&releaseroot=ftp%3A%2F%2Fwww.mozilla.org%2Fpub%2Falsa&releasefileglob=alsa.*.src.tgz&Update+RCS+Details=Update+RCS+Details""")
   HTTP/1.1 303 See Other
