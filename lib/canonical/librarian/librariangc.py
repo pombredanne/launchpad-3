@@ -12,6 +12,8 @@ from canonical.librarian.storage import _relFileLocation as relative_file_path
 from canonical.librarian.storage import _sameFile
 from canonical.database.postgresql import listReferences
 
+BATCH_SIZE = 1
+
 log = None
 
 def merge_duplicates(ztm):
@@ -45,12 +47,15 @@ def merge_duplicates(ztm):
         sha1 = sha1.encode('US-ASCII') # Can't pass Unicode to execute (yet)
 
         # Get a list of our dupes, making sure that the first in the
-        # list is not deleted if possible.
+        # list is not deleted if possible. Where multiple non-deleted
+        # files exist, we return the most recently added one first, because
+        # this is the version most likely to exist on the staging server
+        # (it should be irrelevant on production).
         cur.execute("""
             SELECT id
             FROM LibraryFileContent
             WHERE sha1=%(sha1)s AND filesize=%(filesize)s
-            ORDER BY deleted, datecreated
+            ORDER BY deleted, datecreated DESC
             """, vars())
         dupes = [str(row[0]) for row in cur.fetchall()]
 
@@ -60,15 +65,24 @@ def merge_duplicates(ztm):
                 )
 
         # Make sure the first file exists on disk. Don't merge if it
-        # doesn't. This shouldn't happen, so we don't try and cope - just
-        # report and skip.
+        # doesn't. This shouldn't happen on production, so we don't try
+        # and cope - just report and skip. However, on staging this will
+        # be more common because database records has been synced from
+        # production but the actual librarian contents has not.
         dupe1_id = int(dupes[0])
         dupe1_path = get_file_path(dupe1_id)
         if not os.path.exists(dupe1_path):
-            log.error(
-                    "LibraryFileContent %d data is missing (%s)",
-                    dupe1_id, dupe1_path
-                    )
+            if config.name == 'staging':
+                log.debug(
+                        "LibraryFileContent %d data is missing (%s)",
+                        dupe1_id, dupe1_path
+                        )
+            else:
+                log.error(
+                        "LibraryFileContent %d data is missing (%s)",
+                        dupe1_id, dupe1_path
+                        )
+            ztm.abort()
             continue
 
         # Do a manual check that they really are identical, because we
@@ -78,13 +92,16 @@ def merge_duplicates(ztm):
         # unlikely. Where did I leave my tin foil hat?
         for dupe2_id in (int(dupe) for dupe in dupes[1:]):
             dupe2_path = get_file_path(dupe2_id)
-            if not _sameFile(dupe1_path, dupe2_path):
+            # Check paths exist, because on staging they may not!
+            if (os.path.exists(dupe2_path)
+                and not _sameFile(dupe1_path, dupe2_path)):
                 log.error(
                         "SHA-1 collision found. LibraryFileContent %d and "
                         "%d have the same SHA1 and filesize, but are not "
                         "byte-for-byte identical.",
                         dupe1_id, dupe2_id
                         )
+                ztm.abort()
                 sys.exit(1)
 
         # Update all the LibraryFileAlias entries to point to a single
@@ -98,7 +115,7 @@ def merge_duplicates(ztm):
         cur.execute("""
             UPDATE LibraryFileAlias SET content=%(prime_id)s
             WHERE content in (%(other_ids)s)
-            """, vars())
+            """ % vars())
 
         log.debug("Committing")
         ztm.commit()
@@ -168,7 +185,7 @@ def delete_unreferenced_aliases(ztm):
             """ % vars())
         referenced_ids = set(row[0] for row in cur.fetchall())
         ztm.abort()
-        log.debug(
+        log.info(
                 "Found %d distinct LibraryFileAlias references in %s(%s)",
                 len(referenced_ids), table, column
                 )
@@ -181,7 +198,11 @@ def delete_unreferenced_aliases(ztm):
     # Delete unreferenced LibraryFileAliases. Note that this will raise a
     # database exception if we screwed up and attempt to delete an alias that
     # is still referenced.
-    for content_id in content_ids:
+    content_ids = list(content_ids)
+    for i in range(0, len(content_ids), BATCH_SIZE):
+        in_content_ids = ','.join(
+                (str(content_id) for content_id in content_ids[i:i+BATCH_SIZE])
+                )
         ztm.begin()
         cur = cursor()
         # First a sanity check to ensure we aren't removing anything we
@@ -189,22 +210,22 @@ def delete_unreferenced_aliases(ztm):
         cur.execute("""
             SELECT COUNT(*)
             FROM LibraryFileAlias
-            WHERE content=%(content_id)s
+            WHERE content in (%(in_content_ids)s)
                 AND (
                     expires + '1 week'::interval
                         > CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
                     OR last_accessed + '1 week'::interval
                         > CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
                     )
-            """, vars())
+            """ % vars())
         assert cur.fetchone()[0] == 0, "Logic error - sanity check failed"
         log.info(
                 "Deleting all LibraryFileAlias references to "
-                "LibraryFileContent %d", content_id
+                "LibraryFileContents %s", in_content_ids
                 )
         cur.execute("""
-            DELETE FROM LibraryFileAlias WHERE content=%(content_id)s
-            """, vars())
+            DELETE FROM LibraryFileAlias WHERE content IN (%(in_content_ids)s)
+            """ % vars())
         ztm.commit()
 
 
@@ -228,25 +249,29 @@ def delete_unreferenced_content(ztm):
     garbage_ids = [row[0] for row in cur.fetchall()]
     ztm.abort()
 
-    for garbage_id in garbage_ids:
+    for i in range(0, len(garbage_ids), BATCH_SIZE):
+        in_garbage_ids = ','.join(
+            (str(garbage_id) for garbage_id in garbage_ids[i:i+BATCH_SIZE])
+            )
         ztm.begin()
         cur = cursor()
 
         # Delete old LibraryFileContent entries. Note that this will fail
         # if we screwed up and still have LibraryFileAlias entries referencing
         # it.
-        log.info("Deleting LibraryFileContent %d", garbage_id)
+        log.info("Deleting LibraryFileContents %s", in_garbage_ids)
         cur.execute("""
-            DELETE FROM LibraryFileContent WHERE id = %(garbage_id)s
-            """, vars())
+            DELETE FROM LibraryFileContent WHERE id in (%s)
+            """ % in_garbage_ids)
 
-        # Remove the file from disk, if it hasn't already been
-        path = get_file_path(garbage_id)
-        if os.path.exists(path):
-            log.info("Deleting %s", path)
-            os.unlink(path)
-        else:
-            log.info("%s already deleted", path)
+        for garbage_id in garbage_ids[i:i+BATCH_SIZE]:
+            # Remove the file from disk, if it hasn't already been
+            path = get_file_path(garbage_id)
+            if os.path.exists(path):
+                log.info("Deleting %s", path)
+                os.unlink(path)
+            else:
+                log.info("%s already deleted", path)
 
         # And commit the database changes. It may be possible for this to
         # fail in rare cases, leaving a record in the DB with no corresponding
