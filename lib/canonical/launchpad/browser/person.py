@@ -39,6 +39,7 @@ __all__ = [
     ]
 
 import cgi
+import itertools
 import sets
 from StringIO import StringIO
 
@@ -65,10 +66,10 @@ from canonical.launchpad.interfaces import (
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet,
-    ITeamMembershipSubset, IPollSet, NotFoundError)
+    ITeamMembershipSubset, IPollSet, BugTaskSearchParams, NotFoundError,
+    UNRESOLVED_BUGTASK_STATUSES)
 
-from canonical.launchpad.browser.bugtask import (
-    BugTaskSearchListingView, BUGTASK_STATUS_OPEN)
+from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.helpers import (
@@ -123,6 +124,8 @@ class PersonNavigation(Navigation, CalendarTraversalMixin):
 class TeamNavigation(Navigation, CalendarTraversalMixin):
 
     usedfor = ITeam
+
+    redirection("+bugs", "+assignedbugs")
 
     def breadcrumb(self):
         return smartquote('"%s" team') % self.context.displayname
@@ -190,9 +193,7 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('', text, summary)
 
     def bugs(self):
-        # XXX: Soon the +assignedbugs and +reportedbugs pages of IPerson will
-        # be merged into a single +bugs page, and I'll fix the target here.
-        # -- GuilhermeSalgado, 2005-07-29
+        target = '+assignedbugs'
         text = 'Bugs'
         summary = (
             'Bug reports that %s is involved with' % self.context.browsername)
@@ -598,7 +599,8 @@ class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs reported by someone."""
 
     def getExtraSearchParams(self):
-        return {'status': any(*BUGTASK_STATUS_OPEN), 'owner': self.context}
+        return {'status': any(*UNRESOLVED_BUGTASK_STATUSES),
+                'owner': self.context}
 
 
 class BugTasksOnMaintainedSoftwareSearchListingView(BugTaskSearchListingView):
@@ -628,7 +630,8 @@ class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
     """All open bugs assigned to someone."""
 
     def getExtraSearchParams(self):
-        return {'status': any(*BUGTASK_STATUS_OPEN), 'assignee': self.context}
+        return {'status': any(*UNRESOLVED_BUGTASK_STATUSES),
+                'assignee': self.context}
 
     def doNotShowAssignee(self):
         """Should we not show the assignee in the list of results?"""
@@ -639,7 +642,7 @@ class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs someone is subscribed to."""
 
     def getExtraSearchParams(self):
-        return {'status': any(*BUGTASK_STATUS_OPEN), 
+        return {'status': any(*UNRESOLVED_BUGTASK_STATUSES), 
                 'subscriber': self.context}
 
 
@@ -665,6 +668,49 @@ class PersonView:
         """Return True if this team has any non-closed polls."""
         assert self.context.isTeam()
         return bool(len(self.openpolls) or len(self.notyetopenedpolls))
+
+    def sourcepackagerelease_open_bugs_count(self, sourcepackagerelease):
+        """Return the number of open bugs targeted to the sourcepackagename
+        and distrorelease of the given sourcepackagerelease.
+        """
+        params = BugTaskSearchParams(
+            user=self.user,
+            sourcepackagename=sourcepackagerelease.sourcepackagename,
+            status=any(*UNRESOLVED_BUGTASK_STATUSES))
+        params.setDistributionRelease(sourcepackagerelease.uploaddistrorelease)
+        return getUtility(IBugTaskSet).search(params).count()
+
+    def maintainedPackagesByPackageName(self):
+        return self._groupSourcePackageReleasesByName(
+            self.context.maintainedPackages())
+
+    def uploadedButNotMaintainedPackagesByPackageName(self):
+        return self._groupSourcePackageReleasesByName(
+            self.context.uploadedButNotMaintainedPackages())
+
+    class SourcePackageReleasesByName:
+        """A class to hold a sourcepackagename and a list of
+        sourcepackagereleases of that sourcepackagename.
+        """
+
+        def __init__(self, name, releases):
+            self.name = name
+            self.releases = releases
+
+    def _groupSourcePackageReleasesByName(self, sourcepackagereleases):
+        """Return a list of SourcePackageReleasesByName objects ordered by
+        SourcePackageReleasesByName.name.
+        
+        Each SourcePackageReleasesByName object contains a name, which is the
+        sourcepackagename and a list containing all sourcepackagereleases of
+        that sourcepackagename.
+        """
+        allreleasesbyallnames = []
+        keyfunc = lambda sprelease: sprelease.name
+        for key, group in itertools.groupby(sourcepackagereleases, keyfunc):
+            allreleasesbyallnames.append(
+                PersonView.SourcePackageReleasesByName(key, list(group)))
+        return sorted(allreleasesbyallnames, key=lambda s: s.name)
 
     def no_bounties(self):
         return not (self.context.ownedBounties or
