@@ -480,8 +480,8 @@ The user is a package bug contact
         Assignee: (unassigned) => No Privileges Person
     ...
 
-The user is a distribution bug contact
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+The user is a distribution member
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
     >>> login('foo.bar@canonical.com')
     >>> submit_commands(
