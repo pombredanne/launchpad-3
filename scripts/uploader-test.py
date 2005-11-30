@@ -33,11 +33,13 @@ from canonical.lp import dbschema
 
 class UploaderTester:
     """  """
-    def __init__(self, ztm, log, options, keyring=None):
+    def __init__(self, ztm, log, options, uploader_team, 
+                 keyring=None):
         """ """
         self.ztm = ztm
         self.log = log
         self.options = options
+        self.uploader_team = uploader_team
         if keyring:
             self._load_keyring(keyring)
 
@@ -113,6 +115,8 @@ class UploaderTester:
                 email, displayname=displayname)
             # promote the email from NEW to PREFERRED
             email.status = dbschema.EmailAddressStatus.PREFERRED
+            # add user to the uploader_test team
+            self.uploader_team.addMember(user)
             
             # create a PymeKey to wrap the handy attributes
             # it's necessary because we are based in a local keyring
@@ -243,8 +247,14 @@ def main():
     lock.acquire(blocking=True)
 
     try:
-
-        tester = UploaderTester(ztm, log, options, keyring=options.keyring)
+        uploader_team = getUtility(IPersonSet).getByName('uploader-test')
+        if not uploader_team:
+            log.critical("No 'uploader-team' found, insert the "
+                         "required DB data")
+            sys.exit(1)
+            
+        tester = UploaderTester(ztm, log, options, uploader_team,
+                                keyring=options.keyring)
 
         log.info("Fetching list of files with .changes suffix")
         changes_filenames = rsync_list_filenames(rsync_url+"*.changes")

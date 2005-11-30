@@ -1,0 +1,94 @@
+Poppy Uploader Test
+-------------------
+
+
+First, let's create a temporary directory where we'll put
+uploaded files in.
+
+
+>>> import tempfile
+>>> temp_dir = tempfile.mkdtemp()
+
+
+Now, let's create a subprocess running the server.
+
+
+>>> from canonical.config import config
+>>> import subprocess
+>>> import os
+>>> script = os.path.join(config.root, "daemons", "poppy-upload.py")
+>>> process = subprocess.Popen(["/usr/bin/python", script, temp_dir, "3421"],
+...                            stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+
+
+Connect to the server and login. We'll keep trying to connect until
+the server dies or the connection succeeds.
+
+
+>>> import ftplib, socket
+>>> ftp = ftplib.FTP()
+>>> while True:
+...    try:
+...        reply = ftp.connect("localhost", 3421)
+...    except socket.error:
+...        if process.poll() is not None:
+...            raise RuntimeError, "Server is not starting"
+...    else:
+...        break
+>>> ftp.login("ubuntu", "")
+'230 Login Successful.'
+
+
+Good.. now we can try to send something.
+
+
+>>> from StringIO import StringIO
+>>> something = StringIO("Something")
+>>> ftp.cwd("/")
+'250 CWD command successful.'
+>>> ftp.storbinary("STOR something", something)
+'226 Transfer successful.'
+>>> ftp.quit()
+'221 Goodbye.'
+
+
+It says it was transferred successfully. Let's see if the file is
+in the expected place, with the expected content.
+
+
+>>> open(os.path.join(temp_dir, "upload-000001", "something")).read()
+'Something'
+
+
+It works. Let's check if it's creating other directories on new
+connections as well.
+
+
+>>> ftp = ftplib.FTP()
+>>> reply = ftp.connect("localhost", 3421)
+>>> ftp.login("ubuntu", "")
+'230 Login Successful.'
+>>> sio = StringIO("Something else")
+>>> ftp.storbinary("STOR something_else", sio)
+'226 Transfer successful.'
+>>> ftp.quit()
+'221 Goodbye.'
+>>> open(os.path.join(temp_dir, "upload-000002", "something_else")).read()
+'Something else'
+
+
+Nice! That's enough for now.. let's kill the process and clean
+everything up.
+
+
+>>> import signal
+>>> os.kill(process.pid, signal.SIGTERM)
+>>> status = process.wait()
+
+>>> import shutil
+>>> shutil.rmtree(temp_dir)
+
+
+Feito! ;-)
+
+

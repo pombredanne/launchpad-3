@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from canonical.poppy.server import run_server
-from canonical.lucille.poppyinterface import PoppyInterface
+from canonical.archivepublisher.poppyinterface import PoppyInterface
 
 import sys
 import logging
@@ -16,6 +16,7 @@ def main():
     ident = "lucille upload server"
     numthreads = 4
 
+    #XXX cprov 20051130: use lp pattern for loghandler
     logger = logging.getLogger('Server')
     hdlr = logging.FileHandler('++lucilleupload.log')
     formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
@@ -23,7 +24,11 @@ def main():
     logger.addHandler(hdlr)
     logger.setLevel(logging.DEBUG)
 
-    iface = PoppyInterface(logger)
+    # command line to invoke uploader
+    cmd = [('python scripts/process-upload.py -C insecure '
+            '-r warty --no-mails -vv -d'), '@distro@', '@fsroot@'] 
+
+    iface = PoppyInterface(logger, cmd=cmd)
     
 
     run_server(root, host, int(port), ident, numthreads,
