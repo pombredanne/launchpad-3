@@ -243,6 +243,44 @@ class TestErrorReportingService(unittest.TestCase):
         # verify that the oopsid was set on the request
         self.assertEqual(request.oopsid, 'OOPS-T1')
 
+    def test_raising_with_unprintable_exception(self):
+        """Test ErrorReportingService.raising() with an unprintable exception"""
+        from canonical.launchpad.webapp.errorlog import ErrorReportingService
+        service = ErrorReportingService()
+        now = datetime.datetime(2004, 04, 01, 00, 30, 00, tzinfo=UTC)
+
+        class UnprintableException(Exception):
+            def __str__(self):
+                raise RuntimeError('arrgh')
+
+        try:
+            raise UnprintableException()
+        except:
+            service.raising(sys.exc_info(), now=now)
+
+        errorfile = os.path.join(service.errordir(now), '01800.T1')
+        self.assertTrue(os.path.exists(errorfile))
+        lines = open(errorfile, 'r').readlines()
+
+        # the header
+        self.assertEqual(lines[0], 'Oops-Id: OOPS-T1\n')
+        self.assertEqual(lines[1], 'Exception-Type: UnprintableException\n')
+        self.assertEqual(lines[2], 'Exception-Value: <unprintable instance object>\n')
+        self.assertEqual(lines[3], 'Date: 2004-04-01T00:30:00+00:00\n')
+        self.assertEqual(lines[4], 'User: None\n')
+        self.assertEqual(lines[5], 'URL: None\n')
+        self.assertEqual(lines[6], '\n')
+
+        # no request vars
+        self.assertEqual(lines[7], '\n')
+
+        # traceback
+        self.assertEqual(lines[8], 'Traceback (innermost last):\n')
+        #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
+        #    raise UnprintableException()
+        self.assertEqual(lines[11], 'UnprintableException: <unprintable instance object>\n')
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(TestErrorReport))

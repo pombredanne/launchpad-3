@@ -9,6 +9,7 @@ import errno
 import datetime
 import pytz
 import rfc822
+import logging
 
 from zope.interface import implements
 
@@ -162,6 +163,24 @@ class ErrorReportingService:
                                                          newid))
         return oops, filename
 
+    def safestr(self, obj):
+        if isinstance(obj, unicode):
+            return obj.encode('ASCII', 'replace')
+
+        # A call to str(obj) could raise anything at all.
+        # We'll ignore these errors, and print something
+        # useful instead, but also log the error.
+        try:
+            value = str(obj)
+        except:
+            logging.getLogger('SiteError').exception(
+                'Error in ErrorReportingService while getting a str '
+                'representation of an object')
+            value = '<unprintable %s object>' % (
+                str(type(obj).__name__)
+                )
+        return value
+
     def raising(self, info, request=None, now=None):
         """See IErrorReportingService.raising()"""
         if now is None:
@@ -213,30 +232,11 @@ class ErrorReportingService:
                 except AttributeError:
                     pass
 
-                req_vars = sorted((key, str(value))
+                req_vars = sorted((key, self.safestr(value))
                                   for (key, value) in request.items())
-            try:
-                strv = str(info[1])
-            # A call to str(obj) could raise anything at all.
-            # We'll ignore these errors, and print something
-            # useful instead, but also log the error.
-            except:
-                logging.getLogger('SiteError').exception(
-                    'Error in ErrorReportingService while getting a str '
-                    'representation of an object')
-                strv = '<unprintable %s object>' % (
-                        str(type(info[1]).__name__)
-                        )
+            strv = self.safestr(info[1])
 
-            try:
-                strurl = str(url)
-            except:
-                logging.getLogger('SiteError').exception(
-                    'Error in ErrorReportingService while getting a str '
-                    'representation of an object')
-                strurl = '<unprintable %s object>' % (
-                        str(type(url).__name__)
-                        )
+            strurl = self.safestr(url)
 
             oopsid, filename = self.newOopsId(now)
 
@@ -248,7 +248,7 @@ class ErrorReportingService:
                 request.setOopsId(oopsid)
 
             if self.copy_to_zlog:
-                self._do_copy_to_zlog(now, strtype, str(url), info)
+                self._do_copy_to_zlog(now, strtype, strurl, info)
         finally:
             info = None
 
