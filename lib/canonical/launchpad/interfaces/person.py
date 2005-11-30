@@ -73,8 +73,8 @@ class PersonNameField(TextLine):
         person = getUtility(IPersonSet).getByName(value, ignore_merged=False)
         if person is not None:
             raise LaunchpadValidationError(_(dedent("""
-                The name %s is already in use.
-                """ % value)))
+                This name is already in use by another person/team.
+                """ )))
 
 class IPerson(IHasSpecifications):
     """A Person."""
