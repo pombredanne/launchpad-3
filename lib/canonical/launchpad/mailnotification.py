@@ -263,11 +263,11 @@ def generate_bug_edit_email(bug_delta):
 
 
     if bug_delta.title is not None:
-        body += u"Title changed to:\n"
+        body += u"Summary changed to:\n"
         body += u"    %s\n" % bug_delta.title
 
     if bug_delta.summary is not None:
-        body += u"Summary changed to:\n"
+        body += u"Short description changed to:\n"
         body += mailwrapper.format(bug_delta.summary)
         body += u"\n"
 
