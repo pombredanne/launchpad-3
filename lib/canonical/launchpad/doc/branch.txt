@@ -40,6 +40,12 @@ utility.
 >>> from canonical.launchpad.interfaces import IBranchSet
 >>> branchset = getUtility(IBranchSet)
 
+It must define the IBranchSet interface.
+
+>>> from zope.interface.verify import verifyObject
+>>> verifyObject(IBranchSet, branchset)
+True
+
 >>> from canonical.launchpad.interfaces import IProductSet
 >>> productset = getUtility(IProductSet)
 >>> gterm_product = productset.get(6)

@@ -871,7 +871,24 @@ class PersonSet:
         # indexes. Ideally we want to order by karma DESC, name but
         # that will not use the indexes (at least under PostgreSQL 7.4)
         # and be really slow.
-        return self.getAllValidPersons(orderBy=['-karma', '-id'])[:5]
+
+        # This is a simpler implementation, but is triggering Bug 4818
+        # return self.getAllValidPersons(orderBy=['-karma', '-id'])[:5]
+
+        query = """
+            id in (
+                SELECT Person.id
+                FROM Person, EmailAddress
+                WHERE Person.id = EmailAddress.person
+                    AND teamowner IS NULL
+                    AND merged IS NULL
+                    AND EmailAddress.status = %d
+                ORDER BY Person.karma DESC, Person.id DESC
+                LIMIT 5
+                )
+            """ % (EmailAddressStatus.PREFERRED.value,)
+        return Person.select(query, orderBy=['-karma', '-id'])
+
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
