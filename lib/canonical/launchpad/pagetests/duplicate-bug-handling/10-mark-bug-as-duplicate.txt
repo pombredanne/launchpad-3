@@ -45,7 +45,7 @@ When the bug is marked as a duplicate, each subscriber will receive,
 individually, a bugmail notification of this event.
 
     >>> len(stub.test_emails)
-    9
+    8
 
 Let's sort the emails by subject and talk a bit more about each
 notification:
@@ -100,7 +100,7 @@ notification:
     >>> all_to_addrs.sort()
     >>> print all_to_addrs
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['no-priv@canonical.com'],
-     ['support@ubuntu.com'], ['test@canonical.com']]
+     ['test@canonical.com']]
 
     Let's grab the first email in the list to illustrate:
 

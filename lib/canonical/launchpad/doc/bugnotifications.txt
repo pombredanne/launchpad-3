@@ -421,12 +421,12 @@ pretending we've just added a watch to a bug.
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    5
+    4
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['no-priv@canonical.com'],
-     ['support@ubuntu.com'], ['test@canonical.com']]
+     ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
@@ -441,7 +441,6 @@ pretending we've just added a watch to a bug.
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
     ['product=firefox; status=New; priority=Wontfix;\n\tassignee=mark@hbd.com; ',
-     'product=ubuntu; status=New; priority=Medium; assignee=keybuk; ',
      'distribution=ubuntu; sourcepackage=mozilla-firefox;\n\tcomponent=main;
       status=New; priority=Medium; assignee=None; ',
      'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
@@ -473,12 +472,12 @@ the changes made:
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    5
+    4
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['no-priv@canonical.com'],
-     ['support@ubuntu.com'], ['test@canonical.com']]
+     ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
@@ -493,7 +492,6 @@ the changes made:
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
     ['product=firefox; status=New; priority=Wontfix;\n\tassignee=mark@hbd.com; ',
-     'product=ubuntu; status=New; priority=Medium; assignee=keybuk; ',
      'distribution=ubuntu; sourcepackage=mozilla-firefox;\n\tcomponent=main;
       status=New; priority=Medium; assignee=None; ',
      'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
@@ -526,12 +524,12 @@ this document:
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    5
+    4
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['no-priv@canonical.com'],
-     ['support@ubuntu.com'], ['test@canonical.com']]
+     ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
@@ -546,7 +544,6 @@ this document:
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
     ['product=firefox; status=New; priority=Wontfix;\n\tassignee=mark@hbd.com; ',
-     'product=ubuntu; status=New; priority=Medium; assignee=keybuk; ',
      'distribution=ubuntu; sourcepackage=mozilla-firefox;\n\tcomponent=main;
       status=New; priority=Medium; assignee=None; ',
      'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
@@ -578,12 +575,12 @@ publishing an object created event.
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    5
+    4
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['no-priv@canonical.com'],
-     ['support@ubuntu.com'], ['test@canonical.com']]
+     ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
@@ -598,7 +595,6 @@ publishing an object created event.
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
     ['product=firefox; status=New; priority=Wontfix;\n\tassignee=mark@hbd.com; ',
-     'product=ubuntu; status=New; priority=Medium; assignee=keybuk; ',
      'distribution=ubuntu; sourcepackage=mozilla-firefox;\n\tcomponent=main;
       status=New; priority=Medium; assignee=None; ',
      'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
@@ -629,12 +625,12 @@ When a link is edited, the notification will look as follows:
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    5
+    4
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
     [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['no-priv@canonical.com'],
-     ['support@ubuntu.com'], ['test@canonical.com']]
+     ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
@@ -649,7 +645,6 @@ When a link is edited, the notification will look as follows:
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
     ['product=firefox; status=New; priority=Wontfix;\n\tassignee=mark@hbd.com; ',
-     'product=ubuntu; status=New; priority=Medium; assignee=keybuk; ',
      'distribution=ubuntu; sourcepackage=mozilla-firefox;\n\tcomponent=main;
       status=New; priority=Medium; assignee=None; ',
      'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
@@ -684,14 +679,14 @@ duplicate.
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    9
+    8
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
     [['dilys@muse.19inch.net'], ['dilys@muse.19inch.net'],
      ['mark@hbd.com'],
      ['no-priv@canonical.com'], ['no-priv@canonical.com'],
-     ['support@ubuntu.com'], ['support@ubuntu.com'],
+     ['support@ubuntu.com'],
      ['test@canonical.com'], ['test@canonical.com']]
 
     >>> sample_person_mails = [email.message_from_string(raw_message)

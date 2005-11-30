@@ -437,7 +437,7 @@ The user is a bug contact of the upstream product
     >>> login('test@canonical.com')
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> len(bug_one.bugtasks)
-    4
+    3
     >>> submit_commands(
     ...     bug_one, 'status accepted', 'assignee test@canonical.com')
     >>> for bugtask in bug_one.bugtasks:
