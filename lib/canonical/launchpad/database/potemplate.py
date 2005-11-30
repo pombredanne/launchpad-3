@@ -312,7 +312,7 @@ class POTemplate(SQLBase, RosettaStats):
         """See IPOTemplate."""
         return POFile.selectOne("""
             POFile.potemplate = %s AND
-            POFile.path %s
+            POFile.path = %s
             """ % sqlvalues(self.id, path))
 
     def getPOFileByLang(self, language_code, variant=None):
@@ -529,7 +529,7 @@ class POTemplate(SQLBase, RosettaStats):
     # ICanAttachRawFileData implementation
 
     def attachRawFileData(self, contents, published, importer=None,
-        date_import=UTC_NOW):
+        date_imported=UTC_NOW):
         """See ICanAttachRawFileData."""
         rawfile = IRawFileData(self)
         if rawfile.rawimportstatus == RosettaImportStatus.PENDING:
@@ -540,10 +540,10 @@ class POTemplate(SQLBase, RosettaStats):
 
         filename = '%s.pot' % self.potemplatename.translationdomain
         helpers.attachRawFileData(
-            self, filename, contents, importer, date_import)
+            self, filename, contents, importer, date_imported)
 
     def attachRawFileDataAsFileAlias(self, alias, published, importer=None,
-        date_import=UTC_NOW):
+        date_imported=UTC_NOW):
         """See ICanAttachRawFileData."""
         rawfile = IRawFileData(self)
         if rawfile.rawimportstatus == RosettaImportStatus.PENDING:
@@ -553,7 +553,7 @@ class POTemplate(SQLBase, RosettaStats):
         assert published == True, 'POTemplate is always "published"'
 
         helpers.attachRawFileDataByFileAlias(
-            self, alias, importer, date_import)
+            self, alias, importer, date_imported)
 
     # IRawFileData implementation
 
@@ -711,7 +711,7 @@ class POTemplateSubset:
         try:
             ptn = POTemplateName.byName(name)
         except SQLObjectNotFound:
-            raise NotFoundError(name)
+            return None
 
         if self.query is None:
             query = 'POTemplate.potemplatename = %d' % ptn.id
@@ -774,7 +774,7 @@ class POTemplateSet:
         assert kw.get('productseries')
         return POTemplateSubset(productseries=kw['productseries'])
 
-    def getSubsetFromRealSourcePackageName(self, distrorelease,
+    def getSubsetFromImporterSourcePackageName(self, distrorelease,
         sourcepackagename):
         """See IPOTemplateSet."""
         if distrorelease is None or sourcepackage is None:

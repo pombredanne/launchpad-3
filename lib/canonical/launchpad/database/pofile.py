@@ -583,7 +583,7 @@ class POFile(SQLBase, RosettaStats):
 
     # ICanAttachRawFileData implementation
     def attachRawFileData(self, contents, published, importer=None,
-        date_import=UTC_NOW):
+        date_imported=UTC_NOW):
         """See ICanAttachRawFileData."""
         rawfile = IRawFileData(self)
 
@@ -597,12 +597,12 @@ class POFile(SQLBase, RosettaStats):
             filename = '%s.po' % self.language.code
 
         helpers.attachRawFileData(
-            self, filename, contents, importer, date_import)
+            self, filename, contents, importer, date_imported)
 
         rawfile.rawfilepublished = published
 
     def attachRawFileDataAsFileAlias(self, alias, published, importer=None,
-        date_import=UTC_NOW):
+        date_imported=UTC_NOW):
         """See ICanAttachRawFileData."""
         rawfile = IRawFileData(self)
 
@@ -610,7 +610,7 @@ class POFile(SQLBase, RosettaStats):
             raise RawFileBusy
 
         helpers.attachRawFileDataByFileAlias(
-            self, alias, importer, date_import)
+            self, alias, importer, date_imported)
 
         rawfile.rawfilepublished = published
 

@@ -18,7 +18,6 @@ class RawFileBusy(Exception):
     """Exception raised when we try to attach a file over another that is not
     yet imported.
     """
-    pass
 
 class RawFileAttachFailed(Exception):
     pass
@@ -30,22 +29,21 @@ class ICanAttachRawFileData(Interface):
     """Accept .po or .pot attachments."""
 
     def attachRawFileDataAsFileAlias(alias, published, importer=None,
-        date_import=UTC_NOW):
+        date_imported=UTC_NOW):
         """Attach a PO template or PO file to be imported later.
 
-        'alias' is a Librarian reference.
-        The 'published' flag indicates whether or not this attachment is an
-        upload by a translator of their own translations, or the published
-        PO file.
+        :alias: is a Librarian reference.
+        :published: is a flag that indicates whether or not this attachment is
+            an upload by a translator of their own translations, or the
+            published PO file.
 
-        If there is any problem storing the attached file, a
-        RawFileAttachFailed exception will be raised.
+        If there is any problem storing the attached file, a RawFileAttachFailed        exception will be raised.
 
         If there is a pending import, the RawFileBusy exception is raised.
         """
 
     def attachRawFileData(contents, published, importer=None,
-        date_import=UTC_NOW):
+        date_imported=UTC_NOW):
         """Attach a PO template or PO file to be imported later.
 
         'contents' is the text content of the file to attach.

@@ -638,9 +638,8 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
         # NB: We use '/' as the seperator because '-' is valid in
         # a product.name or productseries.name
         token = '%s/%s' % (obj.product.name, obj.name)
-        return SimpleTerm(obj,
-                          token,
-                          obj.product.name + ' ' + obj.name)
+        return SimpleTerm(
+            obj, token, '%s %s' % (obj.product.name, obj.name))
 
     def getTermByToken(self, token):
         try:
@@ -683,7 +682,7 @@ class FilteredDistroReleaseVocabulary(SQLObjectVocabularyBase):
 
     def _toTerm(self, obj):
         return SimpleTerm(
-            obj, obj.id, obj.distribution.name + " " + obj.name)
+            obj, obj.id, '%s %s' % (obj.distribution.name, obj.name))
 
     def __iter__(self):
         kw = {}
@@ -704,7 +703,7 @@ class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
 
     def _toTerm(self, obj):
         return SimpleTerm(
-            obj, obj.id, obj.product.name + " " + obj.name)
+            obj, obj.id, '%s %s' % (obj.product.name, obj.name))
 
     def __iter__(self):
         launchbag = getUtility(ILaunchBag)

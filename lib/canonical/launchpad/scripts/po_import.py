@@ -11,11 +11,9 @@ import time
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IPOTemplateSet, IPOFileSet, IPOFile, IPOTemplate, ITranslationImportQueue)
+    IPOTemplateSet, IPOFileSet, IPOFile, IPOTemplate, ITranslationImportQueue,
+    UnsupportedFileType)
 
-class UnsupportedFileType(NotImplementedError):
-    """Raised when we get a file to import that we don't support."""
-    pass
 
 class ImportProcess:
     """Import .po and .pot files attached to Rosetta."""
@@ -111,7 +109,7 @@ class ImportProcess:
             if sourcepackage is not None:
                 # The entry is for a sourcepackagename
                 potemplate_subset = (
-                    potemplateset.getSubsetFromRealSourcePackageName(
+                    potemplateset.getSubsetFromImporterSourcePackageName(
                         distrorelease, sourcepackagename)
                     )
                 if len(potemplate_subset) == 0:

@@ -9,20 +9,18 @@ _ = MessageIDFactory('launchpad')
 __metaclass__ = type
 
 __all__ = [
-    'EntryBlocked',
-    'EntryFileNameError',
+    'TranslationImportQueueEntryBlocked',
+    'UnsupportedFileType',
     'ITranslationImportQueueEntry',
     'ITranslationImportQueue',
     'IEditTranslationImportQueueEntry',
     ]
 
-class EntryBlocked(ValueError):
+class TranslationImportQueueEntryBlocked(Exception):
     """The given entry is blocked."""
-    pass
 
-class EntryFileNameError(ValueError):
-    """The filename of the entry is not valid."""
-    pass
+class UnsupportedFileType(Exception):
+    """Raised when we get a file to import that we don't support."""
 
 class ITranslationImportQueueEntry(Interface):
     """An entry of the Translation Import Queue."""
@@ -79,8 +77,9 @@ class ITranslationImportQueueEntry(Interface):
     def attachToPOFileOrPOTemplate(pofile_or_potemplate):
         """Attach the imported file into the given IPOFile or IPOTemplate.
 
-        Raise the EntryBlocked exception if the entry is blocked.
-        Raise EntryFileNameError exception if the filename does not end with
+        Raise the TranslationImportQueueEntryBlocked exception if the entry is
+        blocked.
+        Raise UnsupportedFileType exception if the filename does not end with
         .po or .pot.
         """
 

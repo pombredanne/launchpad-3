@@ -15,8 +15,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import DEFAULT
 from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, ITranslationImportQueue, IPOFile,
-    IPOFileSet, IPOTemplateSet, ICanAttachRawFileData, EntryFileNameError,
-    NotFoundError, EntryBlocked)
+    IPOFileSet, IPOTemplateSet, ICanAttachRawFileData, NotFoundError,
+    UnsupportedFileType, TranslationImportQueueEntryBlocked)
 from canonical.launchpad.database import SourcePackage
 from canonical.librarian.interfaces import ILibrarianClient
 
@@ -79,30 +79,30 @@ class TranslationImportQueueEntry(SQLBase):
                 distrorelease=self.distrorelease,
                 sourcepackagename=self.sourcepackagename)
         else:
-            # Unknow import so we don't know where to import it.
+            # Unknown import so we don't know where to import it.
             return None
 
     def attachToPOFileOrPOTemplate(self, pofile_or_potemplate):
         """See ITranslationImportQueueEntry."""
         if self.is_blocked:
-            raise EntryBlocked(
+            raise TranslationImportQueueEntryBlocked(
                 'This entry cannot be imported. It has the is_blocked flag set')
         if IPOFile.providedBy(pofile_or_potemplate):
             if not self.path.lower().endswith('.po'):
-                raise EntryFileNameError(
+                raise UnsupportedFileType(
                     'The %s file cannot be imported as a PO file' % self.path)
             potemplate = pofile_or_potemplate.potemplate
 
         elif IPOTemplate.providedBy(pofile_or_potemplate):
             if not (self.path.lower().endswith('.po') or
                     self.path.lower().endswith('.pot')):
-                raise EntryFileNameError(
+                raise UnsupportedFileType(
                     'The %s file cannot be imported as a PO/POT file' %
                         self.path)
             potemplate = pofile_or_potemplate
         else:
             raise AssertionError(
-                'Unknow object %s' % pofile_or_potemplate)
+                'Unknown object %s' % pofile_or_potemplate)
         if ((potemplate.distrorelease != self.distrorelease) or
             ((potemplate.sourcepackagename != self.sourcepackagename) and
              (potemplate.fromsourcepackagename != self.sourcepackagename)) or
@@ -119,8 +119,8 @@ class TranslationImportQueueEntry(SQLBase):
         attach_object.attachRawFileDataAsFileAlias(
             self.content, self.is_published, self.importer, self.dateimported)
 
-        # The import is noted now, so we should remove this entry from the
-        # queue.
+        # The import is already attached to the destination object so we should
+        # remove this entry from the queue.
         TranslationImportQueueEntry.delete(self.id)
 
     def setBlocked(self, value=True):

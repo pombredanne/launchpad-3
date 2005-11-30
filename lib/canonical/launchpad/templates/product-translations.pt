@@ -39,7 +39,7 @@
           If you would like to help translate <span
           tal:replace="context/displayname" i18n:name="product_name"> this
           product</span> then, you should follow the instructions at
-          <a href="https://wiki.ubuntu.com/RosettaFAQ">
+          <a href="https://wiki.ubuntu.com/RosettaFAQ">Rosetta's FAQ</a>
         </p>
 
     </tal:notemplatesregistered>

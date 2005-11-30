@@ -34,7 +34,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr tal:repeat="entry view/getReadyToImport">
+        <tr tal:repeat="entry view/iterReadyToImport">
           <td>
             <a tal:condition="entry/sourcepackage"
                tal:content="entry/sourcepackage/title"
@@ -81,10 +81,8 @@
       </tbody>
     </table>
     <input tal:condition="request/lp:person"
-           style="float: left" 
            type="submit" name="remove_import" value="Remove" />
     <input tal:condition="context/required:launchpad.Admin"
-           style="float: left"
            type="submit" name="block_import" value="Block" />
     <br />
   </form>
@@ -114,7 +112,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr tal:repeat="entry view/getPendingReview">
+        <tr tal:repeat="entry view/iterPendingReview">
           <td>
             <input type="checkbox"
                    tal:condition="entry/required:launchpad.Edit"
@@ -156,10 +154,8 @@
       </tbody>
     </table>
     <input tal:condition="request/lp:person"
-           style="float: left"
            type="submit" name="remove_review" value="Remove" />
     <input tal:condition="context/required:launchpad.Admin"
-           style="float: left"
            type="submit" name="block_review" value="Block" />
     <br />
   </form>

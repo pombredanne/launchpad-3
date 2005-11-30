@@ -325,13 +325,13 @@ class IPOTemplateSubset(Interface):
     def getPOTemplateByName(name):
         """Return the IPOTemplate from this subset that has the given name.
 
-        Return None if there is not such IPOTemplate.
+        Return None if there is no such IPOTemplate.
         """
 
     def getPOTemplateByPath(path):
         """Return the IPOTemplate from this subset that has the given path.
 
-        Return None if there is not such IPOTemplate.
+        Return None if there is no such IPOTemplate.
         """
 
 
@@ -349,7 +349,8 @@ class IPOTemplateSet(Interface):
         """Return a POTemplateSubset object depending on the given arguments.
         """
 
-    def getSubsetFromRealSourcePackageName(distrorelease, sourcepackagename):
+    def getSubsetFromImporterSourcePackageName(
+        distrorelease, sourcepackagename):
         """Return a POTemplateSubset based on the origin sourcepackagename.
         """
 
@@ -361,7 +362,7 @@ class IPOTemplateSet(Interface):
         """Return an IPOTemplate that is stored at 'path' in source code and
            came from the given arguments.
 
-        Return None if there is not such IPOTemplate.
+        Return None if there is no such IPOTemplate.
         """
 
 

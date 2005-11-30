@@ -467,18 +467,18 @@ def uploadRosettaFile(filename, contents):
     return alias
 
 def attachRawFileDataByFileAlias(raw_file_data, alias, importer,
-    date_import):
+    date_imported):
     """Attach the contents of a file to a raw file data object."""
     raw_file_data.rawfile = alias
-    raw_file_data.daterawimport = date_import
+    raw_file_data.daterawimport = date_imported
     raw_file_data.rawimporter = importer
     raw_file_data.rawimportstatus = RosettaImportStatus.PENDING
 
 def attachRawFileData(raw_file_data, filename, contents, importer,
-    date_import):
+    date_imported):
     """Attach the contents of a file to a raw file data object."""
     alias = uploadRosettaFile(filename, contents)
-    attachRawFileDataByFileAlias(raw_file_data, alias, importer, date_import)
+    attachRawFileDataByFileAlias(raw_file_data, alias, importer, date_imported)
 
 def getRawFileData(raw_file_data):
     client = getUtility(ILibrarianClient)

@@ -157,14 +157,12 @@ class TranslationImportQueueContextMenu(ContextMenu):
     links = ['overview', 'blocked']
 
     def overview(self):
-        target = ''
         text = 'Import queue'
-        return Link(target, text)
+        return Link('', text)
 
     def blocked(self):
-        target = '+blocked'
         text = 'Blocked items'
-        return Link(target, text)
+        return Link('+blocked', text)
 
 
 class TranslationImportQueueView(LaunchpadView):
@@ -180,24 +178,24 @@ class TranslationImportQueueView(LaunchpadView):
     @property
     def has_things_to_import(self):
         """Return whether there are things ready to import or not."""
-        for entry in self.getReadyToImport():
+        for entry in self.iterReadyToImport():
             return True
         return False
 
     @property
     def has_pending_reviews(self):
         """Return whether there are things pending to review or not."""
-        for entry in self.getPendingReview():
+        for entry in self.iterPendingReview():
             return True
         return False
 
-    def getReadyToImport(self):
+    def iterReadyToImport(self):
         """Iterate the entries that can be imported directly."""
         for entry in self.context.iterEntries():
             if entry.import_into is not None:
                 yield entry
 
-    def getPendingReview(self):
+    def iterPendingReview(self):
         """Iterate the entries that need manually review."""
         for entry in self.context.iterEntries():
             if entry.import_into is None:
@@ -262,16 +260,16 @@ class TranslationImportQueueView(LaunchpadView):
         # The user must be logged in.
         assert self.user is not None
 
-        actions_executed = 0
+        num_actions_executed = 0
         for id in self.form_entries:
             entry = self.context.get(id)
             action(entry)
-            actions_executed += 1
+            num_actions_executed += 1
 
         # Notifications.
-        if actions_executed > 0:
+        if num_actions_executed > 0:
             self.request.response.addInfoNotification(message_notification %
-                actions_executed)
+                num_actions_executed)
 
     def _remove(self, item):
         """Remove the given item from the queue."""

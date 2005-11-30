@@ -253,19 +253,16 @@ class RosettaContextMenu(ContextMenu):
         return Link(target, text)
 
     def about(self):
-        target = '+about'
         text = 'About Rosetta'
-        return Link(target, text)
+        return Link('+about', text)
 
     def preferences(self):
-        target = 'prefs'
         text = 'Preferences'
-        return Link(target, text)
+        return Link('prefs', text)
 
     def imports(self):
-        target = 'imports'
         text = 'Import queue'
-        return Link(target, text)
+        return Link('imports', text)
 
 
 class LoginStatus:
