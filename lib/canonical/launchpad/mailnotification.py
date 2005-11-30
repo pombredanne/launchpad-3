@@ -148,26 +148,6 @@ def notify_errors_list(message, file_alias_url):
         template % {'url': file_alias_url, 'error_msg': message})
 
 
-def add_bugmail_footer_to_body(body):
-    """Add the bugmail footer to a bugmail message body.
-
-    :body: A string of arbitrary length.
-
-    This footer is used to explain why a user is receiving this bugmail. We will
-    always make sure there is one blank line, and only one blank line, before
-    the message footer.
-    """
-    # Make sure the body always ends with exactly one blank line followed by the
-    # footer, to make it easy to read.
-    body = re.sub(r"\s*$", "\n\n", body, re.MULTILINE)
-
-    return body + (
-        "-- \n"
-        "You are receiving this message because you are on the Cc list of this "
-        "bug,\nor are a member of a team that is, or you are assigned to fix "
-        "it.")
-
-
 def generate_bug_add_email(bug):
     """Generate a new bug notification from the given IBug.
 
@@ -221,7 +201,7 @@ def generate_bug_add_email(bug):
     mailwrapper = MailWrapper(width=72)
     body += u"Description:\n%s" % mailwrapper.format(description)
 
-    body = add_bugmail_footer_to_body(body)
+    body = body.rstrip()
 
     return (subject, body)
 
@@ -428,8 +408,7 @@ def generate_bug_edit_email(bug_delta):
                     u"Assignee", assignee.name, assignee.preferredemail.email)
             body += u"%15s: %s" % (u"Status", added_bugtask.status.title)
 
-    # Append a footer that explains why the recipient is receiving this email.
-    body = add_bugmail_footer_to_body(body)
+    body = body.rstrip()
 
     return (subject, body)
 
@@ -459,7 +438,7 @@ def generate_bug_comment_email(bug_comment):
                'comment' : comment_wrapper.format(
                     bug_comment.message.contents)})
 
-    body = add_bugmail_footer_to_body(body)
+    body = body.rstrip()
 
     return (subject, body)
 
