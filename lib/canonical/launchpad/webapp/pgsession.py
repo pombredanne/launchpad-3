@@ -9,7 +9,9 @@ import psycopg
 import cPickle as pickle
 from UserDict import DictMixin
 
+from zope.component import getUtility
 from zope.interface import implements
+from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from zope.app.session.interfaces import (
         ISessionDataContainer, ISessionData, ISessionPkgData
         )
@@ -55,11 +57,12 @@ class PGSessionDataContainer:
 
     session_data_tablename = 'SessionData'
     session_pkg_data_tablename = 'SessionPkgData'
+    database_adapter_name = 'session'
 
     @property
     def cursor(self):
-        # XXX: Don't connect to the default database
-        return cursor()
+        da = getUtility(IZopeDatabaseAdapter, self.database_adapter_name)
+        return da().cursor()
 
     def __getitem__(self, client_id):
         """See zope.app.session.interfaces.ISessionDataContainer"""
