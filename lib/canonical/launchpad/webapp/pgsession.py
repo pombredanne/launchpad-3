@@ -35,7 +35,7 @@ class PGSessionDataContainer:
         last_accessed timestamp with time zone
             NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
-
+    CREATE INDEX sessiondata_last_accessed_idx ON SessionData(last_accessed);
     CREATE TABLE SessionPkgData (
         client_id  text NOT NULL REFERENCES SessionData(client_id),
         product_id text NOT NULL,
@@ -43,10 +43,6 @@ class PGSessionDataContainer:
         pickle     bytea NOT NULL,
         CONSTRAINT sessiondata_key UNIQUE (client_id, product_id, key)
         );
-
-    GRANT ALL ON SessionData TO PUBLIC;
-    GRANT ALL ON SessionPkgData TO PUBLIC;
-
     """
     implements(ISessionDataContainer)
 

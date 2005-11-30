@@ -19,10 +19,25 @@ from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
 
 __all__ = [
     'LaunchpadDatabaseAdapter',
+    'SessionDatabaseAdapter',
     'RequestExpired',
     'set_request_started',
     'clear_request_started',
     ]
+
+
+class SessionDatabaseAdapter(PsycopgAdapter):
+    """A subclass of PsycopgAdapter that stores its connection information
+    in the central launchpad configuration
+    """
+    def __init__(self, dsn=None):
+        """Ignore dsn"""
+        dbuser = config.launchpad.session.dbuser
+        dbhost = config.launchpad.session.dbhost or ''
+        dbname = config.launchpad.session.dbname
+        PsycopgAdapter.__init__(
+                self, 'dbi://%(dbuser)s:@%(dbhost)s/%(dbname)s' % vars()
+                )
 
 
 class LaunchpadDatabaseAdapter(PsycopgAdapter):
