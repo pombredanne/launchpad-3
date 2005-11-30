@@ -12,7 +12,7 @@ from canonical.librarian.storage import _relFileLocation as relative_file_path
 from canonical.librarian.storage import _sameFile
 from canonical.database.postgresql import listReferences
 
-BATCH_SIZE = 1
+BATCH_SIZE = 10
 
 log = None
 
