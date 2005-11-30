@@ -480,6 +480,12 @@ The user is a package bug contact
         Assignee: (unassigned) => No Privileges Person
     ...
 
+The user is a bug contact of a distribution
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+XXX: TBD after InitialBugContacts is implemented.
+     -- Bjorn Tillenius, 2005-11-30
+
 The user is a distribution member
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -505,6 +511,37 @@ The user is a distribution member
     ...
 
 
+No matching bug task
+^^^^^^^^^^^^^^^^^^^^
+
+If none of the bug tasks can be chosen, an error message is sent to the
+user, telling him that he has to use the 'affects' command.
+
+    >>> login('stuart.bishop@canonical.com')
+    >>> submit_commands(
+    ...     bug_one, 'status new', 'assignee foo.bar@canonical.com')
+    >>> for bugtask in bug_one.bugtasks:
+    ...     print '%s: %s, assigned to %s' % (
+    ...         bugtask.targetname, bugtask.status.title,
+    ...         getattr(bugtask.assignee, 'displayname', 'no one'))
+    firefox (upstream): Accepted, assigned to Sample Person
+    mozilla-firefox (ubuntu): New, assigned to Sample Person
+    mozilla-firefox (debian): Accepted, assigned to No Privileges Person
+
+    >>> transaction.commit()
+    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    >>> error_mail = email.message_from_string(raw_message)
+    >>> print to_addrs
+    ['stuart.bishop@canonical.com']
+
+    >>> print error_mail.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    An error...
+    ...
+    You tried to edit bug 1, but it couldn't be determined in which context
+    you wanted the changes to occur. The bug exists in 3 different contexts,
+    and you have to specify which one by using the affects command.
+    ...
+
 Error Handling
 --------------
 
@@ -512,6 +549,7 @@ If an error is encountered, an email is sent to the sender informing
 him about the error. Let's start by trying to submit a bug without
 including an 'affects' command:
 
+    >>> login('test@canonical.com')
     >>> submit_mail_no_bugtask = """From: test@canonical.com
     ... To: new@malone
     ... Date: Fri Jun 17 10:20:23 BST 2005
@@ -537,7 +575,6 @@ No bug was created, instead an error mail was sent to the submitter:
     Error message:
     ...
     The bug has to affect at least one product or distribution.
-    ...
 
 Now we try to submit a bug on a distribution that doesn't exist:
 
@@ -562,7 +599,6 @@ Again no bug was filed, and an error mail was sent:
     Error message:
     ...
     'foo' couldn't be found in command 'affects /distros/foo'
-    ...
 
 
 Let's send an empty unsigned mail to new@malone:

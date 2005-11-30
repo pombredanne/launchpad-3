@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces import (
     IDistroReleaseBugTask)
 from canonical.launchpad.mail.commands import emailcommands
 from canonical.launchpad.mailnotification import (
-    send_process_error_notification)
+    send_process_error_notification, get_email_template)
 
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectCreatedEvent)
@@ -219,6 +219,11 @@ class MaloneHandler:
                         if bugtask is None:
                             bugtask = guess_bugtask(
                                 bug, getUtility(ILaunchBag).user)
+                            if bugtask is None:
+                                raise IncomingEmailError(get_email_template(
+                                    'no-default-affects.txt') % {
+                                        'bug_id': bug.id,
+                                        'nr_of_bugtasks': len(bug.bugtasks)})
                             bugtask_snapshot = Snapshot(
                                 bugtask, providing=get_bugtask_type(bugtask))
                         ob, ob_event = command.execute(bugtask, bugtask_event)
@@ -249,7 +254,7 @@ class MaloneHandler:
         except IncomingEmailError, error:
             transaction.abort()
             send_process_error_notification(
-                signed_msg['From'],
+                getUtility(ILaunchBag).user.preferredemail.email,
                 'Submit Request Failure',
                 error.message)
 
