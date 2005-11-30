@@ -883,7 +883,7 @@ class PersonSet:
                     AND teamowner IS NULL
                     AND merged IS NULL
                     AND EmailAddress.status = %d
-                ORDER BY karma DESC, id DESC
+                ORDER BY Person.karma DESC, Person.id DESC
                 LIMIT 5
                 )
             """ % (EmailAddressStatus.PREFERRED.value,)
