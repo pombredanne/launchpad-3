@@ -101,9 +101,9 @@ class ErrorReportingService:
 
     def __init__(self):
         self.lastid_lock = threading.Lock()
-        self.lastid = self.findLastErrId()
+        self.lastid = self.findLastOopsId()
 
-    def findLastErrId(self):
+    def findLastOopsId(self):
         """Find the last error number used by this Launchpad instance
 
         The purpose of this function is to not repeat sequence numbers
@@ -111,7 +111,7 @@ class ErrorReportingService:
         """
         prefix = config.launchpad.errorreports.oops_prefix
         lastid = 0
-        for filename in os.listdir(self.errordir):
+        for filename in os.listdir(self.errordir()):
             oopsid = filename.rsplit('.', 1)[1]
             if not oopsid.startswith(prefix):
                 continue
@@ -120,13 +120,10 @@ class ErrorReportingService:
                 lastid = int(oopsid)
         return lastid
 
-    @property
-    def now(self):
-        return datetime.datetime.now(UTC)
-
-    @property
-    def errordir(self):
-        date = self.now.strftime('%Y-%m-%d')
+    def errordir(self, now=None):
+        if now is None:
+            now = datetime.datetime.now(UTC)
+        date = now.strftime('%Y-%m-%d')
         errordir = os.path.join(config.launchpad.errorreports.errordir, date)
         if date != self.lasterrordate:
             self.lastid_lock.acquire()
@@ -146,7 +143,11 @@ class ErrorReportingService:
     def newOopsId(self, now=None):
         """Returns an (oopsid, filename) pair for the next Oops ID"""
         if now is None:
-            now = self.now
+            now = datetime.datetime.now(UTC)
+        # we look up the error directory before allocating a new ID,
+        # because if the day has changed, errordir() will reset the ID
+        # counter to zero
+        errordir = self.errordir(now)
         self.lastid_lock.acquire()
         try:
             self.lastid += 1
@@ -156,14 +157,15 @@ class ErrorReportingService:
         second_in_day = now.hour * 3600 + now.minute * 60 + now.second
         oops_prefix = config.launchpad.errorreports.oops_prefix
         oops = 'OOPS-%s%d' % (oops_prefix, newid)
-        filename = os.path.join(self.errordir,
-                                '%05d.%s%s' % (second_in_day, oops_prefix,
-                                               newid))
+        filename = os.path.join(errordir, '%05d.%s%s' % (second_in_day,
+                                                         oops_prefix,
+                                                         newid))
         return oops, filename
 
-    def raising(self, info, request=None):
+    def raising(self, info, request=None, now=None):
         """See IErrorReportingService.raising()"""
-        now = self.now
+        if now is None:
+            now = datetime.datetime.now(UTC)
         try:
             tb_text = None
             tb_html = None
@@ -182,7 +184,7 @@ class ErrorReportingService:
 
             url = None
             username = None
-            req_vars = None
+            req_vars = []
 
             if request:
                 # XXX: Temporary fix, which Steve should undo. URL is
@@ -242,7 +244,8 @@ class ErrorReportingService:
                                 username, strurl, req_vars)
             entry.write(open(filename, 'wb'))
 
-            request.setOopsId(oopsid)
+            if request:
+                request.setOopsId(oopsid)
 
             if self.copy_to_zlog:
                 self._do_copy_to_zlog(now, strtype, str(url), info)
@@ -260,7 +263,7 @@ class ErrorReportingService:
 
     def getLogEntries(self):
         """See ILocalErrorReportingService.getLogEntries()"""
-        errordir = self.errordir
+        errordir = self.errordir()
         files = os.listdir(errordir)
         # since the file names start with a zero padded "second in day",
         # lexical sorting leaves them in order of occurrence.
@@ -276,7 +279,7 @@ class ErrorReportingService:
         if not id.startswith('OOPS-'):
             return None
         suffix = '.%s' % id[5:]
-        errordir = self.errordir
+        errordir = self.errordir()
         files = os.listdir(errordir)
         for filename in files:
             if filename.endswith(suffix):
