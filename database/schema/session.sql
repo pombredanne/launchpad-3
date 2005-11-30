@@ -1,4 +1,5 @@
 /* This script sets up the session database */
+SET client_min_messages=ERROR;
 
 CREATE TABLE Secret (secret text);
 INSERT INTO Secret VALUES ('thooper thpetial theqwet');
@@ -8,6 +9,8 @@ CREATE TABLE SessionData (
     last_accessed timestamp with time zone
         NOT NULL DEFAULT CURRENT_TIMESTAMP
     );
+
+CREATE INDEX sessiondata_last_accessed_idx ON SessionData(last_accessed);
 
 CREATE TABLE SessionPkgData (
     client_id  text NOT NULL REFERENCES SessionData(client_id),

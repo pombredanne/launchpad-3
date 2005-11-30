@@ -15,7 +15,7 @@
     <rdb:provideConnection
         name="session"
         component="psycopgda.adapter.PsycopgAdapter"
-        dsn="dbi://postgres:@localhost/session"
+        dsn="dbi://postgres:@localhost/launchpad_session"
         />
 
 </configure>
