@@ -93,6 +93,9 @@ def guess_bugtask(bug, person):
             elif (bugtask.distribution and
                   person.inTeam(bugtask.distribution.members)):
                 return bugtask
+            elif (bugtask.sourcepackagename and
+                  person.inTeam(bugtask.maintainer)):
+                return bugtask
 
     return None
 
