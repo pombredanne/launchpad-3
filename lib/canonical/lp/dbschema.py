@@ -1845,7 +1845,7 @@ class PackagePublishingPocket(DBSchema):
     RELEASE = Item(0, """
         Release
 
-        These are the package versions that were published
+        The package versions that were published
         when the distribution release was made.
         For releases that are still under development,
         packages are published here only.
@@ -1854,7 +1854,7 @@ class PackagePublishingPocket(DBSchema):
     SECURITY = Item(10, """
         Security
 
-        These package versions contain security fixes for the released
+        Package versions containing security fixes for the released
         distribution.
         It is a good idea to have security updates turned on for your system.
         """)
@@ -1862,7 +1862,7 @@ class PackagePublishingPocket(DBSchema):
     UPDATES = Item(20, """
         Updates
 
-        These package versions include new features after the distribution
+        Package versions including new features after the distribution
         release has been made.
         Updates are usually turned on by default after a fresh install.
         """)
@@ -1870,7 +1870,7 @@ class PackagePublishingPocket(DBSchema):
     PROPOSED = Item(30, """
         Proposed
 
-        These package versions include new functions that should be widely
+        Package versions including new functions that should be widely
         tested, but that are not yet part of a default installation.
         People who "live on the edge" will test these packages before they
         are accepted for use in "Updates".
@@ -1879,7 +1879,7 @@ class PackagePublishingPocket(DBSchema):
     BACKPORTS = Item(40, """
         Backports
 
-        This is where backported packages go.
+        Backported packages.
         """)
 
 class SourcePackageRelationships(DBSchema):
