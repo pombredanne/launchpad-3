@@ -20,7 +20,8 @@ from sqlobject import (
 from canonical.database.sqlbase import SQLBase, sqlvalues, cursor
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.launchpad.helpers import intOrZero, make_mondays_between
+from canonical.launchpad.helpers import intOrZero
+from canonical.launchpad.datetimeutils import make_mondays_between
 
 from canonical.lp.dbschema import (
         ShipItDistroRelease, ShipItArchitecture, ShipItFlavour, EnumCol,
@@ -473,7 +474,8 @@ class ShippingRequestSet:
               r3.request = shippingrequest.id AND
               r1.architecture = %s AND
               r2.architecture = %s AND
-              r3.architecture = %s
+              r3.architecture = %s AND
+              shippingrequest.cancelled = FALSE
             """ % sqlvalues(ShipItArchitecture.X86, ShipItArchitecture.AMD64,
                             ShipItArchitecture.PPC)
         cur = cursor()
