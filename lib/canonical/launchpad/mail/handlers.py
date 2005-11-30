@@ -168,6 +168,9 @@ class MaloneHandler:
         bugtask_event = None
         bugtask_snapshot = None
         try:
+            # XXX: Parts of this loop could be generalized. I'll do that
+            #      in the next patch, though.
+            #      -- Bjorn Tillenius, 2005-11-30
             while len(commands) > 0:
                 command = commands.pop(0)
                 try:

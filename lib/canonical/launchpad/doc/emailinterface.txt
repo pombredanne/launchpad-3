@@ -406,8 +406,9 @@ Let's take on the upstream task as well:
 Default 'affects' target
 ------------------------
 
-Most of the time it's not necessary to give the 'affects' command,
-though. It tries to guess which bug task the user wanted to edit.
+Most of the time it's not necessary to give the 'affects' command. If
+you omit it, the email interface  tries to guess which bug task you
+wanted to edit.
 
 If there's only one task, that task will be edited. So if we simply send
 a 'status' command to bug seven, the single upstream task will be
@@ -542,9 +543,10 @@ user, telling him that he has to use the 'affects' command.
     >>> print error_mail.get_payload() #doctest: -NORMALIZE_WHITESPACE
     An error...
     ...
-    You tried to edit bug 1, but it couldn't be determined in which context
-    you wanted the changes to occur. The bug exists in 3 different contexts,
-    and you have to specify which one by using the affects command.
+    You tried to edit bug 1 via email, but it couldn't be determined in
+    which context you wanted the changes to occur. The bug is reported in 3
+    different contexts, and you have to specify which one by using the
+    affects command.
     ...
 
 Error Handling

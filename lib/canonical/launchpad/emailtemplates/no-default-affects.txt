@@ -1,4 +1,4 @@
-You tried to edit bug %(bug_id)s, but it couldn't be determined in which context you wanted the changes to occur. The bug exists in %(nr_of_bugtasks)s different contexts, and you have to specify which one by using the affects command.
+You tried to edit bug %(bug_id)s via email, but it couldn't be determined in which context you wanted the changes to occur. The bug is reported in %(nr_of_bugtasks)s different contexts, and you have to specify which one by using the affects command.
 
 For example:
 
