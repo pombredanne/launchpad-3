@@ -13,6 +13,7 @@ from zope.interface import implements
 from zope.app.session.interfaces import (
         ISessionDataContainer, ISessionData, ISessionPkgData
         )
+from psycopgda.adapter import PG_ENCODING
 
 # XXX: This is only needed for bootstrapping. Final implementation should
 # connect via a named PsycopgDA
@@ -66,8 +67,7 @@ class PGSessionDataContainer:
                 self.session_data_tablename
                 )
         cursor = self.cursor
-        # XXX: Use connection encoding
-        cursor.execute(query.encode('UTF-8'), vars())
+        cursor.execute(query.encode(PG_ENCODING), vars())
         if cursor.fetchone()[0] == 0:
             raise KeyError(client_id)
         return PGSessionData(self, client_id)
@@ -77,8 +77,7 @@ class PGSessionDataContainer:
         query = "INSERT INTO %s (client_id) VALUES (%%(client_id)s)" % (
                 self.session_data_tablename
                 )
-        # XXX: Use connection encoding
-        client_id = client_id.encode('UTF-8')
+        client_id = client_id.encode(PG_ENCODING)
         self.cursor.execute(query, vars())
 
 
@@ -95,20 +94,17 @@ class PGSessionData:
         self.lastAccessTime = time.time()
 
         # Update the last access time in the db if it is out of date
-        # XXX: Shouldn't do this every access - cache somehow
         tablename = session_data_container.session_data_tablename
         query = """
             UPDATE %s SET last_accessed = CURRENT_TIMESTAMP
             WHERE client_id = %%s
             AND last_accessed < CURRENT_TIMESTAMP - '%d seconds'::interval
             """ % (tablename, session_data_container.resolution)
-        # XXX: Use connection encoding
-        self.cursor.execute(query, [client_id.encode('UTF-8')])
+        self.cursor.execute(query, [client_id.encode(PG_ENCODING)])
 
     @property
     def cursor(self):
-        # XXX: Don't connect to the default database
-        return cursor()
+        return self.session_data_container.cursor
 
     def __getitem__(self, product_id):
         """Return an ISessionPkgData"""
@@ -127,8 +123,7 @@ class PGSessionPkgData(DictMixin):
 
     @property
     def cursor(self):
-        # XXX: Don't connect to the default database
-        return cursor()
+        return self.session_data.cursor
 
     def __init__(self, session_data, product_id):
         self.session_data = session_data
@@ -143,17 +138,16 @@ class PGSessionPkgData(DictMixin):
                 AND product_id = %%(product_id)s AND key = %%(key)s
             """ % self.tablename
 
-        # Convert argument to UTF-8 as psycopg1 doesn't handle Unicode
-        # XXX: Use connection encoding
-        client_id = self.session_data.client_id.encode('UTF-8')
-        product_id = self.product_id.encode('UTF-8')
-        key = key.encode('UTF-8')
+        client_id = self.session_data.client_id.encode(PG_ENCODING)
+        product_id = self.product_id.encode(PG_ENCODING)
+        org_key = key
+        key = key.encode(PG_ENCODING)
 
         cursor = self.cursor
         cursor.execute(query, vars())
         row = cursor.fetchone()
         if row is None:
-            raise KeyError(key)
+            raise KeyError(org_key)
         return pickle.loads(row[0])
 
     def __setitem__(self, key, value):
@@ -168,10 +162,9 @@ class PGSessionPkgData(DictMixin):
             WHERE client_id = %%(client_id)s AND product_id = %%(product_id)s
                 AND key = %%(key)s
             """ % self.tablename
-        # XXX: Use connection encoding
-        client_id = self.session_data.client_id.encode('UTF-8')
-        product_id = self.product_id.encode('UTF-8')
-        key = key.encode('UTF-8')
+        client_id = self.session_data.client_id.encode(PG_ENCODING)
+        product_id = self.product_id.encode(PG_ENCODING)
+        key = key.encode(PG_ENCODING)
         cursor.execute(query, vars())
 
         if cursor.rowcount == 1:
@@ -190,11 +183,10 @@ class PGSessionPkgData(DictMixin):
             WHERE client_id = %%(client_id)s AND product_id = %%(product_id)s
                 AND key = %%(key)s
             """ % self.tablename
-        # XXX: Use connection encoding
-        client_id = self.session_data.client_id.encode('UTF-8')
-        product_id = self.session_data.product_id.encode('UTF-8')
+        client_id = self.session_data.client_id.encode(PG_ENCODING)
+        product_id = self.session_data.product_id.encode(PG_ENCODING)
         org_key = key
-        key = key.encode('UTF-8')
+        key = key.encode(PG_ENCODING)
         cursor = self.cursor
         cursor.execute(query, [
                 self.session_data.client_id, self.product_id, key
@@ -207,14 +199,11 @@ class PGSessionPkgData(DictMixin):
             SELECT key FROM %s WHERE client_id = %%(client_id)s
                 AND product_id = %%(product_id)s
             """ % self.tablename
-        # XXX: Use connection encoding
-        client_id = self.session_data.client_id.encode('UTF-8')
-        product_id = self.product_id.encode('UTF-8')
+        client_id = self.session_data.client_id.encode(PG_ENCODING)
+        product_id = self.product_id.encode(PG_ENCODING)
         cursor = self.cursor
         cursor.execute(query, vars())
         return [row[0] for row in cursor.fetchall()]
-
-    # XXX: Define __contains__, __iter__ and iteritems()
 
 
 data_container = PGSessionDataContainer()
