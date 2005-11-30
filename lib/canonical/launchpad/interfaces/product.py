@@ -231,7 +231,7 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
         """
 
     def newSeries(name, displayname, summary):
-        """Creates a new ProductSeries for this series."""
+        """Creates a new ProductSeries for this product."""
 
     def getSeries(name):
         """Returns the series for this product that has the name given, or
@@ -247,6 +247,10 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
     def ensureRelatedBounty(bounty):
         """Ensure that the bounty is linked to this product. Return None.
         """
+
+    def newBranch(name, title, url, home_page, lifecycle_status, summary,
+                  whiteboard):
+        """Create a new Branch for this product."""
 
 
 class IProductSet(Interface):

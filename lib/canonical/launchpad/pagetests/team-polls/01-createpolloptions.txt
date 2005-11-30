@@ -1,4 +1,4 @@
-
+  Let's add a new option for the dpl-2080 poll we've just created.
 
   >>> print http(r"""
   ... GET /people/name17/+poll/dpl-2080/+newoption HTTP/1.1
@@ -8,6 +8,8 @@
   ...
 
 
+  First, go to the +newoption page.
+
   >>> print http(r"""
   ... GET /people/name17/+poll/dpl-2080/+newoption HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
@@ -15,6 +17,8 @@
   HTTP/1.1 200 Ok
   ...Add a Poll Option...
 
+
+  And now, actually add the option.
 
   >>> print http(r"""
   ... POST /people/name17/+poll/dpl-2080/+newoption HTTP/1.1
@@ -41,6 +45,9 @@
   ...
 
 
+  And here we see the option listed as one of the active options for this
+  poll.
+
   >>> print http(r"""
   ... GET /people/name17/+poll/dpl-2080/+options HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
@@ -50,4 +57,34 @@
   ...Options...
   ...Bill amazingly-huge-middle-name-almost-impossible-to-read Graham...
   ...
+
+
+  If we try to add a new option without providing a title, we'll get an error
+  message because the title is required.
+
+  >>> print http(r"""
+  ... POST /people/name17/+poll/dpl-2080/+newoption HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------787692318512460570977813785
+  ... 
+  ... -----------------------------787692318512460570977813785
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... Will amazingly-huge-middle-name-almost-impossible-to-read Graham
+  ... -----------------------------787692318512460570977813785
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... 
+  ... -----------------------------787692318512460570977813785
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------787692318512460570977813785--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...An error occured...
+  ...Required input is missing...
+  ...
+
 

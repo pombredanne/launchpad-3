@@ -46,24 +46,6 @@
       </form>
     </div>
 
-    <div tal:condition="view/successfullyProcessed">
-      <h1>Merge User Accounts</h1>
-
-      <div tal:condition="not: view/mergeCompleted">
-        <p>The email address <em><span tal:replace="context/email" /></em> have
-        been assigned to you, but the dupe account you selected still have
-        more registered email addresses. In order to actually complete the
-        merge, you have to prove that you have access to all email addresses of
-        that account.</p>
-      </div>
-
-      <div tal:condition="view/mergeCompleted">
-        <p>The merge you requested was concluded with success. Now, everything
-        that was owned by the duplicated account should be owned by your user
-        account.</p>
-      </div>
-    </div>
-
 </div>
 
 </body>

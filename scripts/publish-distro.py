@@ -137,7 +137,8 @@ dp.scan()
 
 debug("Preparing publisher.")
 
-pub = Publisher(logging.getLogger("Publisher"), pubconf, dp, distro)
+#pub = Publisher(logging.getLogger("Publisher"), pubconf, dp, distro)
+pub = Publisher(log, pubconf, dp, distro)
 
 try:
     # main publishing section

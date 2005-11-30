@@ -81,4 +81,3 @@ class IDistributionSourcePackage(ITicketTarget, IBugTarget):
         Distro sourcepackages compare not equal if either of their distribution
         or sourcepackagename compare not equal.
         """
-

@@ -20,7 +20,6 @@ __all__ = [
     'AdvancedBugTaskSearchView',
     'BugTargetView',
     'BugTaskView',
-    'BUGTASK_STATUS_OPEN',
     'BugTaskReleaseTargetingView',
     'get_sortorder_from_request']
 
@@ -43,19 +42,13 @@ from canonical.launchpad.interfaces import (
     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, IPerson,
     INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
     NotFoundError, IDistributionSourcePackage, ISourcePackage,
-    IPersonBugTaskSearch)
+    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
 from canonical.launchpad.components.bugtask import NullBugTask
-
-# This shortcut constant indicates what we consider "open"
-# (non-terminal) states. XXX: should this be centralized elsewhere?
-#       -- kiko, 2005-08-23
-BUGTASK_STATUS_OPEN = [dbschema.BugTaskStatus.NEW,
-                       dbschema.BugTaskStatus.ACCEPTED]
 
 def get_sortorder_from_request(request):
     """Get the sortorder from the request."""
@@ -377,12 +370,13 @@ class BugTaskReleaseTargetingView:
                     releasename)
 
             user = getUtility(ILaunchBag).user
+            assert user is not None, 'Not logged in'
             getUtility(IBugTaskSet).createTask(
                     bug=bug, owner=user, distrorelease=release,
                     sourcepackagename=spname)
 
         # Redirect the user back to the task form.
-        self.request.response.redirect(canonical_url(bugtask)) 
+        self.request.response.redirect(canonical_url(bugtask))
 
 
 class BugTaskEditView(SQLObjectEditView):
@@ -734,7 +728,8 @@ class AssignedBugTasksView(BugTaskSearchListingView):
     """All open bugs assigned to someone."""
 
     def getExtraSearchParams(self):
-        return {'status': any(*BUGTASK_STATUS_OPEN), 'assignee': self.user}
+        return {'status': any(*UNRESOLVED_BUGTASK_STATUSES),
+                'assignee': self.user}
 
     def doNotShowAssignee(self):
         """Should we not show the assignee in the list of results?"""
@@ -745,14 +740,14 @@ class OpenBugTasksView(BugTaskSearchListingView):
     """All open bugs."""
 
     def getExtraSearchParams(self):
-        return {'status': any(*BUGTASK_STATUS_OPEN)}
+        return {'status': any(*UNRESOLVED_BUGTASK_STATUSES)}
 
 
 class CriticalBugTasksView(BugTaskSearchListingView):
     """All open critical bugs."""
 
     def getExtraSearchParams(self):
-        return {'status': any(*BUGTASK_STATUS_OPEN),
+        return {'status': any(*UNRESOLVED_BUGTASK_STATUSES),
                 'severity': dbschema.BugTaskSeverity.CRITICAL}
 
 
@@ -770,7 +765,7 @@ class UnassignedBugTasksView(BugTaskSearchListingView):
     """All open bugs that don't have an assignee."""
 
     def getExtraSearchParams(self):
-        return {'status': any(*BUGTASK_STATUS_OPEN), 'assignee': NULL}
+        return {'status': any(*UNRESOLVED_BUGTASK_STATUSES), 'assignee': NULL}
 
 
 class AdvancedBugTaskSearchView(BugTaskSearchListingView):
@@ -797,7 +792,7 @@ class AdvancedBugTaskSearchView(BugTaskSearchListingView):
         if attachmenttype:
             search_params['attachmenttype'] = any(*attachmenttype)
 
-        statuses = form_params.get("status", BUGTASK_STATUS_OPEN)
+        statuses = form_params.get("status", UNRESOLVED_BUGTASK_STATUSES)
         if statuses is not None:
             search_params['status'] = any(*statuses)
 

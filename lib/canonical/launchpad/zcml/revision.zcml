@@ -1,0 +1,15 @@
+<configure xmlns="http://namespaces.zope.org/zope">
+
+    <content class="canonical.launchpad.database.Revision">
+        <allow interface="canonical.launchpad.interfaces.IRevision"/>
+        <require permission="zope.Public"
+            set_attributes="revision" />
+    </content>
+
+    <content class="canonical.launchpad.database.RevisionAuthor">
+        <allow interface="canonical.launchpad.interfaces.IRevisionAuthor"/>
+        <require permission="zope.Public"
+            set_attributes="revisionauthor" />
+    </content>
+
+</configure>

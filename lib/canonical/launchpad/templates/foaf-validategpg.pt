@@ -42,15 +42,6 @@
       </form>
     </div>
 
-    <tal:success condition="view/successfullyProcessed">
-      <h1>Your GPG key has been confirmed successfully.</h1>
-
-      <div tal:condition="view/infomessage" class="portalMessage"
-           tal:content="structure view/infomessage">
-      </div>
-      
-    </tal:success>
-
 </div>
 
 

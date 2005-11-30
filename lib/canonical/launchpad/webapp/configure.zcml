@@ -337,6 +337,19 @@
         template="../templates/rdf-macros.pt"
         />
 
+    <content
+        class="canonical.launchpad.webapp.adapter.LaunchpadDatabaseAdapter">
+        <factory id="zope.da.LaunchpadDA" />
+        <require
+            permission="zope.app.rdb.Use"
+            interface="zope.app.rdb.interfaces.IZopeDatabaseAdapter"
+            />
+        <require
+            permission="zope.ManageServices"
+            interface="zope.app.rdb.interfaces.IZopeDatabaseAdapterManagement"
+            />
+    </content>
+
     <!-- LaunchpadBrowserResponse needs to be able to find the session -->
     <adapter
         for="canonical.launchpad.webapp.LaunchpadBrowserResponse"

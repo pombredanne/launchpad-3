@@ -30,39 +30,13 @@
       Distribution Summary
   </p>
 
-  <table width="100%" class="listing">
-    <thead>
-      <tr>
-        <th>Release</th>
-        <th>Title</th>
-        <th>Version</th>
-        <th>Status</th>
-      </tr>
-    </thead>
-    <tbody>
-      <tr tal:repeat="release context/releases">
-        <td tal:content="release/displayname">displayname</td>
-        <td><a tal:content="release/title"
-               tal:attributes="href string:${release/name}">
-               distribution name</a>
-        </td>
-        <td tal:content="release/version">VERSION</td>
-        <td tal:content="release/releasestatus/title">RELEASESTATE</td>
-      </tr>
-    </tbody>
-  </table>
-
-    <i tal:condition="not: context/releases">
-      No releases yet.
-    </i>
-
   <div class="highlighted" style="font-size: 80%;">
     <p tal:replace="structure context/description/fmt:text-to-html">
         Distribution description
     </p>
   </div>
 
-  <h2>Search Source Packages</h2>
+  <h2>Source Packages in <span tal:replace="context/title"/></h2>
 
   <form name="search" action="+search" method="GET">
   

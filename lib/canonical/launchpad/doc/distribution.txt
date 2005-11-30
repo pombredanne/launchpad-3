@@ -27,11 +27,31 @@ To retrieve a specific distribution, use IDistributionSet.get:
 Once you've got a distribution, you can retrieve a source package if you
 have a SourcePackageName object for it.
 
-    >>> from canonical.launchpad.database.sourcepackagename import SourcePackageName
+    >>> from canonical.launchpad.database.sourcepackagename import (
+    ...                                          SourcePackageName)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSourcePackage,
+    ...     IDistributionSourcePackageRelease)
+
     >>> evo = SourcePackageName.byName("evolution")
     >>> evo_ubuntu = ubuntu.getSourcePackage(evo)
     >>> print evo_ubuntu.name
     evolution
+  
+    >>> IDistributionSourcePackage.providedBy(evo_ubuntu)
+    True
+
+    >>> from canonical.launchpad.database.sourcepackagerelease import (
+    ...                                           SourcePackageRelease)
+    >>> sourcepackagerelease = SourcePackageRelease.selectOneBy(
+    ...     sourcepackagenameID=evo.id, version='1.0')
+    >>> sourcepackagerelease.name
+    u'evolution'
+
+    >>> evo_ubuntu_rel = ubuntu.getSourcePackageRelease(
+    ...                    sourcepackagerelease)
+    >>> IDistributionSourcePackageRelease.providedBy(evo_ubuntu_rel)
+    True
 
 You can also get a release by name:
 
