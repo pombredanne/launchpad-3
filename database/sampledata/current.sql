@@ -1481,11 +1481,11 @@ INSERT INTO karma (id, datecreated, person, "action") VALUES (13, '2025-08-10 16
 INSERT INTO karma (id, datecreated, person, "action") VALUES (14, '2025-08-10 16:30:47.448639', 12, 9);
 INSERT INTO karma (id, datecreated, person, "action") VALUES (15, '2025-10-14 15:12:29.602117', 16, 1);
 INSERT INTO karma (id, datecreated, person, "action") VALUES (16, '2025-10-14 15:12:29.602117', 16, 1);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (17, '2005-10-28 09:10:17.13237', 12, 1);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (18, '2005-10-28 09:10:47.344393', 16, 17);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (19, '2005-10-28 09:11:07.93721', 16, 8);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (20, '2005-11-02 15:14:22.177596', 12, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (21, '2005-11-02 15:14:22.177596', 12, 22);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (17, '2030-10-28 09:10:17.13237', 12, 1);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (18, '2030-10-28 09:10:47.344393', 16, 17);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (19, '2030-10-28 09:11:07.93721', 16, 8);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (20, '2030-11-02 15:14:22.177596', 12, 22);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (21, '2030-11-02 15:14:22.177596', 12, 22);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'karma'::pg_catalog.regclass;
