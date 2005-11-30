@@ -90,6 +90,9 @@ def guess_bugtask(bug, person):
         for bugtask in bug.bugtasks:
             if bugtask.product and is_maintainer(bugtask.product, person):
                 return bugtask
+            elif (bugtask.distribution and
+                  person.inTeam(bugtask.distribution.members)):
+                return bugtask
 
     return None
 

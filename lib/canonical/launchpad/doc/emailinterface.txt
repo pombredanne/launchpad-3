@@ -436,17 +436,15 @@ The user is a bug contact of the upstream product
 
     >>> login('test@canonical.com')
     >>> bug_one = getUtility(IBugSet).get(1)
-    >>> len(bug_one.bugtasks)
-    3
     >>> submit_commands(
     ...     bug_one, 'status accepted', 'assignee test@canonical.com')
     >>> for bugtask in bug_one.bugtasks:
-    ...   if bugtask.product and bugtask.product.name == 'firefox':
-    ...       firefox_task = bugtask
-    >>> print firefox_task.status.name
-    ACCEPTED
-    >>> print firefox_task.assignee.preferredemail.email
-    test@canonical.com
+    ...     print '%s: %s, assigned to %s' % (
+    ...         bugtask.targetname, bugtask.status.title,
+    ...         getattr(bugtask.assignee, 'displayname', 'no one'))
+    firefox (upstream): Accepted, assigned to Sample Person
+    mozilla-firefox (ubuntu): New, assigned to no one
+    mozilla-firefox (debian): Accepted, assigned to no one
 
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
@@ -456,6 +454,30 @@ The user is a bug contact of the upstream product
     Public bug report changed:
     ...
         Status: New => Accepted
+    ...
+
+The user is a distribution bug contact
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    >>> login('foo.bar@canonical.com')
+    >>> submit_commands(
+    ...     bug_one, 'status accepted', 'assignee test@canonical.com')
+    >>> for bugtask in bug_one.bugtasks:
+    ...     print '%s: %s, assigned to %s' % (
+    ...         bugtask.targetname, bugtask.status.title,
+    ...         getattr(bugtask.assignee, 'displayname', 'no one'))
+    firefox (upstream): Accepted, assigned to Sample Person
+    mozilla-firefox (ubuntu): Accepted, assigned to Sample Person
+    mozilla-firefox (debian): Accepted, assigned to no one
+
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> print msg['Subject']
+    [Bug 1]...
+    >>> print msg.get_payload(decode=True)
+    Public bug report changed:
+    ...
+        Assignee: (unassigned) => Sample Person
     ...
 
 
