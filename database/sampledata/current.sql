@@ -7777,7 +7777,7 @@ INSERT INTO potranslation (id, translation) VALUES (643, 'Bitte setzen Sie Ihre 
 INSERT INTO potranslation (id, translation) VALUES (644, ' caratas');
 INSERT INTO potranslation (id, translation) VALUES (648, ' Srprise! (non-editor)');
 INSERT INTO potranslation (id, translation) VALUES (649, ' bang bang in evo hoary');
-INSERT INTO potranslation (id, translation) VALUES (652, 'This is a suggestion added by a non-editor for a multiline entry.
+INSERT INTO potranslation (id, translation) VALUES (652, 'This is a suggestion added by a non-editor for a multiline entry, and it happens to have a very long first line.
 It should work! :-P');
 
 

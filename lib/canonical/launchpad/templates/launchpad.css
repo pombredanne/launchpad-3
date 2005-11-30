@@ -119,6 +119,7 @@ pre {
     border: 1px dashed #8cacbb;
     color: Black;
     background-color: #dee7ec;
+    max-width: 100%;
     overflow: auto;
 }
 table {
