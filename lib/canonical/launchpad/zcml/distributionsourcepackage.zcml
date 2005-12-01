@@ -9,6 +9,9 @@
   <content class="canonical.launchpad.database.DistributionSourcePackage">
     <allow
       interface="canonical.launchpad.interfaces.IDistributionSourcePackage" />
+    <require
+      permission="launchpad.AnyPerson"
+      set_attributes="bugcontact" />
   </content>
 
   <browser:defaultView
@@ -28,7 +31,8 @@
 
   <browser:menus
     module="canonical.launchpad.browser.distributionsourcepackage"
-    classes="DistributionSourcePackageFacets"
+    classes="DistributionSourcePackageFacets
+             DistributionSourcePackageOverviewMenu"
     />
 
   <browser:pages

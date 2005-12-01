@@ -17,14 +17,15 @@ from canonical.launchpad.interfaces import IDistributionSourcePackage
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
-from canonical.launchpad.database.distributionsourcepackagecache import \
-    DistributionSourcePackageCache
-from canonical.launchpad.database.distributionsourcepackagerelease import \
-    DistributionSourcePackageRelease
-from canonical.launchpad.database.publishing import \
-    SourcePackagePublishingHistory
-from canonical.launchpad.database.sourcepackagerelease import \
-    SourcePackageRelease
+from canonical.launchpad.database.distributionsourcepackagecache import (
+    DistributionSourcePackageCache)
+from canonical.launchpad.database.distributionsourcepackagerelease import (
+    DistributionSourcePackageRelease)
+from canonical.launchpad.database.packagebugcontact import PackageBugContact
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishingHistory)
+from canonical.launchpad.database.sourcepackagerelease import (
+    SourcePackageRelease)
 from canonical.launchpad.database.ticket import Ticket
 from sourcerer.deb.version import Version
 from canonical.launchpad.helpers import shortlist
@@ -117,6 +118,11 @@ class DistributionSourcePackage:
                             self.sourcepackagename.id),
             orderBy='-datecreated',
             limit=quantity)
+
+    def bugcontact(self, value=None):
+        pass
+
+    bugcontact = property(bugcontact, bugcontact)
 
     @property
     def binary_package_names(self):

@@ -36,7 +36,10 @@ class DistributionSourcePackageOverviewMenu(ApplicationMenu):
 
     usedfor = IDistributionSourcePackage
     facet = 'overview'
-    links = []
+    links = ['editbugcontact']
+
+    def editbugcontact(self):
+        return Link('+editbugcontact', 'Edit Bug Contact', icon='edit')
 
 
 class DistributionSourcePackageNavigation(GetitemNavigation,

@@ -1,0 +1,63 @@
+Distribution Source Packages
+============================
+
+A distribution source package represents a named source package in a
+distribution, independant of any particular release of that source
+package.
+
+This is useful for, among other things, tracking bugs in source
+packages, ensuring that bug reports automatically carry forward from one
+distribution release to the next.
+
+Fetching a Distribution Source Package
+======================================
+
+A common way to fetch a distribution source package is to start with the
+distribution object:
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+
+    >>> debian = getUtility(IDistributionSet).getByName("debian")
+
+Call IDistribution.getSourcePackage to get a specific package by name:
+
+    >>> debian_firefox = debian.getSourcePackage("mozilla-firefox")
+    >>> debian_firefox.name
+    u'mozilla-firefox'
+
+Package Bug Contact
+===================
+
+The package bug contact is the person or team that will be explicitly
+Cc'd to all public bugs filed on the package.
+
+Distribution source packages don't actually have an associated database
+table (i.e. there is no "DistributionSourcePackage" relation.) This
+information is extrapolated from other tables. The package bug contact
+is obtained from looking at the PackageBugContact table. It is accessed
+and set via the IDistributionSourcePackage.bugcontact property.
+
+Let's have a look at some examples:
+
+    >>> debian_firefox.bugcontact is None
+    True
+
+You have to be logged in to set the bugcontact:
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> sample_person = getUtility(IPersonSet).get(12)
+
+    >>> debian_firefox.bugcontact = sample_person
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ...
+
+Let's login then to set the bugcontact:
+
+    >>> from canonical.launchpad.ftests import login
+    >>> login("foo.bar@canonical.com")
+
+    >>> debian_firefox.bugcontact = sample_person
+    >>> debian_firefox.bugcontact == sample_person
+    True

@@ -25,26 +25,32 @@ class IDistributionSourcePackage(ITicketTarget, IBugTarget):
     # XXX sabdfl 16/10/2005
     distro = Attribute("The distribution.")
 
-    by_distroreleases = Attribute("Return a list of "
-        "DistroReleaseSourcePackage "
-        "objects, each representing this same source package in the "
-        "releases of this distribution.")
+    by_distroreleases = Attribute(
+        "Return a list of DistroReleaseSourcePackage objects, each "
+        "representing this same source package in the releases of this "
+        "distribution.")
 
     subscribers = Attribute("The subscribers to this package.")
 
-    currentrelease = Attribute("""The latest published SourcePackageRelease
-        of a source package with this name in the distribution or
-        distrorelease, or None if no source package with that name is
-        published in this distrorelease.""")
+    currentrelease = Attribute(
+        "The latest published SourcePackageRelease of a source package with "
+        "this name in the distribution or distrorelease, or None if no source "
+        "package with that name is published in this distrorelease.")
 
-    releases = Attribute("The list of all releases of this source "
+    releases = Attribute(
+        "The list of all releases of this source package in this distribution.")
+
+    publishing_history = Attribute(
+        "Return a list of publishing records for this source package in this "
+        "distribution.")
+
+    binary_package_names = Attribute(
+        "A string of al the binary package names associated with this source "
         "package in this distribution.")
 
-    publishing_history = Attribute("Return a list of publishing "
-        "records for this source package in this distribution.")
-
-    binary_package_names = Attribute("A string of al the binary package "
-        "names associated with this source package in this distribution.")
+    bugcontact = Attribute(
+        "The person or team that is explicitly Cc'd to all public bugs filed "
+        "on this package.")
 
     def subscribe(person):
         """Subscribe a person to this package.

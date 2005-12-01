@@ -1,0 +1,22 @@
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+
+"""Database API for the PackageBugContact table."""
+
+__metaclass__ = type
+
+from sqlobject import ForeignKey
+from canonical.database.sqlbase import SQLBase
+
+class PackageBugContact(SQLBase):
+    """Database class for the package bug contact.
+
+    This class is purely an implementation detail behind
+    IDistributionSourcePackage.bugcontact. This class should otherwise never be
+    imported and/or used directly.
+    """
+    distribution = ForeignKey(
+        dbName="distribution", notNull=True, foreignKey="Distribution")
+    sourcepackagename = ForeignKey(
+        dbName="distribution", notNull=True, foreignKey="SourcePackageName")
+    bugcontact = ForeignKey(
+        dbName="distribution", notNull=True, foreignKey="Person")
