@@ -46,11 +46,24 @@
       Traceback (text)
     </pre>
 
-    <div tal:condition="entry/req_html">
+    <div tal:condition="entry/req_vars">
 
       <h1 i18n:translate="">Request</h1>
 
-      <div tal:replace="structure entry/req_html"></div>
+      <table class="listing">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="row entry/req_vars">
+            <td tal:content="python:row[0]">Name</td>
+            <td tal:content="python:row[1]">Value</td> 
+         </tr>
+        </tbody>
+      </table>
 
     </div>
 

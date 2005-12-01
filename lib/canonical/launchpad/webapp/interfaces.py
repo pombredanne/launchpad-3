@@ -234,7 +234,6 @@ class IErrorReport(Interface):
     username = Attribute('the user associated with the request')
     url = Attribute('the URL for the failed request')
     req_vars = Attribute('the request variables')
-    req_html = Attribute('the request variables, as HTML')
 
 
 class IErrorReportRequest(Interface):

@@ -53,17 +53,6 @@ class ErrorReport:
         self.url = url
         self.req_vars = req_vars
 
-    @property
-    def req_html(self):
-        result = ['<table class="listing">',
-                  '<thead><tr><th>Name</th><th>Value</th></tr></thead>'
-                  '<tbody>']
-        
-        for key, value in self.req_vars:
-            result.append('<tr><td>%s</td><td>%s</td></tr>' % (key, value))
-        result.append('</tbody></table>')
-        return '\n'.join(result)
-
     def __repr__(self):
         return '<ErrorReport %s>' % self.id
 
