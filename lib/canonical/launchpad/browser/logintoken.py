@@ -12,6 +12,7 @@ __all__ = [
     ]
 
 import urllib
+import pytz
 
 from zope.component import getUtility
 from zope.event import notify
@@ -23,13 +24,16 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.lp.dbschema import EmailAddressStatus, LoginTokenType
 from canonical.lp.dbschema import GPGKeyAlgorithm
 
+from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logInPerson
 from canonical.launchpad.webapp import canonical_url, GetitemNavigation
 
 from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, IPasswordEncryptor, ILoginTokenSet,
-    IGPGKeySet, IGPGHandler)
+    IGPGKeySet, IGPGHandler, GPGVerificationError)
+
+UTC = pytz.timezone('UTC')
 
 
 class LoginTokenSetNavigation(GetitemNavigation):
@@ -50,7 +54,9 @@ class LoginTokenView:
              LoginTokenType.NEWACCOUNT: '+newaccount',
              LoginTokenType.VALIDATEEMAIL: '+validateemail',
              LoginTokenType.VALIDATETEAMEMAIL: '+validateteamemail',
-             LoginTokenType.VALIDATEGPG: '+validategpg'}
+             LoginTokenType.VALIDATEGPG: '+validategpg',
+             LoginTokenType.VALIDATESIGNONLYGPG: '+validatesignonlygpg',
+             }
 
     def __init__(self, context, request):
         self.context = context
@@ -67,11 +73,20 @@ class BaseLoginTokenView:
         self.request = request
         self.context = context
         self.errormessage = ""
-        self.formProcessed = False
+        self.successfullyProcessed = False
 
-    def successfullyProcessed(self):
-        """Return True if the form was processed without any errors."""
-        return self.formProcessed and not self.errormessage
+    def success(self, message):
+        """Indicate to the user that the token has been successfully processed.
+
+        This involves adding a notification message, and redirecting the
+        user to their Launchpad page.
+        """
+        assert not self.errormessage, \
+               'token processing can not succeed with an error message set'
+        self.successfullyProcessed = True
+        self.request.response.addInfoNotification(message)
+        self.request.response.redirect(canonical_url(
+                self.context.requester))
 
     def validateRequesterPassword(self, password):
         """Return True if <password> is the same as the requester's password.
@@ -150,23 +165,18 @@ class ResetPasswordView(BaseLoginTokenView):
         encryptor = getUtility(IPasswordEncryptor)
         password = encryptor.encrypt(password)
         naked_person.password = password
-        self.formProcessed = True
         self.context.destroySelf()
-
-        # Need to flush all changes we made, so subsequent queries we make
-        # with this transaction will see this changes and thus they'll be
-        # displayed on the page that calls this method.
-        flush_database_updates()
 
         if form.get('logmein'):
             self.logInPersonByEmail(self.context.email)
+
+        self.success(_('Your password has been reset successfully'))
 
 
 class ValidateEmailView(BaseLoginTokenView):
 
     def __init__(self, context, request):
         BaseLoginTokenView.__init__(self, context, request)
-        self.infomessage = ""
 
     def processForm(self):
         """Process the action specified by the LoginToken.
@@ -177,19 +187,24 @@ class ValidateEmailView(BaseLoginTokenView):
         if self.request.method != "POST":
             return
 
-        self.formProcessed = True
-        if (self.context.tokentype == LoginTokenType.VALIDATEEMAIL or
-            self.context.tokentype == LoginTokenType.VALIDATEGPG):
-            password = self.request.form.get("password")
-            if not self.validateRequesterPassword(password):
-                return
-
-            if self.context.tokentype == LoginTokenType.VALIDATEEMAIL:
-                self.markEmailAddressAsValidated()
-            else:
-                self.validateGpg()
-        elif self.context.tokentype == LoginTokenType.VALIDATETEAMEMAIL:
+        if self.context.tokentype == LoginTokenType.VALIDATETEAMEMAIL:
             self.setTeamContactAddress()
+            if not self.errormessage:
+                self.success(_('Contact email address validated successfully'))
+            return
+
+        password = self.request.form.get("password")
+        if not self.validateRequesterPassword(password):
+            return
+
+        if self.context.tokentype == LoginTokenType.VALIDATEEMAIL:
+            self.markEmailAddressAsValidated()
+            if not self.errormessage:
+                self.success(_('Email address successfully confirmed'))
+        elif self.context.tokentype == LoginTokenType.VALIDATEGPG:
+            self.validateGpg()
+        elif self.context.tokentype == LoginTokenType.VALIDATESIGNONLYGPG:
+            self.validateSignOnlyGpg()
 
     def setTeamContactAddress(self):
         """Set the new email address as the team's contact email address.
@@ -239,14 +254,83 @@ class ValidateEmailView(BaseLoginTokenView):
             self.logInPersonByEmail(self.context.requesteremail)
 
         requester = self.context.requester
+
+        # retrieve respective key info
+        key = self._getGPGKey()
+        if not key:
+            return
+
+        self._activateGPGKey(key, can_encrypt=True)
+
+    def validateSignOnlyGpg(self):
+        """Validate a gpg key."""
+        if self.request.form.get('logmein'):
+            self.logInPersonByEmail(self.context.requesteremail)
+
+        requester = self.context.requester
+        person_url = canonical_url(requester)
+
+        logintokenset = getUtility(ILoginTokenSet)
+        gpghandler = getUtility(IGPGHandler)
+
+        # retrieve respective key info
+        key = self._getGPGKey()
+        if not key:
+            return
+
+        fingerprint = self.context.fingerprint
+
+        # verify the signed content
+        signedcontent = self.request.form.get('signedcontent', '')
+        try:
+            signature = gpghandler.getVerifiedSignature(
+                signedcontent.encode('ASCII'))
+        except (GPGVerificationError, UnicodeEncodeError), e:
+            self.errormessage = (
+                'Launchpad could not verify your signature: %s'
+                % str(e))
+            return
+
+        if signature.fingerprint != fingerprint:
+            self.errormessage = (
+                'The key used to sign the content (%s) is not the key '
+                'you were registering' % signature.fingerprint)
+            return
+            
+        # we compare the word-splitted content to avoid failures due
+        # to whitepace differences.
+        if signature.plain_data.split() != self.validationphrase.split():
+            self.errormessage = (
+                'The signed content does not match the message found '
+                'in the email.')
+            return
+
+        self._activateGPGKey(key, can_encrypt=False)
+
+    @property
+    def validationphrase(self):
+        """The phrase used to validate sign-only GPG keys"""
+        utctime = self.context.created.astimezone(UTC)
+        return 'Please register %s to the\nLaunchpad user %s.  %s UTC' % (
+            self.context.fingerprint, self.context.requester.name,
+            utctime.strftime('%Y-%m-%d %H:%M:%S'))
+
+
+    def _getGPGKey(self):
+        """Look up the PGP key for this login token.
+
+        If the key can not be retrieved from the keyserver, the key
+        has been revoked or expired, None is returned and
+        self.errormessage is set appropriately.
+        """
+        logintokenset = getUtility(ILoginTokenSet)
+        gpghandler = getUtility(IGPGHandler)
+
+        requester = self.context.requester
         fingerprint = self.context.fingerprint
         assert fingerprint is not None
 
-        gpgkeyset = getUtility(IGPGKeySet)
-        logintokenset = getUtility(ILoginTokenSet)
-
         # retrieve respective key info
-        gpghandler = getUtility(IGPGHandler)
         result, key = gpghandler.retrieveKey(fingerprint)
 
         person_url = canonical_url(requester)
@@ -259,7 +343,7 @@ class ValidateEmailView(BaseLoginTokenView):
                 'gpg --fingerprint YOU</kdb>). Try later or '
                 '<a href="%s/+editgpgkeys">cancel your request</a>.'
                 % (key, person_url))
-            return
+            return None
 
         # if key is globally revoked skip import and remove token
         if key.revoked:
@@ -271,7 +355,7 @@ class ValidateEmailView(BaseLoginTokenView):
                 'the new key.' % (key.keyid, person_url))
             logintokenset.deleteByFingerprintAndRequester(fingerprint,
                                                           requester)
-            return
+            return None
 
         if key.expired:
             self.errormessage = (
@@ -282,39 +366,45 @@ class ValidateEmailView(BaseLoginTokenView):
                 'the new key.' % (key.keyid, person_url))
             logintokenset.deleteByFingerprintAndRequester(fingerprint,
                                                           requester)
-            return
+            return None
+
+        return key
+
+    def _activateGPGKey(self, key, can_encrypt):
+        logintokenset = getUtility(ILoginTokenSet)
+        gpgkeyset = getUtility(IGPGKeySet)
+
+        fingerprint = key.fingerprint
+        requester = self.context.requester
+        person_url = canonical_url(requester)
 
         # Is it a revalidation ?
         lpkey = gpgkeyset.getByFingerprint(fingerprint)
 
         if lpkey:
-            gpgkeyset.activateGPGKey(lpkey.id)
-            self.infomessage = (
-                'The key %s was successfully revalidated. '
-                '<a href="%s/+editgpgkeys">See more Information</a>'
-                % (lpkey.displayname, person_url))
-            self.formProcessed = True
-
+            lpkey.active = True
+            lpkey.can_encrypt = can_encrypt
+            self.success('The key %s was successfully revalidated. '
+                         '<a href="%s/+editgpgkeys">See more Information</a>'
+                         % (lpkey.displayname, person_url))
             logintokenset.deleteByFingerprintAndRequester(fingerprint,
                                                           requester)
             return
 
         # Otherwise prepare to add
         ownerID = self.context.requester.id
-        fingerprint = key.fingerprint
         keyid = key.keyid
         keysize = key.keysize
         algorithm = GPGKeyAlgorithm.items[key.algorithm]
 
         # Add new key in DB. See IGPGKeySet for further information
-        lpkey = gpgkeyset.new(ownerID, keyid, fingerprint, keysize, algorithm)
+        lpkey = gpgkeyset.new(ownerID, keyid, fingerprint, keysize, algorithm,
+                              can_encrypt=can_encrypt)
 
         logintokenset.deleteByFingerprintAndRequester(fingerprint, requester)
 
-        self.infomessage = (
+        infomessage = (
             "The key %s was successfully validated. " % (lpkey.displayname))
-
-        self.formProcessed = True
 
         guessed, hijacked = self._guessGPGEmails(key.emails)
 
@@ -322,8 +412,8 @@ class ValidateEmailView(BaseLoginTokenView):
             # build email list
             emails = ' '.join([email.email for email in guessed]) 
 
-            self.infomessage += (
-                '<p>Some e-mail addresses were found in your key but are '
+            infomessage += (
+                '<p>Some email addresses were found in your key but are '
                 'not registered with Launchpad:<code>%s</code>. If you '
                 'want to use these addressess with Launchpad, you need to '
                 '<a href="%s/+editemails\">confirm them</a>.</p>'
@@ -332,7 +422,7 @@ class ValidateEmailView(BaseLoginTokenView):
         if len(hijacked):
             # build email list
             emails = ' '.join([email.email for email in hijacked]) 
-            self.infomessage += (
+            infomessage += (
                 "<p>Also some of them were registered into another "
                 "account(s):<code>%s</code>. Those accounts, probably "
                 "already belong to you, in this case you should be able to "
@@ -340,6 +430,8 @@ class ValidateEmailView(BaseLoginTokenView):
                 "current account.</p>"
                 % emails
                 )
+
+        self.success(infomessage)
 
     def _guessGPGEmails(self, uids):
         """Figure out which emails from the GPG UIDs are unknown in LP
@@ -387,7 +479,7 @@ class ValidateEmailView(BaseLoginTokenView):
                 # -- Guilherme Salgado 2005-07-09
                 url = '/people/+requestmerge?field.dupeaccount=%s' % dupe.name
                 self.errormessage = (
-                        'This email is already registered for another '
+                        'This email address is already registered for another '
                         'Launchpad user account. This account can be a '
                         'duplicate of yours, created automatically, and '
                         'in this case you should be able to '
@@ -396,9 +488,9 @@ class ValidateEmailView(BaseLoginTokenView):
 
             elif email.status in validated:
                 self.errormessage = (
-                        "This email is already registered and validated "
-                        "for your Launchpad account. There's no need to "
-                        "validate it again.")
+                        "This email address is already registered and "
+                        "validated for your Launchpad account. There's "
+                        "no need to validate it again.")
                 return None
 
             else:
@@ -458,9 +550,21 @@ class MergePeopleView(BaseLoginTokenView):
         # Merge requests must have a valid user account (one with a preferred
         # email) as requester.
         assert self.context.requester.preferredemail is not None
-        self.formProcessed = True
         if self.validateRequesterPassword(self.request.form.get("password")):
             self._doMerge()
+            if self.mergeCompleted: 
+                self.success(
+                        _('The merge you requested was concluded with success. '
+                          'Now, everything that was owned by the duplicated ' 
+                          'account should be owned by your user account.'))
+            else:
+                self.success(
+                        _('The email address %s have been assigned to you, but '
+                          'the dupe account you selected still have more ' 
+                          'registered email addresses. In order to actually ' 
+                          'complete the merge, you have to prove that you have '
+                          'access to all email addresses of that account.' %
+                          self.context.email))
             self.context.destroySelf()
 
     def _doMerge(self):

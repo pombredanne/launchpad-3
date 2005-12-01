@@ -7,6 +7,7 @@ import logging
 from zope.interface import Interface, Attribute, implements
 from zope.app.security.interfaces import IAuthenticationService, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
+from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from zope.schema import Int, Text, Object, Datetime, TextLine
 
 from canonical.launchpad import _
@@ -100,6 +101,27 @@ class ILaunchpadPrincipal(IPrincipal):
     This is used for the launchpad.AnyPerson permission.
     """
 
+
+class ILaunchpadDatabaseAdapter(IZopeDatabaseAdapter):
+    """The Launchpad customized database adapter"""
+    def readonly():
+        """Set the connection to read only.
+        
+        This should only be called at the start of the transaction to
+        avoid confusing code that defers making database changes until
+        transaction commit time.
+        """
+
+    def switchUser(self, dbuser=None):
+        """Change the PostgreSQL user we are connected as, defaulting to the
+        default Launchpad user.
+       
+        This involves closing the existing connection and reopening it;
+        uncommitted changes will be lost. The new connection will also open
+        in read/write mode so calls to readonly() will need to be made
+        after switchUser.
+        """
+
 #
 # Browser notifications
 #
@@ -151,20 +173,6 @@ class INotificationRequest(Interface):
             """,
         schema=INotificationList
         )
-
-    def getNotifications(levels=BrowserNotificationLevel.ALL_LEVELS):
-        """Retrieve a list of notifications, which are XHTML fragments.
-         
-        levels is a sequence of levels. Only the notifications with matching
-        levels are returned. By default, all notifications are returned.
-        Notifications are always returned in the order they were added.
-
-        An empty list is returned if there are no matching notifications.
-
-        An empty list is returned if there is no notification information
-        in the query string, or if the notification parameter is invalid
-        for the current user.
-        """
 
 
 class INotificationResponse(Interface):

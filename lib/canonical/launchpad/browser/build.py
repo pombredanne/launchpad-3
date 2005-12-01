@@ -17,7 +17,8 @@ from canonical.launchpad.interfaces import IHasBuildRecords
 from canonical.launchpad.interfaces import IBuild
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, GetitemNavigation, stepthrough)
+    StandardLaunchpadFacets, Link, GetitemNavigation, stepthrough,
+    LaunchpadView)
 
 
 class BuildNavigation(GetitemNavigation):
@@ -31,7 +32,7 @@ class BuildFacets(StandardLaunchpadFacets):
     usedfor = IBuild
 
 
-class BuildRecordsView:
+class BuildRecordsView(LaunchpadView):
     __used_for__ = IHasBuildRecords
 
     def getBuilt(self):
@@ -65,4 +66,21 @@ class BuildRecordsView:
         if result:
             return result.count()
         return None
+
+    def getFailed(self):
+        """Return the builds entries failed to build for the context object."""
+        return self.context.getBuildRecords(status=BuildStatus.FAILEDTOBUILD)
+
+    @property
+    def number_failed(self):
+        """Return the number of build entries failures for the context object.
+
+        If no result is available return None.
+        """
+        result = self.context.getBuildRecords(status=BuildStatus.FAILEDTOBUILD,
+                                              limit=0)
+        if result:
+            return result.count()
+        return None
+
 

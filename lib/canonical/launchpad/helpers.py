@@ -9,6 +9,7 @@ be better as a method on an existing content object or IFooSet object.
 __metaclass__ = type
 
 import email
+import subprocess
 import gettextpo
 import os
 import random
@@ -529,42 +530,11 @@ def simple_popen2(command, input, in_bufsize=1024, out_bufsize=128):
     replaced with something using subprocess.Popen.communicate().
     """
 
-    # Strategy:
-    #  - write until there's no more input
-    #  - when there's no more input, close the input filehandle
-    #  - stop when we receive EOF on the output
-
-    offset = 0
-    output = ''
-    child_stdin, child_stdout = os.popen2(command)
-
-    while True:
-        # We can't select on the input file handle after it has been
-        # closed.
-        if child_stdin.closed:
-            test_writable = []
-        else:
-            test_writable = [child_stdin]
-
-        readable, writable, erroneous = select(
-            [child_stdout], test_writable, [])
-
-        if readable:
-            s = child_stdout.read(out_bufsize)
-            if s:
-                output += s
-            else:
-                break
-
-        if writable:
-            if offset <= len(input):
-                child_stdin.write(
-                    input[offset:offset+in_bufsize])
-                offset += in_bufsize
-            else:
-                # End of input.
-                child_stdin.close()
-
+    p = subprocess.Popen(
+            command, shell=True, stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
+    (output, nothing) = p.communicate(input)
     return output
 
 def contactEmailAddresses(person):
@@ -1037,6 +1007,8 @@ def sanitiseFingerprint(fpr):
 
     >>> sanitiseFingerprint('C858 2652 1A6E F6A6 037B  B3F7 9FF2 583E 681B 6469')
     'C85826521A6EF6A6037BB3F79FF2583E681B6469'
+    >>> sanitiseFingerprint('c858 2652 1a6e f6a6 037b  b3f7 9ff2 583e 681b 6469')
+    'C85826521A6EF6A6037BB3F79FF2583E681B6469'
     >>> sanitiseFingerprint('681B 6469')
     False
 
@@ -1046,6 +1018,9 @@ def sanitiseFingerprint(fpr):
     """
     # replace the white spaces
     fpr = fpr.replace(' ', '')
+
+    # convert to upper case
+    fpr = fpr.upper()
 
     if not valid_fingerprint(fpr):
         return False

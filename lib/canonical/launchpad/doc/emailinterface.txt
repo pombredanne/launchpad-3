@@ -2,21 +2,21 @@ Malone's Email Interface
 ========================
 
 Malone has an email interface, with which you may submit new bugs, add
-comments, and editing bugs. The email interface has a number of
-different command. Commands can be interleaved within a comment, so in
-order to distinguish them from the comment, the commands have to be
-indented with at least one space or tab character. The available
-commands are described later on.
+comments, and edit bugs. The email interface has a number of different
+commands. Commands can be interleaved within a comment, so in order to
+distinguish them from the comment, the commands have to be indented with
+at least one space or tab character. The available commands are
+described later on.
 
 Submit a new bug
 ----------------
 
-In order to submit a new bug you send a GPG signed  email to
+In order to submit a new bug you send a GPG signed email to
 new@malone-domain. Note that you have to have registered your key in
-Launchpad as well. The subject of the email will be used as the title of
-the bug, and the body will be used as the description. In the body of
-the email you have tell on what you file a bug, either a product or
-a distribution. You do so by issuing an 'affects' command. The simplest
+Launchpad as well. The subject of the email will be used as the summary
+of the bug, and the body will be used as the description. In the body of
+the email you have tell on what you file a bug, either a product or a
+distribution. You do so by issuing an 'affects' command. The simplest
 case is either:
 
     affects /products/$product_name
@@ -38,7 +38,7 @@ Let's take an example where we file a bug on Firefox:
     ... To: new@bugs.launchpad.ubuntu.com
     ... Date: Fri Jun 17 10:20:23 BST 2005
     ... Subject: A bug in Firefox
-    ... 
+    ...
     ... There is a bug in Firefox.
     ...
     ...  affects /products/firefox"""
@@ -52,7 +52,7 @@ to sign each email, we'll create a class which fakes a signed email:
     >>> class SignedMessage(email.Message.Message):
     ...     def signedMessage(self):
     ...         return self
-    ...     signedMessage = property(signedMessage) 
+    ...     signedMessage = property(signedMessage)
 
 And since we'll pass the email directly to the correct handler,
 we'll have to authenticate the user manually:
@@ -66,7 +66,7 @@ bug got submitted correctly:
     >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
     >>> from canonical.launchpad.mail.handlers import MaloneHandler
     >>> handler = MaloneHandler()
-    >>> def process_email(raw_mail): 
+    >>> def process_email(raw_mail):
     ...     msg = email.message_from_string(raw_mail, _class=SignedMessage)
     ...     if not msg.has_key('Message-Id'):
     ...         msg['Message-Id'] = email.Utils.make_msgid()
@@ -85,7 +85,7 @@ bug got submitted correctly:
     ...     msg = email.message_from_string(raw_message)
     ...     bug_nr = int(msg['Subject'].split()[1][:-1])
     ...     return bugset.get(bug_nr)
-    >>> bug = get_latest_added_bug() 
+    >>> bug = get_latest_added_bug()
 
     >>> print bug.title
     A bug in Firefox
@@ -126,12 +126,12 @@ this:
     ... To: new@bugs.canonical.com
     ... Date: Fri Jun 17 10:20:23 BST 2005
     ... Subject: A bug in Debian's Evolution package
-    ... 
+    ...
     ... There's a bug in Debian.
     ...  affects /distros/debian/evolution
     ... """
     >>> process_email(submit_mail)
-    >>> bug = get_latest_added_bug() 
+    >>> bug = get_latest_added_bug()
 
     >>> print bug.title
     A bug in Debian's Evolution package
@@ -158,9 +158,9 @@ includes commands, the email has to be GPG signed.
     ... Message-Id: <yada-yada-test1>
     ... Subject: New comment to bug 1
     ...
-    ... Adding a comment via the email system. Let's change the title as
-    ... well:
-    ...     title "Better title"
+    ... Adding a comment via the email system. Let's change the summary
+    ... as well:
+    ...     summary "Better summary"
     ...
     ... /Sample Person
     ... """
@@ -174,7 +174,7 @@ includes commands, the email has to be GPG signed.
     >>> added_message in bug_one.messages
     True
     >>> print bug_one.title
-    Better title
+    Better summary
 
 If the message doesn't have a Reference or In-Reply-To header, the
 parent will be set to the bug's initial message.
@@ -199,12 +199,12 @@ For that you can send mails to edit@malone-domain.
     ... Subject: Not important
     ...
     ...     bug 4
-    ...     title "Changed title"
+    ...     summary "Changed summary"
     ...
     ... It won't break if we write some stuff here.
     ...
     ...     bug 5
-    ...     title "Nicer title"
+    ...     summary "Nicer summary"
     ... """
 
     >>> process_email(edit_mail)
@@ -217,12 +217,12 @@ No comments were added to the bugs:
     >>> len(bug_five.messages) == bug_five_comments
     True
 
-And the titles were changed:
+And the summaries were changed:
 
     >>> print bug_four.title
-    Changed title
+    Changed summary
     >>> print bug_five.title
-    Nicer title
+    Nicer summary
 
 
 Commands
@@ -251,20 +251,20 @@ Switches what bug you want to edit. Example:
 
     bug 42
 
-title "$title"
-^^^^^^^^^^^^^^
-Changes the title of the bug. The title has to be enclosed in
+summary "$summary"
+^^^^^^^^^^^^^^^^^^
+Changes the summary of the bug. The title has to be enclosed in
 quotes. Example:
 
-    >>> submit_commands('title "New title"')
+    >>> submit_commands('summary "New summary"')
     >>> print bug_four.title
-    New title
+    New summary
 
-Just a quick check that the whitespace will be preserved in the title:
+Whitespace will be preserved in the title:
 
-    >>> submit_commands('title "New             title"')
+    >>> submit_commands('summary "New             summary"')
     >>> print bug_four.title #doctest: -NORMALIZE_WHITESPACE
-    New             title
+    New             summary
 
 private yes|no
 ^^^^^^^^^^^^^^
@@ -306,7 +306,7 @@ be subscribed. Examples:
 
 unsubscribe [$name|$email]
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Unsubscribes yourself or someone else from the bug. 
+Unsubscribes yourself or someone else from the bug.
 If you don't specify a name or email, the sender of the email will be
 unsubscribed. Examples:
 
@@ -358,7 +358,7 @@ We can change the assignee, status, and severity using the sub
 commands. It's possible to have these sub commands on separate lines:
 
     >>> submit_commands('affects /distros/debian severity critical',
-    ...                 'status accepted', 'assignee test@canonical.com')
+    ...     'status accepted', 'assignee test@canonical.com', 'priority high')
 
     >>> len(bug_four.bugtasks)
     2
@@ -369,6 +369,8 @@ commands. It's possible to have these sub commands on separate lines:
     ACCEPTED
     >>> print debian_task.assignee.displayname
     Sample Person
+    >>> print debian_task.priority.name
+    HIGH
 
 To set which source package the bug affects, we use:
 
@@ -381,8 +383,10 @@ To set which source package the bug affects, we use:
 
 Let's take on the upstream task as well:
 
-    >>> submit_commands('affects /products/firefox severity critical',
-    ...                 'status accepted', 'assignee test@canonical.com')
+    >>> submit_commands(
+    ...     'affects /products/firefox severity critical',
+    ...     'status accepted', 'assignee test@canonical.com',
+    ...     'priority high')
 
     >>> len(bug_four.bugtasks)
     3
@@ -393,7 +397,8 @@ Let's take on the upstream task as well:
     ACCEPTED
     >>> print upstream_task.assignee.displayname
     Sample Person
-
+    >>> print upstream_task.priority.name
+    HIGH
 
 Error Handling
 --------------
@@ -439,7 +444,7 @@ Now we try to submit a bug on a distribution that doesn't exist:
     ... There's a nasty bug in Foo.
     ...  affects /distros/foo"""
     >>> process_email(submit_mail_distro_not_found)
-   
+
 Again no bug was filed, and an error mail was sent:
 
     >>> transaction.commit()
@@ -453,6 +458,36 @@ Again no bug was filed, and an error mail was sent:
     ...
     'foo' couldn't be found in command 'affects /distros/foo'
     ...
+
+
+Let's send an empty unsigned mail to new@malone:
+
+    >>> submit_empty = """From: test@canonical.com
+    ... To: new@malone
+    ... Date: Fri Jun 17 10:20:27 BST 2005
+    ... Subject: An empty mail
+    ...
+    ... """
+    >>> process_email(submit_empty)
+
+This causes an error message to be sent to the submitter:
+
+    >>> transaction.commit()
+    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    >>> error_mail = email.message_from_string(raw_message)
+
+    >>> print error_mail.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    An error...
+    ...
+    Error message:
+    ...
+    An error occurred while processing your mail to create a new bug. You
+    didn't specify on what you want to file a bug on. A new bug has to
+    affect either a product or a distribution. Please use the 'affects'
+    command in order to specify on what you want to file a bug on. For
+    example, in order to file a bug on Malone itself, use:
+    ...
+
 
     >>> LibrarianTestSetup().tearDown()
 

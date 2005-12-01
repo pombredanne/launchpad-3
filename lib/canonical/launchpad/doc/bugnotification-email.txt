@@ -72,21 +72,21 @@ generate_bug_comment_email accepts an object that provides
 IBugMessage. Let's borrow the first comment on bug four, just to
 demonstrate how the comment notification is formatted:
 
-   >>> bugmessage = getUtility(IBugMessageSet).get(4)
-   >>> subject, body = generate_bug_comment_email(bugmessage)
-   >>> subject
-   u'[Bug 2] Blackhole Trash folder'
-   >>> print body
-   Public bug report changed:
-   http://.../malone/bugs/2
-   <BLANKLINE>
-   Comment:
-   This would be a real killer feature. If there is already code to
-   make it possible, why aren't there tons of press announcements
-   about the secuirty possibilities. Imagine - no more embarrassing
-   emails for Mr Gates... everything they delete would actually
-   disappear! I'm sure Redmond will switch over as soon as they hear
-   about this. It's not a bug, it's a feature!
+    >>> bugmessage = getUtility(IBugMessageSet).get(4)
+    >>> subject, body = generate_bug_comment_email(bugmessage)
+    >>> subject
+    u'[Bug 2] Blackhole Trash folder'
+    >>> print body
+    Public bug report changed:
+    http://.../malone/bugs/2
+    <BLANKLINE>
+    Comment:
+    This would be a real killer feature. If there is already code to
+    make it possible, why aren't there tons of press announcements
+    about the secuirty possibilities. Imagine - no more embarrassing
+    emails for Mr Gates... everything they delete would actually
+    disappear! I'm sure Redmond will switch over as soon as they hear
+    about this. It's not a bug, it's a feature!
 
 Editing a bug
 -------------
@@ -117,7 +117,7 @@ returns the subject and body of the email, as a tuple.
     Public bug report changed:
     http://.../bugs/2
     <BLANKLINE>
-    Title changed to:
+    Summary changed to:
         the new title
     Description changed to:
         a new description that is quite long. but the nice thing is that the
@@ -126,7 +126,6 @@ returns the subject and body of the email, as a tuple.
         that gets sent.
     <BLANKLINE>
         it's also smart enough to preserve whitespace, finally!
-    <BLANKLINE>
 
 Another edit, this time the summary:
 
@@ -144,10 +143,9 @@ Another edit, this time the summary:
     Public bug report changed:
     http://www.example.com/bugs/2
     <BLANKLINE>
-    Summary changed to:
+    Short description changed to:
         this summary isn't particularly short is it? after all, what kind of
         summary is so long that it needs to be wrapped?
-    <BLANKLINE>
 
 Let's set the bug private (for demo purposes, we need to switch logins
 to a user that is explicitly subscribed to this bug):
@@ -169,7 +167,6 @@ to a user that is explicitly subscribed to this bug):
     <BLANKLINE>
     Secrecy changed to:
         Private
-    <BLANKLINE>
 
 Now we set the bug public and check if the e-mail sent changed as well.
 
@@ -188,7 +185,6 @@ Now we set the bug public and check if the e-mail sent changed as well.
     <BLANKLINE>
     Secrecy changed to:
         Public
-    <BLANKLINE>
 
 Adding a new bug task
 ---------------------
@@ -198,25 +194,25 @@ generate_bug_edit_email handles generating the email when a new task
 is added to a bug. To demonstrate what this email looks like, let's
 pretend we had just added task five:
 
-   >>> task_five = getUtility(IBugTaskSet).get(5)
+    >>> task_five = getUtility(IBugTaskSet).get(5)
 
-   >>> bug_delta = BugDelta(
-   ...     bug = edited_bug,
-   ...     bugurl = "http://www.example.com/bugs/2",
-   ...     user = sample_person,
-   ...     added_bugtasks = task_five)
-   >>> subject, body = generate_bug_edit_email(bug_delta)
-   >>> subject
-   u'[Bug 2] the new title'
-   >>> print body
-   Public bug report changed:
-   http://.../bugs/2
-   <BLANKLINE>
-   Also affects: mozilla-firefox (debian)
-          Severity: Minor
-          Priority: High
-          Assignee: name12 <test@canonical.com>
-            Status: Accepted
+    >>> bug_delta = BugDelta(
+    ...     bug = edited_bug,
+    ...     bugurl = "http://www.example.com/bugs/2",
+    ...     user = sample_person,
+    ...     added_bugtasks = task_five)
+    >>> subject, body = generate_bug_edit_email(bug_delta)
+    >>> subject
+    u'[Bug 2] the new title'
+    >>> print body
+    Public bug report changed:
+    http://.../bugs/2
+    <BLANKLINE>
+    Also affects: mozilla-firefox (debian)
+           Severity: Minor
+           Priority: High
+           Assignee: name12 <test@canonical.com>
+             Status: Accepted
 
 Editing a bug task
 ------------------
@@ -254,7 +250,6 @@ bugmail when a bug task is edited.
              Status: New => Accepted
         Explanation: i'm just babbling here to ensure line wrapping works in
                      the explanation.
-    <BLANKLINE>
 
 Adding and editing web links
 ----------------------------
@@ -290,7 +285,6 @@ Adding a web link can be seen as "editing" a bug.
     <BLANKLINE>
     Web links changed:
         + http://www.example.com/foo/bar (some title)
-    <BLANKLINE>
 
 Editing a web link shows the previous link as "Removed" and the newly
 modified link as having been "Added" (though no actual "adding" or
@@ -318,7 +312,6 @@ modified link as having been "Added" (though no actual "adding" or
     Web links changed:
         + http://www.example.com/foo/bar (some better title)
         - http://www.example.com/foo/bar (some title)
-    <BLANKLINE>
 
 Adding and editing bug watches
 ------------------------------
@@ -354,7 +347,6 @@ generated when a bug watch is added:
     <BLANKLINE>
     Bug watches changed:
         + Bug 123 [The Mozilla.org Bug Tracker]
-    <BLANKLINE>
 
 When edited, we display the change to a bug watch as though the
 previous data was "removed" and the new, current data was "added."
@@ -381,7 +373,6 @@ Let's demonstrate with an example:
     Bug watches changed:
         + Bug 12 [The Mozilla.org Bug Tracker]
         - Bug 123 [The Mozilla.org Bug Tracker]
-    <BLANKLINE>
 
 Adding and editing CVE relationships
 ------------------------------------
@@ -419,7 +410,6 @@ Adding a CVE will generate a notification that looks as follows:
     http://www.example.com/bugs/2
     <BLANKLINE>
     Added CVE-2004-0718 (Candidate)
-    <BLANKLINE>
 
 Similarly, removing a CVE ref will result in an email:
 
@@ -441,7 +431,6 @@ Similarly, removing a CVE ref will result in an email:
     http://www.example.com/bugs/2
     <BLANKLINE>
     Removed CVE-2004-0719 (Candidate)
-    <BLANKLINE>
 
 Adding an infestation
 ---------------------

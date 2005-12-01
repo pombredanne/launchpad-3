@@ -121,7 +121,13 @@ bounty_index = ContextTitle('Launchpad Bounty: %s')
 
 bounty_subscription = 'Bounty Subscription'
 
+branch_edit = 'Edit Branch Details'
+
 branch_index = ContextTitle('Bazaar Branch: %s')
+
+branch_subscription = ContextTitle('Subscription to Branch %s')
+
+branchtarget_branches = ContextTitle('Branches for %s')
 
 bug_activity = ContextId('Bug #%s - Activity Log')
 
@@ -385,6 +391,8 @@ foaf_validateteamemail = 'Validate email address'
 
 foaf_validategpg = 'Validate GPG Key'
 
+foaf_validatesignonlygpg = 'Validate Sign-Only GPG Key'
+
 karmaaction_index = 'Karma Actions'
 
 karmaaction_edit = 'Edit Karma Action'
@@ -487,7 +495,7 @@ person_assignedbugs = ContextDisplayName('Bugs Assigned To %s')
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
-person_branches = ContextDisplayName("%s's code branches in Launchpad")
+person_branch_add = ContextDisplayName('Register a new branch for %s')
 
 person_changepassword = 'Change your password'
 
@@ -524,6 +532,8 @@ person_packagebugs = ContextDisplayName('Bugs on Software Maintained by %s')
 person_reportedbugs = ContextDisplayName('Bugs Reported By %s')
 
 person_review = ContextDisplayName("Review %s' Information")
+
+person_subscribedbugs = ContextDisplayName('Bugs %s is subscribed to')
 
 person_translations = ContextDisplayName('Translations Made By %s')
 
@@ -673,6 +683,8 @@ rosetta_about = 'About Rosetta'
 rosetta_index = 'Rosetta'
 
 rosetta_preferences = 'Rosetta: Preferences'
+
+product_branch_add = ContextDisplayName('Register a new branch for %s')
 
 def productseries_edit(context, view):
     return 'Edit %s %s Details' % (context.product.displayname, context.name)

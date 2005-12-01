@@ -4,6 +4,7 @@
 
 __metaclass__ = type
 
+import re
 import os.path
 import itertools
 import sets
@@ -138,13 +139,13 @@ def send_process_error_notification(to_addrs, subject, error_msg):
     simple_sendmail(get_bugmail_error_address(), to_addrs, subject, msg)
 
 
-def notify_errors_list(message, file_alias):
+def notify_errors_list(message, file_alias_url):
     """Sends an error to the Launchpad errors list."""
     template = get_email_template('notify-unhandled-email.txt')
     simple_sendmail(
         get_bugmail_error_address(), [config.launchpad.errors_address],
-        'Unhandled Email: %s' % file_alias.filename,
-        template % {'url': file_alias.url, 'error_msg': message})
+        'Unhandled Email: %s' % file_alias_url,
+        template % {'url': file_alias_url, 'error_msg': message})
 
 
 def generate_bug_add_email(bug):
@@ -200,6 +201,8 @@ def generate_bug_add_email(bug):
     mailwrapper = MailWrapper(width=72)
     body += u"Description:\n%s" % mailwrapper.format(description)
 
+    body = body.rstrip()
+
     return (subject, body)
 
 
@@ -233,18 +236,18 @@ def generate_bug_edit_email(bug_delta):
             body += (
                 u"*** This bug is no longer a duplicate of bug %d ***\n\n" %
                 old_bug_dupe.id)
-        if new_bug_dupe is not None: 
+        if new_bug_dupe is not None:
             body += (
                 u"*** This bug has been marked a duplicate of bug %d ***\n\n" %
                 new_bug_dupe.id)
-    
+
 
     if bug_delta.title is not None:
-        body += u"Title changed to:\n"
+        body += u"Summary changed to:\n"
         body += u"    %s\n" % bug_delta.title
 
     if bug_delta.summary is not None:
-        body += u"Summary changed to:\n"
+        body += u"Short description changed to:\n"
         body += mailwrapper.format(bug_delta.summary)
         body += u"\n"
 
@@ -405,31 +408,9 @@ def generate_bug_edit_email(bug_delta):
                     u"Assignee", assignee.name, assignee.preferredemail.email)
             body += u"%15s: %s" % (u"Status", added_bugtask.status.title)
 
+    body = body.rstrip()
+
     return (subject, body)
-
-
-def _get_task_change_row(label, oldval_display, newval_display):
-    """Return a row formatted for display in task change info."""
-    return u"%(label)15s: %(oldval)s => %(newval)s\n" % {
-        'label' : label.capitalize(),
-        'oldval' : oldval_display,
-        'newval' : newval_display}
-
-
-def _get_task_change_values(task_change, displayattrname):
-    """Return the old value and the new value for a task field change."""
-    oldval = task_change.get('old')
-    newval = task_change.get('new')
-
-    oldval_display = None
-    newval_display = None
-
-    if oldval:
-        oldval_display = getattr(oldval, displayattrname)
-    if newval:
-        newval_display = getattr(newval, displayattrname)
-
-    return (oldval_display, newval_display)
 
 
 def generate_bug_comment_email(bug_comment):
@@ -457,11 +438,37 @@ def generate_bug_comment_email(bug_comment):
                'comment' : comment_wrapper.format(
                     bug_comment.message.contents)})
 
+    body = body.rstrip()
+
     return (subject, body)
 
 
-def send_bug_notification(bug, user, subject, body,
-                          to_addrs=None, headers=None):
+def _get_task_change_row(label, oldval_display, newval_display):
+    """Return a row formatted for display in task change info."""
+    return u"%(label)15s: %(oldval)s => %(newval)s\n" % {
+        'label' : label.capitalize(),
+        'oldval' : oldval_display,
+        'newval' : newval_display}
+
+
+def _get_task_change_values(task_change, displayattrname):
+    """Return the old value and the new value for a task field change."""
+    oldval = task_change.get('old')
+    newval = task_change.get('new')
+
+    oldval_display = None
+    newval_display = None
+
+    if oldval:
+        oldval_display = getattr(oldval, displayattrname)
+    if newval:
+        newval_display = getattr(newval, displayattrname)
+
+    return (oldval_display, newval_display)
+
+
+def send_bug_notification(bug, user, subject, body, to_addrs=None,
+                          headers=None):
     """Sends a bug notification.
 
     :bug: The bug the notification concerns.
@@ -479,10 +486,17 @@ def send_bug_notification(bug, user, subject, body,
     concerning the same bug (if the email client supports threading).
     """
 
+    assert user is not None, 'user is None'
+
     if headers is None:
         headers = {}
     if to_addrs is None:
         to_addrs = get_cc_list(bug)
+
+    if not to_addrs:
+        # No recipients for this email means there's no point generating an
+        # email.
+        return
 
     if ('Message-Id' not in headers or
             headers['Message-Id'] != bug.initial_message.rfc822msgid):
@@ -504,10 +518,21 @@ def send_bug_notification(bug, user, subject, body,
         headers["Reply-To"] = get_bugmail_replyto_address(bug)
     if "Sender" not in headers:
         headers["Sender"] = config.bounce_address
-    from_addr = get_bugmail_from_address(user)
-    for to_addr in to_addrs:
-        simple_sendmail(from_addr, to_addr, subject, body, headers=headers)
 
+    from_addr = get_bugmail_from_address(user)
+
+    # Add a header for each task on this bug, to help users organize their
+    # incoming mail in a way that's convenient for them.
+    x_launchpad_bug_values = []
+    for bugtask in bug.bugtasks:
+        x_launchpad_bug_values.append(bugtask.asEmailHeaderValue())
+
+    headers["X-Launchpad-Bug"] = x_launchpad_bug_values
+
+    for to_addr in to_addrs:
+        simple_sendmail(
+            from_addr=from_addr, to_addrs=to_addr, subject=subject, body=body,
+            headers=headers)
 
 def send_bug_edit_notification(bug_delta):
     """Send a notification email about a bug that was modified.
@@ -683,8 +708,8 @@ def notify_bug_added(bug, event):
     subject, body = generate_bug_add_email(bug)
 
     send_bug_notification(
-            bug, event.user, subject, body,
-            headers={'Message-Id': bug.initial_message.rfc822msgid})
+        bug, event.user, subject, body,
+        headers={'Message-Id': bug.initial_message.rfc822msgid})
 
 
 def notify_bug_modified(modified_bug, event):

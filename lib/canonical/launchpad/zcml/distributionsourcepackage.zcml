@@ -28,7 +28,7 @@
 
   <browser:menus
     module="canonical.launchpad.browser.distributionsourcepackage"
-    classes="DistributionSourcePackageFacets"
+    classes="DistributionSourcePackageFacets DistributionSourcePackageBugsMenu"
     />
 
   <browser:pages
@@ -98,5 +98,6 @@
       class="zope.app.form.browser.TextAreaWidget"
       width="62" />
   </browser:addform>
+
 
 </configure>

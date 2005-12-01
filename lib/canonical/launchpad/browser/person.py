@@ -11,6 +11,7 @@ __all__ = [
     'PersonBugsMenu',
     'PersonSpecsMenu',
     'PersonSupportMenu',
+    'PersonCodeMenu',
     'PersonOverviewMenu',
     'TeamOverviewMenu',
     'BaseListView',
@@ -24,6 +25,7 @@ __all__ = [
     'PersonAssignedBugTaskSearchListingView',
     'ReportedBugTaskSearchListingView',
     'BugTasksOnMaintainedSoftwareSearchListingView',
+    'SubscribedBugTaskSearchListingView',
     'PersonRdfView',
     'PersonView',
     'TeamJoinView',
@@ -37,6 +39,7 @@ __all__ = [
     ]
 
 import cgi
+import itertools
 import sets
 from StringIO import StringIO
 
@@ -63,10 +66,10 @@ from canonical.launchpad.interfaces import (
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet,
-    ITeamMembershipSubset, IPollSet)
+    ITeamMembershipSubset, IPollSet, BugTaskSearchParams, NotFoundError,
+    UNRESOLVED_BUGTASK_STATUSES)
 
-from canonical.launchpad.browser.bugtask import (
-    BugTaskSearchListingView, BUGTASK_STATUS_OPEN)
+from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.helpers import (
@@ -93,10 +96,36 @@ class PersonNavigation(Navigation, CalendarTraversalMixin):
     def breadcrumb(self):
         return self.context.displayname
 
+    @stepto('+branch')
+    def traverse_branch(self):
+        """Branch of this person for the specified product and branch names.
+
+        For example:
+
+        * '/people/ddaa/+branch/bazaar/devel' points to the branch whose owner
+          name is 'ddaa', whose product name is 'bazaar', and whose branch name
+          is 'devel'.
+
+        * '/people/sabdfl/+branch/+junk/junkcode' points to the branch whose
+          owner name is 'sabdfl', with no associated product, and whose branch
+          name is 'junkcode'.
+        """
+        stepstogo = self.request.stepstogo
+        product_name = stepstogo.consume()
+        branch_name = stepstogo.consume()
+        if product_name is not None and branch_name is not None:
+            if product_name == '+junk':
+                return self.context.getBranch(None, branch_name)
+            else:
+                return self.context.getBranch(product_name, branch_name)
+        raise NotFoundError
+
 
 class TeamNavigation(Navigation, CalendarTraversalMixin):
 
     usedfor = ITeam
+
+    redirection("+bugs", "+assignedbugs")
 
     def breadcrumb(self):
         return smartquote('"%s" team') % self.context.displayname
@@ -154,54 +183,42 @@ class PersonFacets(StandardLaunchpadFacets):
     usedfor = IPerson
 
     enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
-                   'translations', 'calendar']
+                   'translations', 'calendar', 'code']
+
+    links = StandardLaunchpadFacets.links + ['code']
 
     def overview(self):
-        target = ''
         text = 'Overview'
         summary = 'General information about %s' % self.context.browsername
-        return Link(target, text, summary)
+        return Link('', text, summary)
 
     def bugs(self):
-        # XXX: Soon the +assignedbugs and +reportedbugs pages of IPerson will
-        # be merged into a single +bugs page, and I'll fix the target here.
-        # -- GuilhermeSalgado, 2005-07-29
         target = '+assignedbugs'
         text = 'Bugs'
         summary = (
-            'Bug reports that %s is involved with' % self.context.browsername
-        )
-        return Link(target, text, summary)
+            'Bug reports that %s is involved with' % self.context.browsername)
+        return Link('+assignedbugs', text, summary)
 
     def support(self):
-        target = '+tickets'
         text = 'Support'
         summary = (
             'Support requests that %s is involved with' %
             self.context.browsername)
-        return Link(target, text, summary)
+        return Link('+tickets', text, summary)
 
     def specifications(self):
-        target = '+specs'
         text = 'Specifications'
         summary = (
             'Feature specifications that %s is involved with' %
             self.context.browsername)
-        return Link(target, text, summary)
+        return Link('+specs', text, summary)
 
     def bounties(self):
-        target = '+bounties'
         text = 'Bounties'
         summary = (
             'Bounty offers that %s is involved with' % self.context.browsername
             )
-        return Link(target, text, summary)
-
-    def code(self):
-        target = '+branches'
-        text = 'Code'
-        summary = 'Branches and revisions by %s' % self.context.browsername
-        return Link(target, text, summary)
+        return Link('+bounties', text, summary)
 
     def translations(self):
         target = '+translations'
@@ -212,14 +229,18 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link(target, text, summary)
 
     def calendar(self):
-        target = '+calendar'
         text = 'Calendar'
         summary = (
             u'%s\N{right single quotation mark}s scheduled events' %
             self.context.browsername)
         # only link to the calendar if it has been created
         enabled = ICalendarOwner(self.context).calendar is not None
-        return Link(target, text, summary, enabled=enabled)
+        return Link('+calendar', text, summary, enabled=enabled)
+
+    def code(self):
+        text = 'Code'
+        summary = 'Branches and revisions by %s' % self.context.browsername
+        return Link('+branches', text, summary)
 
 
 class PersonBugsMenu(ApplicationMenu):
@@ -228,7 +249,7 @@ class PersonBugsMenu(ApplicationMenu):
 
     facet = 'bugs'
 
-    links = ['assignedbugs', 'softwarebugs', 'reportedbugs']
+    links = ['assignedbugs', 'softwarebugs', 'reportedbugs', 'subscribedbugs']
 
     def assignedbugs(self):
         text = 'Bugs Assigned'
@@ -242,6 +263,9 @@ class PersonBugsMenu(ApplicationMenu):
         text = 'Bugs Reported'
         return Link('+reportedbugs', text, icon='bugs')
 
+    def subscribedbugs(self):
+        text = 'Bugs Subscribed'
+        return Link('+subscribedbugs', text, icon='bugs')
 
 
 class PersonSpecsMenu(ApplicationMenu):
@@ -301,6 +325,29 @@ class PersonSupportMenu(ApplicationMenu):
         return Link('+subscribedtickets', text, icon='ticket')
 
 
+class PersonCodeMenu(ApplicationMenu):
+
+    usedfor = IPerson
+    facet = 'code'
+    links = ['authored', 'registered', 'subscribed', 'add']
+
+    def authored(self):
+        text = 'Show Authored Branches'
+        return Link('+authoredbranches', text, icon='branch')
+
+    def registered(self):
+        text = 'Show Registered Branches'
+        return Link('+registeredbranches', text, icon='branch')
+
+    def subscribed(self):
+        text = 'Show Subscribed Branches'
+        return Link('+subscribedbranches', text, icon='branch')
+
+    def add(self):
+        text = 'Add Bazaar Branch'
+        return Link('+addbranch', text, icon='add')
+
+
 class CommonMenuLinks:
 
     def common_edit(self):
@@ -311,17 +358,6 @@ class CommonMenuLinks:
     def common_edithomepage(self):
         target = '+edithomepage'
         text = 'Edit Home Page'
-        return Link(target, text, icon='edit')
-
-    def common_edithackergotchi(self):
-        target = '+edithackergotchi'
-        text = 'Edit Hackergotchi'
-        return Link(target, text, icon='edit')
-
-    @enabled_with_permission('launchpad.Admin')
-    def common_editemblem(self):
-        target = '+editemblem'
-        text = 'Edit Emblem'
         return Link(target, text, icon='edit')
 
     def common_packages(self):
@@ -336,8 +372,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     usedfor = IPerson
     facet = 'overview'
     links = ['karma', 'common_edit', 'common_edithomepage',
-             'common_edithackergotchi',
-             'common_editemblem', 'editsshkeys', 'editgpgkeys',
+             'common_edithackergotchi', 'editsshkeys', 'editgpgkeys',
              'codesofconduct', 'administer', 'common_packages']
 
     def karma(self):
@@ -364,6 +399,11 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         summary = 'Used for the Supermirror, and when maintaining packages'
         return Link(target, text, summary, icon='edit')
 
+    def common_edithackergotchi(self):
+        target = '+edithackergotchi'
+        text = 'Edit Hackergotchi'
+        return Link(target, text, icon='edit')
+
     def codesofconduct(self):
         target = '+codesofconduct'
         text = 'Codes of Conduct'
@@ -382,9 +422,9 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['common_edit', 'common_edithomepage', 'common_edithackergotchi',
-             'common_editemblem', 'members', 'editemail', 'polls',
-             'joinleave', 'reassign', 'common_packages']
+    links = ['common_edit', 'common_edithomepage', 'common_editemblem',
+             'members', 'editemail', 'polls', 'joinleave', 'reassign',
+             'common_packages']
 
     @enabled_with_permission('launchpad.Admin')
     def reassign(self):
@@ -393,6 +433,11 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         summary = 'Change the owner of the team'
         # alt="(Change owner)"
         return Link(target, text, summary, icon='edit')
+
+    def common_editemblem(self):
+        target = '+editemblem'
+        text = 'Edit Emblem'
+        return Link(target, text, icon='edit')
 
     def members(self):
         target = '+members'
@@ -403,17 +448,6 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+polls'
         text = 'Show Polls'
         return Link(target, text, icon='info')
-
-    def teamhierarchy(self):
-        # XXX: removed because of bug https://launchpad.net/malone/bugs/2435
-        #      that i cannot see at the moment.
-        #      SteveAlexander / Salgado, 2005-09-21
-        target = '+teamhierarchy'
-        text = 'Team Hierarchy'
-        summary = (
-            'Which teams are members of %s, and which teams %s is a member of'
-            % (self.context.browsername, self.context.browsername))
-        return Link(target, text, summary, icon='people')
 
     @enabled_with_permission('launchpad.Edit')
     def editemail(self):
@@ -565,7 +599,8 @@ class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs reported by someone."""
 
     def getExtraSearchParams(self):
-        return {'status': any(*BUGTASK_STATUS_OPEN), 'owner': self.context}
+        return {'status': any(*UNRESOLVED_BUGTASK_STATUSES),
+                'owner': self.context}
 
 
 class BugTasksOnMaintainedSoftwareSearchListingView(BugTaskSearchListingView):
@@ -595,11 +630,20 @@ class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
     """All open bugs assigned to someone."""
 
     def getExtraSearchParams(self):
-        return {'status': any(*BUGTASK_STATUS_OPEN), 'assignee': self.context}
+        return {'status': any(*UNRESOLVED_BUGTASK_STATUSES),
+                'assignee': self.context}
 
     def doNotShowAssignee(self):
         """Should we not show the assignee in the list of results?"""
         return True
+
+
+class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
+    """All bugs someone is subscribed to."""
+
+    def getExtraSearchParams(self):
+        return {'status': any(*UNRESOLVED_BUGTASK_STATUSES), 
+                'subscriber': self.context}
 
 
 class PersonView:
@@ -624,6 +668,49 @@ class PersonView:
         """Return True if this team has any non-closed polls."""
         assert self.context.isTeam()
         return bool(len(self.openpolls) or len(self.notyetopenedpolls))
+
+    def sourcepackagerelease_open_bugs_count(self, sourcepackagerelease):
+        """Return the number of open bugs targeted to the sourcepackagename
+        and distrorelease of the given sourcepackagerelease.
+        """
+        params = BugTaskSearchParams(
+            user=self.user,
+            sourcepackagename=sourcepackagerelease.sourcepackagename,
+            status=any(*UNRESOLVED_BUGTASK_STATUSES))
+        params.setDistributionRelease(sourcepackagerelease.uploaddistrorelease)
+        return getUtility(IBugTaskSet).search(params).count()
+
+    def maintainedPackagesByPackageName(self):
+        return self._groupSourcePackageReleasesByName(
+            self.context.maintainedPackages())
+
+    def uploadedButNotMaintainedPackagesByPackageName(self):
+        return self._groupSourcePackageReleasesByName(
+            self.context.uploadedButNotMaintainedPackages())
+
+    class SourcePackageReleasesByName:
+        """A class to hold a sourcepackagename and a list of
+        sourcepackagereleases of that sourcepackagename.
+        """
+
+        def __init__(self, name, releases):
+            self.name = name
+            self.releases = releases
+
+    def _groupSourcePackageReleasesByName(self, sourcepackagereleases):
+        """Return a list of SourcePackageReleasesByName objects ordered by
+        SourcePackageReleasesByName.name.
+        
+        Each SourcePackageReleasesByName object contains a name, which is the
+        sourcepackagename and a list containing all sourcepackagereleases of
+        that sourcepackagename.
+        """
+        allreleasesbyallnames = []
+        keyfunc = lambda sprelease: sprelease.name
+        for key, group in itertools.groupby(sourcepackagereleases, keyfunc):
+            allreleasesbyallnames.append(
+                PersonView.SourcePackageReleasesByName(key, list(group)))
+        return sorted(allreleasesbyallnames, key=lambda s: s.name)
 
     def no_bounties(self):
         return not (self.context.ownedBounties or
@@ -970,16 +1057,6 @@ class PersonView:
                 "(using <kbd>gpg --genkey</kbd>) and repeat the previous "
                 "process to find and import the new key." % key.keyid)
 
-        # XXX: jamesh 20051012
-        # This code will change once we have support for validating
-        # sign-only keys.
-        if not key.can_encrypt:
-            return (
-                "Launchpad does not currently support validation of "
-                "sign-only GPG keys.  If you add an encryption subkey "
-                "(using <kbd>gpg --edit-key</kbd>) and upload your key "
-                "again, you should be able to import the key.")
-
         self._validateGPG(key)
 
         return ('A message has been sent to <code>%s</code>, encrypted with '
@@ -1111,13 +1188,18 @@ class PersonView:
         preferredemail = bag.user.preferredemail.email
         login = bag.login
 
+        if key.can_encrypt:
+            tokentype = LoginTokenType.VALIDATEGPG
+        else:
+            tokentype = LoginTokenType.VALIDATESIGNONLYGPG
+        
         token = logintokenset.new(self.context, login,
                                   preferredemail,
-                                  LoginTokenType.VALIDATEGPG,
+                                  tokentype,
                                   fingerprint=key.fingerprint)
 
         appurl = self.request.getApplicationURL()
-        token.sendGPGValidationRequest(appurl, key, encrypt=True)
+        token.sendGPGValidationRequest(appurl, key)
 
     def processPasswordChangeForm(self):
         if self.request.method != 'POST':
@@ -1181,10 +1263,8 @@ class PersonHackergotchiView(GeneralFormView):
                 file=StringIO(hackergotchi),
                 contentType=content_type)
             self.context.hackergotchi = hkg
+        self._nextURL = canonical_url(self.context)
         return 'Success'
-
-    def nextURL(self):
-        return canonical_url(self.context)
 
 
 class TeamJoinView(PersonView):
@@ -1376,7 +1456,7 @@ class PersonEditEmailsView:
         token.sendEmailValidationRequest(self.request.getApplicationURL())
 
         self.message = (
-                "An e-mail message was sent to '%s'. Follow the "
+                "An email message was sent to '%s'. Follow the "
                 "instructions in that message to confirm that the "
                 "address is yours." % newemail)
 

@@ -3,11 +3,11 @@
 __metaclass__ = type
 
 __all__ = ['ProductSeriesNavigation',
-           'ProductSeriesSetNavigation',
            'ProductSeriesContextMenu',
            'ProductSeriesView',
            'ProductSeriesRdfView',
-           'ProductSeriesSourceSetView']
+           'ProductSeriesSourceSetView',
+           'ProductSeriesReviewView']
 
 import re
 import urllib
@@ -26,12 +26,26 @@ from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 from canonical.launchpad.helpers import request_languages, browserLanguages
 from canonical.launchpad.interfaces import (
     IPerson, ICountry, IPOTemplateSet, ILaunchpadCelebrities, ILaunchBag,
-    ISourcePackageNameSet, validate_url, IProductSeries, IProductSeriesSet)
+    ISourcePackageNameSet, validate_url, IProductSeries)
 from canonical.launchpad.browser.potemplate import POTemplateView
+from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     ContextMenu, Link, enabled_with_permission, Navigation, GetitemNavigation,
-    stepto)
+    stepto, canonical_url)
 
+from canonical.launchpad import _
+
+class ProductSeriesReviewView(SQLObjectEditView):
+    def changed(self):
+        """Redirect to the productseries page.
+
+        We need this because people can now change productseries'
+        product and name, and this will make their canonical_url to
+        change too.         
+        """
+        self.request.response.addInfoNotification( 
+            _('This Serie has been changed'))
+        self.request.response.redirect(canonical_url(self.context))
 
 class ProductSeriesNavigation(Navigation):
 
@@ -44,11 +58,6 @@ class ProductSeriesNavigation(Navigation):
 
     def traverse(self, name):
         return self.context.getRelease(name)
-
-
-class ProductSeriesSetNavigation(GetitemNavigation):
-
-    usedfor = IProductSeriesSet
 
 
 class ProductSeriesContextMenu(ContextMenu):

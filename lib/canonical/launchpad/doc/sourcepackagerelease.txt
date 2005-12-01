@@ -44,3 +44,16 @@ If there isn't one, that should return None.
 
    >>> print SourcePackageRelease.get(20).productrelease
    None
+
+Verify the 'meta_binary' attribute:
+
+   >>> spr_test = SourcePackageRelease.get(20)
+   >>> spr_test.name
+   u'pmount'
+
+   >>> from canonical.launchpad.interfaces import (
+   ...    IDistroReleaseBinaryPackage) 
+
+   >>> IDistroReleaseBinaryPackage.providedBy(spr_test.meta_binaries[0])
+   True
+
