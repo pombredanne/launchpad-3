@@ -261,11 +261,11 @@ class ErrorReportingService:
                 request.setOopsId(oopsid)
 
             if self.copy_to_zlog:
-                self._do_copy_to_zlog(now, strtype, strurl, info)
+                self._do_copy_to_zlog(now, strtype, strurl, info, oopsid)
         finally:
             info = None
 
-    def _do_copy_to_zlog(self, now, strtype, url, info):
+    def _do_copy_to_zlog(self, now, strtype, url, info, oopsid):
         # XXX info is unused; logging.exception() will call sys.exc_info()
         # work around this with an evil hack
         distant_past = datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=UTC)
@@ -278,7 +278,8 @@ class ErrorReportingService:
             try:
                 raise info[0], info[1], info[2]
             except:
-                logging.getLogger('SiteError').exception(str(url))
+                logging.getLogger('SiteError').exception(
+                    '%s (%s)' % (url, oopsid))
 
     def getProperties(self):
         """See ILocalErrorReportingService.getProperties()"""

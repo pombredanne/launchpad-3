@@ -15,8 +15,8 @@
       </p>
       <p tal:condition="request/oopsid">
         The reference for this error is
-        <tt tal:content="request/oopsid">OOPS-A1234</tt>.  Please
-        include it in any related bug report or email.
+        <tt class="oopsid" tal:content="request/oopsid">OOPS-A1234</tt>.
+        Please include it in any related bug report or email.
       </p>
     <tal:replace tal:replace="structure view/maybeShowTraceback" />
     </div>

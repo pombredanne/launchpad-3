@@ -21,8 +21,8 @@
           </p>
           <p tal:condition="request/oopsid">
             The reference for this error is
-            <tt tal:content="request/oopsid">OOPS-A1234</tt>.  Please
-            include it in your bug report or email.
+            <tt class="oopsid" tal:content="request/oopsid">OOPS-A1234</tt>.
+            Please include it in your bug report or email.
           </p>
           <p>
             Thanks for helping improve Launchpad, and sorry for the inconvenience.
