@@ -187,7 +187,7 @@ class IPerson(IHasSpecifications):
     # Properties of the Person object.
     karma_category_caches = Attribute('The caches of karma scores, by '
         'karma category.')
-    ubuntite = Attribute("Ubuntite Flag")
+    is_ubuntite = Attribute("Ubuntite Flag")
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
     signedcocs = Attribute("List of Signed Code Of Conduct")
@@ -201,7 +201,6 @@ class IPerson(IHasSpecifications):
     allwikis = Attribute("All WikiNames of this Person.")
     ircnicknames = Attribute("List of IRC nicknames of this Person.")
     jabberids = Attribute("List of Jabber IDs of this Person.")
-    packages = Attribute("A Selection of SourcePackageReleases")
     branches = Attribute("All branches related to this persion. "
         "They might be registered, authored or subscribed by this person.")
     authored_branches = Attribute("The branches whose author is this person.")
@@ -210,7 +209,6 @@ class IPerson(IHasSpecifications):
         "author or an author different from this person.")
     subscribed_branches = Attribute("Branches to which this person "
         "subscribes.")
-    maintainerships = Attribute("This person's Maintainerships")
     activities = Attribute("Karma")
     myactivememberships = Attribute(
         "List of TeamMembership objects for Teams this Person is an active "
@@ -392,6 +390,14 @@ class IPerson(IHasSpecifications):
         Return an iterable of matching results.
         """
 
+    def maintainedPackages():
+        """Return all SourcePackageReleases maintained by this person."""
+
+    def uploadedButNotMaintainedPackages(self):
+        """Return all SourcePackageReleases created by this person but not
+        maintained by him.
+        """
+
     def validateAndEnsurePreferredEmail(email):
         """Ensure this person has a preferred email.
 
@@ -534,7 +540,7 @@ class IPersonSet(Interface):
     def __getitem__(personid):
         """Return the person with the given id.
 
-        Raise KeyError if there is no such person.
+        Raise NotFoundError if there is no such person.
         """
     
     def topPeople():

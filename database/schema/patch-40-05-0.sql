@@ -6,6 +6,11 @@ SET client_min_messages=ERROR;
 DELETE FROM ManifestEntry;
 DELETE FROM ArchConfigEntry;
 
+-- Drop some obsolete tables
+DROP TABLE ChangesetFileHash;
+DROP TABLE ChangesetFile;
+DROP TABLE ChangesetFilename;
+
 -- Remove everything. Will be repopulated.
 DELETE FROM Changeset; 
 DELETE FROM Branch;
@@ -180,9 +185,6 @@ DROP TABLE ArchNamespace;
 DROP TABLE ArchArchiveLocationSigner;
 DROP TABLE ArchArchiveLocation;
 DROP TABLE ArchArchive;
-DROP TABLE ChangesetFileHash;
-DROP TABLE ChangesetFile;
-DROP TABLE ChangesetFilename;
 DROP TABLE ProductBkBranch;
 
 -- Tidy up some foreign keys
@@ -201,4 +203,4 @@ ALTER TABLE Revision ADD CONSTRAINT revision_gpgkey_fk
     FOREIGN KEY (gpgkey) REFERENCES GPGKey;
 
 -- Shazzham!
-INSERT INTO LaunchpadDatabaseRevision VALUES (25, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (40, 5, 0);
