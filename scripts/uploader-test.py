@@ -12,6 +12,7 @@ import urllib
 import rfc822
 import sys
 import os
+import time
 
 from zope.component import getUtility
 
@@ -27,7 +28,8 @@ from canonical.launchpad.scripts import (
 from canonical.launchpad.utilities.gpghandler import PymeKey
 
 from canonical.launchpad.interfaces import (
-    IGPGHandler, GPGVerificationError, IGPGKeySet, IPersonSet)
+    IGPGHandler, GPGVerificationError, IGPGKeySet, IPersonSet,
+    IEmailAddressSet)
 
 from canonical.lp import dbschema
 
@@ -41,6 +43,7 @@ class UploaderTester:
         self.options = options
         self.uploader_team = uploader_team
         if keyring:
+            self.log.info("Import Keyring at %s", keyring)
             self._load_keyring(keyring)
 
     def _load_keyring(self, keyring):
@@ -100,7 +103,8 @@ class UploaderTester:
         key = getUtility(IGPGKeySet).getByFingerprint(sig.fingerprint)
         # we assume all keys have an owner.
         if key:
-            self.log.debug("User %s is already present in LPDB", key.owner.name)
+            self.log.debug("User %s is already present in LPDB", 
+                           key.owner.name)
             return
         # key not found, need to add
         self.log.debug("Key is not present, creating it.")
@@ -111,10 +115,16 @@ class UploaderTester:
             # create person ...
             # missed user details (email, displayname), parse changes
             # is there something ready in IPersonSet ?
-            user, email = getUtility(IPersonSet).createPersonAndEmail(
-                email, displayname=displayname)
-            # promote the email from NEW to PREFERRED
-            email.status = dbschema.EmailAddressStatus.PREFERRED
+            user = getUtility(IPersonSet).getByEmail(email)
+            
+            if user is None:
+                user, email = getUtility(IPersonSet).createPersonAndEmail(
+                    email, displayname=displayname)
+                # promote the email from NEW to PREFERRED
+                email.status = dbschema.EmailAddressStatus.PREFERRED
+            else:
+                email = getUtility(IEmailAddressSet).getByEmail(email)
+                
             # add user to the uploader_test team
             self.uploader_team.addMember(user)
             
@@ -156,8 +166,13 @@ class FTPURL:
 
 class RSyncError(Exception): pass
 
-def rsync_files(orig_url, dest_url):
-    cmd = "rsync -vz '%s' '%s'" % (orig_url, dest_url)
+def rsync_files(orig_url, dest_url, includes=None):
+    if includes is not None:
+        options = " ".join(["--include '%s'" % expr for expr in includes])
+        options += " --exclude '*'"
+    else:
+        options = ""
+    cmd = "rsync -vz %s '%s' '%s'" % (options, orig_url, dest_url)
     devnull = open("/dev/null", "w")
     process = subprocess.Popen(cmd, stdout=devnull, shell=True)
     devnull.close()
@@ -218,8 +233,12 @@ def main():
 
     parser.add_option("-k", "--keyring", dest="keyring", metavar="KEYRING",
                       help="OpenPGP Key Ring file to be imported.")
-    
-    (options, args) = parser.parse_args()
+
+    parser.add_option("-s", "--sleep", action="store", metavar="SLEEP",
+                      type="int",
+                      help="OpenPGP Key Ring file to be imported.")
+
+    options, args = parser.parse_args()
 
     if len(args) != 2:
         sys.exit("Usage: uploader-test.py <rsync url> <ftp url>")
@@ -243,7 +262,7 @@ def main():
     execute_zcml_for_scripts()
 
     log.debug("Acquiring lock")
-    lock = GlobalLock('/var/lock/launchpad-process-upload.lock')
+    lock = GlobalLock('/var/lock/launchpad-uploader-test.lock')
     lock.acquire(blocking=True)
 
     try:
@@ -257,7 +276,7 @@ def main():
                                 keyring=options.keyring)
 
         log.info("Fetching list of files with .changes suffix")
-        changes_filenames = rsync_list_filenames(rsync_url+"*.changes")
+        changes_filenames = rsync_list_filenames(rsync_url + "*.changes")
         for changes_filename in changes_filenames:
 
             temp_dir = tempfile.mkdtemp("-rsync-to-ftp")
@@ -267,7 +286,7 @@ def main():
 		changes_filepath = os.path.join(temp_dir, changes_filename)
 
                 log.info("Fetching %s" % changes_filename)
-                rsync_files(rsync_url+changes_filename, temp_dir)
+                rsync_files(rsync_url + changes_filename, temp_dir)
 
                 changes_file = open(changes_filepath)
                 tester.ensure_signer(changes_file.read())
@@ -277,8 +296,7 @@ def main():
                 files = read_files_from_changes(changes_filepath)
 
                 log.info("Downloading additional files...")
-                files_expr = "{%s}" % ','.join(files)
-                rsync_files(rsync_url+files_expr, temp_dir)
+                rsync_files(rsync_url + '*', temp_dir, includes=files)
 
                 for filename in files:
                     if filename.endswith(".dsc"):
@@ -294,7 +312,8 @@ def main():
             finally:
                 log.info("Removing temporary directory...")
                 shutil.rmtree(temp_dir)
-
+            # wait some time between uploads
+            time.sleep(options.sleep)
         log.info("Finished.")
 
     finally:
@@ -303,4 +322,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
 

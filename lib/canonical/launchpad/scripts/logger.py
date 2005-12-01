@@ -127,6 +127,10 @@ def logger_options(parser, default=logging.INFO):
             action="callback", callback=counter, callback_args=(10, ),
             help="Decrease verbosity. May be specified multiple times."
             )
+    parser.add_option(
+            "--log-file", action="store",
+            help="Send log to the given file, rather than stderr."
+            )
 
     # Set the global log
     global log
@@ -154,7 +158,12 @@ def logger(options=None, name=None):
         logger_options(parser)
         options, args = parser.parse_args()
 
-    return _logger(options.loglevel, name)
+    if options.log_file:
+        out_stream = open(options.log_file, 'a')
+    else:
+        out_stream = None
+
+    return _logger(options.loglevel, name, out_stream)
 
 
 def reset_root_logger():
@@ -164,11 +173,14 @@ def reset_root_logger():
         hdlr.close()
         root_logger.removeHandler(hdlr)
 
-def _logger(level, name=None):
+def _logger(level, name=None, out_stream=None):
     """Create the actual logger instance, logging at the given level
 
     if name is None, it will get args[0] without the extension (e.g. gina).
     """
+    
+    if out_stream is None:
+        out_stream = sys.stderr
 
     if name is None:
         # Determine the logger name from the script name
@@ -192,7 +204,7 @@ def _logger(level, name=None):
     # Make it print output in a standard format, suitable for 
     # both command line tools and cron jobs (command line tools often end
     # up being run from inside cron, so this is a good thing).
-    hdlr = logging.StreamHandler(strm=sys.stderr)
+    hdlr = logging.StreamHandler(strm=out_stream)
     if config.default_section == 'testrunner':
         # Don't output timestamps in the test environment
         fmt = '%(levelname)-7s %(message)s'
@@ -242,5 +254,7 @@ class _LogWrapper:
             return setattr(self._log, key, value)
 
 log = _LogWrapper(logging.getLogger())
+
+
 
 

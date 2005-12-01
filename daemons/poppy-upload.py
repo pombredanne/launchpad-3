@@ -1,13 +1,23 @@
 #!/usr/bin/python
 
-from canonical.poppy.server import run_server
-from canonical.archivepublisher.poppyinterface import PoppyInterface
-
 import sys
 import logging
+import optparse
+
+from canonical.poppy.server import run_server
+from canonical.archivepublisher.poppyinterface import PoppyInterface
+from canonical.launchpad.scripts import logger, logger_options
+
 
 def main():
-    args = sys.argv[1:]
+
+    parser = optparse.OptionParser()
+    logger_options(parser)
+
+    options, args = parser.parse_args()
+
+    log = logger(options, "poppy-upload")
+
     if len(args) != 2:
         print "usage: poppy-upload.py rootuploaddirectory port"
         return 1
@@ -16,19 +26,14 @@ def main():
     ident = "lucille upload server"
     numthreads = 4
 
-    #XXX cprov 20051130: use lp pattern for loghandler
-    logger = logging.getLogger('Server')
-    hdlr = logging.FileHandler('++lucilleupload.log')
-    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-    hdlr.setFormatter(formatter)
-    logger.addHandler(hdlr)
-    logger.setLevel(logging.DEBUG)
 
-    # command line to invoke uploader
-    cmd = [('python scripts/process-upload.py -C insecure '
-            '-r warty --no-mails -vv -d'), '@distro@', '@fsroot@'] 
-
-    iface = PoppyInterface(logger, cmd=cmd)
+    # command line to invoke uploader (it shares the same PYTHONPATH
+    # than poppy
+    cmd = [('python scripts/process-upload.py -C insecure -r breezy '
+            '--no-mails -vv --log-file %s -d' % options.log_file), 
+           '@distro@', '@fsroot@'] 
+   
+    iface = PoppyInterface(log, cmd=cmd)
     
 
     run_server(root, host, int(port), ident, numthreads,
@@ -38,3 +43,6 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
+
+
+
