@@ -49,10 +49,11 @@ to sign each email, we'll create a class which fakes a signed email:
 
     >>> import email
     >>> import email.Utils
-    >>> class SignedMessage(email.Message.Message):
+    >>> class MockSignedMessage(email.Message.Message):
     ...     def signedMessage(self):
     ...         return self
     ...     signedMessage = property(signedMessage)
+    ...     signature = object()
 
 And since we'll pass the email directly to the correct handler,
 we'll have to authenticate the user manually:
@@ -67,7 +68,7 @@ bug got submitted correctly:
     >>> from canonical.launchpad.mail.handlers import MaloneHandler
     >>> handler = MaloneHandler()
     >>> def process_email(raw_mail):
-    ...     msg = email.message_from_string(raw_mail, _class=SignedMessage)
+    ...     msg = email.message_from_string(raw_mail, _class=MockSignedMessage)
     ...     if not msg.has_key('Message-Id'):
     ...         msg['Message-Id'] = email.Utils.make_msgid()
     ...     handler.process(msg, msg['To'])
@@ -553,10 +554,35 @@ Error Handling
 --------------
 
 If an error is encountered, an email is sent to the sender informing
-him about the error. Let's start by trying to submit a bug without
-including an 'affects' command:
+him about the error. Let's start with trying to submit a bug without
+signing the mail:
 
     >>> login('test@canonical.com')
+    >>> def print_latest_email():
+    ...     transaction.commit()
+    ...     from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    ...     error_mail = email.message_from_string(raw_message)
+    ...     print "Subject: %s" % error_mail['Subject']
+    ...     print "To: %s" % ', '.join(to_addrs)
+    ...     print
+    ...     print error_mail.get_payload(decode=True)
+
+    >>> from canonical.launchpad.mail import SignedMessage
+    >>> msg = email.message_from_string(submit_mail, _class=SignedMessage)
+    >>> msg['Message-Id'] = email.Utils.make_msgid()
+    >>> handler.process(msg, msg['To'])
+    True
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    In order to submit bugs via email you have to sign the message with a
+    GPG key that is registered in Launchpad.
+
+Let's start by trying to submit a bug without
+including an 'affects' command:
+
     >>> submit_mail_no_bugtask = """From: test@canonical.com
     ... To: new@malone
     ... Date: Fri Jun 17 10:20:23 BST 2005

@@ -143,31 +143,36 @@ class MaloneHandler:
 
     def process(self, signed_msg, to_addr, filealias=None):
         commands = self.getCommands(signed_msg)
-
         user, host = to_addr.split('@')
-
         add_comment_to_bug = False
-        if user.lower() == 'new':
-            # A submit request.   
-            commands.insert(0, emailcommands.get('bug', ['new']))
-        elif user.isdigit():
-            # A comment to a bug. We set add_comment_to_bug to True so
-            # that the comment gets added to the bug later. We don't add
-            # the comment now, since we want to let the 'bug' command
-            # handle the possible errors that can occur while getting
-            # the bug.
-            add_comment_to_bug = True
-            commands.insert(0, emailcommands.get('bug', [user]))
-        elif user.lower() != 'edit':
-            # Indicate that we didn't handle the mail.
-            return False
 
-        bug = None
-        bug_event = None
-        bugtask = None
-        bugtask_event = None
-        bugtask_snapshot = None
         try:
+            if user.lower() == 'new':
+                # A submit request.
+                commands.insert(0, emailcommands.get('bug', ['new']))
+                if signed_msg.signature is None:
+                    raise IncomingEmailError(
+                        'In order to submit bugs via email you have to sign '
+                        'the message with a GPG key that is registered in '
+                        'Launchpad.')
+            elif user.isdigit():
+                # A comment to a bug. We set add_comment_to_bug to True so
+                # that the comment gets added to the bug later. We don't add
+                # the comment now, since we want to let the 'bug' command
+                # handle the possible errors that can occur while getting
+                # the bug.
+                add_comment_to_bug = True
+                commands.insert(0, emailcommands.get('bug', [user]))
+            elif user.lower() != 'edit':
+                # Indicate that we didn't handle the mail.
+                return False
+
+            bug = None
+            bug_event = None
+            bugtask = None
+            bugtask_event = None
+            bugtask_snapshot = None
+
             # XXX: Parts of this loop could be generalized. I'll do that
             #      in the next patch, though.
             #      -- Bjorn Tillenius, 2005-11-30
