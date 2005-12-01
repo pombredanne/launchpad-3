@@ -87,7 +87,7 @@ class PasswordChangeWidget(PasswordWidget):
         >>> widget.getInputValue()
         Traceback (most recent call last):
             [...]
-        WidgetInputError: ('foo', u'Foo', u'Passwords do not match')
+        WidgetInputError: ('foo', u'Foo', u'Passwords do not match.')
 
         >>> FunctionalTestSetup().tearDown()
         """
