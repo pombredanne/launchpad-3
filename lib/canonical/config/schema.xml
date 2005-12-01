@@ -31,6 +31,12 @@
 		Launchpad instances in the same directory structure.
 	    </description>
 	</key>
+	<key name="copy_to_zlog" datatype="boolean" default="false">
+	    <description>
+	        Should exceptions be sent to the log as well as being
+		saved to disk?
+	    </description>
+	</key>
     </sectiontype>
 
     <sectiontype name="launchpad">

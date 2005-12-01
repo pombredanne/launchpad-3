@@ -26,6 +26,18 @@ from canonical.launchpad.webapp.interfaces import (
 
 UTC = pytz.timezone('UTC')
 
+#Restrict the rate at which errors are sent to the Event Log
+_rate_restrict_pool = {}
+
+# The number of seconds that must elapse on average between sending two
+# exceptions of the same name into the the Event Log. one per minute.
+_rate_restrict_period = datetime.timedelta(seconds=60)
+
+# The number of exceptions to allow in a burst before the above limit
+# kicks in. We allow five exceptions, before limiting them to one per
+# minute.
+_rate_restrict_burst = 5
+
 
 class ErrorReport:
     implements(IErrorReport)
@@ -101,6 +113,7 @@ class ErrorReportingService:
     lastid = 0
 
     def __init__(self):
+        self.copy_to_zlog = config.launchpad.errorreports.copy_to_zlog
         self.lastid_lock = threading.Lock()
         self.lastid = self.findLastOopsId()
 
@@ -251,6 +264,21 @@ class ErrorReportingService:
                 self._do_copy_to_zlog(now, strtype, strurl, info)
         finally:
             info = None
+
+    def _do_copy_to_zlog(self, now, strtype, url, info):
+        # XXX info is unused; logging.exception() will call sys.exc_info()
+        # work around this with an evil hack
+        distant_past = datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=UTC)
+        when = _rate_restrict_pool.get(strtype, distant_past)
+        if now > when:
+            next_when = max(when,
+                            now - _rate_restrict_burst*_rate_restrict_period)
+            next_when += _rate_restrict_period
+            _rate_restrict_pool[strtype] = next_when
+            try:
+                raise info[0], info[1], info[2]
+            except:
+                logging.getLogger('SiteError').exception(str(url))
 
     def getProperties(self):
         """See ILocalErrorReportingService.getProperties()"""
