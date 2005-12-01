@@ -62,12 +62,14 @@ def main():
         # Note - no need to issue ztm.begin() or ztm.commit(),
         # as each of these next steps will issue these as appropriate
         # to make this script as transaction friendly as possible.
+        if not options.skip_content:
+            librariangc.delete_unreferenced_content(ztm) # first sweep
         if not options.skip_duplicates:
             librariangc.merge_duplicates(ztm)
         if not options.skip_aliases:
             librariangc.delete_unreferenced_aliases(ztm)
         if not options.skip_content:
-            librariangc.delete_unreferenced_content(ztm)
+            librariangc.delete_unreferenced_content(ztm) # second sweep
     finally:
         lockfile.release()
 
