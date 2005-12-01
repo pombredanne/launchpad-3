@@ -1482,11 +1482,11 @@ INSERT INTO karma (id, datecreated, person, "action") VALUES (13, '2025-08-10 16
 INSERT INTO karma (id, datecreated, person, "action") VALUES (14, '2025-08-10 16:30:47.448639', 12, 9);
 INSERT INTO karma (id, datecreated, person, "action") VALUES (15, '2025-10-14 15:12:29.602117', 16, 1);
 INSERT INTO karma (id, datecreated, person, "action") VALUES (16, '2025-10-14 15:12:29.602117', 16, 1);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (17, '2005-10-28 09:10:17.13237', 12, 1);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (18, '2005-10-28 09:10:47.344393', 16, 17);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (19, '2005-10-28 09:11:07.93721', 16, 8);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (20, '2005-11-02 15:14:22.177596', 12, 22);
-INSERT INTO karma (id, datecreated, person, "action") VALUES (21, '2005-11-02 15:14:22.177596', 12, 22);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (17, '2030-10-28 09:10:17.13237', 12, 1);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (18, '2030-10-28 09:10:47.344393', 16, 17);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (19, '2030-10-28 09:11:07.93721', 16, 8);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (20, '2030-11-02 15:14:22.177596', 12, 22);
+INSERT INTO karma (id, datecreated, person, "action") VALUES (21, '2030-11-02 15:14:22.177596', 12, 22);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'karma'::pg_catalog.regclass;
@@ -2002,7 +2002,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (44, 'bej', 'Beja', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (45, 'be', 'Belarusian', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (46, 'bem', 'Bemba', NULL, NULL, NULL, true, 0);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (47, 'bn', 'Bengali', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (47, 'bn', 'Bengali', NULL, 2, 'n != 1', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (48, 'ber', 'Berber (Other)', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (49, 'bho', 'Bhojpuri', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (50, 'bh', 'Bihari', NULL, NULL, NULL, true, 0);
@@ -2305,7 +2305,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (347, 'rn', 'Rundi', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (348, 'ru', 'Russian', NULL, 3, 'n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (349, 'sad', 'Sandawe', NULL, NULL, NULL, true, 0);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (350, 'sg', 'Sango', NULL, NULL, NULL, true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (350, 'sg', 'Sango', NULL, 2, 'n > 1', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (351, 'sah', 'Yakut', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (352, 'sai', 'South American Indian (Other)', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (353, 'sal', 'Salishan languages', NULL, NULL, NULL, true, 0);
@@ -7777,7 +7777,7 @@ INSERT INTO potranslation (id, translation) VALUES (643, 'Bitte setzen Sie Ihre 
 INSERT INTO potranslation (id, translation) VALUES (644, ' caratas');
 INSERT INTO potranslation (id, translation) VALUES (648, ' Srprise! (non-editor)');
 INSERT INTO potranslation (id, translation) VALUES (649, ' bang bang in evo hoary');
-INSERT INTO potranslation (id, translation) VALUES (652, 'This is a suggestion added by a non-editor for a multiline entry.
+INSERT INTO potranslation (id, translation) VALUES (652, 'This is a suggestion added by a non-editor for a multiline entry, and it happens to have a very long first line.
 It should work! :-P');
 
 
@@ -8075,7 +8075,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'project'::pg_catalog
 
 INSERT INTO project (id, "owner", name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, calendar) VALUES (1, 1, 'ubuntu', 'the Ubuntu Project', 'The Ubuntu Project', 'A community Linux distribution building a slick desktop for the global market. Ubuntu is absolutely free and will stay that way, contains no proprietary application software, always ships with the latest Gnome desktop software and Python integration.', 'The Ubuntu Project aims to create a freely redistributable OS that is easy to customize and derive from. Ubuntu is released every six months with contributions from a large community, especially the Gnome Project. While the full range of KDE and other desktop environments are available, Ubuntu''s Gnome desktop receives most of the polish and support work done for each release.
 
-Ubuntu also includes work to unify the translation of common open source desktop applications and the tracking of bugs across multiple distributions.', '2004-09-24 20:58:00.633513', 'http://www.ubuntulinux.org/', NULL, NULL, NULL, NULL, false, true, '''os'':54 ''aim'':48 ''bug'':125 ''kde'':84 ''six'':67 ''way'':28C ''also'':108 ''done'':103 ''easi'':57 ''free'':23C ''full'':81 ''larg'':73 ''open'':117 ''rang'':82 ''ship'':35C ''stay'':26C ''work'':102,110 ''alway'':34C ''avail'':90 ''build'':12C ''creat'':50 ''deriv'':61 ''everi'':66 ''gnome'':39C,77,93 ''linux'':10C ''month'':68 ''slick'':14C ''sourc'':118 ''track'':123 ''unifi'':112 ''across'':126 ''applic'':32C,120 ''common'':116 ''commun'':9C,74 ''custom'':59 ''especi'':75 ''freeli'':52 ''global'':18C ''includ'':109 ''integr'':44C ''latest'':38C ''market'':19C ''polish'':99 ''python'':43C ''receiv'':95 ''releas'':65,106 ''ubuntu'':1A,3A,6B,20C,46,63,91,107 ''absolut'':22C ''contain'':29C ''desktop'':15C,40C,87,94,119 ''environ'':88 ''multipl'':127 ''project'':4A,7B,47,78 ''softwar'':33C,41C ''support'':101 ''translat'':114 ''contribut'':70 ''distribut'':11C,128 ''proprietari'':31C ''redistribut'':53', NULL, 1, 3);
+Ubuntu also includes work to unify the translation of common open source desktop applications and the tracking of bugs across multiple distributions.', '2004-09-24 20:58:00.633513', 'http://www.ubuntulinux.org/', NULL, NULL, NULL, NULL, false, true, '''os'':54 ''aim'':48 ''bug'':125 ''kde'':84 ''six'':67 ''way'':28C ''also'':108 ''done'':103 ''easi'':57 ''free'':23C ''full'':81 ''larg'':73 ''open'':117 ''rang'':82 ''ship'':35C ''stay'':26C ''work'':102,110 ''alway'':34C ''avail'':90 ''build'':12C ''creat'':50 ''deriv'':61 ''everi'':66 ''gnome'':39C,77,93 ''linux'':10C ''month'':68 ''slick'':14C ''sourc'':118 ''track'':123 ''unifi'':112 ''across'':126 ''applic'':32C,120 ''common'':116 ''custom'':59 ''especi'':75 ''freeli'':52 ''global'':18C ''includ'':109 ''integr'':44C ''latest'':38C ''market'':19C ''polish'':99 ''python'':43C ''receiv'':95 ''releas'':65,106 ''ubuntu'':1A,3A,6B,20C,46,63,91,107 ''absolut'':22C ''contain'':29C ''desktop'':15C,40C,87,94,119 ''environ'':88 ''multipl'':127 ''project'':4A,7B,47,78 ''softwar'':33C,41C ''support'':101 ''translat'':114 ''communiti'':9C,74 ''contribut'':70 ''distribut'':11C,128 ''proprietari'':31C ''redistribut'':53', NULL, 1, 3);
 INSERT INTO project (id, "owner", name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, calendar) VALUES (2, 2, 'do-not-use-info-imports', 'DO NOT USE', 'DO NOT USE', 'DO NOT USE', 'TEMPORARY project till mirror jobs are assigned to correct project', '2004-09-24 20:58:00.637677', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, true, false, '''job'':20 ''use'':4A,9A,12B,15C ''info'':5A ''till'':18 ''assign'':22 ''import'':6A ''mirror'':19 ''correct'':24 ''project'':17,25 ''temporari'':16 ''do-not-use-info-import'':1A', NULL, 1, NULL);
 INSERT INTO project (id, "owner", name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, calendar) VALUES (3, 2, 'launchpad-mirrors', 'Launchpad SCM Mirrors', 'The Launchpad Mirroring Project', 'launchpad mirrors various revision control archives, that mirroring is managed here', 'A project to mirror revision control archives into Arch.', '2004-09-24 20:58:00.65398', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, false, true, '''scm'':5A ''arch'':29 ''manag'':20C ''revis'':14C,25 ''archiv'':16C,27 ''mirror'':3A,6A,9B,12C,18C,24 ''control'':15C,26 ''project'':10B,22 ''various'':13C ''launchpad'':2A,4A,8B,11C ''launchpad-mirror'':1A', NULL, 1, NULL);
 INSERT INTO project (id, "owner", name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, calendar) VALUES (4, 12, 'mozilla', 'the Mozilla Project', 'The Mozilla Project', 'The Mozilla Project is the largest open source web browser collaborative project. Founded when Netscape released the source code to its pioneering browser in 1999, the Mozilla Project continues to set the standard for web browser technology.', 'The Mozilla Project produces several internet applications that are very widely used, and is also a center for collaboration on internet standards work by open source groups.
@@ -8579,6 +8579,7 @@ INSERT INTO spokenin ("language", country, id) VALUES (348, 179, 119);
 INSERT INTO spokenin ("language", country, id) VALUES (348, 223, 121);
 INSERT INTO spokenin ("language", country, id) VALUES (360, 55, 153);
 INSERT INTO spokenin ("language", country, id) VALUES (366, 70, 227);
+INSERT INTO spokenin ("language", country, id) VALUES (367, 201, 344);
 INSERT INTO spokenin ("language", country, id) VALUES (371, 194, 251);
 INSERT INTO spokenin ("language", country, id) VALUES (372, 195, 260);
 INSERT INTO spokenin ("language", country, id) VALUES (374, 162, 261);
@@ -8610,6 +8611,7 @@ INSERT INTO spokenin ("language", country, id) VALUES (387, 97, 97);
 INSERT INTO spokenin ("language", country, id) VALUES (397, 206, 248);
 INSERT INTO spokenin ("language", country, id) VALUES (397, 74, 246);
 INSERT INTO spokenin ("language", country, id) VALUES (401, 101, 19);
+INSERT INTO spokenin ("language", country, id) VALUES (401, 201, 343);
 INSERT INTO spokenin ("language", country, id) VALUES (403, 179, 8);
 INSERT INTO spokenin ("language", country, id) VALUES (404, 101, 18);
 INSERT INTO spokenin ("language", country, id) VALUES (408, 210, 17);

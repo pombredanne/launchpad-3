@@ -3,7 +3,6 @@
 __metaclass__ = type
 
 __all__ = ['ProductSeriesNavigation',
-           'ProductSeriesSetNavigation',
            'ProductSeriesContextMenu',
            'ProductSeriesView',
            'ProductSeriesRdfView',
@@ -27,7 +26,7 @@ from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 from canonical.launchpad.helpers import request_languages, browserLanguages
 from canonical.launchpad.interfaces import (
     IPerson, ICountry, IPOTemplateSet, ILaunchpadCelebrities, ILaunchBag,
-    ISourcePackageNameSet, validate_url, IProductSeries, IProductSeriesSet)
+    ISourcePackageNameSet, validate_url, IProductSeries)
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
@@ -59,11 +58,6 @@ class ProductSeriesNavigation(Navigation):
 
     def traverse(self, name):
         return self.context.getRelease(name)
-
-
-class ProductSeriesSetNavigation(GetitemNavigation):
-
-    usedfor = IProductSeriesSet
 
 
 class ProductSeriesContextMenu(ContextMenu):

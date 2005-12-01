@@ -21,7 +21,8 @@ from canonical.launchpad.event import (
 from canonical.launchpad.event.interfaces import ISQLObjectCreatedEvent
 from canonical.launchpad.mailnotification import get_email_template
 
-from canonical.lp.dbschema import BugTaskStatus, BugTaskSeverity
+from canonical.lp.dbschema import (
+    BugTaskStatus, BugTaskSeverity, BugTaskPriority)
 
 
 def normalize_arguments(string_args):
@@ -272,7 +273,7 @@ class AffectsEmailCommand(EditEmailCommand):
     """Either creates a new task, or edits an existing task."""
 
     implements(IBugEditEmailCommand)
-    _subCommandNames = ['status', 'severity', 'assignee']
+    _subCommandNames = ['status', 'severity', 'assignee', 'priority']
 
     def execute(self, bug, current_event):
         """See IEmailCommand."""
@@ -434,6 +435,11 @@ class SeverityEmailCommand(DBSchemaEditEmailCommand):
     dbschema = BugTaskSeverity
 
 
+class PriorityEmailCommand(DBSchemaEditEmailCommand):
+    """Changes the bug task's priority."""
+    dbschema = BugTaskPriority
+
+
 class NoSuchCommand(KeyError):
     """A command with the given name couldn't be found."""
 
@@ -450,6 +456,7 @@ class EmailCommands:
         'affects': AffectsEmailCommand,
         'assignee': AssigneeEmailCommand,
         'status': StatusEmailCommand,
+        'priority': PriorityEmailCommand,
         'severity': SeverityEmailCommand,
     }
 
