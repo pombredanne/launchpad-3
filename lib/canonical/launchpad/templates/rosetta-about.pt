@@ -18,33 +18,34 @@
 
   <h1>About Rosetta</h1>
 
-      <p>
-        Rosetta is a Web-based system for translating open source software into
-        any language. All you need to start translating is a Web browser, a good
-        knowledge of the application you are translating, and a knowledge of
-        English.
-      </p>
+  <p>
+    Rosetta is a Web-based system for translating open source software into
+    any language. All you need to start translating is a Web browser, a good
+    knowledge of the application you are translating, and a knowledge of
+    English.
+  </p>
 
-    <h2>Join the Rosetta community</h2>
+  <h2>Join the Rosetta community</h2>
 
-    <p>To participate in the development and testing of Rosetta, join
-    the <a
+  <p>
+    To participate in the development and testing of Rosetta, join the <a
     href="http://lists.canonical.com/mailman/listinfo/rosetta-users">Rosetta
     users mailing list</a>, where we discuss new features, bugs and other
-    issues.</p>
+    issues.
+  </p>
 
-    <h2>Adding projects to Rosetta</h2>
+  <h2>Learn how to work with Rosetta</h>
 
-      <p>
-        Rosetta uses the <a href="http://www.gnu.org/software/gettext/">GNU
-        <code>gettext</code></a> software, so it can be used to translate any
-        software that supports the standard <abbr>PO</abbr> file format.
-      </p>
-      <p>
-        To register software for translation in Rosetta, follow the
-        instructions noted at <a href="https://wiki.ubuntu.com/RosettaFAQ">
-        RosettaFAQ</a>
-      </p>
+  <p>
+    If you want more info about Rosetta or how to do something with it, please
+    take a look to the <a href="https://wiki.ubuntu.com/RosettaFAQ">Rosetta
+    FAQ guide</a>.
+  </p>
+
+  <p>
+    You can also find some other useful information about Rosetta taking a
+    look to its main <a href="https://wiki.ubuntu.com/Rosetta">Wiki page</a>
+  </p>
 
 </div>
 
