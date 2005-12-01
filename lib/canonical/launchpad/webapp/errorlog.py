@@ -42,14 +42,13 @@ _rate_restrict_burst = 5
 class ErrorReport:
     implements(IErrorReport)
 
-    def __init__(self, id, type, value, time, tb_text, tb_html,
-                 username, url, req_vars):
+    def __init__(self, id, type, value, time, tb_text, username,
+                 url, req_vars):
         self.id = id
         self.type = type
         self.value = value
         self.time = time
         self.tb_text = tb_text
-        self.tb_html = tb_html
         self.username = username
         self.url = url
         self.req_vars = req_vars
@@ -98,9 +97,8 @@ class ErrorReport:
             key, value = line.split('=', 1)
             req_vars.append((key, value))
         tb_text = ''.join(lines[linenum+1:])
-        tb_html = None
 
-        return cls(id, exc_type, exc_value, date, tb_text, tb_html,
+        return cls(id, exc_type, exc_value, date, tb_text,
                    username, url, req_vars)
 
 class ErrorReportingService:
@@ -200,7 +198,6 @@ class ErrorReportingService:
             now = datetime.datetime.now(UTC)
         try:
             tb_text = None
-            tb_html = None
 
             strtype = str(getattr(info[0], '__name__', info[0]))
             if strtype in self._ignored_exceptions:
@@ -209,8 +206,6 @@ class ErrorReportingService:
             if not isinstance(info[2], basestring):
                 tb_text = ''.join(format_exception(*info,
                                                    **{'as_html': False}))
-                tb_html = ''.join(format_exception(*info,
-                                                   **{'as_html': True}))
             else:
                 tb_text = info[2]
 
@@ -253,7 +248,7 @@ class ErrorReportingService:
 
             oopsid, filename = self.newOopsId(now)
 
-            entry = ErrorReport(oopsid, strtype, strv, now, tb_text, tb_html,
+            entry = ErrorReport(oopsid, strtype, strv, now, tb_text,
                                 username, strurl, req_vars)
             entry.write(open(filename, 'wb'))
 

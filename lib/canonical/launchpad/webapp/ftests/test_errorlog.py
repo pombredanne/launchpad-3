@@ -23,14 +23,13 @@ class TestErrorReport(unittest.TestCase):
         """Test ErrorReport.__init__()"""
         from canonical.launchpad.webapp.errorlog import ErrorReport
         entry = ErrorReport('id', 'exc-type', 'exc-value', 'timestamp',
-                            'traceback-text', 'traceback-html', 'username',
-                            'url', [('name1', 'value1'), ('name2', 'value2')])
+                            'traceback-text', 'username', 'url',
+                            [('name1', 'value1'), ('name2', 'value2')])
         self.assertEqual(entry.id, 'id')
         self.assertEqual(entry.type, 'exc-type')
         self.assertEqual(entry.value, 'exc-value')
         self.assertEqual(entry.time, 'timestamp')
         self.assertEqual(entry.tb_text, 'traceback-text')
-        self.assertEqual(entry.tb_html, 'traceback-html')
         self.assertEqual(entry.username, 'username')
         self.assertEqual(entry.url, 'url')
         self.assertEqual(len(entry.req_vars), 2)
@@ -43,7 +42,7 @@ class TestErrorReport(unittest.TestCase):
         entry = ErrorReport('OOPS-A0001', 'NotFound', 'error message',
                             datetime.datetime(2005, 04, 01, 00, 00, 00,
                                               tzinfo=UTC),
-                            'traceback-text', 'traceback-html',
+                            'traceback-text',
                             'Sample User', 'http://localhost:9000/foo',
                             [('HTTP_USER_AGENT', 'Mozilla/5.0'),
                              ('HTTP_REFERER', 'http://localhost:9000/')])
@@ -85,7 +84,6 @@ class TestErrorReport(unittest.TestCase):
         # this should probably convert back to a datetime
         self.assertEqual(entry.time, '2005-04-01T00:00:00+00:00')
         self.assertEqual(entry.tb_text, 'traceback-text')
-        self.assertEqual(entry.tb_html, None)
         self.assertEqual(entry.username, 'Sample User')
         self.assertEqual(entry.url, 'http://localhost:9000/foo')
         self.assertEqual(len(entry.req_vars), 2)

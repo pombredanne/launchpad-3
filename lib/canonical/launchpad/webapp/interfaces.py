@@ -231,7 +231,6 @@ class IErrorReport(Interface):
     value = Attribute('the value of the exception that occurred')
     time = Attribute('the time at which the exception occurred')
     tb_text = Attribute('a text version of the traceback')
-    tb_html = Attribute('an html version of the traceback')
     username = Attribute('the user associated with the request')
     url = Attribute('the URL for the failed request')
     req_vars = Attribute('the request variables')

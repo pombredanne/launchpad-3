@@ -42,20 +42,9 @@
     </div>
     <br/>
 
-    <div tal:condition="entry/tb_html" tal:content="structure entry/tb_html">
-      Traceback (HTML)
-    </div>
-
-    <pre tal:condition="not:entry/tb_html" tal:content="entry/tb_text">
+    <pre tal:content="entry/tb_text">
       Traceback (text)
     </pre>
-
-    <p tal:condition="entry/tb_text">
-      <a href="." 
-         tal:attributes="href string:showTextTBEntry.html?id=${entry/id}" 
-         i18n:translate="">Display traceback as text</a>
-    </p>
-
 
     <div tal:condition="entry/req_html">
 
