@@ -269,7 +269,7 @@ class ImporterHandler:
             # If the sourcepackagerelease is not imported, not way to import
             # this binarypackage. Warn and giveup.
             raise NoSourcePackageError("No source package %s (%s) found "
-                "for %s (%s)" % (binarypackagedata.name,
+                "for %s (%s)" % (binarypackagedata.package,
                                  binarypackagedata.version,
                                  binarypackagedata.source,
                                  binarypackagedata.source_version))
@@ -905,7 +905,7 @@ class BinaryPackagePublisher:
             name = binarypackage.binarypackagename.name
             raise MultiplePublishingEntryError("Binary package %s (%s) has "
                 "more than one publishing record for %s" %
-                (name, binarypackage.version, 
+                (name, binarypackage.version,
                  distroarchrelease.distrorelease.name))
 
 
