@@ -7,8 +7,17 @@
 
     <content class="canonical.launchpad.database.POMsgSet">
       <require permission="zope.Public"
-          interface="canonical.launchpad.interfaces.IEditPOMsgSet"
+          interface="canonical.launchpad.interfaces.IPOMsgSet"
           set_attributes="fuzzy" />
     </content>
+
+    <browser:pages
+      for="canonical.launchpad.interfaces.IPOMsgSet"
+      class="canonical.launchpad.browser.POMsgSetView"
+      permission="zope.Public">
+      <browser:page
+        name="+pomsgset-translate"
+        template="../templates/pomsgset-translate.pt" />
+    </browser:pages>
 
 </configure>

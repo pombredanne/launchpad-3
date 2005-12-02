@@ -123,6 +123,18 @@
         class="canonical.launchpad.browser.POExportView"
         />
 
+    <!-- Note: This is a POMsgSet page. This registration is duplicated
+      in pomsgset.zcml, so that they can work on pages where IPOFile is the
+      context.) -->
+    <browser:pages
+      for="canonical.launchpad.interfaces.IPOFile"
+      class="canonical.launchpad.browser.POMsgSetView"
+      permission="zope.Public">
+      <browser:page
+        name="+pomsgset-translate"
+        template="../templates/pomsgset-translate.pt" />
+    </browser:pages>
+
     <!-- Dummy PO File -->
     <content class="canonical.launchpad.database.DummyPOFile">
         <allow interface="canonical.launchpad.interfaces.IPOFile" />

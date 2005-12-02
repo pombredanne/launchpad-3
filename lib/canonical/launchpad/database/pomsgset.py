@@ -17,14 +17,14 @@ from canonical.database.sqlbase import (SQLBase, sqlvalues,
 from canonical.lp.dbschema import (RosettaTranslationOrigin,
     TranslationValidationStatus)
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import IEditPOMsgSet
+from canonical.launchpad.interfaces import IPOMsgSet
 from canonical.launchpad.database.poselection import POSelection
 from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
 
 
 class POMsgSet(SQLBase):
-    implements(IEditPOMsgSet)
+    implements(IPOMsgSet)
 
     _table = 'POMsgSet'
 
@@ -116,11 +116,9 @@ class POMsgSet(SQLBase):
                """ % (self.id, pluralform),
                clauseTables=['POSelection'])
 
-    # IEditPOMsgSet
-
     def updateTranslationSet(self, person, new_translations, fuzzy,
         published, ignore_errors=False, force_edition_rights=False):
-        """See IEditPOMsgSet."""
+        """See IPOMsgSet."""
         # Is the person allowed to edit translations?
         is_editor = (force_edition_rights or
                      self.pofile.canEditTranslations(person))

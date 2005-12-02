@@ -259,7 +259,6 @@ class POMsgSetView:
         curr = sec_lang_potmsgset.getCurrentSubmissions(sec_lang, index)
         self._second_language_submissions = list(curr)[:3]
         return self._second_language_submissions
-        
 
     def isFuzzy(self):
         """Return if this pomsgset is set as fuzzy or not."""

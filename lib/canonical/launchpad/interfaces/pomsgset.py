@@ -4,9 +4,10 @@ from zope.interface import Interface, Attribute
 
 __metaclass__ = type
 
-__all__ = ('IPOMsgSet', 'IEditPOMsgSet')
+__all__ = ['IPOMsgSet']
 
 class IPOMsgSet(Interface):
+
     sequence = Attribute("The ordering of this set within its file.")
 
     pofile = Attribute("The PO file this set is associated with.")
@@ -89,10 +90,6 @@ class IPOMsgSet(Interface):
 
         So, for example, this will include submissions that are current
         upstream, or in other distributions."""
-
-
-class IEditPOMsgSet(IPOMsgSet):
-    """Interface for editing a POMsgSet."""
 
     def updateTranslationSet(person, new_translations, fuzzy, published,
         ignore_errors=False, force_edition_rights=False):
