@@ -32,6 +32,8 @@
       />
     </tr>
   </table>
+  <div class="body">
+  
   <h2 class="lpcontext">
     <metal:block
       define-slot="titleheader"
@@ -159,6 +161,8 @@
   <!-- end column wrapper -->
 
   <div class="visualClear">&nbsp;</div>
+
+  </div><!-- class="body" -->
 
   <div class="footer">
       Copyright 2004-2005 Canonical Ltd. &ndash;  <a

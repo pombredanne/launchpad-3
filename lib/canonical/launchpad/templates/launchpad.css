@@ -63,13 +63,18 @@ thead th, tr.thead th {
 }
 
 /* === Global Launchpad design: === */
+
 body {
   background-color: #fcfcfc;
   color: black;
   font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
   margin: 0;
-  padding: 0.5em 0.75em;
+  padding: 0;
 }
+.body {
+  margin: 0 1em;
+}
+
 :visited {
   background: none;
   color: #8888bb;
@@ -374,9 +379,26 @@ ul.app>li.current {
   border-bottom: 1px solid #fcfcfc;
 }
 
+/* Column definitions: */
 
-
-
+#portal-column-content {
+  display: inline; /* avoids MSIE Double Float Margin bug */
+  float: left;
+  margin-left: 26%; /* = 25% + 1% whitespace */
+  width: 48%; /* = 50% - 1% left whitespace - 1% right whitespace */
+}
+#portal-column-two {
+  display: inline;
+  float: left;
+  margin-left: 2%; /* whitespace */
+  width: 24%; /* = 25% - 1% whitespace */
+}
+#portal-column-one {
+  display: inline;
+  float: left;
+  margin-left: -100%; /* flush with the left edge of the page */
+  width: 24%; /* = 25% - 1% whitespace */
+}
 
 
 /* ----------------------- UNCHANGED FROM PLONE.CSS ----------------------- */
@@ -509,28 +531,6 @@ ins {
 }
 
 /* -------------------------- END OF PLONE.CSS -------------------------- */
-
-/* Column definitions */
-
-#portal-column-content {
-  display: inline; /* avoids MSIE Double Float Margin bug */
-  float: left;
-  margin-left: 26%; /* = 25% + 1% whitespace */
-  width: 48%; /* = 50% - 1% left whitespace - 1% right whitespace */
-}
-#portal-column-two {
-  display: inline;
-  float: left;
-  margin-left: 2%; /* whitespace */
-  width: 24%; /* = 25% - 1% whitespace */
-}
-
-#portal-column-one {
-  display: inline;
-  float: left;
-  margin-left: -100%; /* flush with the left edge of the page */
-  width: 24%; /* = 25% - 1% whitespace */
-}
 
 /* Launchpad classes */
 
