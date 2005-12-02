@@ -2,13 +2,13 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.interfaces import BugCreationConstraintsError
+from canonical.launchpad.interfaces import CreatedBugWithNoBugTasksError
 
 def at_least_one_task(bug, event):
     """Make sure that the created bug has at least one task.
-    
+
     If not a ValueError is raised.
     """
     if len(bug.bugtasks) == 0:
-        raise BugCreationConstraintsError(
+        raise CreatedBugWithNoBugTasksError(
             "The bug has to affect at least one product or distribution.")

@@ -12,7 +12,7 @@ from canonical.launchpad.helpers import Snapshot, is_maintainer
 from canonical.launchpad.interfaces import (
     ILaunchBag, IMessageSet, IBugEmailCommand, IBugTaskEmailCommand,
     IBugEditEmailCommand, IBugTaskEditEmailCommand, IBug, IBugTask,
-    IMailHandler, IBugMessageSet, BugCreationConstraintsError,
+    IMailHandler, IBugMessageSet, CreatedBugWithNoBugTasksError,
     EmailProcessingError, IUpstreamBugTask, IDistroBugTask,
     IDistroReleaseBugTask)
 from canonical.launchpad.mail.commands import emailcommands
@@ -254,8 +254,9 @@ class MaloneHandler:
             if bug_event is not None:
                 try:
                     notify(bug_event)
-                except BugCreationConstraintsError, error:
-                    raise IncomingEmailError(str(error))
+                except CreatedBugWithNoBugTasksError:
+                    raise IncomingEmailError(get_email_template(
+                        'no-affects-target-on-submit.txt'))
             if bugtask_event is not None:
                 notify(bugtask_event)
 
