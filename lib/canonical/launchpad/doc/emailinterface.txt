@@ -579,6 +579,7 @@ signing the mail:
     ...
     In order to submit bugs via email you have to sign the message with a
     GPG key that is registered in Launchpad.
+    ...
 
 A submit without specifying on what we want to file the bug on:
 
@@ -594,8 +595,7 @@ A submit without specifying on what we want to file the bug on:
     To: test@canonical.com
     <BLANKLINE>
     ...
-    An error occurred while processing your mail to create a new bug. You
-    didn't specify on what you want to file a bug on. A new bug has to
+    You didn't specify on what you want to file a bug on. A new bug has to
     affect either a product or a distribution. Please use the 'affects'
     command in order to specify on what you want to file a bug on. For
     example, in order to file a bug on Launchpad itself, use:
@@ -618,6 +618,7 @@ Submit a bug on a distribution that doesn't exist:
     <BLANKLINE>
     ...
     'foo' couldn't be found in command 'affects /distros/foo'
+    ...
 
 
 An empty unsigned mail to new@malone:
@@ -634,8 +635,7 @@ An empty unsigned mail to new@malone:
     To: test@canonical.com
     <BLANKLINE>
     ...
-    An error occurred while processing your mail to create a new bug. You
-    didn't specify on what you want to file a bug on. A new bug has to
+    You didn't specify on what you want to file a bug on. A new bug has to
     affect either a product or a distribution. Please use the 'affects'
     command in order to specify on what you want to file a bug on. For
     example, in order to file a bug on Launchpad itself, use:
