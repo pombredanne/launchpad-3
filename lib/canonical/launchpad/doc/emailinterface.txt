@@ -580,8 +580,7 @@ signing the mail:
     In order to submit bugs via email you have to sign the message with a
     GPG key that is registered in Launchpad.
 
-Let's start by trying to submit a bug without
-including an 'affects' command:
+A submit without specifying on what we want to file the bug on:
 
     >>> submit_mail_no_bugtask = """From: test@canonical.com
     ... To: new@malone
@@ -590,26 +589,14 @@ including an 'affects' command:
     ...
     ... There's a nasty bug in Evolution."""
     >>> process_email(submit_mail_no_bugtask)
-
-No bug was created, instead an error mail was sent to the submitter:
-
-    >>> transaction.commit()
-    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
-    >>> error_mail = email.message_from_string(raw_message)
-    >>> print error_mail['Subject']
-    Submit Request Failure
-
-    >>> print to_addrs
-    ['test@canonical.com']
-
-    >>> print error_mail.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    An error...
-    ...
-    Error message:
+    >>> print_latest_email() #doctest: -NORMALIZE_WHITESPACE
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
     ...
     The bug has to affect at least one product or distribution.
 
-Now we try to submit a bug on a distribution that doesn't exist:
+Submit a bug on a distribution that doesn't exist:
 
     >>> submit_mail_distro_not_found = """From: test@canonical.com
     ... To: new@malone
@@ -619,22 +606,15 @@ Now we try to submit a bug on a distribution that doesn't exist:
     ... There's a nasty bug in Foo.
     ...  affects /distros/foo"""
     >>> process_email(submit_mail_distro_not_found)
-
-Again no bug was filed, and an error mail was sent:
-
-    >>> transaction.commit()
-    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
-    >>> error_mail = email.message_from_string(raw_message)
-
-    >>> print error_mail.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    An error...
-    ...
-    Error message:
+    >>> print_latest_email() #doctest: -NORMALIZE_WHITESPACE
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
     ...
     'foo' couldn't be found in command 'affects /distros/foo'
 
 
-Let's send an empty unsigned mail to new@malone:
+An empty unsigned mail to new@malone:
 
     >>> submit_empty = """From: test@canonical.com
     ... To: new@malone
@@ -643,17 +623,10 @@ Let's send an empty unsigned mail to new@malone:
     ...
     ... """
     >>> process_email(submit_empty)
-
-This causes an error message to be sent to the submitter:
-
-    >>> transaction.commit()
-    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
-    >>> error_mail = email.message_from_string(raw_message)
-
-    >>> print error_mail.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    An error...
-    ...
-    Error message:
+    >>> print_latest_email() #doctest: -NORMALIZE_WHITESPACE
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
     ...
     An error occurred while processing your mail to create a new bug. You
     didn't specify on what you want to file a bug on. A new bug has to
