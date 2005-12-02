@@ -17,7 +17,14 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import IPasswordEncryptor
 
 class PasswordMismatch(ValidationError):
-    __doc__ = _("Passwords do not match")
+    __doc__ = _("Passwords do not match.")
+
+    def __repr__(self):
+        return repr(self.__doc__)
+
+
+class RequiredPasswordMissing(ValidationError):
+    __doc__ = _("You must enter a password.")
 
     def __repr__(self):
         return repr(self.__doc__)
@@ -80,7 +87,7 @@ class PasswordChangeWidget(PasswordWidget):
         >>> widget.getInputValue()
         Traceback (most recent call last):
             [...]
-        WidgetInputError: ('foo', u'Foo', u'Passwords do not match')
+        WidgetInputError: ('foo', u'Foo', u'Passwords do not match.')
 
         >>> FunctionalTestSetup().tearDown()
         """
@@ -93,9 +100,18 @@ class PasswordChangeWidget(PasswordWidget):
             raise self._error
 
         # If the user hasn't entered a password, we use the existing one
-        # if it is there
+        # if it is there. If it is not there, we are creating a new password
+        # and we raise an error
         if not value1:
-            return self._getCurrentPassword()
+            current_password = self._getCurrentPassword()
+            if current_password:
+                return current_password
+            else:
+                self._error = WidgetInputError(
+                        self.context.__name__, self.label,
+                        RequiredPasswordMissing()
+                        )
+                raise self._error
 
         # Do any other validation
         value = PasswordWidget.getInputValue(self)

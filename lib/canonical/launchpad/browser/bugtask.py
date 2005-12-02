@@ -231,9 +231,7 @@ class BugTaskView:
             self.context = real_task
 
             # Add an appropriate feedback message
-            self.notices.append(
-                "Successfully opened bug #%d in %s" % (
-                real_task.bug.id, real_task.targetname))
+            self.notices.append("Thank you for your bug report.")
 
     def isReportedInContext(self):
         """Is the bug reported in this context? Returns True or False.
