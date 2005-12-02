@@ -7,6 +7,11 @@ from zope.testing.doctest import DocTestSuite
 from canonical.launchpad import datetimeutils
 
 
+def test_suite():
+    suite = unittest.TestSuite()
+    suite.addTest(DocTestSuite(datetimeutils))
+    return suite
+
 if __name__ == '__main__':
-    unittest.TextTestRunner().run(DocTestSuite(datetimeutils))
+    unittest.TextTestRunner().run(test_suite())
 

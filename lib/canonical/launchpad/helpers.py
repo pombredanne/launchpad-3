@@ -1152,6 +1152,8 @@ def intOrZero(value):
     0
     >>> intOrZero(1)
     1
+    >>> intOrZero(-9)
+    -9
     """
     try:
         return int(value)
@@ -1173,6 +1175,8 @@ def positiveIntOrZero(value):
     0
     >>> positiveIntOrZero('5')
     5
+    >>> positiveIntOrZero(3.1415)
+    3
     """
     value = intOrZero(value)
     if value < 0:
