@@ -364,10 +364,7 @@ input[type="radio"] {
   background-color: #dee7ec;
   color: inherit;
 }
-ul.facets {
-  text-align: right;
-}
-ul.app {
+ul.app { /* Currently not used */
   padding: 0;
   margin: 1em 0 1em;
   border-bottom: 1px solid #8cacbb;
@@ -395,10 +392,14 @@ ul.app>li.current {
 /* Column definitions: */
 
 #portal-column-content {
-  display: inline; /* avoids MSIE Double Float Margin bug */
+  display: inline; /* avoid MSIE Double Float Margin bug */
   float: left;
   margin-left: 26%; /* = 25% + 1% whitespace */
   width: 48%; /* = 50% - 1% left whitespace - 1% right whitespace */
+}
+* > #portal-column-content { /* hide from MSIE/Win 5 where "relative" breaks */
+  position: relative; /* allow z-index to work */
+  z-index: 1000; /* force main column to appear on top */
 }
 #portal-column-two {
   display: inline;
@@ -413,11 +414,11 @@ ul.app>li.current {
   width: 24%; /* = 25% - 1% whitespace */
 }
 
-.sitemap {
+.sitemap, ul.facets {
   background-color: #dee7ec;
   border: 1px solid #8cacbb;
   font-size: smaller;
-  margin-bottom: 1em;
+  margin: 0 0 1em 0;
 }
 #pillars, #subpillars {
   display: inline;
@@ -433,18 +434,37 @@ ul.app>li.current {
   width: 50%;
 }
 #pillars li, #subpillars li {
-  height: 1.5em !important;
   list-style: none;
   margin: 0;
 }
 .sitemap :link, .sitemap :visited, .sitemap .current {
   display: block;
-  padding: 0.125em 1em;
+  padding: 0.25em 1em;
   text-decoration: none;
 }
-.sitemap .current {
+.sitemap li.current, .facets li.current {
   background-color: white;
   color: inherit;
+}
+/* The following paddings/margins aren't yet robust when zoomed. */
+ul.facets {
+  padding: 0.25em 0 0.25em 0;
+}
+ul.facets :link, ul.facets :visited {
+  text-decoration: none;
+}
+ul.facets>li {
+  list-style-position: inside;
+  margin: 0.25em 1em;
+  padding-left: 0.5em;
+}
+ul.facets>li.current {
+  padding-left: 0.5em;
+}
+ul.facets>li ul {
+  list-style-position: outside;
+  margin-left: 1.5em;
+  padding-left: 1.5em;
 }
 
 /* ----------------------- UNCHANGED FROM PLONE.CSS ----------------------- */
