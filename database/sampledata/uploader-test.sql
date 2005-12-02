@@ -208,16 +208,43 @@ INSERT INTO ComponentSelection (distrorelease, component)
 INSERT INTO DistroComponentUploader (distribution, component, uploader)
             VALUES ((SELECT id from Distribution where name = 'ubuntu') ,
            	    (SELECT id from Component where name = 'main'),
-                    (SELECT id from Person where name = 'name17'));  
+                    (SELECT id from Person where name = 'ubuntu-team'));
 
 INSERT INTO DistroComponentUploader (distribution, component, uploader)
             VALUES ((SELECT id from Distribution where name = 'ubuntu'),
            	    (SELECT id from Component where name = 'restricted'),
-                    (SELECT id from Person where name = 'name17'));  
+                    (SELECT id from Person where name = 'ubuntu-team'));
 
 INSERT INTO DistroComponentUploader (distribution, component, uploader)
             VALUES ((SELECT id from Distribution where name = 'ubuntu'), 
            	    (SELECT id from Component where name = 'universe'),
-                    (SELECT id from Person where name = 'name17'));  
+                    (SELECT id from Person where name = 'ubuntu-team'));
 
+-- Lucille Config for Ubuntu distribution
+UPDATE distribution set lucilleconfig = '[publishing]
+pendingremovalduration=5
+root=/var/tmp/archive
+archiveroot=/var/tmp/archive/ubuntu
+poolroot=/var/tmp/archive/ubuntu/pool
+distsroot=/var/tmp/archive/ubuntu/dists
+overrideroot=/var/tmp/archive/ubuntu-overrides
+cacheroot=/var/tmp/archive/ubuntu-cache
+miscroot=/var/tmp/archive/ubuntu-misc
+' WHERE name = 'ubuntu';
 
+-- Lucille Config for Ubuntu Distroreleases
+UPDATE distrorelease set lucilleconfig = '[publishing]
+components = main restricted universe
+' WHERE name = 'breezy-autotest';
+
+UPDATE distrorelease set lucilleconfig = '[publishing]
+components = main restricted universe
+' WHERE name = 'warty';
+
+UPDATE distrorelease set lucilleconfig = '[publishing]
+components = main restricted universe
+' WHERE name = 'hoary';
+
+UPDATE distrorelease set lucilleconfig = '[publishing]
+components = main restricted universe
+' WHERE name = 'grumpy';

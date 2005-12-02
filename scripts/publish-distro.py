@@ -9,8 +9,9 @@ from canonical.launchpad.scripts import (execute_zcml_for_scripts,
                                          logger, logger_options)
 
 from canonical.lp import initZopeless
-from canonical.archivepublisher import \
-     DiskPool, Poolifier, POOL_DEBIAN, Config, Publisher, Dominator
+from canonical.archivepublisher import (
+    DiskPool, Poolifier, POOL_DEBIAN, Config, Publisher, Dominator,
+    LucilleConfigError)
 import sys, os
 
 from canonical.launchpad.database import (
@@ -108,7 +109,11 @@ drs = DistroRelease.selectBy(distributionID=distro.id)
 
 debug("Finding configuration.")
 
-pubconf = Config(distro, drs)
+try:
+    pubconf = Config(distro, drs)
+except LucilleConfigError, info:
+    error(info)
+    sys.exit(1)
 
 debug("Making directories as needed.")
 

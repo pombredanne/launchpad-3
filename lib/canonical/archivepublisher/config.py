@@ -8,6 +8,9 @@
 from StringIO import StringIO
 from ConfigParser import ConfigParser
 
+class LucilleConfigError(Exception):
+    """Lucille configuration was not present."""
+
 class Config(object):
     """Manage a publisher configuration from the database. (Read Only)
     This class provides a useful abstraction so that if we change
@@ -18,6 +21,10 @@ class Config(object):
         """Initialise the configuration"""
         self.distroName = distribution.name.encode('utf-8')
         self._distroreleases = {}
+        if not distribution.lucilleconfig:
+            raise LucilleConfigError(
+                'No Lucille config section for %s' % distribution.name)
+
         for dr in distroreleases:
             drn = dr.name.encode('utf-8')
             drdrn =  {
@@ -26,11 +33,17 @@ class Config(object):
             self._distroreleases[drn] = drdrn
             for dar in dr.architectures:
                 drdrn["archtags"].append(dar.architecturetag.encode('utf-8'))
+
+            if not dr.lucilleconfig:
+                raise LucilleConfigError(
+                    'No Lucille configuration section for %s' % dr.name)
+        
             strio = StringIO(dr.lucilleconfig.encode('utf-8'))
             drdrn["config"] = ConfigParser()
             drdrn["config"].readfp(strio)
             strio.close()
-            drdrn["components"] = drdrn["config"].get("publishing","components").split(" ")
+            comp = drdrn["config"].get("publishing","components").split(" ")
+            drdrn["components"] = comp
 
         strio = StringIO(distribution.lucilleconfig.encode('utf-8'))
         self._distroconfig = ConfigParser()
@@ -51,9 +64,8 @@ class Config(object):
 
     def _extractConfigInfo(self):
         """Extract configuration information into the attributes we use"""
-        self.stayofexecution = self._distroconfig.get("publishing",
-                                                      "pendingremovalduration",
-                                                      5)
+        self.stayofexecution = self._distroconfig.get(
+            "publishing", "pendingremovalduration", 5)
         self.stayofexecution = float(self.stayofexecution)
         self.distroroot = self._distroconfig.get("publishing","root")
         self.archiveroot = self._distroconfig.get("publishing","archiveroot")
