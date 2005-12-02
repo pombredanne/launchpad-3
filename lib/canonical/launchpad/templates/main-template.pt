@@ -36,13 +36,6 @@
   </table>
   <div class="body">
   
-  <h2 class="lpcontext">
-    <metal:block
-      define-slot="titleheader"
-      tal:content="context/title | default"
-    >Launchpad</metal:block>
-  </h2>    
-
   <div class="visualClear" id="body">
     <tal:replace tal:replace="structure context/@@+maintenancemessage" />
     <metal:block define-slot="body">
@@ -51,6 +44,12 @@
 
   <div id="portal-columns">
     <div id="portal-column-content">
+      <h2 class="lpcontext">
+        <metal:block
+          define-slot="titleheader"
+          tal:content="context/title | default"
+        >Launchpad</metal:block>
+      </h2>    
               <div id="region-content">
                   <tal:block
                       define="notifications request/notifications"

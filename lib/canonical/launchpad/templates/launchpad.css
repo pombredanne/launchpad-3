@@ -125,6 +125,8 @@ h2 {
 }
 h2.lpcontext {
   font-size: 1.5em;
+  margin-top: 0;
+  padding-top: 0;
 }
 h3, h4, h5, h6 {
   font-size: 1em;
@@ -390,7 +392,9 @@ ul.app>li.current {
 }
 
 /* Column definitions: */
-
+#portal-columns {
+  margin-top: 1em;
+}
 #portal-column-content {
   display: inline; /* avoid MSIE Double Float Margin bug */
   float: left;
