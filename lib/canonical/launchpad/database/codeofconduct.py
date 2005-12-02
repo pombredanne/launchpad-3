@@ -26,7 +26,7 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import (
     ICodeOfConduct, ICodeOfConductSet, ICodeOfConductConf,
     ISignedCodeOfConduct, ISignedCodeOfConductSet, IGPGHandler,
-    IGPGKeySet, NotFoundError)
+    IGPGKeySet, NotFoundError, GPGVerificationError)
 
 
 class CodeOfConduct:
@@ -222,11 +222,11 @@ class SignedCodeOfConductSet:
             sane_signedcode = signedcode.encode('utf-8')
         except UnicodeEncodeError:
             raise TypeError('Signed Code Could not be encoded as UTF-8')
-            
-        sig = gpghandler.verifySignature(sane_signedcode)
 
-        if sig is None:
-            return 'Signature has invalid format'
+        try:
+            sig = gpghandler.getVerifiedSignature(sane_signedcode)
+        except GPGVerificationError, e:
+            return str(e)
 
         if not sig.fingerprint:
             return ('Failed to verify the signature, check if the GPG key '
@@ -259,13 +259,11 @@ class SignedCodeOfConductSet:
         coc = CodeOfConduct(getUtility(ICodeOfConductConf).currentrelease)
         current = coc.content
 
-        # calculate text digest 
-        plain_dig = sha(sig.plain_data).hexdigest()
-        current_dig = sha(current).hexdigest()
-
-        if plain_dig != current_dig:
-            return ('Code of Conduct digest do not match: %s vs. %s'
-                     % (plain_dig, current_dig))
+        # calculate text digest
+        if sig.plain_data.split() != current.split():
+            return ('The signed text does not match the Code of Conduct. '
+                    'Make sure that you signed the correct text (white '
+                    'space differences are acceptable.')
 
         # Store the signature 
         signed = SignedCodeOfConduct(owner=user.id, signingkey=gpg.id,
