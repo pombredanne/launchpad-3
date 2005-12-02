@@ -20,11 +20,13 @@
   <table class="header" style="width: 100%;">
     <tr>
       <td class="hierarchy">
-        <img
-          alt=""
-          src="/@@/launchpad.png"
-          style="vertical-align: bottom;"
-        />
+        <a href="/">
+          <img
+            alt=""
+            src="/@@/launchpad.png"
+            style="vertical-align: bottom;"
+          />
+        </a>
         <tal:hierarchy content="structure context/@@+breadcrumbs" />
       <td
         class="login"
@@ -153,6 +155,26 @@
           id="portal-column-one"
           metal:define-slot="column_one"
     >
+      <div class="sitemap clearfix"
+        tal:condition="not:exists:body"
+        xtal:replace="structure CONTEXTS/@@+sitemap"
+      >
+        <!-- this is a demo, and does not highlight the correct items -->
+        <ul id="pillars">
+          <li><a href="/products">Products</a></li>
+          <li><a href="/distros">Distributions</a></li>
+          <li><a href="/people">People</a></li>
+          <li class="current">Projects</li>
+          <li><a href="/sprints">Meetings</a></li>
+        </ul>
+        <ul id="subpillars">
+          <li><a href="releases/">Releases</a></li>
+          <li><a href="ports/">Ports</a></li>
+          <li class="current">Packages</li>
+          <li><a href="packages/">Binary Packages</a></li>
+        </ul>
+      </div>
+
                   <metal:portlets define-slot="portlets_one">
 
                   </metal:portlets>

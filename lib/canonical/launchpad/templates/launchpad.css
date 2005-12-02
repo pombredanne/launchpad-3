@@ -1,5 +1,18 @@
 /* === Things browsers should do, but don't: === */
 
+.clearfix:after { /* use class="clearfix" whenever floats should be enclosed */
+  content: "."; 
+  display: block; 
+  height: 0; 
+  clear: both; 
+  visibility: hidden;
+}
+.clearfix {display: inline-table;}
+/* Work around float bug in MSIE for Windows, while hiding from MSIE for Mac \*/
+* html .clearfix {height: 1%;}
+.clearfix {display: block;}
+/* End hiding from MSIE for Mac */
+
 abbr[title], acronym[title] {
   border-bottom: 1px dotted Black;
   color: Black;
@@ -400,6 +413,39 @@ ul.app>li.current {
   width: 24%; /* = 25% - 1% whitespace */
 }
 
+.sitemap {
+  background-color: #dee7ec;
+  border: 1px solid #8cacbb;
+  font-size: smaller;
+  margin-bottom: 1em;
+}
+#pillars, #subpillars {
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+#pillars {
+  float: left;
+  width: 50%;
+}
+#subpillars {
+  float: left;
+  width: 50%;
+}
+#pillars li, #subpillars li {
+  height: 1.5em !important;
+  list-style: none;
+  margin: 0;
+}
+.sitemap :link, .sitemap :visited, .sitemap .current {
+  display: block;
+  padding: 0.125em 1em;
+  text-decoration: none;
+}
+.sitemap .current {
+  background-color: white;
+  color: inherit;
+}
 
 /* ----------------------- UNCHANGED FROM PLONE.CSS ----------------------- */
 
