@@ -309,7 +309,9 @@ class ProductSeriesView(LaunchpadView):
         self.releasefileglob = form.get("releasefileglob") 
         if self.releaseroot:
             if not validate_release_root(self.releaseroot):
-                self.errormsgs.append('Invalid release root URL')
+                self.request.response.addErrorNotification(
+                    'Invalid release root URL')
+                self.has_errors = True
                 return
         # make sure we at least got something for the relevant rcs
         if rcstype == 'cvs':
@@ -360,7 +362,7 @@ class ProductSeriesView(LaunchpadView):
         # make sure we also update the ubuntu packaging if it has been
         # modified
         self.setCurrentUbuntuPackage()
-        if not self.errormsgs:
+        if not self.has_errors:
             self.request.response.redirect(canonical_url(self.context))
 
     def adminSource(self):
