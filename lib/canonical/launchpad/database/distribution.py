@@ -42,7 +42,8 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IDistroPackageFinder, NotFoundError,
-    IHasBuildRecords, ISourcePackageName)
+    IHasBuildRecords, ISourcePackageName, UNRESOLVED_BUGTASK_STATUSES,
+    RESOLVED_BUGTASK_STATUSES)
 
 from sourcerer.deb.version import Version
 
@@ -101,34 +102,34 @@ class Distribution(SQLBase):
     @property
     def open_cve_bugtasks(self):
         """See IDistribution."""
+        open_bugtask_status_sql_values = "(%s)" % (
+            ', '.join(sqlvalues(*UNRESOLVED_BUGTASK_STATUSES)))
+
         result = BugTask.select("""
             CVE.id = BugCve.cve AND
             BugCve.bug = Bug.id AND
             BugTask.bug = Bug.id AND
-            BugTask.distribution=%s AND
-            BugTask.status IN (%s, %s)
-            """ % sqlvalues(
-                self.id,
-                BugTaskStatus.NEW,
-                BugTaskStatus.ACCEPTED),
+            BugTask.distribution=%d AND
+            BugTask.status IN %s
+            """ % (self.id, open_bugtask_status_sql_values),
             clauseTables=['Bug', 'Cve', 'BugCve'],
             orderBy=['-severity', 'datecreated'])
+
         return result
 
     @property
     def resolved_cve_bugtasks(self):
         """See IDistribution."""
+        resolved_bugtask_status_sql_values = "(%s)" % (
+            ', '.join(sqlvalues(*RESOLVED_BUGTASK_STATUSES)))
+
         result = BugTask.select("""
             CVE.id = BugCve.cve AND
             BugCve.bug = Bug.id AND
             BugTask.bug = Bug.id AND
-            BugTask.distribution=%s AND
-            BugTask.status IN (%s, %s, %s)
-            """ % sqlvalues(
-                self.id,
-                BugTaskStatus.REJECTED,
-                BugTaskStatus.FIXED,
-                BugTaskStatus.PENDINGUPLOAD),
+            BugTask.distribution=%d AND
+            BugTask.status IN %s
+            """ % (self.id, resolved_bugtask_status_sql_values),
             clauseTables=['Bug', 'Cve', 'BugCve'],
             orderBy=['-severity', 'datecreated'])
         return result

@@ -18,7 +18,8 @@ __all__ = [
     'ISelectResultsSlicable',
     'IBugTaskSet',
     'BugTaskSearchParams',
-    'UNRESOLVED_BUGTASK_STATUSES']
+    'UNRESOLVED_BUGTASK_STATUSES',
+    'RESOLVED_BUGTASK_STATUSES']
 
 from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
@@ -34,8 +35,20 @@ from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 
 _ = MessageIDFactory('launchpad')
 
+# XXX: Brad Bollenbach, 2005-12-02: In theory, NEEDSINFO belongs in
+# UNRESOLVED_BUGTASK_STATUSES, but the semantics of our current reports would
+# break if it were added to the list below. See
+# <https://launchpad.net/malone/bugs/5320>
 UNRESOLVED_BUGTASK_STATUSES = (
-    dbschema.BugTaskStatus.NEW, dbschema.BugTaskStatus.ACCEPTED)
+    dbschema.BugTaskStatus.UNCONFIRMED,
+    dbschema.BugTaskStatus.CONFIRMED,
+    dbschema.BugTaskStatus.INPROGRESS)
+
+RESOLVED_BUGTASK_STATUSES = (
+    dbschema.BugTaskStatus.FIXED,
+    dbschema.BugTaskStatus.RELEASED,
+    dbschema.BugTaskStatus.REJECTED)
+
 
 class IBugTask(IHasDateCreated):
     """A description of a bug needing fixing in a particular product
@@ -55,7 +68,7 @@ class IBugTask(IHasDateCreated):
         title=_('Milestone'), required=False, vocabulary='Milestone')
     status = Choice(
         title=_('Status'), vocabulary='BugTaskStatus',
-        default=dbschema.BugTaskStatus.NEW)
+        default=dbschema.BugTaskStatus.UNCONFIRMED)
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
     priority = Choice(
@@ -166,7 +179,7 @@ class IBugTaskSearch(Interface):
     status = List(
         title=_('Status:'),
         value_type=IBugTask['status'],
-        default=[dbschema.BugTaskStatus.NEW, dbschema.BugTaskStatus.ACCEPTED],
+        default=list(UNRESOLVED_BUGTASK_STATUSES),
         required=False)
     severity = List(
         title=_('Severity:'),

@@ -136,7 +136,7 @@ class DBSchemaValidator(validators.Validator):
         """Convert from DBSchema Item to int.
 
         >>> validator = DBSchemaValidator(schema=BugTaskStatus)
-        >>> validator.fromPython(BugTaskStatus.PENDINGUPLOAD, None)
+        >>> validator.fromPython(BugTaskStatus.FIXED, None)
         25
         >>> validator.fromPython(ImportTestStatus.NEW, None)
         Traceback (most recent call last):
@@ -171,7 +171,7 @@ class DBSchemaValidator(validators.Validator):
         """Convert from int to DBSchema Item.
 
         >>> validator = DBSchemaValidator(schema=BugTaskStatus)
-        >>> validator.toPython(25, None) is BugTaskStatus.PENDINGUPLOAD
+        >>> validator.toPython(25, None) is BugTaskStatus.FIXED
         True
 
         """
@@ -2248,46 +2248,48 @@ class BranchReviewStatus(DBSchema):
 class BugTaskStatus(DBSchema):
     """Bug Task Status
 
-    Bugs are assigned to products and to source packages in Malone. The
-    task carries a status - new, open or closed. This schema
-    documents those possible status values.
+    The various possible states for a bugfix in a specific place.
     """
 
-    NEW = Item(10, """
-        New
+    UNCONFIRMED = Item(10, """
+        Unconfirmed
 
-        This is a new bug and has not yet been accepted by the maintainer
-        of this product or source package.
+        This is a new bug and has not yet been confirmed by the maintainer of
+        this product or source package.
         """)
 
-    NEEDINFO = Item(15, """
-        NeedInfo
+    NEEDSINFO = Item(15, """
+        Needs Info
 
-        More info is required before making further progress on this
-        bug, likely from the reporter. E.g. the exact error message
-        the user saw, the URL the user was visiting when the bug
-        occurred, etc.
+        More info is required before making further progress on this bug, likely
+        from the reporter. E.g. the exact error message the user saw, the URL
+        the user was visiting when the bug occurred, etc.
         """)
 
-    ACCEPTED = Item(20, """
-        Accepted
+    CONFIRMED = Item(20, """
+        Confirmed
 
-        This bug has been reviewed, perhaps verified, and accepted as
-        something needing fixing.
+        This bug has been reviewed, verified, and confirmed as something needing
+        fixing.
         """)
 
-    PENDINGUPLOAD = Item(25, """
-        PendingUpload
+    INPROGRESS = Item(22, """
+        In Progress
 
-        The source package with the fix has been sent off to the buildds.
-        The bug will be resolved once the newly uploaded package is
-        completed.
+        The person assigned to fix this bug is currently working on fixing it.
         """)
 
-    FIXED = Item(30, """
+    FIXED = Item(25, """
         Fixed
 
-        This bug has been fixed.
+        This bug has been fixed, but the fix has not yet made it into a released
+        version of the affected software.
+        """)
+
+    RELEASED = Item(30, """
+        Released
+
+        The fix for this bug has been released.
         """)
 
     REJECTED = Item(40, """

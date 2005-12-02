@@ -27,7 +27,8 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
     IPublishedPackageSet, IHasBuildRecords, NotFoundError,
-    IBinaryPackageName)
+    IBinaryPackageName, UNRESOLVED_BUGTASK_STATUSES,
+    RESOLVED_BUGTASK_STATUSES)
 
 from canonical.database.constants import DEFAULT, UTC_NOW
 
@@ -241,16 +242,16 @@ class DistroRelease(SQLBase):
     @property
     def open_cve_bugtasks(self):
         """See IDistroRelease."""
+        open_bugtask_status_sql_values = "(%s)" % (
+            ', '.join(sqlvalues(*UNRESOLVED_BUGTASK_STATUSES)))
+
         result = BugTask.select("""
             CVE.id = BugCve.cve AND
             BugCve.bug = Bug.id AND
             BugTask.bug = Bug.id AND
-            BugTask.distrorelease=%s AND
-            BugTask.status IN (%s, %s)
-            """ % sqlvalues(
-                self.id,
-                BugTaskStatus.NEW,
-                BugTaskStatus.ACCEPTED),
+            BugTask.distrorelease=%d AND
+            BugTask.status IN %s
+            """ % (self.id, open_bugtask_status_sql_values),
             clauseTables=['Bug', 'Cve', 'BugCve'],
             orderBy=['-severity', 'datecreated'])
         return result
@@ -258,17 +259,16 @@ class DistroRelease(SQLBase):
     @property
     def resolved_cve_bugtasks(self):
         """See IDistroRelease."""
+        resolved_bugtask_status_sql_values = "(%s)" % (
+            ', '.join(sqlvalues(*RESOLVED_BUGTASK_STATUSES)))
+
         result = BugTask.select("""
             CVE.id = BugCve.cve AND
             BugCve.bug = Bug.id AND
             BugTask.bug = Bug.id AND
-            BugTask.distrorelease=%s AND
-            BugTask.status IN (%s, %s, %s)
-            """ % sqlvalues(
-                self.id,
-                BugTaskStatus.REJECTED,
-                BugTaskStatus.FIXED,
-                BugTaskStatus.PENDINGUPLOAD),
+            BugTask.distrorelease=%d AND
+            BugTask.status IN %s
+            """ % (self.id, resolved_bugtask_status_sql_values),
             clauseTables=['Bug', 'Cve', 'BugCve'],
             orderBy=['-severity', 'datecreated'])
         return result

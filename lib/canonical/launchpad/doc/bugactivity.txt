@@ -133,16 +133,16 @@ EVENT: source package assignment edited
   >>> old_source_package_assignment = capture_state(
   ...     source_package_assignment, *edit_fields)
   >>> directlyProvides(old_source_package_assignment, IDistroBugTask)
-  >>> source_package_assignment.status = BugTaskStatus.ACCEPTED
+  >>> source_package_assignment.status = BugTaskStatus.CONFIRMED
   >>> source_package_assignment_edited = SQLObjectModifiedEvent(
   ...     source_package_assignment, old_source_package_assignment, edit_fields)
   >>> notify(source_package_assignment_edited)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
   u'mozilla-firefox: status'
-  >>> latest_activity.oldvalue == BugTaskStatus.NEW.title
+  >>> latest_activity.oldvalue == BugTaskStatus.UNCONFIRMED.title
   True
-  >>> latest_activity.newvalue == BugTaskStatus.ACCEPTED.title
+  >>> latest_activity.newvalue == BugTaskStatus.CONFIRMED.title
   True
 
 EVENT: bug gets assigned to an upstream product
@@ -171,7 +171,7 @@ EVENT: upstream product assignment edited
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
   u'thunderbird: status'
-  >>> latest_activity.oldvalue == BugTaskStatus.NEW.title
+  >>> latest_activity.oldvalue == BugTaskStatus.UNCONFIRMED.title
   True
   >>> latest_activity.newvalue == BugTaskStatus.REJECTED.title
   True

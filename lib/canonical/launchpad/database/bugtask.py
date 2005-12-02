@@ -36,9 +36,9 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage)
 
 
-debbugsstatusmap = {'open': BugTaskStatus.NEW,
-                    'forwarded': BugTaskStatus.ACCEPTED,
-                    'done': BugTaskStatus.FIXED}
+debbugsstatusmap = {'open': BugTaskStatus.UNCONFIRMED,
+                    'forwarded': BugTaskStatus.CONFIRMED,
+                    'done': BugTaskStatus.RELEASED}
 
 debbugsseveritymap = {'wishlist': BugTaskSeverity.WISHLIST,
                       'minor': BugTaskSeverity.MINOR,
@@ -105,7 +105,7 @@ class BugTask(SQLBase, BugTaskMixin):
     status = EnumCol(
         dbName='status', notNull=True,
         schema=BugTaskStatus,
-        default=BugTaskStatus.NEW)
+        default=BugTaskStatus.UNCONFIRMED)
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
     priority = EnumCol(
         dbName='priority', notNull=False, schema=BugTaskPriority, default=None)
@@ -274,26 +274,27 @@ class BugTask(SQLBase, BugTaskMixin):
         status = self.status
 
         if assignee:
-            assignee_name = urllib.quote_plus(assignee.name)
-            assignee_browsername = cgi.escape(assignee.browsername)
-
-            if status in (BugTaskStatus.ACCEPTED, BugTaskStatus.REJECTED,
-                          BugTaskStatus.FIXED):
-                return (
-                    '%s by <img src="/++resource++user.gif" /> '
-                    '<a href="/malone/assigned?name=%s">%s</a>' % (
-                        status.title.lower(), assignee_name,
-                        assignee_browsername))
-
-            return (
-                'assigned to <img src="/++resource++user.gif" /> '
+            assignee_html = (
+                '<img src="/++resource++user.gif" /> '
                 '<a href="/malone/assigned?name=%s">%s</a>' % (
-                    assignee_name, assignee_browsername))
-        else:
-            if status in (BugTaskStatus.REJECTED, BugTaskStatus.FIXED):
-                return status.title.lower()
+                    urllib.quote_plus(assignee.name),
+                    cgi.escape(assignee.browsername)))
 
-            return 'not assigned'
+            if status in (BugTaskStatus.CONFIRMED, BugTaskStatus.REJECTED,
+                          BugTaskStatus.FIXED):
+                return '%s by %s' % (status.title.lower(), assignee_html)
+            elif status == BugTaskStatus.RELEASED:
+                return 'fix released by %s' % assignee_html
+
+            return 'assigned to %s' % assignee_html
+        else:
+            # Some statuses look silly written as "$status (unassigned)"
+            if status == BugTaskStatus.REJECTED:
+                return status.title.lower()
+            if status == BugTaskStatus.RELEASED:
+                return 'fix released'
+
+            return status.title.lower() + ' (unassigned)'
 
 
 class BugTaskSet:

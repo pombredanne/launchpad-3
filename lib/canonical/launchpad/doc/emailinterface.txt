@@ -358,7 +358,7 @@ We can change the assignee, status, and severity using the sub
 commands. It's possible to have these sub commands on separate lines:
 
     >>> submit_commands('affects /distros/debian severity critical',
-    ...     'status accepted', 'assignee test@canonical.com', 'priority high')
+    ...     'status confirmed', 'assignee test@canonical.com', 'priority high')
 
     >>> len(bug_four.bugtasks)
     2
@@ -366,7 +366,7 @@ commands. It's possible to have these sub commands on separate lines:
     >>> print debian_task.severity.name
     CRITICAL
     >>> print debian_task.status.name
-    ACCEPTED
+    CONFIRMED
     >>> print debian_task.assignee.displayname
     Sample Person
     >>> print debian_task.priority.name
@@ -385,7 +385,7 @@ Let's take on the upstream task as well:
 
     >>> submit_commands(
     ...     'affects /products/firefox severity critical',
-    ...     'status accepted', 'assignee test@canonical.com',
+    ...     'status confirmed', 'assignee test@canonical.com',
     ...     'priority high')
 
     >>> len(bug_four.bugtasks)
@@ -394,7 +394,7 @@ Let's take on the upstream task as well:
     >>> print upstream_task.severity.name
     CRITICAL
     >>> print upstream_task.status.name
-    ACCEPTED
+    CONFIRMED
     >>> print upstream_task.assignee.displayname
     Sample Person
     >>> print upstream_task.priority.name

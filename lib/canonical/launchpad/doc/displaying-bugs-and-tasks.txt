@@ -48,7 +48,7 @@ Displaying Status
 Sometimes it's useful to display the status of an IBugTask as a
 human-readable string. So, instead of displaying something like:
 
-  Status: Accepted, Assignee: foo.bar@canonical.com
+  Status: Confirmed, Assignee: foo.bar@canonical.com
 
 you might prefer that to read, simply:
 
@@ -67,16 +67,16 @@ Let's see some examples of how this works:
 
   >>> high_priority_task.assignee = None
   >>> high_priority_task.statusdisplayhtml
-  'not assigned'
+  'confirmed (unassigned)'
 
   >>> high_priority_task.assignee = foobar
-  >>> high_priority_task.status = BugTaskStatus.NEW
+  >>> high_priority_task.status = BugTaskStatus.UNCONFIRMED
   >>> high_priority_task.statusdisplayhtml
   u'assigned to <img src="/++resource++user.gif" /> <a href=".../malone/assigned?name=name16">Foo Bar</a>'
 
-  >>> high_priority_task.status = BugTaskStatus.ACCEPTED
+  >>> high_priority_task.status = BugTaskStatus.CONFIRMED
   >>> high_priority_task.statusdisplayhtml
-  u'accepted by <img src="/++resource++user.gif" /> <a href=".../malone/assigned?name=name16">Foo Bar</a>'
+  u'confirmed by <img src="/++resource++user.gif" /> <a href=".../malone/assigned?name=name16">Foo Bar</a>'
 
   >>> high_priority_task.status = BugTaskStatus.REJECTED
   >>> high_priority_task.statusdisplayhtml
@@ -86,13 +86,13 @@ Let's see some examples of how this works:
   >>> high_priority_task.statusdisplayhtml
   'rejected'
 
-  >>> high_priority_task.status = BugTaskStatus.FIXED
+  >>> high_priority_task.status = BugTaskStatus.RELEASED
   >>> high_priority_task.statusdisplayhtml
-  'fixed'
+  'fix released'
 
   >>> high_priority_task.assignee = foobar
   >>> high_priority_task.statusdisplayhtml
-  u'fixed by <img src="/++resource++user.gif" /> <a href=".../malone/assigned?name=name16">Foo Bar</a>'
+  u'fix released by <img src="/++resource++user.gif" /> <a href=".../malone/assigned?name=name16">Foo Bar</a>'
 
 Lastly, some cleanup:
 
@@ -128,11 +128,9 @@ Fixed, and see how the statuselsewhere value is affected:
 
   >>> related_task = wontfix_priority_task.related_tasks[0]
   >>> ORIGINAL_STATUS = related_task.status
-  >>> related_task.status = BugTaskStatus.FIXED
+  >>> related_task.status = BugTaskStatus.RELEASED
 
   >>> wontfix_priority_task.statuselsewhere
   'fixed in 1 of 4 places'
 
   >>> related_task.status = removeSecurityProxy(ORIGINAL_STATUS)
-
-Hmm.. XXX bradb, it looks as though this doctest is unfinished.

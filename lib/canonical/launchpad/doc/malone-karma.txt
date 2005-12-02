@@ -135,7 +135,7 @@ Reject a bug task:
 Accept a bug task:
 
     >>> old_bugtask = Snapshot(bugtask, providing=IDistroBugTask)
-    >>> bugtask.status = BugTaskStatus.ACCEPTED
+    >>> bugtask.status = BugTaskStatus.CONFIRMED
     >>> event = SQLObjectModifiedEvent(bugtask, old_bugtask, ['status'])
     >>> make_sure_karma_is_added('bugaccepted', event, 5)
     True

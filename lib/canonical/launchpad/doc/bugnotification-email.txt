@@ -59,7 +59,7 @@ Let's take a look at what the notification email looks like:
     Affects: firefox (upstream)
            Severity: Normal
            Priority: Medium
-             Status: New
+             Status: Unconfirmed
     <BLANKLINE>
     Description:
     Malone pages that use more complex layouts with portlets and fancy CSS are
@@ -212,7 +212,7 @@ pretend we had just added task five:
            Severity: Minor
            Priority: High
            Assignee: name12 <test@canonical.com>
-             Status: Accepted
+             Status: Confirmed
 
 Editing a bug task
 ------------------
@@ -225,12 +225,12 @@ bugmail when a bug task is edited.
     >>> from canonical.lp.dbschema import BugTaskStatus
 
     >>> edited_bugtask = getUtility(IBugTaskSet).get(3)
-    >>> edited_bugtask.status = BugTaskStatus.ACCEPTED
+    >>> edited_bugtask.status = BugTaskStatus.CONFIRMED
     >>> edited_bugtask.assignee = sample_person.id
     >>> edited_bugtask.statusexplanation = "i'm just babbling here to ensure line wrapping works in the explanation."
     >>> bugtask_delta = BugTaskDelta(
     ...     bugtask=edited_bugtask,
-    ...     status={'old' : BugTaskStatus.NEW, 'new' : edited_bugtask.status},
+    ...     status={'old' : BugTaskStatus.UNCONFIRMED, 'new' : edited_bugtask.status},
     ...     assignee={'old' : None, 'new' : edited_bugtask.assignee},
     ...     statusexplanation=edited_bugtask.statusexplanation)
     >>> bug_delta = BugDelta(
@@ -247,7 +247,7 @@ bugmail when a bug task is edited.
     <BLANKLINE>
     Changed in: Ubuntu (upstream)
            Assignee: (unassigned) => Sample Person
-             Status: New => Accepted
+             Status: Unconfirmed => Confirmed
         Explanation: i'm just babbling here to ensure line wrapping works in
                      the explanation.
 

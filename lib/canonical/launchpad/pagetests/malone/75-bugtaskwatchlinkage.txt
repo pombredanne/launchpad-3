@@ -58,7 +58,7 @@ form.
   ... -----------------------------6732896103366711491579814469
   ... Content-Disposition: form-data; name="field.status"
   ... 
-  ... New
+  ... Unconfirmed
   ... -----------------------------6732896103366711491579814469
   ... Content-Disposition: form-data; name="field.status-empty-marker"
   ... 

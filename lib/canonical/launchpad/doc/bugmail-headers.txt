@@ -25,19 +25,19 @@ You can ask an IBugTask for its representation as an email header value:
     >>> warty_firefox_bugtask = bugtaskset.get(16)
 
     >>> upstream_firefox_bugtask.asEmailHeaderValue()
-    u'product=firefox; status=New; priority=Wontfix; assignee=mark@hbd.com;'
+    u'product=firefox; status=Unconfirmed; priority=Wontfix; assignee=mark@hbd.com;'
 
     >>> upstream_firefox_bugtask_no_assignee.asEmailHeaderValue()
-    u'product=firefox; status=New; priority=Medium; assignee=None;'
+    u'product=firefox; status=Unconfirmed; priority=Medium; assignee=None;'
 
     >>> debian_firefox_bugtask.asEmailHeaderValue()
-    u'distribution=debian; sourcepackage=mozilla-firefox; component=None; status=Accepted; priority=High; assignee=None;'
+    u'distribution=debian; sourcepackage=mozilla-firefox; component=None; status=Confirmed; priority=High; assignee=None;'
 
     >>> ubuntu_firefox_bugtask.asEmailHeaderValue()
-    u'distribution=ubuntu; sourcepackage=mozilla-firefox; component=main; status=New; priority=Medium; assignee=None;'
+    u'distribution=ubuntu; sourcepackage=mozilla-firefox; component=main; status=Unconfirmed; priority=Medium; assignee=None;'
 
     >>> warty_firefox_bugtask.asEmailHeaderValue()
-    u'distribution=ubuntu; distrorelease=warty; sourcepackage=mozilla-firefox; component=main; status=New; priority=Medium; assignee=None;'
+    u'distribution=ubuntu; distrorelease=warty; sourcepackage=mozilla-firefox; component=main; status=Unconfirmed; priority=Medium; assignee=None;'
 
 Here's what the header values look like for distro tasks that have no
 sourcepackage (we have to login to be allowed to set attributes on these tasks):
@@ -49,10 +49,10 @@ sourcepackage (we have to login to be allowed to set attributes on these tasks):
     >>> warty_firefox_bugtask.sourcepackagename = None
 
     >>> debian_firefox_bugtask.asEmailHeaderValue()
-    u'distribution=debian; sourcepackage=None; component=None; status=Accepted; priority=High; assignee=None;'
+    u'distribution=debian; sourcepackage=None; component=None; status=Confirmed; priority=High; assignee=None;'
 
     >>> warty_firefox_bugtask.asEmailHeaderValue()
-    u'distribution=ubuntu; distrorelease=warty; sourcepackage=None; component=None; status=New; priority=Medium; assignee=None;'
+    u'distribution=ubuntu; distrorelease=warty; sourcepackage=None; component=None; status=Unconfirmed; priority=Medium; assignee=None;'
 
 It is possible to have an assignee on a task who doesn't have a preferred email
 address. The assignee might be a team with no email address or a person who has
@@ -64,4 +64,4 @@ doesn't have a "preferred email" set in Launchpad.
 
     >>> ubuntu_upstream_task = bugtaskset.get(1)
     >>> ubuntu_upstream_task.asEmailHeaderValue()
-    u'product=ubuntu; status=New; priority=Medium; assignee=keybuk;'
+    u'product=ubuntu; status=Unconfirmed; priority=Medium; assignee=keybuk;'

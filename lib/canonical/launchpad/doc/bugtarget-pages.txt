@@ -19,13 +19,14 @@ First we define a helper function to make it easier to construct a view.
 Open bugtasks
 -------------
 
-All bug tasks the have status NEW or ACCEPTED:
+A bugtask is considered "open" if it is set to one of the statuses defined by
+canonical.launchpad.interfaces.bugtask.UNRESOLVED_BUGTASK_STATUSES.
 
     >>> open_bugtasks_view = create_view(debian, '+bugs-open')
     >>> open_bugtasks = list(open_bugtasks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name)
     ...         for bugtask in open_bugtasks])
-    [(1, 'ACCEPTED'), (2, 'ACCEPTED'), (3, 'NEW')]
+    [(1, 'CONFIRMED'), (2, 'CONFIRMED'), (3, 'UNCONFIRMED')]
     >>> open_bugtasks_view.taskCount
     3
 
@@ -79,13 +80,13 @@ package names, since we don't have any to show:
 Untriaged bugtasks
 ------------------
 
-All bugtasks with status NEW.
+All bugtasks with status UNCONFIRMED.
 
     >>> untriaged_bugtasks_view = create_view(debian, '+bugs-untriaged')
     >>> untriaged_bugtasks = list(untriaged_bugtasks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name)
     ...         for bugtask in untriaged_bugtasks])
-    [(3, 'NEW')]
+    [(3, 'UNCONFIRMED')]
     >>> untriaged_bugtasks_view.taskCount
     1
 
@@ -111,7 +112,7 @@ All bugtasks ever reported on the target, including closed ones.
     >>> all_bugtasks = list(all_bugtasks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name)
     ...         for bugtask in all_bugtasks])
-    [(1, 'ACCEPTED'), (2, 'ACCEPTED'), (3, 'NEW'), (8, 'FIXED')]
+    [(1, 'CONFIRMED'), (2, 'CONFIRMED'), (3, 'UNCONFIRMED'), (8, 'RELEASED')]
     >>> all_bugtasks_view.taskCount
     4
 

@@ -159,7 +159,8 @@ class BugTaskMixin:
         if related_tasks:
             fixes_found = len(
                 [task for task in related_tasks
-                 if task.status == BugTaskStatus.FIXED])
+                 if (task.status == BugTaskStatus.FIXED or
+                     task.status == BugTaskStatus.RELEASED)])
             if fixes_found:
                 return "fixed in %d of %d places" % (
                     fixes_found, len(self.bug.bugtasks))
