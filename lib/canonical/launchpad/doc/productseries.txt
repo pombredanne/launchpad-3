@@ -1,0 +1,25 @@
+ProductSeries
+=============
+
+A "release series" or "branch" is a sequence of releases that are mostly the same codebase, with just minor changes between them. 
+
+
+ProductSeriesSourceSet implements two methods to search the database for
+IProductSeries that have RCS details set. It returns an IProductSeries or
+None.
+
+>>> from canonical.launchpad.interfaces import IProductSeriesSourceSet
+
+>>> cvsroot = ':pserver:anonymous@anoncvs.gnome.org:/cvs/gnome'
+>>> cvsmodule = 'evolution'
+>>> cvsbranch = 'MAIN'
+>>> svnrepository = 'svn://testing.com'
+>>> productseriesset = getUtility(IProductSeriesSourceSet)
+>>> productseries = productseriesset.getByCVSDetails(cvsroot, cvsmodule,
+...     cvsbranch)
+>>> productseries.name
+u'main'
+
+>>> productseries = productseriesset.getBySVNDetails(svnrepository)
+>>> print productseries
+None
