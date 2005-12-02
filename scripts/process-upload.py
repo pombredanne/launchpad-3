@@ -107,7 +107,8 @@ def send_mails(mails):
             log.info("   Body:")
             for line in mail_message.get_payload().split("\n"):
                 log.info(line)
-        sendmail(mail_message)
+        else:
+            sendmail(mail_message)
         
 def process_upload(upload):
     """Process an upload as provided."""
