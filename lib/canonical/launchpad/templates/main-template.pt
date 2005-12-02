@@ -170,7 +170,7 @@
           <li><a href="releases/">Releases</a></li>
           <li><a href="ports/">Ports</a></li>
           <li class="current">Packages</li>
-          <li><a href="packages/">Binary Packages</a></li>
+          <li><a href="packages/">Binary packages</a></li>
         </ul>
       </div>
 

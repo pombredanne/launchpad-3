@@ -88,12 +88,12 @@ body {
   margin: 0 1em;
 }
 
-:visited {
+:visited, #subpillars :link {
   background: none;
   color: #8888bb;
 }
 :link, .hierarchy :visited, .footer :visited,
-.app :visited, .sidebar :visited, .portlet :visited {
+#pillars :visited, .facets :visited, .portlet :visited {
   background: none;
   color: #000088;
 }
@@ -342,8 +342,9 @@ input[type="radio"] {
 
 /* -- Page layout: -- */
 
-.header, .footer {
+.header td, .footer {
   font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
+  padding: 0.25em 1em;
 }
 .header {
   font-size: 0.875em;
@@ -358,9 +359,6 @@ input[type="radio"] {
 }
 .login input[type="submit"] {
   padding: 0;
-}
-.header td, .footer {
-  padding: 0.25em;
 }
 .header, .footer, ul.app>li {
   background-color: #dee7ec;
@@ -424,18 +422,24 @@ ul.app>li.current {
   font-size: smaller;
   margin: 0 0 1em 0;
 }
+.sitemap, #subpillars {
+  background-color: #f4f5f8;
+}
 #pillars, #subpillars {
   display: inline;
   margin: 0;
   padding: 0;
 }
 #pillars {
+  background-color: #dee7ec;
   float: left;
-  width: 50%;
+  width: 47%;
 }
 #subpillars {
   float: left;
-  width: 50%;
+  font-size: smaller;
+  margin-left: 6%;
+  width: 42%;
 }
 #pillars li, #subpillars li {
   list-style: none;
@@ -446,9 +450,13 @@ ul.app>li.current {
   padding: 0.25em 1em;
   text-decoration: none;
 }
-.sitemap li.current, .facets li.current {
-  background-color: white;
+#pillars li.current, .facets li.current {
+  background-color: #f4f5f8;
   color: inherit;
+}
+#subpillars li.current {
+  background-color: #dee7ec;
+  border: 1px solid #8cacbb;
 }
 /* The following paddings/margins aren't yet robust when zoomed. */
 ul.facets {
