@@ -189,7 +189,8 @@ class ValidateEmailView(BaseLoginTokenView):
 
         if self.context.tokentype == LoginTokenType.VALIDATETEAMEMAIL:
             self.setTeamContactAddress()
-            self.success(_('Contact email address validated successfully'))
+            if not self.errormessage:
+                self.success(_('Contact email address validated successfully'))
             return
 
         password = self.request.form.get("password")
@@ -198,7 +199,8 @@ class ValidateEmailView(BaseLoginTokenView):
 
         if self.context.tokentype == LoginTokenType.VALIDATEEMAIL:
             self.markEmailAddressAsValidated()
-            self.success(_('Email address successfully confirmed'))
+            if not self.errormessage:
+                self.success(_('Email address successfully confirmed'))
         elif self.context.tokentype == LoginTokenType.VALIDATEGPG:
             self.validateGpg()
         elif self.context.tokentype == LoginTokenType.VALIDATESIGNONLYGPG:
@@ -411,7 +413,7 @@ class ValidateEmailView(BaseLoginTokenView):
             emails = ' '.join([email.email for email in guessed]) 
 
             infomessage += (
-                '<p>Some e-mail addresses were found in your key but are '
+                '<p>Some email addresses were found in your key but are '
                 'not registered with Launchpad:<code>%s</code>. If you '
                 'want to use these addressess with Launchpad, you need to '
                 '<a href="%s/+editemails\">confirm them</a>.</p>'
@@ -477,7 +479,7 @@ class ValidateEmailView(BaseLoginTokenView):
                 # -- Guilherme Salgado 2005-07-09
                 url = '/people/+requestmerge?field.dupeaccount=%s' % dupe.name
                 self.errormessage = (
-                        'This email is already registered for another '
+                        'This email address is already registered for another '
                         'Launchpad user account. This account can be a '
                         'duplicate of yours, created automatically, and '
                         'in this case you should be able to '
@@ -486,9 +488,9 @@ class ValidateEmailView(BaseLoginTokenView):
 
             elif email.status in validated:
                 self.errormessage = (
-                        "This email is already registered and validated "
-                        "for your Launchpad account. There's no need to "
-                        "validate it again.")
+                        "This email address is already registered and "
+                        "validated for your Launchpad account. There's "
+                        "no need to validate it again.")
                 return None
 
             else:

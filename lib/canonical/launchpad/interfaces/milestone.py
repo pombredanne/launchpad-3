@@ -14,6 +14,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import Choice, TextLine, Int, Date, Bool
 
 from canonical.launchpad.interfaces import IHasProduct
+from canonical.launchpad.validators.name import name_validator
 
 _ = MessageIDFactory('launchpad')
 
@@ -22,9 +23,12 @@ class IMilestone(IHasProduct):
     items that need coordination.
     """
     id = Int(title=_("Id"))
-    name = TextLine(title=_("Name"), required=True,
+    name = TextLine(
+        title=_("Name"),
         description=_(
-            "Only letters, numbers, and simple punctuation are allowed."))
+            "Only letters, numbers, and simple punctuation are allowed."),
+        required=True,
+        constraint=name_validator)
     product = Choice(
         title=_("Product"),
         description=_("The product to which this milestone is associated"),

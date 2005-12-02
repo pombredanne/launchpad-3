@@ -67,7 +67,8 @@ As well as signed multipart messages:
     'foo.bar@canonical.com'
 
 When dealing with inline signatures, lines that begin with a '-'
-character in the signed content are escaped.
+character in the signed content are required to be escaped, so we need
+to deal with it if we receive a dash escaped message.
 
     >>> msg = read_test_message('signed_dash_escaped.txt')
     >>> principal = authenticateEmail(msg)
