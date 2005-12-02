@@ -3,7 +3,6 @@
 __metaclass__ = type
 __all__ = ['LoginToken', 'LoginTokenSet']
 
-from datetime import datetime
 import random
 
 from zope.interface import implements
@@ -29,7 +28,7 @@ class LoginToken(SQLBase):
 
     requester = ForeignKey(dbName='requester', foreignKey='Person')
     requesteremail = StringCol(dbName='requesteremail', notNull=False,
-                               default=None) 
+                               default=None)
     email = StringCol(dbName='email', notNull=True)
     token = StringCol(dbName='token', unique=True)
     tokentype = EnumCol(dbName='tokentype', notNull=True,
@@ -37,6 +36,7 @@ class LoginToken(SQLBase):
     created = UtcDateTimeCol(dbName='created', notNull=True)
     fingerprint = StringCol(dbName='fingerprint', notNull=False,
                             default=None)
+    password = '' # Quick fix for Bug #2481
 
     title = 'Launchpad Email Verification'
 
@@ -56,14 +56,18 @@ class LoginToken(SQLBase):
         subject = "Launchpad: Validate your email address"
         simple_sendmail(fromaddress, self.email, subject, message)
 
-    def sendGPGValidationRequest(self, appurl, key, encrypt=None):
+    def sendGPGValidationRequest(self, appurl, key):
         """See ILoginToken."""
         formatted_uids = ''
         for email in key.emails:
             formatted_uids += '\t%s\n' % email
 
+        assert self.tokentype in (LoginTokenType.VALIDATEGPG,
+                                  LoginTokenType.VALIDATESIGNONLYGPG)
+
         template = open(
             'lib/canonical/launchpad/emailtemplates/validate-gpg.txt').read()
+            
         fromaddress = "Launchpad GPG Validator <noreply@ubuntu.com>"
 
         replacements = {'longstring': self.token,
@@ -76,7 +80,7 @@ class LoginToken(SQLBase):
         message = template % replacements
 
         # encrypt message if requested
-        if encrypt:
+        if key.can_encrypt:
             gpghandler = getUtility(IGPGHandler)
             message = gpghandler.encryptContent(message.encode('utf-8'),
                                                 key.fingerprint)

@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 
-from zope.publisher.browser import BrowserRequest, BrowserResponse
+from zope.publisher.browser import BrowserRequest, BrowserResponse, TestRequest
 from zope.app.session.interfaces import ISession
 from zope.interface import Interface, implements
 from zope.app.publication.interfaces import IPublicationRequestFactory
@@ -18,7 +18,10 @@ from zope.publisher.browser import BrowserRequest
 import zope.publisher.publish
 from canonical.launchpad.interfaces import ILaunchpadBrowserApplicationRequest
 from canonical.launchpad.webapp.notification import (
-        NotificationRequest, NotificationResponse
+        NotificationRequest, NotificationResponse, NotificationList
+        )
+from canonical.launchpad.webapp.interfaces import (
+        INotificationRequest, INotificationResponse, BrowserNotificationLevel
         )
 
 
@@ -131,9 +134,72 @@ def adaptResponseToSession(response):
     """Adapt LaunchpadBrowserResponse to ISession"""
     return ISession(response._request)
 
+
 def adaptRequestToResponse(request):
     """Adapt LaunchpadBrowserRequest to LaunchpadBrowserResponse"""
     return request.response
+
+
+class LaunchpadTestRequest(TestRequest):
+    """Mock request for use in unit and functional tests.
+    
+    >>> request = LaunchpadTestRequest(SERVER_URL='http://127.0.0.1/foo/bar')
+
+    This class subclasses TestRequest - the standard Mock request object
+    used in unit tests
+
+    >>> isinstance(request, TestRequest)
+    True
+
+    It adds a mock INotificationRequest implementation
+
+    >>> INotificationRequest.providedBy(request)
+    True
+    >>> request.uuid == request.response.uuid
+    True
+    >>> request.notifications is request.response.notifications
+    True
+    """
+    implements(INotificationRequest)
+
+    @property
+    def uuid(self):
+        return self.response.uuid
+
+    @property
+    def notifications(self):
+        return self.response.notifications
+
+    def _createResponse(self, outstream):
+        """As per zope.publisher.browser.BrowserRequest._createResponse"""
+        return LaunchpadTestResponse(outstream)
+
+
+class LaunchpadTestResponse(NotificationResponse, BrowserResponse):
+    """Mock response for use in unit and functional tests.
+
+    >>> request = LaunchpadTestRequest()
+    >>> response = request.response
+    >>> isinstance(response, LaunchpadTestResponse)
+    True
+    >>> INotificationResponse.providedBy(response)
+    True
+
+    >>> response.addWarningNotification('%(val)s Notification', val='Warning')
+    >>> request.notifications[0].message
+    u'Warning Notification'
+    """
+    implements(INotificationResponse)
+
+    uuid = 'LaunchpadTestResponse'
+
+    _notifications = None
+
+    @property
+    def notifications(self):
+        if self._notifications is None:
+            self._notifications = NotificationList()
+        return self._notifications
 
 
 class HTTPPublicationRequestFactory:
@@ -195,6 +261,18 @@ class PMDBHTTPServer(PublisherHTTPServer):
             raise
 
 
+class InternalHTTPLayerRequestFactory(HTTPPublicationRequestFactory):
+    """RequestFactory that sets the InternalHTTPLayer on a request."""
+
+    def __call__(self, input_stream, output_steam, env):
+        """See zope.app.publication.interfaces.IPublicationRequestFactory"""
+        request = HTTPPublicationRequestFactory.__call__(
+            self, input_stream, output_steam, env)
+        canonical.launchpad.layers.setFirstLayer(
+            request, canonical.launchpad.layers.InternalHTTPLayer)
+        return request
+
+
 http = ServerType(
     PublisherHTTPServer,
     HTTPPublicationRequestFactory,
@@ -216,3 +294,9 @@ debughttp = ServerType(
     8082,
     True)
 
+internalhttp = ServerType(
+    PublisherHTTPServer,
+    InternalHTTPLayerRequestFactory,
+    CommonAccessLogger,
+    8083,
+    True)

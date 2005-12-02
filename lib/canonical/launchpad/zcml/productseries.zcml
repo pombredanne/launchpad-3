@@ -36,7 +36,7 @@
 
     <browser:navigation
         module="canonical.launchpad.browser"
-        classes="ProductSeriesNavigation ProductSeriesSetNavigation"
+        classes="ProductSeriesNavigation"
         />
 
     <browser:url
@@ -121,16 +121,18 @@
         attribute="__call__"
         />
 
-    <browser:pages
+    <browser:editform
+        name="+edit"
         for="canonical.launchpad.interfaces.IProductSeries"
-        class="canonical.launchpad.browser.ProductSeriesView"
+        schema="canonical.launchpad.interfaces.IProductSeries"
+        label="Edit Release Series Details"
+        fields="name displayname summary"
+        class="canonical.launchpad.browser.ProductSeriesEditView"
         facet="overview"
-        permission="launchpad.AnyPerson">
-        <browser:page
-            name="+edit"
-            template="../templates/productseries-edit.pt"
-            lp:url="/products/$Product.name/+series/$ProductSeries.name/+edit" />
-    </browser:pages>
+        permission="launchpad.Edit"
+        template="../templates/productseries-edit.pt"
+        lp:url="/products/$Product.name/+series/$ProductSeries.name/+edit">
+    </browser:editform>
 
     <browser:addform
         name="+addrelease"
@@ -184,6 +186,7 @@
         name="+review"
         for="canonical.launchpad.interfaces.IProductSeries"
         schema="canonical.launchpad.interfaces.IProductSeries"
+        class="canonical.launchpad.browser.ProductSeriesReviewView"
         facet="overview"
         label="Review Product Series Details"
         fields="product name"
@@ -237,41 +240,6 @@
           displayWidth="50"
           height="5" />
     </browser:addform>
-
-    <!-- ProductSeriesSet -->
-    <content class="canonical.launchpad.database.ProductSeriesSet">
-        <allow interface="canonical.launchpad.interfaces.IProductSeriesSet" />
-        <require
-            permission="zope.Public"
-            set_schema="canonical.launchpad.interfaces.IProductSeriesSet"
-        />
-    </content>
-
-    <securedutility
-        class="canonical.launchpad.database.ProductSeriesSet"
-        provides="canonical.launchpad.interfaces.IProductSeriesSet">
-        <allow interface="canonical.launchpad.interfaces.IProductSeriesSet" />
-    </securedutility>
-
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IProductSeriesSet"
-        name="+index" />
-
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.IProductSeriesSet"
-        layer="canonical.launchpad.layers.BazaarLayer"
-        name="+bazaar-index" />
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.IProductSeriesSet"
-        facet="overview"
-        permission="zope.Public">
-        <browser:page
-            name="+index"
-            template="../templates/redirect-up.pt"
-            lp:url="/products/$Product.name/+series"
-            />
-    </browser:pages>
 
     <!-- ProductSeriesSourceSet. Note this is only used by -->
     <content class="canonical.launchpad.database.ProductSeriesSourceSet">

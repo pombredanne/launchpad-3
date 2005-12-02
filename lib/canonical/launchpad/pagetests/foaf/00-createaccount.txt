@@ -99,7 +99,84 @@
   ...
 
 
-  Fill in the information to create the new account and submit it.
+  Fill in invalid information to create the new account and submit it.
+  Here we are testing that password validation is fine and display name is
+  required.
+
+  >>> print http(r"""
+  ... POST %s HTTP/1.1
+  ... Content-Type: multipart/form-data; boundary=---------------------------17483551342125833225531652773
+  ... 
+  ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="field.givenname"
+  ... 
+  ... foo
+  ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="field.familyname"
+  ... 
+  ... baz
+  ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="field.displayname"
+  ... 
+  ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="field.password"
+  ... foo
+  ... 
+  ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="field.password_dupe"
+  ... 
+  ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------17483551342125833225531652773--
+  ... """ % path)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...<span class="error">Required input is missing.</span>...
+  ...
+  ...<span class="error">Passwords do not match.</span>...
+  ...
+
+  >>> print http(r"""
+  ... POST %s HTTP/1.1
+  ... Content-Type: multipart/form-data; boundary=---------------------------17483551342125833225531652773
+  ... 
+  ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="field.givenname"
+  ... 
+  ... foo
+  ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="field.familyname"
+  ... 
+  ... baz
+  ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="field.displayname"
+  ... 
+  ... foobar
+  ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="field.password"
+  ... 
+  ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="field.password_dupe"
+  ... 
+  ... -----------------------------17483551342125833225531652773
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------17483551342125833225531652773--
+  ... """ % path)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...<span class="error">You must enter a password.</span>...
+  ...
+
+
+  Fill in the information correctly to create the new account and submit it.
 
   >>> print http(r"""
   ... POST %s HTTP/1.1
