@@ -469,6 +469,19 @@
         <key name="dbuser" datatype="string" required="yes" />
     </sectiontype>
 
+    <sectiontype name="branchupdater">
+        <key name="dbuser" datatype="string" required="yes">
+            <description>
+                The database user wich will be used to update branches.
+            </description>
+        </key>
+        <key name="prefixurl" datatype="string" required="yes">
+            <description>
+                URL prepended to branch ids to obtain branch URLs.
+            </description>
+        </key>
+    </sectiontype>
+
     <sectiontype name="canonical">
         <key name="dbhost" datatype="ipaddr-or-hostname" required="no" />
         <key name="dbname" datatype="string" required="yes" />
@@ -503,6 +516,7 @@
         <section name="*" type="buildsequencer" attribute="buildsequencer" />
         <section name="*" type="uploader" attribute="uploader" />
         <section name="*" type="uploadqueue" attribute="uploadqueue" />
+        <section name="*" type="branchupdater" attribute="branchupdater" />
     </sectiontype>
 
     <!-- Now specify where the section types may be rooted in the config file

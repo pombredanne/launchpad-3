@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    "BranchIdError",
     "BzrSync",
     ]
 
@@ -16,7 +15,6 @@ import logging
 from datetime import datetime
 
 from pytz import UTC
-from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 from bzrlib.branch import Branch as BzrBranch
 from bzrlib.errors import NoSuchRevision
@@ -25,29 +23,22 @@ from canonical.lp import initZopeless
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.database import (
     Person, Branch, Revision, RevisionNumber, RevisionParent, RevisionAuthor)
-from canonical.launchpad.interfaces import ILaunchpadCelebrities
-
-
-class BranchIdError(Exception):
-    """The requested branch id was not found in the database.
-
-    Raised by BzrSync when the provided branch id was not found in the
-    database.
-    """
-    pass
+from canonical.launchpad.interfaces import (
+    ILaunchpadCelebrities, IBranchSet, NotFoundError)
 
 
 class BzrSync:
     """Import version control metadata from Bazaar2 branches into the database.
     """
 
-    def __init__(self, trans_manager, branch_id, logger=None):
+    def __init__(self, trans_manager, branch_id, branch_url=None, logger=None):
         self.trans_manager = trans_manager
-        try:
-            self.db_branch = Branch.get(branch_id)
-        except SQLObjectNotFound:
-            raise BranchIdError("Branch not found: id=%d" % branch_id)
-        self.bzr_branch = BzrBranch.open(self.db_branch.url)
+        branchset = getUtility(IBranchSet)
+        # Will raise NotFoundError when the branch is not found.
+        self.db_branch = branchset[branch_id]
+        if branch_url is None:
+            branch_url = self.db_branch.url
+        self.bzr_branch = BzrBranch.open(branch_url)
         self.bzr_history = self.bzr_branch.revision_history()
         self._seen_ids = set()
         self._admin = getUtility(ILaunchpadCelebrities).admin
@@ -61,7 +52,7 @@ class BzrSync:
         :param doparents: If true, also import parents of imported revisions.
         """
         self.logger.info(
-            "synchronizing history for branch: %s" % self.db_branch.url)
+            "synchronizing history for branch: %s" % self.bzr_branch.base)
 
         # Keep track if something was actually loaded in the database.
         didsomething = False
@@ -218,10 +209,9 @@ def main(branch_id):
     logger.addHandler(handler)
 
     try:
-        bzrsync = BzrSync(trans_manager, branch_id, logger)
-    except BranchIdError, exception:
-        # Branch not found
-        logger.error(unicode(exception.args[0]))
+        bzrsync = BzrSync(trans_manager, branch_id, logger=logger)
+    except NotFoundError:
+        logger.error("Branch not found: %d" % branch_id)
         status = 1
     else:
         bzrsync.syncHistory()
