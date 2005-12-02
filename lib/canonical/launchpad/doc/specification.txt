@@ -47,13 +47,13 @@ We attach now a spec to a distribution.
     >>> print ubuspec.name
     fix-spec-permissions
 
-The Ubuntu distro is owned by the Ubuntu team, name17. jdub is a member,
+The Ubuntu distro is owned by the Ubuntu team, ubuntu-team. jdub is a member,
 and therefore should be able to edit any spec attached to it (but not
 specs attached to mozilla-firefox).
 
     >>> from canonical.launchpad.helpers import check_permission
     >>> print ubuntu.owner.name
-    name17
+    ubuntu-team
     >>> jdub = Person.byName('jdub')
     >>> jdub.inTeam(ubuntu.owner)
     True

@@ -413,7 +413,7 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         # and testing Spanish team.
         self.assertEqual(
             [{'displayname': u'Mark Shuttleworth', 'id': 1, 'name': u'sabdfl'},
-             {'displayname': u'Ubuntu Team', 'id': 17, 'name': u'name17'},
+             {'displayname': u'Ubuntu Team', 'id': 17, 'name': u'ubuntu-team'},
              {'displayname': u'Launchpad Administrators',
               'id': 25,
               'name': u'admins'},

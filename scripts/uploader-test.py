@@ -262,9 +262,9 @@ def main():
     lock.acquire(blocking=True)
 
     try:
-        uploader_team = getUtility(IPersonSet).getByName('uploader-test')
+        uploader_team = getUtility(IPersonSet).getByName('ubuntu-team')
         if not uploader_team:
-            log.critical("No 'uploader-team' found, insert the "
+            log.critical("No 'ubuntu-team' found, insert the "
                          "required DB data")
             sys.exit(1)
             

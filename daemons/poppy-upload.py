@@ -21,16 +21,19 @@ def main():
     if len(args) != 2:
         print "usage: poppy-upload.py rootuploaddirectory port"
         return 1
+
     root, port = args
     host = "127.0.0.1"
     ident = "lucille upload server"
     numthreads = 4
-
-    # command line to invoke uploader (it shares the same PYTHONPATH
-    # than poppy
-    cmd = [('python scripts/process-upload.py -C autosync -r breezy '
-            '--no-mails -vv --log-file %s -d' % options.log_file), 
-           '@distro@', '@fsroot@'] 
+    # runs for all incomming uploads:
+    # process-upload with "autosync" policy, NO EMAIL SENDING, 
+    # verbosely and logging in the some file poppy is logging.
+    # '@distro@' and '@fsroot@' are replaced internally according
+    # each upload.
+    cmdline = ('python2.4 scripts/process-upload.py -C autosync --no-mails '
+               '-vv --log-file %s -d @distro@ @fsroot@' % options.log_file)
+    cmd = cmdline.split()
    
     iface = PoppyInterface(log, cmd=cmd)
 

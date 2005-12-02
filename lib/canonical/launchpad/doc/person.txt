@@ -156,7 +156,7 @@ Now we remove the only email address nonempty had.
 
 Must login as 'sabdfl' cause he's the owner of the Ubuntu Team.
 >>> login('mark@hbd.com')
->>> ubuntu_team = personset.getByName('name17')
+>>> ubuntu_team = personset.getByName('ubuntu-team')
 >>> ubuntu_translators = personset.getByName('ubuntu-translators')
 >>> ubuntu_translators.addMember(empty)
 >>> ubuntu_team.teamowner = empty
@@ -209,7 +209,7 @@ A merged account gets a -merged suffix on its name.
 True
 
 >>> cur.execute("select p1.name from person as p1, person as p2 where "
-...             "p1.id = p2.teamowner and p2.name = 'name17'")
+...             "p1.id = p2.teamowner and p2.name = 'ubuntu-team'")
 >>> cur.fetchone()[0]
 u'name12'
 
@@ -275,7 +275,7 @@ trying to match the text only against the beginning of an email address:
 ...     (person.displayname, person.name, emails)
 (u'Sigurd Gartmann', u'sigurd-ubuntu', [u'sigurd-ubuntu@brogar.org'])
 (u'Ubuntu Gnome Team', u'name18', [])
-(u'Ubuntu Team', u'name17', [u'support@ubuntu.com'])
+(u'Ubuntu Team', u'ubuntu-team', [u'support@ubuntu.com'])
 (u'Ubuntu Translators', u'ubuntu-translators', [])
 
 >>> results = personset.find('steve.alexander')
@@ -306,7 +306,7 @@ Searching only for Teams based on their names or email addresses:
 >>> for person in results:
 ...     emails = [email.email for email in emailset.getByPerson(person)]
 ...     (person.displayname, person.name, emails)
-(u'Ubuntu Team', u'name17', [u'support@ubuntu.com'])
+(u'Ubuntu Team', u'ubuntu-team', [u'support@ubuntu.com'])
 
 >>> results = personset.findTeam('translators')
 >>> for person in results:

@@ -1,7 +1,7 @@
   Let's add a new option for the dpl-2080 poll we've just created.
 
   >>> print http(r"""
-  ... GET /people/name17/+poll/dpl-2080/+newoption HTTP/1.1
+  ... GET /people/ubuntu-team/+poll/dpl-2080/+newoption HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 403 Forbidden
@@ -11,7 +11,7 @@
   First, go to the +newoption page.
 
   >>> print http(r"""
-  ... GET /people/name17/+poll/dpl-2080/+newoption HTTP/1.1
+  ... GET /people/ubuntu-team/+poll/dpl-2080/+newoption HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -21,7 +21,7 @@
   And now, actually add the option.
 
   >>> print http(r"""
-  ... POST /people/name17/+poll/dpl-2080/+newoption HTTP/1.1
+  ... POST /people/ubuntu-team/+poll/dpl-2080/+newoption HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------787692318512460570977813785
   ... 
@@ -41,7 +41,7 @@
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/people/name17/+poll/dpl-2080
+  Location: http://localhost:9000/people/ubuntu-team/+poll/dpl-2080
   ...
 
 
@@ -49,7 +49,7 @@
   poll.
 
   >>> print http(r"""
-  ... GET /people/name17/+poll/dpl-2080/+options HTTP/1.1
+  ... GET /people/ubuntu-team/+poll/dpl-2080/+options HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -63,7 +63,7 @@
   message because the title is required.
 
   >>> print http(r"""
-  ... POST /people/name17/+poll/dpl-2080/+newoption HTTP/1.1
+  ... POST /people/ubuntu-team/+poll/dpl-2080/+newoption HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: multipart/form-data; boundary=---------------------------787692318512460570977813785
   ... 

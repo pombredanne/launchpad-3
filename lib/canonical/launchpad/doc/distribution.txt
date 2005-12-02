@@ -155,6 +155,10 @@ people.
    ...     print dcu.uploader.displayname
    main
    Ubuntu Team
+   restricted
+   Ubuntu Team
+   universe
+   Ubuntu Team
 
 When processing an upload we may want to find a file (E.g. if an
 incomplete source is uploaded).

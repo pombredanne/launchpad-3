@@ -885,6 +885,9 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'componentselection'::pg_catalog.regclass;
 
 INSERT INTO componentselection (id, distrorelease, component) VALUES (1, 3, 1);
+INSERT INTO componentselection (id, distrorelease, component) VALUES (2, 10, 1);
+INSERT INTO componentselection (id, distrorelease, component) VALUES (3, 10, 2);
+INSERT INTO componentselection (id, distrorelease, component) VALUES (4, 10, 3);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'componentselection'::pg_catalog.regclass;
@@ -1280,6 +1283,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distrocomponentuploader'::pg_catalog.regclass;
 
 INSERT INTO distrocomponentuploader (id, distribution, component, uploader) VALUES (1, 1, 1, 17);
+INSERT INTO distrocomponentuploader (id, distribution, component, uploader) VALUES (3, 1, 2, 17);
+INSERT INTO distrocomponentuploader (id, distribution, component, uploader) VALUES (4, 1, 3, 17);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distrocomponentuploader'::pg_catalog.regclass;
@@ -1297,6 +1302,7 @@ INSERT INTO distrorelease (id, distribution, name, title, description, version, 
 INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount) VALUES (8, 3, 'sid', 'Sid', 'Sid is the CRAZY unstable version of Debian GNU/Linux.', '3.2', 1, '2004-12-29 00:00:00', 6, 6, NULL, 'Sid is the CRAZY unstable version of Debian GNU/Linux.', 'sid', NULL, 0, NULL, NULL, 0, 1);
 INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount) VALUES (9, 7, '2k5', 'Guada 2005', 'This release places extra emphasis on usability and installability. The installer is adapted from Ubuntu to assume your country, language, keyboard and time zone preference, thus ensuring that installs ask the minimum number of questions possible.', '2005', 2, NULL, 3, 4, NULL, 'Guada 2005 is a rapid-install version of
 Ubuntu Hoary for the Andalucian marketplace.', 'Guada2005', NULL, 0, NULL, NULL, 0, 0);
+INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount) VALUES (10, 1, 'breezy-autotest', 'Breezy Badger Autotest', 'Autotest version of Breezy', '6.6.6', 1, '2005-12-01 10:00:00', 1, 1, NULL, 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, NULL, NULL, 0, 0);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distrorelease'::pg_catalog.regclass;
@@ -2892,7 +2898,7 @@ INSERT INTO person (id, displayname, givenname, familyname, "password", teamowne
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (13, 'Carlos Perelló Marín', 'Carlos', 'Perelló Marín', 'MdB+BoAdbza3BA6mIkMm6bFo1kv9hR2PKZ3U', NULL, NULL, 'carlos', NULL, '''carlo'':1A,2B,5C ''marín'':4B,7C ''perelló'':3B,6C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.615543', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (14, 'Dafydd Harries', 'Dafydd', 'Harries', 'EvSuSe4k4tkRHSp6p+g91vyQIwL5VJ3iTbRZ', NULL, NULL, 'daf', NULL, '''daf'':1A ''harri'':3B,5C ''dafydd'':2B,4C', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.616666', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (16, 'Foo Bar', 'Foo', 'Bar', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'name16', NULL, '''bar'':3B,5C ''foo'':2B,4C ''name16'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.593849', 2, 'Africa/Johannesburg', 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
-INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (17, 'Ubuntu Team', NULL, NULL, NULL, 1, 'This Team is responsible for the Ubuntu Distribution', 'name17', NULL, '''team'':3B ''name17'':1A ''ubuntu'':2B', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.60576', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (17, 'Ubuntu Team', NULL, NULL, NULL, 1, 'This Team is responsible for the Ubuntu Distribution', 'ubuntu-team', NULL, '''team'':3A,5B ''ubuntu'':2A,4B ''ubuntu-team'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.60576', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (18, 'Ubuntu Gnome Team', NULL, NULL, NULL, 1, 'This Team is responsible for the GNOME releases Issues on whole Ubuntu Distribution', 'name18', NULL, '''team'':4B ''gnome'':3B ''name18'':1A ''ubuntu'':2B', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.607744', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (19, 'Warty Gnome Team', NULL, NULL, NULL, 1, 'This Team is responsible for GNOME release Issues on Warty Distribution Release', 'name19', NULL, '''team'':4B ''gnome'':3B ''warti'':2B ''name19'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.602661', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (20, 'Warty Security Team', NULL, NULL, NULL, 1, 'This Team is responsible for Security Issues on Warty Distribution Release', 'name20', NULL, '''team'':4B ''secur'':3B ''warti'':2B ''name20'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.614468', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
@@ -8269,6 +8275,38 @@ UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'section'::pg_catalog
 INSERT INTO section (id, name) VALUES (1, 'base');
 INSERT INTO section (id, name) VALUES (2, 'web');
 INSERT INTO section (id, name) VALUES (3, 'editors');
+INSERT INTO section (id, name) VALUES (4, 'admin');
+INSERT INTO section (id, name) VALUES (5, 'comm');
+INSERT INTO section (id, name) VALUES (6, 'debian-installer');
+INSERT INTO section (id, name) VALUES (7, 'devel');
+INSERT INTO section (id, name) VALUES (8, 'doc');
+INSERT INTO section (id, name) VALUES (9, 'games');
+INSERT INTO section (id, name) VALUES (10, 'gnome');
+INSERT INTO section (id, name) VALUES (11, 'graphics');
+INSERT INTO section (id, name) VALUES (12, 'interpreters');
+INSERT INTO section (id, name) VALUES (13, 'kde');
+INSERT INTO section (id, name) VALUES (14, 'libdevel');
+INSERT INTO section (id, name) VALUES (15, 'libs');
+INSERT INTO section (id, name) VALUES (16, 'mail');
+INSERT INTO section (id, name) VALUES (17, 'math');
+INSERT INTO section (id, name) VALUES (18, 'misc');
+INSERT INTO section (id, name) VALUES (19, 'net');
+INSERT INTO section (id, name) VALUES (20, 'news');
+INSERT INTO section (id, name) VALUES (21, 'oldlibs');
+INSERT INTO section (id, name) VALUES (22, 'otherosfs');
+INSERT INTO section (id, name) VALUES (23, 'perl');
+INSERT INTO section (id, name) VALUES (24, 'python');
+INSERT INTO section (id, name) VALUES (25, 'shells');
+INSERT INTO section (id, name) VALUES (26, 'sound');
+INSERT INTO section (id, name) VALUES (27, 'tex');
+INSERT INTO section (id, name) VALUES (28, 'text');
+INSERT INTO section (id, name) VALUES (29, 'translations');
+INSERT INTO section (id, name) VALUES (30, 'utils');
+INSERT INTO section (id, name) VALUES (31, 'x11');
+INSERT INTO section (id, name) VALUES (32, 'electronics');
+INSERT INTO section (id, name) VALUES (33, 'embedded');
+INSERT INTO section (id, name) VALUES (34, 'hamradio');
+INSERT INTO section (id, name) VALUES (35, 'science');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'section'::pg_catalog.regclass;
@@ -8277,6 +8315,38 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'sectionselection'::pg_catalog.regclass;
 
 INSERT INTO sectionselection (id, distrorelease, section) VALUES (1, 3, 3);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (2, 10, 4);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (3, 10, 1);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (4, 10, 5);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (5, 10, 6);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (6, 10, 7);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (7, 10, 8);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (8, 10, 3);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (9, 10, 9);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (10, 10, 10);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (11, 10, 11);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (12, 10, 12);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (13, 10, 13);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (14, 10, 14);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (15, 10, 15);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (16, 10, 16);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (17, 10, 17);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (18, 10, 18);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (19, 10, 19);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (20, 10, 20);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (21, 10, 21);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (22, 10, 22);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (23, 10, 22);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (24, 10, 23);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (25, 10, 24);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (26, 10, 25);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (27, 10, 26);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (28, 10, 27);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (29, 10, 28);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (30, 10, 30);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (31, 10, 2);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (32, 10, 31);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (33, 10, 29);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sectionselection'::pg_catalog.regclass;
