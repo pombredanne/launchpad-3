@@ -95,14 +95,8 @@
     </metal:block>
   </div>
 
-  <table id="portal-columns">
-    <tbody>
-      <tr>
-        <td style="height: 1px;"></td>
-        <td
-          id="portal-column-content"
-          rowspan="2"
-        >
+  <div id="portal-columns">
+    <div id="portal-column-content">
               <div id="region-content">
                   <tal:block
                       define="notifications request/notifications"
@@ -139,38 +133,29 @@
                       <p>Main content area.</p>
                   </metal:main>
               </div>
-        </td>
-
-              <!-- start of right (by default at least) column -->
-        <td
+    </div>
+    <!-- start of right (by default at least) column -->
+    <div
           id="portal-column-two"
           metal:define-slot="column_two"
-          rowspan="2"
-        >
+    >
           <tal:menu
             condition="not:exists:body"
             replace="structure CONTEXTS/@@+menubox"
           />
           <metal:portlets define-slot="portlets_two">
           </metal:portlets>
-        </td>
-              <!-- end of the right (by default at least) column -->
-      </tr>
-      <tr>
-              <!-- start of the left (by default at least) column -->
-        <td
+    </div>
+    <!-- start of the left (by default at least) column -->
+    <div
           id="portal-column-one"
           metal:define-slot="column_one"
-        >
+    >
                   <metal:portlets define-slot="portlets_one">
 
                   </metal:portlets>
-        </td>
-              <!-- end of the left (by default at least) column -->
-
-        </tr>
-    </tbody>
-  </table>
+    </div>
+  </div>
   <!-- end column wrapper -->
 
   <div class="visualClear">&nbsp;</div>

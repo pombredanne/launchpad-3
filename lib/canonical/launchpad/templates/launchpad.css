@@ -125,11 +125,9 @@ table {
   margin-left: auto;
   margin-right: auto;
   border-collapse: collapse;
-}
-table table { /* assumes that the overall page layout is a <table> */
   width: 100%;
 }
-table table th, table table td {
+th, td {
   padding: 0.25em;
 }
 th.icon, td.icon {
@@ -512,27 +510,26 @@ ins {
 
 /* -------------------------- END OF PLONE.CSS -------------------------- */
 
-
 /* Column definitions */
 
-#portal-columns {
-  width: 100% !important;
+#portal-column-content {
+  display: inline; /* avoids MSIE Double Float Margin bug */
+  float: left;
+  margin-left: 26%; /* = 25% + 1% whitespace */
+  width: 48%; /* = 50% - 1% left whitespace - 1% right whitespace */
+}
+#portal-column-two {
+  display: inline;
+  float: left;
+  margin-left: 2%; /* whitespace */
+  width: 24%; /* = 25% - 1% whitespace */
 }
 
 #portal-column-one {
-  vertical-align: top;
-  width: 16em;
-}
-
-#portal-column-content {
-  vertical-align: top;
-  padding: 2px 1em 1em 1em;
-}
-
-#portal-column-two {
-  padding-top: 3px;
-  vertical-align: top;
-  width: 16em;
+  display: inline;
+  float: left;
+  margin-left: -100%; /* flush with the left edge of the page */
+  width: 24%; /* = 25% - 1% whitespace */
 }
 
 /* Launchpad classes */
@@ -568,16 +565,6 @@ input[disabled] {
 tr.highlight {
     border: 1px solid #ffc550;
     background-color: #ffe7ab;
-}
-
-/* XXX Just setting a fixed width until the rest of the layout is in place */
-
-#portal-column-content {
-  width: 600px;
-}
-
-#portal-columns {
-  margin: auto;
 }
 
 /* batch navigation links */
