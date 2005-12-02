@@ -13,7 +13,7 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol, AND)
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -295,10 +295,10 @@ class ShippingRequestSet:
                         WHERE Person.fti @@ ftq(%s)
                     UNION
                     SELECT EmailAddress.person FROM EmailAddress
-                        WHERE lower(EmailAddress.email) LIKE %s
+                        WHERE lower(EmailAddress.email) LIKE %s || '%%'
                     )
-                """ % sqlvalues(recipient_text, recipient_text,
-                                recipient_text + '%'))
+                """ % (quote(recipient_text), quote(recipient_text),
+                       quote_like(recipient_text)))
             clauseTables = ['Person', 'EmailAddress']
 
         if omit_cancelled:

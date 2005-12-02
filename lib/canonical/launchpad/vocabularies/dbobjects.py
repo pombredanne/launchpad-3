@@ -495,7 +495,8 @@ class ValidPersonOrTeamVocabulary(
         # slow.
         fti_clause = "Person.fti @@ ftq(%s)" % quote(text)
         fti_clause = "%s AND %s" % (base_query, fti_clause)
-        email_clause = "lower(EmailAddress.email) LIKE %s" % quote(text + '%')
+        email_clause = (
+            "lower(EmailAddress.email) LIKE %s || '%%'" % quote_like(text))
         email_clause = "%s AND %s" % (base_query, email_clause)
         query_str = """
             SELECT DISTINCT *

@@ -23,7 +23,7 @@ from sqlobject import (
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 from canonical.database.sqlbase import (
-    SQLBase, quote, cursor, sqlvalues, flush_database_updates,
+    SQLBase, quote, quote_like, cursor, sqlvalues, flush_database_updates,
     flush_database_caches)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -985,8 +985,8 @@ class PersonSet:
         # it a lot faster than with a LEFT OUTER JOIN.
         email_query = """
             EmailAddress.person = Person.id AND 
-            lower(EmailAddress.email) LIKE %s
-            """ % quote(text + '%%')
+            lower(EmailAddress.email) LIKE %s || '%%'
+            """ % quote_like(text)
         results = Person.select(email_query, clauseTables=['EmailAddress'])
         name_query = "fti @@ ftq(%s) AND merged is NULL" % quote(text)
         return results.union(Person.select(name_query), orderBy=orderBy)
@@ -1003,8 +1003,8 @@ class PersonSet:
             # We use a UNION here because this makes things *a lot* faster
             # than if we did a single SELECT with the two following clauses
             # ORed.
-            email_query = ('%s AND lower(EmailAddress.email) LIKE %s' 
-                           % (base_query, quote(text + '%')))
+            email_query = ("%s AND lower(EmailAddress.email) LIKE %s || '%%'"
+                           % (base_query, quote_like(text)))
             name_query = ('%s AND Person.fti @@ ftq(%s)' 
                           % (base_query, quote(text)))
             results = Person.select(email_query, clauseTables=clauseTables)
@@ -1026,8 +1026,8 @@ class PersonSet:
         email_query = """
             Person.teamowner IS NOT NULL AND 
             EmailAddress.person = Person.id AND 
-            lower(EmailAddress.email) LIKE %s
-            """ % quote(text + '%%')
+            lower(EmailAddress.email) LIKE %s || '%%'
+            """ % quote_like(text)
         results = Person.select(email_query, clauseTables=['EmailAddress'])
         name_query = """
              Person.teamowner IS NOT NULL AND 
