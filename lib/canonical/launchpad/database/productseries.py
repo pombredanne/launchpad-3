@@ -1,7 +1,12 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['ProductSeries', 'ProductSeriesSet', 'ProductSeriesSourceSet']
+
+__all__ = [
+    'ProductSeries',
+    'ProductSeriesSourceSet',
+    ]
+
 
 import datetime
 import sets
@@ -16,7 +21,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 # canonical imports
 from canonical.launchpad.interfaces import (
     IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin,
-    IProductSeriesSet, IProductSeriesSourceSet, NotFoundError)
+    IProductSeriesSourceSet, NotFoundError)
 
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
@@ -201,29 +206,6 @@ class ProductSeries(SQLBase):
     def autoTestFailed(self):
         """Has the series source failed automatic testing by roomba?"""
         return self.importstatus == ImportStatus.TESTFAILED
-
-
-class ProductSeriesSet:
-    # XXX: this is in fact a subset of product series
-    implements(IProductSeriesSet)
-
-    def __init__(self, product=None):
-        self.product = product
-
-    def __iter__(self):
-        if self.product:
-            return iter(ProductSeries.selectBy(productID=self.product.id))
-        return iter(ProductSeries.select())
-
-    def __getitem__(self, name):
-        if not self.product:
-            raise AssertionError(
-                'ProductSeriesSet not initialised with product.')
-        series = ProductSeries.selectOneBy(productID=self.product.id,
-                                           name=name)
-        if series is None:
-            raise NotFoundError(name)
-        return series
 
 
 class ProductSeriesSourceSet:

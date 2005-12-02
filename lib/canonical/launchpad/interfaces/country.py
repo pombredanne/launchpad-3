@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'ICountry',
     'ICountrySet',
+    'IContinent'
     ]
 
 from zope.i18nmessageid import MessageIDFactory
@@ -39,6 +40,7 @@ class ICountry(Interface):
             title=_('Description'), required=True,
             )
 
+    continent = Attribute("The Continent where this country is located.")
     languages = Attribute("An iterator over languages that are spoken in "
                           "that country.")
 
@@ -51,4 +53,12 @@ class ICountrySet(Interface):
 
     def __iter__():
         """Iterate through the countries in this set."""
+
+
+class IContinent(Interface):
+    """See IContinent."""
+
+    id = Int(title=_('ID'), required=True, readonly=True)
+    code = TextLine(title=_("Continent's code"), required=True, readonly=True)
+    name = TextLine(title=_("Continent's name"), required=True, readonly=True)
 
