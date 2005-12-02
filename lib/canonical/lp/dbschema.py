@@ -2266,6 +2266,12 @@ class BugTaskStatus(DBSchema):
         the user was visiting when the bug occurred, etc.
         """)
 
+    REJECTED = Item(17, """
+        Rejected
+
+        This bug has been rejected, e.g. in cases of operator-error.
+        """)
+
     CONFIRMED = Item(20, """
         Confirmed
 
@@ -2290,12 +2296,6 @@ class BugTaskStatus(DBSchema):
         Released
 
         The fix for this bug has been released.
-        """)
-
-    REJECTED = Item(40, """
-        Rejected
-
-        This bug has been rejected, e.g. in cases of operator-error.
         """)
 
 
