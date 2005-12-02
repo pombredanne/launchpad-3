@@ -56,7 +56,7 @@ class UnauthorizedView(SystemErrorView):
                 query_string = '?' + query_string
             target = self.request.getURL() + '/+login' + query_string
             self.request.response.addNoticeNotification(_(
-                    'The requested page is protected. You will need to login.'
+                    'To continue, you must log in to Launchpad.'
                     ))
             self.request.response.redirect(target)
             # Maybe render page with a link to the redirection?

@@ -5,12 +5,12 @@ __metaclass__ = type
 __all__ = ['ProductSeriesNavigation',
            'ProductSeriesContextMenu',
            'ProductSeriesView',
+           'ProductSeriesEditView',
            'ProductSeriesRdfView',
            'ProductSeriesSourceSetView',
            'ProductSeriesReviewView']
 
 import re
-import urllib
 
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
@@ -49,7 +49,7 @@ class ProductSeriesReviewView(SQLObjectEditView):
         self.request.response.addInfoNotification( 
             _('This Serie has been changed'))
         self.request.response.redirect(canonical_url(self.context))
->>>>>>> MERGE-SOURCE
+
 
 class ProductSeriesNavigation(Navigation):
 
@@ -209,7 +209,6 @@ class ProductSeriesView(LaunchpadView):
             return
 
         dispatch_table = {
-            'edit_productseries': self.edit,
             'edit_productseries_source': self.editSource,
             'admin_productseries_source': self.adminSource,
             'set_ubuntu_pkg': self.setCurrentUbuntuPackage,
@@ -279,59 +278,39 @@ class ProductSeriesView(LaunchpadView):
         html += '</select>\n'
         return html
 
-    def edit(self):
-        """Update the contents of the ProductSeries.
-
-        It process the form, updating the fields of the database as it goes.
-        """
-        form = self.form
-        # Extract details from the form and update the Product
-        # we don't let people edit the name because it's part of the url
-        self.name = form.get('name', self.name)
-        self.displayname = form.get('displayname', self.displayname)
-        self.summary = form.get('summary', self.summary)
-        self.releaseroot = form.get("releaseroot", self.releaseroot) or None
-        self.releasefileglob = form.get("releasefileglob",
-                self.releasefileglob) or None
-        if self.releaseroot:
-            if not validate_release_root(self.releaseroot):
-                self.request.response.addErrorNotification(
-                    'Invalid release root URL')
-                self.has_errors = True
-                return
-        self.context.name = self.name
-        self.context.summary = self.summary
-        self.context.displayname = self.displayname
-        self.context.releaseroot = self.releaseroot
-        self.context.releasefileglob = self.releasefileglob
-        # now redirect to view the productseries
-        self.request.response.redirect(
-            '../%s' % urllib.quote(self.context.name))
-
     def editSource(self, fromAdmin=False):
         """Edit the upstream revision control details for this series."""
         form = self.form
-
         if self.context.syncCertified() and not fromAdmin:
             self.request.response.addErrorNotification(
-                    'This Source is has been certified and is now '
+                    'This Source has been certified and is now '
                     'unmodifiable.'
                     )
             self.has_errors = True
             return
         # get the form content, defaulting to what was there
-        rcstype=form.get("rcstype", None)
+        rcstype = form.get("rcstype")
         if rcstype == 'cvs':
             self.rcstype = RevisionControlSystems.CVS
+            self.cvsroot = form.get("cvsroot").strip()
+            self.cvsmodule = form.get("cvsmodule").strip()
+            self.cvsbranch = form.get("cvsbranch").strip()
+            self.svnrepository = None
         elif rcstype == 'svn':
             self.rcstype = RevisionControlSystems.SVN
+            self.cvsroot = None 
+            self.cvsmodule = None 
+            self.cvsbranch = None 
+            self.svnrepository = form.get("svnrepository").strip()
         else:
             raise NotImplementedError, 'Unknown RCS %s' % rcstype
-        self.cvsroot = form.get("cvsroot", self.cvsroot).strip() or None
-        self.cvsmodule = form.get("cvsmodule", self.cvsmodule).strip() or None
-        self.cvsbranch = form.get("cvsbranch", self.cvsbranch).strip() or None
-        self.svnrepository = form.get("svnrepository",
-                self.svnrepository).strip() or None
+        # FTP release details
+        self.releaseroot = form.get("releaseroot")
+        self.releasefileglob = form.get("releasefileglob") 
+        if self.releaseroot:
+            if not validate_release_root(self.releaseroot):
+                self.errormsgs.append('Invalid release root URL')
+                return
         # make sure we at least got something for the relevant rcs
         if rcstype == 'cvs':
             if not (self.cvsroot and self.cvsmodule and self.cvsbranch):
@@ -372,6 +351,8 @@ class ProductSeriesView(LaunchpadView):
         self.context.cvsmodule = self.cvsmodule
         self.context.cvsbranch = self.cvsbranch
         self.context.svnrepository = self.svnrepository
+        self.context.releaseroot = self.releaseroot
+        self.context.releasefileglob = self.releasefileglob
         if not fromAdmin:
             self.context.importstatus = ImportStatus.TESTING
         elif (oldrcstype is None and self.rcstype is not None):
@@ -379,6 +360,8 @@ class ProductSeriesView(LaunchpadView):
         # make sure we also update the ubuntu packaging if it has been
         # modified
         self.setCurrentUbuntuPackage()
+        if not self.errormsgs:
+            self.request.response.redirect(canonical_url(self.context))
 
     def adminSource(self):
         """Make administrative changes to the source details of the
@@ -562,6 +545,14 @@ class ProductSeriesView(LaunchpadView):
             self.request.response.addWarningNotification(
                 "Ignored your upload because the file you uploaded was not"
                 " recognised as a file that can be imported.")
+
+
+class ProductSeriesEditView(SQLObjectEditView):
+    """View class that lets you edit a ProductSeries object."""
+
+    def changed(self):
+        # If the name changed then the URL changed, so redirect
+        self.request.response.redirect(canonical_url(self.context))
 
 
 class ProductSeriesRdfView(object):

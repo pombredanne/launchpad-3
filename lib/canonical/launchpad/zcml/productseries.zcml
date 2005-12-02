@@ -121,21 +121,18 @@
         attribute="__call__"
         />
 
-    <browser:pages
+    <browser:editform
+        name="+edit"
         for="canonical.launchpad.interfaces.IProductSeries"
-        class="canonical.launchpad.browser.ProductSeriesView"
+        schema="canonical.launchpad.interfaces.IProductSeries"
+        label="Edit Release Series Details"
+        fields="name displayname summary"
+        class="canonical.launchpad.browser.ProductSeriesEditView"
         facet="overview"
-        permission="launchpad.AnyPerson">
-        <browser:page
-            name="+edit"
-            template="../templates/productseries-edit.pt"
-            lp:url="/products/$Product.name/+series/$ProductSeries.name/+edit" />
-        <browser:page
-            name="+translations-upload"
-            facet="translations"
-            template="../templates/productseries-translations-upload.pt"
-            lp:url="/products/evolution/+series/main/+translations-upload" />
-    </browser:pages>
+        permission="launchpad.Edit"
+        template="../templates/productseries-edit.pt"
+        lp:url="/products/$Product.name/+series/$ProductSeries.name/+edit">
+    </browser:editform>
 
     <browser:addform
         name="+addrelease"
@@ -242,6 +239,18 @@
           displayWidth="50"
           height="5" />
     </browser:addform>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProductSeries"
+        class="canonical.launchpad.browser.ProductSeriesView"
+        facet="translations"
+        permission="launchpad.AnyPerson">
+        <browser:page
+            name="+translations-upload"
+            facet="translations"
+            template="../templates/productseries-translations-upload.pt"
+            lp:url="/products/evolution/+series/main/+translations-upload" />
+    </browser:pages>
 
     <!-- ProductSeriesSourceSet. Note this is only used by -->
     <content class="canonical.launchpad.database.ProductSeriesSourceSet">

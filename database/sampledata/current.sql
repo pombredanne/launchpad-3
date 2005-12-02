@@ -2031,7 +2031,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (73, 'chb', 'Chibcha', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (74, 'ce', 'Chechen', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (75, 'chg', 'Chagatai', NULL, NULL, NULL, true, 0);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (76, 'zh', 'Chinese', NULL, 1, '0', true, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (76, 'zh', 'Chinese', NULL, 1, '0', false, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (77, 'chk', 'Chukese', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (78, 'chm', 'Mari', NULL, NULL, NULL, true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (79, 'chn', 'Chinook jargon', NULL, NULL, NULL, true, 0);
@@ -2445,7 +2445,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (487, 'en_ZA', 'English (South Africa)', NULL, 2, 'n != 1', false, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (488, 'en_ZW', 'English (Zimbabwe)', NULL, 2, 'n != 1', false, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (489, 'zh_CN', 'Chinese (China)', NULL, 1, '0', true, 0);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (490, 'zh_HK', 'Chinese (Hong Kong)', NULL, 1, '0', false, 0);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (490, 'zh_HK', 'Chinese (Hong Kong)', NULL, 1, '0', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (491, 'zh_SG', 'Chinese (Singapore)', NULL, 1, '0', false, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (492, 'zh_TW', 'Chinese (Taiwan)', NULL, 1, '0', true, 0);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction) VALUES (493, 'eu_ES', 'Basque (Spain)', NULL, 2, 'n != 1', false, 0);

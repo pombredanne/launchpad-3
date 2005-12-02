@@ -889,7 +889,6 @@ class PersonSet:
             """ % (EmailAddressStatus.PREFERRED.value,)
         return Person.select(query, orderBy=['-karma', '-id'])
 
-
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
                 defaultmembershipperiod=None, defaultrenewalperiod=None):
