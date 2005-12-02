@@ -115,16 +115,14 @@ class UploaderTester:
             # create person ...
             # missed user details (email, displayname), parse changes
             # is there something ready in IPersonSet ?
-            user = getUtility(IPersonSet).getByEmail(email)
-            
+            user = getUtility(IPersonSet).ensurePerson(email, displayname)
             if user is None:
-                user, email = getUtility(IPersonSet).createPersonAndEmail(
-                    email, displayname=displayname)
-                # promote the email from NEW to PREFERRED
-                email.status = dbschema.EmailAddressStatus.PREFERRED
-            else:
-                email = getUtility(IEmailAddressSet).getByEmail(email)
-                
+                raise ValueError('Could not create user %s, %s' 
+                                  % (displayname, email))
+                                  
+            email = getUtility(IEmailAddressSet).getByEmail(email)
+            # ensure PREFERRED email
+            email.status = dbschema.EmailAddressStatus.PREFERRED
             # add user to the uploader_test team
             self.uploader_team.addMember(user)
             
@@ -227,16 +225,14 @@ def main():
     parser = optparse.OptionParser()
     logger_options(parser)
 
-    parser.add_option("-N", "--dry-run", action="store_true",
-                      dest="dryrun", metavar="DRY_RUN", default=False,
-                      help="Whether to treat this as a dry-run or not.")
-
-    parser.add_option("-k", "--keyring", dest="keyring", metavar="KEYRING",
+    parser.add_option("-k", "--keyring", dest="keyring", metavar="FILENAME",
                       help="OpenPGP Key Ring file to be imported.")
 
-    parser.add_option("-s", "--sleep", action="store", metavar="SLEEP",
-                      type="int",
-                      help="OpenPGP Key Ring file to be imported.")
+    parser.add_option("-s", "--sleep", action="store", metavar="SECONDS",
+                      type="int", help="Wait given seconds between uploads")
+
+    parser.add_option("--start-at", action="store", metavar="CHANGESNAME",
+                      help="Start at given changes filename")
 
     options, args = parser.parse_args()
 
@@ -277,7 +273,16 @@ def main():
 
         log.info("Fetching list of files with .changes suffix")
         changes_filenames = rsync_list_filenames(rsync_url + "*.changes")
+
+        started = False
         for changes_filename in changes_filenames:
+
+            if not started:
+                if (not options.start_at or
+                    options.start_at == changes_filename):
+                    started = True
+                else:
+                    continue
 
             temp_dir = tempfile.mkdtemp("-rsync-to-ftp")
             log.info("Using temporary directory at %s" % temp_dir)
@@ -298,12 +303,6 @@ def main():
                 log.info("Downloading additional files...")
                 rsync_files(rsync_url + '*', temp_dir, includes=files)
 
-                for filename in files:
-                    if filename.endswith(".dsc"):
-                        dsc_file = open(os.path.join(temp_dir, filename))
-                        tester.ensure_signer(dsc_file.read())
-                        dsc_file.close()
-
                 log.info("Uploading to FTP server...")
                 ftp_send_files(temp_dir, ftp_url_obj)
 
@@ -312,8 +311,11 @@ def main():
             finally:
                 log.info("Removing temporary directory...")
                 shutil.rmtree(temp_dir)
+
             # wait some time between uploads
-            time.sleep(options.sleep)
+            if options.sleep:
+                time.sleep(options.sleep)
+
         log.info("Finished.")
 
     finally:
@@ -322,6 +324,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 
 
 

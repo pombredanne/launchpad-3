@@ -93,11 +93,6 @@ def main():
 
 def send_mails(mails):
     """Send the mails provided using the launchpad mail infrastructure."""
-    # XXX cprov 20051201: for god sake, DO NOT SEND EMAILS if --no-mails
-    # is specified in cmd-line
-    if options.nomails:
-       return
-       
     for mail_text in mails:
         mail_message = message_from_string(ascii_smash(mail_text))
         if mail_message['To'] is None:
@@ -112,7 +107,8 @@ def send_mails(mails):
             log.info("   Body:")
             for line in mail_message.get_payload().split("\n"):
                 log.info(line)
-        sendmail(mail_message)
+        else:
+            sendmail(mail_message)
         
 def process_upload(upload):
     """Process an upload as provided."""
@@ -148,5 +144,6 @@ def process_upload(upload):
 
 if __name__ == '__main__':
     sys.exit(main())
+
 
 

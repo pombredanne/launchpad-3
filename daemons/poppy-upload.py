@@ -26,15 +26,13 @@ def main():
     ident = "lucille upload server"
     numthreads = 4
 
-
     # command line to invoke uploader (it shares the same PYTHONPATH
     # than poppy
-    cmd = [('python scripts/process-upload.py -C insecure -r breezy '
+    cmd = [('python scripts/process-upload.py -C autosync -r breezy '
             '--no-mails -vv --log-file %s -d' % options.log_file), 
            '@distro@', '@fsroot@'] 
    
     iface = PoppyInterface(log, cmd=cmd)
-    
 
     run_server(root, host, int(port), ident, numthreads,
                iface.new_client_hook, iface.client_done_hook,
@@ -43,6 +41,7 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
+
 
 
 
