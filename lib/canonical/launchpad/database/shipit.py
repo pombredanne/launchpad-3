@@ -437,14 +437,18 @@ class ShippingRequestSet:
             percentage_of_approved = float(shipped_cds) / float(requested_cds)
             percentage_of_total = float(shipped_cds) / float(all_shipped_cds)
 
-            row = [country.name, shipped_cds_per_arch[ShipItArchitecture.X86],
+            # Need to encode strings that may have non-ASCII chars into
+            # unicode because we're using StringIO.
+            country_name = country.name.encode('utf-8')
+            continent_name = country.continent.name.encode('utf-8')
+            row = [country_name, shipped_cds_per_arch[ShipItArchitecture.X86],
                    shipped_cds_per_arch[ShipItArchitecture.AMD64],
                    shipped_cds_per_arch[ShipItArchitecture.PPC],
                    normal_prio_count, high_prio_count,
                    average_request_size,
-                   "%d%%" % (percentage_of_approved * 100),
-                   "%d%%" % (percentage_of_total * 100),
-                   country.continent.name]
+                   "%.2f%%" % (percentage_of_approved * 100),
+                   "%.2f%%" % (percentage_of_total * 100),
+                   continent_name]
             csv_writer.writerow(row)
         csv_file.seek(0)
         return csv_file
