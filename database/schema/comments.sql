@@ -1200,6 +1200,16 @@ COMMENT ON COLUMN Language.direction IS 'The direction that text is written in t
 -- PackageBugContact
 COMMENT ON TABLE PackageBugContact IS 'Defines the bug contact for a given sourcepackage in a given distribution. The bug contact will be automatically subscribed to every bug filed on this sourcepackage in this distribution.';
 
+-- ShipItReport
+COMMENT ON TABLE ShipItReport IS 'A report generated with the ShipIt data.';
+COMMENT ON COLUMN ShipItReport.datecreated IS 'The date this report run was created.';
+COMMENT ON COLUMN ShipItReport.csvfile IS 'A csv file with the report';
+
+-- Continent
+COMMENT ON TABLE Continent IS 'A continent in this huge world.';
+COMMENT ON COLUMN Continent.code IS 'A two-letter code for a continent.';
+COMMENT ON COLUMN Continent.name IS 'The name of the continent.';
+
 -- TranslationImportQueueEntry
 COMMENT ON TABLE TranslationImportQueueEntry IS 'Queue with translatable resources pending to be imported into Rosetta.';
 COMMENT ON COLUMN TranslationImportQueueEntry.path IS 'The path (included the filename) where this file was stored when we imported it.';

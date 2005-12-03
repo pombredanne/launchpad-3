@@ -29,7 +29,7 @@ from canonical.launchpad.helpers import (
 from canonical.launchpad.interfaces import (
     IPerson, ICountry, IPOTemplateSet, ILaunchpadCelebrities, ILaunchBag,
     ISourcePackageNameSet, validate_url, IProductSeries,
-    ITranslationImportQueue)
+    ITranslationImportQueue, IProductSeriesSourceSet)
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
@@ -146,7 +146,6 @@ def validate_release_root(repo):
 
 def validate_svn_repo(repo):
     return validate_url(repo, ["http", "https", "svn", "svn+ssh"])
-
 
 
 # A View Class for ProductSeries
@@ -278,6 +277,32 @@ class ProductSeriesView(LaunchpadView):
         html += '</select>\n'
         return html
 
+    def cvs_details_already_in_use(self, cvsroot, cvsmodule, cvsbranch):
+        """Check if the CVS details are in use by another ProductSeries.
+
+        Return True if the CVS details don't exist in the database or 
+        if it's already set in this ProductSeries, otherwise return False.
+        """
+        productseries = getUtility(IProductSeriesSourceSet).getByCVSDetails(
+            cvsroot, cvsmodule, cvsbranch) 
+        if productseries is None or productseries == self.context:
+            return True
+        else: 
+            return False 
+
+    def svn_details_already_in_use(self, svnrepository): 
+        """Check if the SVN details are in use by another ProductSeries.
+
+        Return True if the SVN details don't exist in the database or
+        if it's already set in this ProductSeries, otherwise return False.
+        """
+        productseries = getUtility(IProductSeriesSourceSet).getBySVNDetails(
+            svnrepository)
+        if productseries is None or productseries == self.context:
+            return True
+        else: 
+            return False 
+
     def editSource(self, fromAdmin=False):
         """Edit the upstream revision control details for this series."""
         form = self.form
@@ -336,15 +361,25 @@ class ProductSeriesView(LaunchpadView):
                     'Please remove the SVN repository.')
                 self.has_errors = True
                 return
+            if not self.cvs_details_already_in_use(self.cvsroot, self.cvsmodule,
+                    self.cvsbranch):
+                self.errormsgs.append(
+                    'CVS repository details already in use by another product.')
+                return
         elif rcstype == 'svn':
             if not validate_svn_repo(self.svnrepository):
                 self.request.response.addErrorNotification(
-                    'Please give valid SVN server details')
+                    'Please give valid SVN server details.')
                 self.has_errors = True
                 return
             if (self.cvsroot or self.cvsmodule or self.cvsbranch):
                 self.request.response.addErrorNotification(
                     'Please remove the CVS repository details.')
+                self.has_errors = True
+                return
+            if not self.svn_details_already_in_use(self.svnrepository):
+                self.request.response.addErrorNotification(
+                    'SVN repository details already in use by another product.')
                 self.has_errors = True
                 return
         oldrcstype = self.context.rcstype

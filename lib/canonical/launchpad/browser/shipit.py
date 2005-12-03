@@ -7,7 +7,7 @@ __all__ = [
     'ShippingRequestsView', 'ShipItLoginView', 'ShipItRequestView',
     'ShipItUnauthorizedView', 'StandardShipItRequestsView',
     'ShippingRequestURL', 'StandardShipItRequestURL', 'ShipItExportsView',
-    'ShipItNavigation', 'RedirectToOldestPendingRequest',
+    'ShipItNavigation', 'RedirectToOldestPendingRequest', 'ShipItReportsView',
     'StandardShipItRequestSetNavigation', 'ShippingRequestSetNavigation']
     
 
@@ -24,6 +24,7 @@ from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.login import LoginOrRegister
+from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp import (
     canonical_url, Navigation, stepto, redirection)
 from canonical.launchpad.mail.sendmail import simple_sendmail
@@ -32,7 +33,7 @@ from canonical.launchpad.helpers import positiveIntOrZero, intOrZero
 from canonical.launchpad.interfaces import (
     IStandardShipItRequestSet, IShippingRequestSet, ILaunchBag, IShipItCountry,
     ShippingRequestStatus, ILaunchpadCelebrities, ICanonicalUrlData,
-    IShippingRunSet, IShipItApplication)
+    IShippingRunSet, IShipItApplication, IShipItReportSet)
 import canonical.launchpad.layers
 
 from canonical.launchpad import _
@@ -747,6 +748,13 @@ class ShippingRequestAdminView:
             url = '%s?previous=%d&%s=1' % (canonical_url(next_order),
                                            self.context.id, previous_action)
             self.request.response.redirect(url)
+
+
+class ShipItReportsView(LaunchpadView):
+    """The view for the list of shipit reports."""
+
+    def initialize(self):
+        self.reports = getUtility(IShipItReportSet).getAll()
 
 
 class ShipItExportsView:
