@@ -3,6 +3,7 @@ import os
 import shutil
 
 from twisted.trial import unittest
+from twisted.vfs.ivfs import VFSError, PermissionError
 
 from supermirrorsftp.sftponly import SFTPOnlyAvatar
 from supermirrorsftp.bazaarfs import SFTPServerRoot
@@ -45,7 +46,12 @@ class TestTopLevelDir(unittest.TestCase):
 
     def testAllWriteOpsForbidden(self):
         # mkdir
+        # rmdir
         # make new file
         # ...?
-        pass
+        avatar = SFTPOnlyAvatar('alice', self.tmpdir, '/dev/null',
+                                self.aliceUserDict)
+        root = SFTPServerRoot(avatar)
+        self.assertRaises(PermissionError, root.createDirectory, 'xyz')
+        self.assertRaises(PermissionError, root.createFile, 'xyz')
 
