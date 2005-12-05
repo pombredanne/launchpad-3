@@ -174,20 +174,6 @@ class INotificationRequest(Interface):
         schema=INotificationList
         )
 
-    def getNotifications(levels=BrowserNotificationLevel.ALL_LEVELS):
-        """Retrieve a list of notifications, which are XHTML fragments.
-         
-        levels is a sequence of levels. Only the notifications with matching
-        levels are returned. By default, all notifications are returned.
-        Notifications are always returned in the order they were added.
-
-        An empty list is returned if there are no matching notifications.
-
-        An empty list is returned if there is no notification information
-        in the query string, or if the notification parameter is invalid
-        for the current user.
-        """
-
 
 class INotificationResponse(Interface):
     """This class is responsible for removing notifications that it assumes

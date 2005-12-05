@@ -23,7 +23,7 @@ from sqlobject import (
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 from canonical.database.sqlbase import (
-    SQLBase, quote, cursor, sqlvalues, flush_database_updates,
+    SQLBase, quote, quote_like, cursor, sqlvalues, flush_database_updates,
     flush_database_caches)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -31,13 +31,12 @@ from canonical.database import postgresql
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, ITeamMembership, ITeamParticipation,
-    ITeamMembershipSet, IEmailAddress, IWikiName, IIrcID,
-    IJabberID, IIrcIDSet, ISSHKeySet, IJabberIDSet,
-    IWikiNameSet, IGPGKeySet, ISSHKey, IGPGKey, IMaintainershipSet,
-    IEmailAddressSet, ISourcePackageReleaseSet, IPasswordEncryptor,
-    ICalendarOwner, UBUNTU_WIKI_URL, ISignedCodeOfConductSet,
-    ILoginTokenSet, KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken,
-    NotFoundError, IKarmaSet, IKarmaCacheSet, IBugTaskSet)
+    ITeamMembershipSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
+    IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet, ISSHKey,
+    IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner,
+    UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
+    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, NotFoundError, IKarmaSet,
+    IKarmaCacheSet, IBugTaskSet)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -46,6 +45,9 @@ from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.karma import (
     KarmaAction, Karma, KarmaCategory)
 from canonical.launchpad.database.shipit import ShippingRequest
+from canonical.launchpad.database.sourcepackagerelease import (
+    SourcePackageRelease)
+
 from canonical.launchpad.database.branch import Branch
 
 from canonical.lp.dbschema import (
@@ -798,20 +800,32 @@ class Person(SQLBase):
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id)
 
-    @property
-    def maintainerships(self):
+    def maintainedPackages(self):
         """See IPerson."""
-        maintainershipsutil = getUtility(IMaintainershipSet)
-        return maintainershipsutil.getByPersonID(self.id)
+        querystr = """
+            sourcepackagerelease.maintainer = %d AND
+            sourcepackagerelease.sourcepackagename = sourcepackagename.id
+            """ % self.id
+        return SourcePackageRelease.select(
+            querystr,
+            orderBy=['SourcePackageName.name', 'SourcePackageRelease.id'],
+            clauseTables=['SourcePackageName'])
+
+    def uploadedButNotMaintainedPackages(self):
+        """See IPerson."""
+        querystr = """
+            sourcepackagerelease.creator = %d AND
+            sourcepackagerelease.maintainer != %d AND
+            sourcepackagerelease.sourcepackagename = sourcepackagename.id
+            """ % (self.id, self.id)
+        return SourcePackageRelease.select(
+            querystr,
+            orderBy=['SourcePackageName.name', 'SourcePackageRelease.id'],
+            clauseTables=['SourcePackageName'])
 
     @property
-    def packages(self):
+    def is_ubuntite(self):
         """See IPerson."""
-        sprutil = getUtility(ISourcePackageReleaseSet)
-        return sprutil.getByCreatorID(self.id)
-
-    @property
-    def ubuntite(self):
         sigset = getUtility(ISignedCodeOfConductSet)
         lastdate = sigset.getLastAcceptedDate()
 
@@ -823,13 +837,16 @@ class Person(SQLBase):
 
     @property
     def activesignatures(self):
+        """See IPerson."""
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         return sCoC_util.searchByUser(self.id)
 
     @property
     def inactivesignatures(self):
+        """See IPerson."""
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         return sCoC_util.searchByUser(self.id, active=False)
+
 
 class PersonSet:
     """The set of persons."""
@@ -854,7 +871,23 @@ class PersonSet:
         # indexes. Ideally we want to order by karma DESC, name but
         # that will not use the indexes (at least under PostgreSQL 7.4)
         # and be really slow.
-        return self.getAllValidPersons(orderBy=['-karma', '-id'])[:5]
+
+        # This is a simpler implementation, but is triggering Bug 4818
+        # return self.getAllValidPersons(orderBy=['-karma', '-id'])[:5]
+
+        query = """
+            id in (
+                SELECT Person.id
+                FROM Person, EmailAddress
+                WHERE Person.id = EmailAddress.person
+                    AND teamowner IS NULL
+                    AND merged IS NULL
+                    AND EmailAddress.status = %d
+                ORDER BY Person.karma DESC, Person.id DESC
+                LIMIT 5
+                )
+            """ % (EmailAddressStatus.PREFERRED.value,)
+        return Person.select(query, orderBy=['-karma', '-id'])
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
@@ -964,13 +997,12 @@ class PersonSet:
             orderBy = self._defaultOrder
         text = text.lower()
         # Teams may not have email addresses, so we need to either use a LEFT
-        # OUTER JOIN or do a UNION between two queries.
-        # XXX: I'll be using two queries and a union() here until we have
-        # support for JOINS in our sqlobject. -- Guilherme Salgado 2005-07-18
+        # OUTER JOIN or do a UNION between two queries. Using a UNION makes 
+        # it a lot faster than with a LEFT OUTER JOIN.
         email_query = """
             EmailAddress.person = Person.id AND 
-            lower(EmailAddress.email) LIKE %s
-            """ % quote(text + '%%')
+            lower(EmailAddress.email) LIKE %s || '%%'
+            """ % quote_like(text)
         results = Person.select(email_query, clauseTables=['EmailAddress'])
         name_query = "fti @@ ftq(%s) AND merged is NULL" % quote(text)
         return results.union(Person.select(name_query), orderBy=orderBy)
@@ -980,14 +1012,24 @@ class PersonSet:
         if orderBy is None:
             orderBy = self._defaultOrder
         text = text.lower()
-        query = ('Person.teamowner IS NULL AND Person.merged IS NULL AND '
-                 'EmailAddress.person = Person.id')
+        base_query = ('Person.teamowner IS NULL AND Person.merged IS NULL AND '
+                      'EmailAddress.person = Person.id')
+        clauseTables = ['EmailAddress']
         if text:
-            query += (' AND (lower(EmailAddress.email) LIKE %s OR '
-                      'Person.fti @@ ftq(%s))'
-                      % (quote(text + '%%'), quote(text)))
-        return Person.select(query, clauseTables=['EmailAddress'],
-                             orderBy=orderBy, distinct=True)
+            # We use a UNION here because this makes things *a lot* faster
+            # than if we did a single SELECT with the two following clauses
+            # ORed.
+            email_query = ("%s AND lower(EmailAddress.email) LIKE %s || '%%'"
+                           % (base_query, quote_like(text)))
+            name_query = ('%s AND Person.fti @@ ftq(%s)' 
+                          % (base_query, quote(text)))
+            results = Person.select(email_query, clauseTables=clauseTables)
+            results = results.union(
+                Person.select(name_query, clauseTables=clauseTables))
+        else:
+            results = Person.select(base_query, clauseTables=clauseTables)
+
+        return results.orderBy(orderBy)
 
     def findTeam(self, text, orderBy=None):
         """See IPersonSet."""
@@ -995,14 +1037,13 @@ class PersonSet:
             orderBy = self._defaultOrder
         text = text.lower()
         # Teams may not have email addresses, so we need to either use a LEFT
-        # OUTER JOIN or do a UNION between two queries.
-        # XXX: I'll be using two queries and a union() here until we have
-        # support for JOINS in our sqlobject. -- Guilherme Salgado 2005-07-18
+        # OUTER JOIN or do a UNION between two queries. Using a UNION makes 
+        # it a lot faster than with a LEFT OUTER JOIN.
         email_query = """
             Person.teamowner IS NOT NULL AND 
             EmailAddress.person = Person.id AND 
-            lower(EmailAddress.email) LIKE %s
-            """ % quote(text + '%%')
+            lower(EmailAddress.email) LIKE %s || '%%'
+            """ % quote_like(text)
         results = Person.select(email_query, clauseTables=['EmailAddress'])
         name_query = """
              Person.teamowner IS NOT NULL AND 
@@ -1168,6 +1209,13 @@ class PersonSet:
             DELETE FROM TicketSubscription WHERE person=%(from_id)d
             ''' % vars())
         skip.append(('ticketsubscription', 'person'))
+
+        # Update PackageBugContact entries
+        cur.execute('''
+            UPDATE PackageBugContact SET bugcontact=%(to_id)s
+            WHERE bugcontact=%(from_id)s
+            ''', vars())
+        skip.append(('packagebugcontact', 'bugcontact'))
 
         # Update the SpecificationFeedback entries that will not conflict
         # and trash the rest.

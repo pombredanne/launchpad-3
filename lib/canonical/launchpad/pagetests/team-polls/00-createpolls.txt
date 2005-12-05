@@ -112,7 +112,7 @@
   ...
 
 
-  Create a new poll that starts in 2005-06-04 and will last until 2025.
+  Create a new poll that starts in 2025-06-04 and will last until 2035.
 
   >>> print http(r"""
   ... POST /people/name17/+newpoll HTTP/1.1
@@ -150,11 +150,11 @@
   ... -----------------------------323203348670962331774819759
   ... Content-Disposition: form-data; name="field.dateopens"
   ... 
-  ... 2005-06-04 02:00:00+00:00
+  ... 2025-06-04 02:00:00+00:00
   ... -----------------------------323203348670962331774819759
   ... Content-Disposition: form-data; name="field.datecloses"
   ... 
-  ... 2025-06-04 02:00:00+00:00
+  ... 2035-06-04 02:00:00+00:00
   ... -----------------------------323203348670962331774819759
   ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
   ... 

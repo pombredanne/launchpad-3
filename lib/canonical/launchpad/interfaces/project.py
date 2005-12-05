@@ -15,7 +15,7 @@ from canonical.launchpad.fields import Title, Summary
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 from canonical.launchpad.interfaces.person import NameAlreadyTaken
-
+from canonical.launchpad.interfaces.validation import valid_webref
 from zope.component import getUtility
 from zope.schema import Bool, Choice, Int, Text, TextLine
 from zope.interface import Interface, Attribute
@@ -90,11 +90,14 @@ class IProject(IHasOwner):
 
     homepageurl = TextLine(
         title=_('Homepage URL'),
+        required=False,
+        constraint=valid_webref,
         description=_("""The project home page. Please include the http://"""))
 
     wikiurl = TextLine(
         title=_('Wiki URL'),
         required=False,
+        constraint=valid_webref,
         description=_("""The URL of this project's wiki, if it has one.
             Please include the http://"""))
 

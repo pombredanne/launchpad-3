@@ -19,7 +19,6 @@ import tarfile
 import time
 import warnings
 from StringIO import StringIO
-from select import select
 from math import ceil
 from xml.sax.saxutils import escape as xml_escape
 from difflib import unified_diff
@@ -1007,6 +1006,8 @@ def sanitiseFingerprint(fpr):
 
     >>> sanitiseFingerprint('C858 2652 1A6E F6A6 037B  B3F7 9FF2 583E 681B 6469')
     'C85826521A6EF6A6037BB3F79FF2583E681B6469'
+    >>> sanitiseFingerprint('c858 2652 1a6e f6a6 037b  b3f7 9ff2 583e 681b 6469')
+    'C85826521A6EF6A6037BB3F79FF2583E681B6469'
     >>> sanitiseFingerprint('681B 6469')
     False
 
@@ -1016,6 +1017,9 @@ def sanitiseFingerprint(fpr):
     """
     # replace the white spaces
     fpr = fpr.replace(' ', '')
+
+    # convert to upper case
+    fpr = fpr.upper()
 
     if not valid_fingerprint(fpr):
         return False
@@ -1136,16 +1140,43 @@ def getBinaryPackageFormat(fname):
         return BinaryPackageFormat.RPM
 
 def intOrZero(value):
-    """Return int(value) or 0 if the conversion fails."""
+    """Return int(value) or 0 if the conversion fails.
+    
+    >>> intOrZero('1.23')
+    0
+    >>> intOrZero('1.ab')
+    0
+    >>> intOrZero('2')
+    2
+    >>> intOrZero(None)
+    0
+    >>> intOrZero(1)
+    1
+    >>> intOrZero(-9)
+    -9
+    """
     try:
         return int(value)
-    except ValueError:
+    except (ValueError, TypeError):
         return 0
 
 def positiveIntOrZero(value):
     """Return 0 if int(value) fails or if int(value) is less than 0.
 
     Return int(value) otherwise.
+
+    >>> positiveIntOrZero(None)
+    0
+    >>> positiveIntOrZero(-9)
+    0
+    >>> positiveIntOrZero(1)
+    1
+    >>> positiveIntOrZero('-3')
+    0
+    >>> positiveIntOrZero('5')
+    5
+    >>> positiveIntOrZero(3.1415)
+    3
     """
     value = intOrZero(value)
     if value < 0:

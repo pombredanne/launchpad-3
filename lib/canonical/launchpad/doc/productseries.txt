@@ -52,3 +52,22 @@ Let's check that the new series is properly associated to its product.
 >>> flush_database_updates()
 >>> firefox.getSeries('emacs') == emacs
 True
+
+ProductSeriesSourceSet implements two methods to search the database for
+IProductSeries that have RCS details set. It returns an IProductSeries or None.
+
+>>> from canonical.launchpad.interfaces import IProductSeriesSourceSet
+
+>>> cvsroot = ':pserver:anonymous@anoncvs.gnome.org:/cvs/gnome'
+>>> cvsmodule = 'evolution'
+>>> cvsbranch = 'MAIN'
+>>> svnrepository = 'svn://testing.com'
+>>> productseriesset = getUtility(IProductSeriesSourceSet)
+>>> productseries = productseriesset.getByCVSDetails(cvsroot, cvsmodule,
+...     cvsbranch)
+>>> productseries.name
+u'main'
+
+>>> productseries = productseriesset.getBySVNDetails(svnrepository)
+>>> print productseries
+None

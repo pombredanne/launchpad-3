@@ -98,8 +98,10 @@ Or a name that is not already in use.
 But you can't use Mark's name, of course. ;)
 >>> field.validate(u'sabdfl')
 Traceback (most recent call last):
+  ...
+LaunchpadValidationError: ...
+This name is already in use by another person/team.
 ...
-NameAlreadyTaken: The name sabdfl is already in use.
 
 In the case of your displayname, the only constraint is that it can't contain
 only spaces. To ensure that, we use a StrippingTextLine in the displayname,
@@ -313,3 +315,33 @@ Searching only for Teams based on their names or email addresses:
 ...     emails = [email.email for email in emailset.getByPerson(person)]
 ...     (person.displayname, person.name, emails)
 (u'Ubuntu Translators', u'ubuntu-translators', [])
+
+
+Packages related to a person
+----------------------------
+
+To obtain the packages a person is related to, we should use the
+maintainedPackages() and uploadedButNotMaintainedPackages() methods of
+IPersonSet. The former will return all SourcePackageReleases a person is
+listed as the Maintainer, while the latter will return all
+SourcePackageReleases that a person created (uploaded) but is not the
+Maintainer.
+
+>>> sabdfl = personset.getByName('sabdfl')
+>>> for sprelease in sabdfl.maintainedPackages():
+...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
+...            sprelease.version)
+(u'alsa-utils', u'Ubuntu Warty', u'1.0.8-1ubuntu1')
+(u'alsa-utils', u'Debian Sid', u'1.0.9a-4')
+(u'evolution', u'Ubuntu Hoary', u'1.0')
+(u'mozilla-firefox', u'Ubuntu Hoary', u'0.9')
+(u'netapplet', u'Ubuntu Hoary', u'1.0-1')
+(u'netapplet', u'Ubuntu Warty', u'0.99.6-1')
+(u'pmount', u'Ubuntu Hoary', u'0.1-1')
+(u'pmount', u'Ubuntu Hoary', u'0.1-2')
+
+>>> for sprelease in sabdfl.uploadedButNotMaintainedPackages():
+...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
+...            sprelease.version)
+(u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
+
