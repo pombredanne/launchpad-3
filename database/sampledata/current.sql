@@ -8364,7 +8364,10 @@ INSERT INTO sectionselection (id, distrorelease, section) VALUES (30, 10, 30);
 INSERT INTO sectionselection (id, distrorelease, section) VALUES (31, 10, 2);
 INSERT INTO sectionselection (id, distrorelease, section) VALUES (32, 10, 31);
 INSERT INTO sectionselection (id, distrorelease, section) VALUES (33, 10, 29);
-
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (34, 10, 32);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (35, 10, 33);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (36, 10, 34);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (37, 10, 35);
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sectionselection'::pg_catalog.regclass;
 
