@@ -6,6 +6,7 @@ __metaclass__ = type
 import threading
 import os
 import errno
+import re
 import datetime
 import pytz
 import rfc822
@@ -27,7 +28,8 @@ from canonical.launchpad.webapp.interfaces import (
 
 UTC = pytz.timezone('UTC')
 
-#Restrict the rate at which errors are sent to the Event Log
+# Restrict the rate at which errors are sent to the Zope event Log
+# (this does not affect generation of error reports).
 _rate_restrict_pool = {}
 
 # The number of seconds that must elapse on average between sending two
@@ -55,7 +57,8 @@ class ErrorReport:
         self.req_vars = []
         # hide passwords that might be present in the request variables
         for (name, value) in req_vars:
-            if name.lower() in ['password', 'passwd']:
+            if (name.lower().startswith('password') or
+                name.lower().startswith('passwd')):
                 self.req_vars.append((name, '<hidden>'))
             else:
                 self.req_vars.append((name, value))
@@ -70,7 +73,7 @@ class ErrorReport:
         fp.write('Date: %s\n' % self.time.isoformat())
         fp.write('User: %s\n' % self.username)
         fp.write('URL: %s\n\n' % self.url)
-        safe_chars = ';/?:@&+$,'
+        safe_chars = ';/?:@&+$, ()*!'
         for key, value in self.req_vars:
             fp.write('%s=%s\n' % (urllib.quote(key, safe_chars),
                                   urllib.quote(value, safe_chars)))
@@ -201,8 +204,6 @@ class ErrorReportingService:
         # useful instead, but also log the error.
         try:
             value = str(obj)
-            if isinstance(value, unicode):
-                value = value.encode('ASCII', 'replace')
         except:
             logging.getLogger('SiteError').exception(
                 'Error in ErrorReportingService while getting a str '
@@ -210,6 +211,8 @@ class ErrorReportingService:
             value = '<unprintable %s object>' % (
                 str(type(obj).__name__)
                 )
+        # replace non-ASCII characters
+        value = re.sub(r'[\x80-\xff]', '?', value)
         return value
 
     def raising(self, info, request=None, now=None):
@@ -276,7 +279,7 @@ class ErrorReportingService:
             entry.write(open(filename, 'wb'))
 
             if request:
-                request.setOopsId(oopsid)
+                request.oopsid = oopsid
 
             if self.copy_to_zlog:
                 self._do_copy_to_zlog(now, strtype, strurl, info, oopsid)
@@ -284,8 +287,6 @@ class ErrorReportingService:
             info = None
 
     def _do_copy_to_zlog(self, now, strtype, url, info, oopsid):
-        # XXX info is unused; logging.exception() will call sys.exc_info()
-        # work around this with an evil hack
         distant_past = datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=UTC)
         when = _rate_restrict_pool.get(strtype, distant_past)
         if now > when:
@@ -293,6 +294,9 @@ class ErrorReportingService:
                             now - _rate_restrict_burst*_rate_restrict_period)
             next_when += _rate_restrict_period
             _rate_restrict_pool[strtype] = next_when
+            # The logging module doesn't provide a way to pass in
+            # exception info, so we temporarily raise the exception so
+            # it can be logged.
             try:
                 raise info[0], info[1], info[2]
             except:
@@ -347,7 +351,3 @@ class ErrorReportRequest:
     implements(IErrorReportRequest)
 
     oopsid = None
-
-    def setOopsId(self, oopsid):
-        """See IErrorReportRequest"""
-        self.oopsid = oopsid

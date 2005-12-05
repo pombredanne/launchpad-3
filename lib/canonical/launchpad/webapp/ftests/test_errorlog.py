@@ -27,7 +27,7 @@ class TestErrorReport(unittest.TestCase):
                             'traceback-text', 'username', 'url',
                             [('name1', 'value1'), ('name2', 'value2'),
                              ('name1', 'value3'), ('password', 'secret1'),
-                             ('PassWd', 'secret2')])
+                             ('PassWd2', 'secret2')])
         self.assertEqual(entry.id, 'id')
         self.assertEqual(entry.type, 'exc-type')
         self.assertEqual(entry.value, 'exc-value')
@@ -40,7 +40,7 @@ class TestErrorReport(unittest.TestCase):
         self.assertEqual(entry.req_vars[1], ('name2', 'value2'))
         self.assertEqual(entry.req_vars[2], ('name1', 'value3'))
         self.assertEqual(entry.req_vars[3], ('password', '<hidden>'))
-        self.assertEqual(entry.req_vars[4], ('PassWd', '<hidden>'))
+        self.assertEqual(entry.req_vars[4], ('PassWd2', '<hidden>'))
 
     def test_write(self):
         """Test ErrorReport.write()"""
@@ -214,9 +214,6 @@ class TestErrorReportingService(unittest.TestCase):
                     return u'Login'
 
             oopsid = None
-
-            def setOopsId(self, oopsid):
-                self.oopsid = oopsid
 
             def items(self):
                 return [('name2', 'value2'), ('name1', 'value1'),

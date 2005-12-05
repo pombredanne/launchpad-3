@@ -226,24 +226,18 @@ class INotificationResponse(Interface):
         """
  
 class IErrorReport(Interface):
-    id = Attribute('the name of this error report')
-    type = Attribute('the type of the exception that occurred')
-    value = Attribute('the value of the exception that occurred')
-    time = Attribute('the time at which the exception occurred')
-    tb_text = Attribute('a text version of the traceback')
-    username = Attribute('the user associated with the request')
-    url = Attribute('the URL for the failed request')
+    id = TextLine(description=u"""the name of this error report""")
+    type = TextLine(description=u"""the type of the exception that occurred""")
+    value = TextLine(description=u"""the value of the exception that occurred""")
+    time = Datetime(description=u"""the time at which the exception occurred""")
+    tb_text = Text(description=u"""a text version of the traceback""")
+    username = TextLine(description=u"""the user associated with the request""")
+    url = TextLine(description=u"""the URL for the failed request""")
     req_vars = Attribute('the request variables')
 
 
 class IErrorReportRequest(Interface):
 
-    oopsid = Attribute('an identifier for the exception, or None if no '
-                       'exception has occurred')
-
-    def setOopsId(oopsid):
-        '''Set the oops ID for this request.
-
-        This should be called if an unhandled exception occurs, to
-        store the identifier for error report.
-        '''
+    oopsid = TextLine(
+        description=u"""an identifier for the exception, or None if no 
+        exception has occurred""")
