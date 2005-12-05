@@ -1,94 +1,282 @@
-Poppy Uploader Test
--------------------
+
+
+Uploading Packages
+------------------
+
+
+We need the librarian for this test.
+
+  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+  >>> LibrarianTestSetup().setUp()  
 
 
 First, let's create a temporary directory where we'll put
 uploaded files in.
 
-
->>> import tempfile
->>> temp_dir = tempfile.mkdtemp()
-
-
-Now, let's create a subprocess running the server.
+  >>> import tempfile
+  >>> temp_dir = tempfile.mkdtemp()
 
 
->>> from canonical.config import config
->>> import subprocess
->>> import os
->>> script = os.path.join(config.root, "daemons", "poppy-upload.py")
->>> process = subprocess.Popen(["/usr/bin/python", script, temp_dir, "3421"],
-...                            stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+Now, let's create a subprocess running the poppy FTP server. The
+--test option ensures that it won't call the upload processing tool.
+We'll do that ourselves in our test, so that we can control what's
+going on.
+
+  >>> from canonical.config import config
+  >>> import subprocess
+  >>> import sys
+  >>> import os
+  >>> script = os.path.join(config.root, "daemons", "poppy-upload.py")
+  >>> process = subprocess.Popen([sys.executable, script, "--test",
+  ...                             temp_dir, "3421"],
+  ...                            stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
 
 Connect to the server and login. We'll keep trying to connect until
 the server dies or the connection succeeds.
 
-
->>> import ftplib, socket
->>> ftp = ftplib.FTP()
->>> while True:
-...    try:
-...        reply = ftp.connect("localhost", 3421)
-...    except socket.error:
-...        if process.poll() is not None:
-...            raise RuntimeError, "Server is not starting"
-...    else:
-...        break
->>> ftp.login("ubuntu", "")
-'230 Login Successful.'
-
-
-Good.. now we can try to send something.
+  >>> import ftplib, socket
+  >>> ftp = ftplib.FTP()
+  >>> while True:
+  ...    try:
+  ...        reply = ftp.connect("localhost", 3421)
+  ...    except socket.error:
+  ...        if process.poll() is not None:
+  ...            raise RuntimeError, "Server is not starting"
+  ...    else:
+  ...        break
+  >>> ftp.login("ubuntu", "")
+  '230 Login Successful.'
+  >>> ftp.cwd("/")
+  '250 CWD command successful.'
 
 
->>> from StringIO import StringIO
->>> something = StringIO("Something")
->>> ftp.cwd("/")
-'250 CWD command successful.'
->>> ftp.storbinary("STOR something", something)
-'226 Transfer successful.'
->>> ftp.quit()
-'221 Goodbye.'
+Good.. let's send all packages we have in the test directory to
+the poppy server. We send each package set on a different ftp
+session.
+
+  #>>> from canonical.tagfile import TagFile
+
+  >>> from canonical.archivepublisher.tagfiles import parse_tagfile
+  >>> from cStringIO import StringIO
+  >>> import glob
+  >>> import time
+  >>>
+  >>> test_files_dir = os.path.join(config.root,
+  ...                               "lib/canonical/launchpad/scripts/"
+  ...                               "ftests/upload_test_files/")
+  ...
+  >>> changes = glob.glob(test_files_dir + "*.changes")
+  >>> sent_filenames = set()
+  >>> uploads = []
+  >>>
+  >>> for changes_filepath in changes:
+  ...
+  ...     if not ftp.sock:
+  ...         assert ftp.connect("localhost", 3421).startswith("220 ")
+  ...         assert ftp.login("ubuntu", "") == '230 Login Successful.'
+  ...
+  ...     tf = parse_tagfile(changes_filepath)
+  ...
+  ...     send_filepaths = [changes_filepath]
+  ...     send_filepaths.extend([os.path.join(test_files_dir, line.split()[-1])
+  ...                            for line in tf["files"].splitlines() if line])
+  ...
+  ...     sent_filenames.update(os.path.basename(filepath)
+  ...                           for filepath in send_filepaths)
+  ...
+  ...     for filepath in send_filepaths:
+  ...         reply = ftp.storbinary("STOR "+os.path.basename(filepath),
+  ...                                open(filepath))
+  ...         assert reply == '226 Transfer successful.'
+  ...
+  ...     uploads.append(send_filepaths)
+  ...
+  ...     assert ftp.quit() == '221 Goodbye.'
 
 
-It says it was transferred successfully. Let's see if the file is
-in the expected place, with the expected content.
+We don't want to block forever reading data from the process, since
+it's a deamon and should not die until we ask it to. So, we first
+set the stdout to non-blocking...
+
+  >>> import fcntl
+  >>> def set_non_blocking(fd):
+  ...    flags = fcntl.fcntl(fd, fcntl.F_GETFL, 0)
+  ...    flags |= os.O_NONBLOCK
+  ...    fcntl.fcntl(fd, fcntl.F_SETFL, flags)
+  >>> set_non_blocking(process.stdout.fileno())
 
 
->>> open(os.path.join(temp_dir, "upload-000001", "something")).read()
-'Something'
+Then, we create a set of the filenames we expect to see in the
+FTP server process output, and wait until all of them have been
+shown.
+
+This is a little bit tricky because we won't simply try to read
+the process output in a blocking way, since any failure in the
+FTP process would block automated tests. Instead, we define a
+timeout between output data. If the process doesn't provide new
+data in the given number seconds, we report a failure.
+
+  >>> import errno
+  >>> expected = sent_filenames.copy()
+  >>> timeout = 10 # 600
+  >>> ping = time.time()
+  >>> buffer = ""
+  >>> while time.time()-ping < timeout:
+  ...     if process.poll() is not None:
+  ...         raise RuntimeError("FTP server died unexpectedly")
+  ...     try:
+  ...        data = process.stdout.read()
+  ...     except IOError, e:
+  ...         if e.errno != errno.EWOULDBLOCK:
+  ...             raise
+  ...     else:
+  ...         if data:
+  ...             ping = time.time()
+  ...             buffer += data
+  ...             lines = buffer.splitlines()
+  ...             buffer = lines.pop(0)
+  ...             for line in lines:
+  ...                 if line == "ubuntu":
+  ...                     continue
+  ...                 if line not in expected:
+  ...                     raise RuntimeError("Unexpected line found in FTP "
+  ...                                        "output: %r" % line)
+  ...                 expected.remove(line)
+  ...             if not expected:
+  ...                 break
+  ...     time.sleep(0.5)
+  ... else:
+  ...     raise RuntimeError("FTP server is not responding correctly, bad boy")
+  
+
+At that point we must have a bunch of directories in the upload
+base directory named upload-XXXXXX, each one as a result of
+each FTP session. Below we ensure that, and also that the content
+of these files match the uploaded ones.
+
+  >>> import md5
+  >>> def get_md5(filename):
+  ...     return md5.new(open(filename).read()).digest()
+  >>> def get_upload_dir(num):
+  ...     return os.path.join(temp_dir, "upload-%06d" % num)
+
+  >>> for i, sent_filenames in enumerate(uploads):
+  ...     upload_dir = get_upload_dir(i+1)
+  ...     assert len(os.listdir(upload_dir)) == len(sent_filenames)
+  ...     for filename in sent_filenames:
+  ...         upload_filename = os.path.join(upload_dir,
+  ...                                        os.path.basename(filename))
+  ...         assert os.path.isfile(upload_filename)
+  ...         assert get_md5(filename) == get_md5(upload_filename)
 
 
-It works. Let's check if it's creating other directories on new
-connections as well.
+Right, that's all we need from the FTP server. We don't need it anymore,
+so we'll just kill the process.
+
+  >>> import signal
+  >>> os.kill(process.pid, signal.SIGTERM)
+  >>> status = process.wait()
 
 
->>> ftp = ftplib.FTP()
->>> reply = ftp.connect("localhost", 3421)
->>> ftp.login("ubuntu", "")
-'230 Login Successful.'
->>> sio = StringIO("Something else")
->>> ftp.storbinary("STOR something_else", sio)
-'226 Transfer successful.'
->>> ftp.quit()
-'221 Goodbye.'
->>> open(os.path.join(temp_dir, "upload-000002", "something_else")).read()
-'Something else'
+
+Processing Uploads
+------------------
+
+Before asking the system to process the upload, we must prepare the
+database to receive it. This consists mainly of adding the katie
+user, since that's the email used in the Changed-By field for the
+.changes files we are going to process, and the ftpmaster@canonical.com
+GPG key, since that's the one used to sign the .changes file.
+
+We don't have to check the .dsc file, since we're using the autosync
+policy in process-upload.py.
+
+XXX: It might be interesting to move these entries into the sample data
+     rather than leaving it here. On the other hand, it's nice to have
+     it here as we have a good reference of what the uploading
+     procedure depends upon.
+
+So, load the GPG key:
+
+  >>> from canonical.launchpad.ftests.keys_for_tests import gpgkeysdir
+  >>> from canonical.launchpad.interfaces import IGPGHandler
+  >>> from zope.component import getUtility
+  >>> gpg_handler = getUtility(IGPGHandler)
+  >>> key_path = os.path.join(gpgkeysdir, 'ftpmaster@canonical.com.pub')
+  >>> key_data = open(key_path).read()
+  >>> key = gpg_handler.importKey(key_data)
+  >>> assert key is not None
+  >>> key.fingerprint
+  '33C0A61893A5DC5EB325B29E415A12CAC2F30234'
+
+
+Create the katie user and register it in a team that is allowed to
+do uploads:
+
+  >>> from canonical.launchpad.interfaces import IPersonSet, IEmailAddressSet
+  >>> name, address = "Katie", "katie@rockhopper.ubuntu.com"
+  >>> user = getUtility(IPersonSet).ensurePerson(address, name)
+  >>> assert user is not None
+  >>> email = getUtility(IEmailAddressSet).getByEmail(address)
+  >>> user.validateAndEnsurePreferredEmail(email)
+
+  >>> uploader_team = getUtility(IPersonSet).getByName("ubuntu-team")
+  >>> assert uploader_team is not None
+
+  >>> uploader_team.addMember(user)
+
+
+Assign the loaded GPG key to the katie user.
+
+  >>> from canonical.launchpad.interfaces import IGPGKeySet
+  >>> from canonical.lp.dbschema import GPGKeyAlgorithm
+  >>> key_set = getUtility(IGPGKeySet)
+  >>> user_key = key_set.new(ownerID=user.id, keyid=key.keyid,
+  ...                        fingerprint=key.fingerprint,
+  ...                        algorithm=GPGKeyAlgorithm.items[key.algorithm],
+  ...                        keysize=key.keysize, can_encrypt=key.can_encrypt,
+  ...                        active=True)
+
+  >>> import transaction
+  >>> transaction.commit()
+
+
+Now we want to turn on the zeca key server to provide the key we
+just imported.
+
+  >>> from canonical.zeca.ftests.harness import ZecaTestSetup
+  >>> ZecaTestSetup().setUp()
+
+
+That's all for the FTP server. Now we must process the uploaded packages.
+This is done by running process-upload.py on each upload directory.
+
+  >>> script = os.path.join(config.root, "scripts", "process-upload.py")
+  >>> def process_upload(num):
+  ...     upload_dir = get_upload_dir(num)
+  ...     process = subprocess.Popen([sys.executable, script, "--no-mails",
+  ...                                 "-C", "autosync", "-d", "ubuntu",
+  ...                                 upload_dir],
+  ...                                stdin=subprocess.PIPE,
+  ...                                stdout=subprocess.PIPE)
+  ...     return process.wait()
+
+  >>> for upload_num in range(1, len(uploads)+1):
+  ...     assert process_upload(upload_num) == 0
 
 
 Nice! That's enough for now.. let's kill the process and clean
 everything up.
 
-
->>> import signal
->>> os.kill(process.pid, signal.SIGTERM)
->>> status = process.wait()
-
->>> import shutil
->>> shutil.rmtree(temp_dir)
+  >>> import shutil
+  >>> shutil.rmtree(temp_dir)
+  
+  >>> ZecaTestSetup().tearDown()
+  >>> LibrarianTestSetup().tearDown()
 
 
 Feito! ;-)
 
 
+vim:ft=doctest:ts=4:sw=4:et

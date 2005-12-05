@@ -120,9 +120,6 @@ class UploaderTester:
                 raise ValueError('Could not create user %s, %s' 
                                   % (displayname, email))
                                   
-            email = getUtility(IEmailAddressSet).getByEmail(email)
-            # ensure PREFERRED email
-            email.status = dbschema.EmailAddressStatus.PREFERRED
             # add user to the uploader_test team
             self.uploader_team.addMember(user)
             

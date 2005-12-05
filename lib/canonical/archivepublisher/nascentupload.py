@@ -1704,8 +1704,9 @@ class NascentUpload:
         if self.is_new():
             status = DistroReleaseQueueStatus.NEW
         self.logger.debug("Creating a %s queue entry" % status.title)
+        filecontents = guess_encoding(self.changes["filecontents"])
         queue_root = self.distrorelease.createQueueEntry(
-            self.policy.pocket, self.changes['filecontents'], status=status)
+            self.policy.pocket, filecontents, status=status)
         # Next, if we're sourceful, add a source to the queue
         if self.sourceful:
             queue_root.addSource(self.policy.sourcepackagerelease)
