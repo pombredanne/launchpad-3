@@ -9,6 +9,7 @@ import pytz
 import unittest
 import shutil
 import StringIO
+from textwrap import dedent
 
 from canonical.config import config
 
@@ -24,7 +25,9 @@ class TestErrorReport(unittest.TestCase):
         from canonical.launchpad.webapp.errorlog import ErrorReport
         entry = ErrorReport('id', 'exc-type', 'exc-value', 'timestamp',
                             'traceback-text', 'username', 'url',
-                            [('name1', 'value1'), ('name2', 'value2')])
+                            [('name1', 'value1'), ('name2', 'value2'),
+                             ('name1', 'value3'), ('password', 'secret1'),
+                             ('PassWd', 'secret2')])
         self.assertEqual(entry.id, 'id')
         self.assertEqual(entry.type, 'exc-type')
         self.assertEqual(entry.value, 'exc-value')
@@ -32,9 +35,12 @@ class TestErrorReport(unittest.TestCase):
         self.assertEqual(entry.tb_text, 'traceback-text')
         self.assertEqual(entry.username, 'username')
         self.assertEqual(entry.url, 'url')
-        self.assertEqual(len(entry.req_vars), 2)
+        self.assertEqual(len(entry.req_vars), 5)
         self.assertEqual(entry.req_vars[0], ('name1', 'value1'))
         self.assertEqual(entry.req_vars[1], ('name2', 'value2'))
+        self.assertEqual(entry.req_vars[2], ('name1', 'value3'))
+        self.assertEqual(entry.req_vars[3], ('password', '<hidden>'))
+        self.assertEqual(entry.req_vars[4], ('PassWd', '<hidden>'))
 
     def test_write(self):
         """Test ErrorReport.write()"""
@@ -45,37 +51,40 @@ class TestErrorReport(unittest.TestCase):
                             'traceback-text',
                             'Sample User', 'http://localhost:9000/foo',
                             [('HTTP_USER_AGENT', 'Mozilla/5.0'),
-                             ('HTTP_REFERER', 'http://localhost:9000/')])
+                             ('HTTP_REFERER', 'http://localhost:9000/'),
+                             ('name=foo', 'hello\nworld')])
         fp = StringIO.StringIO()
         entry.write(fp)
-        self.assertEqual(fp.getvalue(),
-                         'Oops-Id: OOPS-A0001\n'
-                         'Exception-Type: NotFound\n'
-                         'Exception-Value: error message\n'
-                         'Date: 2005-04-01T00:00:00+00:00\n'
-                         'User: Sample User\n'
-                         'URL: http://localhost:9000/foo\n'
-                         '\n'
-                         'HTTP_USER_AGENT=Mozilla/5.0\n'
-                         'HTTP_REFERER=http://localhost:9000/\n'
-                         '\n'
-                         'traceback-text')
+        self.assertEqual(fp.getvalue(), dedent("""\
+            Oops-Id: OOPS-A0001
+            Exception-Type: NotFound
+            Exception-Value: error message
+            Date: 2005-04-01T00:00:00+00:00
+            User: Sample User
+            URL: http://localhost:9000/foo
+            
+            HTTP_USER_AGENT=Mozilla/5.0
+            HTTP_REFERER=http://localhost:9000/
+            name%3Dfoo=hello%0Aworld
+            
+            traceback-text"""))
 
     def test_read(self):
         """Test ErrorReport.read()"""
         from canonical.launchpad.webapp.errorlog import ErrorReport
-        fp = StringIO.StringIO(
-            'Oops-Id: OOPS-A0001\n'
-            'Exception-Type: NotFound\n'
-            'Exception-Value: error message\n'
-            'Date: 2005-04-01T00:00:00+00:00\n'
-            'User: Sample User\n'
-            'URL: http://localhost:9000/foo\n'
-            '\n'
-            'HTTP_USER_AGENT=Mozilla/5.0\n'
-            'HTTP_REFERER=http://localhost:9000/\n'
-            '\n'
-            'traceback-text')
+        fp = StringIO.StringIO(dedent("""\
+            Oops-Id: OOPS-A0001
+            Exception-Type: NotFound
+            Exception-Value: error message
+            Date: 2005-04-01T00:00:00+00:00
+            User: Sample User
+            URL: http://localhost:9000/foo
+            
+            HTTP_USER_AGENT=Mozilla/5.0
+            HTTP_REFERER=http://localhost:9000/
+            name%3Dfoo=hello%0Aworld
+            
+            traceback-text"""))
         entry = ErrorReport.read(fp)
         self.assertEqual(entry.id, 'OOPS-A0001')
         self.assertEqual(entry.type, 'NotFound')
@@ -86,10 +95,11 @@ class TestErrorReport(unittest.TestCase):
         self.assertEqual(entry.tb_text, 'traceback-text')
         self.assertEqual(entry.username, 'Sample User')
         self.assertEqual(entry.url, 'http://localhost:9000/foo')
-        self.assertEqual(len(entry.req_vars), 2)
+        self.assertEqual(len(entry.req_vars), 3)
         self.assertEqual(entry.req_vars[0], ('HTTP_USER_AGENT', 'Mozilla/5.0'))
         self.assertEqual(entry.req_vars[1], ('HTTP_REFERER',
                                              'http://localhost:9000/'))
+        self.assertEqual(entry.req_vars[2], ('name=foo', 'hello\nworld'))
 
 
 class TestErrorReportingService(unittest.TestCase):
@@ -130,8 +140,12 @@ class TestErrorReportingService(unittest.TestCase):
         self.assertEqual(service.lastid, 1)
         self.assertEqual(service.lasterrordate, '2004-04-02')
 
+        # another oops with a naiive datetime
+        now = datetime.datetime(2004, 04, 02, 00, 30, 00)
+        self.assertRaises(ValueError, service.newOopsId, now)
+
     def test_findLastOopsId(self):
-        """Test ErrorReportingService.findLastOopsId()"""
+        """Test ErrorReportingService._findLastOopsId()"""
         from canonical.launchpad.webapp.errorlog import ErrorReportingService
         service = ErrorReportingService()
 
@@ -146,7 +160,7 @@ class TestErrorReportingService(unittest.TestCase):
         open(os.path.join(errordir, '12346.A42'), 'w').close()
         open(os.path.join(errordir, '12346.B100'), 'w').close()
 
-        self.assertEqual(service.findLastOopsId(), 10)
+        self.assertEqual(service._findLastOopsId(), 10)
 
     def test_raising(self):
         """Test ErrorReportingService.raising() with no request"""
@@ -205,7 +219,8 @@ class TestErrorReportingService(unittest.TestCase):
                 self.oopsid = oopsid
 
             def items(self):
-                return [('name2', 'value2'), ('name1', 'value1')]
+                return [('name2', 'value2'), ('name1', 'value1'),
+                        ('name1', 'value3'), (u'\N{BLACK SQUARE}', u'value4')]
 
         request = FakeRequest()
 
@@ -228,15 +243,17 @@ class TestErrorReportingService(unittest.TestCase):
         self.assertEqual(lines[6], '\n')
 
         # request vars
-        self.assertEqual(lines[7], 'name1=value1\n')
-        self.assertEqual(lines[8], 'name2=value2\n')
-        self.assertEqual(lines[9], '\n')
+        self.assertEqual(lines[7], '?=value4\n')    # non-ASCII request var
+        self.assertEqual(lines[8], 'name1=value1\n')
+        self.assertEqual(lines[9], 'name1=value3\n')
+        self.assertEqual(lines[10], 'name2=value2\n')
+        self.assertEqual(lines[11], '\n')
 
         # traceback
-        self.assertEqual(lines[10], 'Traceback (innermost last):\n')
+        self.assertEqual(lines[12], 'Traceback (innermost last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise Exception(\'xyz\')
-        self.assertEqual(lines[13], 'Exception: xyz\n')
+        self.assertEqual(lines[15], 'Exception: xyz\n')
 
         # verify that the oopsid was set on the request
         self.assertEqual(request.oopsid, 'OOPS-T1')

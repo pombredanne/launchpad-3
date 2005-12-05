@@ -10,6 +10,7 @@ import datetime
 import pytz
 import rfc822
 import logging
+import urllib
 
 from zope.interface import implements
 
@@ -51,7 +52,13 @@ class ErrorReport:
         self.tb_text = tb_text
         self.username = username
         self.url = url
-        self.req_vars = req_vars
+        self.req_vars = []
+        # hide passwords that might be present in the request variables
+        for (name, value) in req_vars:
+            if name.lower() in ['password', 'passwd']:
+                self.req_vars.append((name, '<hidden>'))
+            else:
+                self.req_vars.append((name, value))
 
     def __repr__(self):
         return '<ErrorReport %s>' % self.id
@@ -63,8 +70,10 @@ class ErrorReport:
         fp.write('Date: %s\n' % self.time.isoformat())
         fp.write('User: %s\n' % self.username)
         fp.write('URL: %s\n\n' % self.url)
+        safe_chars = ';/?:@&+$,'
         for key, value in self.req_vars:
-            fp.write('%s=%s\n' % (key, value))
+            fp.write('%s=%s\n' % (urllib.quote(key, safe_chars),
+                                  urllib.quote(value, safe_chars)))
         fp.write('\n')
         fp.write(self.tb_text)
 
@@ -84,7 +93,7 @@ class ErrorReport:
             line = line.strip()
             if not line: break
             key, value = line.split('=', 1)
-            req_vars.append((key, value))
+            req_vars.append((urllib.unquote(key), urllib.unquote(value)))
         tb_text = ''.join(lines[linenum+1:])
 
         return cls(id, exc_type, exc_value, date, tb_text,
@@ -102,13 +111,16 @@ class ErrorReportingService:
     def __init__(self):
         self.copy_to_zlog = config.launchpad.errorreports.copy_to_zlog
         self.lastid_lock = threading.Lock()
-        self.lastid = self.findLastOopsId()
+        self.lastid = self._findLastOopsId()
 
-    def findLastOopsId(self):
+    def _findLastOopsId(self):
         """Find the last error number used by this Launchpad instance
 
         The purpose of this function is to not repeat sequence numbers
         if the Launchpad instance is restarted.
+
+        This method is not thread safe, and only intended to be called
+        from the constructor.
         """
         prefix = config.launchpad.errorreports.oops_prefix
         lastid = 0
@@ -122,7 +134,14 @@ class ErrorReportingService:
         return lastid
 
     def errordir(self, now=None):
-        if now is None:
+        """Find the directory to write error reports to.
+
+        Error reports are written to subdirectories containing the
+        date of the error.
+        """
+        if now is not None:
+            now = now.astimezone(UTC)
+        else:
             now = datetime.datetime.now(UTC)
         date = now.strftime('%Y-%m-%d')
         errordir = os.path.join(config.launchpad.errorreports.errordir, date)
@@ -142,8 +161,19 @@ class ErrorReportingService:
         return errordir
 
     def newOopsId(self, now=None):
-        """Returns an (oopsid, filename) pair for the next Oops ID"""
-        if now is None:
+        """Returns an (oopsid, filename) pair for the next Oops ID
+
+        The Oops ID is composed of a short string to identify the
+        Launchpad instance followed by an ID that is unique for the
+        day.
+
+        The filename is composed of the zero padded second in the day
+        followed by the Oops ID.  This ensures that error reports are
+        in date order when sorted lexically.
+        """
+        if now is not None:
+            now = now.astimezone(UTC)
+        else:
             now = datetime.datetime.now(UTC)
         # we look up the error directory before allocating a new ID,
         # because if the day has changed, errordir() will reset the ID
@@ -166,12 +196,13 @@ class ErrorReportingService:
     def safestr(self, obj):
         if isinstance(obj, unicode):
             return obj.encode('ASCII', 'replace')
-
         # A call to str(obj) could raise anything at all.
         # We'll ignore these errors, and print something
         # useful instead, but also log the error.
         try:
             value = str(obj)
+            if isinstance(value, unicode):
+                value = value.encode('ASCII', 'replace')
         except:
             logging.getLogger('SiteError').exception(
                 'Error in ErrorReportingService while getting a str '
@@ -183,7 +214,9 @@ class ErrorReportingService:
 
     def raising(self, info, request=None, now=None):
         """See IErrorReportingService.raising()"""
-        if now is None:
+        if now is not None:
+            now = now.astimezone(UTC)
+        else:
             now = datetime.datetime.now(UTC)
         try:
             tb_text = None
@@ -197,6 +230,7 @@ class ErrorReportingService:
                                                    **{'as_html': False}))
             else:
                 tb_text = info[2]
+            tb_text = self.safestr(tb_text)
 
             url = None
             username = None
@@ -229,7 +263,7 @@ class ErrorReportingService:
                 except AttributeError:
                     pass
 
-                req_vars = sorted((key, self.safestr(value))
+                req_vars = sorted((self.safestr(key), self.safestr(value))
                                   for (key, value) in request.items())
             strv = self.safestr(info[1])
 
