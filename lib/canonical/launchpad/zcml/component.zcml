@@ -11,4 +11,15 @@
         <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
 
+    <!-- ComponentSet -->
+    <content class="canonical.launchpad.database.ComponentSet">
+        <allow interface="canonical.launchpad.interfaces.IComponentSet"/>
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.ComponentSet"
+        provides="canonical.launchpad.interfaces.IComponentSet">
+        <allow interface="canonical.launchpad.interfaces.IComponentSet" />
+    </securedutility>
+
 </configure>

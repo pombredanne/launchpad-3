@@ -11,5 +11,15 @@
         <implements interface="zope.app.container.interfaces.IItemContainer"/>
     </content>
 
+    <!-- SectionSet -->
+    <content class="canonical.launchpad.database.SectionSet">
+        <allow interface="canonical.launchpad.interfaces.ISectionSet"/>
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.SectionSet"
+        provides="canonical.launchpad.interfaces.ISectionSet">
+        <allow interface="canonical.launchpad.interfaces.ISectionSet" />
+    </securedutility>
 
 </configure>

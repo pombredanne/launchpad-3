@@ -41,7 +41,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     IGPGHandler, GPGVerificationError, IGPGKeySet, IPersonSet,
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
-    NotFoundError)
+    IComponentSet, ISectionSet, NotFoundError)
 
 from sourcerer.deb.version import (
     Version as DebianVersion, BadUpstreamError, VersionError)
@@ -1038,7 +1038,7 @@ class NascentUpload:
                 uploaded_file.priority = priority_map[uploaded_file.priority]
 
             # check component and section 
-            #self.verify_components_and_sections(uploaded_file)
+            self.verify_components_and_sections(uploaded_file)
             
         # Finally verify that sourceful/binaryful match the policy
         if self.sourceful and not self.policy.can_upload_source:
@@ -1055,12 +1055,19 @@ class NascentUpload:
                 "Upload is source/binary but policy refuses mixed uploads.")
 
     def verify_components_and_sections(self, uploaded_file):
-        """Validate the component and section."""
-        valid_components = set(component.name for component in
-                               self.distrorelease.components)
-        valid_sections = set(section.name for section in
-                             self.distrorelease.sections)
-
+        """Check presence of component and section."""
+        # XXX cprov 20051205: check components and sections via
+        # Selection tables is deprecated. Smply ensure the match
+        # with the available ones.
+        #
+        #valid_components = set(component.name for component in
+        #                       self.distrorelease.components)
+        #valid_sections = set(section.name for section in
+        #                     self.distrorelease.sections)
+        valid_components = [component.name for component in
+                            getUtility(IComponentSet)]
+        valid_sections = [section.name for section in getUtility(ISectionSet)]
+        
         if uploaded_file.component not in valid_components:
             self.reject("%s: Component %s is not valid" % (
                 uploaded_file.filename, uploaded_file.component))
@@ -1590,15 +1597,25 @@ class NascentUpload:
             self.dsc_contents.get('build-depends-indep', ''))
         arg_architecturehintlist=guess_encoding(
             self.dsc_contents.get('architecture', ''))
-        arg_component=self.distrorelease.getComponentByName(
-            self._find_dsc().component).id
+
+        # XXX cprov 20051205: do not use components and sections
+        # via Selections. Simply retrieve than from the original
+        # tables.
+        #
+        #arg_component=self.distrorelease.getComponentByName(
+        #    self._find_dsc().component).id
+        #arg_section=self.distrorelease.getSectionByName(
+        #    self._find_dsc().section).id
+        component_name = self._find_dsc().component
+        arg_component = getUtility(IComponentSet)[component_name].id
+        section_name = self._find_dsc().section
+        arg_section = getUtility(ISectionSet)[section_name].id
+        
         arg_creator=self.changed_by['person'].id
         arg_urgency=urgency_map[self.changes['urgency'].lower()]
         arg_changelog=guess_encoding(self.changes['changes'])
         arg_dsc=guess_encoding(self.dsc_contents['filecontents'])
         arg_dscsigningkey=self.dsc_signing_key
-        arg_section=self.distrorelease.getSectionByName(
-            self._find_dsc().section).id
         arg_manifest=None
         self.policy.sourcepackagerelease = (
             self.distrorelease.createUploadedSourcePackageRelease(
@@ -1761,7 +1778,7 @@ class NascentUpload:
                 interpolations['ANNOUNCE'] = 'nowhere'
             self.build_recipients()
             interpolations['TO'] = ", ".join(self.recipients)
-
+            
             interpolations = self.policy.filterInterpolations(
                 self, interpolations)
             self.insert_into_queue()
@@ -1770,8 +1787,7 @@ class NascentUpload:
                 return True, [new_msg % interpolations]
             else:
                 return True, [accept_msg % interpolations,
-                              announce_msg % interpolations]
-
+                               announce_msg % interpolations]
         except Exception, e:
             # Any exception which occurs while processing an accept will
             # cause a rejection to occur. The exception is logged in the

@@ -1,22 +1,49 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Section']
+__all__ = [
+    'Section',
+    'SectionSet'
+    ]
 
 from zope.interface import implements
 
-from sqlobject import StringCol
+from sqlobject import (
+    StringCol, SQLObjectNotFound)
 
 from canonical.database.sqlbase import SQLBase
 
-from canonical.launchpad.interfaces import ISection
+from canonical.launchpad.interfaces import (
+    ISection, ISectionSet)
 
 
 class Section(SQLBase):
     """Section table SQLObject."""
     implements(ISection)
 
-    _table = 'Section'
-
     name = StringCol(notNull=True, alternateID=True)
+
+
+class SectionSet:
+    """Set manipulation tools for Section table."""
+    implements(ISectionSet)
+
+    def __iter__(self):
+        """See ISectionSet."""
+        return iter(Section.select())
+
+    def __getitem__(self, name):
+        """See ISectionSet."""
+        try:
+            return Section.selectOneBy(name=name)
+        except SQLObjectNotFound:
+            raise NotFoundError(name)
+
+    def get(self, section_id):
+        """See ISectionSet."""
+        return Section.get(section_id)
+
+    def new(self, name):
+        """See ISectionSet."""
+        return Section(name=name)
 
