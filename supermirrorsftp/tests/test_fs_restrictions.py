@@ -45,13 +45,10 @@ class TestTopLevelDir(unittest.TestCase):
             ['.', '..', '~alice', '~test-team'])
 
     def testAllWriteOpsForbidden(self):
-        # mkdir
-        # rmdir
-        # make new file
-        # ...?
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, '/dev/null',
                                 self.aliceUserDict)
         root = SFTPServerRoot(avatar)
         self.assertRaises(PermissionError, root.createDirectory, 'xyz')
         self.assertRaises(PermissionError, root.createFile, 'xyz')
+        # XXX: self.assertRaises(PermissionError, root.removeDirectory, 'xyz')
 
