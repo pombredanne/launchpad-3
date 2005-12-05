@@ -33,6 +33,13 @@ class TeamEditView(SQLObjectEditView):
         SQLObjectEditView.__init__(self, context, request)
         self.team = context
 
+    def changed(self):
+        """Redirect to the team  page.
+
+        We need this because people can now change team names, and this will
+        make their canonical_url to change too.
+        """
+        self.request.response.redirect(canonical_url(self.context))
 
 class TeamEmailView:
     """A View to edit a team's contact email address."""

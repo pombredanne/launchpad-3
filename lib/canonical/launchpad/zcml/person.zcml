@@ -385,7 +385,7 @@
       for="canonical.launchpad.interfaces.ITeam"
       class="canonical.launchpad.browser.TeamEditView"
       schema="canonical.launchpad.interfaces.ITeam"
-      fields="displayname teamdescription defaultmembershipperiod 
+      fields="name displayname teamdescription defaultmembershipperiod 
               defaultrenewalperiod subscriptionpolicy"
       permission="launchpad.Edit"
       template="../templates/team-edit.pt"
