@@ -6,12 +6,22 @@ __metaclass__ = type
 
 __all__ = [
     'IDistributionSourcePackage',
+    'DuplicateBugContactError',
+    'DeleteBugContactError'
     ]
 
 from zope.interface import Attribute
 
 from canonical.launchpad.interfaces.bug import IBugTarget
 from canonical.launchpad.interfaces.tickettarget import ITicketTarget
+
+class DuplicateBugContactError(Exception):
+    """Raised when trying to add a package bug contact that already exists."""
+
+
+class DeleteBugContactError(Exception):
+    """Raised when an error occurred trying to delete a bug contact."""
+
 
 class IDistributionSourcePackage(ITicketTarget, IBugTarget):
 
@@ -48,9 +58,21 @@ class IDistributionSourcePackage(ITicketTarget, IBugTarget):
         "A string of al the binary package names associated with this source "
         "package in this distribution.")
 
-    bugcontact = Attribute(
-        "The person or team that is explicitly Cc'd to all public bugs filed "
-        "on this package.")
+    bugcontacts = Attribute(
+        "The list of people or teams that is explicitly Cc'd to all public "
+        "bugs filed on this package.")
+
+    def addBugContact(person):
+        """Add a bug contact for this package.
+
+        :person: An IPerson or ITeam.
+        """
+
+    def removeBugContact(person):
+        """Remove a bug contact from this package.
+
+        :person: An IPerson or ITeam.
+        """
 
     def subscribe(person):
         """Subscribe a person to this package.

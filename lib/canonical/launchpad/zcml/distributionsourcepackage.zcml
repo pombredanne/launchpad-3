@@ -8,10 +8,13 @@
   <!-- DistributionSourcePackage -->
   <content class="canonical.launchpad.database.DistributionSourcePackage">
     <allow
-      interface="canonical.launchpad.interfaces.IDistributionSourcePackage" />
+      attributes="distribution sourcepackagename name displayname title
+                  distro by_distroreleases subscribers currentrelease
+                  releases publishing_history binary_package_names
+                  bugcontacts __getitem__ getVersion bugtasks __eq__ __ne__" />
     <require
       permission="launchpad.AnyPerson"
-      set_attributes="bugcontact" />
+      attributes="addBugContact removeBugContact subscribe" />
   </content>
 
   <browser:defaultView

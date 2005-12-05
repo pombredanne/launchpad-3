@@ -29,35 +29,70 @@ Call IDistribution.getSourcePackage to get a specific package by name:
 Package Bug Contact
 ===================
 
-The package bug contact is the person or team that will be explicitly
-Cc'd to all public bugs filed on the package.
+The package bug contact is zero, one or more people or teams that get
+explicitly Cc'd to all public bugs filed on the package.
 
-Distribution source packages don't actually have an associated database
-table (i.e. there is no "DistributionSourcePackage" relation.) This
-information is extrapolated from other tables. The package bug contact
-is obtained from looking at the PackageBugContact table. It is accessed
-and set via the IDistributionSourcePackage.bugcontact property.
+Distribution source packages don't have an associated database table
+(i.e. there is no "DistributionSourcePackage" relation.) This
+information is extrapolated from other tables. The package bug contacts
+are obtained from looking at the PackageBugContact table.
 
-Let's have a look at some examples:
+The list of bug contacts associated with a package is accessed by the
+IDistributionSourcePackage.bugcontacts attribute. When there are no
+contacts associated with a package, an empty list is returned:
 
-    >>> debian_firefox.bugcontact is None
-    True
+    >>> debian_firefox.bugcontacts
+    []
 
-You have to be logged in to set the bugcontact:
+Adding a package bug contact is done with the
+IDistributionSourcePackage.addBugContact method. You have to be logged
+in to call this method:
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> sample_person = getUtility(IPersonSet).get(12)
 
-    >>> debian_firefox.bugcontact = sample_person
+    >>> debian_firefox.addBugContact(sample_person)
     Traceback (most recent call last):
       ...
     Unauthorized: ...
 
-Let's login then to set the bugcontact:
+Let's login then to add a bugcontact:
 
     >>> from canonical.launchpad.ftests import login
     >>> login("foo.bar@canonical.com")
 
-    >>> debian_firefox.bugcontact = sample_person
-    >>> debian_firefox.bugcontact == sample_person
-    True
+    >>> debian_firefox.addBugContact(sample_person)
+    >>> [pbc.bugcontact.id for pbc in debian_firefox.bugcontacts]
+    [12]
+
+Trying to add a bug contact to a package when that person or team is
+already one of the bug contacts on that package will raise a
+DuplicateBugContactError.
+
+    >>> debian_firefox.addBugContact(sample_person)
+    Traceback (most recent call last):
+      ...
+    DuplicateBugContactError: ...
+
+Let's add an ITeam as one of the bug contacts:
+
+    >>> ubuntu_team = getUtility(IPersonSet).get(17)
+    >>> debian_firefox.addBugContact(ubuntu_team)
+
+    >>> sorted([pbc.bugcontact.id for pbc in debian_firefox.bugcontacts])
+    [12, 17]
+
+To remove a bug contact, use IDistributionSourcePackage.removeBugContact:
+
+    >>> debian_firefox.removeBugContact(sample_person)
+    >>> sorted([pbc.bugcontact.id for pbc in debian_firefox.bugcontacts])
+    [17]
+
+Trying to remove a bug contact that doesn't exist on a source package raises a
+DeleteBugContactError.
+
+    >>> foobar = getUtility(IPersonSet).get(16)
+    >>> debian_firefox.removeBugContact(foobar)
+    Traceback (most recent call last):
+      ...
+    DeleteBugContactError: ...

@@ -12,7 +12,8 @@ from sqlobject import SQLObjectNotFound
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import IDistributionSourcePackage
+from canonical.launchpad.interfaces import (
+    IDistributionSourcePackage, DuplicateBugContactError, DeleteBugContactError)
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet
@@ -120,28 +121,43 @@ class DistributionSourcePackage:
             orderBy='-datecreated',
             limit=quantity)
 
-    def bugcontact(self, value=_arg_not_provided):
+    @property
+    def bugcontacts(self):
         """See IDistributionSourcePackage."""
-        if value is _arg_not_provided:
-            # The property value is being fetched, so returned it.
-            pass
+        # Use "list" here because it's possible that this list will be longer
+        # than a "shortlist", though probably uncommon.
+        return list(PackageBugContact.selectBy(
+            distributionID=self.distribution.id,
+            sourcepackagenameID=self.sourcepackagename.id))
+
+    def addBugContact(self, person):
+        """See IDistributionSourcePackage."""
+        contact_already_exists = PackageBugContact.selectOneBy(
+            distributionID=self.distribution.id,
+            sourcepackagenameID=self.sourcepackagename.id,
+            bugcontactID=person.id)
+
+        if contact_already_exists:
+            raise DuplicateBugContactError(
+                "%s is already one of the bug contacts for %s." %
+                (person.name, self.displayname))
         else:
-            # The property value is being set.
+            PackageBugContact(
+                distribution=self.distribution,
+                sourcepackagename=self.sourcepackagename,
+                bugcontact=person)
 
-            # Does there already exist a row containing package bug contact
-            # information for this DSP?
-            package_bug_contact = PackageBugContact.selectOneBy(
-                distributionID=self.distribution.id,
-                sourcepackagenameID=self.sourcepackagename.id)
-            if package_bug_contact:
-                # There already exists package bug contact information for this
-                # DSP.
-                pass
-            else:
-                # There is package bug contact information for this DSP.
-                pass
+    def removeBugContact(self, person):
+        """See IDistributionSourcePackage."""
+        contact_to_remove = PackageBugContact.selectOneBy(
+            distributionID=self.distribution.id,
+            sourcepackagenameID=self.sourcepackagename.id,
+            bugcontactID=person.id)
 
-    bugcontact = property(bugcontact, bugcontact)
+        if not contact_to_remove:
+            raise DeleteBugContactError("%s is not a bug contact for this package.")
+        else:
+            contact_to_remove.destroySelf()
 
     @property
     def binary_package_names(self):
