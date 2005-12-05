@@ -355,7 +355,6 @@ input[type="radio"] {
 }
 .login {
   text-align: right;
-  min-height: 1.75em;
 }
 .login input[type="submit"] {
   padding: 0;
