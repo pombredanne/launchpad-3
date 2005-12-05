@@ -9,17 +9,38 @@ __all__ = [
     'IProductSet',
     ]
 
+from textwrap import dedent
 from zope.schema import Bool, Choice, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
+from zope.component import getUtility
 
 from canonical.launchpad.fields import Title, Summary, Description
 from canonical.launchpad.interfaces import (
     IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.validation import valid_webref
+from canonical.launchpad.validators import LaunchpadValidationError
 
 _ = MessageIDFactory('launchpad')
+
+class ProductNameField(TextLine):
+
+    def _validate(self, value):
+        TextLine._validate(self, value)
+        if (IProduct.providedBy(self.context) and 
+            value == getattr(self.context, self.__name__)):
+            # The name wasn't changed.
+            return
+
+        try:
+            product = getUtility(IProductSet)[value]
+        except KeyError:
+            pass
+        else:
+            raise LaunchpadValidationError(_(dedent("""
+                This name is already in use by another product.
+                """))) 
 
 class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
     """A Hatchery Product.
@@ -56,7 +77,7 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
             "product"),
         required=False, vocabulary='ValidPersonOrTeam')
 
-    name = TextLine(
+    name = ProductNameField(
         title=_('Name'),
         constraint=name_validator,
         description=_("""The short name of this product, which must be

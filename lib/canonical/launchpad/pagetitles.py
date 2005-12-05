@@ -705,6 +705,8 @@ shipit_exports = 'ShipIt Exports'
 
 shipit_myrequest = "Your ShipIt Order"
 
+shipit_reports = 'ShipIt Reports'
+
 shipitrequests_index = 'ShipIt Requests'
 
 shipitrequests_search = 'Search ShipIt Requests'

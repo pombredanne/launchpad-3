@@ -8,14 +8,14 @@ Resetting to autotest does in fact reset to autotest.
   HTTP/1.1 200 Ok
   ...Failed Import Control...
 
-  >>> response = http(r"""
+  >>> print http(r"""
   ... POST /products/a52dec/+series/failedbranch/+sourceadmin HTTP/1.1
-  ... Content-Length: 323
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic cm9iZXJ0Y0Byb2JlcnRjb2xsaW5zLm5ldDpsdW5jaHBhZA==
   ... 
   ... cvsroot=%3Apserver%3Aanonymous%40cvs.sourceforge.net%3A%2Fcvsroot%2Fliba52&cvsmodule=a52dec&cvsbranch=AUTOTESTFAILED&svnrepository=&rcstype=cvs&targetarcharchive=a52dec%40bazaar.ubuntu.com&targetarchcategory=a52dec&targetarchbranch=AUTOTESTFAILED&targetarchversion=0&resetToAutotest=on&Update+RCS+Details=Update+RCS+Details""")
-  >>> print str(response).split('\n')[0]
-  HTTP/1.1 200 Ok
-  >>> 'Failed Import Control' in response.getBody()
-  False
+  HTTP/1.1 303 See Other
+  ...
+  ...
+  Location: http://localhost:9000/products/a52dec/+series/failedbranch
+  ...
