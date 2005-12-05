@@ -1036,19 +1036,10 @@ class NascentUpload:
                 uploaded_file.priority != "-" and
                 uploaded_file.priority in priority_map):
                 uploaded_file.priority = priority_map[uploaded_file.priority]
-            
-            # Validate the component and section. (needs the distrorelease)
-            dr = self.distrorelease
-            valid_components = set(
-                component.name for component in dr.components)
-            valid_sections = set(section.name for section in dr.sections)
-            if uploaded_file.component not in valid_components:
-                self.reject("%s: Component %s is not valid" % (
-                    uploaded_file.filename, uploaded_file.component))
-            if uploaded_file.section not in valid_sections:
-                self.reject("%s: Section %s is not valid" % (
-                    uploaded_file.filename, uploaded_file.section))
 
+            # check component and section 
+            #self.verify_components_and_sections(uploaded_file)
+            
         # Finally verify that sourceful/binaryful match the policy
         if self.sourceful and not self.policy.can_upload_source:
             self.reject(
@@ -1062,6 +1053,21 @@ class NascentUpload:
             not self.policy.can_upload_mixed):
             self.reject(
                 "Upload is source/binary but policy refuses mixed uploads.")
+
+    def verify_components_and_sections(self, uploaded_file):
+        """Validate the component and section."""
+        valid_components = set(component.name for component in
+                               self.distrorelease.components)
+        valid_sections = set(section.name for section in
+                             self.distrorelease.sections)
+
+        if uploaded_file.component not in valid_components:
+            self.reject("%s: Component %s is not valid" % (
+                uploaded_file.filename, uploaded_file.component))
+
+        if uploaded_file.section not in valid_sections:
+            self.reject("%s: Section %s is not valid" % (
+                uploaded_file.filename, uploaded_file.section))
 
     def _find_dsc(self):
         """Return the .dsc file from the files list."""
@@ -1488,7 +1494,7 @@ class NascentUpload:
         if self.signer is not None:
             self.policy.considerSigner(self.signer, self.signingkey)
         
-        self.process_signer_acl()
+        #self.process_signer_acl()
 
         self.verify_changes()
         self.verify_uploaded_files()
@@ -1496,9 +1502,9 @@ class NascentUpload:
         # If there are no possible components, then this uploader simply does
         # not have any rights on this distribution so stop now before we
         # go processing crap.
-        if not self.permitted_components:
-            self.reject("Unable to find a component acl OK for the uploader")
-            return
+        #if not self.permitted_components:
+        #    self.reject("Unable to find a component acl OK for the uploader")
+        #    return
         
         if self.sourceful:
             self.verify_uploaded_dsc()
@@ -1510,7 +1516,7 @@ class NascentUpload:
         self.find_and_apply_overrides()
 
         # Verify ACLs
-        self.verify_acl()
+        #self.verify_acl()
 
         # And finally, check that the policy is happy overall
         self.policy.policySpecificChecks(self)
