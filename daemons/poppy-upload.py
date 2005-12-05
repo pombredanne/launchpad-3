@@ -14,6 +14,10 @@ def main():
     parser = optparse.OptionParser()
     logger_options(parser)
 
+    # Do not remove this option, nor its implementation. Tests are using it.
+    parser.add_option("--test", action="store_true", default=False,
+                      help="Run in test mode and do not process the upload")
+
     options, args = parser.parse_args()
 
     log = logger(options, "poppy-upload")
@@ -26,16 +30,20 @@ def main():
     host = "127.0.0.1"
     ident = "lucille upload server"
     numthreads = 4
-    # runs for all incomming uploads:
-    # process-upload with "autosync" policy, NO EMAIL SENDING, 
-    # verbosely and logging in the some file poppy is logging.
-    # '@distro@' and '@fsroot@' are replaced internally according
-    # each upload.
-    cmdline = ('python2.4 scripts/process-upload.py -C autosync --no-mails '
-               '-vv --log-file %s -d @distro@ @fsroot@' % options.log_file)
-    cmd = cmdline.split()
+    if not options.test:
+        # Command line to invoke uploader (it shares the same PYTHONPATH)
+        if options.log_file:
+            log_option = "--log-file '%s'" % options.log_file
+        else:
+            log_option = ''
+        cmd = ['python scripts/process-upload.py -C autosync '
+               '--no-mails -vv', log_option, '-d', '@distro@', '@fsroot@']
+        background = True
+    else:
+        cmd = None
+        background = False
    
-    iface = PoppyInterface(log, cmd=cmd)
+    iface = PoppyInterface(log, cmd=cmd, background=background)
 
     run_server(root, host, int(port), ident, numthreads,
                iface.new_client_hook, iface.client_done_hook,
@@ -44,7 +52,3 @@ def main():
 
 if __name__ == '__main__':
     sys.exit(main())
-
-
-
-

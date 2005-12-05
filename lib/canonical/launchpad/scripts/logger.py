@@ -128,7 +128,7 @@ def logger_options(parser, default=logging.INFO):
             help="Decrease verbosity. May be specified multiple times."
             )
     parser.add_option(
-            "--log-file", action="store",
+            "--log-file", action="store", type="string",
             help="Send log to the given file, rather than stderr."
             )
 

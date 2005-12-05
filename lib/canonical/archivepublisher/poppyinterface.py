@@ -16,10 +16,16 @@ class PoppyInterface:
 
     clients = {}
 
-    def __init__(self, logger, cmd = ['echo', '@distro@', ';', 'ls', '@fsroot@']):
+    def __init__(self, logger, cmd=None, background=True):
         self.tm = initZopeless()
         self.logger = logging.getLogger("%s.PoppyInterface" % logger.name)
-        self.cmd = cmd
+
+        if cmd is None:
+            self.cmd = ['echo', '@distro@', ';', 'ls', '@fsroot@']
+        else:
+            self.cmd = cmd
+
+        self.background = background
         
     def new_client_hook(self, fsroot, host, port):
         """Prepare a new client record indexed by fsroot..."""
@@ -54,7 +60,8 @@ class PoppyInterface:
             else:
                 cmd.append(element)
         self.logger.debug("Running upload handler: %s" % (" ".join(cmd)))
-        cmd.append("&")
+        if self.background:
+            cmd.append("&")
         system(" ".join(cmd))
         self.clients.pop(fsroot)
 
