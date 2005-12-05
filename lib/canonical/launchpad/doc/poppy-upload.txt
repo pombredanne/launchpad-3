@@ -119,7 +119,7 @@ data in the given number seconds, we report a failure.
 
   >>> import errno
   >>> expected = sent_filenames.copy()
-  >>> timeout = 10 # 600
+  >>> timeout = 600
   >>> ping = time.time()
   >>> buffer = ""
   >>> while time.time()-ping < timeout:

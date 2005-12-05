@@ -221,9 +221,6 @@ Finally we can ask the upload to process itself.
   DEBUG: Beginning processing.
   DEBUG: Checking signature on changes file.
   DEBUG: Verifying signature on ed_0.2-20_i386.changes
-  DEBUG: Daniel Silverstone (26) is in main's uploaders.
-  DEBUG: Daniel Silverstone (26) is in restricted's uploaders.
-  DEBUG: Daniel Silverstone (26) is in universe's uploaders.
   DEBUG: Verifying the changes file.
   DEBUG: Verifying files in upload.
   DEBUG: Verifying source file ed_0.2-20.dsc
