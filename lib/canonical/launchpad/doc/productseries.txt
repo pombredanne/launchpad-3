@@ -1,10 +1,10 @@
 ProductSeries
 =============
 
-A Launchpad product models a single piece of software. However for release
-management purposes, a product often has to be split in several discrete
+A Launchpad Product models a single piece of software. However for release
+management purposes, a Product often has to be split in several discrete
 entities which must be considered separately for packaging, translations,
-version control, etc. The components of products are ProductSeries.
+version control, etc. We call these entities ProductSeries.
 
 >>> from zope.component import getUtility
 >>> from zope.interface.verify import verifyObject
@@ -21,12 +21,10 @@ A ProductSeries can be retrieved using the associated product and the series nam
 
 >>> milestones = firefox.getSeries('milestones')
 
-Verify that the resulting object correctly implements and provides the
-IProductSeries interface.
+Verify that the resulting object correctly implements the IProductSeries
+interface.
 
 >>> verifyObject(IProductSeries, milestones)
-True
->>> IProductSeries.providedBy(milestones)
 True
 
 And verify that it looks like the series we think it should be.
