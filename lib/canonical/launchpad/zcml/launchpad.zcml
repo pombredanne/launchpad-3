@@ -92,10 +92,10 @@
 
   <browser:page
       for="*"
+      attribute="logout"
       class="canonical.launchpad.webapp.login.CookieLogoutPage"
       permission="zope.Public"
       name="+logout"
-      template="../templates/launchpad-log-out.pt"
       />
 
   <browser:page

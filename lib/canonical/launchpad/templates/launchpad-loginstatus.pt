@@ -20,6 +20,5 @@
     >User's browser name
     </a>
     &ndash;
-  <!-- input type="submit" value="Log Out" / -->
-  <a href="+logout">Log Out</a>
+  <input type="submit" value="Log Out" />
 </form>

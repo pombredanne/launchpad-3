@@ -355,6 +355,7 @@ input[type="radio"] {
 }
 .login {
   text-align: right;
+  min-height: 1.75em;
 }
 .login input[type="submit"] {
   padding: 0;
@@ -432,7 +433,7 @@ ul.app>li.current {
 #pillars {
   background-color: #dee7ec;
   float: left;
-  width: 47%;
+  width: 100%; /* 47% once subpillars are implemented */
 }
 #subpillars {
   float: left;

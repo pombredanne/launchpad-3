@@ -92,12 +92,12 @@
       id="portal-column-two"
       metal:define-slot="column_two"
     >
-      <ul
-        class="facets"
-        tal:define="facetmenu CONTEXTS/menu:facet"
-      >
-       <tal:condition tal:condition="python: '+login' not in request.getURL()">
-        <tal:facetmenu condition="facetmenu">
+      <tal:notlogin condition="python: '+login' not in request.getURL()">
+        <ul
+          tal:define="facetmenu CONTEXTS/menu:facet"
+          tal:condition="facetmenu"
+          class="facets"
+        >
           <tal:facet repeat="link facetmenu">
             <tal:available condition="link/enabled">
               <tal:comment condition="nothing">
@@ -141,10 +141,8 @@
               class="unavailable"
             />
           </tal:facet>
-        </tal:facetmenu>
-        </tal:condition>
-      </ul>
-
+        </ul>
+      </tal:notlogin>
 
       <metal:portlets define-slot="portlets_two">
       </metal:portlets>
@@ -156,17 +154,15 @@
     >
       <div class="sitemap clearfix"
         tal:condition="not:exists:body"
-        xtal:replace="structure CONTEXTS/@@+sitemap"
       >
-        <!-- this is a demo, and does not highlight the correct items -->
         <ul id="pillars">
           <li><a href="/products">Products</a></li>
           <li><a href="/distros">Distributions</a></li>
           <li><a href="/people">People</a></li>
-          <li class="current">Projects</li>
+          <li><a href="/projects">Projects</li>
           <li><a href="/sprints">Meetings</a></li>
         </ul>
-        <ul id="subpillars">
+        <ul id="subpillars" tal:condition="nothing">
           <li><a href="releases/">Releases</a></li>
           <li><a href="ports/">Ports</a></li>
           <li class="current">Packages</li>
