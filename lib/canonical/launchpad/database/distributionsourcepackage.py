@@ -30,6 +30,7 @@ from canonical.launchpad.database.ticket import Ticket
 from sourcerer.deb.version import Version
 from canonical.launchpad.helpers import shortlist
 
+_arg_not_provided = object()
 
 class DistributionSourcePackage:
     """This is a "Magic Distribution Source Package". It is not an
@@ -119,8 +120,26 @@ class DistributionSourcePackage:
             orderBy='-datecreated',
             limit=quantity)
 
-    def bugcontact(self, value=None):
-        pass
+    def bugcontact(self, value=_arg_not_provided):
+        """See IDistributionSourcePackage."""
+        if value is _arg_not_provided:
+            # The property value is being fetched, so returned it.
+            pass
+        else:
+            # The property value is being set.
+
+            # Does there already exist a row containing package bug contact
+            # information for this DSP?
+            package_bug_contact = PackageBugContact.selectOneBy(
+                distributionID=self.distribution.id,
+                sourcepackagenameID=self.sourcepackagename.id)
+            if package_bug_contact:
+                # There already exists package bug contact information for this
+                # DSP.
+                pass
+            else:
+                # There is package bug contact information for this DSP.
+                pass
 
     bugcontact = property(bugcontact, bugcontact)
 
