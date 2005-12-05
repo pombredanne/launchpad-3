@@ -28,7 +28,7 @@
 
   <browser:menus
     module="canonical.launchpad.browser.distributionsourcepackage"
-    classes="DistributionSourcePackageFacets"
+    classes="DistributionSourcePackageFacets DistributionSourcePackageBugsMenu"
     />
 
   <browser:pages

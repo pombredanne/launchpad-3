@@ -3,14 +3,14 @@
 __metaclass__ = type
 
 __all__ = ['ProductSeriesNavigation',
-           'ProductSeriesSetNavigation',
            'ProductSeriesContextMenu',
            'ProductSeriesView',
+           'ProductSeriesEditView',
            'ProductSeriesRdfView',
-           'ProductSeriesSourceSetView']
+           'ProductSeriesSourceSetView',
+           'ProductSeriesReviewView']
 
 import re
-import urllib
 
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
@@ -26,11 +26,28 @@ from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 from canonical.launchpad.helpers import request_languages, browserLanguages
 from canonical.launchpad.interfaces import (
     IPerson, ICountry, IPOTemplateSet, ILaunchpadCelebrities, ILaunchBag,
-    ISourcePackageNameSet, validate_url, IProductSeries, IProductSeriesSet)
+    ISourcePackageNameSet, validate_url, IProductSeries,
+    IProductSeriesSourceSet)
+from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.potemplate import POTemplateView
+from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     ContextMenu, Link, enabled_with_permission, Navigation, GetitemNavigation,
-    stepto)
+    stepto, canonical_url)
+
+from canonical.launchpad import _
+
+class ProductSeriesReviewView(SQLObjectEditView):
+    def changed(self):
+        """Redirect to the productseries page.
+
+        We need this because people can now change productseries'
+        product and name, and this will make their canonical_url to
+        change too.         
+        """
+        self.request.response.addInfoNotification( 
+            _('This Serie has been changed'))
+        self.request.response.redirect(canonical_url(self.context))
 
 
 class ProductSeriesNavigation(Navigation):
@@ -44,11 +61,6 @@ class ProductSeriesNavigation(Navigation):
 
     def traverse(self, name):
         return self.context.getRelease(name)
-
-
-class ProductSeriesSetNavigation(GetitemNavigation):
-
-    usedfor = IProductSeriesSet
 
 
 class ProductSeriesContextMenu(ContextMenu):
@@ -129,7 +141,6 @@ def validate_release_root(repo):
 
 def validate_svn_repo(repo):
     return validate_url(repo, ["http", "https", "svn", "svn+ssh"])
-
 
 
 # A View Class for ProductSeries
@@ -224,40 +235,31 @@ class ProductSeriesView(object):
         html += '</select>\n'
         return html
 
-    def edit(self):
+    def cvs_details_already_in_use(self, cvsroot, cvsmodule, cvsbranch):
+        """Check if the CVS details are in use by another ProductSeries.
+
+        Return True if the CVS details don't exist in the database or 
+        if it's already set in this ProductSeries, otherwise return False.
         """
-        Update the contents of the ProductSeries. This method is called by a
-        tal:dummy element in a page template. It checks to see if a form has
-        been submitted that has a specific element, and if so it continues
-        to process the form, updating the fields of the database as it goes.
+        productseries = getUtility(IProductSeriesSourceSet).getByCVSDetails(
+            cvsroot, cvsmodule, cvsbranch) 
+        if productseries is None or productseries == self.context:
+            return True
+        else: 
+            return False 
+
+    def svn_details_already_in_use(self, svnrepository): 
+        """Check if the SVN details are in use by another ProductSeries.
+
+        Return True if the SVN details don't exist in the database or
+        if it's already set in this ProductSeries, otherwise return False.
         """
-        # check that we are processing the correct form, and that
-        # it has been POST'ed
-        form = self.form
-        if not form.get("Update", None)=="Update Series":
-            return
-        if not self.request.method == "POST":
-            return
-        # Extract details from the form and update the Product
-        # we don't let people edit the name because it's part of the url
-        self.name = form.get('name', self.name)
-        self.displayname = form.get('displayname', self.displayname)
-        self.summary = form.get('summary', self.summary)
-        self.releaseroot = form.get("releaseroot", self.releaseroot) or None
-        self.releasefileglob = form.get("releasefileglob",
-                self.releasefileglob) or None
-        if self.releaseroot:
-            if not validate_release_root(self.releaseroot):
-                self.errormsgs.append('Invalid release root URL')
-                return
-        self.context.name = self.name
-        self.context.summary = self.summary
-        self.context.displayname = self.displayname
-        self.context.releaseroot = self.releaseroot
-        self.context.releasefileglob = self.releasefileglob
-        # now redirect to view the productseries
-        self.request.response.redirect(
-            '../%s' % urllib.quote(self.context.name))
+        productseries = getUtility(IProductSeriesSourceSet).getBySVNDetails(
+            svnrepository)
+        if productseries is None or productseries == self.context:
+            return True
+        else: 
+            return False 
 
     def editSource(self, fromAdmin=False):
         """This method processes the results of an attempt to edit the
@@ -266,27 +268,37 @@ class ProductSeriesView(object):
         if self.request.method != "POST":
             return
         form = self.form
-        if form.get("Update RCS Details", None) is None:
+        if form.get("Update RCS Details") is None:
             return
         if self.context.syncCertified() and not fromAdmin:
             self.errormsgs.append(
-                    'This Source is has been certified and is now '
+                    'This Source has been certified and is now '
                     'unmodifiable.'
                     )
             return
         # get the form content, defaulting to what was there
-        rcstype=form.get("rcstype", None)
+        rcstype = form.get("rcstype")
         if rcstype == 'cvs':
             self.rcstype = RevisionControlSystems.CVS
+            self.cvsroot = form.get("cvsroot").strip()
+            self.cvsmodule = form.get("cvsmodule").strip()
+            self.cvsbranch = form.get("cvsbranch").strip()
+            self.svnrepository = None
         elif rcstype == 'svn':
             self.rcstype = RevisionControlSystems.SVN
+            self.cvsroot = None 
+            self.cvsmodule = None 
+            self.cvsbranch = None 
+            self.svnrepository = form.get("svnrepository").strip()
         else:
             raise NotImplementedError, 'Unknown RCS %s' % rcstype
-        self.cvsroot = form.get("cvsroot", self.cvsroot).strip() or None
-        self.cvsmodule = form.get("cvsmodule", self.cvsmodule).strip() or None
-        self.cvsbranch = form.get("cvsbranch", self.cvsbranch).strip() or None
-        self.svnrepository = form.get("svnrepository",
-                self.svnrepository).strip() or None
+        # FTP release details
+        self.releaseroot = form.get("releaseroot")
+        self.releasefileglob = form.get("releasefileglob") 
+        if self.releaseroot:
+            if not validate_release_root(self.releaseroot):
+                self.errormsgs.append('Invalid release root URL')
+                return
         # make sure we at least got something for the relevant rcs
         if rcstype == 'cvs':
             if not (self.cvsroot and self.cvsmodule and self.cvsbranch):
@@ -302,13 +314,22 @@ class ProductSeriesView(object):
             if self.svnrepository:
                 self.errormsgs.append('Please remove the SVN repository.')
                 return
+            if not self.cvs_details_already_in_use(self.cvsroot, self.cvsmodule,
+                    self.cvsbranch):
+                self.errormsgs.append(
+                    'CVS repository details already in use by another product.')
+                return
         elif rcstype == 'svn':
             if not validate_svn_repo(self.svnrepository):
-                self.errormsgs.append('Please give valid SVN server details')
+                self.errormsgs.append('Please give valid SVN server details.')
                 return
             if (self.cvsroot or self.cvsmodule or self.cvsbranch):
                 self.errormsgs.append(
                     'Please remove the CVS repository details.')
+                return
+            if not self.svn_details_already_in_use(self.svnrepository):
+                self.errormsgs.append(
+                    'SVN repository details already in use by another product.')
                 return
         oldrcstype = self.context.rcstype
         self.context.rcstype = self.rcstype
@@ -316,6 +337,8 @@ class ProductSeriesView(object):
         self.context.cvsmodule = self.cvsmodule
         self.context.cvsbranch = self.cvsbranch
         self.context.svnrepository = self.svnrepository
+        self.context.releaseroot = self.releaseroot
+        self.context.releasefileglob = self.releasefileglob
         if not fromAdmin:
             self.context.importstatus = ImportStatus.TESTING
         elif (oldrcstype is None and self.rcstype is not None):
@@ -323,6 +346,8 @@ class ProductSeriesView(object):
         # make sure we also update the ubuntu packaging if it has been
         # modified
         self.setCurrentUbuntuPackage()
+        if not self.errormsgs:
+            self.request.response.redirect(canonical_url(self.context))
 
     def adminSource(self):
         """Make administrative changes to the source details of the
@@ -424,6 +449,14 @@ class ProductSeriesView(object):
 
     def browserLanguages(self):
         return browserLanguages(self.request)
+
+
+class ProductSeriesEditView(SQLObjectEditView):
+    """View class that lets you edit a ProductSeries object."""
+
+    def changed(self):
+        # If the name changed then the URL changed, so redirect
+        self.request.response.redirect(canonical_url(self.context))
 
 
 class ProductSeriesRdfView(object):
