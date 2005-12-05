@@ -237,11 +237,6 @@ class RosettaContextMenu(ContextMenu):
     usedfor = IRosettaApplication
     links = ['about', 'preferences']
 
-    def overview(self):
-        target = ''
-        text = 'Translations'
-        return Link(target, text)
-
     def upload(self):
         target = '+upload'
         text = 'Upload'
