@@ -100,6 +100,10 @@ class EmailCommand:
         """See IEmailCommand."""
         self.string_args += [sub_command.name] + sub_command.string_args
 
+    def __str__(self):
+        """See IEmailCommand."""
+        return ' '.join([self.name] + self.string_args)
+
 
 class BugEmailCommand(EmailCommand):
     """Creates new bug, or returns an existing one."""
@@ -278,8 +282,9 @@ class AffectsEmailCommand(EditEmailCommand):
 
     def execute(self, bug):
         """See IEmailCommand."""
+        string_args = list(self.string_args)
         try:
-            path = self.string_args.pop(0)
+            path = string_args.pop(0)
         except IndexError:
             raise EmailProcessingError(
                 "'affects' command requires at least one argument.")
@@ -334,12 +339,13 @@ class AffectsEmailCommand(EditEmailCommand):
     def convertArguments(self):
         """See EmailCommand."""
         args = {}
-        while len(self.string_args) > 0:
+        string_args = list(self.string_args[1:])
+        while len(string_args) > 0:
             # Get the sub command name.
-            subcmd_name = self.string_args.pop(0)
+            subcmd_name = string_args.pop(0)
             # Get the sub command's argument
             try:
-                subcmd_arg = self.string_args.pop(0)
+                subcmd_arg = string_args.pop(0)
             except IndexError:
                 raise EmailProcessingError(
                     "'affects' sub command '%s' requires at least"
@@ -386,7 +392,8 @@ class AssigneeEmailCommand(EditEmailCommand):
 
     def convertArguments(self):
         """See EmailCommand."""
-        person_name = self.string_args.pop()
+        string_args = list(self.string_args)
+        person_name = string_args.pop()
         valid_person_vocabulary = ValidPersonOrTeamVocabulary()
         try:
             person_term = valid_person_vocabulary.getTermByToken(person_name)

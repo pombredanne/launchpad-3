@@ -617,6 +617,9 @@ Submit a bug on a distribution that doesn't exist:
     To: test@canonical.com
     <BLANKLINE>
     ...
+    Failing command:
+        affects /distros/foo
+    ...
     'foo' couldn't be found in command 'affects /distros/foo'
     ...
 

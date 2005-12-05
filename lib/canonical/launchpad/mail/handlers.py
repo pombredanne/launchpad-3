@@ -102,8 +102,10 @@ def guess_bugtask(bug, person):
 
 class IncomingEmailError(Exception):
     """Indicates that something went wrong processing the mail."""
-    def __init__(self, message):
+
+    def __init__(self, message, failing_command=None):
         self.message = message
+        self.failing_command = failing_command
 
 
 class MaloneHandler:
@@ -249,7 +251,8 @@ class MaloneHandler:
                                     bugtask, bugtask_snapshot, edited_fields)
 
                 except EmailProcessingError, error:
-                    raise IncomingEmailError(str(error))
+                    raise IncomingEmailError(
+                        str(error), failing_command=command)
 
             if bug_event is not None:
                 try:
@@ -265,6 +268,6 @@ class MaloneHandler:
             send_process_error_notification(
                 getUtility(ILaunchBag).user.preferredemail.email,
                 'Submit Request Failure',
-                error.message)
+                error.message, error.failing_command)
 
         return True

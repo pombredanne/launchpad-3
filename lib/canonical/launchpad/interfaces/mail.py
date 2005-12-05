@@ -81,6 +81,9 @@ class IEmailCommand(Interface):
     def addSubCommandToBeExecuted(subcommand):
         """Adds a sub command to be executed when this command is."""
 
+    def __str__():
+        """Return a textual representation of the command and its arguments."""
+
 
 class IBugEmailCommand(IEmailCommand):
     """An email command specific to getting or creating a bug."""

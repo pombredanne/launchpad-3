@@ -1,6 +1,8 @@
 An error occurred while processing a mail you sent to Malone's email
 interface.
 
+%(failed_command_information)s
+
 Error message:
 
 %(error_msg)s
