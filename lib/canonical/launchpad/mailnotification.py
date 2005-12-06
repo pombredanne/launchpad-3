@@ -486,12 +486,6 @@ def send_bug_notification(bug, user, subject, body, to_addrs=None,
     concerning the same bug (if the email client supports threading).
     """
 
-    # XXX: 20051115 jamesh
-    # if there is no current user, the change came from a script.  We
-    # don't want a notification in this case, so just return.
-    if user is None:
-        return
-
     assert user is not None, 'user is None'
 
     if headers is None:

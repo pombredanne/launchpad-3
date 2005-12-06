@@ -28,10 +28,6 @@ def bug_comment_added(bugmessage, event):
 
 def bug_modified(bug, event):
     """Check changes made to <bug> and assign karma to user if needed."""
-    # XXX: 20051115 jamesh
-    # If there is no user associated with the event, don't assign karma
-    if event.user is None:
-        return
     user = event.user
     bug_delta = get_bug_delta(
         event.object_before_modification, event.object, user)
@@ -50,37 +46,21 @@ def bug_modified(bug, event):
 
 def bugwatch_added(bugwatch, event):
     """Assign karma to the user which added :bugwatch:."""
-    # XXX: 20051115 jamesh
-    # If there is no user associated with the event, don't assign karma
-    if event.user is None:
-        return
     event.user.assignKarma('bugwatchadded')
 
 
 def cve_added(cve, event):
     """Assign karma to the user which added :cve:."""
-    # XXX: 20051115 jamesh
-    # If there is no user associated with the event, don't assign karma
-    if event.user is None:
-        return
     event.user.assignKarma('bugcverefadded')
 
 
 def extref_added(extref, event):
     """Assign karma to the user which added :extref:."""
-    # XXX: 20051115 jamesh
-    # If there is no user associated with the event, don't assign karma
-    if event.user is None:
-        return
     event.user.assignKarma('bugextrefadded')
 
 
 def bugtask_modified(bugtask, event):
     """Check changes made to <bugtask> and assign karma to user if needed."""
-    # XXX: 20051115 jamesh
-    # If there is no user associated with the event, don't assign karma
-    if event.user is None:
-        return
     user = event.user
     task_delta = get_task_delta(event.object_before_modification, event.object)
 
@@ -103,10 +83,6 @@ def bugtask_modified(bugtask, event):
 
 def potemplate_modified(template, event):
     """Check changes made to <template> and assign karma to user if needed."""
-    # XXX: 20051115 jamesh
-    # If there is no user associated with the event, don't assign karma
-    if event.user is None:
-        return
     user = event.user
     old = event.object_before_modification
     new = event.object
@@ -122,10 +98,6 @@ def potemplate_modified(template, event):
 
 def pofile_modified(pofile, event):
     """Check changes made to <pofile> and assign karma to user if needed."""
-    # XXX: 20051115 jamesh
-    # If there is no user associated with the event, don't assign karma
-    if event.user is None:
-        return
     user = event.user
     old = event.object_before_modification
     new = event.object
@@ -148,10 +120,6 @@ def posubmission_created(submission, event):
 
 def poselection_created(selection, event):
     """Assign karma to the submission author and the reviewer."""
-    # XXX: 20051115 jamesh
-    # If there is no user associated with the event, don't assign karma
-    if event.user is None:
-        return
     reviewer = event.user
     active = selection.activesubmission
     published = selection.publishedsubmission
@@ -171,10 +139,6 @@ def poselection_created(selection, event):
 
 def poselection_modified(selection, event):
     """Assign karma to the submission author and the reviewer."""
-    # XXX: 20051115 jamesh
-    # If there is no user associated with the event, don't assign karma
-    if event.user is None:
-        return
     reviewer = event.user
     old = event.object_before_modification
     new = event.object
@@ -194,10 +158,6 @@ def spec_created(spec, event):
 
 def spec_modified(spec, event):
     """Check changes made to the spec and assign karma if needed."""
-    # XXX: 20051115 jamesh
-    # If there is no user associated with the event, don't assign karma
-    if event.user is None:
-        return
     user = event.user
     spec_delta = event.object.getDelta(event.object_before_modification, user)
     if spec_delta is None:
