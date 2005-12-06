@@ -173,7 +173,6 @@ class Product(SQLBase):
         """See ITicketTarget."""
         ticket =  Ticket(
             title=title, description=description, owner=owner, product=self)
-        ticket.subscribe(owner)
         return ticket
 
     def getTicket(self, ticket_num):

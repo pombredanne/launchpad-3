@@ -36,6 +36,8 @@ class ITicketTarget(IHasTickets):
 
         All tickets are created with status NEW and priority NORMAL, so
         these values are not specified.
+
+        The owner will be subscribed to the ticket.
         """
 
     def getTicket(ticket_num):

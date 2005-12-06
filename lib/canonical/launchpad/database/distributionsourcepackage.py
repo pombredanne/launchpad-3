@@ -199,7 +199,6 @@ class DistributionSourcePackage:
             title=title, description=description, owner=owner,
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
-        ticket.subscribe(owner)
         return ticket
 
     def getTicket(self, ticket_num):

@@ -246,7 +246,6 @@ class Distribution(SQLBase):
         ticket = Ticket(
             title=title, description=description, owner=owner,
             distribution=self)
-        ticket.subscribe(owner)
         return ticket
 
     def getTicket(self, ticket_num):
