@@ -10,9 +10,11 @@ import MySQLdb
 import _pythonpath
 
 from zope.component import getUtility
+from canonical.config import config
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
+from canonical.launchpad.ftests import login
 
 from canonical.launchpad.scripts import bugzilla
 
@@ -67,8 +69,12 @@ def main(argv):
 
     logger(options, 'canonical.launchpad.scripts.bugzilla')
 
+    # don't send email
+    config.zopeless.send_email = False
+    
     ztm = initZopeless()
     execute_zcml_for_scripts()
+    login('bugzilla-importer@launchpad.net')
 
     db = make_connection(options)
     bz = bugzilla.Bugzilla(db)

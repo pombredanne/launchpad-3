@@ -1419,7 +1419,7 @@ INSERT INTO emailaddress (id, email, person, status) VALUES (49, 'stub@fastmail.
 INSERT INTO emailaddress (id, email, person, status) VALUES (50, 'marilize@hbd.com', 55, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (51, 'jordi@ubuntu.com', 56, 4);
 INSERT INTO emailaddress (id, email, person, status) VALUES (52, 'daniel.silverstone@canonical.com', 26, 4);
-INSERT INTO emailaddress (id, email, person, status) VALUES (53, 'bugzilla-importer@launchpad.net', 58, 1);
+INSERT INTO emailaddress (id, email, person, status) VALUES (53, 'bugzilla-importer@launchpad.net', 58, 4);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'emailaddress'::pg_catalog.regclass;

@@ -116,7 +116,7 @@ it to return:
 
 Get a reference to the Ubuntu bug tracker, and log in:
 
-  >>> login('test@canonical.com')
+  >>> login('bugzilla-importer@launchpad.net')
   >>> bugtracker = getUtility(ILaunchpadCelebrities).ubuntu_bugzilla
 
 Now we create a bugzilla.Bugzilla instance to handle the import, using
