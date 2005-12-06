@@ -195,11 +195,10 @@ class DistributionSourcePackage:
 
     def newTicket(self, owner, title, description):
         """See ITicketTarget."""
-        ticket = Ticket(
+        return Ticket(
             title=title, description=description, owner=owner,
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
-        return ticket
 
     def getTicket(self, ticket_num):
         """See ITicketTarget."""

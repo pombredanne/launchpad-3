@@ -71,7 +71,7 @@ class Ticket(SQLBase):
     reopenings = MultipleJoin('TicketReopening', orderBy='datecreated',
         joinColumn='ticket')
 
-    def _create(self, id,**kwargs):
+    def _create(self, id, **kwargs):
         """Subscribe the owner to the ticket when it's created."""
         SQLBase._create(self, id, **kwargs)
         self.subscribe(self.owner)
