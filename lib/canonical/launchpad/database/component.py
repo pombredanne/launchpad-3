@@ -34,14 +34,22 @@ class ComponentSet:
 
     def __getitem__(self, name):
         """See IComponentSet."""
-        try:
-            return Component.selectOneBy(name=name)
-        except SQLObjectNotFound:
-            raise NotFoundError(name)
+        component = Component.selectOneBy(name=name)
+        if component:
+            return component
+        raise NotFoundError(name)
 
     def get(self, component_id):
         """See IComponentSet."""
         return Component.get(component_id)
+
+    def ensure(self, name):
+        """See IComponentSet."""
+        component = Component.selectOneBy(name=name)
+        if component:
+            return component
+        return self.new(name)
+
 
     def new(self, name):
         """See IComponentSet."""

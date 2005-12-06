@@ -27,5 +27,8 @@ class ISectionSet(Interface):
     def get(section_id):
         """Return the ISection with the given section_id."""
 
+    def ensure(name):
+        """Ensure the existence of a section with a given name."""
+        
     def new(name):
         """Create a new section."""

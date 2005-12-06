@@ -1055,15 +1055,12 @@ class NascentUpload:
                 "Upload is source/binary but policy refuses mixed uploads.")
 
     def verify_components_and_sections(self, uploaded_file):
-        """Check presence of component and section."""
-        # XXX cprov 20051205: check components and sections via
-        # Selection tables is deprecated. Smply ensure the match
-        # with the available ones.
-        #
-        #valid_components = set(component.name for component in
-        #                       self.distrorelease.components)
-        #valid_sections = set(section.name for section in
-        #                     self.distrorelease.sections)
+        """Check presence of the component and section from an uploaded_file.
+
+        They need to satisfy at least the NEW queue contraints that includes
+        SourcePackageRelease creation, so component and section need to exist.
+        Even if they might be overriden in the future.
+        """
         valid_components = [component.name for component in
                             getUtility(IComponentSet)]
         valid_sections = [section.name for section in getUtility(ISectionSet)]
@@ -1495,23 +1492,13 @@ class NascentUpload:
         """
         self.logger.debug("Beginning processing.")
 
-        # Verify the changes information.
-        
+        # Verify the changes information. 
         self._find_signer()
         if self.signer is not None:
             self.policy.considerSigner(self.signer, self.signingkey)
-        
-        #self.process_signer_acl()
-
+    
         self.verify_changes()
         self.verify_uploaded_files()
-
-        # If there are no possible components, then this uploader simply does
-        # not have any rights on this distribution so stop now before we
-        # go processing crap.
-        #if not self.permitted_components:
-        #    self.reject("Unable to find a component acl OK for the uploader")
-        #    return
         
         if self.sourceful:
             self.verify_uploaded_dsc()
@@ -1522,8 +1509,17 @@ class NascentUpload:
         # Apply the overrides from the database.
         self.find_and_apply_overrides()
 
-        # Verify ACLs
-        #self.verify_acl()
+        # If there are no possible components, then this uploader simply does
+        # not have any rights on this distribution so stop now before we
+        # go processing crap.
+        #if not self.permitted_components:
+        #    self.reject("Unable to find a component acl OK for the uploader")
+        #    return
+
+        # check rights for OLD packages, the NEW ones goes straight to queue 
+        if not self.is_new():
+            self.process_signer_acl()
+            self.verify_acl()
 
         # And finally, check that the policy is happy overall
         self.policy.policySpecificChecks(self)
@@ -1597,20 +1593,10 @@ class NascentUpload:
             self.dsc_contents.get('build-depends-indep', ''))
         arg_architecturehintlist=guess_encoding(
             self.dsc_contents.get('architecture', ''))
-
-        # XXX cprov 20051205: do not use components and sections
-        # via Selections. Simply retrieve than from the original
-        # tables.
-        #
-        #arg_component=self.distrorelease.getComponentByName(
-        #    self._find_dsc().component).id
-        #arg_section=self.distrorelease.getSectionByName(
-        #    self._find_dsc().section).id
         component_name = self._find_dsc().component
         arg_component = getUtility(IComponentSet)[component_name].id
         section_name = self._find_dsc().section
         arg_section = getUtility(ISectionSet)[section_name].id
-        
         arg_creator=self.changed_by['person'].id
         arg_urgency=urgency_map[self.changes['urgency'].lower()]
         arg_changelog=guess_encoding(self.changes['changes'])

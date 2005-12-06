@@ -28,6 +28,9 @@ class IComponentSet(Interface):
     def get(component_id):
         """Return the IComponent with the given component_id."""
 
+    def ensure(name):
+        """Ensure the existence of a component with given name."""
+        
     def new(name):
         """Create a new component."""
 

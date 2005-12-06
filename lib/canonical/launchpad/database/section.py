@@ -34,14 +34,22 @@ class SectionSet:
 
     def __getitem__(self, name):
         """See ISectionSet."""
-        try:
-            return Section.selectOneBy(name=name)
-        except SQLObjectNotFound:
-            raise NotFoundError(name)
+        section = Section.selectOneBy(name=name)
+        if section:
+            return section
+        
+        raise NotFoundError(name)
 
     def get(self, section_id):
         """See ISectionSet."""
         return Section.get(section_id)
+
+    def ensure(self, name):
+        """See ISectionSet."""
+        section = Section.selectOneBy(name=name)
+        if section:
+            return section
+        return self.new(name)
 
     def new(self, name):
         """See ISectionSet."""

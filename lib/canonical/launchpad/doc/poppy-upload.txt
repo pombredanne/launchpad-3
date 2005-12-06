@@ -238,6 +238,15 @@ Assign the loaded GPG key to the katie user.
   ...                        keysize=key.keysize, can_encrypt=key.can_encrypt,
   ...                        active=True)
 
+  Ensure we have the required 'non-free' component, simulating the
+  behaviour of uploader-test script, which will create missing section
+  & components before sending uploads for poppy.
+
+  >>> from canonical.launchpad.interfaces import IComponentSet
+  >>> nonfree = getUtility(IComponentSet).ensure('non-free')
+  >>> nonfree.id
+  4L
+
   >>> import transaction
   >>> transaction.commit()
 

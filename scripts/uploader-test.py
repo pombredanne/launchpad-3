@@ -22,6 +22,7 @@ from sqlobject.main import SQLObjectIntegrityError
 
 from canonical.lp import initZopeless
 from canonical.config import config
+from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 
@@ -29,7 +30,7 @@ from canonical.launchpad.utilities.gpghandler import PymeKey
 
 from canonical.launchpad.interfaces import (
     IGPGHandler, GPGVerificationError, IGPGKeySet, IPersonSet,
-    IEmailAddressSet)
+    IEmailAddressSet, IComponentSet, ISectionSet)
 
 from canonical.lp import dbschema
 
@@ -119,7 +120,16 @@ class UploaderTester:
             if user is None:
                 raise ValueError('Could not create user %s, %s' 
                                   % (displayname, email))
-                                  
+
+            # ensure the user has preferred email address
+            if user.preferredemail is None:
+                user_email = getUtility(IEmailAddressSet).getByEmail(email)
+                user_email.status = dbschema.EmailAddressStatus.PREFERRED
+                # ensure the DB content is modified immediately
+                flush_database_updates()
+                self.log.info('Setting PREFERRED email to: %s'
+                              % user.preferredemail.email)
+                                
             # add user to the uploader_test team
             self.uploader_team.addMember(user)
             
@@ -135,13 +145,37 @@ class UploaderTester:
                 fingerprint=key.fingerprint, 
                 algorithm=dbschema.GPGKeyAlgorithm.items[key.algorithm], 
                 keysize=key.keysize, can_encrypt=key.can_encrypt)
-            self.log.info("%s, %s, 0x%s", user.displayname, 
-                          email.email, lpkey.keyid)
+            self.log.info("%s, %s, 0x%s", user.displayname, email, lpkey.keyid)
         except (ValueError, SQLObjectIntegrityError), info:
             self.ztm.abort()
             self.log.critical(str(info))
         else:
-            self.ztm.commit()
+            self.ztm.commit()        
+
+    def ensure_component(self, name):
+        """ """
+        self.ztm.begin()
+        self.log.info('Ensure component "%s"' % name)
+        try:
+            component = getUtility(IComponentSet).ensure(name)
+        except SQLObjectIntegrityError, info:
+            self.ztm.abort()
+            self.log.critical(str(info))
+        else:
+            self.ztm.commit()        
+        
+    def ensure_section(self, name):
+        """ """
+        self.ztm.begin()
+        self.log.info('Ensure section "%s"' % name)
+        try:
+            component = getUtility(ISectionSet).ensure(name)
+        except SQLObjectIntegrityError, info:
+            self.ztm.abort()
+            self.log.critical(str(info))
+        else:
+            self.ztm.commit()        
+                
 
 class FTPURLError(Exception): pass
 
@@ -200,9 +234,13 @@ def ftp_send_files(orig_dir, ftp_url_obj):
     ftp.quit()
 
 def read_files_from_changes(filename):
-    """Return a list of filenames from the Files: section"""
+    """Return a list of useful info from the Files: section.
+
+    Return a list of tuples containing (files, component, section).
+    """
     file = open(filename)
     files = []
+    proto_secs = []
     started = False
     for line in file:
         line = line.rstrip()
@@ -210,10 +248,25 @@ def read_files_from_changes(filename):
             if started:
                 if line[0] != " ":
                     break
-                files.append(line.split()[-1])
+                # CKSUM SIZE COMP/SECT PRIORITY FILENAME
+                ck, s, proto_sec, priority, filename = line.strip().split()
+                proto_secs.append(proto_sec)
+                files.append(filename)
             elif line == "Files:":
                 started = True
-    return files
+    # XXX cprov 20051206: assuming component & section are the same for all
+    # files within a change, which is reasonable.
+    proto_sec = set(proto_secs).pop()
+
+    # extract component and section from a collapsed form, use 'main' component
+    # if it was ommited.
+    if '/' in proto_sec:
+        component, section = proto_sec.split('/')
+    else:
+        component = 'main'
+        section = proto_sec
+        
+    return files, component, section
 
 
 def main():
@@ -295,8 +348,12 @@ def main():
                 changes_file.close()
 
                 log.info("Extracting files list...")
-                files = read_files_from_changes(changes_filepath)
+                files, component, section = read_files_from_changes(
+                    changes_filepath)
 
+                tester.ensure_component(component)
+                tester.ensure_section(section)
+                
                 log.info("Downloading additional files...")
                 rsync_files(rsync_url + '*', temp_dir, includes=files)
 
