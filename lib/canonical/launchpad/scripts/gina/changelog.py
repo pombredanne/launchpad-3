@@ -7,7 +7,7 @@ __metaclass__ = type
 import re, sys
 
 first_re = re.compile(r"^([a-z0-9][a-z0-9\\+\\.\\-]+)\s+\(([^ ]+)\)")
-urgency_re = re.compile(r'(?:urgency|priority)=([^ ]+)')
+urgency_re = re.compile(r'(?:urgency|priority)=([^ ,;:.]+)')
 
 from sourcerer.deb.version import Version
 

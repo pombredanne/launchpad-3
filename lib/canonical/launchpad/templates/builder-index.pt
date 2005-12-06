@@ -1,3 +1,4 @@
+<tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
@@ -9,7 +10,7 @@
     <meta http-equiv="refresh" content="300">
 </metal:block>
 
-    <div metal:fill-slot="body">
+    <div metal:fill-slot="main">
       <h1>Build machine &#8220;<span tal:replace="context/name"/>&#8221;</h1>
       <p>
         <dfn tal:replace="context/name">BUILDER</dfn> is part of
@@ -175,3 +176,4 @@
     </div>
   </body>
 </html>
+</tal:layout>
