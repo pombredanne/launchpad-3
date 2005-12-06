@@ -12,10 +12,6 @@ from bzrlib.branch import ScratchBranch
 
 from canonical.launchpad import database
 
-def compare_branches(a, b):
-    a.last_revision() == b.last_revision()
-
-    
 
 class AcceptanceTests(unittest.TestCase):
     """ 
