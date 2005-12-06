@@ -1,6 +1,7 @@
+<tal:layout define="columns1 default">
 <html metal:use-macro="context/@@main_template/master">
   <body>
-        <div metal:fill-slot="body">
+    <div metal:fill-slot="main">
           <h1 class="exception">
             Oops
           </h1>
@@ -19,10 +20,15 @@
             <a href="mailto:system-error@launchpad.ubuntu.com">e-mail us</a>
             instead, with &#8220;Bug&#8221; in the Subject line.)
           </p>
+          <p tal:condition="request/oopsid">
+            The reference for this error is
+            <tt class="oopsid" tal:content="request/oopsid">OOPS-A1234</tt>.
+            Please include it in your bug report or email.
+          </p>
           <p>
             Thanks for helping improve Launchpad, and sorry for the inconvenience.
           </p>
         <tal:replace tal:replace="structure view/maybeShowTraceback" />
-        </div>
+    </div>
   </body>
 </html>
