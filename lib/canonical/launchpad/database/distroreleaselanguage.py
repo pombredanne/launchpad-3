@@ -96,7 +96,7 @@ class DistroReleaseLanguage(SQLBase, RosettaStats):
     def rosettaCount(self, language=None):
         return self.rosettacount
 
-    def updateStatistics(self):
+    def updateStatistics(self, ztm):
         current = 0
         updates = 0
         rosetta = 0
@@ -119,6 +119,7 @@ class DistroReleaseLanguage(SQLBase, RosettaStats):
                           'POTemplate'],
             distinct=True).count()
         self.dateupdated = UTC_NOW
+        ztm.commit()
 
 
 class DummyDistroReleaseLanguage(RosettaStats):

@@ -1,0 +1,21 @@
+<div class="portlet">
+
+  <h4>Suggests:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul>
+      <li tal:repeat="binsuggests view/suggests">
+
+        <a tal:content="binsuggests/name"
+           tal:attributes="href string:../../binsuggests/name}"/>  
+          <tal:dummy condition="binsuggests/signal">
+            (<span tal:replace="binsuggests/signal" />
+             <span tal:replace="binsuggests/version" />)
+          </tal:dummy>
+      </li>
+    </ul>
+
+  </div>
+
+</div>

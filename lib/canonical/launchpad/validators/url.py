@@ -13,8 +13,3 @@ def valid_absolute_url(name):
     if name is None or re.match(pat, name):
         return True
     return False
-    
-valid_absolute_url.sql_signature = [
-    ('name', 'text'),
-    ]
-

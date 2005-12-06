@@ -1,0 +1,94 @@
+<metal:item define-macro="item">
+  <tal:comment replace="nothing">
+  This macro expects the following variables defined:
+      :task: An IBugTask to be rendered.
+      :show_targetname: Should the sourcepackage name be shown?
+      Defaults to False.
+      If there's a do_not_show_assignee variable and it's set to True,
+      only the bugtask status is displayed, but not the assignee. Otherwise,
+      the status and the assignee (in case there's one) are displayed.
+  </tal:comment>
+
+  <td class="icon left">
+    <tal:taskicon content="structure task/fmt:icon" />&nbsp;
+  </td>
+  <td>
+    <div>
+      <a tal:attributes="href task/fmt:url">
+        <tal:id replace="task/bug/id">42</tal:id>.
+        <strong tal:content="task/bug/title">A test title</strong>
+      </a>
+    </div>
+    <div class="lesser">
+      <tal:packagename condition="show_targetname|nothing">
+        <tal:has_target condition="task/target">
+          in
+          <a
+            tal:attributes="
+              href string:${task/target/fmt:url}/+bugs;
+              title string:All bug reports about ${task/targetname};
+            "
+            tal:content="task/targetname"
+          >firefox</a>,
+        </tal:has_target>
+      </tal:packagename>
+      <tal:block define="do_not_show_assignee do_not_show_assignee|nothing">
+        <tal:status-with-assignee
+          condition="not: do_not_show_assignee"
+          content="structure task/statusdisplayhtml">
+          assigned to Foo Bar
+        </tal:status-with-assignee>
+        <tal:status 
+          condition="do_not_show_assignee"
+          content="task/status/title/lower">
+          accepted
+        </tal:status>
+      </tal:block>
+      <tal:milestone condition="task/milestone">
+        for <tal:icon content="structure task/milestone/fmt:icon" />
+        <a tal:attributes="href task/milestone/fmt:url"
+           tal:content="task/milestone/name">1.0</a>
+      </tal:milestone>
+    </div>
+    <div class="discreet">
+      <tal:age
+        replace="string:${task/age/fmt:approximateduration} old"
+      >2 weeks old</tal:age>
+      &mdash;
+      <tal:elsewhere replace="task/statuselsewhere">
+        Not wanted elsewhere
+      </tal:elsewhere>
+    </div>
+  </td>
+</metal:item>
+
+<metal:item define-macro="sortwidget_label">
+  <label for="orderby">Sorted by:</label>
+</metal:item>
+
+<metal:item define-macro="sortwidget">
+  <tal:comment condition="nothing">
+    This macro expects that the callsite's view class has a shouldShowTargetName
+    method.
+  </tal:comment>
+
+  <select name="orderby" id="orderby" size="1"
+          tal:define="orderby request/orderby|string:-priority,-severity">
+    <option value="-datecreated"
+            tal:attributes="selected python:orderby == '-datecreated'">newest first</option>
+    <option value="datecreated"
+            tal:attributes="selected python:orderby == 'datecreated'">oldest first</option>
+    <option value="-priority,-severity"
+            tal:attributes="selected python:orderby == '-priority,-severity'">priority, then severity</option>
+    <option value="-severity,-priority"
+            tal:attributes="selected python:orderby == '-severity,-priority'">severity, then priority</option>
+    <option value="title"
+            tal:attributes="selected python:orderby == 'title'">summary</option>
+    <option value="milestone"
+            tal:attributes="selected python:orderby == 'milestone'">milestone</option>
+    <option tal:condition="view/shouldShowTargetName|nothing"
+            tal:attributes="selected python:orderby == 'targetname'"
+            value="targetname">location</option>
+  </select>
+
+</metal:item>

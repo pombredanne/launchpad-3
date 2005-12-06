@@ -1,0 +1,110 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+  <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-editdetails" />
+  </metal:rightportlets>
+
+  <div metal:fill-slot="main">
+
+    <h1>Your Wiki Names</h1>
+
+    <div tal:define="feedback view/processWikiForm" tal:condition="feedback" 
+         tal:content="structure feedback" class="portalMessage" />
+
+    <form name="edit_wikiname" action="" method="POST">
+    <table>
+
+      <tr><td colspan="2"><h2>Ubuntu Wiki Name</h2></td></tr>
+      <tr>
+        <td colspan="2">
+          <p>This is your wiki name in the Ubuntu wiki. You cannot remove
+          it because without it you won't be able to login there.</p>
+        </td>
+      </tr>
+
+      <tr>
+        <td><label>Wiki Base URL:</label></td>
+        <td><label>Wiki Name:</label></td>
+      </tr>
+
+      <tr>
+        <td><b tal:content="context/ubuntuwiki/wiki" /></td>
+        <td>
+          <input type="text"
+                 tal:attributes="name string:ubuntuwikiname;
+                                 value context/ubuntuwiki/wikiname" />
+        </td>
+      </tr>
+
+      <tal:block condition="context/otherwikis">
+
+        <tr><td colspan="2"><h2>Other Wiki Names</h2></td></tr>
+
+        <tr>
+          <td><label>Wiki Base URL:</label></td>
+          <td><label>Wiki Name:</label></td>
+        </tr>
+
+        <tr tal:repeat="wiki context/otherwikis">
+          <td>
+            <input type="text" size="40" style="margin-bottom: 0.5em;"
+                   tal:attributes="name string:wiki_${wiki/id};
+                                   value wiki/wiki" />
+          </td>
+          <td>
+            <input type="text"
+                   tal:attributes="name string:wikiname_${wiki/id};
+                                   value wiki/wikiname" />
+          </td>
+
+          <td>
+            <label>
+              <input type="checkbox" value="Remove"
+                     tal:attributes="name string:remove_${wiki/id}" />
+              Remove
+            </label>
+          </td>
+        </tr>
+
+      </tal:block>
+
+    <tr>
+      <td colspan="2"><h2>New Wiki Name</h2></td>
+    </tr>
+    
+    <tr>
+      <td><label>Wiki Base URL:</label></td>
+      <td><label>Wiki Name:</label></td>
+    </tr>
+
+    <tr>
+      <td>
+        <input name="newwiki" type="text" size="40"
+               tal:attributes="value view/newwiki|nothing" />
+      </td>
+      <td>
+        <input name="newwikiname" type="text"
+               tal:attributes="value view/newwikiname|nothing" />
+      </td>
+    </tr>
+
+    <tr>
+      <td class="formHelp">Example: https://wiki.ubuntu.com/</td>
+      <td class="formHelp">Example: YourName.</td>
+    </tr>
+  </table>
+
+  <div class="formControls">
+    <input type="submit" value="Save Changes" name="SAVE" />
+  </div>
+
+  </form>
+  </div>
+
+</body>
+</html>

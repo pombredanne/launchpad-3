@@ -1,0 +1,61 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:content="structure context/@@+portlet-details" />
+  <div tal:content="structure context/distribution/@@+portlet-details|nothing" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+    <tal:block content="structure context/@@+portlet-bugtasklist-mybugs" />
+    <tal:releasebugs
+        tal:condition="context/@@+portlet-bugtasklist-releasebugs|nothing"
+        tal:content="structure context/@@+portlet-bugtasklist-releasebugs" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+<metal:page
+    use-macro="context/@@+bugtask-macros-buglisting/page"
+    tal:define="listing_columns view/task_columns;
+                task_batch_navigator view/search">
+
+  <metal:heading fill-slot="heading">
+    <h1>Bugs in <span tal:replace="context/title">Title</span></h1>
+  </metal:heading>
+
+  <metal:extra_search_widgets_in_table
+      metal:fill-slot="extra_search_widgets_in_table">
+
+    <metal:widget 
+      use-macro="context/@@+bugtask-macros-buglisting/assignee_widget_in_table" />
+    <metal:widget 
+      use-macro="context/@@+bugtask-macros-buglisting/include_dupes_widget_in_table" />
+    <metal:widget 
+      use-macro="context/@@+bugtask-macros-buglisting/statusexplanation_widget_in_table" />
+
+  </metal:extra_search_widgets_in_table>
+
+  <metal:extra_search_widgets_below_table
+      metal:fill-slot="extra_search_widgets_below_table">
+    <!-- XXX: Why do we have this hidden field here? It doesn't seem to be
+    used anywhere. Guilherme Salgado, 2005-12-03 -->
+    <input type="hidden" name="advanced" value="1" />
+
+    <metal:widget 
+      use-macro="context/@@+bugtask-macros-buglisting/extra_widgets_in_own_table" />
+
+  </metal:extra_search_widgets_below_table>
+
+</metal:page>
+
+</div>
+
+
+</body>
+
+</html>

@@ -24,7 +24,7 @@ IMailHandler. The name of the utility is the domain that's handled.
 Let's create some utilities which keep track of which mails they
 handle, and register them for some domains:
 
-    >>> from canonical.launchpad.interfaces import IMailHandler
+    >>> from canonical.launchpad.interfaces import IMailHandler, IProductSet
     >>> from zope.interface import implements
     >>> from canonical.config import config
     >>> class MockHandler:
@@ -76,6 +76,10 @@ mail will get filed in there:
     >>> LibrarianTestSetup().setUp()
 
     >>> handleMail()
+    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
+    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
+    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
+    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
 
 Now we can see that each handler handled that mails sent to its domain:
 
@@ -96,6 +100,7 @@ errors_address.
     >>> len(error_handler.handledMails)
     0
     >>> handleMail()
+    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
     >>> len(error_handler.handledMails)
     1
 
@@ -142,6 +147,7 @@ address the email was sent to:
     ...     msg['From'], ['123@bar.com'], msg.as_string())
     >>> transaction.commit()
     >>> handleMail()
+    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
     >>> msgid in bar_handler.handledMails
     True
 
@@ -151,6 +157,105 @@ the To and CC headers will be ignored:
     >>> msgid in foo_handler.handledMails
     False
 
+DB exceptions
+-------------
+
+If something goes wrongs in the handler, a DB exception can be raised,
+leaving the database in a bad state. If that happens a traceback should
+be printed, and the mail should be deleted from the queue.
+
+Let's create and register a handler which violates a DB constraint:
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> class DBExceptionRaiser:
+    ...     implements(IMailHandler)
+    ...     def process(self, mail, to_addr, filealias):
+    ...         firefox = getUtility(IProductSet)['firefox']
+    ...         firefox.name = 'invalid name'
+    ...         flush_database_updates()
+
+    >>> ztapi.provideUtility(IMailHandler, DBExceptionRaiser(), 'except.com')
+
+Now we send a mail to the handler, which will cause an exception:
+
+    >>> exception_raiser = """From: Foo Bar <foo.bar@canonical.com>
+    ... To: something@except.com
+    ... X-Original-To: something@except.com
+    ... Subject: Raise an exception
+    ...
+    ... This part is not important.
+    ... """
+    >>> raw_sendmail(
+    ...     'foo.bar@canonical.com', ['something@exception.com'],
+    ...     exception_raiser)
+    '...'
+    >>> transaction.commit()
+
+We send another mail as well, in order to make sure that it gets
+processed as well:
+
+    >>> msg = read_test_message('signed_detached.txt')
+    >>> msg.replace_header('To', '123@foo.com')
+    >>> msgid = '<%s>' % sendmail(msg)
+    >>> transaction.commit()
+
+
+If we call handleMail(), we'll see some useful error messages printed
+out:
+
+    >>> handleMail(transaction)
+    ERROR:...:An exception was raised inside the handler: http://...
+    ERROR: new row for relation "product" violates check constraint "valid_name"
+    <BLANKLINE>
+    UPDATE Product SET name = 'invalid name' WHERE id = 4
+    WARNING...
+
+
+The second mail we sent got handled despite the exception:
+
+    >>> msgid in foo_handler.handledMails
+    True
+
+There are no mails left in the mail box:
+
+    >>> len(stub.test_emails)
+    0
+
+Handling bounces
+----------------
+
+Some broken mailers might not respect the Errors-To and Return-Path
+headers, send error messages back to the address, from which the email
+was sent. To prevent mail loops, we try to detect such errors, and
+simply drop the emails.
+
+Emails with an empty Return-Path header should be dropped:
+
+    >>> stub.test_emails = []
+    >>> msg = read_test_message('signed_detached.txt')
+    >>> msg.replace_header('To', '123@foo.com')
+    >>> msg['Return-Path'] = '<>'
+    >>> msgid = '<%s>' % sendmail(msg)
+    >>> transaction.commit()
+    >>> handleMail()
+    >>> msgid in foo_handler.handledMails
+    False
+
+Since this shouldn't occur that often, an email is sent about it to the
+errors-list. This is to make it easier to detect any errors, and fine
+tune it. Later we might simply drop the email without noticing anyone
+about it.
+
+    >>> from_addr, to_addr, raw_mail = stub.test_emails[-1]
+    >>> error_mail = email.message_from_string(raw_mail)
+    >>> error_mail['To'] == config.launchpad.errors_address
+    True
+    >>> print error_mail['Subject']
+    Unhandled Email:...
+    >>> print error_mail.get_payload()
+    The following email was unhandled:
+    ...
+    Message had an empty Return-Path.
+
     >>> LibrarianTestSetup().tearDown()
     >>> config.malone.bugmail_error_from_address = old_error_from_address
-

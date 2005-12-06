@@ -1,0 +1,54 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <p tal:replace="nothing">
+    This page uses a view class that organises the tasks into a set of
+    categories. it determines the sequence of the categories, and the
+    sequence of the specs in each category.
+
+      view/categories => the list of spec categories to be displayed
+      category/title => the category title
+      category/contents => the list of specs
+      spec => an ISpecification
+  </p>
+
+  <h1 tal:condition="view/view_title"
+      tal:content="view/view_title">Specs for Approval</h1>
+
+  <p tal:condition="not: view/count">
+    <img src="/++resource++alert" />
+    <i>There are no specifications in this category for
+    <span tal:replace="context/displayname">Ubuntu 5.04</span> at the
+    moment.</i>
+  </p>
+
+  <p tal:condition="view/count">
+    <b><span tal:replace="view/count">5</span> specifications to list:</b>
+  </p>
+
+  <tal:specifications condition="view/categories">
+    <tal:block repeat="category view/categories">
+      <h2 tal:content="category/status/title">Approved</h2>
+      <div
+        tal:repeat="spec category/specs"
+        tal:replace="structure spec/@@+listing-detailed"
+      />
+    </tal:block>
+  </tal:specifications>
+
+</div>
+</body>
+</html>

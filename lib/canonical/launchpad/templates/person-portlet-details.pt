@@ -3,26 +3,33 @@
   
   <div class="portletBody portletContent">
 	
-    <b>Name:</b>
-    <span tal:replace="context/name">sabdfl</span><br />
-
     <tal:block condition="not: context/teamowner">
-      <b>Display name:</b><br />
-      <span tal:replace="context/displayname">Mark Shuttleworth</span><br />
+      <b tal:content="context/browsername">Mark Shuttleworth</b>
+      (<img tal:condition="context/emblem"
+            tal:attributes="src context/emblem/url" /><a
+            tal:attributes="href context/fmt:url"
+            tal:content="context/name">sabdfl</a>)<br />
 
-      <b>Given name:</b><br />
-      <span tal:replace="context/givenname">Mark</span><br />
-
-      <b>Family name:</b><br />
-      <span tal:replace="context/familyname">Shuttleworth</span><br />
+      <tal:logged_in condition="request/lp:person">
+        <b>Preferred Email:</b><br />
+        <img tal:condition="context/preferredemail"
+             src="/++resource++email" />
+        <span tal:condition="context/preferredemail"
+              tal:replace="context/preferredemail/email">foo@bar.com</span>
+        <tal:no_pref_mail condition="not: context/preferredemail">
+          <img src="/++resource++alert" />
+          <i>None set</i>
+        </tal:no_pref_mail>
+        <br />
+      </tal:logged_in>
 
       <b>Timezone:</b>
       <span tal:replace="context/timezone">UTC</span>
       <i tal:condition="not: context/timezone">None given</i><br />
 
-      <b>Ubuntite!</b>
-      <tal:block condition="context/ubuntite">Yes</tal:block>
-      <tal:block condition="not: context/ubuntite">Not yet</tal:block>
+      <b>Ubuntero:</b>
+      <tal:block condition="context/is_ubuntite">Yes</tal:block>
+      <tal:block condition="not: context/is_ubuntite">Not yet</tal:block>
       <br />
 
       <b>Karma:</b>
@@ -31,8 +38,13 @@
     </tal:block>
     <tal:block condition="context/teamowner">
 
+      <b>Team:</b>
+      <img tal:condition="context/emblem"
+            tal:attributes="src context/emblem/url" />
+      <a tal:attributes="href context/fmt:url"
+         tal:content="context/name">sabdfl</a><br />
       <b>Team Owner:</b><br />
-      <a tal:attributes="href string:../${context/teamowner/name}"
+      <a tal:attributes="href context/teamowner/fmt:url"
          tal:content="context/teamowner/browsername">sabdfl</a><br />
 
       <tal:block condition="context/teamdescription">
@@ -48,6 +60,18 @@
       <br />
 
     </tal:block>
+    
+    <tal:comment replace="nothing">
+      Here we are going to put all the emblems from teams this person
+      belongs to.
+    </tal:comment>
+    <tal:memberships repeat="membership context/myactivememberships">
+      <a tal:attributes="href membership/team/fmt:url"
+        ><img tal:condition="membership/team/emblem"
+              tal:attributes="src membership/team/emblem/url;
+                              title string:Emblem of ${membership/team/name}"
+          /></a>
+    </tal:memberships>
     
   </div>
 

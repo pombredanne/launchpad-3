@@ -1,0 +1,75 @@
+
+We should also be able to create a new sprint. We do this off the Sprints
++new page.
+
+  >>> print http(r"""
+  ... GET /sprints/+new HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+
+When we POST to that page we expect to be redirected to the sprint home page
+for the new sprint.
+
+
+  >>> print http(r"""
+  ... POST /sprints/+new HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1403
+  ... Content-Type: multipart/form-data; boundary=---------------------------4017033048037079481422036373
+  ... 
+  ... -----------------------------4017033048037079481422036373
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... ltsponsteroids
+  ... -----------------------------4017033048037079481422036373
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... LTSP On Steroids
+  ... -----------------------------4017033048037079481422036373
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... sdkf hlkdslkjdsz slkjd zlkjdslkjdsz lkjdsz lkjdszhsflkjdsz fflkjdsz flkjdszslkjd hffzlkjsd fjsdhf sdf. sdf sdf sdf jhzkdsjfzksjfd fzzsdf sdf. sd gfsffzfgfgfsdss jkgdsfskjgfsfsd.
+  ... -----------------------------4017033048037079481422036373
+  ... Content-Disposition: form-data; name="field.home_page"
+  ... 
+  ... http://www.willy.net/
+  ... -----------------------------4017033048037079481422036373
+  ... Content-Disposition: form-data; name="field.time_zone"
+  ... 
+  ... UTC
+  ... -----------------------------4017033048037079481422036373
+  ... Content-Disposition: form-data; name="field.time_zone-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------4017033048037079481422036373
+  ... Content-Disposition: form-data; name="field.time_starts"
+  ... 
+  ... 09:15 10 Oct 2006
+  ... -----------------------------4017033048037079481422036373
+  ... Content-Disposition: form-data; name="field.time_ends"
+  ... 
+  ... 16:00 13 Oct 2006
+  ... -----------------------------4017033048037079481422036373
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------4017033048037079481422036373--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../sprints/ltsponsteroids
+  ...
+
+Because this is a brand new sprint, it will have no specs, and we should see
+a warning to that effect on the page.
+
+  >>> print http(r"""
+  ... GET /sprints/ltsponsteroids HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...There are no specifications registered for discussion...
+
+

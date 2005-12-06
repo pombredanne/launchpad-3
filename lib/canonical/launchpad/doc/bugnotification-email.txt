@@ -32,7 +32,8 @@ examples that follow:
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     IBugDelta, IBugSet, IPersonSet, IBugMessageSet, IBugTaskSet)
+    ...     IBugDelta, IBugSet, IPersonSet, IBugMessageSet, IBugTaskSet,
+    ...     ICve)
     >>> from canonical.launchpad.components.bug import BugDelta
 
 Filing a bug
@@ -55,7 +56,7 @@ Let's take a look at what the notification email looks like:
     Public bug reported:
     http://.../malone/bugs/4
     <BLANKLINE>
-    Affects: upstream firefox
+    Affects: firefox (upstream)
            Severity: Normal
            Priority: Medium
              Status: New
@@ -71,21 +72,21 @@ generate_bug_comment_email accepts an object that provides
 IBugMessage. Let's borrow the first comment on bug four, just to
 demonstrate how the comment notification is formatted:
 
-   >>> bugmessage = getUtility(IBugMessageSet).get(4)
-   >>> subject, body = generate_bug_comment_email(bugmessage)
-   >>> subject
-   u'[Bug 2] Blackhole Trash folder'
-   >>> print body
-   Public bug report changed:
-   http://.../malone/bugs/2
-   <BLANKLINE>
-   Comment:
-   This would be a real killer feature. If there is already code to
-   make it possible, why aren't there tons of press announcements
-   about the secuirty possibilities. Imagine - no more embarrassing
-   emails for Mr Gates... everything they delete would actually
-   disappear! I'm sure Redmond will switch over as soon as they hear
-   about this. It's not a bug, it's a feature!
+    >>> bugmessage = getUtility(IBugMessageSet).get(4)
+    >>> subject, body = generate_bug_comment_email(bugmessage)
+    >>> subject
+    u'[Bug 2] Blackhole Trash folder'
+    >>> print body
+    Public bug report changed:
+    http://.../malone/bugs/2
+    <BLANKLINE>
+    Comment:
+    This would be a real killer feature. If there is already code to
+    make it possible, why aren't there tons of press announcements
+    about the secuirty possibilities. Imagine - no more embarrassing
+    emails for Mr Gates... everything they delete would actually
+    disappear! I'm sure Redmond will switch over as soon as they hear
+    about this. It's not a bug, it's a feature!
 
 Editing a bug
 -------------
@@ -116,15 +117,15 @@ returns the subject and body of the email, as a tuple.
     Public bug report changed:
     http://.../bugs/2
     <BLANKLINE>
-    Title changed to:
+    Summary changed to:
         the new title
     Description changed to:
-        a new description that is quite long. but the nice thing is that the edit
-        notification email generator knows how to indent and wrap descriptions, so
-        this will appear quite nice in the actual email that gets sent.
+        a new description that is quite long. but the nice thing is that the
+        edit notification email generator knows how to indent and wrap
+        descriptions, so this will appear quite nice in the actual email
+        that gets sent.
     <BLANKLINE>
         it's also smart enough to preserve whitespace, finally!
-    <BLANKLINE>
 
 Another edit, this time the summary:
 
@@ -142,10 +143,9 @@ Another edit, this time the summary:
     Public bug report changed:
     http://www.example.com/bugs/2
     <BLANKLINE>
-    Summary changed to:
-        this summary isn't particularly short is it? after all, what kind of summary
-        is so long that it needs to be wrapped?
-    <BLANKLINE>
+    Short description changed to:
+        this summary isn't particularly short is it? after all, what kind of
+        summary is so long that it needs to be wrapped?
 
 Let's set the bug private (for demo purposes, we need to switch logins
 to a user that is explicitly subscribed to this bug):
@@ -165,9 +165,26 @@ to a user that is explicitly subscribed to this bug):
     Private bug report changed:
     http://.../bugs/2
     <BLANKLINE>
-    Visibility changed to:
+    Secrecy changed to:
         Private
+
+Now we set the bug public and check if the e-mail sent changed as well.
+
+    >>> edited_bug.private = False 
+    >>> bug_delta = BugDelta(
+    ...     bug = edited_bug,
+    ...     bugurl = "http://www.example.com/bugs/2",
+    ...     user = sample_person,
+    ...     private = {'old' : True, 'new' : edited_bug.private})
+    >>> subject, body = generate_bug_edit_email(bug_delta)
+    >>> subject
+    u'[Bug 2] the new title'
+    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    Public bug report changed:
+    http://.../bugs/2
     <BLANKLINE>
+    Secrecy changed to:
+        Public
 
 Adding a new bug task
 ---------------------
@@ -177,25 +194,25 @@ generate_bug_edit_email handles generating the email when a new task
 is added to a bug. To demonstrate what this email looks like, let's
 pretend we had just added task five:
 
-   >>> task_five = getUtility(IBugTaskSet).get(5)
+    >>> task_five = getUtility(IBugTaskSet).get(5)
 
-   >>> bug_delta = BugDelta(
-   ...     bug = edited_bug,
-   ...     bugurl = "http://www.example.com/bugs/2",
-   ...     user = sample_person,
-   ...     added_bugtasks = task_five)
-   >>> subject, body = generate_bug_edit_email(bug_delta)
-   >>> subject
-   u'[Bug 2] the new title'
-   >>> print body
-   Private bug report changed:
-   http://.../bugs/2
-   <BLANKLINE>
-   Also affects: mozilla-firefox (Debian)
-          Severity: Minor
-          Priority: High
-          Assignee: name12 <test@canonical.com>
-            Status: Accepted
+    >>> bug_delta = BugDelta(
+    ...     bug = edited_bug,
+    ...     bugurl = "http://www.example.com/bugs/2",
+    ...     user = sample_person,
+    ...     added_bugtasks = task_five)
+    >>> subject, body = generate_bug_edit_email(bug_delta)
+    >>> subject
+    u'[Bug 2] the new title'
+    >>> print body
+    Public bug report changed:
+    http://.../bugs/2
+    <BLANKLINE>
+    Also affects: mozilla-firefox (debian)
+           Severity: Minor
+           Priority: High
+           Assignee: name12 <test@canonical.com>
+             Status: Accepted
 
 Editing a bug task
 ------------------
@@ -225,15 +242,14 @@ bugmail when a bug task is edited.
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Private bug report changed:
+    Public bug report changed:
     http://.../bugs/2
     <BLANKLINE>
     Changed in: Ubuntu (upstream)
            Assignee: (unassigned) => Sample Person
              Status: New => Accepted
-        Explanation: i'm just babbling here to ensure line wrapping works in the
-                     explanation.
-    <BLANKLINE>
+        Explanation: i'm just babbling here to ensure line wrapping works in
+                     the explanation.
 
 Adding and editing web links
 ----------------------------
@@ -264,12 +280,11 @@ Adding a web link can be seen as "editing" a bug.
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Private bug report changed:
+    Public bug report changed:
     http://www.example.com/bugs/2
     <BLANKLINE>
     Web links changed:
         + http://www.example.com/foo/bar (some title)
-    <BLANKLINE>
 
 Editing a web link shows the previous link as "Removed" and the newly
 modified link as having been "Added" (though no actual "adding" or
@@ -291,13 +306,12 @@ modified link as having been "Added" (though no actual "adding" or
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Private bug report changed:
+    Public bug report changed:
     http://www.example.com/bugs/2
     <BLANKLINE>
     Web links changed:
         + http://www.example.com/foo/bar (some better title)
         - http://www.example.com/foo/bar (some title)
-    <BLANKLINE>
 
 Adding and editing bug watches
 ------------------------------
@@ -328,12 +342,11 @@ generated when a bug watch is added:
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Private bug report changed:
+    Public bug report changed:
     http://www.example.com/bugs/2
     <BLANKLINE>
     Bug watches changed:
         + Bug 123 [The Mozilla.org Bug Tracker]
-    <BLANKLINE>
 
 When edited, we display the change to a bug watch as though the
 previous data was "removed" and the new, current data was "added."
@@ -354,78 +367,70 @@ Let's demonstrate with an example:
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Private bug report changed:
+    Public bug report changed:
     http://www.example.com/bugs/2
     <BLANKLINE>
     Bug watches changed:
         + Bug 12 [The Mozilla.org Bug Tracker]
         - Bug 123 [The Mozilla.org Bug Tracker]
-    <BLANKLINE>
 
-Adding and editing CVE refs
----------------------------
+Adding and editing CVE relationships
+------------------------------------
 
-Adding a CVE ref will generate a notification that looks as follows:
+Adding a CVE will generate a notification that looks as follows:
 
-    >>> from canonical.launchpad.interfaces import ICVERef
-    >>> from canonical.lp.dbschema import CVEState
+    >>> from canonical.launchpad.interfaces import IBugCve
+    >>> from canonical.lp.dbschema import CveStatus
 
-    >>> class MockCVERef:
-    ...     implements(ICVERef)
-    ...     def __init__(self, bug, cveref, cvestate, title):
-    ...         self.bug = bug
-    ...         self.cveref = cveref
-    ...         self.cvestate = cvestate
-    ...         self.displayname = 'CVE-' + cveref
-    ...         self.title = title
-    >>> mock_cve_ref = MockCVERef(
-    ...     bug = edited_bug,
-    ...     cveref = "2004-0718",
-    ...     cvestate = CVEState.CANDIDATE,
-    ...     title = "a test cve ref")
-
-    >>> bug_delta = BugDelta(
-    ...     bug = edited_bug,
-    ...     bugurl = "http://www.example.com/bugs/2",
-    ...     user = sample_person,
-    ...     cveref = {'new' : mock_cve_ref})
-    >>> subject, body = generate_bug_edit_email(bug_delta)
-    >>> subject
-    u'[Bug 2] the new title'
-    >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Private bug report changed:
-    http://www.example.com/bugs/2
-    <BLANKLINE>
-    CVE references changed:
-        + CVE-2004-0718 [a test cve ref]
-    <BLANKLINE>
-
-Editing a CVE ref generates an email that refers to the previous CVE
-ref as "removed" and the newly modified CVE ref as "added". An example
-follows:
-
-    >>> mock_cve_ref_edited = MockCVERef(
-    ...     bug = edited_bug,
-    ...     cveref = "2004-0719",
-    ...     cvestate = CVEState.CANDIDATE,
-    ...     title = "a test cve ref")
+    >>> class MockCVE:
+    ...     implements(ICve)
+    ...     def __init__(self, sequence, status, description):
+    ...         self.sequence = sequence
+    ...         self.status = status
+    ...         self.displayname = 'CVE-' + sequence
+    ...         self.description = description
+    ...     @property
+    ...     def title(self):
+    ...         return '%s (%s)' % (self.displayname, self.status.title)
+    >>> mock_cve = MockCVE(
+    ...     sequence = "2004-0718",
+    ...     status = CveStatus.CANDIDATE,
+    ...     description = "a test cve ref")
 
     >>> bug_delta = BugDelta(
     ...     bug = edited_bug,
     ...     bugurl = "http://www.example.com/bugs/2",
     ...     user = sample_person,
-    ...     cveref = {'old' : mock_cve_ref, 'new' : mock_cve_ref_edited})
+    ...     cve = {'new' : mock_cve})
     >>> subject, body = generate_bug_edit_email(bug_delta)
     >>> subject
     u'[Bug 2] the new title'
     >>> print body #doctest: -NORMALIZE_WHITESPACE
-    Private bug report changed:
+    Public bug report changed:
     http://www.example.com/bugs/2
     <BLANKLINE>
-    CVE references changed:
-        + CVE-2004-0719 [a test cve ref]
-        - CVE-2004-0718 [a test cve ref]
+    Added CVE-2004-0718 (Candidate)
+
+Similarly, removing a CVE ref will result in an email:
+
+    >>> mock_cve_ref_removed = MockCVE(
+    ...     sequence = "2004-0719",
+    ...     status = CveStatus.CANDIDATE,
+    ...     description = "a test cve ref")
+
+    >>> bug_delta = BugDelta(
+    ...     bug = edited_bug,
+    ...     bugurl = "http://www.example.com/bugs/2",
+    ...     user = sample_person,
+    ...     cve = {'old' : mock_cve_ref_removed})
+    >>> subject, body = generate_bug_edit_email(bug_delta)
+    >>> subject
+    u'[Bug 2] the new title'
+    >>> print body #doctest: -NORMALIZE_WHITESPACE
+    Public bug report changed:
+    http://www.example.com/bugs/2
     <BLANKLINE>
+    Removed CVE-2004-0719 (Candidate)
 
 Adding an infestation
 ---------------------

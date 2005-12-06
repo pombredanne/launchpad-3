@@ -1,13 +1,14 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Country', 'CountrySet']
+__all__ = ['Country', 'CountrySet', 'Continent']
 
 from zope.interface import implements
 
-from sqlobject import StringCol, RelatedJoin
+from sqlobject import StringCol, RelatedJoin, ForeignKey
 
-from canonical.launchpad.interfaces import ICountry, ICountrySet
+from canonical.launchpad.interfaces import (
+    ICountry, ICountrySet, IContinent, NotFoundError)
 from canonical.database.sqlbase import SQLBase
 
 
@@ -29,9 +30,11 @@ class Country(SQLBase):
                              notNull=True)
     title = StringCol(dbName='title', notNull=True)
     description = StringCol(dbName='description', notNull=True)
-    languages = RelatedJoin('Language', joinColumn='country',
-                            otherColumn='language',
-                            intermediateTable='SpokenIn')
+    continent = ForeignKey(
+        dbName='continent', foreignKey='Continent', default=None)
+    languages = RelatedJoin(
+        'Language', joinColumn='country', otherColumn='language',
+        intermediateTable='SpokenIn')
 
 
 class CountrySet:
@@ -42,10 +45,21 @@ class CountrySet:
     def __getitem__(self, iso3166code2):
         country = Country.selectOneBy(iso3166code2=iso3166code2)
         if country is None:
-            raise KeyError(iso3166code2)
+            raise NotFoundError(iso3166code2)
         return country
 
     def __iter__(self):
         for row in Country.select():
             yield row
 
+
+class Continent(SQLBase):
+    """See IContinent."""
+
+    implements(IContinent)
+
+    _table = 'Continent'
+    _defaultOrder = ['name', 'id']
+
+    name = StringCol(unique=True, notNull=True)
+    code = StringCol(unique=True, notNull=True)

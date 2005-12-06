@@ -77,7 +77,12 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
         for changed_field in changes.keys():
             oldvalue, newvalue = changes[changed_field]
             if changed_field == 'duplicateof':
-                whatchanged = 'marked as duplicate'
+                if oldvalue is None and newvalue is not None:
+                    whatchanged = 'marked as duplicate'
+                elif oldvalue is not None and newvalue is not None:
+                    whatchanged = 'changed duplicate marker'
+                elif oldvalue is not None and newvalue is None:
+                    whatchanged = 'removed duplicate marker'
             else:
                 whatchanged = changed_field
             getUtility(IBugActivitySet).new(
@@ -90,16 +95,12 @@ def record_bug_edited(bug_edited, sqlobject_modified_event):
                 message = "")
 
 def record_bug_task_added(bug_task, object_created_event):
-    if bug_task.product:
-        msg = 'assigned to upstream ' + bug_task.product.name
-    else:
-        msg = 'assigned to source package ' + bug_task.sourcepackagename.name
     getUtility(IBugActivitySet).new(
-        bug=bug_task.bugID,
+        bug=bug_task.bug,
         datechanged=UTC_NOW,
         person=object_created_event.user,
         whatchanged='bug',
-        message=msg)
+        message='assigned to ' + bug_task.targetname)
 
 def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
     """Make an activity note that a bug task was edited."""
@@ -134,7 +135,7 @@ def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
 
 def record_product_task_added(product_task, object_created_event):
     getUtility(IBugActivitySet).new(
-        bug=product_task.bugID,
+        bug=product_task.bug,
         datechanged=UTC_NOW,
         person=object_created_event.user,
         whatchanged='bug',
@@ -160,7 +161,7 @@ def record_package_infestation_added(package_infestation, object_created_event):
         package_infestation.sourcepackagerelease.sourcepackagename.name,
         package_infestation.sourcepackagerelease.version)
     getUtility(IBugActivitySet).new(
-        bug=package_infestation.bugID,
+        bug=package_infestation.bug,
         datechanged=UTC_NOW,
         person=package_infestation.creatorID,
         whatchanged="bug",
@@ -190,7 +191,7 @@ def record_product_infestation_added(product_infestation, object_created_event):
         product_infestation.productrelease.product.name,
         product_infestation.productrelease.version)
     getUtility(IBugActivitySet).new(
-        bug=product_infestation.bugID,
+        bug=product_infestation.bug,
         datechanged=UTC_NOW,
         person=product_infestation.creatorID,
         whatchanged="bug",
@@ -216,15 +217,13 @@ def record_product_infestation_edited(product_infestation_edited,
                 message='XXX: not yet implemented')
 
 def record_bugsubscription_added(bugsubscription_added, object_created_event):
-    sv = vocabulary_registry.get(None, "Subscription")
-    term = sv.getTerm(bugsubscription_added.subscription)
     getUtility(IBugActivitySet).new(
         bug=bugsubscription_added.bug,
         datechanged=UTC_NOW,
         person=object_created_event.user,
         whatchanged='bug',
-        message='added subscriber %s (%s)' % (
-            bugsubscription_added.person.browsername, term.token))
+        message='added subscriber %s' % (
+            bugsubscription_added.person.browsername))
 
 def record_bugsubscription_edited(bugsubscription_edited,
                                   sqlobject_modified_event):

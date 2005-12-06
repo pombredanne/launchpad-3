@@ -1,0 +1,37 @@
+Distro Arch Release
+^^^^^^^^^^^^^^^^^^^
+
+  >>> from canonical.launchpad.database.distroarchrelease import (
+  ...     DistroArchRelease)
+  >>> hoary_i386 = DistroArchRelease.get(6)
+
+XXX: This needs many more tests to be effective.
+     bug 3257
+
+
+Distro Arch Releases can tell you about their published releases.
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Distro Arch Releases have a number of releases of any given binary
+package in them. This can be due to various reasons such as uploads in
+progress, superseding in progress, or simply that there is more than
+one version spread across the pockets. getReleasedPackages lets us
+interrogate this information.
+
+   >>> for p in hoary_i386.getReleasedPackages("pmount"):
+   ...     print p.binarypackagerelease.binarypackagename.name
+   pmount
+
+
+DistroArchRelease class has a built-in method to return a single 
+dependency package candidate by its name as a PublishedPackage 
+instance:
+
+   >>> hoary_i386.findDepCandidateByName("pmount").binarypackagename
+   u'pmount'
+
+Since 'at' isn't available in our sampledata (not even published), 
+None is returned:
+
+   >>> hoary_i386.findDepCandidateByName("at") is None
+   True

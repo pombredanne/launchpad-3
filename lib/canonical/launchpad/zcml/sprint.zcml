@@ -1,0 +1,155 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:lp="http://launchpad.canonical.com"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  i18n_domain="launchpad">
+
+  <!-- Sprint -->
+  <content class="canonical.launchpad.database.Sprint">
+    <allow interface="canonical.launchpad.interfaces.ISprint" />
+    <require
+      permission="launchpad.AnyPerson"
+      set_schema="canonical.launchpad.interfaces.ISprint" />
+  </content>
+
+  <browser:menus
+      module="canonical.launchpad.browser"
+      classes="SprintFacets SprintContextMenu SprintSetContextMenu"
+      />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.ISprint"
+    name="+index" />
+
+  <browser:url
+    for="canonical.launchpad.interfaces.ISprint"
+    path_expression="name"
+    parent_utility="canonical.launchpad.interfaces.ISprintSet" />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.ISprint"
+    class="canonical.launchpad.browser.SprintView"
+    permission="zope.Public">
+    <browser:page
+      name="+index"
+      template="../templates/sprint-index.pt" />
+    <browser:page
+      name="+specstable"
+      template="../templates/sprint-table.pt" />
+    <browser:page
+      name="+listing-detailed"
+      template="../templates/sprint-listing-detailed.pt" />
+    <browser:page
+      name="+portlet-details"
+      template="../templates/sprint-portlet-details.pt" />
+    <browser:page
+      name="+portlet-attendees"
+      template="../templates/sprint-portlet-attendees.pt" />
+  </browser:pages>
+
+  <browser:editform
+    name="+edit"
+    schema="canonical.launchpad.interfaces.ISprint"
+    class="canonical.launchpad.browser.SprintEditView"
+    label="Edit Sprint Details"
+    fields="name title summary home_page time_zone time_starts time_ends
+            address"
+    permission="launchpad.Edit"
+    template="../templates/sprint-edit.pt">
+    <browser:widget
+      field="summary"
+      class="zope.app.form.browser.TextAreaWidget"
+      height="5" />
+    <browser:widget
+      field="address"
+      class="zope.app.form.browser.TextAreaWidget"
+      height="3" />
+  </browser:editform>
+
+  <browser:generalform
+    name="+attend"
+    for="canonical.launchpad.interfaces.ISprint"
+    schema="canonical.launchpad.interfaces.ISprintAttendance"
+    fields="attendee time_starts time_ends"
+    arguments="attendee time_starts time_ends"
+    class="canonical.launchpad.browser.SprintAttendanceAddView"
+    permission="launchpad.AnyPerson"
+    template="../templates/sprint-attend.pt"
+    >
+    <browser:widget
+      field="attendee"
+      class="canonical.widgets.HiddenUserWidget" />
+  </browser:generalform>
+
+  <browser:generalform
+    name="+register"
+    for="canonical.launchpad.interfaces.ISprint"
+    schema="canonical.launchpad.interfaces.ISprintAttendance"
+    class="canonical.launchpad.browser.SprintAttendanceAddView"
+    fields="attendee time_starts time_ends"
+    arguments="attendee time_starts time_ends"
+    title="Register Someone Else"
+    description="Register someone for attendance at the conference. Note
+                 that anybody can register anybody else as being an
+                 attendee."
+    permission="launchpad.AnyPerson"
+    template="../templates/sprint-register.pt"
+    />
+
+  <!-- SprintSet -->
+  <content class="canonical.launchpad.database.SprintSet">
+    <allow interface="canonical.launchpad.interfaces.ISprintSet" />
+  </content>
+
+  <securedutility
+    class="canonical.launchpad.database.SprintSet"
+    provides="canonical.launchpad.interfaces.ISprintSet" >
+      <allow interface="canonical.launchpad.interfaces.ISprintSet" />
+  </securedutility>
+
+  <browser:url
+    for="canonical.launchpad.interfaces.ISprintSet"
+    path_expression="string:sprints"
+    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+    />
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.ISprintSet"
+    name="+index" />
+
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="SprintSetNavigation"
+      />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.ISprintSet"
+    permission="zope.Public">
+    <browser:page
+      name="+index"
+      template="../templates/sprints-index.pt" />
+    <browser:page
+      name="+portlet-details"
+      template="../templates/sprints-portlet-details.pt" />
+  </browser:pages>
+
+  <browser:addform
+    name="+new"
+    for="canonical.launchpad.interfaces.ISprintSet"
+    schema="canonical.launchpad.interfaces.ISprint"
+    class="canonical.launchpad.browser.SprintAddView"
+    label="Register a Meeting"
+    permission="launchpad.AnyPerson"
+    fields="owner name title summary home_page time_zone time_starts
+            time_ends"
+    arguments="owner name title time_zone time_starts time_ends"
+    keyword_arguments="summary home_page"
+    template="../templates/sprint-new.pt"
+    >
+    <browser:widget
+      field="owner"
+      class="canonical.widgets.HiddenUserWidget" />
+  </browser:addform>
+
+</configure>

@@ -12,7 +12,8 @@ twisted we use with out version of Python.
 
     >>> import os, sys
     >>> import canonical.lp
-    >>> from canonical.database.ftests import getDBHost
+    >>> from canonical.database.ftests import (
+    ...     getDBHost, wait_until_proxy_is_ready, wait_until_proxy_is_stopped)
     >>> dbhost = getDBHost()
     >>> ver = sys.version[:3]
     >>> cmd = ('mktap%s portforward --port 5555 --dest_port 5432 '
@@ -24,16 +25,6 @@ twisted we use with out version of Python.
 
 Wait for the proxy to start.
 
-    >>> import time
-    >>> def wait_until_proxy_is_ready():
-    ...     start = time.time()
-    ...     while time.time() - start < 5:  # loop for a maximum of 5 seconds
-    ...         try:
-    ...             if 'Starting factory' in open('twistd.log').read():
-    ...                 return
-    ...         except IOError:
-    ...             pass
-    ...     raise RuntimeError('Proxy not ready')
     >>> wait_until_proxy_is_ready()
 
 Install the reconnector.
@@ -77,35 +68,35 @@ Break the connection by stopping the proxy.
 
 Wait for the proxy to stop.
 
-    >>> import os.path
-    >>> def wait_until_proxy_is_stopped():
-    ...     start = time.time()
-    ...     while time.time() - start < 5:  # loop for a maximum of 5 seconds
-    ...         if not os.path.exists('twistd.pid'):
-    ...             return
-    ...     raise RuntimeError('Proxy would not stop')
     >>> wait_until_proxy_is_stopped()
 
-Executing a query now blocks until the database connection can be reestablished.
+Executing a query now blocks until the database connection can be
+reestablished.
 
     >>> import threading
     >>> thread_result = []
+    >>> before_select = threading.Event()
     >>> def foo():
+    ...     before_select.set()
     ...     cur.execute('SELECT 1;')
-    ...     print "thread after execute"
     ...     thread_result.append(cur.fetchone()[0])
-    ...     print "thread end"
+
+Create the thread, and make sure it has started running:
+
     >>> thread = threading.Thread(target=foo)
     >>> thread.start()
-    >>> time.sleep(1)
-    >>> thread_result
-    []
+    >>> before_select.wait()
+
+Execution does not complete because the database
+can't be reached:
+
+    >>> thread.join(1)
     >>> thread.isAlive()
     True
 
 # TODO: test that the disconnection is logged -- spiv
 
-And restart it.
+Restart the proxy:
 
     >>> os.system('twistd%s -of portforward.tap' % ver)
     0
@@ -113,13 +104,11 @@ And restart it.
 
 Now, our blocked thread should've finished successfully.
 
-    >>> time.sleep(1)
-    thread after execute
-    thread end
-    >>> thread_result
-    [1]
+    >>> thread.join()
     >>> thread.isAlive()
     False
+    >>> thread_result
+    [1]
 
 Also, using our connection should still work.
 

@@ -27,10 +27,12 @@
           <input type="password" size="30" name="password" />
           <br>
 
-          <label>
-            <input type="checkbox" checked="checked" name="logmein" />
-            Log me in after validating my key.
-          </label><br />
+          <tal:block condition="not: request/lp:person">
+            <label>
+              <input type="checkbox" checked="checked" name="logmein" />
+              Log me in after validating my key.
+            </label><br />
+          </tal:block>
 
           <div class="formControls">
             <input type="submit" name="SUBMIT_CHANGES" value="Submit" />
@@ -39,15 +41,6 @@
         </div>
       </form>
     </div>
-
-    <tal:success condition="view/successfullyProcessed">
-      <h1>Your GPG key has been confirmed successfully.</h1>
-
-      <div tal:condition="view/infomessage" class="portalMessage"
-           tal:content="structure view/infomessage">
-      </div>
-      
-    </tal:success>
 
 </div>
 

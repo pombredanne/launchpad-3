@@ -1,21 +1,21 @@
-View bugs on Mozilla Firefox as Foo Bar:
+View bugs on Mozilla Firefox as the no-privs user:
 
   >>> print http(r"""
   ... GET /products/firefox/+bugs HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...
       <h1>...Mozilla Firefox</h1>
   ...
 
-Note that Foo Bar doesn't have the permissions to see bug #7.
+Note that the no-privs user doesn't have the permissions to see bug #7.
 
   >>> print http(r"""
-  ... GET /malone/bugs/7 HTTP/1.1
+  ... GET /products/firefox/+bug/9 HTTP/1.1
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 403 Forbidden
   ...

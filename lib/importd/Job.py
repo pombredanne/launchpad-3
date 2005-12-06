@@ -4,12 +4,15 @@
 import os
 from StringIO import StringIO
 import pickle
+import shutil
+
 import pybaz as arch
 from twisted.spread import pb
 
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
-
 from canonical.launchpad.database.sourcepackage import SourcePackage
+from importd import JobStrategy
+from importd.archivemanager import ArchiveManager
 
 # official .job spec:
 # job format
@@ -17,12 +20,12 @@ from canonical.launchpad.database.sourcepackage import SourcePackage
 # RCS=svn|cvs
 # repository=string  i.e. http://example.com/tarball-of-cvs-module.tar.bz2
 #                         :pserver:user:password@anoncvs.example.com/server/cvs
-# module=string
-# category=NULL (use module) | string
+# module=NULL (for svn) | string
+# category=string
 # archivename=string
-# branchfrom=NULL(use MAIN) | string
-# branchto=NULL(use HEAD) | string
-# archversion=NULL (0) | x[[.x]...]
+# branchfrom=NULL (for svn) | string
+# branchto=string
+# archversion=x[[.x]...]
 
 def _interval_to_seconds(interval):
     try:
@@ -30,38 +33,6 @@ def _interval_to_seconds(interval):
     except AttributeError:
         msg = "Failed to convert interval to seconds: %r" % (interval,)
         raise TypeError(msg)
-
-
-class _JobNameMunger(object):
-    # XXX ddaa 2004-10-28: This is part of a short term workaround for
-    # code in cscvs which does not perform shell quoting correctly.
-    # https://bugzilla.canonical.com/bugzilla/show_bug.cgi?id=2149
-
-    def __init__(self):
-        self._table = None
-
-    def is_munged(self, char):
-        import string
-        return not (char in string.ascii_letters or char in string.digits
-                    or char in ",-.:=@^_" or ord(char) > 127)
-
-    def translation_table(self):
-        if self._table is not None: return self._table
-        table = []
-        for code in range(256):
-            if self.is_munged(chr(code)):
-                table.append('_')
-            else:
-                table.append(chr(code))
-        self._table = ''.join(table)
-        return self._table
-
-    def translate(self, text):
-        return text.encode('utf8').translate(self.translation_table())
-
-
-# XXX ddaa 2004-10-28: workaround for broken cscvs shell quoting
-_job_name_munger = _JobNameMunger()
 
 
 class Job:
@@ -150,41 +121,49 @@ class Job:
 
         self.tagging_rules=[]
 
-        # XXX ddaa 2004-10-28: workaround for broken cscvs shell quoting
         name = series.product.name + '-' + series.name
         if series.product.project is not None:
             name = series.product.project.name + '-' + name
-        name = _job_name_munger.translate(name)
-        # XXX end
         self.name = name
-        RCSNames = {RevisionControlSystems.CVS: 'cvs',
-                    RevisionControlSystems.SVN: 'svn',
-                    RevisionControlSystems.ARCH: 'arch',
-                    RevisionControlSystems.BITKEEPER: 'bitkeeper',
-                    }
+        RCSNames = {
+            RevisionControlSystems.CVS: 'cvs',
+            RevisionControlSystems.SVN: 'svn',
+            }
         self.RCS = RCSNames[series.rcstype]
 
         # set the repository
         if self.RCS == 'cvs':
-            if series.cvstarfileurl is not None and series.cvstarfileurl != "":
+            if self._use_cvstarfileurl(series):
+                assert series.cvstarfileurl
                 self.repository = str(series.cvstarfileurl)
-            self.repository = str(series.cvsroot)
+            else:
+                assert series.cvsroot
+                self.repository = str(series.cvsroot)
+            assert series.cvsmodule
             self.module = str(series.cvsmodule)
-            self.branchfrom = str(series.cvsbranch) # FIXME: assumes cvs!
+            assert series.cvsbranch
+            self.branchfrom = str(series.cvsbranch)
         elif self.RCS == 'svn':
+            assert series.svnrepository
             self.repository = str(series.svnrepository)
-        elif self.RCS == 'bitkeeper':
-            self.repository = str(series.bkrepository)
-        assert self.repository is not None and self.repository != ''
 
         self._arch_from_series(series)
 
         self.product_id = series.product.id
         self.seriesID = series.id
         self.description = series.summary
-        self.releaseRoot = str(series.releaseroot)
-        self.releaseFileGlob = str(series.releasefileglob)
         return self
+
+    def _use_cvstarfileurl(self, series):
+        "Should import be done by downloading a CVS repository tarball?"
+        if self.RCS != 'cvs':
+            return False
+        elif self.TYPE != 'import':
+            return False
+        elif series.cvstarfileurl is None or series.cvstarfileurl == "":
+            return False
+        else:
+            return True
 
     def _arch_from_series(self, series):
         """Setup the arch namespace from a productseries.
@@ -252,7 +231,6 @@ class Job:
         aFile.close()
 
     def runJob(self, dir=".", logger=None):
-        import JobStrategy
         if not os.path.isdir(dir):
              os.makedirs(dir)
         strategy = JobStrategy.get(self.RCS, self.TYPE)
@@ -274,157 +252,35 @@ class Job:
         self.__jobTrigger(name)
 
     def mirrorTarget(self, dir=".", logger=None):
-        self.mirrorVersion(dir, logger, self.bazFullPackageVersion())
+        self.makeArchiveManager().mirrorBranch(logger)
 
-    def mirrorVersion(self, dir, logger, version):
-        """Publish a version to the database and the wide world.
+    def makeArchiveManager(self):
+        """Factory method to create an ArchiveManager for this job.
 
-        :type version: str
+        By overriding this method, tests can use a different ArchiveManager
+        class.
         """
-        import taxi
-        import util
-        archive = arch.NameParser(version).get_archive()
-        aTaxi = taxi.Taxi()
-        aTaxi.logger = logger
-        aTaxi.txnManager = util.getTxnManager()
-        title = version
-        version = arch.Version(version)
-        mirror_location = self.archive_mirror_dir + arch.Archive(archive).name
-        aTaxi.importVersion(version, mirror_location, self.product_id,
-                            title=title, description=self.description,)
+        return ArchiveManager(self)
 
-    def nukeTargets(self, dir=".", logger=None):
-        from shutil import rmtree
-        from pybaz import Archive, Version
-        logger.error('nuking working tree')
-        rmtree(self.getWorkingDir(dir), ignore_errors=True)
-        logger.error('nuking archive targets')
-        archive=Archive(self.archivename)
-        if archive.is_registered():
-            version = Version(self.bazFullPackageVersion())
-            rmtree(self.PROPERversionLocation(version), ignore_errors=True)
-        logger.error('nuking archive mirror targets')
-        archive = Archive(self.archivename+'-MIRROR')
-        if archive.is_registered():
-            ### XXX David Allouche 2005-02-07
-            ### XXX It looks like it will NOT nuke the mirror
-            version = Version(self.bazFullPackageVersion())
-            rmtree(self.PROPERversionLocation(version), ignore_errors=True)
-        logger.error('nuked tree targets')
+    def nukeTargets(self, dir='.', logger=None):
+        """Remove the working tree and master archive.
 
-    def mirrorNotEmpty(self, version):
-        """Is there at least one revision in the mirror for this version?
-
-        :type version: pybaz.Version
-        :rtype: bool
+        This is used to clean up the remains of a failed import before running
+        the import a second time.
         """
-        mirror = self.versionOnMirror(version)
-        if not mirror.archive.is_registered():
-            return False
-        elif not mirror.exists():
-            return False
-        elif 0 == len(list(mirror.iter_revisions())):
-            return False
-        else:
-            return True
+        logger.info('nuking working tree')
+        shutil.rmtree(self.getWorkingDir(dir), ignore_errors=True)
+        logger.info('nuking archive targets')
+        self.makeArchiveManager().nukeMaster()
+        logger.info('nuked tree targets')
 
-    def RollbackToMirror(self, version):
-        from shutil import rmtree
-        if list(arch.iter_revision_libraries()):
-            raise RuntimeError, \
-                      "Revision library present, changing history is unsafe."
-        if not version.exists():
-            return
-        mirror_version = self.versionOnMirror(version)
-        master_levels = [rvsn.patchlevel
-                         for rvsn in version.iter_revisions(reverse=True)]
-        if not mirror_version.exists():
-            rmtree(self.PROPERversionLocation(version))
-#             for level in master_levels:
-#                 rmtree(self.revisionLocation(version, level),
-#                        ignore_errors=True)
-            return
-        mirror_levels = [rvsn.patchlevel for rvsn
-                         in mirror_version.iter_revisions(reverse=True)]
-        if len(mirror_levels) > len(master_levels):
-            raise RuntimeError, ("Mirror is more up to date than master: %s"
-                                 % mirror_version)
-        mirror_last_level = None
-        if len(mirror_levels):
-            for level in master_levels: # relies on reverse ordering
-                if level in mirror_levels:
-                    mirror_last_level = level
-                    break
-            os.rename(self.revisionLockLocation(version, master_levels[0]),
-                      self.revisionLockLocation(version, mirror_last_level))
-        for level in master_levels:
-            if level in mirror_levels:
-                break # relies on reverse ordering
-            rmtree(self.revisionLocation(version, level), ignore_errors=True)
-
-    def versionOnMirror(self, version):
-        mirror_name = version.archive.name + '-MIRROR'
-        mirror_version = arch.Version(mirror_name + '/' + version.nonarch)
-        return mirror_version
-
-    def versionLocation(self, archive):
-        return "/".join((archive.get_location(), self.getCategory(),
-                         self.getCategory() + '--' + self.branchto,
-                         self.getCategory() + '--' + self.branchto + '--' +
-                         str(self.archversion)))
-
-    def PROPERversionLocation(self, version):
-        archive_loc = version.archive.location
-        name = arch.NameParser(version)
-        return "/".join((archive_loc, 
-                         name.get_category() + "--" + name.get_branch()
-                         + "--" + name.get_version()))
-    
-
-    def revisionLocation(self, version, level):
-        return "/".join((self.PROPERversionLocation(version), level))
-
-    def revisionLockLocation(self, version, level):
-        return "/".join((self.revisionLocation(version, level), '++revision-lock'))
-
-    def bazFullPackageVersion(self, archivename=None):
+    def bazFullPackageVersion(self):
         """Fully-qualified Arch version.
 
-        :param archivename: override the archive name specified in the
-            `archivename` attribute. That's useful to refer to the branch in
-            mirrors.
-
         :rtype: str
         """
-        if archivename is None:
-            archivename = self.archivename
-        return "%s/%s" % (archivename, self.bazNonArchVersion())
-
-    def bazNonArchVersion(self):
-        """Arch version name, without the archive part."""
-        category = self.getCategory()
-        return "%s--%s--%s" % (category, self.branchto, self.archversion)
-
-    def getCategory(self):
-        """Arch category name, with heuristics.
-
-        If the category was not set (or set to the empty string), use the name
-        of CVS module.
-
-        :rtype: str
-        """
-        if self.category == "":
-            return self.module
-        return self.category
-
-    def validate(self, logger):
-        """sanity check the job details, and log results"""
-        name=arch.NameParser(self.bazFullPackageVersion())
-        if not name.is_version():
-            logger.error("invalid arch version: %s" % self.bazFullPackageVersion())
-        if not self.repository:
-            logger.error("Missing source repository. Target is %s"
-                         % self.bazFullPackageVersion())
+        return "%s/%s--%s--%s" % (
+            self.archivename, self.category, self.branchto, self.archversion)
 
     def getWorkingDir(self, dir):
         """create / reuse a working dir for the job to run in"""
@@ -446,19 +302,6 @@ class Job:
 
     def repositoryIsRsync(self):
         return self.repository.startswith("rsync://")
-
-    def prepRepository(self, dir, logger):
-        """ensure the repository is ready to be accessed"""
-        if self.repositoryIsTar():
-            pass #tar
-        elif self.repositoryIsRsync():
-            pass #rsync
-
-    def sourceBranch(self):
-        if not self.branchfrom:
-            # and svn ?
-            return "MAIN"
-        return self.branchfrom
 
 
 class CopyJob(Job, pb.Copyable):

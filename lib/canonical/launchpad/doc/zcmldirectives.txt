@@ -6,3 +6,645 @@ We have a bunch of custom zcml directives in Launchpad.
 
 See canonical_url.txt for information and tests of the browser:url directive.
 
+
+== A zcml context for zcml directive unittests ==
+
+This is a context that collects actions and has a __repr__ for use in
+tests that shows a pretty-printed representation of the actions.
+
+We have to add the 'kw' arg for the EditFormDirective tests, but it isn't
+important, so we just discard it.
+
+    >>> import zope.app.component.tests.test_directives
+    >>> class Context(zope.app.component.tests.test_directives.Context):
+    ...     def action(self, discriminator, callable, args, kw=None):
+    ...         super(Context, self).action(discriminator, callable, args)
+
+The code to this is actually repeated all through the Zope 3 unit tests for
+zcml directives. :-(
+
+
+== Setting up some interfaces and objects to test with ==
+
+We'll put an interface in canonical.launchpad.ftests.IFoo, and set the
+default view for the IFooLayer layer.
+
+    >>> from zope.component import queryDefaultViewName, queryView
+    >>> import canonical.launchpad.ftests
+    >>> from zope.interface import Interface, implements
+    >>> class IFoo(Interface):
+    ...     pass
+    >>> class IFooLayer(Interface):
+    ...     pass
+    >>> canonical.launchpad.ftests.IFoo = IFoo
+    >>> canonical.launchpad.ftests.IFooLayer = IFooLayer
+
+    >>> class FooObject:
+    ...     implements(IFoo)
+    >>> fooobject = FooObject()
+    >>> class Request:
+    ...     implements(IFooLayer)
+    >>> request = Request()
+
+    >>> import types
+    >>> class FooView:
+    ...     """classic class that is used for a view on an IFoo"""
+    ...     __metaclass__ = types.ClassType
+    ...
+    ...     def __call__(self):
+    ...         return "FooView was called"
+    >>> canonical.launchpad.ftests.FooView = FooView
+
+
+== Overriding the browser:defaultView directive ==
+
+We override browser:defaultView to allow us to specify a layer rather
+than use the hardcoded IDefaultBrowserLayer.
+
+This is something we should ensure is fixed upstream.
+
+First, a unit test of the overridden directive.
+
+    >>> from canonical.launchpad.webapp.metazcml import defaultView
+    >>> context = Context()
+    >>> context.info = "INFO"
+
+Name some variables to mirror the names used as arguments.
+
+    >>> name = "NAME"
+    >>> for_ = "FOR_"
+    >>> layer =  "LAYER"
+    >>> defaultView(context, name, for_, layer)
+    >>> context
+    ((('defaultViewName', 'FOR_', 'LAYER', 'NAME'),
+      <function handler>,
+      ('Adapters',
+       'register',
+       ('FOR_', 'LAYER'),
+       <InterfaceClass zope.component.interfaces.IDefaultViewName>,
+       '',
+       'NAME',
+       'INFO')),
+     (None,
+      <function provideInterface>,
+      ('', 'FOR_')))
+
+Next, a functional/integration test of the overridden directive.
+
+    >>> print queryDefaultViewName(fooobject, request)
+    None
+
+    >>> from zope.configuration import xmlconfig
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure xmlns:browser="http://namespaces.zope.org/browser">
+    ...   <include file="lib/canonical/launchpad/webapp/meta-overrides.zcml" />
+    ...   <browser:defaultView
+    ...     for="canonical.launchpad.ftests.IFoo"
+    ...     name="mandrill"
+    ...     layer="canonical.launchpad.ftests.IFooLayer"
+    ...     />
+    ... </configure>
+    ... """)
+
+    >>> print queryDefaultViewName(fooobject, request)
+    mandrill
+
+
+== Overriding the browser:page directive ==
+
+We override browser:page to allow us to specify the facet that the
+page is associated with.
+
+First, a unit test of the overridden directive.
+
+    >>> from canonical.launchpad.webapp.metazcml import page
+    >>> context = Context()
+    >>> context.info = "INFO"
+
+Name some variables to mirror the names used as arguments.
+
+    >>> name = "NAME"
+    >>> permission = "PERMISSION"
+    >>> for_ = "FOR_"
+    >>> facet = "FACET"
+    >>> page(context, name, permission, for_, facet=facet)
+    >>> context
+    ((None,
+      <function provideInterface>,
+      ('', 'FOR_')),
+     (('view',
+       'FOR_',
+       'NAME',
+       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
+       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
+      <function handler>,
+      ('Adapters',
+       'register',
+       ('FOR_',
+        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
+       <InterfaceClass zope.interface.Interface>,
+       'NAME',
+       <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>,
+       'INFO')))
+
+Look for the SimpleLaunchpadViewClass in the data structure above, and check
+its __launchpad_facetname__ attribute.
+
+    >>> cls = context.actions[1][2][-2]
+    >>> cls
+    <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>
+    >>> cls.__launchpad_facetname__
+    'FACET'
+
+Next, a functional/integration test of the overridden directive.
+
+    >>> print queryView(fooobject, '+whatever', request)
+    None
+    >>> print queryView(fooobject, '+mandrill', request)
+    None
+
+    >>> from zope.configuration import xmlconfig
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure xmlns:browser="http://namespaces.zope.org/browser"
+    ...     package="canonical.launchpad">
+    ...   <include file="webapp/meta-overrides.zcml" />
+    ...   <browser:page
+    ...     for="canonical.launchpad.ftests.IFoo"
+    ...     name="+whatever"
+    ...     permission="zope.Public"
+    ...     class="canonical.launchpad.ftests.FooView"
+    ...     attribute="__call__"
+    ...     facet="the_evil_facet"
+    ...     layer="canonical.launchpad.ftests.IFooLayer"
+    ...     />
+    ...   <browser:page
+    ...     for="canonical.launchpad.ftests.IFoo"
+    ...     name="+mandrill"
+    ...     permission="zope.Public"
+    ...     template="templates/main-template.pt"
+    ...     facet="another-mister-lizard"
+    ...     layer="canonical.launchpad.ftests.IFooLayer"
+    ...     />
+    ... </configure>
+    ... """)
+
+    >>> whatever_view = queryView(fooobject, '+whatever', request)
+    >>> print whatever_view.__class__.__name__
+    FooView
+    >>> print whatever_view.__launchpad_facetname__
+    the_evil_facet
+    >>> mandrill_view = queryView(fooobject, '+mandrill', request)
+    >>> print mandrill_view.__class__.__name__
+    SimpleViewClass from ...main-template.pt
+    >>> print mandrill_view.__launchpad_facetname__
+    another-mister-lizard
+
+
+== Overriding the browser:pages directive ==
+
+We override browser:pages to allow us to specify the facet that each
+page is associated with.
+
+First, a unit test of the overridden directive.
+
+    >>> from canonical.launchpad.webapp.metazcml import pages
+    >>> context = Context()
+    >>> context.info = "INFO"
+
+Name some variables to mirror the names used as arguments.
+
+    >>> for_ = "FOR_"
+    >>> permission = "PERMISSION"
+
+    >>> name = "NAME"
+    >>> facet = "FACET"
+
+The facet specified for the outer pages element will be used only when a
+facet is not specified for the inner page.
+
+    >>> P = pages(context, for_, permission, facet="OUTERFACET")
+    >>> P.page(context, name, facet=facet)
+    >>> P.page(context, "OTHER NAME")
+    >>> context
+    ((None,
+      <function provideInterface>,
+      ('', 'FOR_')),
+     (('view',
+       'FOR_',
+       'NAME',
+       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
+       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
+      <function handler>,
+      ('Adapters',
+       'register',
+       ('FOR_',
+        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
+       <InterfaceClass zope.interface.Interface>,
+       'NAME',
+       <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>,
+       'INFO')),
+     (None,
+      <function provideInterface>,
+      ('', 'FOR_')),
+     (('view',
+       'FOR_',
+       'OTHER NAME',
+       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
+       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
+      <function handler>,
+      ('Adapters',
+       'register',
+       ('FOR_',
+        <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
+       <InterfaceClass zope.interface.Interface>,
+       'OTHER NAME',
+       <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>,
+       'INFO')))
+
+
+Look for the SimpleLaunchpadViewClass in the data structure above, and check
+its __launchpad_facetname__ attribute.
+
+    >>> cls = context.actions[1][2][5]
+    >>> cls
+    <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>
+    >>> cls.__launchpad_facetname__
+    'FACET'
+    >>> cls2 = context.actions[3][2][5]
+    >>> cls2
+    <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>
+    >>> cls2.__launchpad_facetname__
+    'OUTERFACET'
+
+Next, a functional/integration test of the overridden directive.
+
+    >>> print queryView(fooobject, '+whatever2', request)
+    None
+
+    >>> from zope.configuration import xmlconfig
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure xmlns:browser="http://namespaces.zope.org/browser"
+    ...     package="canonical.launchpad">
+    ...   <include file="webapp/meta-overrides.zcml" />
+    ...   <browser:pages
+    ...     for="canonical.launchpad.ftests.IFoo"
+    ...     layer="canonical.launchpad.ftests.IFooLayer"
+    ...     class="canonical.launchpad.ftests.FooView"
+    ...     facet="outerspace"
+    ...     permission="zope.Public">
+    ...     <browser:page
+    ...         name="+whatever2"
+    ...         attribute="__call__"
+    ...         facet="another_evil_facet"
+    ...         />
+    ...     <browser:page
+    ...         name="+whatever3"
+    ...         attribute="__call__"
+    ...         />
+    ...   </browser:pages>
+    ... </configure>
+    ... """)
+
+    >>> whatever2_view = queryView(fooobject, '+whatever2', request)
+    >>> print whatever2_view.__class__.__name__
+    FooView
+    >>> print whatever2_view.__launchpad_facetname__
+    another_evil_facet
+
+    >>> whatever3_view = queryView(fooobject, '+whatever3', request)
+    >>> print whatever3_view.__class__.__name__
+    FooView
+    >>> print whatever3_view.__launchpad_facetname__
+    outerspace
+
+
+== Overriding the browser:editform directive ==
+
+We override browser:editform to allow us to specify the facet that the
+form is associated with.
+
+First, a unit test of the overridden directive.
+
+    >>> from canonical.launchpad.webapp.metazcml import EditFormDirective
+    >>> context = Context()
+    >>> context.info = "INFO"
+
+Name some variables to mirror the names used as arguments.
+
+    >>> for_ = "FOR_"
+    >>> name = "NAME"
+    >>> facet = "FACET"
+    >>> schema = Interface
+
+    >>> EF = EditFormDirective(context, for_=for_, permission=permission,
+    ...     schema=schema, name=name, facet=facet)
+    >>> EF()
+    >>> context
+    ((('view',
+       'FOR_',
+       'NAME',
+       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
+       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
+      <function EditViewFactory>,
+      ('NAME',
+       <InterfaceClass zope.interface.Interface>,
+       None,
+       'PERMISSION',
+       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
+       'edit.pt',
+       'edit.pt',
+       (<class 'zope.app.form.browser.editview.EditView'>,
+        <class 'canonical.launchpad.webapp.metazcml.SimpleLaunchpadViewClass'>),
+       'FOR_',
+       [])),)
+
+Look for the SimpleLaunchpadViewClass in the data structure above, and check
+its __launchpad_facetname__ attribute.
+
+    >>> bases = context.actions[0][2][7]
+    >>> cls = bases[-1]
+    >>> print cls.__name__
+    SimpleLaunchpadViewClass
+    >>> print cls.__launchpad_facetname__
+    FACET
+
+Next, a functional/integration test of the overridden directive.
+
+    >>> print queryView(fooobject, '+someeditform', request)
+    None
+
+    >>> from zope.configuration import xmlconfig
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure xmlns:browser="http://namespaces.zope.org/browser"
+    ...     package="canonical.launchpad">
+    ...   <include file="webapp/meta-overrides.zcml" />
+    ...   <browser:editform
+    ...     for="canonical.launchpad.ftests.IFoo"
+    ...     name="+someeditform"
+    ...     layer="canonical.launchpad.ftests.IFooLayer"
+    ...     schema="zope.interface.Interface"
+    ...     facet="another_mister_lizard"
+    ...     permission="zope.Public"/>
+    ... </configure>
+    ... """)
+
+    >>> whatever_view = queryView(fooobject, '+someeditform', request)
+    >>> print whatever_view.__class__.__name__
+    SimpleViewClass from edit.pt
+    >>> print whatever_view.__launchpad_facetname__
+    another_mister_lizard
+
+
+== Overriding the browser:addform directive ==
+
+We override browser:addform to allow us to specify the facet that the
+form is associated with.
+
+First, a unit test of the overridden directive.
+
+    >>> from canonical.launchpad.webapp.metazcml import AddFormDirective
+    >>> context = Context()
+    >>> context.info = "INFO"
+
+Name some variables to mirror the names used as arguments.
+
+    >>> for_ = "FOR_"
+    >>> name = "NAME"
+    >>> facet = "FACET"
+    >>> schema = Interface
+
+    >>> AF = AddFormDirective(context, for_=for_, permission=permission,
+    ...     schema=schema, name=name, facet=facet)
+    >>> AF()
+    >>> context
+    ((('view',
+       'FOR_',
+       'NAME',
+       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
+       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
+      <function AddViewFactory>,
+      ('NAME',
+       <InterfaceClass zope.interface.Interface>,
+       None,
+       'PERMISSION',
+       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
+       'add.pt',
+       'add.pt',
+       (<class 'zope.app.form.browser.add.AddView'>,
+        <class 'canonical.launchpad.webapp.metazcml.SimpleLaunchpadViewClass'>),
+       'FOR_',
+       [],
+       None,
+       None,
+       None,
+       None,
+       [])),)
+
+Look for the SimpleLaunchpadViewClass in the data structure above, and check
+its __launchpad_facetname__ attribute.
+
+    >>> bases = context.actions[0][2][7]
+    >>> cls = bases[-1]
+    >>> print cls.__name__
+    SimpleLaunchpadViewClass
+    >>> print cls.__launchpad_facetname__
+    FACET
+
+Next, a functional/integration test of the overridden directive.
+
+    >>> print queryView(fooobject, '+someaddform', request)
+    None
+
+    >>> from zope.configuration import xmlconfig
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure xmlns:browser="http://namespaces.zope.org/browser"
+    ...     package="canonical.launchpad">
+    ...   <include file="webapp/meta-overrides.zcml" />
+    ...   <browser:addform
+    ...     for="canonical.launchpad.ftests.IFoo"
+    ...     name="+someaddform"
+    ...     layer="canonical.launchpad.ftests.IFooLayer"
+    ...     schema="zope.interface.Interface"
+    ...     facet="yet_another_mister_lizard"
+    ...     permission="zope.Public"/>
+    ... </configure>
+    ... """)
+
+    >>> whatever_view = queryView(fooobject, '+someaddform', request)
+    >>> print whatever_view.__class__.__name__
+    SimpleViewClass from add.pt
+    >>> print whatever_view.__launchpad_facetname__
+    yet_another_mister_lizard
+
+
+== Overriding the browser:schemadisplay directive ==
+
+We override browser:schemadisplay to allow us to specify the facet that the
+form is associated with.
+
+First, a unit test of the overridden directive.
+
+    >>> from canonical.launchpad.webapp.metazcml import SchemaDisplayDirective
+    >>> context = Context()
+    >>> context.info = "INFO"
+
+Name some variables to mirror the names used as arguments.
+
+    >>> for_ = "FOR_"
+    >>> name = "NAME"
+    >>> facet = "FACET"
+    >>> schema = Interface
+
+    >>> SDD = SchemaDisplayDirective(context, for_=for_, permission=permission,
+    ...     schema=schema, name=name, facet=facet)
+    >>> SDD()
+    >>> context
+    ((('view',
+       'FOR_',
+       'NAME',
+       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
+       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>),
+      <function DisplayViewFactory>,
+      ('NAME',
+       <InterfaceClass zope.interface.Interface>,
+       None,
+       'PERMISSION',
+       <InterfaceClass zope.publisher.interfaces.browser.IBrowserRequest>,
+       'display.pt',
+       'display.pt',
+       (<class 'zope.app.form.browser.schemadisplay.DisplayView'>,
+        <class 'canonical.launchpad.webapp.metazcml.SimpleLaunchpadViewClass'>),
+       'FOR_',
+       [],
+       None)),)
+
+Look for the SimpleLaunchpadViewClass in the data structure above, and check
+its __launchpad_facetname__ attribute.
+
+    >>> bases = context.actions[0][2][7]
+    >>> cls = bases[-1]
+    >>> print cls.__name__
+    SimpleLaunchpadViewClass
+    >>> print cls.__launchpad_facetname__
+    FACET
+
+Next, a functional/integration test of the overridden directive.
+
+    >>> print queryView(fooobject, '+someschemadisplay', request)
+    None
+
+    >>> from zope.configuration import xmlconfig
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure xmlns:browser="http://namespaces.zope.org/browser"
+    ...     package="canonical.launchpad">
+    ...   <include file="webapp/meta-overrides.zcml" />
+    ...   <browser:schemadisplay
+    ...     for="canonical.launchpad.ftests.IFoo"
+    ...     name="+someschemadisplay"
+    ...     layer="canonical.launchpad.ftests.IFooLayer"
+    ...     schema="zope.interface.Interface"
+    ...     facet="hurrah_yet_another_mister_lizard"
+    ...     permission="zope.Public"/>
+    ... </configure>
+    ... """)
+
+    >>> schemadisplay_view = queryView(fooobject, '+someschemadisplay', request)
+    >>> print schemadisplay_view.__class__.__name__
+    SimpleViewClass from display.pt
+    >>> print schemadisplay_view.__launchpad_facetname__
+    hurrah_yet_another_mister_lizard
+
+
+== Overriding zope:configure to add a facet attribute ==
+
+We override the grouping directive zope:configure to add a 'facet' attribute
+that can be inherited by all of the directives it contains.
+
+    >>> from canonical.launchpad.webapp.metazcml import GroupingFacet
+    >>> context = Context()
+
+Name some variables to mirror the names used as arguments.
+
+    >>> facet = 'whole-file-facet'
+
+    >>> gc = GroupingFacet(context, facet=facet)
+    >>> gc.facet
+    'whole-file-facet'
+
+Next, a functional/integration test of the overridden directive.
+
+    >>> print queryView(fooobject, '+impliedfacet', request)
+    None
+
+    >>> from zope.configuration import xmlconfig
+    >>> zcmlcontext = xmlconfig.string("""
+    ... <configure xmlns="http://namespaces.zope.org/zope"
+    ...            xmlns:browser="http://namespaces.zope.org/browser"
+    ...     package="canonical.launchpad">
+    ...   <include file="webapp/meta.zcml" />
+    ...   <include file="webapp/meta-overrides.zcml" />
+    ...   <facet facet="whole-facet">
+    ...     <browser:page
+    ...       for="canonical.launchpad.ftests.IFoo"
+    ...       name="+impliedfacet"
+    ...       permission="zope.Public"
+    ...       class="canonical.launchpad.ftests.FooView"
+    ...       attribute="__call__"
+    ...       layer="canonical.launchpad.ftests.IFooLayer"
+    ...       />
+    ...     <browser:addform
+    ...       for="canonical.launchpad.ftests.IFoo"
+    ...       name="+impliedfacet-add"
+    ...       layer="canonical.launchpad.ftests.IFooLayer"
+    ...       schema="zope.interface.Interface"
+    ...       permission="zope.Public"/>
+    ...     <browser:editform
+    ...       for="canonical.launchpad.ftests.IFoo"
+    ...       name="+impliedfacet-edit"
+    ...       layer="canonical.launchpad.ftests.IFooLayer"
+    ...       schema="zope.interface.Interface"
+    ...       permission="zope.Public"/>
+    ...     <browser:schemadisplay
+    ...       for="canonical.launchpad.ftests.IFoo"
+    ...       name="+impliedfacet-schemadisplay"
+    ...       layer="canonical.launchpad.ftests.IFooLayer"
+    ...       schema="zope.interface.Interface"
+    ...       permission="zope.Public"/>
+    ...   </facet>
+    ... </configure>
+    ... """)
+
+    >>> impliedfacet_view = queryView(fooobject, '+impliedfacet', request)
+    >>> print impliedfacet_view.__class__.__name__
+    FooView
+    >>> print impliedfacet_view.__launchpad_facetname__
+    whole-facet
+
+    >>> impliedfacet_add = queryView(fooobject, '+impliedfacet-add', request)
+    >>> print impliedfacet_add.__class__.__name__
+    SimpleViewClass from add.pt
+    >>> print impliedfacet_add.__launchpad_facetname__
+    whole-facet
+
+    >>> impliedfacet_edit = queryView(fooobject, '+impliedfacet-edit', request)
+    >>> print impliedfacet_edit.__class__.__name__
+    SimpleViewClass from edit.pt
+    >>> print impliedfacet_edit.__launchpad_facetname__
+    whole-facet
+
+    >>> impliedfacet_schemadisplay = queryView(
+    ...     fooobject, '+impliedfacet-schemadisplay', request)
+    >>> print impliedfacet_schemadisplay.__class__.__name__
+    SimpleViewClass from display.pt
+    >>> print impliedfacet_schemadisplay.__launchpad_facetname__
+    whole-facet
+
+
+== Cleaning up the interfaces and objects to test with ==
+
+Clean up the interfaces we created for testing with.
+
+    >>> del canonical.launchpad.ftests.IFoo
+    >>> del canonical.launchpad.ftests.IFooLayer
+    >>> del canonical.launchpad.ftests.FooView
+

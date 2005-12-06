@@ -6,7 +6,11 @@
   <body>
     <div metal:fill-slot="main">
       <h1>Bazaar branch sync requests</h1>
-      <p class="documentDescription">
+      <p class="documentDescription" tal:condition="not: context/forSyncReview">
+          There are currently no repositories that require approval for
+          production syncing.
+      </p>
+      <p class="documentDescription" tal:condition="context/forSyncReview">
           These upstream revision control repositories have been
           nominated for syncing to Bazaar, but not yet approved for
           production syncing. Select an item to review/administer it.
@@ -28,9 +32,9 @@
             <p tal:content="project/summary">project summary</p>
             <ul
               tal:define="products project/products"
-              tal:condition="product products"
+              tal:condition="products"
             >
-              <li tal:repeat="product project/products">
+              <li tal:repeat="product products">
                 <div>
                   <a
                     tal:attributes="href string:/products/${product/name}/+review"

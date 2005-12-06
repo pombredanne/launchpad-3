@@ -17,16 +17,18 @@ from transaction import get_transaction
 
 from zope.app.i18n import ZopeMessageIDFactory as _
 from zope.app.form.browser.editview import EditView
-from zope.app.form.utility import setUpEditWidgets, applyWidgetsChanges, \
-    getWidgetsData
+from zope.app.form.utility import (
+        setUpEditWidgets, applyWidgetsChanges,  getWidgetsData
+        )
 from zope.app.form.browser.submit import Update
 from zope.app.form.interfaces import WidgetsError
 from zope.event import notify
 from zope.interface import providedBy
 
 from canonical.launchpad.helpers import Snapshot
-from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent, \
-    SQLObjectToBeModifiedEvent
+from canonical.launchpad.event.sqlobjectevent import (
+        SQLObjectModifiedEvent,  SQLObjectToBeModifiedEvent
+        )
 
 class SQLObjectEditView(EditView):
     """An editview that publishes an SQLObjectModifiedEvent, that provides

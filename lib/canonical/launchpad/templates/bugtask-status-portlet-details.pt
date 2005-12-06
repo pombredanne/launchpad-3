@@ -1,0 +1,24 @@
+<div class="portlet">
+
+  <h4>details:</h4>
+
+  <div class="portletBody"
+       tal:define="bug context/bug">
+    <div class="portletContent">
+
+      <b>Reported by:</b><br />
+      <img src="/++resource++user.gif" />
+      <a tal:attributes="href context/owner/fmt:url"
+        tal:content="context/owner/browsername"
+        style="text-decoration: underline"></a><br />
+
+      <b>On:</b>
+      <a tal:content="context/targetname"
+         tal:attributes="href string:${context/target/fmt:url}/+bugs">ubuntu</a><br />
+
+      <b>Date:</b>
+      <tal:block content="context/datecreated/fmt:date" />
+
+    </div>
+  </div>
+</div>

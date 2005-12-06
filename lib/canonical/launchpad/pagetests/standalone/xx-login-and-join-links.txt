@@ -36,17 +36,27 @@ that preserves those parameters.
   ... """)
   HTTP/1.1 200 Ok
   ...
-  ...<a href=".../malone/+login?foo=14&amp;bar=23">...
+  ...<a href=".../malone/+login?bar=23&amp;foo=14">...
   ...
 
-Check that the logout page has an appropriate login link.
+Check that the logout page redirects appropriately.
 
   >>> print http(r"""
   ... GET /+logout HTTP/1.1
   ... """)
-  HTTP/1.1 200 Ok
+  HTTP/1.1 303 See Other
   ...
-  ...<a href="http://localhost:9000/+login">...
+  Location: http://localhost:9000/?loggingout=1&lpnotification=...
+  ...
+
+Check that the logout page redirects appropriately from a more interesting url.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+logout HTTP/1.1
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/products/firefox/?loggingout=1&...
   ...
 
 Check that basic auth works.
@@ -60,10 +70,11 @@ Check that basic auth works.
   ...<input type="submit" value="Log Out" />...
   ...
 
-The login page preserves all the query parameters it is given.
+The login page preserves all the query parameters it is given, except for
+lpnotification.
 
   >>> result = http(r"""
-  ... GET /malone/+login?foo=mandrill&foo=bonobo&bar=tsimpson HTTP/1.1
+  ... GET /malone/+login?foo=mandrill&foo=bonobo&bar=tsimpson&lpnotification=XXX HTTP/1.1
   ... """).getBody()
   >>> '<input type="hidden" name="foo" value="mandrill" />' in result
   True
@@ -71,4 +82,6 @@ The login page preserves all the query parameters it is given.
   True
   >>> '<input type="hidden" name="bar" value="tsimpson" />' in result
   True
+  >>> '<input type="hidden" name="lpnotification"' in result
+  False
 

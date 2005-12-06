@@ -30,7 +30,7 @@ class IPublishedPackage(Interface):
     packagepublishingstatus = Attribute("The status of this published package")
     component = Attribute("The component in which the package has been published")
     section = Attribute("The section in which it is published.")
-    binarypackage = Attribute("The id of the binary package in question")
+    binarypackagerelease = Attribute("The id of the binary package in question")
     binarypackagename = Attribute("The binary package name")
     binarypackagesummary = Attribute("The binary package summary")
     binarypackagedescription = Attribute("The binary package description")
@@ -53,4 +53,9 @@ class IPublishedPackageSet(Interface):
         """Search through published packages returning those that meet the
         given criteria"""
 
+    def findDepCandidate(name, distroarchrelease):
+        """Return the package candidate within the distroarchrelease context.
 
+        Return the PublishedPackage record by bynarypackagename or None if
+        not found.
+        """

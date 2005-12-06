@@ -10,7 +10,6 @@
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-actions" />
     <div tal:replace="structure context/@@+portlet-stats" />
   </metal:rightportlets>
 
@@ -97,7 +96,7 @@
             Some accounts have been created automatically by Launchpad
             and may be duplicates.  If you find you have more than one
             account, perhaps for different email addresses, please
-            <a href="+requestmerge">merge the accounts</a>. Thank you!
+            <a href="+requestmerge">merge the duplicate accounts</a>.
           </p>
         </tal:block>
         <tal:block condition="bn">
@@ -105,41 +104,40 @@
             define="prev_url bn/prevBatchURL;
             next_url bn/nextBatchURL;"
           >
-            <table class="data">
+            <table class="listing">
               <thead class="results">
-                <tr>
+                <tr tal:condition="python:prev_url or next_url">
                   <td colspan="3">
-                    <div style="width: 50%; float: left;">
-                      Search results
-                    </div>
-                    <div
-                      style="width: 50%; float: right; text-align: right;"
-                      tal:condition="python:prev_url or next_url"
-                    >
-                  	  <!-- <th condition="not: prev_url"><< prev</th> -->
+                    <div style="float: right; text-align: right;">
                       <tal:block condition="prev_url">
-                	      <a tal:attributes="href prev_url">Previous</a>
-                	    </tal:block>
-                      <tal:block repeat="page_link bn/batchPageURLs">
-                	      <a tal:attributes="href python:page_link.values()[0]"
-                                tal:content="python:page_link.keys()[0]"></a>
-                	    </tal:block>
-                      <tal:block condition="next_url" >
-                	      <a tal:attributes="href next_url">Next</a>
+                        <a tal:attributes="href prev_url">Previous</a>
                       </tal:block>
-                      <!-- <th condition="not: next_url">next >></th> -->
+                      <tal:block repeat="page_link bn/batchPageURLs">
+                        <a tal:attributes="href python:page_link.values()[0]"
+                                tal:content="python:page_link.keys()[0]"></a>
+                      </tal:block>
+                      <tal:block condition="next_url" >
+                        <a tal:attributes="href next_url">Next</a>
+                      </tal:block>
                     </div>
-                    <br style="clear: both;">
                   </td>
+                </tr>
+                <tr>
+                  <th colspan="2">
+                    Name
+                  </th>
+                  <th>
+                    Karma
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                <tr tal:repeat="person python:list(bn.currentBatch())">      
+                <tr tal:repeat="person python:list(bn.currentBatch())">
                   <td><a tal:content="person/browsername"
-            	    tal:attributes="href person/name"/>
+                         tal:attributes="href person/name"/>
                   </td>
                   <td tal:content="person/name">foobar</td>
-                  <td tal:content="person/karma">34</td>
+                  <td class="amount" tal:content="person/karma">34</td>
                 </tr>    
               </tbody>
             </table>

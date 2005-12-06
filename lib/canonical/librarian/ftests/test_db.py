@@ -37,7 +37,7 @@ class DBTestCase(LaunchpadZopelessTestSetup, unittest.TestCase):
                          sorted(library.lookupBySHA1('deadbeef')))
 
         aliasID = library.addAlias(fileID, 'file1', 'text/unknown')
-        alias = library.getAlias(fileID, 'file1')
+        alias = library.getAlias(aliasID)
         self.assertEqual('file1', alias.filename)
         self.assertEqual('text/unknown', alias.mimetype)
         

@@ -34,7 +34,7 @@ class PublishedPackage(SQLBase):
                                       schema=PackagePublishingStatus)
     component = StringCol(immutable=True)
     section = StringCol(immutable=True)
-    binarypackage = IntCol(immutable=True)
+    binarypackagerelease = IntCol(immutable=True)
     binarypackagename = StringCol(immutable=True)
     binarypackagesummary = StringCol(immutable=True)
     binarypackagedescription = StringCol(immutable=True)
@@ -61,15 +61,20 @@ class PublishedPackageSet:
             name.replace('%','%%')
             querytxt += " AND binarypackagename ILIKE %s" % quote('%'+name+'%')
         if distribution:
-            querytxt += " AND distribution = %d" % distribution
+            querytxt += " AND distribution = %d" % distribution.id
         if distrorelease:
-            querytxt += " AND distrorelease = %d" % distrorelease
+            querytxt += " AND distrorelease = %d" % distrorelease.id
         if distroarchrelease:
-            querytxt += " AND distroarchrelease = %d" % distroarchrelease
+            querytxt += " AND distroarchrelease = %d" % distroarchrelease.id
         if component:
             querytxt += " AND component = %s" % quote(component)
         if text:
             text = text.lower().strip()
             querytxt += " AND binarypackagefti @@ ftq(%s)" % quote(text)
-        return PublishedPackage.select(querytxt)
+        return PublishedPackage.select(querytxt, orderBy=['-datebuilt',])
 
+    def findDepCandidate(self, name, distroarchrelease):
+        """See IPublishedSet."""
+        return PublishedPackage.selectOneBy(
+            binarypackagename=name, distroarchreleaseID=distroarchrelease.id
+            )

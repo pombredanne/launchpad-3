@@ -6,7 +6,6 @@ __metaclass__ = type
 
 __all__ = [
     'IBugSubscription',
-    'IBugSubscriptionSet',
     ]
 
 from zope.interface import Interface, Attribute
@@ -20,33 +19,10 @@ class IBugSubscription(Interface):
 
     id = Int(title=_('ID'), readonly=True, required=True)
     person = Choice(
-            title=_('Person ID'), required=True, vocabulary='ValidPersonOrTeam',
-            readonly=True,
-            )
-    bug = Int(title=_('Bug ID'), required=True, readonly=True)
-    subscription = Choice(
-            title=_('Subscription'), required=True, readonly=False,
-            description=_("""Your subscription to a bug can be one of
-            "watch", "cc" or "ignore". If you "watch" a bug then it will
-            show up on your reports, but you won't normally receive bug
-            mail. If you "cc" yourself on a bug you will receive a copy of
-            all bug update notifications by email. If you "ignore" a bug
-            then you will not receive notifications from that bug even if
-            they are directly addressed to you as a maintainer or assignee."""),
-            vocabulary='Subscription')
+        title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
+        readonly=True, description=_("The person's Launchpad ID or "
+        "e-mail address. You can only subscribe someone who has a Launchpad "
+        "account.")
+        )
+    bug = Int(title=_('Bug Number'), required=True, readonly=True)
 
-
-class IBugSubscriptionSet(Interface):
-    """A set for IBugSubscription objects."""
-
-    title = Attribute('Title')
-    bug = Attribute('the bug')
-
-    def __getitem__(key):
-        """Get a BugSubscription object."""
-
-    def __iter__():
-        """Iterate through the bug subscriptions in this set."""
-
-    def delete(id):
-        """Delete a subscription."""

@@ -127,19 +127,41 @@ class PgTestSetup(object):
     template = 'template1'
     dbname = 'launchpad_ftest'
     dbuser = None
+    host = None
+    port = None
 
     # (template, name) of last test. Class attribute.
     _last_db = (None, None)
     # Cass attribute. True if we should destroy the DB because changes made.
     _reset_db = True
 
-    def __init__(self, template=None, dbname=None, dbuser=None):
+    def __init__(self, template=None, dbname=None, dbuser=None,
+            host=None, port=None):
+        '''Construct the PgTestSetup
+        
+        Note that dbuser is not used for setting up or tearing down
+        the database - it is only used by the connect() method
+        '''
         if template is not None:
             self.template = template
         if dbname is not None:
             self.dbname = dbname
         if dbuser is not None:
             self.dbuser = dbuser
+        if host is not None:
+            self.host = host
+        if port is not None:
+            self.port = port
+
+    def _connectionString(self, dbname, dbuser=None):
+        connection_parameters = ['dbname=%s' % dbname]
+        if dbuser is not None:
+            connection_parameters.append('user=%s' % dbuser)
+        if self.host is not None:
+            connection_parameters.append('host=%s' % self.host)
+        if self.port is not None:
+            connection_parameters.append('port=%s' % self.host)
+        return ' '.join(connection_parameters)
 
     def setUp(self):
         '''Create a fresh database (dropping the old if necessary)
@@ -155,7 +177,7 @@ class PgTestSetup(object):
             # anyway (because they might have been incremented even if
             # nothing was committed), making sure not to disturb the
             # 'committed' flag, and we're done.
-            con = psycopg.connect('dbname=%s' % self.dbname)
+            con = psycopg.connect(self._connectionString(self.dbname))
             cur = con.cursor()
             resetSequences(cur)
             con.commit()
@@ -163,11 +185,11 @@ class PgTestSetup(object):
             ConnectionWrapper.committed = False
             return
         self.dropDb()
-        con = psycopg.connect('dbname=%s' % self.template)
+        con = psycopg.connect(self._connectionString(self.template))
         try:
+            con.set_isolation_level(0)
             try:
                 cur = con.cursor()
-                cur.execute('ABORT TRANSACTION')
                 cur.execute('DROP DATABASE %s' % self.dbname)
             except psycopg.ProgrammingError, x:
                 if 'does not exist' not in str(x):
@@ -203,26 +225,27 @@ class PgTestSetup(object):
 
     def connect(self):
         """Get an open DB-API Connection object to a temporary database"""
-        con = ConnectionWrapper(psycopg.connect('dbname=%s' % self.dbname))
-        return con
+        con = psycopg.connect(
+            self._connectionString(self.dbname, self.dbuser)
+            )
+        return ConnectionWrapper(con)
 
     def dropDb(self):
         '''Drop the database if it exists.
         
         Raises an exception if there are open connections
-        
         '''
         attempts = 100
         for i in range(0, attempts):
             try:
-                con = psycopg.connect('dbname=%s' % self.template)
+                con = psycopg.connect(self._connectionString(self.template))
             except psycopg.OperationalError, x:
                 if 'does not exist' in x:
                     return
                 raise
             try:
+                con.set_isolation_level(0)
                 cur = con.cursor()
-                cur.execute('ABORT TRANSACTION')
                 try:
                     cur.execute('DROP DATABASE %s' % self.dbname)
                 except psycopg.ProgrammingError, x:
@@ -239,15 +262,25 @@ class PgTestSetup(object):
             finally:
                 con.close()
 
+
 class PgTestCase(unittest.TestCase):
     dbname = None
+    dbuser = None
+    host = None
+    port = None
     template = None
     def setUp(self):
-        PgTestSetup(self.template, self.dbname).setUp()
+        PgTestSetup(
+                self.template, self.dbname, self.dbuser, self.host, self.port
+                ).setUp()
 
     def tearDown(self):
-        PgTestSetup(self.template, self.dbname).tearDown()
+        PgTestSetup(
+                self.template, self.dbname, self.dbuser, self.host, self.port
+                ).tearDown()
 
     def connect(self):
-        return PgTestSetup().connect()
+        return PgTestSetup(
+                self.template, self.dbname, self.dbuser, self.host, self.port
+                ).connect()
 

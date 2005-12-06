@@ -4,14 +4,11 @@ __metaclass__ = type
 
 __all__ = ['PollSubset', 'PollOptionSubset']
 
-# Zope interfaces
 from zope.interface import implements
 from zope.component import getUtility
 
-# canonical imports
-from canonical.launchpad.interfaces import (
-    IPollSubset, IPollSet, IPollOptionSubset, IPollOptionSet,
-    PollStatus)
+from canonical.launchpad.interfaces import IPollSubset, IPollSet, PollStatus
+from canonical.lp.dbschema import PollAlgorithm
 
 
 class PollSubset:
@@ -24,12 +21,12 @@ class PollSubset:
         self.team = team
 
     def new(self, name, title, proposition, dateopens, datecloses,
-            type, secrecy, allowspoilt):
+            secrecy, allowspoilt, poll_type=PollAlgorithm.SIMPLE):
         """See IPollSubset."""
         assert self.team is not None
         return getUtility(IPollSet).new(
             self.team, name, title, proposition, dateopens,
-            datecloses, type, secrecy, allowspoilt)
+            datecloses, secrecy, allowspoilt, poll_type)
 
     def getByName(self, name, default=None):
         """See IPollSubset."""
@@ -60,49 +57,4 @@ class PollSubset:
         return getUtility(IPollSet).selectByTeam(
             self.team, [PollStatus.NOT_YET_OPENED],
             orderBy='dateopens', when=when)
-
-
-class PollOptionSubset:
-
-    implements(IPollOptionSubset)
-
-    title = 'Poll options'
-
-    def __init__(self, poll=None):
-        self.poll = poll
-
-    def new(self, name, shortname=None, active=True):
-        """See IPollOptionSubset."""
-        assert self.poll is not None
-        # We don't want shortname to be an empty string. That's why we're not
-        # testing if it's not None.
-        if not shortname:
-            shortname = name
-        return getUtility(IPollOptionSet).new(
-            self.poll, name, shortname, active)
-
-    def get_default(self, id, default=None):
-        """See IPollOptionSubset."""
-        assert self.poll is not None
-        option = getUtility(IPollOptionSet).getByPollAndId(self.poll, id)
-        if not option:
-            return default
-        return option
-
-    def getByName(self, name, default=None):
-        """See IPollOptionSubset."""
-        assert self.poll is not None
-        optionset = getUtility(IPollOptionSet)
-        return optionset.getByPollAndName(self.poll, name, default)
-
-    def getAll(self):
-        """See IPollOptionSubset."""
-        assert self.poll is not None
-        return getUtility(IPollOptionSet).selectByPoll(self.poll)
-
-    def getActive(self):
-        """See IPollOptionSubset."""
-        assert self.poll is not None
-        return getUtility(IPollOptionSet).selectByPoll(
-                self.poll, only_active=True)
 

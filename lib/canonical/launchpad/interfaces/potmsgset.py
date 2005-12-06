@@ -4,7 +4,7 @@ from zope.interface import Interface, Attribute
 
 __metaclass__ = type
 
-__all__ = ('IPOTMsgSet', 'IEditPOTMsgSet')
+__all__ = ('IPOTMsgSet', )
 
 class IPOTMsgSet(Interface):
     """A collection of message IDs."""
@@ -36,7 +36,6 @@ class IPOTMsgSet(Interface):
         """Return an iterator over each of the submissions out there that
         are currently published or active in any PO file for the same
         language and prime msgid."""
-        
 
     def flags():
         """Return a list of flags on this set."""
@@ -47,9 +46,10 @@ class IPOTMsgSet(Interface):
         The maximum number of items this iterator returns is 2.
         """
 
-    def getMessageIDSighting(pluralForm):
-        """Return the message ID sighting that is current and has the
-        plural form provided."""
+    def getPOMsgIDSighting(pluralForm):
+        """Return the IPOMsgIDSighting that is current and has the plural
+        form provided.
+        """
 
     def translationsForLanguage(language):
         """Return an iterator over the active translation strings for this
@@ -66,12 +66,30 @@ class IPOTMsgSet(Interface):
         NotFoundError exception is raised.
         """
 
-class IEditPOTMsgSet(IPOTMsgSet):
-    """Interface for editing a MessageSet."""
-
     def makeMessageIDSighting(text, pluralForm, update=False):
         """Return a new message ID sighting that points back to us.
-        If one already exists, behaviour depends on 'update'; if update
-        is allowed, the existing one is "touched" and returned.  If it
-        is not, then a KeyError is raised."""
 
+        If one already exists, behaviour depends on 'update'; if update
+        is allowed, the existing one is 'touched' and returned.  If it
+        is not, then a KeyError is raised.
+        """
+
+    def sanity_fixes(text):
+        """Return 'text' after doing some sanity checks and fixes against the
+        msgid so we improve its value in case the user did some mistakes.
+        """
+
+    def convert_dot_to_space(text):
+        """Return 'text' with the u'\u2022' char changed by a normal space.
+
+        If the self.primemsgid contains that character, 'text' is returned without
+        changes.
+        """
+
+    def normalize_whitespaces(text):
+        """Return 'text' with the same trailing and leading whitespaces
+        that self.primemsgid has.
+
+        If 'text' has only whitespaces but self.primemsgid has other characters, the
+        empty string ('') is returned.
+        """

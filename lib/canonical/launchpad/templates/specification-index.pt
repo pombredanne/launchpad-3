@@ -1,0 +1,84 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-blocked" />
+  <div tal:replace="structure context/@@+portlet-dependencies" />
+  <div tal:replace="structure context/@@+portlet-subscribers" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-feedbackqueue" />
+  <div tal:replace="structure context/@@+portlet-bugs" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <p tal:repeat="notice view/notices" tal:content="notice"
+     class="portalMessage" style="margin-bottom: 10px">
+    notice goes here
+  </p>
+
+  <p tal:condition="context/superseded_by" class="portalMessage">
+    This specification has been superseded. See the newer specification
+    "<b><a tal:content="context/superseded_by/title"
+           tal:attributes="href context/superseded_by/fmt:url">new spec
+    title</a></b>" for updated plans.
+  </p>
+
+  <p tal:condition="not:context/specurl" class="portalMessage"
+     style="margin-bottom: 10px">
+    This specification is currently not linked to a URL. Visit the
+    <a href="+edit">edit page</a> if you wish to link it to a URL that others
+    can visit to read a more detailed description of the specification.
+  </p>
+
+  <div class="highlighted">
+    <tal:desc replace="structure context/summary/fmt:text-to-html">
+      The spec summary will go here.
+    </tal:desc>
+    <tal:has_page condition="context/specurl">
+      <img src="/++resource++link" />
+      <a tal:attributes="href context/specurl">Read More</a>.
+    </tal:has_page>
+    <tal:has_milestone condition="context/milestone">
+      Milestone target:
+      <img src="/++resource++target" />
+      <a tal:attributes="href context/milestone/fmt:url">
+        <span tal:replace="context/milestone/name">1.0</span>.</a>
+    </tal:has_milestone>
+  </div>
+
+  <p class="lesser" tal:condition="context/whiteboard">
+    <b>Whiteboard:</b>
+    <i tal:content="context/whiteboard">
+      white board text goes here
+    </i>
+  </p>
+
+  <p class="lesser">
+    <b>Priority:</b>
+    <span tal:attributes="class string:specpriority${context/priority/name}"
+          tal:content="context/priority/title">Approved</span>.
+    <tal:priority_description content="context/priority/description">
+      This status means that.
+    </tal:priority_description>
+  </p>
+
+  <p class="lesser">
+    <b>Status:</b>
+    <span tal:attributes="class string:specstatus${context/status/name}"
+          tal:content="context/status/title">Approved</span>.
+    <tal:status_description content="context/status/description">
+      This status means that.
+    </tal:status_description>
+  </p>
+
+</div>
+</body>
+</html>

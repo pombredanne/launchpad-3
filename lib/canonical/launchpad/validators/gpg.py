@@ -9,7 +9,6 @@ def valid_fingerprint(fingerprint):
         return True
     else:
         return False
-valid_fingerprint.sql_signature = [('fingerprint', 'text')]
 
 def valid_keyid(keyid):
     import re
@@ -17,4 +16,3 @@ def valid_keyid(keyid):
         return True
     else:
         return False
-valid_keyid.sql_signature = [('keyid', 'text')]

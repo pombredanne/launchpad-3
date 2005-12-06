@@ -1,0 +1,126 @@
+Bug Listings
+============
+
+Each bug target has a number of different bug listings. Let's take a
+look at the ones of a distribution.
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> debian = getUtility(IDistributionSet).getByName('debian')
+
+First we define a helper function to make it easier to construct a view.
+
+    >>> from zope.component import getView
+    >>> from zope.publisher.browser import TestRequest
+    >>> def create_view(context, name):
+    ...     view = getView(context, name, TestRequest())
+    ...     view.initialize()
+    ...     return view
+
+Open bugtasks
+-------------
+
+All bug tasks the have status NEW or ACCEPTED:
+
+    >>> open_bugtasks_view = create_view(debian, '+bugs-open')
+    >>> open_bugtasks = list(open_bugtasks_view.search().batch)
+    >>> sorted([(bugtask.bug.id, bugtask.status.name)
+    ...         for bugtask in open_bugtasks])
+    [(1, 'ACCEPTED'), (2, 'ACCEPTED'), (3, 'NEW')]
+    >>> open_bugtasks_view.taskCount
+    3
+
+This is a  distribuiton bug listing, so the package names should be
+shown:
+
+    open_bugtasks_view.shouldShowPackageName()
+    True
+
+
+Bugtasks assigned to me
+-----------------------
+
+Bugs assigned to the currently logged in user. This view is protected
+by launchpad.AnyPerson, so we need to log in first. Let's log in as
+Sample Person and see which bugs are assigned to him.
+
+    >>> login('test@canonical.com')
+    >>> assigned_to_bugtasks_view = create_view(debian, '+bugs-assigned-to')
+    >>> assigned_bugtasks = list(assigned_to_bugtasks_view.search().batch)
+    >>> sorted([(bugtask.bug.id, bugtask.assignee.displayname)
+    ...         for bugtask in assigned_bugtasks])
+    [(2, u'Sample Person')]
+    >>> assigned_to_bugtasks_view.taskCount
+    1
+
+    login(ANONYMOUS)
+
+Critical bugtasks
+-----------------
+
+All bugtasks that have severity CRITICAL. Debian doesn't have any
+critical bugs, so we look at Firefox's bugs instead:
+
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> firefox = getUtility(IProductSet)['firefox']
+    >>> critical_bugtasks_view = create_view(firefox, '+bugs-critical')
+    >>> critical_bugtasks = list(critical_bugtasks_view.search().batch)
+    >>> sorted([(bugtask.bug.id, bugtask.severity.name)
+    ...         for bugtask in critical_bugtasks])
+    [(5, 'CRITICAL')]
+    >>> critical_bugtasks_view.taskCount
+    1
+
+Now we have a product bug listing, and of course we shouldn't show any
+package names, since we don't have any to show:
+
+    critical_bugtasks_view.shouldShowPackageName()
+    False
+
+Untriaged bugtasks
+------------------
+
+All bugtasks with status NEW.
+
+    >>> untriaged_bugtasks_view = create_view(debian, '+bugs-untriaged')
+    >>> untriaged_bugtasks = list(untriaged_bugtasks_view.search().batch)
+    >>> sorted([(bugtask.bug.id, bugtask.status.name)
+    ...         for bugtask in untriaged_bugtasks])
+    [(3, 'NEW')]
+    >>> untriaged_bugtasks_view.taskCount
+    1
+
+Unassigned bugtasks
+-------------------
+
+All open bugtasks that don't have an assignee.
+
+    >>> unassigned_bugtasks_view = create_view(debian, '+bugs-unassigned')
+    >>> unassigned_bugtasks = list(unassigned_bugtasks_view.search().batch)
+    >>> sorted([(bugtask.bug.id, bugtask.assignee)
+    ...         for bugtask in unassigned_bugtasks])
+    [(1, None), (3, None)]
+    >>> unassigned_bugtasks_view.taskCount
+    2
+
+All bugs
+--------
+
+All bugtasks ever reported on the target, including closed ones.
+
+    >>> all_bugtasks_view = create_view(debian, '+bugs-all')
+    >>> all_bugtasks = list(all_bugtasks_view.search().batch)
+    >>> sorted([(bugtask.bug.id, bugtask.status.name)
+    ...         for bugtask in all_bugtasks])
+    [(1, 'ACCEPTED'), (2, 'ACCEPTED'), (3, 'NEW'), (8, 'FIXED')]
+    >>> all_bugtasks_view.taskCount
+    4
+
+Advanced search
+---------------
+
+    >>> advanced_search_view = create_view(debian, '+bugs-advanced')
+    >>> bugtasks = list(advanced_search_view.search().batch)
+    >>> sorted([bugtask.bug.id for bugtask in bugtasks])
+    [1, 2, 3]
+    >>> advanced_search_view.taskCount
+    3

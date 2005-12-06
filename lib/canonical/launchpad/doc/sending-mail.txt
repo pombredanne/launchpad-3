@@ -30,6 +30,28 @@ Now let's look at the sent email:
     >>> msg.get_payload(decode=True)
     'Content'
 
+To make a header appear more than once in the sent message (e.g.
+X-Launchpad-Bug), you can pass a headers dict whose keys are the header names
+and whose values are the header body values. If a value is a list or a tuple,
+the header will appear more than once in the output message.
+
+    >>> msgid = simple_sendmail(
+    ...     from_addr=u'foo.bar@canonical.com',
+    ...     to_addrs=u'test@canonical.com',
+    ...     subject=u'Subject',
+    ...     body=u'Content',
+    ...     headers={
+    ...         'X-Foo': "test", 'X-Bar': ["first value", "second value"]})
+
+    >>> transaction.commit()
+
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg["X-Foo"]
+    'test'
+    >>> msg.get_all("X-Bar")
+    ['first value', 'second value']
+
 All its input can be unicode strings, which will be encoded to ascii
 strings suitable in emails. Let's try to send an email with non-ascii
 characters:
@@ -78,3 +100,41 @@ And finally the body of the email:
 
     >>> msg.get_payload(decode=True).decode(msg.get_content_charset())
     u'Inneh\xe5ll'
+
+simple_sendmail creates a Message instance, and sends it via another
+function, sendmail. sendmail() can also be used directly if you want to
+send more complicated emails, like emails with attachments.
+
+    >>> from canonical.launchpad.mail import sendmail
+
+Let's send a mail using that function. We only create a simple message
+to test with, though.
+
+    >>> msg = email.MIMEText.MIMEText("Some content")
+    >>> msg['From'] = 'foo.bar@canonical.com'
+    >>> msg['To'] = 'test@canonical.com'
+    >>> msg['Subject'] = "test"
+    >>> msgid = sendmail(msg)
+    >>> transaction.commit()
+
+sendmail automatically adds Return-Path and Errors-To headers to
+provide better bounce handling.
+
+    >>> from canonical.config import config
+    >>> from_addr, to_add, raw_message = stub.test_emails.pop()
+    >>> sent_msg = email.message_from_string(raw_message)
+    >>> sent_msg['Return-Path'] == config.bounce_address
+    True
+    >>> sent_msg['Errors-To'] == config.bounce_address
+    True
+
+It's possible to set Return-Path manually if needed.
+
+    >>> msg.replace_header('Return-Path', '<>')
+    >>> msgid = sendmail(msg)
+    >>> transaction.commit()
+
+    >>> from_addr, to_add, raw_message = stub.test_emails.pop()
+    >>> sent_msg = email.message_from_string(raw_message)
+    >>> sent_msg['Return-Path']
+    '<>'

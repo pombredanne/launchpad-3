@@ -12,17 +12,17 @@
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-actions" />
+    <div tal:replace="structure context/@@+portlet-search" />
   </metal:rightportlets>
 
   <div metal:fill-slot="main">
 
     <div metal:use-macro="context/@@launchpad_editform/editform">
-    
+
       <div metal:fill-slot="extra_info">
         <p>
           Malone supports "secret" bugs. These will only be visible to the
-          bug's subscribers. 
+          bug's subscribers.
         </p>
         <p class="discreet">
           This feature is used to allow security teams to
@@ -34,7 +34,7 @@
       </div>
 
     </div>
-    
+
   </div>
 
   </body>

@@ -6,11 +6,11 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/bug/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-actions" />
+  <div tal:replace="structure context/@@+portlet-search" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
@@ -31,16 +31,29 @@
       <tal:block tal:define="releasename release_target_details/release/name;
                              sourcepackage release_target_details/sourcepackage|nothing;
                              spname release_target_details/sourcepackage/sourcepackagename/name|nothing">
-        <input type="checkbox"
-               name="target"
-               tal:attributes="value string:${releasename}.${spname};
-                               disabled release_target_details/istargeted;
-                               checked release_target_details/istargeted" />
-        <a tal:content="string:${releasename} ${spname}"
-           tal:attributes="href string:${sourcepackage/fmt:url}/+bugs">
-          warty mozilla-firefox
-        </a>
-
+        <tal:has_spname condition="spname">
+            <input type="checkbox"
+                   name="target"
+                   tal:attributes="value string:${releasename}.${spname};
+                                   disabled release_target_details/istargeted;
+                                   checked release_target_details/istargeted" />
+            <a tal:content="string:${releasename} ${spname}"
+               tal:attributes="href string:${sourcepackage/fmt:url}/+bugs">
+              warty mozilla-firefox
+            </a>
+        </tal:has_spname>
+        <tal:lacks_spname condition="not: spname">
+            <input type="checkbox"
+                   name="target"
+                   tal:attributes="value string:${releasename};
+                                   disabled release_target_details/istargeted;
+                                   checked release_target_details/istargeted" />
+            <a tal:content="string:${releasename}" 
+               tal:attributes="href
+               string:${release_target_details/release/fmt:url}/+bugs">
+              warty mozilla-firefox
+            </a>
+        </tal:lacks_spname>
         <tal:targeted condition="release_target_details/istargeted">
           <tal:status content="release_target_details/status/title" />,
           <tal:assigned condition="release_target_details/assignee">

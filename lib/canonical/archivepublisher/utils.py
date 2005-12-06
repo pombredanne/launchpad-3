@@ -2,6 +2,8 @@
 # 
 # arch-tag: fbcb5758-d345-4610-8e57-8cc664a376bc
 
+from canonical.archivepublisher.tagfiles import TagFileParseError
+
 def prefix_multi_line_string(str, prefix, include_blank_lines=0):
     """Utility function to split an input string and prefix each line
     with a token or tag. Can be used for quoting text etc"""
@@ -23,8 +25,6 @@ def extract_component_from_section(section, default_component = "main"):
         component = default_component
 
     return (section,component)
-
-from canonical.archivepublisher.TagFiles import TagFileParseError
 
 def build_file_list(tagfile, is_dsc = False, default_component = "main" ):
     files = {}
@@ -167,7 +167,7 @@ contains '.' or ',', (1) and (2) are switched to 'email (name)' format."""
         rfc2047_maint = "%s <%s>" % (rfc2047_name, email)
 
     if email.find("@") == -1 and email.find("buildd_") != 0:
-        raise ParseMaintError, "%s: do @ found in email address part." % maintainer
+        raise ParseMaintError, "%s: no @ found in email address part." % maintainer
 
     return (rfc822_maint, rfc2047_maint, name, email)
 

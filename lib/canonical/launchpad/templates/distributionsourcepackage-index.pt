@@ -1,0 +1,50 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-releases" />
+  </metal:leftportlets>
+
+
+  <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-bugs" />
+    <div tal:replace="structure context/@@+portlet-tickets" />
+  </metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h2><span tal:replace="context/displayname"/> Source Package</h2>
+
+  <p class="documentDescription">
+    This page describes the '<span tal:replace="context/name" />' 
+    source package in 
+    <a tal:content="context/distribution/title"
+       tal:attributes="href context/distribution/fmt:url"/>.
+  </p>
+
+  <h2>Publishing History</h2>
+  <table class="listing">
+  <tr>
+    <td align="center">Datetime</td>
+    <td align="center">Status</td>
+    <td align="center">Target</td>
+    <td align="center">Pocket</td>
+    <td align="center">Component</td>
+    <td align="center">Section</td>
+    <td align="center">Version</td>
+    <td colspan="3" align="center">Info</td>
+  </tr>
+  <tal:block repeat="publishing context/publishing_history"
+             replace="structure publishing/@@+listing-detailed">
+  </tal:block>
+  </table>
+
+</div>
+</body>
+</html>
+ 

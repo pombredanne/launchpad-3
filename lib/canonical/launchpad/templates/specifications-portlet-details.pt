@@ -1,0 +1,16 @@
+<div class="portlet">
+
+  <h4>Launchpad Feature Tracking:</h4>
+
+  <div class="portletBody portletContent">
+
+    <img src="/++resource++info_icon.gif" />
+    Launchpad allows you to track the planned features for your project or
+    distribution. It tracks the dependencies between features and will use
+    those to create a recommended project plan for you. You can assign
+    features to milestones to show your users what you expect to deliver in
+    a given milestone.
+	
+  </div>
+
+</div>

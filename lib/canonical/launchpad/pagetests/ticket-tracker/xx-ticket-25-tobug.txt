@@ -1,0 +1,56 @@
+
+Turning a Ticket into a Bug
+===========================
+
+The ticket page should show a link to make the ticket into a bug.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+ticket/2 HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Create Bug Report...
+
+And the +makebug should be visible (note that it should only be visible when
+there are no linked bugs, but that is rather hard to test with the current
+testing setup).
+
+  >>> print http(r"""
+  ... GET /products/firefox/+ticket/2/+makebug HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+POSTing that form back to the ticket page should show a portal message
+giving the new bug number, and should show the bug in the list of related
+bugs.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+ticket/2/ HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 18
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... makebug=Create+Bug+Report""")
+  HTTP/1.1 200 Ok
+  ...Thank you! Bug...created...
+
+
+It works with distribution tickets as well.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+ticket/5/+makebug HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+ticket/5/ HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 18
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... makebug=Create+Bug+Report""")
+  HTTP/1.1 200 Ok
+  ...Thank you! Bug...created...

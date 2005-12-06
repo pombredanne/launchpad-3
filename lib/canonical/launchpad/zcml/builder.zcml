@@ -1,0 +1,146 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+
+    <!-- BuilderSet -->
+    <securedutility
+        class="canonical.launchpad.database.BuilderSet"
+        provides="canonical.launchpad.interfaces.IBuilderSet">
+        <allow interface="canonical.launchpad.interfaces.IBuilderSet" />
+    </securedutility>
+
+    <!-- BuildFarm -->
+    <browser:url
+        for="canonical.launchpad.interfaces.IBuilderSet"
+        path_expression="string:+builds"
+        parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IBuilderSet"
+        name="+index" />
+
+    <browser:menus
+        module="canonical.launchpad.browser.builder"
+        classes="BuildFarmFacets" />
+
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BuilderSetNavigation"
+        />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IBuilderSet"
+        permission="zope.Public">
+        <browser:page
+            template="../templates/builders.pt"
+            name="+index"
+            lp:url="+builds/+index" />
+    </browser:pages>
+
+    <browser:addform
+        name="+new"
+        for="canonical.launchpad.interfaces.IBuilderSet"
+        schema="canonical.launchpad.interfaces.IBuilder"
+        label="Register a new Builder Slave"
+        fields="name title description processor url owner"
+        content_factory="canonical.launchpad.database.Builder"
+        class="canonical.launchpad.browser.BuilderSetAddView"
+        permission="launchpad.AnyPerson"
+        template="../templates/launchpad-addform.pt"
+        lp:url="+builds/+new">
+        <browser:widget 
+            field="owner" 
+            class="canonical.widgets.HiddenUserWidget" />
+    </browser:addform>
+
+    <!-- Builder -->
+    <content class="canonical.launchpad.database.Builder">
+       <allow interface="canonical.launchpad.interfaces.IBuilder"/>
+        <require
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IBuilder"
+        />
+    </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IBuilder"
+        name="+index" />
+
+    <browser:menus
+        module="canonical.launchpad.browser.builder"
+        classes="BuilderFacets" />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IBuilder"
+        path_expression="name"
+        parent_utility="canonical.launchpad.interfaces.IBuilderSet"
+        />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IBuilder"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.BuilderView">
+        <browser:page
+            template="../templates/builder-index.pt"
+            name="+index"
+            lp:url="+builds/$name/+index" />
+        <browser:page
+            template="../templates/builder-cancel.pt"
+            name="+cancel"
+            lp:url="+builds/$name/+cancel" />
+    </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IBuilder"
+        permission="zope.Public">
+        <browser:page
+            template="../templates/portlet-builder-details.pt"
+            name="+portlet-details"
+            lp:url="+builds/$buildername/+portlet-details" />
+    </browser:pages>
+
+    <browser:editform
+        name="+edit"
+        for="canonical.launchpad.interfaces.IBuilder"
+        schema="canonical.launchpad.interfaces.IBuilder"
+        label="Edit Builder Details:"
+        fields="name title description processor url trusted manual owner"
+        permission="launchpad.Edit"
+        template="../templates/builder-edit.pt"
+        lp:url="+builds/$name/+edit">
+    </browser:editform>
+
+    <browser:editform
+        name="+mode"
+        for="canonical.launchpad.interfaces.IBuilder"
+        schema="canonical.launchpad.interfaces.IBuilder"
+        label="Change Builder Mode:"
+        fields="manual"
+        permission="launchpad.Edit"
+        template="../templates/builder-mode.pt"
+        lp:url="+builds/$name/+mode">
+    </browser:editform>
+
+    <!-- BuildQueue -->
+    <content class="canonical.launchpad.database.BuildQueue">
+       <allow interface="canonical.launchpad.interfaces.IBuildQueue"/>
+       <!-- XXX cprov 20051020: we need a autobuild celebrity, bug #3580 -->
+       <!-- Grant permissions to write on BuildQueue and Build. --> 
+       <require
+            permission="zope.Public"
+            set_attributes="lastscore builder buildstart logtail"/>
+    </content>
+
+    <!-- BuildQueueSet -->
+    <securedutility
+        class="canonical.launchpad.database.BuildQueueSet"
+        provides="canonical.launchpad.interfaces.IBuildQueueSet">
+        <allow interface="canonical.launchpad.interfaces.IBuildQueueSet" />
+    </securedutility>
+
+</configure>

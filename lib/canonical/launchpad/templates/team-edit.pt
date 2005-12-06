@@ -4,50 +4,22 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
-  <body>
-    <div metal:fill-slot="body">
-      <div
-        class="sidebar"
-        tal:content="structure context/@@+portlet-actions"
-      />
-      <h1>
-        Edit &#8220;<span tal:replace="context/browsername">
-        Foo</span>&#8221; team
-      </h1>
+<body>
 
-    <div metal:define-macro="editform">
+  <metal:leftportlets fill-slot="portlets_one">
+      <div tal:replace="structure context/@@+portlet-details" />
+  </metal:leftportlets>
 
-      <form action="." tal:attributes="action request/URL" method="post"
-            enctype="multipart/form-data">
+  <h1>
+    Edit &#8220;<span tal:replace="context/browsername">
+    Foo</span>&#8221; team
+  </h1>
 
-        <div metal:define-macro="formbody">
+  <div metal:fill-slot="main">
 
-          <p class="portalMessage"
-             tal:define="status view/update"
-             tal:condition="status"
-             tal:content="status" />
+    <div metal:use-macro="context/@@launchpad_editform/editform" />
 
-          <p tal:condition="view/errors"
-             class="portalMessage"
-             i18n:translate="">
-             There are <strong tal:content="view/errors/count:len"
-                              i18n:name="num_errors">6</strong> input errors.
-          </p>
-
-          <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
-        
-        </div>
-
-          <div class="form actions">
-            <input type="submit" name="UPDATE_SUBMIT"
-                   value="Save Changes"
-                   i18n:attributes="value submit-button"/>
-          </div>
-
-      </form>
-
-    </div>
   </div>
 
-  </body>
+</body>
 </html>

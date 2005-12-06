@@ -6,7 +6,7 @@
 CREATE OR REPLACE FUNCTION valid_name(text) RETURNS boolean AS '
     import re
     name = args[0]
-    pat = r"^[a-z0-9][a-z0-9\\+\\.\\-]+$"
+    pat = r"^[a-z0-9][a-z0-9\\+\\.\\-]*$"
     if re.match(pat, name):
         return 1
     return 0
@@ -27,7 +27,7 @@ COMMENT ON FUNCTION valid_name(text)
 CREATE OR REPLACE FUNCTION valid_branch_name(text) RETURNS boolean AS '
     import re
     name = args[0]
-    pat = r"^(?i)[a-z0-9][a-z0-9\\+\\.\\-\\@]+$"
+    pat = r"^(?i)[a-z0-9][a-z0-9\\+\\.\\-\\@_]+$"
     if re.match(pat, name):
         return 1
     return 0
@@ -64,7 +64,7 @@ CREATE OR REPLACE FUNCTION valid_debian_version(text) RETURNS boolean AS '
     import re
     m = re.search("""^(?ix)
         ([0-9]+:)?
-        ([0-9][a-z0-9+:.~-]*?)
+        ([0-9a-z][a-z0-9+:.~-]*?)
         (-[a-z0-9+.~]+)?
         $""", args[0])
     if m is None:
@@ -201,4 +201,17 @@ COMMENT ON FUNCTION is_person(text) IS
     
 SET check_function_bodies=true;
 
+CREATE OR REPLACE FUNCTION is_printable_ascii(text) RETURNS boolean AS '
+    import re, string
+    try:
+        text = args[0].decode("ASCII")
+    except UnicodeError:
+        return False
+    if re.search(r"^[%s]*$" % re.escape(string.printable), text) is None:
+        return False
+    return True
+' LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT;
+
+COMMENT ON FUNCTION is_printable_ascii(text) IS
+    'True if the string is pure printable US-ASCII';
 

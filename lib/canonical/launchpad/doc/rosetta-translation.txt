@@ -139,6 +139,11 @@ In fact, the published submission should still be the original one, from Pa:
     >>> pomsgset.publishedSubmission(0) == submission
     True
 
+And the latestsubmission for this pofile should be this one.
+
+    >>> pofile.latestsubmission == web_submission
+    True
+
 Now, let's see what happens if Pc submits exactly the same translation that
 Pb just did. We don't want to record this, because we have decided not to
 record a new submission of the EXISTING active or published record. In other
@@ -154,6 +159,11 @@ Since that is exactly what Pb already said, let's see that the submission we
 got back was the one from Pb not a new one for Pc:
 
     >>> repeat_submission.person == Pb
+    True
+
+In fact, it should be the same as before:
+
+    >>> repeat_submission == web_submission
     True
 
 Now, let's test the NonEditorTranslations. These are translations submitted by
@@ -195,6 +205,12 @@ to test the code more easily:
 This submission should come from the new non-editor person:
 
     >>> noneditor_submission.person == Pn
+    True
+
+And latest submission field for this POFile should not change, as this one is
+not from an editor:
+
+    >>> pofile.latestsubmission == web_submission
     True
 
 And now we need to cheat, just a little bit. We need to

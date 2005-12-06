@@ -12,10 +12,14 @@ import tempfile
 from canonical.database.sqlbase import begin, commit, rollback
 
 __all__ = ['DigestMismatchError', 'LibrarianStorage', 'LibraryFileUpload',
-           'DuplicateFileIDError']
+           'DuplicateFileIDError',
+           # _relFileLocation needed by other modules in this package.
+           # Listed here to keep the import facist happy
+           '_relFileLocation', '_sameFile']
 
 class DigestMismatchError(Exception):
     """The given digest doesn't match the SHA-1 digest of the file"""
+
 
 class DuplicateFileIDError(Exception):
     """Given File ID already exists"""
@@ -48,13 +52,16 @@ class LibrarianStorage:
     def startAddFile(self, filename, size):
         return LibraryFileUpload(self, filename, size)
 
-    def getFileAlias(self, fileid, filename):
-        return self.library.getAlias(fileid, filename)
+    def getFileAlias(self, aliasid):
+        return self.library.getAlias(aliasid)
+
 
 class LibraryFileUpload(object):
     srcDigest = None
     mimetype = 'unknown/unknown'
     contentID = None
+    aliasID = None
+    expires = None
 
     def __init__(self, storage, filename, size):
         self.storage = storage
@@ -79,83 +86,51 @@ class LibraryFileUpload(object):
         if self.srcDigest is not None and dstDigest != self.srcDigest:
             # TODO: Write test that checks that the file really is removed or
             # renamed, and can't possibly be left in limbo
-            os.remove(self.tmpfilepath) 
+            os.remove(self.tmpfilepath)
             raise DigestMismatchError, (self.srcDigest, dstDigest)
 
         begin()
         try:
-            # XXX: Figure out a better name for _determineContentAndAliasIDs
-            #        - AndrewBennetts, 2005-03-24
-            result = self._determineContentAndAliasIDs(dstDigest)
-            newFile, contentID, aliasID = result
+            # If we havn't got a contentID, we need to create one and return
+            # it to the client.
+            if self.contentID is None:
+                contentID = self.storage.library.add(dstDigest, self.size)
+                aliasID = self.storage.library.addAlias(
+                        contentID, self.filename, self.mimetype, self.expires
+                        )
+            else:
+                contentID = self.contentID
+                aliasID = None
+
+
         except:
             # Abort transaction and re-raise
             rollback()
             raise
 
-        if newFile:
-            # Move file to final location
-            try:
-                self._move(contentID)
-            except:
-                # Abort DB transaction
-                rollback()
+        # Move file to final location
+        try:
+            self._move(contentID)
+        except:
+            # Abort DB transaction
+            rollback()
 
-                # Remove file
-                os.remove(self.tmpfilepath)
+            # Remove file
+            os.remove(self.tmpfilepath)
 
-                # Re-raise
-                raise
-            else:
-                commit()
-        else:
-            # Not a new file; perhaps a new alias. Commit the transaction
-            commit()
+            # Re-raise
+            raise
+
+        # Commit any DB changes
+        commit()
         
-        # Return the IDs
+        # Return the IDs if we created them, or None otherwise
         return contentID, aliasID
-
-    def _determineContentAndAliasIDs(self, digest):
-        if self.contentID is None:
-            # Find potentially matching files
-            # XXX: This is deprecated.  It should happen in the garbage
-            #      collection cron job.  See LibrarianTransactions spec.
-            #        - Andrew Bennetts, 2005-03-24.
-            similarFiles = self.storage.library.lookupBySHA1(digest)
-            newFile = True
-            if len(similarFiles) == 0:
-                contentID = self.storage.library.add(digest, self.size)
-            else:
-                for candidate in similarFiles:
-                    candidatePath = self.storage._fileLocation(candidate)
-                    if _sameFile(candidatePath, self.tmpfilepath):
-                        # Found a file with the same content
-                        contentID = candidate
-                        newFile = False
-                        break
-                else:
-                    # No matches -- we found a hash collision in SHA-1!
-                    contentID = self.storage.library.add(digest, self.size)
-        
-            aliasID = self.storage.library.addAlias(contentID, self.filename,
-                                                    self.mimetype)
-        else:
-            contentID = self.contentID
-            aliasID = None
-            newFile = True
-        
-            # ensure the content and alias don't already exist.
-            if self.storage.library.hasContent(contentID):
-                raise DuplicateFileIDError(
-                        'content ID %d already exists' % contentID)
-        
-            # We don't need to add them to the DB; the client has done that
-            # for us.
-
-        return newFile, contentID, aliasID
 
     def _move(self, fileID):
         location = self.storage._fileLocation(fileID)
+        if os.path.exists(location):
+            raise DuplicateFileIDError(fileID)
         try:
             os.makedirs(os.path.dirname(location))
         except OSError, e:
@@ -164,11 +139,13 @@ class LibraryFileUpload(object):
                 raise
         os.rename(self.tmpfilepath, location)
 
+
 def _sameFile(path1, path2):
     file1 = open(path1, 'rb')
     file2 = open(path2, 'rb')
-
-    chunksIter = iter(lambda: (file1.read(4096), file2.read(4096)), ('', ''))
+    
+    blk = 1024 * 64
+    chunksIter = iter(lambda: (file1.read(blk), file2.read(blk)), ('', ''))
     for chunk1, chunk2 in chunksIter:
         if chunk1 != chunk2:
             return False
@@ -177,5 +154,5 @@ def _sameFile(path1, path2):
 
 def _relFileLocation(fileid):
     h = "%08x" % int(fileid)
-    return '%s/%s/%s/%s' % (h[:2],h[2:4],h[4:6],h[6:])
+    return '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])
     

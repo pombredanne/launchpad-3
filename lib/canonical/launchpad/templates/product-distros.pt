@@ -10,10 +10,6 @@
     <div tal:replace="structure context/@@+portlet-series" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-actions" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
   <h1>Packages - By Distribution</h1>
@@ -31,7 +27,7 @@
     link it to distribution packages.
   </p>
 
-  <tal:block repeat="distro view/distro_packaging">
+  <tal:distribution repeat="distro view/distro_packaging">
     
     <h2 tal:content="distro/title">Ubuntu Linux</h2>
 
@@ -59,7 +55,7 @@
       </tbody>
     </table>
 
-  </tal:block> <!-- /distribution -->
+  </tal:distribution>
 
   <p>To add a Packaging Record, visit the page for the specific release
   series that has been packaged, and select "Link to Any Package".</p>

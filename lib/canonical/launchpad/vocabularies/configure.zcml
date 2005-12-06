@@ -1,237 +1,318 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
-    <vocabulary
-        name="BountyDifficulty"
-        factory="canonical.launchpad.vocabularies.BountyDifficultyVocabulary"
-        />
+  <vocabulary
+    name="BinaryPackage"
+    factory="canonical.launchpad.vocabularies.BinaryPackageVocabulary"
+    />
 
-    <vocabulary
-        name="BountyStatus"
-        factory="canonical.launchpad.vocabularies.BountyStatusVocabulary"
-        />
+  <vocabulary
+    name="BinaryPackageName"
+    factory="canonical.launchpad.vocabularies.BinaryPackageNameVocabulary"
+    />
 
-    <vocabulary
-        name="BugTracker"
-        factory="canonical.launchpad.vocabularies.BugTrackerVocabulary"
-        />
+  <vocabulary
+    name="Bounty"
+    factory="canonical.launchpad.vocabularies.BountyVocabulary"
+    />
 
-    <vocabulary
-        name="BugTrackerType"
-        factory="canonical.launchpad.vocabularies.BugTrackerTypeVocabulary"
-        />
+  <vocabulary
+    name="BountyDifficulty"
+    factory="canonical.launchpad.vocabularies.BountyDifficultyVocabulary"
+    />
 
-    <vocabulary
-        name="CVEState"
-        factory="canonical.launchpad.vocabularies.CVEStateVocabulary"
-        />
+  <vocabulary
+    name="BountyStatus"
+    factory="canonical.launchpad.vocabularies.BountyStatusVocabulary"
+    />
 
-    <vocabulary
-        name="Bounty"
-        factory="canonical.launchpad.vocabularies.BountyVocabulary"
-        />
+  <vocabulary
+    name="BranchLifecycleStatus"
+    factory="canonical.launchpad.vocabularies.BranchLifecycleStatusVocabulary"
+    />
 
-    <vocabulary
-        name="BugWatch"
-        factory="canonical.launchpad.vocabularies.BugWatchVocabulary"
-        />
+  <vocabulary
+    name="BranchReviewStatus"
+    factory="canonical.launchpad.vocabularies.BranchReviewStatusVocabulary"
+    />
 
-    <vocabulary
-        name="SourcePackageName"
-        factory="canonical.launchpad.vocabularies.SourcePackageNameVocabulary"
-        />
+  <vocabulary
+    name="Bug"
+    factory="canonical.launchpad.vocabularies.BugVocabulary"
+    />
 
-    <vocabulary
-        name="Distribution"
-        factory="canonical.launchpad.vocabularies.DistributionVocabulary"
-        />
+  <vocabulary
+    name="BugAttachmentType"
+    factory="canonical.launchpad.vocabularies.BugAttachmentTypeVocabulary"
+    />
 
-    <vocabulary
-        name="DistroRelease"
-        factory="canonical.launchpad.vocabularies.DistroReleaseVocabulary"
-        />
+  <vocabulary
+    name="BugRef"
+    factory="canonical.launchpad.vocabularies.BugRefVocabulary"
+    />
 
-    <vocabulary
-        name="BinaryPackage"
-        factory="canonical.launchpad.vocabularies.BinaryPackageVocabulary"
-        />
+  <vocabulary
+    name="BugTaskStatus"
+    factory="canonical.launchpad.vocabularies.BugTaskStatusVocabulary"
+    />
 
-    <vocabulary
-        name="BinaryPackageName"
-        factory="canonical.launchpad.vocabularies.BinaryPackageNameVocabulary"
-        />
+  <vocabulary
+    name="BugTaskPriority"
+    factory="canonical.launchpad.vocabularies.BugTaskPriorityVocabulary"
+    />
 
-    <vocabulary
-        name="GPGKeyAlgorithm"
-        factory="canonical.launchpad.vocabularies.GPGKeyAlgorithmVocabulary"
-        />
+  <vocabulary
+    name="BugTaskSeverity"
+    factory="canonical.launchpad.vocabularies.BugTaskSeverityVocabulary"
+    />
 
-    <vocabulary
-        name="PollAlgorithm"
-        factory="canonical.launchpad.vocabularies.PollAlgorithmVocabulary"
-        />
+  <vocabulary
+    name="BugTracker"
+    factory="canonical.launchpad.vocabularies.BugTrackerVocabulary"
+    />
 
-    <vocabulary
-        name="PollSecrecy"
-        factory="canonical.launchpad.vocabularies.PollSecrecyVocabulary"
-        />
+  <vocabulary
+    name="BugTrackerType"
+    factory="canonical.launchpad.vocabularies.BugTrackerTypeVocabulary"
+    />
 
-    <vocabulary
-        name="PersonAccountToMerge"
-        factory="canonical.launchpad.vocabularies.PersonAccountToMergeVocabulary"
-        />
+  <vocabulary
+    name="BugWatch"
+    factory="canonical.launchpad.vocabularies.BugWatchVocabulary"
+    />
 
-    <vocabulary
-        name="ValidPersonOrTeam"
-        factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
-        />
+  <vocabulary
+      name="CountryName"
+      factory="canonical.launchpad.vocabularies.CountryNameVocabulary"
+      />
 
-    <vocabulary
-        name="ValidAssignee"
-        factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
-        />
+  <vocabulary
+    name="CveStatus"
+    factory="canonical.launchpad.vocabularies.CveStatusVocabulary"
+    />
 
-    <vocabulary
-        name="ValidMaintainer"
-        factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
-        />
+  <vocabulary
+    name="Distribution"
+    factory="canonical.launchpad.vocabularies.DistributionVocabulary"
+    />
 
-    <vocabulary
-        name="ValidOwner"
-        factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
-        />
+  <vocabulary
+    name="DistroRelease"
+    factory="canonical.launchpad.vocabularies.DistroReleaseVocabulary"
+    />
 
-    <vocabulary
-        name="ValidTeamMember"
-        factory="canonical.launchpad.vocabularies.ValidTeamMemberVocabulary"
-        />
+  <vocabulary
+    name="DistributionReleaseStatus"
+    factory="canonical.launchpad.vocabularies.DistributionReleaseStatusVocabulary"
+    />
 
-    <vocabulary
-        name="ValidTeamOwner"
-        factory="canonical.launchpad.vocabularies.ValidTeamOwnerVocabulary"
-        />
+  <vocabulary
+    name="FilteredDistroRelease"
+    factory="canonical.launchpad.vocabularies.FilteredDistroReleaseVocabulary"
+    />
 
-    <vocabulary
-        name="TeamSubscriptionPolicy"
-        factory="canonical.launchpad.vocabularies.TeamSubscriptionPolicyVocabulary"
-        />
+  <vocabulary
+    name="FilteredProductSeries"
+    factory="canonical.launchpad.vocabularies.FilteredProductSeriesVocabulary"
+    />
 
-    <vocabulary
-        name="KarmaActionCategory"
-        factory="canonical.launchpad.vocabularies.KarmaActionCategoryVocabulary"
-        />
+  <vocabulary
+    name="GPGKeyAlgorithm"
+    factory="canonical.launchpad.vocabularies.GPGKeyAlgorithmVocabulary"
+    />
 
-    <vocabulary
-        name="Product"
-        factory="canonical.launchpad.vocabularies.ProductVocabulary"
-        />
+  <vocabulary
+    name="InfestationStatus"
+    factory="canonical.launchpad.vocabularies.InfestationStatusVocabulary"
+    />
 
-    <vocabulary
-        name="ProductSeries"
-        factory="canonical.launchpad.vocabularies.ProductSeriesVocabulary"
-        />
+  <vocabulary
+    name="KarmaCategory"
+    factory="canonical.launchpad.vocabularies.KarmaCategoryVocabulary"
+    />
 
-    <vocabulary
-        name="FilteredProductSeries"
-        factory="canonical.launchpad.vocabularies.FilteredProductSeriesVocabulary"
-        />
+  <vocabulary
+    name="Language"
+    factory="canonical.launchpad.vocabularies.LanguageVocabulary"
+    />
 
-    <vocabulary
-        name="ProductRelease"
-        factory="canonical.launchpad.vocabularies.ProductReleaseVocabulary"
-        />
+  <vocabulary
+    name="Milestone"
+    factory="canonical.launchpad.vocabularies.MilestoneVocabulary"
+    />
 
-    <vocabulary
-        name="Project"
-        factory="canonical.launchpad.vocabularies.ProjectVocabulary"
-        />
+  <vocabulary
+    name="PackageRelease"
+    factory="canonical.launchpad.vocabularies.PackageReleaseVocabulary"
+    />
 
-    <vocabulary
-        name="Milestone"
-        factory="canonical.launchpad.vocabularies.MilestoneVocabulary"
-        />
+  <vocabulary
+    name="PackagingType"
+    factory="canonical.launchpad.vocabularies.PackagingTypeVocabulary"
+    />
 
-    <vocabulary
-        name="Subscription"
-        factory="canonical.launchpad.vocabularies.SubscriptionVocabulary"
-        />
-    
-    <vocabulary
-        name="BugAttachmentType"
-        factory="canonical.launchpad.vocabularies.BugAttachmentTypeVocabulary"
-        />
+  <vocabulary
+    name="PersonAccountToMerge"
+    factory="canonical.launchpad.vocabularies.PersonAccountToMergeVocabulary"
+    />
 
-    <vocabulary
-        name="BugRef"
-        factory="canonical.launchpad.vocabularies.BugRefVocabulary"
-        />
+  <vocabulary
+    name="PollAlgorithm"
+    factory="canonical.launchpad.vocabularies.PollAlgorithmVocabulary"
+    />
 
-    <vocabulary
-        name="BugTaskStatus"
-        factory="canonical.launchpad.vocabularies.BugTaskStatusVocabulary"
-        />
+  <vocabulary
+    name="PollSecrecy"
+    factory="canonical.launchpad.vocabularies.PollSecrecyVocabulary"
+    />
 
-    <vocabulary
-        name="BugTaskPriority"
-        factory="canonical.launchpad.vocabularies.BugTaskPriorityVocabulary"
-        />
+  <vocabulary
+    name="POTemplateName"
+    factory="canonical.launchpad.vocabularies.POTemplateNameVocabulary"
+    />
 
-    <vocabulary
-        name="BugTaskSeverity"
-        factory="canonical.launchpad.vocabularies.BugTaskSeverityVocabulary"
-        />
+  <vocabulary
+    name="Product"
+    factory="canonical.launchpad.vocabularies.ProductVocabulary"
+    />
 
-    <vocabulary
-        name="InfestationStatus"
-        factory="canonical.launchpad.vocabularies.InfestationStatusVocabulary"
-        />
+  <vocabulary
+    name="ProductRelease"
+    factory="canonical.launchpad.vocabularies.ProductReleaseVocabulary"
+    />
 
-    <vocabulary
-        name="PackageRelease"
-        factory="canonical.launchpad.vocabularies.PackageReleaseVocabulary"
-        />
+  <vocabulary
+    name="ProductSeries"
+    factory="canonical.launchpad.vocabularies.ProductSeriesVocabulary"
+    />
 
-    <vocabulary
-        name="PackagingType"
-        factory="canonical.launchpad.vocabularies.PackagingTypeVocabulary"
-        />
+  <vocabulary
+    name="Project"
+    factory="canonical.launchpad.vocabularies.ProjectVocabulary"
+    />
 
-    <vocabulary
-        name="Language"
-        factory="canonical.launchpad.vocabularies.LanguageVocabulary"
-        />
+  <vocabulary
+    name="Schema"
+    factory="canonical.launchpad.vocabularies.SchemaVocabulary"
+    />
 
-    <vocabulary
-        name="TranslationGroup"
-        factory="canonical.launchpad.vocabularies.TranslationGroupVocabulary"
-        />
+  <vocabulary
+    name="SourcePackageName"
+    factory="canonical.launchpad.vocabularies.SourcePackageNameVocabulary"
+    />
 
-    <vocabulary
-        name="TranslationPermission"
-        factory="canonical.launchpad.vocabularies.TranslationPermissionVocabulary"
-        />
+  <vocabulary
+    name="Specification"
+    factory="canonical.launchpad.vocabularies.SpecificationVocabulary"
+    />
 
-    <vocabulary
-        name="POTemplateName"
-        factory="canonical.launchpad.vocabularies.POTemplateNameVocabulary"
-        />
+  <vocabulary
+    name="SpecificationDependencies"
+    factory="canonical.launchpad.vocabularies.SpecificationDependenciesVocabulary"
+    />
 
-    <vocabulary
-        name="Schema"
-        factory="canonical.launchpad.vocabularies.SchemaVocabulary"
-        />
-    <vocabulary
-        name="TimezoneName"
-        factory="canonical.launchpad.vocabularies.TimezoneNameVocabulary"
-        />
+  <vocabulary
+    name="SpecificationDelivery"
+    factory="canonical.launchpad.vocabularies.SpecificationDeliveryVocabulary"
+    />
 
-    <!-- Define the widget used by Choice fields that use huge vocabularies -->
-    <view
-        type="zope.publisher.interfaces.browser.IBrowserRequest"
-        for="zope.schema.interfaces.IChoice
-            canonical.launchpad.vocabularies.IHugeVocabulary"
-        provides="zope.app.form.interfaces.IInputWidget"
-        factory="canonical.widgets.SinglePopupWidget"
-        permission="zope.Public"
-        />
+  <vocabulary
+    name="SpecificationPriority"
+    factory="canonical.launchpad.vocabularies.SpecificationPriorityVocabulary"
+    />
+
+  <vocabulary
+    name="SpecificationStatus"
+    factory="canonical.launchpad.vocabularies.SpecificationStatusVocabulary"
+    />
+
+  <vocabulary
+    name="Sprint"
+    factory="canonical.launchpad.vocabularies.SprintVocabulary"
+    />
+
+  <vocabulary
+    name="SprintSpecificationStatus"
+    factory="canonical.launchpad.vocabularies.SprintSpecificationStatusVocabulary"
+    />
+
+  <vocabulary
+    name="TeamSubscriptionPolicy"
+    factory="canonical.launchpad.vocabularies.TeamSubscriptionPolicyVocabulary"
+    />
+
+  <vocabulary
+    name="TicketPriority"
+    factory="canonical.launchpad.vocabularies.TicketPriorityVocabulary"
+    />
+
+  <vocabulary
+    name="TicketStatus"
+    factory="canonical.launchpad.vocabularies.TicketStatusVocabulary"
+    />
+
+  <vocabulary
+    name="TimezoneName"
+    factory="canonical.launchpad.vocabularies.TimezoneNameVocabulary"
+    />
+
+  <vocabulary
+    name="TranslationGroup"
+    factory="canonical.launchpad.vocabularies.TranslationGroupVocabulary"
+    />
+
+  <vocabulary
+    name="TranslationPermission"
+    factory="canonical.launchpad.vocabularies.TranslationPermissionVocabulary"
+    />
+
+  <vocabulary
+    name="ValidPersonOrTeam"
+    factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+    />
+
+  <vocabulary
+    name="ValidAssignee"
+    factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+    />
+
+  <vocabulary
+    name="ValidMaintainer"
+    factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+    />
+
+  <vocabulary
+    name="ValidOwner"
+    factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+    />
+
+  <vocabulary
+    name="ValidTeamMember"
+    factory="canonical.launchpad.vocabularies.ValidTeamMemberVocabulary"
+    />
+
+  <vocabulary
+    name="ValidTeamOwner"
+    factory="canonical.launchpad.vocabularies.ValidTeamOwnerVocabulary"
+    />
+
+  <vocabulary
+    name="Processor"
+    factory="canonical.launchpad.vocabularies.ProcessorVocabulary"
+    />
+
+  <vocabulary
+    name="ProcessorFamily"
+    factory="canonical.launchpad.vocabularies.ProcessorFamilyVocabulary"
+    />
+
+  <!-- Define the widget used by Choice fields that use huge vocabularies -->
+  <view
+    type="zope.publisher.interfaces.browser.IBrowserRequest"
+    for="zope.schema.interfaces.IChoice
+      canonical.launchpad.vocabularies.IHugeVocabulary"
+    provides="zope.app.form.interfaces.IInputWidget"
+    factory="canonical.widgets.SinglePopupWidget"
+    permission="zope.Public"
+    />
 
 </configure>

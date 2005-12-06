@@ -21,6 +21,6 @@ home page.
   ... GET / HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...Daniel Aguayo...
+  ...Sample Person...
 
 

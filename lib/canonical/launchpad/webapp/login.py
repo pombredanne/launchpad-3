@@ -11,8 +11,8 @@ from zope.component import getUtility
 from zope.app.session.interfaces import ISession
 from zope.event import notify
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
-from zope.app.security.interfaces import IAuthenticationService
 
+from canonical.launchpad import _
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.interfaces import CookieAuthLoggedInEvent
@@ -22,14 +22,21 @@ from canonical.launchpad.interfaces import ILoginTokenSet, IPersonSet
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.lp.dbschema import LoginTokenType
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from canonical.launchpad.webapp.notification import NOTIFICATION_PARAMETER
 
 class UnauthorizedView(SystemErrorView):
+
+    response_code = None
 
     forbidden_page = ViewPageTemplateFile(
         '../templates/launchpad-forbidden.pt')
 
     def __call__(self):
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
+            if 'loggingout' in self.request.form:
+                target = '%s?loggingout=1' % self.request.URL[-2]
+                self.request.response.redirect(target)
+                return ''
             if self.request.method == 'POST':
                 # If we got a POST then that's a problem.  We can only
                 # redirect with a GET, so when we redirect after a successful
@@ -43,11 +50,14 @@ class UnauthorizedView(SystemErrorView):
                 return ('Application error.  Unauthenticated user POSTing to '
                         'page that requires authentication.')
             # If we got any query parameters, then preserve them in the
-            # new URL.
+            # new URL. Except for the BrowserNotifications
             query_string = self.request.get('QUERY_STRING', '')
             if query_string:
                 query_string = '?' + query_string
             target = self.request.getURL() + '/+login' + query_string
+            self.request.response.addNoticeNotification(_(
+                    'To continue, you must log in to Launchpad.'
+                    ))
             self.request.response.redirect(target)
             # Maybe render page with a link to the redirection?
             return ''
@@ -112,6 +122,9 @@ class LoginOrRegister:
         elif self.request.form.get(self.submit_registration):
             self.process_registration_form()
 
+    def get_application_url(self):
+        return self.request.getApplicationURL()
+
     def process_login_form(self):
         """Process the form data.
 
@@ -121,22 +134,22 @@ class LoginOrRegister:
         email = self.request.form.get(self.input_email)
         password = self.request.form.get(self.input_password)
         if not email or not password:
-            self.login_error = "Enter your email address and password."
+            self.login_error = _("Enter your email address and password.")
             return
 
+        appurl = self.get_application_url()
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
         if principal is not None and principal.validate(password):
             person = getUtility(IPersonSet).getByEmail(email)
             if person.preferredemail is None:
-                self.login_error = (
+                self.login_error = _(
                     "The email address '%s', which you're trying to use to "
                     "login has not yet been validated to use in Launchpad. We "
                     "sent an email to that address with instructions on how "
                     "to confirm that it belongs to you. As soon as we have "
                     "that confirmation you'll be able to log into Launchpad."
-                    % email)
-                appurl = self.request.getApplicationURL()
+                    ) % email
                 token = getUtility(ILoginTokenSet).new(
                             person, email, email, LoginTokenType.VALIDATEEMAIL)
                 token.sendEmailValidationRequest(appurl)
@@ -197,23 +210,21 @@ class LoginOrRegister:
         Also, take into account the preserved query from the URL.
         """
         target = self.request.URL[-1]
-
-        # Collect up the form inputs that don't start with self.form_prefix.
-        # If there are any, then make a query string out of them and add
-        # this to the redirect URL.
-        query_string = self.request.get('QUERY_STRING', '')
+        query_string = urllib.urlencode(
+            list(self.iter_form_items()), doseq=True)
         if query_string:
             target = '%s?%s' % (target, query_string)
         self.request.response.redirect(target)
 
-    def preserve_query(self):
-        """Returns zero or more hidden inputs that preserve the URL's query."""
-        # XXX: Exclude '-C' because this is left in from sys.argv in Zope3
-        #      using python's cgi.FieldStorage to process requests.
-        # -- SteveAlexander, 2005-04-11
-        L = []
+    def iter_form_items(self):
+        """Iterate over keys and single values, excluding stuff we don't
+        want such as '-C' and things starting with self.form_prefix.
+        """
         for name, value in self.request.form.items():
-            if name == '-C':
+            # XXX: Exclude '-C' because this is left in from sys.argv in Zope3
+            #      using python's cgi.FieldStorage to process requests.
+            # -- SteveAlexander, 2005-04-11
+            if name == '-C' or name == 'loggingout':
                 continue
             if name.startswith(self.form_prefix):
                 continue
@@ -221,11 +232,17 @@ class LoginOrRegister:
                 value_list = value
             else:
                 value_list = [value]
-            for item in value_list:
-                L.append('<input type="hidden" name="%s" value="%s" />' %
-                    (name, cgi.escape(item, quote=True)))
-        return '\n'.join(L)
+            for value_list_item in value_list:
+                yield (name, value_list_item)
 
+    def preserve_query(self):
+        """Returns zero or more hidden inputs that preserve the URL's query."""
+        L = []
+        for name, value in self.iter_form_items():
+            if name != NOTIFICATION_PARAMETER:
+                L.append('<input type="hidden" name="%s" value="%s" />' %
+                        (name, cgi.escape(value, quote=True)))
+        return '\n'.join(L)
 
 def logInPerson(request, principal, email):
     """Log the person in. Password validation must be done in callsites."""
@@ -236,6 +253,9 @@ def logInPerson(request, principal, email):
     authdata['logintime'] = datetime.utcnow()
     authdata['login'] = email
     notify(CookieAuthLoggedInEvent(request, email))
+    request.response.addNoticeNotification(
+        _(u'You have been logged in')
+        )
 
 
 class CookieLogoutPage:
@@ -244,9 +264,19 @@ class CookieLogoutPage:
         session = ISession(self.request)
         authdata = session['launchpad.authenticateduser']
         previous_login = authdata.get('personid')
-        authdata['personid'] = None
-        authdata['logintime'] = datetime.utcnow()
-        notify(LoggedOutEvent(self.request))
+        if previous_login is not None:
+            authdata['personid'] = None
+            authdata['logintime'] = datetime.utcnow()
+            notify(LoggedOutEvent(self.request))
+        else:
+            # There is no cookie-based login currently.
+            # So, don't attempt to log out.  Just redirect
+            pass
+        self.request.response.addNoticeNotification(
+            _(u'You have been logged out')
+            )
+        target = '%s/?loggingout=1' % self.request.URL[-1]
+        self.request.response.redirect(target)
         return ''
 
 

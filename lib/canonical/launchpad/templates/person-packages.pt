@@ -5,48 +5,102 @@
 
 <body>
 
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-  </metal:leftportlets>
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
 
-  <metal:rightportlets fill-slot="portlets_two">
-      <div tal:content="structure context/@@+portlet-actions" />  
-  </metal:rightportlets>
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-calendar" />
+</metal:rightportlets>
 
-  <div metal:fill-slot="main">
+<div metal:fill-slot="main">
 
-      <h1>Package Maintenance Report</h1>
+  <h1>Package Maintenance Report</h1>
 
-      <p tal:condition="context/maintainerships"><span
-      tal:replace="context/browsername">maintainer</span> is the
-      maintainer of the following distribution packages:</p>
-      
-      <p tal:condition="not: context/maintainerships"><span
-      tal:replace="context/browsername">maintainer</span> is not
-      currently recorded as the maintainer of any packages in the Launchpad
-      system.</p>
+  <tal:maintained-packages condition="context/maintainedPackages">
+    <h2>Maintained packages</h2>
 
-      <tal:block tal:repeat="maintainership context/maintainerships">
-      <tal:block tal:define="spname maintainership/sourcepackagename/name; 
-                             distro maintainership/distribution;
-                             currentrelease distro/currentrelease;"
-          tal:condition="currentrelease">
+    <ul>
+      <li tal:repeat="sourcepackagereleasesbyname view/maintainedPackagesByPackageName">
+        <label tal:content="sourcepackagereleasesbyname/name" />
 
-        <a tal:attributes="href string:/distros/${distro/name}"
-           tal:content="distro/title">DISTRO</a> ::
+        <tal:block define="
+            table_id string:maintained;
+            sourcepackagereleases sourcepackagereleasesbyname/releases">
+          <div metal:use-macro="template/macros/sourcepackagerelease-table" />
+        </tal:block>
+      </li>
+      <br />
+    </ul>
+  </tal:maintained-packages>
 
-        <a tal:attributes="href string:/distros/${distro/name}/${currentrelease/name}"
-           tal:content="currentrelease/name">Distrorelease</a> ::
+  <tal:uploaded-packages condition="context/uploadedButNotMaintainedPackages">
+    <h2>Uploaded packages</h2>
 
-        <a tal:attributes="href string:/distros/${distro/name}/${currentrelease/name}/+sources/${spname}"
-           tal:content="spname">PACKAGE</a>
+    <ul>
+      <li tal:repeat="sourcepackagereleasesbyname view/uploadedButNotMaintainedPackagesByPackageName">
+        <label tal:content="sourcepackagereleasesbyname/name" />
 
-        <br />
+        <tal:block define="
+            table_id string:uploaded;
+            sourcepackagereleases sourcepackagereleasesbyname/releases">
+          <div metal:use-macro="template/macros/sourcepackagerelease-table" />
+        </tal:block>
+      </li>
+      <br />
+    </ul>
+  </tal:uploaded-packages>
 
-      </tal:block>
-      </tal:block>
+</div>
 
-  </div>
+<metal:macros fill-slot="bogus">
+<metal:macro define-macro="sourcepackagerelease-table">
+  <tal:comment replace="nothing">
+    This macro expects the following variables defined:
+    :sourcepackagereleases: A list of SourcePackageRelease objects
+    :table_id: The value for the id attribute of the table. This is needed to
+    allow sorting based on the table columns.
+  </tal:comment>
+
+  <table class="listing sortable" tal:attributes="id table_id">
+  <thead>
+    <tr>
+      <th>Distribution Release</th>
+      <th>Version</th>
+      <th>Bugs</th>
+      <th>Tickets</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr tal:repeat="sourcepackagerelease sourcepackagereleases">
+    <tal:block define="spr sourcepackagerelease;
+                       distrorelease spr/uploaddistrorelease">
+      <td>
+        <a tal:attributes="href distrorelease/fmt:url"
+           tal:content="distrorelease/fullreleasename">
+        </a>
+      </td>
+      <td>
+        <a tal:attributes="href string:${distrorelease/fmt:url}/+source/${spr/name}"
+           tal:content="spr/version">
+        </a>
+      </td>
+      <td style="text-align: right">
+        <a tal:attributes="href string: ${spr/sourcepackage/fmt:url}/+bugs"
+           tal:content="python: view.sourcepackagerelease_open_bugs_count(spr)">
+        </a>
+      </td>
+      <td style="text-align: right">
+        <a tal:attributes="href string: ${spr/sourcepackage/fmt:url}/+tickets"
+           tal:content="spr/open_tickets_count">
+        </a>
+      </td>
+    </tal:block>
+    </tr>
+  </tbody>
+  </table>
+</metal:macro>
+</metal:macros>
 
 </body>
 </html>

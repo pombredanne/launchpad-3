@@ -1,0 +1,13 @@
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+source/pmount/+changelog HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...
+  This is a placeholder changelog for pmount 0.1-2 
+  <BLANKLINE>
+  This is a placeholder changelog for pmount 0.1-1 
+  <BLANKLINE>
+  <BLANKLINE>
+  ...

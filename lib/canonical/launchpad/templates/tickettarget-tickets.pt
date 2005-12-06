@@ -1,0 +1,51 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Support requests for <tal:thing replace="context/displayname" /></h1>
+
+  <tal:x replace="nothing">
+    <!-- ABOUT THIS PAGE
+    This page uses a view class that organises the tasks into a set of
+    categories (by status). it determines the sequence of the categories,
+    and the sequence of the tickets in each category.
+
+       view/categories => the list of ticket statuses to be displayed
+       category/status => the category TicketStatus
+       category/tickets => the list of tickets
+       ticket => an ITicket
+    -->
+  </tal:x>
+
+  <p tal:condition="not:context/tickets">
+    There are no support requests currently registered for
+    <span tal:replace="context/displayname">Ubuntu 5.04</span>.
+  </p>
+
+  <tal:block condition="context/tickets" repeat="category view/categories">
+
+    <h2 tal:content="category/status/title">Approved</h2>
+
+    <table>
+      <tbody>
+      
+        <tr tal:repeat="ticket category/tickets"
+         tal:replace="structure ticket/@@+listing-detailed" />
+
+      </tbody>
+    </table>
+
+  </tal:block>
+
+</div>
+</body>
+</html>

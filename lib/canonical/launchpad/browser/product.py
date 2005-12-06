@@ -4,55 +4,129 @@
 
 __metaclass__ = type
 
+__all__ = [
+    'ProductNavigation',
+    'ProductSetNavigation',
+    'ProductFacets',
+    'ProductOverviewMenu',
+    'ProductBugsMenu',
+    'ProductSupportMenu',
+    'ProductSpecificationsMenu',
+    'ProductBountiesMenu',
+    'ProductTranslationsMenu',
+    'ProductCodeMenu',
+    'ProductSetContextMenu',
+    'ProductView',
+    'ProductEditView',
+    'ProductSeriesAddView',
+    'ProductRdfView',
+    'ProductSetView',
+    'ProductAddView'
+    ]
+
 from warnings import warn
-from urllib import quote as urlquote
 
 import zope.security.interfaces
 from zope.component import getUtility
 from zope.event import notify
-from zope.exceptions import NotFoundError
 from zope.app.form.browser.add import AddView
-from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
+from zope.app.event.objectevent import ObjectCreatedEvent 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
     IPerson, IProduct, IProductSet, IProductSeries, ISourcePackage,
-    ICountry, IBugSet, ICalendarOwner)
+    ICountry, ICalendarOwner, NotFoundError)
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.potemplate import POTemplateView
-from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
+from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
+from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, DefaultLink, canonical_url)
+    StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
+    enabled_with_permission, structured, GetitemNavigation, Navigation,
+    stepthrough)
 
-__all__ = ['ProductFacets', 'ProductView', 'ProductEditView',
-           'ProductFileBugView', 'ProductRdfView', 'ProductSetView',
-           'ProductSetAddView', 'ProductSeriesAddView']
 
-class ProductFacets(StandardLaunchpadFacets):
-    """The links that will appear in the facet menu for
-    an IProduct.
-    """
+class ProductNavigation(
+    Navigation, BugTargetTraversalMixin, CalendarTraversalMixin):
 
     usedfor = IProduct
 
-    # These links are inherited from StandardLaunchpadFacets.
-    # The items in the list refer to method names, and
-    # will appear on the page in the order they appear
-    # in the list.
-    # links = ['overview', 'bugs', 'translations']
+    def breadcrumb(self):
+        return self.context.displayname
+
+    @stepthrough('+spec')
+    def traverse_spec(self, name):
+        return self.context.getSpecification(name)
+
+    @stepthrough('+series')
+    def traverse_series(self, name):
+        return self.context.getSeries(name)
+
+    @stepthrough('+milestone')
+    def traverse_milestone(self, name):
+        return self.context.getMilestone(name)
+
+    @stepthrough('+ticket')
+    def traverse_ticket(self, name):
+        # tickets should be ints
+        try:
+            ticket_num = int(name)
+        except ValueError:
+            raise NotFoundError
+        return self.context.getTicket(ticket_num)
+
+    def traverse(self, name):
+        return self.context.getRelease(name)
+
+
+class ProductSetNavigation(GetitemNavigation):
+
+    usedfor = IProductSet
+
+    def breadcrumb(self):
+        return 'Products'
+
+
+class ProductFacets(StandardLaunchpadFacets):
+    """The links that will appear in the facet menu for an IProduct."""
+
+    usedfor = IProduct
+
+    enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
+                   'translations', 'calendar', 'code']
+
+    links = StandardLaunchpadFacets.links + ['code']
 
     def overview(self):
         target = ''
         text = 'Overview'
         summary = 'General information about %s' % self.context.displayname
-        return DefaultLink(target, text, summary)
+        return Link(target, text, summary)
 
     def bugs(self):
         target = '+bugs'
         text = 'Bugs'
         summary = 'Bugs reported about %s' % self.context.displayname
+        return Link(target, text, summary)
+
+    def support(self):
+        target = '+tickets'
+        text = 'Support'
+        summary = (
+            'Technical support requests for %s' % self.context.displayname)
+        return Link(target, text, summary)
+
+    def bounties(self):
+        target = '+bounties'
+        text = 'Bounties'
+        summary = 'Bounties related to %s' % self.context.displayname
+        return Link(target, text, summary)
+
+    def specifications(self):
+        target = '+specs'
+        text = 'Specifications'
+        summary = 'Feature specifications for %s' % self.context.displayname
         return Link(target, text, summary)
 
     def translations(self):
@@ -61,12 +135,158 @@ class ProductFacets(StandardLaunchpadFacets):
         summary = 'Translations of %s in Rosetta' % self.context.displayname
         return Link(target, text, summary)
 
+    def code(self):
+        target = '+branches'
+        text = 'Code'
+        summary = 'Bazaar Branches for %s' % self.context.displayname
+        return Link(target, text, summary)
+
     def calendar(self):
         target = '+calendar'
         text = 'Calendar'
         # only link to the calendar if it has been created
-        linked = ICalendarOwner(self.context).calendar is not None
-        return Link(target, text, linked=linked)
+        enabled = ICalendarOwner(self.context).calendar is not None
+        return Link(target, text, enabled=enabled)
+
+
+class ProductOverviewMenu(ApplicationMenu):
+
+    usedfor = IProduct
+    facet = 'overview'
+    links = [
+        'edit', 'reassign', 'distributions', 'packages', 'series_add',
+        'branch_add', 'milestone_add', 'launchpad_usage', 'rdf', 'administer'
+        ]
+
+    def edit(self):
+        text = 'Edit Product Details'
+        return Link('+edit', text, icon='edit')
+
+    def reassign(self):
+        text = 'Change Maintainer'
+        return Link('+reassign', text, icon='edit')
+
+    def distributions(self):
+        text = 'Distributions'
+        return Link('+distributions', text, icon='info')
+
+    def packages(self):
+        text = 'Packages'
+        return Link('+packages', text, icon='info')
+
+    def series_add(self):
+        text = 'Add Release Series'
+        return Link('+addseries', text, icon='add')
+
+    def branch_add(self):
+        text = 'Add Branch'
+        return Link('+addbranch', text, icon='add')
+
+    def milestone_add(self):
+        text = 'Add Milestone'
+        return Link('+addmilestone', text, icon='add')
+
+    def launchpad_usage(self):
+        text = 'Define Launchpad Usage'
+        return Link('+launchpad', text, icon='edit')
+
+    def rdf(self):
+        text = structured(
+            'Download <abbr title="Resource Description Framework">'
+            'RDF</abbr> Metadata')
+        return Link('+rdf', text, icon='download')
+
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        text = 'Administer'
+        return Link('+review', text, icon='edit')
+
+
+class ProductBugsMenu(ApplicationMenu):
+
+    usedfor = IProduct
+    facet = 'bugs'
+    links = ['filebug']
+
+    def filebug(self):
+        text = 'Report a bug'
+        return Link('+filebug', text, icon='add')
+
+
+class ProductSupportMenu(ApplicationMenu):
+
+    usedfor = IProduct
+    facet = 'support'
+    links = ['new']
+
+    def new(self):
+        text = 'Request Support'
+        return Link('+addticket', text, icon='add')
+
+
+class ProductSpecificationsMenu(ApplicationMenu):
+
+    usedfor = IProduct
+    facet = 'specifications'
+    links = ['roadmap', 'table', 'workload', 'new']
+
+    def roadmap(self):
+        text = 'Show Roadmap'
+        return Link('+specplan', text, icon='info')
+
+    def table(self):
+        text = 'Show Assignments'
+        return Link('+specstable', text, icon='info')
+
+    def workload(self):
+        text = 'Show Workload'
+        return Link('+workload', text, icon='info')
+
+    def new(self):
+        text = 'New Specification'
+        return Link('+addspec', text, icon='add')
+
+
+class ProductBountiesMenu(ApplicationMenu):
+
+    usedfor = IProduct
+    facet = 'bounties'
+    links = ['new', 'link']
+
+    def new(self):
+        text = 'Register a New Bounty'
+        return Link('+addbounty', text, icon='add')
+
+    def link(self):
+        text = 'Link Existing Bounty'
+        return Link('+linkbounty', text, icon='edit')
+
+
+class ProductTranslationsMenu(ApplicationMenu):
+
+    usedfor = IProduct
+    facet = 'translations'
+    links = ['translators', 'edit']
+
+    def translators(self):
+        text = 'Change Translators'
+        return Link('+changetranslators', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def edit(self):
+        text = 'Edit Template Names'
+        return Link('+potemplatenames', text, icon='edit')
+
+
+class ProductCodeMenu(ApplicationMenu):
+
+    usedfor = IProduct
+    facet = 'code'
+    links = ['new']
+
+    def new(self):
+        text = 'Add Bazaar Branch'
+        return Link('+addbranch', text, icon='add')
 
 
 def _sort_distros(a, b):
@@ -74,8 +294,22 @@ def _sort_distros(a, b):
     if a['name'] == 'ubuntu':
         return -1
     return cmp(a['name'], b['name'])
-        
-# A View Class for Product
+
+
+class ProductSetContextMenu(ContextMenu):
+
+    usedfor = IProductSet
+    links = ['register', 'listall']
+
+    def register(self):
+        text = 'Register a New Product'
+        return Link('+new', text, icon='add')
+
+    def listall(self):
+        text = 'List All Products'
+        return Link('+all', text, icon='list')
+
+
 class ProductView:
 
     __used_for__ = IProduct
@@ -160,7 +394,6 @@ class ProductView:
         title, and an attribute "packagings" which is a list of the relevant
         packagings for this distro and product.
         """
-
         distros = {}
         # first get a list of all relevant packagings
         all_packagings = []
@@ -186,7 +419,6 @@ class ProductView:
         result.sort(cmp=_sort_distros)
         return result
 
-
     def projproducts(self):
         """Return a list of other products from the same project as this
         product, excluding this product"""
@@ -194,31 +426,6 @@ class ProductView:
             return []
         return [product for product in self.context.project.products
                         if product.id != self.context.id]
-
-    def edit(self):
-        """
-        Update the contents of a Product. This method is called by a
-        tal:dummy element in a page template. It checks to see if a
-        form has been submitted that has a specific element, and if
-        so it continues to process the form, updating the fields of
-        the database as it goes.
-        """
-        # check that we are processing the correct form, and that
-        # it has been POST'ed
-        form = self.form
-        if form.get("Update") != "Update Product":
-            return
-        if self.request.method != "POST":
-            return
-        # Extract details from the form and update the Product
-        self.context.displayname = form['displayname']
-        self.context.title = form['title']
-        self.context.summary = form['summary']
-        self.context.description = form['description']
-        self.context.homepageurl = form['homepageurl']
-        notify(ObjectModifiedEvent(self.context))
-        # now redirect to view the product
-        self.request.response.redirect(self.request.URL[-1])
 
     def potemplatenames(self):
         potemplatenames = set([])
@@ -230,22 +437,23 @@ class ProductView:
         return sorted(potemplatenames, key=lambda item: item.name)
 
 
-class ProductEditView(ProductView, SQLObjectEditView):
+class ProductEditView(SQLObjectEditView):
     """View class that lets you edit a Product object."""
 
-    def __init__(self, context, request):
-        ProductView.__init__(self, context, request)
-        SQLObjectEditView.__init__(self, context, request)
-
     def changed(self):
-        # If the name changed then the URL changed, so redirect:
-        self.request.response.redirect(
-            '../%s/+edit' % urlquote(self.context.name))
+        # If the name changed then the URL will have changed
+        if self.context.active:
+            self.request.response.redirect(canonical_url(self.context))
+        else:
+            productset = getUtility(IProductSet)
+            self.request.response.redirect(canonical_url(productset))
 
 
 class ProductSeriesAddView(AddView):
     """Generates a form to add new product release series"""
+
     series = None
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
@@ -255,44 +463,12 @@ class ProductSeriesAddView(AddView):
     def createAndAdd(self, data):
         """Handle a request to create a new series for this product."""
         # Ensure series name is lowercase
-        self.series = self.context.newSeries(data["name"], data["displayname"],
-                                             data["summary"])
+        self.series = self.context.newSeries(
+            data["name"], data["displayname"], data["summary"])
 
     def nextURL(self):
         assert self.series
         return '+series/%s' % self.series.name
-
-
-class ProductFileBugView(SQLObjectAddView):
-
-    __used_for__ = IProduct
-
-    def __init__(self, context, request):
-        self.request = request
-        self.context = context
-        SQLObjectAddView.__init__(self, context, request)
-
-    def createAndAdd(self, data):
-        # add the owner information for the bug
-        owner = IPerson(self.request.principal, None)
-        if not owner:
-            raise zope.security.interfaces.Unauthorized(
-                "Need an authenticated bug owner")
-        kw = {}
-        for key, value in data.items():
-            kw[str(key)] = value
-        kw['product'] = self.context
-        # create the bug
-        # XXX cprov 20050112
-        # Try to avoid passing **kw, it is unreadable
-        # Pass the keyword explicitly ...
-        bug = getUtility(IBugSet).createBug(**kw)
-        notify(SQLObjectCreatedEvent(bug))
-        self.addedBug = bug
-        return bug
-
-    def nextURL(self):
-        return canonical_url(self.addedBug, self.request)
 
 
 class ProductRdfView(object):
@@ -364,18 +540,19 @@ class ProductSetView:
         time the method is called, otherwise return previous results.
         """
         if self.results is None:
-            self.results = self.context.search(text=self.text,
-                                               bazaar=self.bazaar,
-                                               malone=self.malone,
-                                               rosetta=self.rosetta,
-                                               soyuz=self.soyuz)
+            self.results = self.context.search(
+                text=self.text,
+                bazaar=self.bazaar,
+                malone=self.malone,
+                rosetta=self.rosetta,
+                soyuz=self.soyuz)
         self.matches = self.results.count()
         return self.results
 
 
-class ProductSetAddView(AddView):
+class ProductAddView(AddView):
 
-    __used_for__ = IProductSet
+    __used_for__ = IProduct
 
     def __init__(self, context, request):
         self.context = context
@@ -413,5 +590,4 @@ class ProductSetAddView(AddView):
 
     def nextURL(self):
         return self._nextURL
-
 

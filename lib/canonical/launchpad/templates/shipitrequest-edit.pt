@@ -1,0 +1,240 @@
+<tal:do-this-first condition="view/processForm" />
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+  <div metal:fill-slot="body">
+
+    <br />
+    <tal:block condition="request/previous|nothing">
+      <p class="portalMessage">
+        The request #<span tal:replace="request/previous" />
+        <span tal:condition="request/approved|nothing">was approved.</span>
+        <span tal:condition="request/denied|nothing">was denied.</span>
+        <span tal:condition="request/changed|nothing">was changed.</span>
+      </p>
+    </tal:block>
+
+    <h1>
+      <span tal:condition="not: context/isStandardRequest">Custom</span>
+      <span tal:condition="context/isStandardRequest">Standard</span>
+      Request #<span tal:replace="context/id" />
+    </h1>
+
+    <table>
+    <tbody>
+    <tr>
+    <td width="80%">
+
+    <div tal:condition="view/recipientHasOtherShippedRequests"
+         tal:define="shipped_requests context/recipient/shippedShipItRequests"
+         class="portalMessage">
+     <p>This person has other requests already sent to the shipping company.
+     </p>
+      <ul>
+        <tal:block repeat="shipped_request shipped_requests">
+          <li tal:condition="python: shipped_request != context">
+            <a tal:attributes="href shipped_request/fmt:url">
+              <span tal:replace="shipped_request/daterequested/fmt:date" />:
+              <span tal:replace="shipped_request/totalCDs" /> CDs requested,
+              <span tal:replace="shipped_request/totalapprovedCDs" />
+              CDs approved.
+            </a>
+          </li>
+        </tal:block>
+      </ul>
+    </div>
+
+    <tal:block condition="view/contextCancelledOrShipped">
+      <p tal:condition="context/cancelled" 
+         class="portalMessage">This request was cancelled by 
+        <span tal:replace="context/whocancelled/displayname" />.
+      </p>
+      <p tal:condition="context/shipment" class="portalMessage">
+        This request was sent to the shipping company on 
+        <span tal:replace="context/shipment/shippingrun/datecreated/fmt:date" />.
+      </p>
+    </tal:block>
+
+    <tal:block condition="not: view/contextCancelledOrShipped">
+      <tal:block condition="context/isApproved">
+        <br />
+        <p class="portalMessage">This request is currently approved.</p>
+      </tal:block>
+      <tal:block condition="context/isAwaitingApproval">
+        <br />
+        <p style="margin-bottom: 1em" class="portalMessage">This request is
+        still waiting for approval.  It's possible to approve it and change the
+        approved quantities later, if necessary.</p>
+      </tal:block>
+      <tal:block condition="context/isDenied">
+        <br />
+        <p class="portalMessage">This request is currently denied.</p>
+      </tal:block>
+    </tal:block>
+
+    <h2>Requested Quantities</h2>
+    <ul style="margin-left: 3em">
+        <li>X86: <span tal:replace="context/quantityx86" /></li>
+        <li>AMD64: <span tal:replace="context/quantityamd64" /></li>
+        <li>PPC: <span tal:replace="context/quantityppc" /></li>
+    </ul>
+
+    <div style="text-align: right;" tal:condition="not: context/isDenied">
+      <form name="denyrequest" action="" method="POST">
+        <input type="submit" value="Deny" name="DENY" />
+      </form>
+    </div>
+
+    <h2>Approved Quantities</h2>
+
+    <p>These are the quantities that will actually be shipped.</p>
+
+    <form method="POST" action="" name="approverequest">
+
+    <table cols="2">
+      <tr>
+        <td align="right"><strong>X86 CDs:</strong></td>
+        <td>
+          <input type="text" name="quantityx86" align="right" size="5"
+                 maxlength="5"
+                 tal:condition="context/isApproved"
+                 tal:attributes="value context/quantityx86approved" />
+          <input type="text" name="quantityx86" align="right" size="5"
+                 maxlength="5"
+                 tal:condition="not: context/isApproved"
+                 tal:attributes="value context/quantityx86" />
+        </td>
+      </tr>
+      <tr>
+        <td align="right"><strong>AMD64 CDs:</strong></td>
+        <td>
+          <input type="text" name="quantityamd64" align="right" size="5"
+                 maxlength="5"
+                 tal:condition="context/isApproved"
+                 tal:attributes="value context/quantityamd64approved" />
+          <input type="text" name="quantityamd64" align="right" size="5"
+                 maxlength="5"
+                 tal:condition="not: context/isApproved"
+                 tal:attributes="value context/quantityamd64" />
+        </td>
+      </tr>
+      <tr>
+        <td align="right"><strong>PPC CDs:</strong></td>
+        <td>
+          <input type="text" name="quantityppc" align="right" size="5"
+                 maxlength="5"
+                 tal:condition="context/isApproved"
+                 tal:attributes="value context/quantityppcapproved" />
+          <input type="text" name="quantityppc" align="right" size="5"
+                 maxlength="5"
+                 tal:condition="not: context/isApproved"
+                 tal:attributes="value context/quantityppc" />
+        </td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>
+          <label>
+            <input type="checkbox" name="highpriority"
+                   tal:attributes="checked context/highpriority" />
+            High priority?
+          </label>
+        </td>
+      </tr>
+    </table>
+
+    <br />
+    <div style="text-align: right;">
+      <tal:block condition="not: context/cancelled">
+        <tal:block condition="not: context/isApproved">
+          <input type="submit" value="Approve" name="APPROVE" />
+        </tal:block>
+        <tal:block condition="context/isApproved">
+          <input type="submit" value="Change Approved Totals" name="CHANGE" />
+        </tal:block>
+      </tal:block>
+    </div>
+    </form>
+
+    <h2>Shipping Details</h2>
+    <table>
+      <tr>
+        <td align="right"><strong>Recipient:</strong></td>
+        <td tal:condition="context/recipientdisplayname">
+          <span tal:replace="context/recipientdisplayname" />
+          (<a tal:attributes="href 
+            string:mailto:${context/recipient/preferredemail/email}"
+            ><span tal:replace="context/recipient/preferredemail/email" 
+            /></a>)
+        </td>
+      </tr>
+      <tr tal:condition="context/organization">
+        <td align="right"><strong>Organization:</strong></td>
+        <td><span tal:replace="context/organization" /></td>
+      </tr>
+      <tr>
+        <td align="right"><strong>Country:</strong></td>
+        <td><span tal:replace="context/country/name" /></td>
+      </tr>
+      <tr>
+        <td align="right"><strong>City:</strong></td>
+        <td><span tal:replace="context/city" /></td>
+      </tr>
+      <tr tal:condition="context/province">
+        <td align="right"><strong>Province:</strong></td>
+        <td><span tal:replace="context/province" /></td>
+      </tr>
+      <tr>
+        <td align="right"><strong>Address:</strong></td>
+        <td><span tal:replace="context/addressline1" /></td>
+      </tr>
+      <tr tal:condition="context/addressline2">
+        <td align="right"></td>
+        <td><span tal:replace="context/addressline2" /></td>
+      </tr>
+      <tr tal:condition="context/postcode">
+        <td align="right"><strong>Postcode:</strong></td>
+        <td><span tal:replace="context/postcode" /></td>
+      </tr>
+      <tr tal:condition="context/phone">
+        <td align="right"><strong>Phone:</strong></td>
+        <td><span tal:replace="context/phone" /></td>
+      </tr>
+      <tr>
+        <td align="right"><strong>Date:</strong></td>
+        <td><span tal:replace="context/daterequested/fmt:datetime" /></td>
+      </tr>
+      <tr tal:condition="context/reason">
+        <td align="right"><strong>Reason:</strong></td>
+        <td><span tal:replace="context/reason" /></td>
+      </tr>
+    </table>
+
+    <ul>
+      <li class="edit">
+        <a tal:attributes="href string:/myrequest?order=${context/id}">
+          <span tal:condition="context/recipientdisplayname">
+            Edit request details</span>
+          <span tal:condition="not: context/recipientdisplayname">
+            Edit shipping details</span>
+        </a>
+      </li>
+    </ul>
+
+    </td>
+    <td
+      width="20%"
+      style="vertical-align: top;"
+      tal:content="structure context/@@+portlet-navigation"
+    />
+    </tr>
+    </table>  
+  
+  </div>
+
+</body>
+</html>

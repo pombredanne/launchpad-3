@@ -6,10 +6,8 @@ __metaclass__ = type
 __all__ = ['Product', 'ProductSet']
 
 import sets
-from warnings import warn
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 from zope.component import getUtility
 
 from sqlobject import (
@@ -19,9 +17,12 @@ from sqlobject import (
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+
 from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, BugTaskSeverity, BugTaskStatus,
-    RosettaImportStatus)
+    SpecificationSort)
+
+from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.distribution import Distribution
@@ -29,9 +30,12 @@ from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.bugtask import BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.milestone import Milestone
+from canonical.launchpad.database.specification import Specification
+from canonical.launchpad.database.ticket import Ticket
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
-    IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner)
+    IProduct, IProductSet, ILaunchpadCelebrities, ICalendarOwner, NotFoundError
+    )
 
 
 class Product(SQLBase):
@@ -66,6 +70,10 @@ class Product(SQLBase):
     translationpermission = EnumCol(dbName='translationpermission',
         notNull=True, schema=TranslationPermission,
         default=TranslationPermission.OPEN)
+    official_malone = BoolCol(dbName='official_malone', notNull=True,
+        default=False)
+    official_rosetta = BoolCol(dbName='official_rosetta', notNull=True,
+        default=False)
     active = BoolCol(dbName='active', notNull=True, default=True)
     reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
     autoupdate = BoolCol(dbName='autoupdate', notNull=True, default=False)
@@ -88,9 +96,19 @@ class Product(SQLBase):
                 revision=0)
         return self.calendar
 
-    bugtasks = MultipleJoin('BugTask', joinColumn='product')
-    branches = MultipleJoin('Branch', joinColumn='product')
-    serieslist = MultipleJoin('ProductSeries', joinColumn='product')
+    bugtasks = MultipleJoin('BugTask', joinColumn='product',
+        orderBy='id')
+    branches = MultipleJoin('Branch', joinColumn='product',
+        orderBy='id')
+    serieslist = MultipleJoin('ProductSeries', joinColumn='product',
+        orderBy='name')
+
+    @property
+    def name_with_project(self):
+        """See lib.canonical.launchpad.interfaces.IProduct"""
+        if self.project and self.project.name != self.name:
+            return self.project.name + ": " + self.name
+        return self.name
 
     @property
     def releases(self):
@@ -132,13 +150,41 @@ class Product(SQLBase):
 
     def getMilestone(self, name):
         """See IProduct."""
-        milestone = Milestone.selectOne("""
+        return Milestone.selectOne("""
             product = %s AND
             name = %s
             """ % sqlvalues(self.id, name))
-        if milestone is None:
-            raise NotFoundError(name)
-        return milestone
+
+    def createBug(self, owner, title, comment, private=False):
+        """See IBugTarget."""
+        return BugSet().createBug(
+            product=self, comment=comment, title=title, owner=owner,
+            private=private)
+
+    def tickets(self, quantity=None):
+        """See ITicketTarget."""
+        return Ticket.select("""
+            product = %s
+            """ % sqlvalues(self.id),
+            orderBy='-datecreated',
+            limit=quantity)
+
+    def newTicket(self, owner, title, description):
+        """See ITicketTarget."""
+        return Ticket(title=title, description=description, owner=owner,
+            product=self)
+
+    def getTicket(self, ticket_num):
+        """See ITicketTarget."""
+        # first see if there is a ticket with that number
+        try:
+            ticket = Ticket.get(ticket_num)
+        except SQLObjectNotFound:
+            return None
+        # now verify that that ticket is actually for this target
+        if ticket.target != self:
+            return None
+        return ticket
 
     @property
     def translatable_packages(self):
@@ -146,14 +192,8 @@ class Product(SQLBase):
         packages = sets.Set([package
                             for package in self.sourcepackages
                             if len(package.currentpotemplates) > 0])
-        # Sort the list of packages by distrorelease.name and package.name
-        L = [(item.distrorelease.name + item.name, item)
-             for item in packages]
-        # XXX kiko: use sort(key=foo) instead of the DSU here
-        L.sort()
-        # Get the final list of sourcepackages.
-        packages = [item for sortkey, item in L]
-        return packages
+        # Sort packages by distrorelease.name and package.name
+        return sorted(packages, key=lambda p: (p.distrorelease.name, p.name))
 
     @property
     def translatable_series(self):
@@ -212,31 +252,34 @@ class Product(SQLBase):
         # a better way.
         return max(perms)
 
+    def specifications(self, sort=None, quantity=None):
+        """See IHasSpecifications."""
+        if sort is None or sort == SpecificationSort.DATE:
+            order = ['-datecreated', 'id']
+        elif sort == SpecificationSort.PRIORITY:
+            order = ['-priority', 'status', 'name']
+        return Specification.selectBy(productID=self.id,
+            orderBy=order)[:quantity]
+
+    def getSpecification(self, name):
+        """See ISpecificationTarget."""
+        return Specification.selectOneBy(productID=self.id, name=name)
+
     def getSeries(self, name):
         """See IProduct."""
-        series = ProductSeries.selectOneBy(productID=self.id, name=name)
-        if series is None:
-            raise NotFoundError(name)
-        return series
+        return ProductSeries.selectOneBy(productID=self.id, name=name)
 
     def newSeries(self, name, displayname, summary):
         return ProductSeries(product=self, name=name, displayname=displayname,
                              summary=summary)
 
-
     def getRelease(self, version):
-        #return ProductRelease.selectBy(productID=self.id, version=version)[0]
-        release = ProductRelease.selectOne(
-            AND(ProductRelease.q.productseriesID == ProductSeries.q.id,
-                ProductSeries.q.productID == self.id,
-                ProductRelease.q.version == version),
+        return ProductRelease.selectOne("""
+            ProductRelease.productseries = ProductSeries.id AND
+            ProductSeries.product = %s AND
+            ProductRelease.version = %s
+            """ % sqlvalues(self.id, version),
             clauseTables=['ProductSeries'])
-        if release is None:
-            # XXX: This needs a change in banzai, which depends on this method
-            #      raising IndexError.
-            #      SteveAlexander, 2005-04-25
-            raise IndexError
-        return release
 
     def packagedInDistros(self):
         distros = Distribution.select(
@@ -283,8 +326,18 @@ class Product(SQLBase):
         for curr_bounty in self.bounties:
             if bounty.id == curr_bounty.id:
                 return None
-        linker = ProductBounty(product=self, bounty=bounty)
+        ProductBounty(product=self, bounty=bounty)
         return None
+
+    def newBranch(self, name, title, url, home_page, lifecycle_status,
+                  summary, whiteboard):
+        """See IProduct."""
+        from canonical.launchpad.database import Branch
+        return Branch(
+            product=self, name=name, title=title, url=url, home_page=home_page,
+            lifecycle_status=lifecycle_status, summary=summary,
+            whiteboard=whiteboard)
+        
 
 
 class ProductSet:
@@ -299,10 +352,15 @@ class ProductSet:
 
     def __getitem__(self, name):
         """See canonical.launchpad.interfaces.product.IProductSet."""
-        item = Product.selectOneBy(name=name)
+        item = Product.selectOneBy(name=name, active=True)
         if item is None:
             raise NotFoundError(name)
         return item
+
+    def latest(self, quantity=5):
+        return Product.select(Product.q.active==True,
+                              orderBy='-datecreated',
+                              limit=quantity)
 
     def get(self, productid):
         """See canonical.launchpad.interfaces.product.IProductSet."""
@@ -338,6 +396,7 @@ class ProductSet:
                bazaar=None,
                show_inactive=False):
         """See canonical.launchpad.interfaces.product.IProductSet."""
+        # XXX: soyuz is unused
         clauseTables = sets.Set()
         clauseTables.add('Product')
         query = '1=1 '

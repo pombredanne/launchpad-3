@@ -12,31 +12,74 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-actions" />
   <div tal:replace="structure context/@@+portlet-relateds" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
-    <h1>Bounty Overview</h1>
+  <h1>Bounty Overview</h1>
 
-      <p tal:repeat="notice view/notices"
-         tal:content="notice"
-         class="portalMessage"
-         >Notification Message</p>
+  <p tal:repeat="notice view/notices"
+     tal:content="notice"
+     class="portalMessage"
+     >Notification Message</p>
 
-    <p class="documentDescription" tal:content="context/summary">
-        $Bounty.summary goes here. This should be quite short,
-        just a single paragraph of text really, giving a summary of
-        this Bounty.
-    </p>
+  <p class="documentDescription" tal:content="context/summary">
+    $Bounty.summary goes here. This should be quite short,
+    just a single paragraph of text really, giving a summary of
+    this Bounty.
+  </p>
 
-    <p tal:content="context/description">
-        $Bounty.description goes here. It could be quite long, a few
-        paragraphs at least, and should specify in detail the requirements
-        of the bounty, so that both claimant and reviewer will know when the
-        bounty has been completed.
-    </p>
+  <p tal:content="context/description">
+    $Bounty.description goes here. It could be quite long, a few
+    paragraphs at least, and should specify in detail the requirements
+    of the bounty, so that both claimant and reviewer will know when the
+    bounty has been completed.
+  </p>
+
+  <tal:message repeat="message context/messages">
+    <div class="boardComment"
+         tal:condition="python:context.description != message.contents">
+
+      <div class="boardCommentDetails">
+        <strong tal:content="message/title">$Message.title</strong>
+
+        Posted by <a href="#" tal:attributes="href message/owner/fmt:url" 
+                              tal:content="message/owner/browsername|string:(none)">
+          $Person.browsername</a>
+        at <span tal:replace="message/datecreated/fmt:datetime">Thursday 
+        13:21</span>
+      </div>
+
+      <div class="boardCommentBody">
+        <tal:comment
+          content="structure message/contents/fmt:text-to-html"
+        >
+          Comment text.
+        </tal:comment>
+      </div>
+
+    </div>
+  </tal:message>
+
+  <tal:logged-in condition="request/lp:person">
+    <fieldset class="collapsible collapsed">
+      <legend>Add comment to this bounty</legend>
+        <form action="+addmessage" method="post">
+          <b>Subject:</b>
+          <input name="field.subject" type="text" size="50" 
+                 tal:attributes="value context/followup_subject" /><br />
+          <b>Comment:</b> <textarea name="field.content" rows="10"></textarea>
+          <br />
+        <input type="submit" name="UPDATE_SUBMIT" value="Post Comment" />
+        </form>
+    </fieldset>
+  </tal:logged-in>
+  <tal:not-logged-in condition="not: request/lp:person">
+    <div align="center">
+      To post a comment you must <a href="+login">log in</a>.
+    </div>
+  </tal:not-logged-in>
 
 </div>
 

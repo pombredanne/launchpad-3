@@ -43,8 +43,8 @@
         <div class="row" 
              metal:define-slot="extra_top" 
              tal:replace="nothing">
-            <div class="label">Extra top</div>
-            <div class="label"><input type="text" style="width:100%" /></div>
+            <div>Extra top</div>
+            <div><input type="text" style="width:100%" /></div>
         </div>
 
         <div metal:use-macro="context/@@launchpad_widget_macros/launchpad_widget_rows" />
@@ -52,19 +52,17 @@
         <div class="row"
              metal:define-slot="extra_bottom" 
              tal:replace="nothing">
-          <div class="label">Extra bottom</div>
+          <div>Extra bottom</div>
           <div class="field"><input type="text" style="width:100%" /></div>
         </div>
 
       </div>
-      <div class="row">
-        <div class="controls"><hr />
-          <input type='submit' 
-                 value='Add'
-                 name='UPDATE_SUBMIT' 
-                 style="float: right;"
-                 i18n:attributes='value add-button' />
-        </div>
+      <div class="actions">
+          <input type="submit"
+                 tabindex="1000"
+                 value="Add"
+                 name="UPDATE_SUBMIT"
+                 i18n:attributes="value add-button" />
       </div>
 
       <div class="row" 

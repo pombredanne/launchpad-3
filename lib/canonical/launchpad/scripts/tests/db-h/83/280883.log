@@ -1,0 +1,1218 @@
+
+<strong>Report forwarded</strong> to <code>debian-bugs-dist@lists.debian.org, djoume@taket.org, Takuo KITAME &lt;kitame@debian.org&gt;</code>:<br>
+<code>Bug#280883</code>; Package <code>evolution</code>.
+
+
+debian-bugs-dist@lists.debian.orgdjoume@taket.orgTakuo KITAME <kitame@debian.org>
+
+X-Loop: owner@bugs.debian.org
+Subject: Bug#280883: is woody evolution still vulnerable to SSL Man-In-The-Middle Vulnerability?
+Reply-To: Djoume SALVETTI <djoume@taket.org>, 280883@bugs.debian.org
+Resent-From: Djoume SALVETTI <djoume@taket.org>
+Resent-To: debian-bugs-dist@lists.debian.org
+Resent-CC: djoume@taket.org, Takuo KITAME <kitame@debian.org>
+Resent-Date: Fri, 12 Nov 2004 10:48:12 UTC
+Resent-Message-ID: <handler.280883.B.11002555832002@bugs.debian.org>
+Resent-Sender: owner@bugs.debian.org
+X-Debian-PR-Message: report 280883
+X-Debian-PR-Package: evolution
+X-Debian-PR-Keywords: security
+Received: via spool by submit@bugs.debian.org id=B.11002555832002
+          (code B ref -1); Fri, 12 Nov 2004 10:48:12 UTC
+Received: (at submit) by bugs.debian.org; 12 Nov 2004 10:33:03 +0000
+Received: from krepost.taket.org (localhost) [82.227.166.100] 
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1CSYjm-0000Vv-00; Fri, 12 Nov 2004 02:33:03 -0800
+Received: from djoume by localhost with local (Exim 4.34)
+	id 1CSYjb-0003PR-9h; Fri, 12 Nov 2004 11:32:51 +0100
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+From: Djoume SALVETTI <djoume@taket.org>
+To: Debian Bug Tracking System <submit@bugs.debian.org>
+X-Mailer: reportbug 3.2
+Date: Fri, 12 Nov 2004 11:32:51 +0100
+Message-Id: <E1CSYjb-0003PR-9h@localhost>
+Delivered-To: submit@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2004_03_25 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-11.0 required=4.0 tests=BAYES_00,HAS_PACKAGE,
+	X_DEBBUGS_CC autolearn=ham version=2.60-bugs.debian.org_2004_03_25
+X-Spam-Level: 
+
+Package: evolution
+Version: 2.0.2-3
+Severity: grave
+Tags: security
+Justification: user security hole
+
+
+Good day,
+
+I'm reviewing the list of 2002 CVEs to check if there is still
+some known vulnerables packages in testing.
+
+In CVE-2002-1471 it is written :
+
+| The camel component for Ximian Evolution 1.0.x and earlier does not
+| verify certificates when it establishes a new SSL connection after
+| previously verifying a certificate, which could allow remote attackers
+| to monitor or modify sessions via a man-in-the-middle attack.
+
+According to http://www.securityfocus.com/bid/5875/info/
+woody version of evolution is still vulnerable.
+
+Regards.
+
+-- System Information:
+Debian Release: 3.1
+  APT prefers unstable
+  APT policy: (500, 'unstable')
+Architecture: powerpc (ppc)
+Kernel: Linux 2.6.9-rfb-swsusp
+Locale: LANG=fr_FR@euro, LC_CTYPE=fr_FR@euro (charmap=ISO-8859-15)
+
+Versions of packages evolution depends on:
+ii  evolution-data-server     1.0.2-3        evolution database backend server
+ii  gconf2                    2.6.4-2        GNOME configuration database syste
+ii  gnome-icon-theme          1.2.3-1.1      GNOME Desktop icon theme
+ii  gtkhtml3.2                3.2.3-1        HTML rendering/editing library - b
+ii  libart-2.0-2              2.3.16-6       Library of functions for 2D graphi
+ii  libatk1.0-0               1.6.1-5        The ATK accessibility toolkit
+ii  libaudiofile0             0.2.6-4        Open-source version of SGI's audio
+ii  libbonobo2-0              2.6.2-7        Bonobo CORBA interfaces library
+ii  libbonoboui2-0            2.6.1-1        The Bonobo UI library
+ii  libc6                     2.3.2.ds1-18   GNU C Library: Shared libraries an
+ii  libcompfaceg1             1989.11.11-24  Compress/decompress images for mai
+ii  libebook8                 1.0.2-3        Client library for evolution addre
+ii  libecal6                  1.0.2-3        Client library for evolution calen
+ii  libedataserver3           1.0.2-3        Utily library for evolution data s
+ii  libegroupwise6            1.0.2-3        Client library for accessing group
+ii  libesd0                   0.2.35-2       Enlightened Sound Daemon - Shared 
+ii  libfontconfig1            2.2.3-3        generic font configuration library
+ii  libfreetype6              2.1.7-2.2      FreeType 2 font engine, shared lib
+ii  libgail-common            1.6.6b-1       GNOME Accessibility Implementation
+ii  libgail17                 1.6.6b-1       GNOME Accessibility Implementation
+ii  libgal2.2-1               2.2.3-1        G App Libs (run time library)
+ii  libgal2.2-common          2.2.3-1        G App Libs (common files)
+ii  libgconf2-4               2.6.4-2        GNOME configuration database syste
+ii  libgcrypt11               1.2.0-10       LGPL Crypto library - runtime libr
+ii  libglade2-0               1:2.4.0-1      Library to load .glade files at ru
+ii  libglib2.0-0              2.4.7-1        The GLib library of C routines
+ii  libgnome-keyring0         0.2.1-3        GNOME keyring services library
+ii  libgnome-pilot2           2.0.10-6.1     Support libraries for gnome-pilot
+ii  libgnome2-0               2.6.1.2-2      The GNOME 2 library - runtime file
+ii  libgnomecanvas2-0         2.6.1.1-2      A powerful object-oriented display
+ii  libgnomeprint2.2-0        2.8.0.1-2      The GNOME 2.2 print architecture -
+ii  libgnomeprintui2.2-0      2.6.2-1        The GNOME 2.2 print architecture U
+ii  libgnomeui-0              2.6.1.1cvs-1   The GNOME 2 libraries (User Interf
+ii  libgnomevfs2-0            2.6.2-2        The GNOME virtual file-system libr
+ii  libgnutls11               1.0.16-9       GNU TLS library - runtime library
+ii  libgpg-error0             1.0-1          library for common error values an
+ii  libgtk2.0-0               2.4.13-1       The GTK+ graphical user interface 
+ii  libgtkhtml3.2-11          3.2.3-1        HTML rendering/editing library - r
+ii  libice6                   4.3.0.dfsg.1-8 Inter-Client Exchange library
+ii  libjpeg62                 6b-9           The Independent JPEG Group's JPEG 
+ii  libldap2                  2.1.30-3       OpenLDAP libraries
+ii  libnspr4                  2:1.7.3-5      Netscape Portable Runtime Library
+ii  libnss3                   2:1.7.3-5      Network Security Service Libraries
+ii  liborbit2                 1:2.10.2-1.1   libraries for ORBit2 - a CORBA ORB
+ii  libpango1.0-0             1.4.1-4        Layout and rendering of internatio
+ii  libpisock8                0.11.8-10      Library for communicating with a P
+ii  libpisync0                0.11.8-10      Synchronization library for PalmOS
+ii  libpopt0                  1.7-5          lib for parsing cmdline parameters
+ii  libsm6                    4.3.0.dfsg.1-8 X Window System Session Management
+ii  libsoup2.2-7              2.2.1-1        an HTTP library implementation in 
+ii  libtasn1-2                0.2.10-4       Manage ASN.1 structures (runtime)
+ii  libx11-6                  4.3.0.dfsg.1-8 X Window System protocol client li
+ii  libxml2                   2.6.11-5       GNOME XML library
+ii  xlibs                     4.3.0.dfsg.1-8 X Window System client libraries m
+ii  zlib1g                    1:1.2.2-3      compression library - runtime
+
+-- no debconf information
+
+
+
+
+<strong>Acknowledgement sent</strong> to <code>Djoume SALVETTI &lt;djoume@taket.org&gt;</code>:<br>
+New Bug report received and forwarded.  Copy sent to <code>djoume@taket.org, Takuo KITAME &lt;kitame@debian.org&gt;</code>.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+From: owner@bugs.debian.org (Debian Bug Tracking System)
+To: Djoume SALVETTI <djoume@taket.org>
+Subject: Bug#280883: Acknowledgement (is woody evolution still vulnerable to SSL Man-In-The-Middle Vulnerability?)
+Message-ID: <handler.280883.B.11002555832002.ack@bugs.debian.org>
+In-Reply-To: <E1CSYjb-0003PR-9h@localhost>
+References: <E1CSYjb-0003PR-9h@localhost>
+Precedence: bulk
+X-Debian-PR-Message: ack 280883
+X-Debian-PR-Package: evolution
+X-Debian-PR-Keywords: security
+Reply-To: 280883@bugs.debian.org
+
+Thank you for the problem report you have sent regarding Debian.
+This is an automatically generated reply, to let you know your message has
+been received.  It is being forwarded to the package maintainers and other
+interested parties for their attention; they will reply in due course.
+
+As you requested using X-Debbugs-CC, your message was also forwarded to
+   djoume@taket.org
+(after having been given a Bug report number, if it did not have one).
+
+Your message has been sent to the package maintainer(s):
+ Takuo KITAME <kitame@debian.org>
+
+If you wish to submit further information on your problem, please send
+it to 280883@bugs.debian.org (and *not* to
+submit@bugs.debian.org).
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the Bug-tracking system.
+
+Debian bug tracking system administrator
+(administrator, Debian Bugs database)
+
+
+
+Received: (at submit) by bugs.debian.org; 12 Nov 2004 10:33:03 +0000
+From djoume@taket.org Fri Nov 12 02:33:03 2004
+Return-path: <djoume@taket.org>
+Received: from krepost.taket.org (localhost) [82.227.166.100] 
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1CSYjm-0000Vv-00; Fri, 12 Nov 2004 02:33:03 -0800
+Received: from djoume by localhost with local (Exim 4.34)
+	id 1CSYjb-0003PR-9h; Fri, 12 Nov 2004 11:32:51 +0100
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+From: Djoume SALVETTI <djoume@taket.org>
+To: Debian Bug Tracking System <submit@bugs.debian.org>
+Subject: is woody evolution still vulnerable to SSL Man-In-The-Middle Vulnerability?
+X-Mailer: reportbug 3.2
+Date: Fri, 12 Nov 2004 11:32:51 +0100
+X-Debbugs-Cc: djoume@taket.org
+Message-Id: <E1CSYjb-0003PR-9h@localhost>
+Delivered-To: submit@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2004_03_25 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-11.0 required=4.0 tests=BAYES_00,HAS_PACKAGE,
+	X_DEBBUGS_CC autolearn=ham version=2.60-bugs.debian.org_2004_03_25
+X-Spam-Level: 
+
+Package: evolution
+Version: 2.0.2-3
+Severity: grave
+Tags: security
+Justification: user security hole
+
+
+Good day,
+
+I'm reviewing the list of 2002 CVEs to check if there is still
+some known vulnerables packages in testing.
+
+In CVE-2002-1471 it is written :
+
+| The camel component for Ximian Evolution 1.0.x and earlier does not
+| verify certificates when it establishes a new SSL connection after
+| previously verifying a certificate, which could allow remote attackers
+| to monitor or modify sessions via a man-in-the-middle attack.
+
+According to http://www.securityfocus.com/bid/5875/info/
+woody version of evolution is still vulnerable.
+
+Regards.
+
+-- System Information:
+Debian Release: 3.1
+  APT prefers unstable
+  APT policy: (500, 'unstable')
+Architecture: powerpc (ppc)
+Kernel: Linux 2.6.9-rfb-swsusp
+Locale: LANG=fr_FR@euro, LC_CTYPE=fr_FR@euro (charmap=ISO-8859-15)
+
+Versions of packages evolution depends on:
+ii  evolution-data-server     1.0.2-3        evolution database backend server
+ii  gconf2                    2.6.4-2        GNOME configuration database syste
+ii  gnome-icon-theme          1.2.3-1.1      GNOME Desktop icon theme
+ii  gtkhtml3.2                3.2.3-1        HTML rendering/editing library - b
+ii  libart-2.0-2              2.3.16-6       Library of functions for 2D graphi
+ii  libatk1.0-0               1.6.1-5        The ATK accessibility toolkit
+ii  libaudiofile0             0.2.6-4        Open-source version of SGI's audio
+ii  libbonobo2-0              2.6.2-7        Bonobo CORBA interfaces library
+ii  libbonoboui2-0            2.6.1-1        The Bonobo UI library
+ii  libc6                     2.3.2.ds1-18   GNU C Library: Shared libraries an
+ii  libcompfaceg1             1989.11.11-24  Compress/decompress images for mai
+ii  libebook8                 1.0.2-3        Client library for evolution addre
+ii  libecal6                  1.0.2-3        Client library for evolution calen
+ii  libedataserver3           1.0.2-3        Utily library for evolution data s
+ii  libegroupwise6            1.0.2-3        Client library for accessing group
+ii  libesd0                   0.2.35-2       Enlightened Sound Daemon - Shared 
+ii  libfontconfig1            2.2.3-3        generic font configuration library
+ii  libfreetype6              2.1.7-2.2      FreeType 2 font engine, shared lib
+ii  libgail-common            1.6.6b-1       GNOME Accessibility Implementation
+ii  libgail17                 1.6.6b-1       GNOME Accessibility Implementation
+ii  libgal2.2-1               2.2.3-1        G App Libs (run time library)
+ii  libgal2.2-common          2.2.3-1        G App Libs (common files)
+ii  libgconf2-4               2.6.4-2        GNOME configuration database syste
+ii  libgcrypt11               1.2.0-10       LGPL Crypto library - runtime libr
+ii  libglade2-0               1:2.4.0-1      Library to load .glade files at ru
+ii  libglib2.0-0              2.4.7-1        The GLib library of C routines
+ii  libgnome-keyring0         0.2.1-3        GNOME keyring services library
+ii  libgnome-pilot2           2.0.10-6.1     Support libraries for gnome-pilot
+ii  libgnome2-0               2.6.1.2-2      The GNOME 2 library - runtime file
+ii  libgnomecanvas2-0         2.6.1.1-2      A powerful object-oriented display
+ii  libgnomeprint2.2-0        2.8.0.1-2      The GNOME 2.2 print architecture -
+ii  libgnomeprintui2.2-0      2.6.2-1        The GNOME 2.2 print architecture U
+ii  libgnomeui-0              2.6.1.1cvs-1   The GNOME 2 libraries (User Interf
+ii  libgnomevfs2-0            2.6.2-2        The GNOME virtual file-system libr
+ii  libgnutls11               1.0.16-9       GNU TLS library - runtime library
+ii  libgpg-error0             1.0-1          library for common error values an
+ii  libgtk2.0-0               2.4.13-1       The GTK+ graphical user interface 
+ii  libgtkhtml3.2-11          3.2.3-1        HTML rendering/editing library - r
+ii  libice6                   4.3.0.dfsg.1-8 Inter-Client Exchange library
+ii  libjpeg62                 6b-9           The Independent JPEG Group's JPEG 
+ii  libldap2                  2.1.30-3       OpenLDAP libraries
+ii  libnspr4                  2:1.7.3-5      Netscape Portable Runtime Library
+ii  libnss3                   2:1.7.3-5      Network Security Service Libraries
+ii  liborbit2                 1:2.10.2-1.1   libraries for ORBit2 - a CORBA ORB
+ii  libpango1.0-0             1.4.1-4        Layout and rendering of internatio
+ii  libpisock8                0.11.8-10      Library for communicating with a P
+ii  libpisync0                0.11.8-10      Synchronization library for PalmOS
+ii  libpopt0                  1.7-5          lib for parsing cmdline parameters
+ii  libsm6                    4.3.0.dfsg.1-8 X Window System Session Management
+ii  libsoup2.2-7              2.2.1-1        an HTTP library implementation in 
+ii  libtasn1-2                0.2.10-4       Manage ASN.1 structures (runtime)
+ii  libx11-6                  4.3.0.dfsg.1-8 X Window System protocol client li
+ii  libxml2                   2.6.11-5       GNOME XML library
+ii  xlibs                     4.3.0.dfsg.1-8 X Window System client libraries m
+ii  zlib1g                    1:1.2.2-3      compression library - runtime
+
+-- no debconf information
+
+
+
+
+<strong>Tags added: woody</strong>
+Request was from <code>Frank Lichtenheld &lt;djpig@debian.org&gt;</code>
+to <code>control@bugs.debian.org</code>. 
+
+
+Received: (at control) by bugs.debian.org; 12 Nov 2004 17:28:49 +0000
+From frank@lichtenheld.de Fri Nov 12 09:28:48 2004
+Return-path: <frank@lichtenheld.de>
+Received: from higgs.djpig.de [213.133.98.126] 
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1CSfE8-0003WK-00; Fri, 12 Nov 2004 09:28:48 -0800
+Received: from djpig by higgs.djpig.de with local (Exim 4.34)
+	id 1CSfBZ-0002JN-Gn
+	for control@bugs.debian.org; Fri, 12 Nov 2004 18:26:09 +0100
+From: Frank Lichtenheld <djpig@debian.org>
+To: control@bugs.debian.org
+Subject: tagging 280883
+Date: Fri, 12 Nov 2004 18:26:09 +0100
+X-BTS-Version: 2.8.4
+Message-Id: <E1CSfBZ-0002JN-Gn@higgs.djpig.de>
+Sender: Frank Lichtenheld <frank@lichtenheld.de>
+Delivered-To: control@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2004_03_25 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-5.0 required=4.0 tests=BAYES_00,VALID_BTS_CONTROL 
+	autolearn=no version=2.60-bugs.debian.org_2004_03_25
+X-Spam-Level: 
+
+# Automatically generated email from bts, devscripts version 2.8.4
+tags 280883 woody
+
+
+
+
+
+<strong>Reply sent</strong> to <code>Margarita Manterola &lt;debian@marga.com.ar&gt;</code>:<br>
+You have taken responsibility.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+From: owner@bugs.debian.org (Debian Bug Tracking System)
+To: Margarita Manterola <debian@marga.com.ar>
+Cc: Takuo KITAME <kitame@debian.org>, bugs=280883@lists.debian.org
+Subject: Bug#280883: marked as done (is woody evolution still vulnerable to SSL Man-In-The-Middle Vulnerability?)
+Message-ID: <handler.280883.D280883.112146171230964.ackdone@bugs.debian.org>
+In-Reply-To: <20050715210401.GB14470@localhost>
+References: <20050715210401.GB14470@localhost> <E1CSYjb-0003PR-9h@localhost>
+Precedence: bulk
+X-Debian-PR-Message: closed 280883
+X-Debian-PR-Package: evolution
+X-Debian-PR-Keywords: woody security
+
+Your message dated Fri, 15 Jul 2005 18:04:01 -0300
+with message-id <20050715210401.GB14470@localhost>
+and subject line Closing all woody Evolution bugs.
+has caused the attached Bug report to be marked as done.
+
+This means that you claim that the problem has been dealt with.
+If this is not the case it is now your responsibility to reopen the
+Bug report if necessary, and/or fix the problem forthwith.
+
+(NB: If you are a system administrator and have no idea what I am
+talking about this indicates a serious mail system misconfiguration
+somewhere.  Please contact me immediately.)
+
+Debian bug tracking system administrator
+(administrator, Debian Bugs database)
+
+--------------------------------------
+Received: (at submit) by bugs.debian.org; 12 Nov 2004 10:33:03 +0000
+From djoume@taket.org Fri Nov 12 02:33:03 2004
+Return-path: <djoume@taket.org>
+Received: from krepost.taket.org (localhost) [82.227.166.100] 
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1CSYjm-0000Vv-00; Fri, 12 Nov 2004 02:33:03 -0800
+Received: from djoume by localhost with local (Exim 4.34)
+	id 1CSYjb-0003PR-9h; Fri, 12 Nov 2004 11:32:51 +0100
+Content-Type: text/plain; charset="us-ascii"
+MIME-Version: 1.0
+Content-Transfer-Encoding: 7bit
+From: Djoume SALVETTI <djoume@taket.org>
+To: Debian Bug Tracking System <submit@bugs.debian.org>
+Subject: is woody evolution still vulnerable to SSL Man-In-The-Middle Vulnerability?
+X-Mailer: reportbug 3.2
+Date: Fri, 12 Nov 2004 11:32:51 +0100
+X-Debbugs-Cc: djoume@taket.org
+Message-Id: <E1CSYjb-0003PR-9h@localhost>
+Delivered-To: submit@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2004_03_25 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-11.0 required=4.0 tests=BAYES_00,HAS_PACKAGE,
+	X_DEBBUGS_CC autolearn=ham version=2.60-bugs.debian.org_2004_03_25
+X-Spam-Level: 
+
+Package: evolution
+Version: 2.0.2-3
+Severity: grave
+Tags: security
+Justification: user security hole
+
+
+Good day,
+
+I'm reviewing the list of 2002 CVEs to check if there is still
+some known vulnerables packages in testing.
+
+In CVE-2002-1471 it is written :
+
+| The camel component for Ximian Evolution 1.0.x and earlier does not
+| verify certificates when it establishes a new SSL connection after
+| previously verifying a certificate, which could allow remote attackers
+| to monitor or modify sessions via a man-in-the-middle attack.
+
+According to http://www.securityfocus.com/bid/5875/info/
+woody version of evolution is still vulnerable.
+
+Regards.
+
+-- System Information:
+Debian Release: 3.1
+  APT prefers unstable
+  APT policy: (500, 'unstable')
+Architecture: powerpc (ppc)
+Kernel: Linux 2.6.9-rfb-swsusp
+Locale: LANG=fr_FR@euro, LC_CTYPE=fr_FR@euro (charmap=ISO-8859-15)
+
+Versions of packages evolution depends on:
+ii  evolution-data-server     1.0.2-3        evolution database backend server
+ii  gconf2                    2.6.4-2        GNOME configuration database syste
+ii  gnome-icon-theme          1.2.3-1.1      GNOME Desktop icon theme
+ii  gtkhtml3.2                3.2.3-1        HTML rendering/editing library - b
+ii  libart-2.0-2              2.3.16-6       Library of functions for 2D graphi
+ii  libatk1.0-0               1.6.1-5        The ATK accessibility toolkit
+ii  libaudiofile0             0.2.6-4        Open-source version of SGI's audio
+ii  libbonobo2-0              2.6.2-7        Bonobo CORBA interfaces library
+ii  libbonoboui2-0            2.6.1-1        The Bonobo UI library
+ii  libc6                     2.3.2.ds1-18   GNU C Library: Shared libraries an
+ii  libcompfaceg1             1989.11.11-24  Compress/decompress images for mai
+ii  libebook8                 1.0.2-3        Client library for evolution addre
+ii  libecal6                  1.0.2-3        Client library for evolution calen
+ii  libedataserver3           1.0.2-3        Utily library for evolution data s
+ii  libegroupwise6            1.0.2-3        Client library for accessing group
+ii  libesd0                   0.2.35-2       Enlightened Sound Daemon - Shared 
+ii  libfontconfig1            2.2.3-3        generic font configuration library
+ii  libfreetype6              2.1.7-2.2      FreeType 2 font engine, shared lib
+ii  libgail-common            1.6.6b-1       GNOME Accessibility Implementation
+ii  libgail17                 1.6.6b-1       GNOME Accessibility Implementation
+ii  libgal2.2-1               2.2.3-1        G App Libs (run time library)
+ii  libgal2.2-common          2.2.3-1        G App Libs (common files)
+ii  libgconf2-4               2.6.4-2        GNOME configuration database syste
+ii  libgcrypt11               1.2.0-10       LGPL Crypto library - runtime libr
+ii  libglade2-0               1:2.4.0-1      Library to load .glade files at ru
+ii  libglib2.0-0              2.4.7-1        The GLib library of C routines
+ii  libgnome-keyring0         0.2.1-3        GNOME keyring services library
+ii  libgnome-pilot2           2.0.10-6.1     Support libraries for gnome-pilot
+ii  libgnome2-0               2.6.1.2-2      The GNOME 2 library - runtime file
+ii  libgnomecanvas2-0         2.6.1.1-2      A powerful object-oriented display
+ii  libgnomeprint2.2-0        2.8.0.1-2      The GNOME 2.2 print architecture -
+ii  libgnomeprintui2.2-0      2.6.2-1        The GNOME 2.2 print architecture U
+ii  libgnomeui-0              2.6.1.1cvs-1   The GNOME 2 libraries (User Interf
+ii  libgnomevfs2-0            2.6.2-2        The GNOME virtual file-system libr
+ii  libgnutls11               1.0.16-9       GNU TLS library - runtime library
+ii  libgpg-error0             1.0-1          library for common error values an
+ii  libgtk2.0-0               2.4.13-1       The GTK+ graphical user interface 
+ii  libgtkhtml3.2-11          3.2.3-1        HTML rendering/editing library - r
+ii  libice6                   4.3.0.dfsg.1-8 Inter-Client Exchange library
+ii  libjpeg62                 6b-9           The Independent JPEG Group's JPEG 
+ii  libldap2                  2.1.30-3       OpenLDAP libraries
+ii  libnspr4                  2:1.7.3-5      Netscape Portable Runtime Library
+ii  libnss3                   2:1.7.3-5      Network Security Service Libraries
+ii  liborbit2                 1:2.10.2-1.1   libraries for ORBit2 - a CORBA ORB
+ii  libpango1.0-0             1.4.1-4        Layout and rendering of internatio
+ii  libpisock8                0.11.8-10      Library for communicating with a P
+ii  libpisync0                0.11.8-10      Synchronization library for PalmOS
+ii  libpopt0                  1.7-5          lib for parsing cmdline parameters
+ii  libsm6                    4.3.0.dfsg.1-8 X Window System Session Management
+ii  libsoup2.2-7              2.2.1-1        an HTTP library implementation in 
+ii  libtasn1-2                0.2.10-4       Manage ASN.1 structures (runtime)
+ii  libx11-6                  4.3.0.dfsg.1-8 X Window System protocol client li
+ii  libxml2                   2.6.11-5       GNOME XML library
+ii  xlibs                     4.3.0.dfsg.1-8 X Window System client libraries m
+ii  zlib1g                    1:1.2.2-3      compression library - runtime
+
+-- no debconf information
+
+---------------------------------------
+Received: (at 280883-done) by bugs.debian.org; 15 Jul 2005 21:08:32 +0000
+From debian@marga.com.ar Fri Jul 15 14:08:32 2005
+Return-path: <debian@marga.com.ar>
+Received: from maildcarg4.dc-host.net.ar [200.55.6.135] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1DtXQ7-0007zr-00; Fri, 15 Jul 2005 14:08:32 -0700
+Received: from freak.amadeus ([200.115.206.87]) by maildcarg4.dc-host.net.ar
+ (Sun Java System Messaging Server 6.1 HotFix 0.05 (built Oct 21 2004))
+ with ESMTP id <0IJO000H9T6L5330@maildcarg4.dc-host.net.ar>; Fri,
+ 15 Jul 2005 18:03:57 -0300 (ART)
+Received: from ulises.home (ulises.amadeus [192.168.21.15])
+	by freak.amadeus (Postfix) with ESMTP id 0D8D681CA; Fri,
+ 15 Jul 2005 18:05:19 -0300 (ART)
+Received: by ulises.home (Postfix, from userid 1001)	id 58517461D90; Fri,
+ 15 Jul 2005 18:04:01 -0300 (ART)
+Date: Fri, 15 Jul 2005 18:04:01 -0300
+From: Margarita Manterola <debian@marga.com.ar>
+Subject: Closing all woody Evolution bugs.
+To: 231955-done@bugs.debian.org
+Cc: 234863-done@bugs.debian.org, 280883-done@bugs.debian.org,
+ 237257-done@bugs.debian.org, 295548-done@bugs.debian.org,
+ 130666-done@bugs.debian.org, 132730-done@bugs.debian.org,
+ 146835-done@bugs.debian.org, 147855-done@bugs.debian.org,
+ 162802-done@bugs.debian.org, 181372-done@bugs.debian.org
+Message-id: <20050715210401.GB14470@localhost>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+User-Agent: Mutt/1.5.9i
+Delivered-To: 280883-done@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-3.0 required=4.0 tests=BAYES_00 autolearn=no 
+	version=2.60-bugs.debian.org_2005_01_02
+X-CrossAssassin-Score: 10
+
+On 06/06/05 Sarge was released as stable, and woody is now oldstable.  It
+does not make sense to still keep the bugs that are in woody, so I'm
+closing all of them.
+
+
+-- 
+ Besitos,   {o_
+     Marga. (')_
+
+
+
+<strong>Notification sent</strong> to <code>Djoume SALVETTI &lt;djoume@taket.org&gt;</code>:<br>
+Bug acknowledged by developer.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+From: owner@bugs.debian.org (Debian Bug Tracking System)
+To: Djoume SALVETTI <djoume@taket.org>
+Subject: Bug#280883 acknowledged by developer
+         (Closing all woody Evolution bugs.)
+Message-ID: <handler.280883.D280883.112146171230964.notifdone@bugs.debian.org>
+In-Reply-To: <E1CSYjb-0003PR-9h@localhost>
+References: <20050715210401.GB14470@localhost> <E1CSYjb-0003PR-9h@localhost>
+X-Debian-PR-Message: they-closed 280883
+X-Debian-PR-Package: evolution
+X-Debian-PR-Keywords: woody security
+Reply-To: 280883@bugs.debian.org
+
+This is an automatic notification regarding your Bug report
+#280883: is woody evolution still vulnerable to SSL Man-In-The-Middle Vulnerability?,
+which was filed against the evolution package.
+
+It has been closed by one of the developers, namely
+Margarita Manterola <debian@marga.com.ar>.
+
+Their explanation is attached below.  If this explanation is
+unsatisfactory and you have not received a better one in a separate
+message then please contact the developer, by replying to this email.
+
+Debian bug tracking system administrator
+(administrator, Debian Bugs database)
+
+Received: (at 280883-done) by bugs.debian.org; 15 Jul 2005 21:08:32 +0000
+From debian@marga.com.ar Fri Jul 15 14:08:32 2005
+Return-path: <debian@marga.com.ar>
+Received: from maildcarg4.dc-host.net.ar [200.55.6.135] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1DtXQ7-0007zr-00; Fri, 15 Jul 2005 14:08:32 -0700
+Received: from freak.amadeus ([200.115.206.87]) by maildcarg4.dc-host.net.ar
+ (Sun Java System Messaging Server 6.1 HotFix 0.05 (built Oct 21 2004))
+ with ESMTP id <0IJO000H9T6L5330@maildcarg4.dc-host.net.ar>; Fri,
+ 15 Jul 2005 18:03:57 -0300 (ART)
+Received: from ulises.home (ulises.amadeus [192.168.21.15])
+	by freak.amadeus (Postfix) with ESMTP id 0D8D681CA; Fri,
+ 15 Jul 2005 18:05:19 -0300 (ART)
+Received: by ulises.home (Postfix, from userid 1001)	id 58517461D90; Fri,
+ 15 Jul 2005 18:04:01 -0300 (ART)
+Date: Fri, 15 Jul 2005 18:04:01 -0300
+From: Margarita Manterola <debian@marga.com.ar>
+Subject: Closing all woody Evolution bugs.
+To: 231955-done@bugs.debian.org
+Cc: 234863-done@bugs.debian.org, 280883-done@bugs.debian.org,
+ 237257-done@bugs.debian.org, 295548-done@bugs.debian.org,
+ 130666-done@bugs.debian.org, 132730-done@bugs.debian.org,
+ 146835-done@bugs.debian.org, 147855-done@bugs.debian.org,
+ 162802-done@bugs.debian.org, 181372-done@bugs.debian.org
+Message-id: <20050715210401.GB14470@localhost>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+User-Agent: Mutt/1.5.9i
+Delivered-To: 280883-done@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-3.0 required=4.0 tests=BAYES_00 autolearn=no 
+	version=2.60-bugs.debian.org_2005_01_02
+X-CrossAssassin-Score: 10
+
+On 06/06/05 Sarge was released as stable, and woody is now oldstable.  It
+does not make sense to still keep the bugs that are in woody, so I'm
+closing all of them.
+
+
+-- 
+ Besitos,   {o_
+     Marga. (')_
+
+
+
+Received: (at 280883-done) by bugs.debian.org; 15 Jul 2005 21:08:32 +0000
+From debian@marga.com.ar Fri Jul 15 14:08:32 2005
+Return-path: <debian@marga.com.ar>
+Received: from maildcarg4.dc-host.net.ar [200.55.6.135] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1DtXQ7-0007zr-00; Fri, 15 Jul 2005 14:08:32 -0700
+Received: from freak.amadeus ([200.115.206.87]) by maildcarg4.dc-host.net.ar
+ (Sun Java System Messaging Server 6.1 HotFix 0.05 (built Oct 21 2004))
+ with ESMTP id <0IJO000H9T6L5330@maildcarg4.dc-host.net.ar>; Fri,
+ 15 Jul 2005 18:03:57 -0300 (ART)
+Received: from ulises.home (ulises.amadeus [192.168.21.15])
+	by freak.amadeus (Postfix) with ESMTP id 0D8D681CA; Fri,
+ 15 Jul 2005 18:05:19 -0300 (ART)
+Received: by ulises.home (Postfix, from userid 1001)	id 58517461D90; Fri,
+ 15 Jul 2005 18:04:01 -0300 (ART)
+Date: Fri, 15 Jul 2005 18:04:01 -0300
+From: Margarita Manterola <debian@marga.com.ar>
+Subject: Closing all woody Evolution bugs.
+To: 231955-done@bugs.debian.org
+Cc: 234863-done@bugs.debian.org, 280883-done@bugs.debian.org,
+ 237257-done@bugs.debian.org, 295548-done@bugs.debian.org,
+ 130666-done@bugs.debian.org, 132730-done@bugs.debian.org,
+ 146835-done@bugs.debian.org, 147855-done@bugs.debian.org,
+ 162802-done@bugs.debian.org, 181372-done@bugs.debian.org
+Message-id: <20050715210401.GB14470@localhost>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+User-Agent: Mutt/1.5.9i
+Delivered-To: 280883-done@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-3.0 required=4.0 tests=BAYES_00 autolearn=no 
+	version=2.60-bugs.debian.org_2005_01_02
+X-CrossAssassin-Score: 10
+
+On 06/06/05 Sarge was released as stable, and woody is now oldstable.  It
+does not make sense to still keep the bugs that are in woody, so I'm
+closing all of them.
+
+
+-- 
+ Besitos,   {o_
+     Marga. (')_
+
+
+
+
+<strong>Bug reopened, originator set to 295548.</strong>
+Request was from <code>Margarita Manterola &lt;marga@marga.com.ar&gt;</code>
+to <code>control@bugs.debian.org</code>. 
+
+
+Received: (at control) by bugs.debian.org; 15 Jul 2005 21:57:58 +0000
+From marga@marga.com.ar Fri Jul 15 14:57:58 2005
+Return-path: <marga@marga.com.ar>
+Received: from maildcarg4.dc-host.net.ar [200.55.6.135] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1DtYBy-0003Zy-00; Fri, 15 Jul 2005 14:57:58 -0700
+Received: from freak.amadeus ([200.115.206.87]) by maildcarg4.dc-host.net.ar
+ (Sun Java System Messaging Server 6.1 HotFix 0.05 (built Oct 21 2004))
+ with ESMTP id <0IJO00FYHVL7ZR40@maildcarg4.dc-host.net.ar>; Fri,
+ 15 Jul 2005 18:55:55 -0300 (ART)
+Received: from ulises.home (ulises.amadeus [192.168.21.15])
+	by freak.amadeus (Postfix) with ESMTP id 40D1A819B; Fri,
+ 15 Jul 2005 18:57:18 -0300 (ART)
+Received: by ulises.home (Postfix, from userid 1001)	id 6292E461D90; Fri,
+ 15 Jul 2005 18:56:00 -0300 (ART)
+Date: Fri, 15 Jul 2005 18:56:00 -0300
+From: Margarita Manterola <marga@marga.com.ar>
+Subject: Reopening security bugs
+To: control@bugs.debian.org
+Cc: 280883-quiet@bugs.debian.org, 295548-quiet@bugs.debian.org
+Message-id: <20050715215600.GA14856@localhost>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+User-Agent: Mutt/1.5.9i
+Delivered-To: control@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-5.0 required=4.0 tests=BAYES_00,VALID_BTS_CONTROL 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+
+reopen 280883 295548
+thanks
+
+Security bugs must be kept open, sorry for the noise.
+
+
+-- 
+ Bessos,    (o_
+    Marga.  (\)_
+
+
+
+
+<strong>Information stored</strong>:<br>
+<code>Bug#280883</code>; Package <code>evolution</code>.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+Subject: Bug#280883: Reopening security bugs
+Reply-To: Margarita Manterola <marga@marga.com.ar>, 280883-quiet@bugs.debian.org
+Resent-From: Margarita Manterola <marga@marga.com.ar>
+Resent-To: 
+Resent-Date: Fri, 15 Jul 2005 22:03:16 UTC
+Resent-Message-ID: <handler.280883.Q280883.112146467814309@bugs.debian.org>
+Resent-Sender: owner@bugs.debian.org
+X-Debian-PR-Message: report 280883
+X-Debian-PR-Package: evolution
+X-Debian-PR-Keywords: woody security
+Received: via spool by 280883-quiet@bugs.debian.org id=Q280883.112146467814309
+          (code Q ref 280883); Fri, 15 Jul 2005 22:03:16 UTC
+Received: (at 280883-quiet) by bugs.debian.org; 15 Jul 2005 21:57:58 +0000
+Received: from maildcarg4.dc-host.net.ar [200.55.6.135] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1DtYBy-0003Zy-00; Fri, 15 Jul 2005 14:57:58 -0700
+Received: from freak.amadeus ([200.115.206.87]) by maildcarg4.dc-host.net.ar
+ (Sun Java System Messaging Server 6.1 HotFix 0.05 (built Oct 21 2004))
+ with ESMTP id <0IJO00FYHVL7ZR40@maildcarg4.dc-host.net.ar>; Fri,
+ 15 Jul 2005 18:55:55 -0300 (ART)
+Received: from ulises.home (ulises.amadeus [192.168.21.15])
+	by freak.amadeus (Postfix) with ESMTP id 40D1A819B; Fri,
+ 15 Jul 2005 18:57:18 -0300 (ART)
+Received: by ulises.home (Postfix, from userid 1001)	id 6292E461D90; Fri,
+ 15 Jul 2005 18:56:00 -0300 (ART)
+Date: Fri, 15 Jul 2005 18:56:00 -0300
+From: Margarita Manterola <marga@marga.com.ar>
+To: control@bugs.debian.org
+Cc: 280883-quiet@bugs.debian.org, 295548-quiet@bugs.debian.org
+Message-id: <20050715215600.GA14856@localhost>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+User-Agent: Mutt/1.5.9i
+Delivered-To: 280883-quiet@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-5.0 required=4.0 tests=BAYES_00,VALID_BTS_CONTROL 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-CrossAssassin-Score: 2
+
+reopen 280883 295548
+thanks
+
+Security bugs must be kept open, sorry for the noise.
+
+
+-- 
+ Bessos,    (o_
+    Marga.  (\)_
+
+
+
+
+<strong>Acknowledgement sent</strong> to <code>Margarita Manterola &lt;marga@marga.com.ar&gt;</code>:<br>
+Extra info received and filed, but not forwarded.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+From: owner@bugs.debian.org (Debian Bug Tracking System)
+To: Margarita Manterola <marga@marga.com.ar>
+Subject: Bug#280883: Info received and FILED only
+         (was Reopening security bugs)
+Message-ID: <handler.280883.Q280883.112146467814309.ackinfoquiet@bugs.debian.org>
+In-Reply-To: <20050715215600.GA14856@localhost>
+References: <20050715215600.GA14856@localhost>
+Precedence: bulk
+X-Debian-PR-Message: ack-info-quiet 280883
+X-Debian-PR-Package: evolution
+X-Debian-PR-Keywords: woody security
+Reply-To: 280883-quiet@bugs.debian.org
+
+Thank you for the additional information you have supplied regarding
+this problem report.  It has NOT been forwarded to the package
+maintainers, but will accompany the original report in the Bug
+tracking system.  Please ensure that you yourself have sent a copy of
+the additional information to any relevant developers or mailing lists.
+
+If you wish to continue to submit further information on your problem,
+please send it to 280883-quiet@bugs.debian.org, as before.
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the Bug-tracking system.
+
+Debian bug tracking system administrator
+(administrator, Debian Bugs database)
+
+
+
+Received: (at 280883-quiet) by bugs.debian.org; 15 Jul 2005 21:57:58 +0000
+From marga@marga.com.ar Fri Jul 15 14:57:58 2005
+Return-path: <marga@marga.com.ar>
+Received: from maildcarg4.dc-host.net.ar [200.55.6.135] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1DtYBy-0003Zy-00; Fri, 15 Jul 2005 14:57:58 -0700
+Received: from freak.amadeus ([200.115.206.87]) by maildcarg4.dc-host.net.ar
+ (Sun Java System Messaging Server 6.1 HotFix 0.05 (built Oct 21 2004))
+ with ESMTP id <0IJO00FYHVL7ZR40@maildcarg4.dc-host.net.ar>; Fri,
+ 15 Jul 2005 18:55:55 -0300 (ART)
+Received: from ulises.home (ulises.amadeus [192.168.21.15])
+	by freak.amadeus (Postfix) with ESMTP id 40D1A819B; Fri,
+ 15 Jul 2005 18:57:18 -0300 (ART)
+Received: by ulises.home (Postfix, from userid 1001)	id 6292E461D90; Fri,
+ 15 Jul 2005 18:56:00 -0300 (ART)
+Date: Fri, 15 Jul 2005 18:56:00 -0300
+From: Margarita Manterola <marga@marga.com.ar>
+Subject: Reopening security bugs
+To: control@bugs.debian.org
+Cc: 280883-quiet@bugs.debian.org, 295548-quiet@bugs.debian.org
+Message-id: <20050715215600.GA14856@localhost>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+User-Agent: Mutt/1.5.9i
+Delivered-To: 280883-quiet@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-5.0 required=4.0 tests=BAYES_00,VALID_BTS_CONTROL 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-CrossAssassin-Score: 2
+
+reopen 280883 295548
+thanks
+
+Security bugs must be kept open, sorry for the noise.
+
+
+-- 
+ Bessos,    (o_
+    Marga.  (\)_
+
+
+
+
+<strong>Changed Bug submitter from 295548 to Djoume SALVETTI &lt;djoume@taket.org&gt;.</strong>
+Request was from <code>Margarita Manterola &lt;debian@marga.com.ar&gt;</code>
+to <code>control@bugs.debian.org</code>. 
+
+
+Received: (at control) by bugs.debian.org; 15 Jul 2005 22:22:46 +0000
+From debian@marga.com.ar Fri Jul 15 15:22:46 2005
+Return-path: <debian@marga.com.ar>
+Received: from maildcarg4.dc-host.net.ar [200.55.6.135] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1DtYZy-0002iX-00; Fri, 15 Jul 2005 15:22:46 -0700
+Received: from freak.amadeus ([200.115.206.87]) by maildcarg4.dc-host.net.ar
+ (Sun Java System Messaging Server 6.1 HotFix 0.05 (built Oct 21 2004))
+ with ESMTP id <0IJO00FA0W5KZN50@maildcarg4.dc-host.net.ar> for
+ control@bugs.debian.org; Fri, 15 Jul 2005 19:08:09 -0300 (ART)
+Received: from ulises.home (ulises.amadeus [192.168.21.15])
+	by freak.amadeus (Postfix) with ESMTP id 9B88AA4C	for
+ <control@bugs.debian.org>; Fri, 15 Jul 2005 19:09:31 -0300 (ART)
+Received: by ulises.home (Postfix, from userid 1001)	id 12ACE461D90; Fri,
+ 15 Jul 2005 19:08:12 -0300 (ART)
+Date: Fri, 15 Jul 2005 19:08:12 -0300
+From: Margarita Manterola <debian@marga.com.ar>
+Subject: Fixing up my mess
+To: control@bugs.debian.org
+Message-id: <20050715220812.GC14856@localhost>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+User-Agent: Mutt/1.5.9i
+Delivered-To: control@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-5.0 required=4.0 tests=BAYES_00,VALID_BTS_CONTROL 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+
+submitter 280883 Djoume SALVETTI <djoume@taket.org>
+reopen 295548
+thanks
+
+-- 
+ Bessos,
+     Maggie.
+
+
+
+
+<strong>Bug marked as found in version 1.0.5-1woody2.</strong>
+Request was from <code>Margarita Manterola &lt;debian@marga.com.ar&gt;</code>
+to <code>control@bugs.debian.org</code>. 
+
+
+Received: (at control) by bugs.debian.org; 29 Jul 2005 17:05:46 +0000
+From debian@marga.com.ar Fri Jul 29 10:05:46 2005
+Return-path: <debian@marga.com.ar>
+Received: from maildcarg4.dc-host.net.ar [200.55.6.135] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1DyYIr-0008RX-00; Fri, 29 Jul 2005 10:05:46 -0700
+Received: from freak.amadeus ([200.115.206.87]) by maildcarg4.dc-host.net.ar
+ (Sun Java System Messaging Server 6.1 HotFix 0.05 (built Oct 21 2004))
+ with ESMTP id <0IKE0085IF7RCF20@maildcarg4.dc-host.net.ar>; Fri,
+ 29 Jul 2005 13:59:51 -0300 (ART)
+Received: from ulises.home (ulises.amadeus [192.168.21.15])
+	by freak.amadeus (Postfix) with ESMTP id 5CBF28197; Fri,
+ 29 Jul 2005 14:01:12 -0300 (ART)
+Received: by ulises.home (Postfix, from userid 1001)	id 96BDB461E20; Fri,
+ 29 Jul 2005 14:01:01 -0300 (ART)
+Date: Fri, 29 Jul 2005 14:01:01 -0300
+From: Margarita Manterola <debian@marga.com.ar>
+Subject: Fixing the version of the package
+To: 280883-quiet@bugs.debian.org
+Cc: control@bugs.debian.org
+Message-id: <20050729170101.GA8178@localhost>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+User-Agent: Mutt/1.5.9i
+Delivered-To: control@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-3.0 required=4.0 tests=BAYES_00 autolearn=no 
+	version=2.60-bugs.debian.org_2005_01_02
+
+found 280883 1.0.5-1woody2
+close 280883 2.0.2-3
+thanks
+
+The version was screwed due to the pseudo header used in the report. The
+bug is only in woody's version of Evolution. 
+
+
+
+-- 
+ Bessos,
+     Maggie.
+
+
+
+
+<strong>Bug marked as fixed in version 2.0.2-3, send any further explanations to Djoume SALVETTI &lt;djoume@taket.org&gt;</strong>
+Request was from <code>Margarita Manterola &lt;debian@marga.com.ar&gt;</code>
+to <code>control@bugs.debian.org</code>. 
+
+
+Received: (at control) by bugs.debian.org; 29 Jul 2005 17:05:46 +0000
+From debian@marga.com.ar Fri Jul 29 10:05:46 2005
+Return-path: <debian@marga.com.ar>
+Received: from maildcarg4.dc-host.net.ar [200.55.6.135] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1DyYIr-0008RX-00; Fri, 29 Jul 2005 10:05:46 -0700
+Received: from freak.amadeus ([200.115.206.87]) by maildcarg4.dc-host.net.ar
+ (Sun Java System Messaging Server 6.1 HotFix 0.05 (built Oct 21 2004))
+ with ESMTP id <0IKE0085IF7RCF20@maildcarg4.dc-host.net.ar>; Fri,
+ 29 Jul 2005 13:59:51 -0300 (ART)
+Received: from ulises.home (ulises.amadeus [192.168.21.15])
+	by freak.amadeus (Postfix) with ESMTP id 5CBF28197; Fri,
+ 29 Jul 2005 14:01:12 -0300 (ART)
+Received: by ulises.home (Postfix, from userid 1001)	id 96BDB461E20; Fri,
+ 29 Jul 2005 14:01:01 -0300 (ART)
+Date: Fri, 29 Jul 2005 14:01:01 -0300
+From: Margarita Manterola <debian@marga.com.ar>
+Subject: Fixing the version of the package
+To: 280883-quiet@bugs.debian.org
+Cc: control@bugs.debian.org
+Message-id: <20050729170101.GA8178@localhost>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+User-Agent: Mutt/1.5.9i
+Delivered-To: control@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-3.0 required=4.0 tests=BAYES_00 autolearn=no 
+	version=2.60-bugs.debian.org_2005_01_02
+
+found 280883 1.0.5-1woody2
+close 280883 2.0.2-3
+thanks
+
+The version was screwed due to the pseudo header used in the report. The
+bug is only in woody's version of Evolution. 
+
+
+
+-- 
+ Bessos,
+     Maggie.
+
+
+
+
+<strong>Bug marked as not found in version 2.0.2-3.</strong>
+Request was from <code>Margarita Manterola &lt;debian@marga.com.ar&gt;</code>
+to <code>control@bugs.debian.org</code>. 
+
+
+Received: (at control) by bugs.debian.org; 29 Jul 2005 17:23:10 +0000
+From debian@marga.com.ar Fri Jul 29 10:23:10 2005
+Return-path: <debian@marga.com.ar>
+Received: from maildcarg4.dc-host.net.ar [200.55.6.135] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1DyYZi-0004e5-00; Fri, 29 Jul 2005 10:23:10 -0700
+Received: from freak.amadeus ([200.115.206.87]) by maildcarg4.dc-host.net.ar
+ (Sun Java System Messaging Server 6.1 HotFix 0.05 (built Oct 21 2004))
+ with ESMTP id <0IKE008K7G7HC440@maildcarg4.dc-host.net.ar> for
+ control@bugs.debian.org; Fri, 29 Jul 2005 14:21:17 -0300 (ART)
+Received: from ulises.home (ulises.amadeus [192.168.21.15])
+	by freak.amadeus (Postfix) with ESMTP id 0F4C48246	for
+ <control@bugs.debian.org>; Fri, 29 Jul 2005 14:22:37 -0300 (ART)
+Received: by ulises.home (Postfix, from userid 1001)	id 96890461E20; Fri,
+ 29 Jul 2005 14:22:26 -0300 (ART)
+Date: Fri, 29 Jul 2005 14:22:26 -0300
+From: Margarita Manterola <debian@marga.com.ar>
+Subject: Tagging notfound instead of closed
+To: control@bugs.debian.org
+Message-id: <20050729172226.GB8178@localhost>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+User-Agent: Mutt/1.5.9i
+Delivered-To: control@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-3.0 required=4.0 tests=BAYES_00 autolearn=no 
+	version=2.60-bugs.debian.org_2005_01_02
+
+notfound 280883 2.0.2-3
+thanks
+
+-- 
+ Bezos,     (o.
+     Marga. (/)_
+
+
+
+
+<strong>Information stored</strong>:<br>
+<code>Bug#280883</code>; Package <code>evolution</code>.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+Subject: Bug#280883: Fixing the version of the package
+Reply-To: Margarita Manterola <debian@marga.com.ar>, 280883-quiet@bugs.debian.org
+Resent-From: Margarita Manterola <debian@marga.com.ar>
+Resent-To: 
+Resent-Date: Fri, 29 Jul 2005 22:34:05 UTC
+Resent-Message-ID: <handler.280883.Q280883.11226567461215@bugs.debian.org>
+Resent-Sender: owner@bugs.debian.org
+X-Debian-PR-Message: report 280883
+X-Debian-PR-Package: evolution
+X-Debian-PR-Keywords: woody security
+Received: via spool by 280883-quiet@bugs.debian.org id=Q280883.11226567461215
+          (code Q ref 280883); Fri, 29 Jul 2005 22:34:05 UTC
+Received: (at 280883-quiet) by bugs.debian.org; 29 Jul 2005 17:05:46 +0000
+Received: from maildcarg4.dc-host.net.ar [200.55.6.135] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1DyYIr-0008RX-00; Fri, 29 Jul 2005 10:05:46 -0700
+Received: from freak.amadeus ([200.115.206.87]) by maildcarg4.dc-host.net.ar
+ (Sun Java System Messaging Server 6.1 HotFix 0.05 (built Oct 21 2004))
+ with ESMTP id <0IKE0085IF7RCF20@maildcarg4.dc-host.net.ar>; Fri,
+ 29 Jul 2005 13:59:51 -0300 (ART)
+Received: from ulises.home (ulises.amadeus [192.168.21.15])
+	by freak.amadeus (Postfix) with ESMTP id 5CBF28197; Fri,
+ 29 Jul 2005 14:01:12 -0300 (ART)
+Received: by ulises.home (Postfix, from userid 1001)	id 96BDB461E20; Fri,
+ 29 Jul 2005 14:01:01 -0300 (ART)
+Date: Fri, 29 Jul 2005 14:01:01 -0300
+From: Margarita Manterola <debian@marga.com.ar>
+To: 280883-quiet@bugs.debian.org
+Cc: control@bugs.debian.org
+Message-id: <20050729170101.GA8178@localhost>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+User-Agent: Mutt/1.5.9i
+Delivered-To: 280883-quiet@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-3.0 required=4.0 tests=BAYES_00 autolearn=no 
+	version=2.60-bugs.debian.org_2005_01_02
+
+found 280883 1.0.5-1woody2
+close 280883 2.0.2-3
+thanks
+
+The version was screwed due to the pseudo header used in the report. The
+bug is only in woody's version of Evolution. 
+
+
+
+-- 
+ Bessos,
+     Maggie.
+
+
+
+
+<strong>Acknowledgement sent</strong> to <code>Margarita Manterola &lt;debian@marga.com.ar&gt;</code>:<br>
+Extra info received and filed, but not forwarded.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+From: owner@bugs.debian.org (Debian Bug Tracking System)
+To: Margarita Manterola <debian@marga.com.ar>
+Subject: Bug#280883: Info received and FILED only
+         (was Fixing the version of the package)
+Message-ID: <handler.280883.Q280883.11226567461215.ackinfoquiet@bugs.debian.org>
+In-Reply-To: <20050729170101.GA8178@localhost>
+References: <20050729170101.GA8178@localhost>
+Precedence: bulk
+X-Debian-PR-Message: ack-info-quiet 280883
+X-Debian-PR-Package: evolution
+X-Debian-PR-Keywords: woody security
+Reply-To: 280883-quiet@bugs.debian.org
+
+Thank you for the additional information you have supplied regarding
+this problem report.  It has NOT been forwarded to the package
+maintainers, but will accompany the original report in the Bug
+tracking system.  Please ensure that you yourself have sent a copy of
+the additional information to any relevant developers or mailing lists.
+
+If you wish to continue to submit further information on your problem,
+please send it to 280883-quiet@bugs.debian.org, as before.
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the Bug-tracking system.
+
+Debian bug tracking system administrator
+(administrator, Debian Bugs database)
+
+
+
+Received: (at 280883-quiet) by bugs.debian.org; 29 Jul 2005 17:05:46 +0000
+From debian@marga.com.ar Fri Jul 29 10:05:46 2005
+Return-path: <debian@marga.com.ar>
+Received: from maildcarg4.dc-host.net.ar [200.55.6.135] 
+	by spohr.debian.org with esmtp (Exim 3.36 1 (Debian))
+	id 1DyYIr-0008RX-00; Fri, 29 Jul 2005 10:05:46 -0700
+Received: from freak.amadeus ([200.115.206.87]) by maildcarg4.dc-host.net.ar
+ (Sun Java System Messaging Server 6.1 HotFix 0.05 (built Oct 21 2004))
+ with ESMTP id <0IKE0085IF7RCF20@maildcarg4.dc-host.net.ar>; Fri,
+ 29 Jul 2005 13:59:51 -0300 (ART)
+Received: from ulises.home (ulises.amadeus [192.168.21.15])
+	by freak.amadeus (Postfix) with ESMTP id 5CBF28197; Fri,
+ 29 Jul 2005 14:01:12 -0300 (ART)
+Received: by ulises.home (Postfix, from userid 1001)	id 96BDB461E20; Fri,
+ 29 Jul 2005 14:01:01 -0300 (ART)
+Date: Fri, 29 Jul 2005 14:01:01 -0300
+From: Margarita Manterola <debian@marga.com.ar>
+Subject: Fixing the version of the package
+To: 280883-quiet@bugs.debian.org
+Cc: control@bugs.debian.org
+Message-id: <20050729170101.GA8178@localhost>
+MIME-version: 1.0
+Content-type: text/plain; charset=us-ascii
+Content-transfer-encoding: 7BIT
+Content-disposition: inline
+User-Agent: Mutt/1.5.9i
+Delivered-To: 280883-quiet@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Level: 
+X-Spam-Status: No, hits=-3.0 required=4.0 tests=BAYES_00 autolearn=no 
+	version=2.60-bugs.debian.org_2005_01_02
+
+found 280883 1.0.5-1woody2
+close 280883 2.0.2-3
+thanks
+
+The version was screwed due to the pseudo header used in the report. The
+bug is only in woody's version of Evolution. 
+
+
+
+-- 
+ Bessos,
+     Maggie.
+
+
+

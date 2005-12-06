@@ -2,23 +2,27 @@
 
 __metaclass__ = type
 
-__all__ = ['KarmaActionSetView']
+__all__ = [
+    'KarmaActionEditView',
+    'KarmaActionSetNavigation',
+    ]
 
-from zope.component import getUtility
-
-from canonical.lp.dbschema import KarmaActionCategory
 from canonical.launchpad.interfaces import IKarmaActionSet
+from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.webapp import Navigation, canonical_url
 
 
-class KarmaActionSetView:
+class KarmaActionSetNavigation(Navigation):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    usedfor = IKarmaActionSet
 
-    def actionCategories(self):
-        return KarmaActionCategory.items
+    def traverse(self, name):
+        return self.context.getByName(name)
 
-    def actions(self, actionCategory):
-        return getUtility(IKarmaActionSet).selectByCategory(actionCategory)
+
+class KarmaActionEditView(SQLObjectEditView):
+
+    def changed(self):
+        self.request.response.redirect(canonical_url(self.context))
+
 

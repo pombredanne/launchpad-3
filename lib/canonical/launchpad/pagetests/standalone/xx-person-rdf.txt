@@ -19,10 +19,11 @@ And this is what the FOAF document actually looks like
   ...
   Content-Type: application/rdf+xml
   <BLANKLINE>
-  <rdf:rdf xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:foaf="http://xmlns.com/foaf/0.1/">
-      <foaf:person>
+  <?xml version="1.0" encoding="utf-8"?>
+  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+           xmlns:foaf="http://xmlns.com/foaf/0.1/">
+      <foaf:Person>
           <foaf:name>Foo Bar</foaf:name>
+  ...
           <foaf:mbox_sha1sum>F6F8570EBFC7A0550A71E59CAECA52EDE54671F8</foaf:mbox_sha1sum>
-      </foaf:person>
-  </rdf:rdf>
-  <BLANKLINE>
+  ...

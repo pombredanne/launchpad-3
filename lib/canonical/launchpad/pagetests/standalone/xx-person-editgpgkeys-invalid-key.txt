@@ -1,0 +1,134 @@
+
+Imports and setup of stub keyserver:
+
+  >>> from zope.component import getUtility
+  >>> from canonical.lp.dbschema import LoginTokenType
+  >>> from canonical.database.sqlbase import flush_database_updates
+  >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+  >>> from canonical.launchpad.interfaces import (
+  ...     IPersonSet, ILoginTokenSet)
+  >>> from canonical.launchpad.webapp import canonical_url
+  >>> from canonical.zeca.ftests.harness import ZecaTestSetup
+
+  >>> tokenset = getUtility(ILoginTokenSet)
+  >>> z = ZecaTestSetup()
+  >>> z.setUp()
+
+The following keys are used in these tests:
+
+  pub   1024D/AACCD97C 2005-10-12 [revoked: 2005-10-12]
+        Key fingerprint = 84D2 05F0 3E1E 6709 6CB5  4E26 2BE8 3793 AACC D97C
+  uid                  Revoked Key <revoked.key@canonical.com>
+
+  pub   1024D/046C6D63 2005-10-12 [expired: 2005-10-13]
+        Key fingerprint = ECA5 B797 586F 2E27 381A  16CF DE6C 9167 046C 6D63
+  uid                  Expired Key <expired.key@canonical.com>
+  sub   2048g/D501190D 2005-10-12 [expired: 2005-10-13]
+
+
+Attempts to claim a revoked GPG key fail:
+
+  >>> print http(r"""
+  ... POST /people/name12/+editgpgkeys HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... action=claim_gpg&fingerprint=84D205F03E1E67096CB54E262BE83793AACCD97C""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...The key AACCD97C cannot be validated because it has been publicly revoked...
+  ...
+
+
+Attempts to claim an expired GPG key also fail:
+
+  >>> print http(r"""
+  ... POST /people/name12/+editgpgkeys HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... action=claim_gpg&fingerprint=ECA5B797586F2E27381A16CFDE6C9167046C6D63""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...The key 046C6D63 cannot be validated because it has expired...
+  ...
+
+
+
+It is possible for a key to be revoked or expire between the time it
+is claimed and the time the claim is verified.  Therefore, it is
+necessary to check the validity at that point too.  To test this, we
+will create login tokens for the revoked and expired test keys:
+
+  >>> login(ANONYMOUS)
+  >>> person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+  >>> logintoken = tokenset.new(
+  ...     person, 'test@canonical.com', 'test@canonical.com',
+  ...     LoginTokenType.VALIDATEGPG,
+  ...     '84D205F03E1E67096CB54E262BE83793AACCD97C')
+  >>> revoked_key_token = logintoken.token.encode('ascii')
+  >>> logintoken = tokenset.new(
+  ...     person, 'test@canonical.com', 'test@canonical.com',
+  ...     LoginTokenType.VALIDATEGPG,
+  ...     'ECA5B797586F2E27381A16CFDE6C9167046C6D63')
+  >>> expired_key_token = logintoken.token.encode('ascii')
+  >>> logout()
+
+
+Try to validate the revoked GPG key:
+
+  >>> print http(r"""
+  ... POST /token/%s/+validategpg HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... password=test&SUBMIT_CHANGES=Submit""" % revoked_key_token)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...The key AACCD97C cannot be validated because it has been publicly revoked...
+  ...
+
+
+Try to validate the revoked GPG key:
+
+  >>> print http(r"""
+  ... POST /token/%s/+validategpg HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: ...
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... password=test&SUBMIT_CHANGES=Submit""" % expired_key_token)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...The key 046C6D63 cannot be validated because it has expired...
+  ...
+
+
+Each login token is removed after the failed validations:
+
+  >>> login(ANONYMOUS)
+  >>> tokenset[revoked_key_token]
+  Traceback (most recent call last):
+    ...
+  NotFoundError: ...
+  >>> tokenset[expired_key_token]
+  Traceback (most recent call last):
+    ...
+  NotFoundError: ...
+  >>> logout()
+
+
+Kill stub KeyServer
+  
+  >>> z.tearDown()

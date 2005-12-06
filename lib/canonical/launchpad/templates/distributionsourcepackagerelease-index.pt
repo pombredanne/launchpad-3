@@ -1,0 +1,60 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/sourcepackagerelease/@@+portlet-builds" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h2><span tal:replace="context/displayname"/> Source Package Release</h2>
+
+  <p>
+    Binary packages produced in this distribution for this version of 
+    <a tal:attributes="href context/sourcepackage/fmt:url"
+       tal:content="context/sourcepackage/name"/>:
+  </p>
+
+  <ul class="packages">
+    <li tal:repeat="drbp context/sample_binary_packages">
+      <a tal:attributes="href drbp/fmt:url">
+         <span tal:replace="drbp/name">apache-utils</span>:
+      </a>
+      <div style="font-size: 80%; margin-left: 30px;">
+         <b tal:content="drbp/summary">general utilities for apache</b>
+         <br />
+         <span tal:replace="drbp/description">
+           description goes here
+         </span>
+      </div>
+    </li>
+  </ul>
+
+  <h2>Publishing History</h2>
+  <table class="listing">
+  <tr>
+    <td align="center">DateTime</td>
+    <td align="center">Status</td>
+    <td align="center">Target</td>
+    <td align="center">Pocket</td>
+    <td align="center">Component</td>
+    <td align="center">Section</td>
+    <td align="center">Version</td>
+    <td colspan="3" align="center">Info</td>
+  </tr>
+  <tal:block repeat="publishing context/publishing_history"
+             replace="structure publishing/@@+listing-detailed">
+  </tal:block>
+  </table>
+
+</div>
+</body>
+</html>

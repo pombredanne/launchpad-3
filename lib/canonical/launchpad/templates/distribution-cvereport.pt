@@ -10,10 +10,6 @@
   <div tal:replace="structure context/@@+portlet-aboutcve" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-actions" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
   <h1>CVE Report</h1>
@@ -24,84 +20,35 @@
     picture.
   </p>
 
+  <tal:open_issues define="bugtasks context/open_cve_bugtasks">
+
   <h2>Open Issues</h2>
 
-    <table class="listing" tal:condition="context/open_cve_bugtasks">
-      <thead>
-        <tr>
-          <th>CVE</th>
-          <th>Bug Title</th>
-          <th>Source Package</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr tal:repeat="bugtask context/open_cve_bugtasks">
-          <td>
-            <tal:block repeat="cve bugtask/bug/cverefs">
-              <img src="/++resource++link_icon.gif" />
-              <a tal:content="cve/displayname"
-                 tal:attributes="href cve/url">CVE-1999-1234</a><br />
-            </tal:block>
-          </td>
-          <td>
-            <a tal:content="bugtask/bug/title"
-               tal:attributes="href bugtask/bug/fmt:url"
-               >Foo Bar does not work</a>
-          </td>
-          <td tal:content="bugtask/sourcepackagename/name">apache2</td>
-          <td>
-            <span tal:content="bugtask/status/title"
-                  tal:attributes="class string:status${bugtask/status/title}"
-                  >Accepted</span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
 
-    <p tal:condition="not: context/open_cve_bugtasks">
-      There are no CVE issues still open on
-      <span tal:replace="context/displayname">ubuntu</span>.
-    </p>
+  <tal:listing condition="bugtasks"
+               metal:use-macro="context/@@bugtask-macros-cve/table-listing" />
+
+  <p tal:condition="not: bugtasks">
+    There are no CVE issues still open on
+    <span tal:replace="context/displayname">Ubuntu</span>.
+  </p>
+
+  </tal:open_issues>
+
+  <tal:resolved_issues define="bugtasks context/resolved_cve_bugtasks">
 
   <h2>Resolved Issues</h2>
 
-    <table class="listing" tal:condition="context/resolved_cve_bugtasks">
-      <thead>
-        <tr>
-          <th>CVE</th>
-          <th>Bug Title</th>
-          <th>Source Package</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr tal:repeat="bugtask context/open_cve_bugtasks">
-          <td><ul>
-            <li tal:repeat="cve bugtask/bug/cverefs">
-              <img src="/++resource++link_icon.gif" />
-              <a tal:content="cve/displayname"
-                 tal:attributes="href cve/url">CVE-1999-1234</a>
-            </li>
-          </ul></td>
-          <td><a tal:content="bugtask/bug/title"
-                 tal:attributes="href bugtask/bug/fmt:url"
-                 >Foo Bar does not work</a>
-          </td>
-          <td tal:content="bugtask/sourcepackagename/name">apache2</td>
-          <td>
-            <span tal:content="bugtask/status/title"
-                  tal:attributes="class
-                  string:status${bugtask/status/title}">Accepted</span>
-          </td>
-        </tr>
-      </tbody>
-    </table>
 
-    <p tal:condition="not: context/resolved_cve_bugtasks">
-      There are no registered CVE issues resolved on
-      <span tal:replace="context/displayname">ubuntu</span>.
-    </p>
+  <tal:listing condition="bugtasks"
+               metal:use-macro="context/@@bugtask-macros-cve/table-listing" />
+
+  <p tal:condition="not: bugtasks">
+    There are no CVE issues resolved on
+    <span tal:replace="context/displayname">Ubuntu</span>.
+  </p>
+
+  </tal:resolved_issues>
 
 </div> 
 </body>

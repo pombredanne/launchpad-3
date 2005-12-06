@@ -15,7 +15,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Rosetta Translation Group Overview</h1>
+  <h1>Translation Group Overview</h1>
 
   <p class="documentDescription" tal:content="context/summary">
       $TranslationGroup.summary goes here. This should be quite short,
@@ -30,13 +30,15 @@
        Notification Message
   </p>
 
-  <tal:block condition="context/translators">
+  <tal:translators condition="context/translators">
 
-  <p>The translators in this group are listed below. You can appoint
-  additional translators <a href="+appoint">here</a>, or select the relevant
-  link to change or remove them.</p>
+  <p>
+    These are the translators in this group.
+    You can <a href="+appoint">appoint additional translators</a>,
+    as well as changing or removing translators in the list.
+  </p>
 
-  <table class="listing">
+  <table class="sortable listing" id="group-members">
     <thead>
       <tr>
         <th>Language</th>
@@ -78,7 +80,7 @@
     <a href="+appoint">Appoint New Translator</a>
   </p>
 
-  <!-- end translators block --></tal:block>
+  </tal:translators>
 
   <p tal:condition="not: context/translators">There are no translators yet
   appointed in this group. You can <a href="+appoint">appoint a

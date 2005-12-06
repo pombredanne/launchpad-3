@@ -1,0 +1,61 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:condition="context/currentrelease"
+         tal:replace="structure context/currentrelease/@@+portlet-langstats"
+         />
+    <div tal:replace="structure context/@@+portlet-bounties" />
+    <div tal:replace="structure context/@@+portlet-milestones" />
+    <div tal:replace="structure context/@@+portlet-latestspecs" />
+</metal:leftportlets>
+
+
+<metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-latestbugs" />
+    <div tal:replace="structure context/@@+portlet-latesttickets" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <h1><span tal:replace="context/title">TITLE</span>:
+    Distribution Overview</h1>
+
+  <p class="documentDescription" tal:content="context/summary">
+      Distribution Summary
+  </p>
+
+  <div class="highlighted" style="font-size: 80%;">
+    <p tal:replace="structure context/description/fmt:text-to-html">
+        Distribution description
+    </p>
+  </div>
+
+  <h2>Source Packages in <span tal:replace="context/title"/></h2>
+
+  <form name="search" action="+search" method="GET">
+  
+    <input type="text"
+      name="text"
+      size="35"
+      tal:attributes="value request/name|nothing" />
+
+    <input type="submit" value="Search"/>
+
+  </form>
+
+  <p class="discreet">
+    Search for a software package in this distribution using the form above.
+    You will be shown a list of matching source packages, and can explore
+    the archive from there.
+  </p>
+
+</div>
+
+</body>
+</html>

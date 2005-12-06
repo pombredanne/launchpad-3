@@ -54,6 +54,9 @@ class ILoginToken(Interface):
     # used for launchpad page layout
     title = Attribute('Title')
 
+    # Quick fix for Bug #2481
+    password = Attribute('Password')
+
     def destroySelf():
         """Remove this LoginToken from the database.
 
@@ -65,10 +68,11 @@ class ILoginToken(Interface):
     def sendEmailValidationRequest(appurl):
         """Send an email message with a magic URL to validate self.email."""
 
-    def sendGPGValidationRequest(appurl, fingerprint=None):
+    def sendGPGValidationRequest(appurl, key):
         """Send an email message with a magic URL to validate gpg key.
         if fingerprint is set send encrypted email.
         """
+
 
 class ILoginTokenSet(Interface):
     """The set of LoginTokens."""
@@ -101,7 +105,7 @@ class ILoginTokenSet(Interface):
         """
 
     def new(requester, requesteremail, email, tokentype, fingerprint=None):
-        """ Create a new LoginToken object. Parameters must be:
+        """Create a new LoginToken object. Parameters must be:
         requester: a Person object or None (in case of a new account)
 
         requesteremail: the email address used to login on the system. Can

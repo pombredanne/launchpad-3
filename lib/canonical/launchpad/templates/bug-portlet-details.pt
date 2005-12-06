@@ -1,15 +1,16 @@
 <div class="portlet">
 
-  <h4>Bug details</h4>
+  <h4>Bug details:</h4>
 
 
-  <div class="portletBody portletContent">
+  <div class="portletBody portletContent"
+       tal:define="bugtask view/currentBugTask">
     <img alt="" src="/++resource++bug" />
     <a href="#"
        style="text-decoration: underline"
-       tal:attributes="href context/fmt:url">
+       tal:attributes="href bugtask/fmt:url">
        Bug #<span tal:replace="context/id">3252543</span></a><br />
-   
+
     <tal:nickname tal:condition="context/name">
       <b>Nickname:</b><br />
       <span tal:replace="context/name" /><br />
@@ -22,13 +23,13 @@
       style="text-decoration: underline"></a><br />
 
     <b>First reported:</b><br />
-    <span tal:replace="context/datecreated/fmt:datetime">12-12-2004
-    20:44:00 UTC</span>
+    <span tal:replace="context/datecreated/fmt:date">12-12-2004</span>
     <br />
 
     <b>Secrecy:</b>
     <tal:block condition="context/private">
-      <span class="explain" title="Secret bugs can only be seen by the bug subscribers explicitly listed.">Private</span>
+      Private
+      <div>(can be seen only by the bug subscribers)</div>
     </tal:block>
     <tal:block condition="not:context/private">
       Public

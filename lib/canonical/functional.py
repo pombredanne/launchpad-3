@@ -34,7 +34,6 @@ from transaction import abort, commit
 from ZODB.DB import DB
 from ZODB.DemoStorage import DemoStorage
 import zope.interface
-from zope.publisher.browser import BrowserRequest
 from zope.publisher.http import HTTPRequest
 from zope.publisher.publish import publish
 from zope.security.interfaces import Forbidden, Unauthorized
@@ -44,13 +43,17 @@ from zope.app.debug import Debugger
 from zope.app.publication.http import HTTPPublication
 import zope.app.tests.setup
 from zope.app.component.hooks import setSite, getSite
-from zope.app.tests import ztapi
 from zope.component import getUtility
 import zope.security.management
 
-from canonical.publication import BrowserPublication
+from canonical.publication import LaunchpadBrowserPublication
+from canonical.launchpad.webapp import LaunchpadBrowserRequest
 from canonical.chunkydiff import elided_source
 from canonical.config import config
+import canonical.launchpad.layers
+
+
+from canonical.launchpad.webapp import LaunchpadBrowserRequest
 
 # XXX: When we've upgraded Zope 3 to a newer version, we'll just import
 #      IHeaderOutput from zope.publisher.interfaces.http.
@@ -112,9 +115,11 @@ class FunctionalTestSetup(object):
 
             if not config_file:
                 config_file = 'ftesting.zcml'
+
             self.log = StringIO()
-            # Make it silent but keep the log available for debugging
-            logging.root.addHandler(logging.StreamHandler(self.log))
+            # silence most SiteError log messages (e.g. NotFound exceptions)
+            logging.getLogger('SiteError').setLevel(logging.CRITICAL)
+
             self.base_storage = DemoStorage("Memory Storage")
             self.db = DB(self.base_storage)
             self.app = Debugger(self.db, config_file)
@@ -140,11 +145,22 @@ class FunctionalTestSetup(object):
         self.db = self.app.db = DB(storage)
         self.connection = None
 
+        # Make it silent but keep the log available for debugging
+        for hdlr in logging.root.handlers[:]:
+            logging.root.removeHandler(hdlr)
+            hdlr.flush()
+            hdlr.close()
+        logging.basicConfig(stream=self.log, level=logging.WARNING)
+
     def tearDown(self):
         """Cleans up after a functional test case."""
         abort()
         self.db.removeVersionPool('')
         self.db.close()
+        for hdlr in logging.root.handlers[:]:
+            logging.root.removeHandler(hdlr)
+            hdlr.flush()
+            hdlr.close()
 
     def getRootFolder(self):
         """Returns the Zope root folder."""
@@ -226,7 +242,7 @@ class BrowserTestCase(FunctionalTestCase):
         request = app._request(path, '', outstream,
                                environment=environment,
                                basic=basic, form=form,
-                               request=BrowserRequest)
+                               request=LaunchpadBrowserRequest)
         return request
 
     def __http_cookie(self, path):
@@ -268,7 +284,7 @@ class BrowserTestCase(FunctionalTestCase):
         publish(request, handle_errors=handle_errors)
         # Urgh - need to play with the response's privates to extract
         # cookies that have been set
-        for k,v in response._cookies.items():
+        for k, v in response._cookies.items():
             k = k.encode('utf8')
             self.cookies[k] = v['value'].encode('utf8')
             if self.cookies[k].has_key('Path'):
@@ -493,13 +509,15 @@ def http(request_string, port=9000, handle_errors=True, debug=False):
     if method not in ('GET', 'POST', 'HEAD'):
         raise RuntimeError("Request method was not GET, POST or HEAD.")
 
-    request_cls = BrowserRequest
-    publication_cls = BrowserPublication
+    request_cls = LaunchpadBrowserRequest
+    publication_cls = LaunchpadBrowserPublication
 
     request = app._request(path, instream, outstream,
                            environment=environment,
                            request=request_cls, publication=publication_cls)
     request.response.setHeaderOutput(header_output)
+    canonical.launchpad.layers.setFirstLayer(
+        request, canonical.launchpad.layers.PageTestLayer)
     response = DocResponseWrapper(request.response, outstream, path,
                                   header_output)
     if debug:
@@ -567,6 +585,21 @@ class SpecialOutputChecker(doctest.OutputChecker):
         return doctest.OutputChecker.output_difference(
             self, example, newgot, optionflags)
 
+
+class StdoutWrapper:
+    """A wrapper for sys.stdout.  Writes to this file like object will
+    write to whatever sys.stdout is pointing to at the time.
+
+    The purpose of this class is to allow doctest to capture log
+    messages.  Since doctest replaces sys.stdout, configuring the
+    logging module to send messages to sys.stdout before running the
+    tests will not result in the output being captured.  Using an
+    instance of this class solves the problem.
+    """
+    def __getattr__(self, attr):
+        return getattr(sys.stdout, attr)
+
+
 def FunctionalDocFileSuite(*paths, **kw):
     globs = kw.setdefault('globs', {})
     globs['http'] = http
@@ -578,6 +611,13 @@ def FunctionalDocFileSuite(*paths, **kw):
     kwsetUp = kw.get('setUp')
     def setUp(test):
         FunctionalTestSetup().setUp()
+
+        # for doctests, direct log messages to stdout, so that they
+        # must be processed along with other command output.
+        logging.root.handlers[0].close()
+        logging.root.removeHandler(logging.root.handlers[0])
+        logging.basicConfig(stream=StdoutWrapper(), level=logging.WARNING)
+
         if kwsetUp is not None:
             kwsetUp(test)
     kw['setUp'] = setUp

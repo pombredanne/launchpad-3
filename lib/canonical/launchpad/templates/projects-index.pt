@@ -6,31 +6,25 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div class="portlet">
-    <h4>Open Source Projects:</h4>
-
-    <div class="portletBody">
-      <div class="portletContent even">
-
-        <p>Enter a project name or detail, and press search to find all
-        projects matching those words in the Launchpad. You can also
-        <a href="/projects/+all">see all projects</a> registered in the
-        launchpad.</p>
-
-      </div>
-    </div>
-  </div>
+  <tal:statistics replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
+<metal:rightportlets fill-slot="portlets_two">
+  <div class="portlet portletBody portletContent">
+    <ul>
+      <li class="add"><a href="/projects/+new">Register a new project</a></li>
+    </ul>
+  </div>
+</metal:rightportlets>
 
     <div metal:fill-slot="main">
 
-      <h1>Find Projects in Launchpad</h1>
+      <h1>Launchpad projects registry</h1>
 
       <form method="get">
         <table>
           <tr>
             <td>
-              <input name="text" size="30" tal:attributes="value view/text" />
+              <input name="text" size="35" tal:attributes="value view/text" />
                 <input
                   tal:condition="view/searchrequested"
                   type="submit"
@@ -53,7 +47,7 @@
 
     <div tal:condition="view/searchrequested">
 
-        <table class="data" tal:define="results view/searchresults">
+        <table class="listing" tal:define="results view/searchresults">
           <thead>
             <tr class="results">
               <td colspan="0">
@@ -73,10 +67,9 @@
                         ><dfn
                           tal:content="project/title"
                         >$project.title</dfn>
-                        (<span
-                          tal:replace="project/name"
-                        >$project.name
-                      </span>)</a>
+                      </a>
+                      (<code tal:content="project/name"
+                      >$project.name</code>)
                     </dt>
                     <dd tal:content="project/summary">
                       $project.shortdesc

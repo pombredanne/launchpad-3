@@ -17,24 +17,26 @@
       </div>
 
       <p>You're trying to merge the user account named
-      <em><span tal:replace="view/dupe/name" /></em> into the
-      account named <em><span tal:replace="context/requester/name" /></em>. 
-      To complete this proccess, just fill in your Launchpad password on the
-      form bellow and click on <em>Submit</em>.</p>
+      <em><strong tal:content="view/dupe/name" /></em> into the
+      account named <em><strong tal:content="context/requester/name" /></em>. 
+      To complete the merge, simply enter the Launchpad password of the
+      <strong tal:content="context/requester/name" /> account on the
+      form bellow and submit it.</p>
 
       <form autocomplete="off" name="merge" method="POST">
         <div class="field">
 
           <label>Password</label>
           <br>
-          <div class="formHelp"> Type your Launchpad password </div>
           <input type="password" size="30" name="password" />
           <br>
 
-          <label>
-            <input type="checkbox" checked="checked" name="logmein" />
-            Log me in after resetting my password
-          </label><br />
+          <tal:block condition="not: request/lp:person">
+            <label>
+              <input type="checkbox" checked="checked" name="logmein" />
+              Log me in after merging the accounts
+            </label><br />
+          </tal:block>
 
           <div class="formControls">
             <input type="submit" name="SUBMIT_CHANGES" value="Submit" />
@@ -42,24 +44,6 @@
 
         </div>
       </form>
-    </div>
-
-    <div tal:condition="view/successfullyProcessed">
-      <h1>Merge User Accounts</h1>
-
-      <div tal:condition="not: view/mergeCompleted">
-        <p>The email address <em><span tal:replace="context/email" /></em> have
-        been assigned to you, but the dupe account you selected still have
-        more registered email addresses. In order to actually complete the
-        merge, you have to prove that you have access to all email addresses of
-        that account.</p>
-      </div>
-
-      <div tal:condition="view/mergeCompleted">
-        <p>The merge you requested was concluded with success. Now, everything
-        that was owned by the duplicated account should be owned by your user
-        account.</p>
-      </div>
     </div>
 
 </div>

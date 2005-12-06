@@ -8,30 +8,21 @@
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
 
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Please describe the bounty you are registering below. You will be the
-      "creator" of this bounty, listed in perpetuity, so please take care to
-      get the details correct. Most important is to include contact details
-      for the relevant person issuing the bounty, in the description of the
-      bounty itself.
-    </div>
+    <p metal:fill-slot="extra_info">
+      You will be listed forever as the creator of this bounty,
+      so ensure you get the details correct.
+      Most importantly, include contact details
+      for the person issuing the bounty.
+      Thanks!
+    </p>
 
-  </div>
-
-  <div>
-    Once again, please double-check your information above before submitting
-    the form. In particular, make sure you have given contact details for
-    the person coordinating the bounty, and have the amount in USD correct.
-    Thank you!
   </div>
 
 </div>

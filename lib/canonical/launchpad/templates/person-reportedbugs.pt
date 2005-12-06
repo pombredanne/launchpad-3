@@ -5,61 +5,43 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+  </metal:leftportlets>
 
+  <div metal:fill-slot="main">
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-actions" />
-</metal:rightportlets>
+    <metal:page
+        use-macro="context/@@+bugtask-macros-buglisting/page"
+        tal:define="task_batch_navigator view/search">
 
+      <metal:heading fill-slot="heading">
+        <h1>Bugs Reported by <span tal:replace="context/browsername" /></h1>
+      </metal:heading>
 
-  <div metal:fill-slot="main" 
-       tal:define="reportedTasks view/reportedBugTasks;
-                   reportedTasksCount reportedTasks/count">
+      <metal:extra_search_widgets_in_table
+          tal:condition="view/show_advanced_form"
+          metal:fill-slot="extra_search_widgets_in_table">
 
-    <h1>Reported Bugs</h1>
+        <input type="hidden" name="advanced" value="1" />
 
-    <p tal:condition="not: reportedTasksCount">No bugs have been 
-      reported by <span tal:replace="context/browsername" />.
-    </p>
+        <metal:widget 
+          use-macro="context/@@+bugtask-macros-buglisting/assignee_widget_in_table" />
+        <metal:widget 
+          use-macro="context/@@+bugtask-macros-buglisting/include_dupes_widget_in_table" />
+        <metal:widget 
+          use-macro="context/@@+bugtask-macros-buglisting/statusexplanation_widget_in_table" />
+      </metal:extra_search_widgets_in_table>
 
-    <div tal:condition="reportedTasksCount">
-      <p>These are the most recent bugs reported by 
-        <span tal:replace="context/browsername" />.
-      </p>
+      <metal:extra_search_widgets_below_table
+          tal:condition="view/show_advanced_form"
+          metal:fill-slot="extra_search_widgets_below_table">
+        <metal:widget 
+          use-macro="context/@@+bugtask-macros-buglisting/extra_widgets_in_own_table" />
+      </metal:extra_search_widgets_below_table>
 
-      <table class="listing lpListing rowNavigation" width="90%">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>title</th>
-            <th>upstream / package</th>
-            <th>status</th>
-            <th>priority</th>
-            <th>severity</th>
-          </tr>
-        </thead>
+    </metal:page>
 
-        <tr tal:repeat="bugtask reportedTasks" class="rowLinkified">
-          <tal:block tal:define="url string:/malone/bugs/${bugtask/bug/id}">
-          <td><a tal:attributes="href url"><span tal:replace="bugtask/bug/id" /></a></td>
-          <td tal:attributes="title bugtask/bug/summary">
-            <a tal:attributes="href url"><span tal:replace="bugtask/bug/title" /></a></td>
-          <td><a tal:attributes="href url" 
-                 tal:content="bugtask/product/displayname|default">-</a></td>
-          <td><a tal:attributes="href url" 
-                 tal:content="bugtask/status/title">status</a></td>
-          <td><a tal:attributes="href url"
-                 tal:content="bugtask/priority/title|default">-</a></td>
-          <td><a tal:attributes="href url"
-                 tal:content="bugtask/severity/title|default">-</a></td>
-          </tal:block>
-        </tr>
-      </table>
-
-    </div>
   </div>
 
 </body>

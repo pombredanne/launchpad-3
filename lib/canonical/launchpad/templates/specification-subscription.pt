@@ -1,0 +1,68 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-subscribers" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <tal:subscribed condition="view/subscription">
+
+    <h1>Unsubscribe From Specification</h1>
+
+    <p>
+      Choose "Unsubscribe" to remove your subscription to this spec, or
+      "Cancel" to return to the specification page.
+    </p>
+
+    <form action="." method="POST">
+
+      <div>
+      </div>
+      <div class="actions">
+        <input type="submit"
+               name="cancel"
+               value="Cancel" />
+        <input type="submit"
+               name="subscribe"
+               value="Unsubscribe" />
+      </div>
+    </form>
+
+  </tal:subscribed>
+
+  <tal:not_subscribed condition="not: view/subscription">
+
+    <h1>Subscribe to Specification</h1>
+
+    <p>
+      Choose "Subscribe" to become a subscriber to this spec, or "Cancel" to
+      return to the specification page.
+    </p>
+  
+    <form action="." method="POST">
+  
+      <div class="actions">
+        <input type="submit"
+               name="cancel"
+               value="Cancel" />
+        <input type="submit"
+               name="subscribe"
+               value="Subscribe" />
+      </div>
+    </form>
+
+  </tal:not_subscribed>
+
+</div>
+
+</body>
+</html>

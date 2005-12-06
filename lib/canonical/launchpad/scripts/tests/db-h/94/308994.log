@@ -1,0 +1,1541 @@
+
+<strong>Report forwarded</strong> to <code>debian-bugs-dist@lists.debian.org, Sjoerd Simons &lt;sjoerd@debian.org&gt;</code>:<br>
+<code>Bug#308994</code>; Package <code>gnome-volume-manager</code>.
+
+
+debian-bugs-dist@lists.debian.orgSjoerd Simons <sjoerd@debian.org>
+
+X-Loop: owner@bugs.debian.org
+Subject: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write
+Reply-To: josh <jbuhl_nospam@gmx.de>, 308994@bugs.debian.org
+Resent-From: josh <jbuhl_nospam@gmx.de>
+Resent-To: debian-bugs-dist@lists.debian.org
+Resent-CC: Sjoerd Simons <sjoerd@debian.org>
+Resent-Date: Fri, 13 May 2005 16:48:04 UTC
+Resent-Message-ID: <handler.308994.B.11160022917574@bugs.debian.org>
+Resent-Sender: owner@bugs.debian.org
+X-Debian-PR-Message: report 308994
+X-Debian-PR-Package: gnome-volume-manager
+X-Debian-PR-Keywords: 
+Received: via spool by submit@bugs.debian.org id=B.11160022917574
+          (code B ref -1); Fri, 13 May 2005 16:48:04 UTC
+Received: (at submit) by bugs.debian.org; 13 May 2005 16:38:11 +0000
+Received: from pop.gmx.de (mail.gmx.net) [213.165.64.20] 
+	by spohr.debian.org with smtp (Exim 3.35 1 (Debian))
+	id 1DWdAw-0001pN-00; Fri, 13 May 2005 09:38:10 -0700
+Received: (qmail invoked by alias); 13 May 2005 16:37:38 -0000
+Received: from p50888D1F.dip0.t-ipconnect.de (EHLO [192.168.1.10]) [80.136.141.31]
+  by mail.gmx.net (mp005) with SMTP; 13 May 2005 18:37:38 +0200
+X-Authenticated: #23386520
+Message-ID: <4284D7D1.6010208@gmx.de>
+Date: Fri, 13 May 2005 18:37:37 +0200
+From: josh <jbuhl_nospam@gmx.de>
+User-Agent: Debian Thunderbird 1.0.2 (X11/20050329)
+X-Accept-Language: en-us, en
+MIME-Version: 1.0
+To: submit@bugs.debian.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
+Delivered-To: submit@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-8.0 required=4.0 tests=BAYES_00,HAS_PACKAGE 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-Spam-Level: 
+
+Package: gnome-volume-manager
+Version: 1.2.0-1
+Severity: important
+
+When gnome-volume-manager automounts a dvd+rw containing an fs in my dvd
+burner on my system, the volume is unreadable, since it gets pmounted
+rw, and blocks get changed. unmounting the volume reports a dirty
+dvd+rw. the same volume is readable if mounted by hand with the
+read-only flag.
+
+
+I've filed a bug upstream for this, which is here:
+
+http://bugzilla.gnome.org/show_bug.cgi?id=304070
+
+but wanted it in the debian bug database for user and maintainer reference.
+
+
+-j
+
+
+-- System Information:
+Debian Release: 3.1
+  APT prefers testing
+  APT policy: (990, 'testing')
+Architecture: i386 (i686)
+Kernel: Linux 2.6.10
+Locale: LANG=en_US.UTF-8, LC_CTYPE=en_US.UTF-8 (charmap=UTF-8)
+
+Versions of packages gnome-volume-manager depends on:
+ii  dbus-1               0.23.2-3            simple interprocess
+messaging syst
+ii  dbus-glib-1          0.23.2-3            simple interprocess
+messaging syst
+ii  gconf2               2.8.1-5             GNOME configuration
+database syste
+ii  hal                  0.4.7-3             Hardware Abstraction Layer
+ii  libart-2.0-2         2.3.17-1            Library of functions for 2D
+graphi
+ii  libatk1.0-0          1.8.0-4             The ATK accessibility toolkit
+ii  libbonobo2-0         2.8.1-2             Bonobo CORBA interfaces library
+ii  libbonoboui2-0       2.8.1-2             The Bonobo UI library
+ii  libc6                2.3.2.ds1-21        GNU C Library: Shared
+libraries an
+ii  libgconf2-4          2.8.1-5             GNOME configuration
+database syste
+ii  libglade2-0          1:2.4.2-2           library to load .glade
+files at ru
+ii  libglib2.0-0         2.6.4-1             The GLib library of C routines
+ii  libgnome2-0          2.8.1-2             The GNOME 2 library -
+runtime file
+ii  libgnomecanvas2-0    2.8.0-1             A powerful object-oriented
+display
+ii  libgnomeui-0         2.8.1-3             The GNOME 2 libraries (User
+Interf
+ii  libgnomevfs2-0       2.8.4-2             The GNOME virtual
+file-system libr
+ii  libgtk2.0-0          2.6.4-1             The GTK+ graphical user
+interface
+ii  libhal0              0.4.7-3             Hardware Abstraction Layer
+- share
+ii  libice6              4.3.0.dfsg.1-12.0.1 Inter-Client Exchange library
+ii  liborbit2            1:2.12.1-1          libraries for ORBit2 - a
+CORBA ORB
+ii  libpango1.0-0        1.8.1-1             Layout and rendering of
+internatio
+ii  libpopt0             1.7-5               lib for parsing cmdline
+parameters
+ii  libsm6               4.3.0.dfsg.1-12.0.1 X Window System Session
+Management
+ii  libx11-6             4.3.0.dfsg.1-12.0.1 X Window System protocol
+client li
+ii  libxml2              2.6.16-4            GNOME XML library
+ii  pmount               0.7.1-1             mount removable devices as
+normal
+ii  xlibs                4.3.0.dfsg.1-12     X Keyboard Extension (XKB)
+configu
+ii  zlib1g               1:1.2.2-3           compression library - runtime
+
+-- no debconf information
+
+
+
+
+
+<strong>Acknowledgement sent</strong> to <code>josh &lt;jbuhl_nospam@gmx.de&gt;</code>:<br>
+New Bug report received and forwarded.  Copy sent to <code>Sjoerd Simons &lt;sjoerd@debian.org&gt;</code>.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+From: owner@bugs.debian.org (Debian Bug Tracking System)
+To: josh <jbuhl_nospam@gmx.de>
+Subject: Bug#308994: Acknowledgement (gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write)
+Message-ID: <handler.308994.B.11160022917574.ack@bugs.debian.org>
+In-Reply-To: <4284D7D1.6010208@gmx.de>
+References: <4284D7D1.6010208@gmx.de>
+Precedence: bulk
+X-Debian-PR-Message: ack 308994
+X-Debian-PR-Package: gnome-volume-manager
+X-Debian-PR-Keywords: 
+Reply-To: 308994@bugs.debian.org
+
+Thank you for the problem report you have sent regarding Debian.
+This is an automatically generated reply, to let you know your message has
+been received.  It is being forwarded to the package maintainers and other
+interested parties for their attention; they will reply in due course.
+
+Your message has been sent to the package maintainer(s):
+ Sjoerd Simons <sjoerd@debian.org>
+
+If you wish to submit further information on your problem, please send
+it to 308994@bugs.debian.org (and *not* to
+submit@bugs.debian.org).
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the Bug-tracking system.
+
+Debian bug tracking system administrator
+(administrator, Debian Bugs database)
+
+
+
+Received: (at submit) by bugs.debian.org; 13 May 2005 16:38:11 +0000
+From jbuhl_nospam@gmx.de Fri May 13 09:38:11 2005
+Return-path: <jbuhl_nospam@gmx.de>
+Received: from pop.gmx.de (mail.gmx.net) [213.165.64.20] 
+	by spohr.debian.org with smtp (Exim 3.35 1 (Debian))
+	id 1DWdAw-0001pN-00; Fri, 13 May 2005 09:38:10 -0700
+Received: (qmail invoked by alias); 13 May 2005 16:37:38 -0000
+Received: from p50888D1F.dip0.t-ipconnect.de (EHLO [192.168.1.10]) [80.136.141.31]
+  by mail.gmx.net (mp005) with SMTP; 13 May 2005 18:37:38 +0200
+X-Authenticated: #23386520
+Message-ID: <4284D7D1.6010208@gmx.de>
+Date: Fri, 13 May 2005 18:37:37 +0200
+From: josh <jbuhl_nospam@gmx.de>
+User-Agent: Debian Thunderbird 1.0.2 (X11/20050329)
+X-Accept-Language: en-us, en
+MIME-Version: 1.0
+To: submit@bugs.debian.org
+Subject: gnome-volume-manager: dvd+rw unreadable when automounted in burner
+ because mounted read/write
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
+Delivered-To: submit@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-8.0 required=4.0 tests=BAYES_00,HAS_PACKAGE 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-Spam-Level: 
+
+Package: gnome-volume-manager
+Version: 1.2.0-1
+Severity: important
+
+When gnome-volume-manager automounts a dvd+rw containing an fs in my dvd
+burner on my system, the volume is unreadable, since it gets pmounted
+rw, and blocks get changed. unmounting the volume reports a dirty
+dvd+rw. the same volume is readable if mounted by hand with the
+read-only flag.
+
+
+I've filed a bug upstream for this, which is here:
+
+http://bugzilla.gnome.org/show_bug.cgi?id=304070
+
+but wanted it in the debian bug database for user and maintainer reference.
+
+
+-j
+
+
+-- System Information:
+Debian Release: 3.1
+  APT prefers testing
+  APT policy: (990, 'testing')
+Architecture: i386 (i686)
+Kernel: Linux 2.6.10
+Locale: LANG=en_US.UTF-8, LC_CTYPE=en_US.UTF-8 (charmap=UTF-8)
+
+Versions of packages gnome-volume-manager depends on:
+ii  dbus-1               0.23.2-3            simple interprocess
+messaging syst
+ii  dbus-glib-1          0.23.2-3            simple interprocess
+messaging syst
+ii  gconf2               2.8.1-5             GNOME configuration
+database syste
+ii  hal                  0.4.7-3             Hardware Abstraction Layer
+ii  libart-2.0-2         2.3.17-1            Library of functions for 2D
+graphi
+ii  libatk1.0-0          1.8.0-4             The ATK accessibility toolkit
+ii  libbonobo2-0         2.8.1-2             Bonobo CORBA interfaces library
+ii  libbonoboui2-0       2.8.1-2             The Bonobo UI library
+ii  libc6                2.3.2.ds1-21        GNU C Library: Shared
+libraries an
+ii  libgconf2-4          2.8.1-5             GNOME configuration
+database syste
+ii  libglade2-0          1:2.4.2-2           library to load .glade
+files at ru
+ii  libglib2.0-0         2.6.4-1             The GLib library of C routines
+ii  libgnome2-0          2.8.1-2             The GNOME 2 library -
+runtime file
+ii  libgnomecanvas2-0    2.8.0-1             A powerful object-oriented
+display
+ii  libgnomeui-0         2.8.1-3             The GNOME 2 libraries (User
+Interf
+ii  libgnomevfs2-0       2.8.4-2             The GNOME virtual
+file-system libr
+ii  libgtk2.0-0          2.6.4-1             The GTK+ graphical user
+interface
+ii  libhal0              0.4.7-3             Hardware Abstraction Layer
+- share
+ii  libice6              4.3.0.dfsg.1-12.0.1 Inter-Client Exchange library
+ii  liborbit2            1:2.12.1-1          libraries for ORBit2 - a
+CORBA ORB
+ii  libpango1.0-0        1.8.1-1             Layout and rendering of
+internatio
+ii  libpopt0             1.7-5               lib for parsing cmdline
+parameters
+ii  libsm6               4.3.0.dfsg.1-12.0.1 X Window System Session
+Management
+ii  libx11-6             4.3.0.dfsg.1-12.0.1 X Window System protocol
+client li
+ii  libxml2              2.6.16-4            GNOME XML library
+ii  pmount               0.7.1-1             mount removable devices as
+normal
+ii  xlibs                4.3.0.dfsg.1-12     X Keyboard Extension (XKB)
+configu
+ii  zlib1g               1:1.2.2-3           compression library - runtime
+
+-- no debconf information
+
+
+
+
+
+<strong>Information forwarded</strong> to <code>debian-bugs-dist@lists.debian.org, Sjoerd Simons &lt;sjoerd@debian.org&gt;</code>:<br>
+<code>Bug#308994</code>; Package <code>gnome-volume-manager</code>.
+
+
+debian-bugs-dist@lists.debian.orgSjoerd Simons <sjoerd@debian.org>
+
+X-Loop: owner@bugs.debian.org
+Subject: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write
+Reply-To: sjoerd@spring.luon.net (Sjoerd Simons), 308994@bugs.debian.org
+Resent-From: sjoerd@spring.luon.net (Sjoerd Simons)
+Resent-To: debian-bugs-dist@lists.debian.org
+Resent-CC: Sjoerd Simons <sjoerd@debian.org>
+Resent-Date: Tue, 17 May 2005 19:03:03 UTC
+Resent-Message-ID: <handler.308994.B308994.11163560815045@bugs.debian.org>
+Resent-Sender: owner@bugs.debian.org
+X-Debian-PR-Message: report 308994
+X-Debian-PR-Package: gnome-volume-manager
+X-Debian-PR-Keywords: 
+Received: via spool by 308994-submit@bugs.debian.org id=B308994.11163560815045
+          (code B ref 308994); Tue, 17 May 2005 19:03:03 UTC
+Received: (at 308994) by bugs.debian.org; 17 May 2005 18:54:41 +0000
+Received: from simons.xs4all.nl (fire.luon.net) [80.126.201.244] (postfix)
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1DY7DF-0001Iq-00; Tue, 17 May 2005 11:54:41 -0700
+Received: from spring.luon.net (t-27-117.athome.tue.nl [131.155.228.117])
+	by fire.luon.net (Postfix) with ESMTP id 08964FE9D;
+	Tue, 17 May 2005 20:54:35 +0200 (CEST)
+Received: by spring.luon.net (Postfix, from userid 1000)
+	id 145A537D8B; Tue, 17 May 2005 20:54:30 +0200 (CEST)
+Date: Tue, 17 May 2005 20:54:29 +0200
+To: josh <jbuhl_nospam@gmx.de>, 308994@bugs.debian.org
+Cc: control@bugs.debian.org
+Message-ID: <20050517185429.GB20786@spring.luon.net>
+References: <4284D7D1.6010208@gmx.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4284D7D1.6010208@gmx.de>
+X-Operating-System: Linux spring 2.6.11-powerpc #1 Mon Apr 4 04:03:40 CEST 2005 ppc GNU/Linux
+User-Agent: Mutt/1.5.9i
+From: sjoerd@spring.luon.net (Sjoerd Simons)
+Delivered-To: 308994@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-8.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER,
+	VALID_BTS_CONTROL autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-Spam-Level: 
+
+reassign 308994 pmount
+thanks, 
+
+On Fri, May 13, 2005 at 06:37:37PM +0200, josh wrote:
+> When gnome-volume-manager automounts a dvd+rw containing an fs in my dvd
+> burner on my system, the volume is unreadable, since it gets pmounted
+> rw, and blocks get changed. unmounting the volume reports a dirty
+> dvd+rw. the same volume is readable if mounted by hand with the
+> read-only flag.
+> 
+
+I guess that's a pmount issue.. Although i don't completely understand the 
+issue (don't have a dvd writer).
+
+  Sjoerd
+-- 
+Air is water with holes in it.
+
+
+
+
+<strong>Acknowledgement sent</strong> to <code>sjoerd@spring.luon.net (Sjoerd Simons)</code>:<br>
+Extra info received and forwarded to list.  Copy sent to <code>Sjoerd Simons &lt;sjoerd@debian.org&gt;</code>.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+From: owner@bugs.debian.org (Debian Bug Tracking System)
+To: sjoerd@spring.luon.net (Sjoerd Simons)
+Subject: Bug#308994: Info received (was Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write)
+Message-ID: <handler.308994.B308994.11163560815045.ackinfo@bugs.debian.org>
+In-Reply-To: <20050517185429.GB20786@spring.luon.net>
+References: <20050517185429.GB20786@spring.luon.net>
+Precedence: bulk
+X-Debian-PR-Message: ack-info 308994
+X-Debian-PR-Package: gnome-volume-manager
+X-Debian-PR-Keywords: 
+
+Thank you for the additional information you have supplied regarding
+this problem report.  It has been forwarded to the package maintainer(s)
+and to other interested parties to accompany the original report.
+
+Your message has been sent to the package maintainer(s):
+ Sjoerd Simons <sjoerd@debian.org>
+
+If you wish to continue to submit further information on your problem,
+please send it to 308994@bugs.debian.org, as before.
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the Bug-tracking system.
+
+Debian bug tracking system administrator
+(administrator, Debian Bugs database)
+
+
+
+Received: (at 308994) by bugs.debian.org; 17 May 2005 18:54:41 +0000
+From sjoerd@spring.luon.net Tue May 17 11:54:41 2005
+Return-path: <sjoerd@spring.luon.net>
+Received: from simons.xs4all.nl (fire.luon.net) [80.126.201.244] (postfix)
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1DY7DF-0001Iq-00; Tue, 17 May 2005 11:54:41 -0700
+Received: from spring.luon.net (t-27-117.athome.tue.nl [131.155.228.117])
+	by fire.luon.net (Postfix) with ESMTP id 08964FE9D;
+	Tue, 17 May 2005 20:54:35 +0200 (CEST)
+Received: by spring.luon.net (Postfix, from userid 1000)
+	id 145A537D8B; Tue, 17 May 2005 20:54:30 +0200 (CEST)
+Date: Tue, 17 May 2005 20:54:29 +0200
+To: josh <jbuhl_nospam@gmx.de>, 308994@bugs.debian.org
+Cc: control@bugs.debian.org
+Subject: Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write
+Message-ID: <20050517185429.GB20786@spring.luon.net>
+References: <4284D7D1.6010208@gmx.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4284D7D1.6010208@gmx.de>
+X-Operating-System: Linux spring 2.6.11-powerpc #1 Mon Apr 4 04:03:40 CEST 2005 ppc GNU/Linux
+User-Agent: Mutt/1.5.9i
+From: sjoerd@spring.luon.net (Sjoerd Simons)
+Delivered-To: 308994@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-8.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER,
+	VALID_BTS_CONTROL autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-Spam-Level: 
+
+reassign 308994 pmount
+thanks, 
+
+On Fri, May 13, 2005 at 06:37:37PM +0200, josh wrote:
+> When gnome-volume-manager automounts a dvd+rw containing an fs in my dvd
+> burner on my system, the volume is unreadable, since it gets pmounted
+> rw, and blocks get changed. unmounting the volume reports a dirty
+> dvd+rw. the same volume is readable if mounted by hand with the
+> read-only flag.
+> 
+
+I guess that's a pmount issue.. Although i don't completely understand the 
+issue (don't have a dvd writer).
+
+  Sjoerd
+-- 
+Air is water with holes in it.
+
+
+
+
+<strong>Bug reassigned from package `gnome-volume-manager' to `pmount'.</strong>
+Request was from <code>sjoerd@spring.luon.net (Sjoerd Simons)</code>
+to <code>control@bugs.debian.org</code>. 
+
+
+Received: (at control) by bugs.debian.org; 17 May 2005 18:54:41 +0000
+From sjoerd@spring.luon.net Tue May 17 11:54:41 2005
+Return-path: <sjoerd@spring.luon.net>
+Received: from simons.xs4all.nl (fire.luon.net) [80.126.201.244] (postfix)
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1DY7DF-0001Iq-00; Tue, 17 May 2005 11:54:41 -0700
+Received: from spring.luon.net (t-27-117.athome.tue.nl [131.155.228.117])
+	by fire.luon.net (Postfix) with ESMTP id 08964FE9D;
+	Tue, 17 May 2005 20:54:35 +0200 (CEST)
+Received: by spring.luon.net (Postfix, from userid 1000)
+	id 145A537D8B; Tue, 17 May 2005 20:54:30 +0200 (CEST)
+Date: Tue, 17 May 2005 20:54:29 +0200
+To: josh <jbuhl_nospam@gmx.de>, 308994@bugs.debian.org
+Cc: control@bugs.debian.org
+Subject: Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write
+Message-ID: <20050517185429.GB20786@spring.luon.net>
+References: <4284D7D1.6010208@gmx.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4284D7D1.6010208@gmx.de>
+X-Operating-System: Linux spring 2.6.11-powerpc #1 Mon Apr 4 04:03:40 CEST 2005 ppc GNU/Linux
+User-Agent: Mutt/1.5.9i
+From: sjoerd@spring.luon.net (Sjoerd Simons)
+Delivered-To: control@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-8.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER,
+	VALID_BTS_CONTROL autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-Spam-Level: 
+X-CrossAssassin-Score: 2
+
+reassign 308994 pmount
+thanks, 
+
+On Fri, May 13, 2005 at 06:37:37PM +0200, josh wrote:
+> When gnome-volume-manager automounts a dvd+rw containing an fs in my dvd
+> burner on my system, the volume is unreadable, since it gets pmounted
+> rw, and blocks get changed. unmounting the volume reports a dirty
+> dvd+rw. the same volume is readable if mounted by hand with the
+> read-only flag.
+> 
+
+I guess that's a pmount issue.. Although i don't completely understand the 
+issue (don't have a dvd writer).
+
+  Sjoerd
+-- 
+Air is water with holes in it.
+
+
+
+
+<strong>Information forwarded</strong> to <code>debian-bugs-dist@lists.debian.org, Martin Pitt &lt;mpitt@debian.org&gt;</code>:<br>
+<code>Bug#308994</code>; Package <code>pmount</code>.
+
+
+debian-bugs-dist@lists.debian.orgMartin Pitt <mpitt@debian.org>
+
+X-Loop: owner@bugs.debian.org
+Subject: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write
+Reply-To: josh <jbuhl_nospam@gmx.de>, 308994@bugs.debian.org
+Resent-From: josh <jbuhl_nospam@gmx.de>
+Resent-To: debian-bugs-dist@lists.debian.org
+Resent-CC: Martin Pitt <mpitt@debian.org>
+Resent-Date: Tue, 17 May 2005 19:33:10 UTC
+Resent-Message-ID: <handler.308994.B308994.11163579006630@bugs.debian.org>
+Resent-Sender: owner@bugs.debian.org
+X-Debian-PR-Message: report 308994
+X-Debian-PR-Package: pmount
+X-Debian-PR-Keywords: 
+Received: via spool by 308994-submit@bugs.debian.org id=B308994.11163579006630
+          (code B ref 308994); Tue, 17 May 2005 19:33:10 UTC
+Received: (at 308994) by bugs.debian.org; 17 May 2005 19:25:00 +0000
+Received: from pop.gmx.net (mail.gmx.net) [213.165.64.20] 
+	by spohr.debian.org with smtp (Exim 3.35 1 (Debian))
+	id 1DY7gZ-0001ZY-00; Tue, 17 May 2005 12:24:59 -0700
+Received: (qmail invoked by alias); 17 May 2005 19:24:27 -0000
+Received: from p5088A282.dip0.t-ipconnect.de (EHLO [192.168.1.10]) [80.136.162.130]
+  by mail.gmx.net (mp008) with SMTP; 17 May 2005 21:24:27 +0200
+X-Authenticated: #23386520
+Message-ID: <428A44E9.6090802@gmx.de>
+Date: Tue, 17 May 2005 21:24:25 +0200
+From: josh <jbuhl_nospam@gmx.de>
+User-Agent: Debian Thunderbird 1.0.2 (X11/20050329)
+X-Accept-Language: en-us, en
+MIME-Version: 1.0
+To: Sjoerd Simons <sjoerd@spring.luon.net>
+CC: 308994@bugs.debian.org,  control@bugs.debian.org
+References: <4284D7D1.6010208@gmx.de> <20050517185429.GB20786@spring.luon.net>
+In-Reply-To: <20050517185429.GB20786@spring.luon.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
+Delivered-To: 308994@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-8.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER,
+	VALID_BTS_CONTROL autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-Spam-Level: 
+
+reassign 308994 gnome-volume-manager
+
+Sjoerd Simons wrote:
+> reassign 308994 pmount
+> thanks, 
+> 
+> On Fri, May 13, 2005 at 06:37:37PM +0200, josh wrote:
+> 
+>>When gnome-volume-manager automounts a dvd+rw containing an fs in my dvd
+>>burner on my system, the volume is unreadable, since it gets pmounted
+>>rw, and blocks get changed. unmounting the volume reports a dirty
+>>dvd+rw. the same volume is readable if mounted by hand with the
+>>read-only flag.
+>>
+> 
+> 
+> I guess that's a pmount issue.. Although i don't completely understand the 
+> issue (don't have a dvd writer).
+
+hope you don't mind my re-re-assigning back to you even though I'm not a
+debian-developer.
+
+It's not a pmount thing, rather gnome-volume-manager has pmount
+hardcoded into it:
+
+josh@spleen:~$  strings /usr/bin/gnome-volume-manager | grep pmount
+/usr/bin/pmount-hal %h
+josh@spleen:~$
+
+and it doesn't let the user pass options to pmount. Also, the
+gnome-volume-properties dialog has no option to set to mount volumes
+read-only. This is a bug with how gnome-volume-manager uses pmount, not
+with pmount itself.
+
+I think instead of reassigning, you should mark as "forwarded to
+upstream". I already filed the upsteam bug for you:
+
+http://bugzilla.gnome.org/show_bug.cgi?id=304070
+
+
+-josh
+
+
+
+
+<strong>Acknowledgement sent</strong> to <code>josh &lt;jbuhl_nospam@gmx.de&gt;</code>:<br>
+Extra info received and forwarded to list.  Copy sent to <code>Martin Pitt &lt;mpitt@debian.org&gt;</code>.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+From: owner@bugs.debian.org (Debian Bug Tracking System)
+To: josh <jbuhl_nospam@gmx.de>
+Subject: Bug#308994: Info received (was Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write)
+Message-ID: <handler.308994.B308994.11163579006630.ackinfo@bugs.debian.org>
+In-Reply-To: <428A44E9.6090802@gmx.de>
+References: <428A44E9.6090802@gmx.de>
+Precedence: bulk
+X-Debian-PR-Message: ack-info 308994
+X-Debian-PR-Package: pmount
+X-Debian-PR-Keywords: 
+
+Thank you for the additional information you have supplied regarding
+this problem report.  It has been forwarded to the package maintainer(s)
+and to other interested parties to accompany the original report.
+
+Your message has been sent to the package maintainer(s):
+ Martin Pitt <mpitt@debian.org>
+
+If you wish to continue to submit further information on your problem,
+please send it to 308994@bugs.debian.org, as before.
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the Bug-tracking system.
+
+Debian bug tracking system administrator
+(administrator, Debian Bugs database)
+
+
+
+Received: (at 308994) by bugs.debian.org; 17 May 2005 19:25:00 +0000
+From jbuhl_nospam@gmx.de Tue May 17 12:24:59 2005
+Return-path: <jbuhl_nospam@gmx.de>
+Received: from pop.gmx.net (mail.gmx.net) [213.165.64.20] 
+	by spohr.debian.org with smtp (Exim 3.35 1 (Debian))
+	id 1DY7gZ-0001ZY-00; Tue, 17 May 2005 12:24:59 -0700
+Received: (qmail invoked by alias); 17 May 2005 19:24:27 -0000
+Received: from p5088A282.dip0.t-ipconnect.de (EHLO [192.168.1.10]) [80.136.162.130]
+  by mail.gmx.net (mp008) with SMTP; 17 May 2005 21:24:27 +0200
+X-Authenticated: #23386520
+Message-ID: <428A44E9.6090802@gmx.de>
+Date: Tue, 17 May 2005 21:24:25 +0200
+From: josh <jbuhl_nospam@gmx.de>
+User-Agent: Debian Thunderbird 1.0.2 (X11/20050329)
+X-Accept-Language: en-us, en
+MIME-Version: 1.0
+To: Sjoerd Simons <sjoerd@spring.luon.net>
+CC: 308994@bugs.debian.org,  control@bugs.debian.org
+Subject: Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted
+ in burner because mounted read/write
+References: <4284D7D1.6010208@gmx.de> <20050517185429.GB20786@spring.luon.net>
+In-Reply-To: <20050517185429.GB20786@spring.luon.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
+Delivered-To: 308994@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-8.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER,
+	VALID_BTS_CONTROL autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-Spam-Level: 
+
+reassign 308994 gnome-volume-manager
+
+Sjoerd Simons wrote:
+> reassign 308994 pmount
+> thanks, 
+> 
+> On Fri, May 13, 2005 at 06:37:37PM +0200, josh wrote:
+> 
+>>When gnome-volume-manager automounts a dvd+rw containing an fs in my dvd
+>>burner on my system, the volume is unreadable, since it gets pmounted
+>>rw, and blocks get changed. unmounting the volume reports a dirty
+>>dvd+rw. the same volume is readable if mounted by hand with the
+>>read-only flag.
+>>
+> 
+> 
+> I guess that's a pmount issue.. Although i don't completely understand the 
+> issue (don't have a dvd writer).
+
+hope you don't mind my re-re-assigning back to you even though I'm not a
+debian-developer.
+
+It's not a pmount thing, rather gnome-volume-manager has pmount
+hardcoded into it:
+
+josh@spleen:~$  strings /usr/bin/gnome-volume-manager | grep pmount
+/usr/bin/pmount-hal %h
+josh@spleen:~$
+
+and it doesn't let the user pass options to pmount. Also, the
+gnome-volume-properties dialog has no option to set to mount volumes
+read-only. This is a bug with how gnome-volume-manager uses pmount, not
+with pmount itself.
+
+I think instead of reassigning, you should mark as "forwarded to
+upstream". I already filed the upsteam bug for you:
+
+http://bugzilla.gnome.org/show_bug.cgi?id=304070
+
+
+-josh
+
+
+
+
+<strong>Bug reassigned from package `pmount' to `gnome-volume-manager'.</strong>
+Request was from <code>josh &lt;jbuhl_nospam@gmx.de&gt;</code>
+to <code>control@bugs.debian.org</code>. 
+
+
+Received: (at control) by bugs.debian.org; 17 May 2005 19:25:00 +0000
+From jbuhl_nospam@gmx.de Tue May 17 12:24:59 2005
+Return-path: <jbuhl_nospam@gmx.de>
+Received: from pop.gmx.de (mail.gmx.net) [213.165.64.20] 
+	by spohr.debian.org with smtp (Exim 3.35 1 (Debian))
+	id 1DY7gZ-0001ZZ-00; Tue, 17 May 2005 12:24:59 -0700
+Received: (qmail invoked by alias); 17 May 2005 19:24:27 -0000
+Received: from p5088A282.dip0.t-ipconnect.de (EHLO [192.168.1.10]) [80.136.162.130]
+  by mail.gmx.net (mp008) with SMTP; 17 May 2005 21:24:27 +0200
+X-Authenticated: #23386520
+Message-ID: <428A44E9.6090802@gmx.de>
+Date: Tue, 17 May 2005 21:24:25 +0200
+From: josh <jbuhl_nospam@gmx.de>
+User-Agent: Debian Thunderbird 1.0.2 (X11/20050329)
+X-Accept-Language: en-us, en
+MIME-Version: 1.0
+To: Sjoerd Simons <sjoerd@spring.luon.net>
+CC: 308994@bugs.debian.org,  control@bugs.debian.org
+Subject: Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted
+ in burner because mounted read/write
+References: <4284D7D1.6010208@gmx.de> <20050517185429.GB20786@spring.luon.net>
+In-Reply-To: <20050517185429.GB20786@spring.luon.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
+Delivered-To: control@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-8.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER,
+	VALID_BTS_CONTROL autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-Spam-Level: 
+X-CrossAssassin-Score: 2
+
+reassign 308994 gnome-volume-manager
+
+Sjoerd Simons wrote:
+> reassign 308994 pmount
+> thanks, 
+> 
+> On Fri, May 13, 2005 at 06:37:37PM +0200, josh wrote:
+> 
+>>When gnome-volume-manager automounts a dvd+rw containing an fs in my dvd
+>>burner on my system, the volume is unreadable, since it gets pmounted
+>>rw, and blocks get changed. unmounting the volume reports a dirty
+>>dvd+rw. the same volume is readable if mounted by hand with the
+>>read-only flag.
+>>
+> 
+> 
+> I guess that's a pmount issue.. Although i don't completely understand the 
+> issue (don't have a dvd writer).
+
+hope you don't mind my re-re-assigning back to you even though I'm not a
+debian-developer.
+
+It's not a pmount thing, rather gnome-volume-manager has pmount
+hardcoded into it:
+
+josh@spleen:~$  strings /usr/bin/gnome-volume-manager | grep pmount
+/usr/bin/pmount-hal %h
+josh@spleen:~$
+
+and it doesn't let the user pass options to pmount. Also, the
+gnome-volume-properties dialog has no option to set to mount volumes
+read-only. This is a bug with how gnome-volume-manager uses pmount, not
+with pmount itself.
+
+I think instead of reassigning, you should mark as "forwarded to
+upstream". I already filed the upsteam bug for you:
+
+http://bugzilla.gnome.org/show_bug.cgi?id=304070
+
+
+-josh
+
+
+
+
+<strong>Information forwarded</strong> to <code>debian-bugs-dist@lists.debian.org, Sjoerd Simons &lt;sjoerd@debian.org&gt;</code>:<br>
+<code>Bug#308994</code>; Package <code>gnome-volume-manager</code>.
+
+
+debian-bugs-dist@lists.debian.orgSjoerd Simons <sjoerd@debian.org>
+
+X-Loop: owner@bugs.debian.org
+Subject: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write
+Reply-To: Sjoerd Simons <sjoerd@spring.luon.net>, 308994@bugs.debian.org
+Resent-From: Sjoerd Simons <sjoerd@spring.luon.net>
+Resent-To: debian-bugs-dist@lists.debian.org
+Resent-CC: Sjoerd Simons <sjoerd@debian.org>
+Resent-Date: Tue, 17 May 2005 20:33:05 UTC
+Resent-Message-ID: <handler.308994.B308994.11163612565930@bugs.debian.org>
+Resent-Sender: owner@bugs.debian.org
+X-Debian-PR-Message: report 308994
+X-Debian-PR-Package: gnome-volume-manager
+X-Debian-PR-Keywords: 
+Received: via spool by 308994-submit@bugs.debian.org id=B308994.11163612565930
+          (code B ref 308994); Tue, 17 May 2005 20:33:05 UTC
+Received: (at 308994) by bugs.debian.org; 17 May 2005 20:20:56 +0000
+Received: from simons.xs4all.nl (fire.luon.net) [80.126.201.244] (postfix)
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1DY8Yi-0001X8-00; Tue, 17 May 2005 13:20:56 -0700
+Received: from spring.luon.net (t-27-117.athome.tue.nl [131.155.228.117])
+	by fire.luon.net (Postfix) with ESMTP id D66B9FE9F;
+	Tue, 17 May 2005 22:20:50 +0200 (CEST)
+Received: by spring.luon.net (Postfix, from userid 1000)
+	id BDF6037D8B; Tue, 17 May 2005 22:20:44 +0200 (CEST)
+Date: Tue, 17 May 2005 22:20:44 +0200
+From: Sjoerd Simons <sjoerd@spring.luon.net>
+To: josh <jbuhl_nospam@gmx.de>
+Cc: 308994@bugs.debian.org, control@bugs.debian.org
+Message-ID: <20050517202044.GA23231@spring.luon.net>
+References: <4284D7D1.6010208@gmx.de> <20050517185429.GB20786@spring.luon.net> <428A44E9.6090802@gmx.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <428A44E9.6090802@gmx.de>
+X-Operating-System: Linux spring 2.6.11-powerpc #1 Mon Apr 4 04:03:40 CEST 2005 ppc GNU/Linux
+User-Agent: Mutt/1.5.9i
+Delivered-To: 308994@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-8.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER,
+	VALID_BTS_CONTROL autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-Spam-Level: 
+
+reassign 308994 pmount
+thanks,
+
+On Tue, May 17, 2005 at 09:24:25PM +0200, josh wrote:
+> reassign 308994 gnome-volume-manager
+> 
+> Sjoerd Simons wrote:
+> > reassign 308994 pmount
+> > thanks, 
+> > 
+> > On Fri, May 13, 2005 at 06:37:37PM +0200, josh wrote:
+> > 
+> >>When gnome-volume-manager automounts a dvd+rw containing an fs in my dvd
+> >>burner on my system, the volume is unreadable, since it gets pmounted
+> >>rw, and blocks get changed. unmounting the volume reports a dirty
+> >>dvd+rw. the same volume is readable if mounted by hand with the
+> >>read-only flag.
+> >>
+> > 
+> > 
+> > I guess that's a pmount issue.. Although i don't completely understand the 
+> > issue (don't have a dvd writer).
+> 
+> hope you don't mind my re-re-assigning back to you even though I'm not a
+> debian-developer.
+> 
+> It's not a pmount thing, rather gnome-volume-manager has pmount
+> hardcoded into it:
+> 
+> josh@spleen:~$  strings /usr/bin/gnome-volume-manager | grep pmount
+> /usr/bin/pmount-hal %h
+> josh@spleen:~$
+> 
+> and it doesn't let the user pass options to pmount. Also, the
+> gnome-volume-properties dialog has no option to set to mount volumes
+> read-only. This is a bug with how gnome-volume-manager uses pmount, not
+> with pmount itself.
+
+pmount-hal's job is to figure out the right options, so it should
+handle dvd+rw's right. Worst-case it should be changed to decide mounting ro or
+rw based on an hal property. 
+  
+> I think instead of reassigning, you should mark as "forwarded to
+> upstream". I already filed the upsteam bug for you:
+> 
+> http://bugzilla.gnome.org/show_bug.cgi?id=304070
+
+Upstream doesn't use pmount, so it's useless forwarding to upstream. Even more,
+debian's gnome-volume-manager is so heavily patched that reporting upstream is
+basically useless.. (Not that upstream reacts to us anyway)
+
+  Sjoerd
+-- 
+The clearest way into the Universe is through a forest wilderness.
+		-- John Muir
+
+
+
+
+<strong>Acknowledgement sent</strong> to <code>Sjoerd Simons &lt;sjoerd@spring.luon.net&gt;</code>:<br>
+Extra info received and forwarded to list.  Copy sent to <code>Sjoerd Simons &lt;sjoerd@debian.org&gt;</code>.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+From: owner@bugs.debian.org (Debian Bug Tracking System)
+To: Sjoerd Simons <sjoerd@spring.luon.net>
+Subject: Bug#308994: Info received (was Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write)
+Message-ID: <handler.308994.B308994.11163612565930.ackinfo@bugs.debian.org>
+In-Reply-To: <20050517202044.GA23231@spring.luon.net>
+References: <20050517202044.GA23231@spring.luon.net>
+Precedence: bulk
+X-Debian-PR-Message: ack-info 308994
+X-Debian-PR-Package: gnome-volume-manager
+X-Debian-PR-Keywords: 
+
+Thank you for the additional information you have supplied regarding
+this problem report.  It has been forwarded to the package maintainer(s)
+and to other interested parties to accompany the original report.
+
+Your message has been sent to the package maintainer(s):
+ Sjoerd Simons <sjoerd@debian.org>
+
+If you wish to continue to submit further information on your problem,
+please send it to 308994@bugs.debian.org, as before.
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the Bug-tracking system.
+
+Debian bug tracking system administrator
+(administrator, Debian Bugs database)
+
+
+
+Received: (at 308994) by bugs.debian.org; 17 May 2005 20:20:56 +0000
+From sjoerd@spring.luon.net Tue May 17 13:20:56 2005
+Return-path: <sjoerd@spring.luon.net>
+Received: from simons.xs4all.nl (fire.luon.net) [80.126.201.244] (postfix)
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1DY8Yi-0001X8-00; Tue, 17 May 2005 13:20:56 -0700
+Received: from spring.luon.net (t-27-117.athome.tue.nl [131.155.228.117])
+	by fire.luon.net (Postfix) with ESMTP id D66B9FE9F;
+	Tue, 17 May 2005 22:20:50 +0200 (CEST)
+Received: by spring.luon.net (Postfix, from userid 1000)
+	id BDF6037D8B; Tue, 17 May 2005 22:20:44 +0200 (CEST)
+Date: Tue, 17 May 2005 22:20:44 +0200
+From: Sjoerd Simons <sjoerd@spring.luon.net>
+To: josh <jbuhl_nospam@gmx.de>
+Cc: 308994@bugs.debian.org, control@bugs.debian.org
+Subject: Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write
+Message-ID: <20050517202044.GA23231@spring.luon.net>
+References: <4284D7D1.6010208@gmx.de> <20050517185429.GB20786@spring.luon.net> <428A44E9.6090802@gmx.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <428A44E9.6090802@gmx.de>
+X-Operating-System: Linux spring 2.6.11-powerpc #1 Mon Apr 4 04:03:40 CEST 2005 ppc GNU/Linux
+User-Agent: Mutt/1.5.9i
+Delivered-To: 308994@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-8.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER,
+	VALID_BTS_CONTROL autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-Spam-Level: 
+
+reassign 308994 pmount
+thanks,
+
+On Tue, May 17, 2005 at 09:24:25PM +0200, josh wrote:
+> reassign 308994 gnome-volume-manager
+> 
+> Sjoerd Simons wrote:
+> > reassign 308994 pmount
+> > thanks, 
+> > 
+> > On Fri, May 13, 2005 at 06:37:37PM +0200, josh wrote:
+> > 
+> >>When gnome-volume-manager automounts a dvd+rw containing an fs in my dvd
+> >>burner on my system, the volume is unreadable, since it gets pmounted
+> >>rw, and blocks get changed. unmounting the volume reports a dirty
+> >>dvd+rw. the same volume is readable if mounted by hand with the
+> >>read-only flag.
+> >>
+> > 
+> > 
+> > I guess that's a pmount issue.. Although i don't completely understand the 
+> > issue (don't have a dvd writer).
+> 
+> hope you don't mind my re-re-assigning back to you even though I'm not a
+> debian-developer.
+> 
+> It's not a pmount thing, rather gnome-volume-manager has pmount
+> hardcoded into it:
+> 
+> josh@spleen:~$  strings /usr/bin/gnome-volume-manager | grep pmount
+> /usr/bin/pmount-hal %h
+> josh@spleen:~$
+> 
+> and it doesn't let the user pass options to pmount. Also, the
+> gnome-volume-properties dialog has no option to set to mount volumes
+> read-only. This is a bug with how gnome-volume-manager uses pmount, not
+> with pmount itself.
+
+pmount-hal's job is to figure out the right options, so it should
+handle dvd+rw's right. Worst-case it should be changed to decide mounting ro or
+rw based on an hal property. 
+  
+> I think instead of reassigning, you should mark as "forwarded to
+> upstream". I already filed the upsteam bug for you:
+> 
+> http://bugzilla.gnome.org/show_bug.cgi?id=304070
+
+Upstream doesn't use pmount, so it's useless forwarding to upstream. Even more,
+debian's gnome-volume-manager is so heavily patched that reporting upstream is
+basically useless.. (Not that upstream reacts to us anyway)
+
+  Sjoerd
+-- 
+The clearest way into the Universe is through a forest wilderness.
+		-- John Muir
+
+
+
+
+<strong>Bug reassigned from package `gnome-volume-manager' to `pmount'.</strong>
+Request was from <code>Sjoerd Simons &lt;sjoerd@spring.luon.net&gt;</code>
+to <code>control@bugs.debian.org</code>. 
+
+
+Received: (at control) by bugs.debian.org; 17 May 2005 20:20:56 +0000
+From sjoerd@spring.luon.net Tue May 17 13:20:56 2005
+Return-path: <sjoerd@spring.luon.net>
+Received: from simons.xs4all.nl (fire.luon.net) [80.126.201.244] (postfix)
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1DY8Yi-0001X8-00; Tue, 17 May 2005 13:20:56 -0700
+Received: from spring.luon.net (t-27-117.athome.tue.nl [131.155.228.117])
+	by fire.luon.net (Postfix) with ESMTP id D66B9FE9F;
+	Tue, 17 May 2005 22:20:50 +0200 (CEST)
+Received: by spring.luon.net (Postfix, from userid 1000)
+	id BDF6037D8B; Tue, 17 May 2005 22:20:44 +0200 (CEST)
+Date: Tue, 17 May 2005 22:20:44 +0200
+From: Sjoerd Simons <sjoerd@spring.luon.net>
+To: josh <jbuhl_nospam@gmx.de>
+Cc: 308994@bugs.debian.org, control@bugs.debian.org
+Subject: Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write
+Message-ID: <20050517202044.GA23231@spring.luon.net>
+References: <4284D7D1.6010208@gmx.de> <20050517185429.GB20786@spring.luon.net> <428A44E9.6090802@gmx.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <428A44E9.6090802@gmx.de>
+X-Operating-System: Linux spring 2.6.11-powerpc #1 Mon Apr 4 04:03:40 CEST 2005 ppc GNU/Linux
+User-Agent: Mutt/1.5.9i
+Delivered-To: control@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-8.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER,
+	VALID_BTS_CONTROL autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-Spam-Level: 
+X-CrossAssassin-Score: 2
+
+reassign 308994 pmount
+thanks,
+
+On Tue, May 17, 2005 at 09:24:25PM +0200, josh wrote:
+> reassign 308994 gnome-volume-manager
+> 
+> Sjoerd Simons wrote:
+> > reassign 308994 pmount
+> > thanks, 
+> > 
+> > On Fri, May 13, 2005 at 06:37:37PM +0200, josh wrote:
+> > 
+> >>When gnome-volume-manager automounts a dvd+rw containing an fs in my dvd
+> >>burner on my system, the volume is unreadable, since it gets pmounted
+> >>rw, and blocks get changed. unmounting the volume reports a dirty
+> >>dvd+rw. the same volume is readable if mounted by hand with the
+> >>read-only flag.
+> >>
+> > 
+> > 
+> > I guess that's a pmount issue.. Although i don't completely understand the 
+> > issue (don't have a dvd writer).
+> 
+> hope you don't mind my re-re-assigning back to you even though I'm not a
+> debian-developer.
+> 
+> It's not a pmount thing, rather gnome-volume-manager has pmount
+> hardcoded into it:
+> 
+> josh@spleen:~$  strings /usr/bin/gnome-volume-manager | grep pmount
+> /usr/bin/pmount-hal %h
+> josh@spleen:~$
+> 
+> and it doesn't let the user pass options to pmount. Also, the
+> gnome-volume-properties dialog has no option to set to mount volumes
+> read-only. This is a bug with how gnome-volume-manager uses pmount, not
+> with pmount itself.
+
+pmount-hal's job is to figure out the right options, so it should
+handle dvd+rw's right. Worst-case it should be changed to decide mounting ro or
+rw based on an hal property. 
+  
+> I think instead of reassigning, you should mark as "forwarded to
+> upstream". I already filed the upsteam bug for you:
+> 
+> http://bugzilla.gnome.org/show_bug.cgi?id=304070
+
+Upstream doesn't use pmount, so it's useless forwarding to upstream. Even more,
+debian's gnome-volume-manager is so heavily patched that reporting upstream is
+basically useless.. (Not that upstream reacts to us anyway)
+
+  Sjoerd
+-- 
+The clearest way into the Universe is through a forest wilderness.
+		-- John Muir
+
+
+
+
+<strong>Information forwarded</strong> to <code>debian-bugs-dist@lists.debian.org</code>:<br>
+<code>Bug#308994</code>; Package <code>pmount</code>.
+
+
+debian-bugs-dist@lists.debian.org
+
+X-Loop: owner@bugs.debian.org
+Subject: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write
+Reply-To: Martin Pitt <mpitt@debian.org>, 308994@bugs.debian.org
+Resent-From: Martin Pitt <mpitt@debian.org>
+Resent-To: debian-bugs-dist@lists.debian.org
+Resent-Date: Fri, 17 Jun 2005 14:48:32 UTC
+Resent-Message-ID: <handler.308994.B308994.111901701527235@bugs.debian.org>
+Resent-Sender: owner@bugs.debian.org
+X-Debian-PR-Message: report 308994
+X-Debian-PR-Package: pmount
+X-Debian-PR-Keywords: 
+Received: via spool by 308994-submit@bugs.debian.org id=B308994.111901701527235
+          (code B ref 308994); Fri, 17 Jun 2005 14:48:32 UTC
+Received: (at 308994) by bugs.debian.org; 17 Jun 2005 14:03:35 +0000
+Received: from mail01.pironet-ndh.com (mail.pironet-ndh.com) [194.64.31.10] 
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1DjHRX-0006wZ-00; Fri, 17 Jun 2005 07:03:35 -0700
+Received: from mail.fbn-dd.de (mail.fbn-dd.de [195.227.105.178])
+	by mail.pironet-ndh.com (Postfix) with ESMTP id 958C94FE61C;
+	Fri, 17 Jun 2005 16:00:08 +0200 (CEST)
+Received: from sonne.intranet.fbn-dd.de (192-168-0-1.transfer-000.intranet.fbn-dd.de [192.168.0.1])
+	by mail.fbn-dd.de (Postfix) with ESMTP
+	id 94CA726358; Fri, 17 Jun 2005 16:00:09 +0200 (CEST)
+Received: from localhost (localhost [127.0.0.1])
+	by sonne.intranet.fbn-dd.de (Postfix) with ESMTP
+	id 9C3641FDCC; Fri, 17 Jun 2005 16:00:08 +0200 (CEST)
+Received: from sonne.intranet.fbn-dd.de (localhost [127.0.0.1])
+	by localhost (AvMailGate-2.0.1.16) id 11403-7CEBDFB8;
+	Fri, 17 Jun 2005 16:00:08 +0200
+Received: from localhost.localdomain (10-28-130-200.intranet-28-130.fbn-dd.de [10.28.130.200])
+	by sonne.intranet.fbn-dd.de (Postfix) with ESMTP
+	id 325401F7C2; Fri, 17 Jun 2005 16:00:08 +0200 (CEST)
+Received: by localhost.localdomain (Postfix, from userid 1000)
+	id 6BF8C20E24; Fri, 17 Jun 2005 16:00:11 +0200 (CEST)
+Date: Fri, 17 Jun 2005 16:00:11 +0200
+From: Martin Pitt <mpitt@debian.org>
+To: josh <jbuhl_nospam@gmx.de>, 308994@bugs.debian.org
+Cc: Sjoerd Simons <sjoerd@luon.net>
+Message-ID: <20050617140011.GA15638@piware.de>
+References: <4284D7D1.6010208@gmx.de> <20050517185429.GB20786@spring.luon.net> <428A44E9.6090802@gmx.de>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zYM0uCDKw75PZbzx"
+Content-Disposition: inline
+In-Reply-To: <428A44E9.6090802@gmx.de>
+User-Agent: Mutt/1.5.9i
+X-AntiVirus: checked by AntiVir MailGate (version: 2.0.1.16; AVE: 6.31.0.7; VDF: 6.31.0.75; host: sonne)
+Delivered-To: 308994@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-6.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-Spam-Level: 
+
+
+--zYM0uCDKw75PZbzx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi!
+
+Usually CD-ROMs are handled in /etc/fstab, so this might not even be a
+pmount bug. However, I do not understand the problem properly. Can you
+please post your /etc/fstab and the output of "mount" here? This will
+tell me the file system of your dvd (UDF, I suppose), and what you
+changed in fstab.
+
+Thanks,
+
+Martin
+--=20
+Martin Pitt        http://www.piware.de
+Ubuntu Developer   http://www.ubuntu.com
+Debian Developer   http://www.debian.org
+
+--zYM0uCDKw75PZbzx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.1 (GNU/Linux)
+
+iD8DBQFCstdrDecnbV4Fd/IRAhu1AJ41FQ/FJ+OphfVgqZTa6OIbaez0twCg3Qav
+qwGq1wYYiTSlD2fRc2fc/O8=
+=OxMa
+-----END PGP SIGNATURE-----
+
+--zYM0uCDKw75PZbzx--
+
+
+
+
+<strong>Acknowledgement sent</strong> to <code>Martin Pitt &lt;mpitt@debian.org&gt;</code>:<br>
+Extra info received and forwarded to list.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+From: owner@bugs.debian.org (Debian Bug Tracking System)
+To: Martin Pitt <mpitt@debian.org>
+Subject: Bug#308994: Info received (was Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write)
+Message-ID: <handler.308994.B308994.111901701527235.ackinfo@bugs.debian.org>
+In-Reply-To: <20050617140011.GA15638@piware.de>
+References: <20050617140011.GA15638@piware.de>
+Precedence: bulk
+X-Debian-PR-Message: ack-info 308994
+X-Debian-PR-Package: pmount
+X-Debian-PR-Keywords: 
+
+Thank you for the additional information you have supplied regarding
+this problem report.  It has been forwarded to the package maintainer(s)
+and to other interested parties to accompany the original report.
+
+If you wish to continue to submit further information on your problem,
+please send it to 308994@bugs.debian.org, as before.
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the Bug-tracking system.
+
+Debian bug tracking system administrator
+(administrator, Debian Bugs database)
+
+
+
+Received: (at 308994) by bugs.debian.org; 17 Jun 2005 14:03:35 +0000
+From martin@piware.de Fri Jun 17 07:03:35 2005
+Return-path: <martin@piware.de>
+Received: from mail01.pironet-ndh.com (mail.pironet-ndh.com) [194.64.31.10] 
+	by spohr.debian.org with esmtp (Exim 3.35 1 (Debian))
+	id 1DjHRX-0006wZ-00; Fri, 17 Jun 2005 07:03:35 -0700
+Received: from mail.fbn-dd.de (mail.fbn-dd.de [195.227.105.178])
+	by mail.pironet-ndh.com (Postfix) with ESMTP id 958C94FE61C;
+	Fri, 17 Jun 2005 16:00:08 +0200 (CEST)
+Received: from sonne.intranet.fbn-dd.de (192-168-0-1.transfer-000.intranet.fbn-dd.de [192.168.0.1])
+	by mail.fbn-dd.de (Postfix) with ESMTP
+	id 94CA726358; Fri, 17 Jun 2005 16:00:09 +0200 (CEST)
+Received: from localhost (localhost [127.0.0.1])
+	by sonne.intranet.fbn-dd.de (Postfix) with ESMTP
+	id 9C3641FDCC; Fri, 17 Jun 2005 16:00:08 +0200 (CEST)
+Received: from sonne.intranet.fbn-dd.de (localhost [127.0.0.1])
+	by localhost (AvMailGate-2.0.1.16) id 11403-7CEBDFB8;
+	Fri, 17 Jun 2005 16:00:08 +0200
+Received: from localhost.localdomain (10-28-130-200.intranet-28-130.fbn-dd.de [10.28.130.200])
+	by sonne.intranet.fbn-dd.de (Postfix) with ESMTP
+	id 325401F7C2; Fri, 17 Jun 2005 16:00:08 +0200 (CEST)
+Received: by localhost.localdomain (Postfix, from userid 1000)
+	id 6BF8C20E24; Fri, 17 Jun 2005 16:00:11 +0200 (CEST)
+Date: Fri, 17 Jun 2005 16:00:11 +0200
+From: Martin Pitt <mpitt@debian.org>
+To: josh <jbuhl_nospam@gmx.de>, 308994@bugs.debian.org
+Cc: Sjoerd Simons <sjoerd@luon.net>
+Subject: Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write
+Message-ID: <20050617140011.GA15638@piware.de>
+References: <4284D7D1.6010208@gmx.de> <20050517185429.GB20786@spring.luon.net> <428A44E9.6090802@gmx.de>
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="zYM0uCDKw75PZbzx"
+Content-Disposition: inline
+In-Reply-To: <428A44E9.6090802@gmx.de>
+User-Agent: Mutt/1.5.9i
+X-AntiVirus: checked by AntiVir MailGate (version: 2.0.1.16; AVE: 6.31.0.7; VDF: 6.31.0.75; host: sonne)
+Delivered-To: 308994@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-6.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-Spam-Level: 
+
+
+--zYM0uCDKw75PZbzx
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi!
+
+Usually CD-ROMs are handled in /etc/fstab, so this might not even be a
+pmount bug. However, I do not understand the problem properly. Can you
+please post your /etc/fstab and the output of "mount" here? This will
+tell me the file system of your dvd (UDF, I suppose), and what you
+changed in fstab.
+
+Thanks,
+
+Martin
+--=20
+Martin Pitt        http://www.piware.de
+Ubuntu Developer   http://www.ubuntu.com
+Debian Developer   http://www.debian.org
+
+--zYM0uCDKw75PZbzx
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.1 (GNU/Linux)
+
+iD8DBQFCstdrDecnbV4Fd/IRAhu1AJ41FQ/FJ+OphfVgqZTa6OIbaez0twCg3Qav
+qwGq1wYYiTSlD2fRc2fc/O8=
+=OxMa
+-----END PGP SIGNATURE-----
+
+--zYM0uCDKw75PZbzx--
+
+
+
+
+<strong>Information forwarded</strong> to <code>debian-bugs-dist@lists.debian.org, Martin Pitt &lt;mpitt@debian.org&gt;</code>:<br>
+<code>Bug#308994</code>; Package <code>pmount</code>.
+
+
+debian-bugs-dist@lists.debian.orgMartin Pitt <mpitt@debian.org>
+
+X-Loop: owner@bugs.debian.org
+Subject: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write
+Reply-To: josh <jbuhl_nospam@gmx.de>, 308994@bugs.debian.org
+Resent-From: josh <jbuhl_nospam@gmx.de>
+Resent-To: debian-bugs-dist@lists.debian.org
+Resent-CC: Martin Pitt <mpitt@debian.org>
+Resent-Date: Sat, 25 Jun 2005 10:18:05 UTC
+Resent-Message-ID: <handler.308994.B308994.111969442425127@bugs.debian.org>
+Resent-Sender: owner@bugs.debian.org
+X-Debian-PR-Message: report 308994
+X-Debian-PR-Package: pmount
+X-Debian-PR-Keywords: 
+Received: via spool by 308994-submit@bugs.debian.org id=B308994.111969442425127
+          (code B ref 308994); Sat, 25 Jun 2005 10:18:05 UTC
+Received: (at 308994) by bugs.debian.org; 25 Jun 2005 10:13:44 +0000
+Received: from pop.gmx.de (mail.gmx.net) [213.165.64.20] 
+	by spohr.debian.org with smtp (Exim 3.35 1 (Debian))
+	id 1Dm7fT-0006Oe-00; Sat, 25 Jun 2005 03:13:43 -0700
+Received: (qmail invoked by alias); 25 Jun 2005 10:13:12 -0000
+Received: from H8abe.h.pppool.de (EHLO [192.168.2.2]) [85.72.138.190]
+  by mail.gmx.net (mp016) with SMTP; 25 Jun 2005 12:13:12 +0200
+X-Authenticated: #23386520
+Message-ID: <42BD2E36.9090809@gmx.de>
+Date: Sat, 25 Jun 2005 12:13:10 +0200
+From: josh <jbuhl_nospam@gmx.de>
+User-Agent: Debian Thunderbird 1.0.2 (X11/20050329)
+X-Accept-Language: en-us, en
+MIME-Version: 1.0
+To: 308994@bugs.debian.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
+Delivered-To: 308994@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-6.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-Spam-Level: 
+
+I'll be happy to add the info you request to the bug report if it will
+help, but I don't think it will.
+
+The gnome-volume-manager automounts media-volumes for users *without*
+having a mountpoint exist or having any mountpoint info, etc,. in
+/etc/fstab. The debian version uses hal, udev and pmount to do this.
+gnome-volume-manager has pmount with fixed options hardcoded into it:
+
+josh@spleen:~$  strings /usr/bin/gnome-volume-manager | grep pmount
+/usr/bin/pmount-hal %h
+josh@spleen:~$
+
+
+The problem is that dvdrw's get auto-pmounted by gnome-volume-manager in
+rw mode, which makes the volume unreadable, since blocks get changed
+when mount rw. unmounting the volume by hand in a terminal window
+reports a dirty dvd+rw. the same volume is readable if mounted by hand
+with the read-only flag.
+
+Either gnome-volume-manager needs to be able to pass a read-only mount
+flag to pmount when it automounts a dvdrw, or pmount/hal needs to detect
+an rw and automagically mount readonly.
+
+I didn't change anything in fstab and there is no entry for cdroms or
+similar in it (well, actually, I did change it...I removed all those
+entries that I had added years ago to user mount cdroms, since
+gnome-volume-manager mounts them for the user...), so this wouldn't tell
+you anything.
+
+-j
+
+Martin Pitt wrote:
+> Hi!
+> 
+> Usually CD-ROMs are handled in /etc/fstab, so this might not even be a
+> pmount bug. However, I do not understand the problem properly. Can you
+> please post your /etc/fstab and the output of "mount" here? This will
+> tell me the file system of your dvd (UDF, I suppose), and what you
+> changed in fstab.
+> 
+> Thanks,
+> 
+> Martin
+
+
+
+
+
+
+<strong>Acknowledgement sent</strong> to <code>josh &lt;jbuhl_nospam@gmx.de&gt;</code>:<br>
+Extra info received and forwarded to list.  Copy sent to <code>Martin Pitt &lt;mpitt@debian.org&gt;</code>.
+
+
+-t
+
+X-Loop: owner@bugs.debian.org
+From: owner@bugs.debian.org (Debian Bug Tracking System)
+To: josh <jbuhl_nospam@gmx.de>
+Subject: Bug#308994: Info received (was Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted in burner because mounted read/write)
+Message-ID: <handler.308994.B308994.111969442425127.ackinfo@bugs.debian.org>
+In-Reply-To: <42BD2E36.9090809@gmx.de>
+References: <42BD2E36.9090809@gmx.de>
+Precedence: bulk
+X-Debian-PR-Message: ack-info 308994
+X-Debian-PR-Package: pmount
+X-Debian-PR-Keywords: 
+
+Thank you for the additional information you have supplied regarding
+this problem report.  It has been forwarded to the package maintainer(s)
+and to other interested parties to accompany the original report.
+
+Your message has been sent to the package maintainer(s):
+ Martin Pitt <mpitt@debian.org>
+
+If you wish to continue to submit further information on your problem,
+please send it to 308994@bugs.debian.org, as before.
+
+Please do not reply to the address at the top of this message,
+unless you wish to report a problem with the Bug-tracking system.
+
+Debian bug tracking system administrator
+(administrator, Debian Bugs database)
+
+
+
+Received: (at 308994) by bugs.debian.org; 25 Jun 2005 10:13:44 +0000
+From jbuhl_nospam@gmx.de Sat Jun 25 03:13:44 2005
+Return-path: <jbuhl_nospam@gmx.de>
+Received: from pop.gmx.de (mail.gmx.net) [213.165.64.20] 
+	by spohr.debian.org with smtp (Exim 3.35 1 (Debian))
+	id 1Dm7fT-0006Oe-00; Sat, 25 Jun 2005 03:13:43 -0700
+Received: (qmail invoked by alias); 25 Jun 2005 10:13:12 -0000
+Received: from H8abe.h.pppool.de (EHLO [192.168.2.2]) [85.72.138.190]
+  by mail.gmx.net (mp016) with SMTP; 25 Jun 2005 12:13:12 +0200
+X-Authenticated: #23386520
+Message-ID: <42BD2E36.9090809@gmx.de>
+Date: Sat, 25 Jun 2005 12:13:10 +0200
+From: josh <jbuhl_nospam@gmx.de>
+User-Agent: Debian Thunderbird 1.0.2 (X11/20050329)
+X-Accept-Language: en-us, en
+MIME-Version: 1.0
+To: 308994@bugs.debian.org
+Subject: Re: Bug#308994: gnome-volume-manager: dvd+rw unreadable when automounted
+ in burner because mounted read/write
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
+Delivered-To: 308994@bugs.debian.org
+X-Spam-Checker-Version: SpamAssassin 2.60-bugs.debian.org_2005_01_02 
+	(1.212-2003-09-23-exp) on spohr.debian.org
+X-Spam-Status: No, hits=-6.0 required=4.0 tests=BAYES_00,HAS_BUG_NUMBER 
+	autolearn=no version=2.60-bugs.debian.org_2005_01_02
+X-Spam-Level: 
+
+I'll be happy to add the info you request to the bug report if it will
+help, but I don't think it will.
+
+The gnome-volume-manager automounts media-volumes for users *without*
+having a mountpoint exist or having any mountpoint info, etc,. in
+/etc/fstab. The debian version uses hal, udev and pmount to do this.
+gnome-volume-manager has pmount with fixed options hardcoded into it:
+
+josh@spleen:~$  strings /usr/bin/gnome-volume-manager | grep pmount
+/usr/bin/pmount-hal %h
+josh@spleen:~$
+
+
+The problem is that dvdrw's get auto-pmounted by gnome-volume-manager in
+rw mode, which makes the volume unreadable, since blocks get changed
+when mount rw. unmounting the volume by hand in a terminal window
+reports a dirty dvd+rw. the same volume is readable if mounted by hand
+with the read-only flag.
+
+Either gnome-volume-manager needs to be able to pass a read-only mount
+flag to pmount when it automounts a dvdrw, or pmount/hal needs to detect
+an rw and automagically mount readonly.
+
+I didn't change anything in fstab and there is no entry for cdroms or
+similar in it (well, actually, I did change it...I removed all those
+entries that I had added years ago to user mount cdroms, since
+gnome-volume-manager mounts them for the user...), so this wouldn't tell
+you anything.
+
+-j
+
+Martin Pitt wrote:
+> Hi!
+> 
+> Usually CD-ROMs are handled in /etc/fstab, so this might not even be a
+> pmount bug. However, I do not understand the problem properly. Can you
+> please post your /etc/fstab and the output of "mount" here? This will
+> tell me the file system of your dvd (UDF, I suppose), and what you
+> changed in fstab.
+> 
+> Thanks,
+> 
+> Martin
+
+
+
+
+

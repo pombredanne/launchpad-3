@@ -165,48 +165,48 @@ INSERT INTO ArchUserID (person, archuserid) VALUES
 -- WikiName
 INSERT INTO WikiName (person, wiki, wikiname) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Mark Shuttleworth'),
-	'http://www.ubuntulinux.com/wiki/',
+	'https://wiki.ubuntu.com/',
 	'MarkShuttleworth');
 INSERT INTO WikiName (person, wiki, wikiname) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Steve Alexander'),
-	'http://www.ubuntulinux.com/wiki/',
+	'https://wiki.ubuntu.com/',
 	'SteveAlexander');
 INSERT INTO WikiName (person, wiki, wikiname) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Alexander Limi'),
-	'http://www.ubuntulinux.com/wiki/',
+	'https://wiki.ubuntu.com/',
 	'AlexanderLimi');
 INSERT INTO WikiName (person, wiki, wikiname) VALUES
 	((SELECT id FROM Person WHERE displayname = 'James Blackwell'),
-	'http://www.ubuntulinux.com/wiki/',
+	'https://wiki.ubuntu.com/',
 	'JamesBlackwell');
 INSERT INTO WikiName (person, wiki, wikiname) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Christian Reis'),
-	'http://www.ubuntulinux.com/wiki/',
+	'https://wiki.ubuntu.com/',
 	'ChristianReis');
 INSERT INTO WikiName (person, wiki, wikiname) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Colin Watson'),
-	'http://www.ubuntulinux.com/wiki/',
+	'https://wiki.ubuntu.com/',
 	'ColinWatson');
 INSERT INTO WikiName (person, wiki, wikiname) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Scott James Remnant'),
-	'http://www.ubuntulinux.com/wiki/',
+	'https://wiki.ubuntu.com/',
 	'ScottJamesRemnant');
 INSERT INTO WikiName (person, wiki, wikiname) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Andrew Bennetts'),
-	'http://www.ubuntulinux.com/wiki/',
+	'https://wiki.ubuntu.com/',
 	'AndrewBennetts');
 INSERT INTO WikiName (person, wiki, wikiname) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Dave Miller'),
-	'http://www.ubuntulinux.com/wiki/',
+	'https://wiki.ubuntu.com/',
 	'DaveMiller');
 INSERT INTO WikiName (person, wiki, wikiname) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Jeff Waugh'),
-	'http://www.ubuntulinux.com/wiki/',
+	'https://wiki.ubuntu.com/',
 	'JeffWaugh');
 
 INSERT INTO WikiName (person, wiki, wikiname) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Foo Bar'),
-	'http://www.ubuntulinux.com/wiki/',
+	'https://wiki.ubuntu.com/',
 	'FooBar');
 
 -- JabberID
@@ -376,3 +376,21 @@ INSERT INTO TeamParticipation (team, person) VALUES
 	((SELECT id FROM Person WHERE displayname = 'Ubuntu Gnome Team'),
 	(SELECT id FROM Person WHERE displayname = 'Hoary Gnome Team')
 	);
+
+
+-- GPG and Signed CoC
+
+INSERT INTO GPGKey (owner, keyid, fingerprint, active, algorithm, keysize) 
+       VALUES ((SELECT id FROM person WHERE name = 'name16'), 
+               '12345678', 
+               'ABCDEF0123456789ABCDDCBA0000111112345678', 
+               true, 17, 1024);
+
+
+INSERT INTO SignedCodeOfConduct (owner, signingkey, datecreated, signedcode, 
+                                 active) VALUES 
+            ((SELECT id FROM person WHERE name = 'name16'), 
+             (SELECT id FROM gpgkey WHERE keyid = '12345678'), 
+             '2005-09-27 10:01:13', 
+             'Sampledata signedcode',
+             true); 

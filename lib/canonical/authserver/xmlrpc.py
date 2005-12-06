@@ -5,6 +5,7 @@ from twisted.web import xmlrpc
 class UserDetailsResource(xmlrpc.XMLRPC):
 
     def __init__(self, storage, debug=False):
+        xmlrpc.XMLRPC.__init__(self)
         self.storage = storage
         self.debug = debug
 

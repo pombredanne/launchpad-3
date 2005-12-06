@@ -16,7 +16,7 @@ from canonical.database.sqlbase import SQLBase
 
 # interfaces and database 
 from canonical.launchpad.interfaces import (
-    IBinaryPackageName, IBinaryPackageNameSet)
+    IBinaryPackageName, IBinaryPackageNameSet, NotFoundError)
 
 
 class BinaryPackageName(SQLBase):
@@ -33,22 +33,6 @@ class BinaryPackageName(SQLBase):
     def __unicode__(self):
         return self.name
 
-    @classmethod
-    def ensure(class_, name):
-        """Ensure that the given BinaryPackageName exists, creating it
-        if necessary.
-
-        Returns the BinaryPackageName
-        """
-        # XXX: Debonzi 20050719
-        # Its already writen on BinaryPackageNameSet and not been
-        # used anymore for gina. Just buildmaster.py uses it and
-        # as long as cprov change it he will remove this method.
-        try:
-            return class_.byName(name)
-        except SQLObjectNotFound:
-            return class_(name=name)
-
 
 class BinaryPackageNameSet:
     implements(IBinaryPackageNameSet)
@@ -58,7 +42,7 @@ class BinaryPackageNameSet:
         try:
             return BinaryPackageName.byName(name)
         except SQLObjectNotFound:
-            raise KeyError, name
+            raise NotFoundError(name)
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.IBinaryPackageNameSet."""

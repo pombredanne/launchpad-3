@@ -42,7 +42,7 @@
 
           <div class="row"
                metal:define-slot="extra_top" tal:replace="nothing">
-            <div class="label">Extra top</div>
+            <div>Extra top</div>
             <div class="field"><input type="text" style="width:100%" /></div>
           </div>
         
@@ -52,15 +52,16 @@
         
           <div class="row"
                metal:define-slot="extra_bottom" tal:replace="nothing">
-            <div class="label">Extra bottom</div>
+            <div>Extra bottom</div>
             <div class="field"><input type="text" style="width:100%" /></div>
           </div>
 
         </div>
 
-        <div class="form actions">
+        <div class="actions">
           <input
             type="submit"
+            tabindex="1000"
             name="UPDATE_SUBMIT"
             value="Change"
             i18n:attributes="value submit-button"

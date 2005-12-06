@@ -12,7 +12,8 @@ the Python version.
 
     >>> import os, sys
     >>> import canonical.lp
-    >>> from canonical.database.ftests import getDBHost
+    >>> from canonical.database.ftests import (
+    ...     getDBHost, wait_until_proxy_is_ready, wait_until_proxy_is_stopped)
     >>> dbhost = getDBHost()
     >>> ver = sys.version[:3]
     >>> cmd = ('mktap%s portforward --port 5555 --dest_port 5432 '
@@ -22,9 +23,9 @@ the Python version.
     >>> os.system('twistd%s -of portforward.tap' % ver)
     0
 
-Wait for the proxy to start (this is a hack).
+Wait for the proxy to start.
 
-    >>> import time; time.sleep(1)
+    >>> wait_until_proxy_is_ready()
     
 Connect to postgres via the proxy
 
@@ -45,16 +46,15 @@ Break the connection by stopping the proxy
     >>> os.system('kill `cat twistd.pid`')
     0
 
-Wait for the proxy to stop (this is a hack, but it's *much* simpler than doing
-it properly).
+Wait for the proxy to stop.
 
-    >>> time.sleep(1)
+    >>> wait_until_proxy_is_stopped()
 
 And restart it.
 
     >>> os.system('twistd%s -of portforward.tap' % ver)
     0
-    >>> time.sleep(1)
+    >>> wait_until_proxy_is_ready()
 
 Now using our connection should fail
 

@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 20010904//EN"
+"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd">
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg
+   width="14.000000pt"
+   height="14.000000pt"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:cc="http://web.resource.org/cc/"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
+   id="svg1"
+   sodipodi:version="0.32"
+   inkscape:version="0.40"
+   sodipodi:docbase="/home/mpt/ubuntu/launchpad/lib/canonical/launchpad/images"
+   sodipodi:docname="progress-1.svg">
+  <defs
+     id="defs3" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:pageopacity="0.0"
+     inkscape:pageshadow="2"
+     inkscape:zoom="25.928571"
+     inkscape:cx="7.0000000"
+     inkscape:cy="6.9343571"
+     inkscape:current-layer="layer1"
+     gridspacingy="0.50000000pt"
+     gridspacingx="0.50000000pt"
+     gridoriginy="0.0000000pt"
+     gridoriginx="0.0000000pt"
+     showgrid="true"
+     inkscape:grid-bbox="true"
+     inkscape:grid-points="true"
+     inkscape:window-width="640"
+     inkscape:window-height="541"
+     inkscape:window-x="17"
+     inkscape:window-y="72" />
+  <metadata
+     id="metadata4">
+    <rdf:RDF
+       id="RDF5">
+      <cc:Work
+         rdf:about=""
+         id="Work6">
+        <dc:format
+           id="format7">image/svg+xml</dc:format>
+        <dc:type
+           id="type9"
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <path
+       sodipodi:type="arc"
+       style="color:#000000;fill:none;fill-opacity:1.0000000;fill-rule:evenodd;stroke:#999999;stroke-width:2.8894103;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4.0000000;stroke-dashoffset:0.0000000;stroke-opacity:1.0000000;marker:none;marker-start:none;marker-mid:none;marker-end:none;visibility:visible;display:block"
+       id="path1061"
+       sodipodi:cx="8.7500000"
+       sodipodi:cy="8.7500000"
+       sodipodi:rx="8.7500000"
+       sodipodi:ry="8.7500000"
+       d="M 17.367068,10.269422 A 8.7500000,8.7500000 0 0 1 5.6428142,16.929725"
+       transform="matrix(0.862068,0.000000,0.000000,0.868401,1.240884,1.120935)"
+       sodipodi:start="0.17453293"
+       sodipodi:end="1.9338248"
+       sodipodi:open="true" />
+    <path
+       sodipodi:type="arc"
+       style="color:#000000;fill:none;fill-opacity:1.0000000;fill-rule:evenodd;stroke:#999999;stroke-width:2.9127760;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4.0000000;stroke-dashoffset:0.0000000;stroke-opacity:1.0000000;marker:none;marker-start:none;marker-mid:none;marker-end:none;visibility:visible;display:block"
+       id="path1683"
+       sodipodi:cx="8.7500000"
+       sodipodi:cy="8.7500000"
+       sodipodi:rx="8.7500000"
+       sodipodi:ry="8.7500000"
+       d="M 5.7573235,0.52768966 A 8.7500000,8.7500000 0 0 1 17.367068,7.2305786"
+       transform="matrix(0.857843,0.000000,0.000000,0.858733,1.243874,1.236084)"
+       sodipodi:start="4.3633231"
+       sodipodi:end="6.1086524"
+       sodipodi:open="true" />
+    <path
+       sodipodi:type="arc"
+       style="color:#000000;fill:none;fill-opacity:1.0000000;fill-rule:evenodd;stroke:#999999;stroke-width:2.8894103;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4.0000000;stroke-dashoffset:0.0000000;stroke-opacity:1.0000000;marker:none;marker-start:none;marker-mid:none;marker-end:none;visibility:visible;display:block"
+       id="path1684"
+       sodipodi:cx="8.7500000"
+       sodipodi:cy="8.7500000"
+       sodipodi:rx="8.7500000"
+       sodipodi:ry="8.7500000"
+       d="M 3.1256086,15.452889 A 8.7500000,8.7500000 0 0 1 3.1256086,2.0471110"
+       transform="matrix(0.862068,0.000000,0.000000,0.868401,1.206905,1.151491)"
+       sodipodi:start="2.2689280"
+       sodipodi:end="4.0142573"
+       sodipodi:open="true" />
+  </g>
+</svg>

@@ -2,10 +2,11 @@
 <body>
 <div metal:fill-slot="main">
 
-    <h3 i18n:translate="">Exception Log (most recent first)</h3>
+    <h1 i18n:translate="">Exception Log (Most Recent First)</h1>
 
-    <p i18n:translate="">This page lists the exceptions that have occurred
-    in this site recently.</p>
+    <p i18n:translate="">
+      These are the most recent exceptions that have occurred in Launchpad.
+    </p>
 
     <div tal:define="entries context/getLogEntries">
 
@@ -45,10 +46,8 @@
 
   <form action="index.html" method="get">
     <div class="row">
-      <div class="controls">
         <input type="submit" name="submit" value="Refresh" 
             i18n:attributes="value refresh-button" />
-      </div>
     </div>
   </form>
 

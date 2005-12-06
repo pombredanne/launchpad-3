@@ -2,11 +2,10 @@ Sample Person accesses the bug page of a private bug. He is allowed to
 view the page because he is an explicit subscriber on the bug.
 
   >>> print http(r"""
-  ... GET /malone/bugs/7 HTTP/1.1
-  ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
+  ... GET /products/firefox/+bug/9 HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...
-      <title>Bug #7 - this is a private bug</title>
+      <title>Bug #9 in firefox (upstream) - this is a private bug</title>
   ...

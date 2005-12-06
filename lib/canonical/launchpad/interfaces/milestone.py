@@ -14,6 +14,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import Choice, TextLine, Int, Date, Bool
 
 from canonical.launchpad.interfaces import IHasProduct
+from canonical.launchpad.validators.name import name_validator
 
 _ = MessageIDFactory('launchpad')
 
@@ -22,9 +23,12 @@ class IMilestone(IHasProduct):
     items that need coordination.
     """
     id = Int(title=_("Id"))
-    name = TextLine(title=_("Name"), required=True,
-        description=_("A short and unique name for this milestone, only "
-        "letters,numbers, and simple punctuation are allowed."))
+    name = TextLine(
+        title=_("Name"),
+        description=_(
+            "Only letters, numbers, and simple punctuation are allowed."),
+        required=True,
+        constraint=name_validator)
     product = Choice(
         title=_("Product"),
         description=_("The product to which this milestone is associated"),
@@ -33,8 +37,7 @@ class IMilestone(IHasProduct):
         description=_("The distribution to which this milestone belongs."),
         vocabulary="Distribution")
     dateexpected = Date(title=_("Date Targeted"), required=False,
-        description=_("The date on which we expect this milestone to be "
-            "delivered."))
+        description=_("Example: 2005-11-24"))
     visible = Bool(title=_("Active"), description=_("Whether or not this "
         "milestone should be shown in web forms for bug targeting."))
     target = Attribute("The product or distribution of this milestone.")
@@ -43,6 +46,8 @@ class IMilestone(IHasProduct):
     title = Attribute("A milestone context title for pages.")
     bugtasks = Attribute("A list of the bug tasks targeted to this "
         "milestone.")
+    specifications = Attribute("A list of the specifications targeted to "
+        "this milestone.")
 
 
 class IMilestoneSet(Interface):

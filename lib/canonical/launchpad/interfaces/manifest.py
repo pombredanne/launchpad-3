@@ -31,3 +31,5 @@ class IManifest(Interface):
 
     entries = Attribute(_("""List of entries in this manifest, sorted in
     sequence order."""))
+
+    ancestors = Attribute("""List of ancestors to this manifest""")

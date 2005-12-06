@@ -31,16 +31,19 @@ raised:
 Searching for Bugs
 ------------------
 
-To search for bugs matching specific criteria, use IBugSet.search:
+To search for bugs matching specific criteria, use IBugSet.searchAsUser:
 
     >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.interfaces import ILaunchBag
 
     >>> login("foo.bar@canonical.com")
 
     >>> firefox_test_bug = bugset.get(3)
     >>> firefox_test_bug.duplicateof = firefox_crashes.id
     >>> flush_database_updates()
-    >>> dups_of_bug_six = bugset.search(duplicateof = firefox_crashes)
+
+    >>> dups_of_bug_six = bugset.searchAsUser(
+    ...     duplicateof=firefox_crashes, user=getUtility(ILaunchBag).user)
     >>> print dups_of_bug_six.count()
     1
     >>> dups_of_bug_six[0].id
@@ -48,7 +51,8 @@ To search for bugs matching specific criteria, use IBugSet.search:
 
     >>> firefox_test_bug.duplicateof = None
     >>> flush_database_updates()
-    >>> dups_of_bug_six = bugset.search(duplicateof = firefox_crashes)
+    >>> dups_of_bug_six = bugset.searchAsUser(
+    ...     duplicateof=firefox_crashes, user=getUtility(ILaunchBag).user)
     >>> print dups_of_bug_six.count()
     0
 
@@ -69,7 +73,7 @@ Bug Privacy
 
 A Bug has a "private" field. If Bug.private is False, the bug is publicly
 visible. If Bug.private is True, only people who are explicitly subscribed to
-the bug can see it.
+the bug can see it. Launchpad admins can always view and modify private bugs.
 
 Marking Bugs Private
 --------------------
@@ -82,7 +86,7 @@ private. A bug cannot be made private by an anonymous user.
       ...
     Unauthorized: ('private', 'launchpad.Edit')
 
-We have to be logged in, so let's do that (or pretend to do that, anyway :):
+We have to be logged in, so let's do that:
 
     >>> login("test@canonical.com")
 
@@ -95,13 +99,14 @@ there are currently no explicit subscripitions to this bug.
 
 The maintainer is "implicitly" subscribed to the bug. However, the rule with
 private bugs is that only explicit subscribers can view the bug after it's been
-marked private. So, when we mark bug #15 private:
+marked private. So, when we mark bug #6 private:
 
     >>> from zope.event import notify
     >>> from canonical.launchpad.event import (
     ...     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent,
     ...     SQLObjectCreatedEvent)
     >>> from canonical.launchpad.interfaces import IPersonSet
+
     >>> new_values = {"private" : True}
     >>> bug_will_be_set_private = SQLObjectToBeModifiedEvent(
     ...     firefox_crashes, new_values)
@@ -123,6 +128,7 @@ marked private. So, when we mark bug #15 private:
     ...     ["id", "title", "private"])
 
     >>> notify(bug_set_private)
+    >>> flush_database_updates()
 
 The maintainer is automatically explicitly subscribed.
 
@@ -136,9 +142,8 @@ The maintainer is automatically explicitly subscribed.
 How Privacy Affects Access to a Bug
 -----------------------------------
 
-Once a bug is made private, it can only be accessed by the users that
-are explicitly subscribed to the bug; in other words, users for which
-there is a row in the BugSubscription table linking them to this bug.
+Once a bug is made private, it can only be accessed by the users that are
+explicitly subscribed to the bug and Launchpad admins.
 
 So, remembering that we're still logged in as Sample Person (ID 12 in
 the Person table), and that Sample Person is an explicit subscriber to
@@ -147,21 +152,34 @@ the firefox_crashes bug, we can still access properties of this bug:
     >>> firefox_crashes.title
     u'Firefox crashes when Save As dialog for a nonexistent window is closed'
 
-But, if we temporarily switch to a user that isn't an explicit
-subscriber, e.g. Foo Bar:
+Note that a search will return all the bugs, as well:
+
+    >>> all_bugs = bugset.searchAsUser(
+    ...     user=getUtility(ILaunchBag).user, orderBy="id")
+    >>> [bug.id for bug in all_bugs]
+    [1, 2, 3, 4, 5, 6, 7, 8]
+
+Likewise Foo Bar, an admin, can access the bug.
 
     >>> login("foo.bar@canonical.com")
 
-Trying to access a property of this bug will result in an Unauthorized
-exception:
-
+    >>> old_title = firefox_crashes.title
+    >>> firefox_crashes.title = "new title"
     >>> firefox_crashes.title
-    Traceback (most recent call last):
-      ...
-    Unauthorized: ('title', 'launchpad.View')
+    u'new title'
+    >>> firefox_crashes.title = old_title
+    >>> firefox_crashes.title
+    u'Firefox crashes when Save As dialog for a nonexistent window is closed'
 
-As one would expect, the permissions are team aware. So, let's
-retrieve a bug on which Foo Bar is a member of the maintainer team:
+Bug #6 is returned by the search results for an admin as well:
+
+    >>> all_bugs = bugset.searchAsUser(
+    ...     user=getUtility(ILaunchBag).user, orderBy="id")
+    >>> [bug.id for bug in all_bugs]
+    [1, 2, 3, 4, 5, 6, 7, 8]
+
+As one would expect, the permissions are team aware. So, let's retrieve a bug
+and set it private (as Foo Bar again who, of course, is an admin.)
 
     >>> blackhole_trash_folder = bugset.get(2)
 
@@ -182,19 +200,32 @@ And again, let's fake setting the bug private:
     ...     ["id", "title", "private"])
 
     >>> notify(bug_set_private)
+    >>> flush_database_updates()
 
-Now, because Foo Bar is a member of the Ubuntu Team, and this bug is
-filed on upstream Ubuntu, Foo Bar can still access the properties of
-the bug when it's private:
+Jeff Waugh, a member of the Ubuntu Team, is able to access this bug:
 
+    >>> login("jeff.waugh@ubuntulinux.com")
+
+    >>> old_title = blackhole_trash_folder.title
+    >>> blackhole_trash_folder.title = "new title"
+    >>> blackhole_trash_folder.title
+    u'new title'
+    >>> blackhole_trash_folder.title = old_title
     >>> blackhole_trash_folder.title
     u'Blackhole Trash folder'
 
+and see it (bug #2) in searches:
+
+    >>> all_bugs = bugset.searchAsUser(
+    ...     user=getUtility(ILaunchBag).user, orderBy="id")
+    >>> [bug.id for bug in all_bugs]
+    [1, 2, 3, 4, 5, 7, 8]
+
 If we login as someone who *isn't* a member of the Ubuntu Team (and
 isn't otherwise someone who should be allowed to access the properties
-of this bug) though, e.g. Robert Collins:
+of this bug) though:
 
-    >>> login("robertc@robertcollins.net")
+    >>> login("no-priv@canonical.com")
 
 Trying to access a property of this bug will again raise an
 Unauthorized:
@@ -203,6 +234,14 @@ Unauthorized:
     Traceback (most recent call last):
       ...
     Unauthorized: ('title', 'launchpad.View')
+
+And, as you might have guessed, is once again invisible in searches
+(notice that bug #6 is also invisible to No Privileges Person):
+
+    >>> all_bugs = bugset.searchAsUser(
+    ...     user=getUtility(ILaunchBag).user, orderBy="id")
+    >>> [bug.id for bug in all_bugs]
+    [1, 3, 4, 5, 7, 8]
 
 Filing Public vs. Private Bugs
 ------------------------------
@@ -213,7 +252,6 @@ Let's log back in as Foo Bar to continue our examples:
 
 When a public bug is filed:
 
->>> from canonical.launchpad.database.bug import BugFactory
 >>> from canonical.launchpad.interfaces import IProductSet
 >>> from canonical.launchpad.interfaces import IPersonSet
 >>> from canonical.launchpad.interfaces import IBugSet
@@ -223,9 +261,9 @@ When a public bug is filed:
 
 >>> firefox = productset.get(4)
 >>> foobar = personset.get(16)
->>> added_bug = BugFactory(
-...     product = firefox, title = "test firefox bug",
-...     comment = "blah blah blah", owner = foobar)
+>>> added_bug = getUtility(IBugSet).createBug(
+...     product=firefox, title="test firefox bug",
+...     comment="blah blah blah", owner=foobar)
 >>> notify(SQLObjectCreatedEvent(added_bug))
 >>> public_bug = bugset.get(added_bug.id)
 
@@ -251,10 +289,9 @@ u'a new description'
 
 When a private bug is filed:
 
->>> added_bug = BugFactory(
-...     product = firefox, title = "test firefox bug",
-...     comment = "blah blah blah", owner = foobar,
-...     private = True)
+>>> added_bug = getUtility(IBugSet).createBug(
+...     product=firefox, title="test firefox bug",
+...     comment="blah blah blah", owner=foobar, private=True)
 >>> notify(SQLObjectCreatedEvent(added_bug))
 >>> private_bug = bugset.get(added_bug.id)
 
@@ -270,17 +307,35 @@ Note that this works similarly for distributions; in this case the
 "maintainer" is considered the person who maintains the applicable
 sourcepackage. E.g.
 
->>> from canonical.launchpad.interfaces import IDistributionSet, \
-...     ISourcePackageNameSet
+>>> from canonical.launchpad.interfaces import (
+...     IDistributionSet, ISourcePackageNameSet)
 >>> distributionset = getUtility(IDistributionSet)
 >>> spnset = getUtility(ISourcePackageNameSet)
 >>> ubuntu = distributionset.get(1)
 >>> evolution = spnset.get(9)
->>> added_bug = BugFactory(
-...     distribution = ubuntu.id, sourcepackagename = evolution,
-...     title = "test firefox bug", comment = "blah blah blah",
-...     owner = foobar, private = True)
+>>> added_bug = getUtility(IBugSet).createBug(
+...     distribution=ubuntu, sourcepackagename=evolution,
+...     title="test firefox bug", comment="blah blah blah",
+...     owner=foobar, private=True)
 >>> notify(SQLObjectCreatedEvent(added_bug))
 >>> private_bug = bugset.get(added_bug.id)
 >>> print [subscription.person.id for subscription in private_bug.subscriptions]
 [16]
+
+Note that there are some IBugTargets that don't allow bugs to be directly filed
+on them, e.g. IDistroRelease and ISourcePackage.
+
+>>> from canonical.launchpad.interfaces import IDistroReleaseSet
+
+>>> ubuntu_warty = getUtility(IDistroReleaseSet).get(1)
+>>> ubuntu_warty_firefox = ubuntu_warty.getSourcePackage("mozilla-firefox")
+>>> ubuntu_warty.createBug(
+...     owner=getUtility(ILaunchBag).user, title="test", comment="test")
+Traceback (most recent call last):
+  ...
+NotImplementedError: A new bug cannot be filed directly on a distribution release, because releases are meant for "targeting" a fix to a specific release. It's possible that we may change this behaviour to allow filing a bug on a distribution release in the not-too-distant future. For now, you probably meant to file the bug on the distribution instead.
+>>> ubuntu_warty_firefox.createBug(
+...     owner=getUtility(ILaunchBag).user, title="test", comment="test")
+Traceback (most recent call last):
+  ...
+NotImplementedError: A new bug cannot be filed directly on a source package in a specific distribution release, because releases are meant for "targeting" a fix to a specific release. It's possible that we may change this behaviour to allow filing a bug on a distribution release source package in the not-too-distant future. For now, you probably meant to file the bug on the distro-wide (i.e. not release-specific) source package.

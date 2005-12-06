@@ -8,10 +8,6 @@
     <div tal:replace="structure context/@@+portlet-info" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-actions" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
   <p class="documentDescription">
@@ -31,6 +27,7 @@
         <th>Title</th>
         <th>Home Page</th>
         <th class="amount">Watches</th>
+        <th class="type">Tracker Type</th>
       </tr>
     </thead>
 
@@ -43,6 +40,8 @@
                  tal:attributes="href bugtracker/baseurl"
                  tal:content="bugtracker/baseurl">$Bugtracker.baseurl</a></td>
           <td class="amount" tal:content="bugtracker/watchcount">bugcount</td>
+          <td class="type"
+            tal:content="bugtracker/bugtrackertype/title">bugtrackertype</td>
       </tr>
     </tbody>
   </table>

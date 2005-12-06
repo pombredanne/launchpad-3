@@ -1,0 +1,19 @@
+<div class="portlet">
+
+  <h4>Depends:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul>
+      <li class="spec" tal:repeat="spec context/dependencies">
+        <a tal:attributes="href spec/fmt:url"
+           tal:content="spec/title">Spec Title Goes Here</a>
+      </li>
+      <li class="info" tal:condition="not: context/dependencies">
+        <i>No spec dependencies.</i>
+      </li>
+    </ul>
+	
+  </div>
+
+</div>

@@ -1,0 +1,26 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:content="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main"
+     tal:define="listing_columns view/task_columns">
+
+<metal:page
+    use-macro="context/@@+bugtask-macros-buglisting/page"
+    tal:define="listing_columns view/task_columns;
+                task_batch_navigator view/search">
+
+</metal:page>
+
+</div>
+
+</body>
+
+</html>

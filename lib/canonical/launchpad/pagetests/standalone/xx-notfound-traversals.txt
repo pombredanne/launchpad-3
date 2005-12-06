@@ -1,13 +1,323 @@
-= Traversal methods =
-
 A common error of traversal methods is that they raise a KeyError,
 IndexError, LookupError NotFoundError etc. instead of
 zope.interfaces.NotFound. This means they generate a System Error page
 instead of a correct 404 page. So we test them to ensure the correct HTTP
 status is returned.
 
-== ProductSeries ==
+XXX: This test may be better done using a tweaked LinkChecker or other
+spider -- StuartBishop 20050822
 
->>> http(r"GET /products/firefox/+series/1.0/wobbly HTTP/1.0").getStatus()
-404
+
+>>> def check_url(valid_url, auth=False):
+...     if auth:
+...         get_cmd = """
+... GET %s HTTP/1.1
+... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+... """
+...     else:
+...         get_cmd = "GET %s HTTP/1.1\n"
+...     valid_output_obj = http(get_cmd % valid_url)
+...     valid_rc = valid_output_obj.getStatus()
+...     if valid_rc not in (200, 302):
+...         return "%s returned status %s instead of success\n\n%s" % (
+...             valid_url, valid_rc, str(valid_output_obj))
+...     invalid_url = valid_url + '/wobbly'
+...     invalid_output = http(get_cmd % invalid_url)
+...     invalid_rc = invalid_output.getStatus()
+...     if invalid_rc != 404:
+...         return "%s returned status %s instead of 404\n\n%s" % (
+...             invalid_url, invalid_rc, str(invalid_output))
+...     # Some traversal is done by integer
+...     invalid_url = valid_url + '/98723'
+...     invalid_output = http(get_cmd % invalid_url)
+...     invalid_rc = invalid_output.getStatus()
+...     if invalid_rc != 404:
+...         return "%s returned status %s instead of 404\n\n%s" % (
+...             invalid_url, invalid_rc, str(invalid_output))
+
+>>> def check_not_found(url):
+...     output = http("GET %s HTTP/1.1\n" % url)
+...     status = output.getStatus()
+...     if status != 404:
+...         return "%s returned status %s instead of 404\n\n%s" % (
+...             url, status, str(output))
+
+>>> def check_redirect(url, auth=False):
+...     if auth:
+...         get_cmd = """
+... GET %s HTTP/1.1
+... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+... """
+...     else:
+...         get_cmd = "GET %s HTTP/1.1\n"
+...     rc = http(get_cmd % url).getStatus()
+...     if rc != 303:
+...         return "%s returned status %s instead of 303" % (url, rc)
+
+>>> def check(valid_url, auth=False):
+...     output = check_url(valid_url, auth)
+...     if output:
+...         print output
+
+>>> check("/")
+>>> check("/rdf")
+>>> check("/legal")
+>>> check("/feedback")
+
+>>> check("/shipit/robots.txt")
+
+>>> check("/bounties")
+>>> check("/bounties/foomatic-widgets")
+
+>>> check("/codeofconduct")
+>>> check("/codeofconduct/1.0")
+>>> check("/codeofconduct/1.0/+sign", auth=True)
+
+>>> check("/projects")
+>>> check("/projects/+syncreview", auth=True)
+>>> check("/projects/+review", auth=True)
+>>> check("/projects/mozilla")
+>>> check("/projects/mozilla/firefox")
+
+>>> check("/products")
+>>> check("/products/firefox")
+>>> check_not_found("/products/firefox/+series")
+>>> check("/products/firefox/+series/1.0")
+>>> check("/products/firefox/+series/1.0/+addpackage", auth=True)
+>>> check("/products/firefox/+series/1.0/+ubuntupkg", auth=True)
+>>> check("/products/firefox/+series/1.0/+source", auth=True)
+>>> check("/products/firefox/+series/1.0/+edit", auth=True)
+>>> check("/products/firefox/+series/1.0/+specs")
+>>> check("/products/firefox/+series/1.0/+addrelease", auth=True)
+>>> check("/products/firefox/+bugs")
+>>> check("/products/firefox/+bugs-open")
+>>> check("/products/firefox/+bugs-assigned-to", auth=True)
+>>> check("/products/firefox/+bugs-critical")
+>>> check("/products/firefox/+bugs-untriaged")
+>>> check("/products/firefox/+bugs-all")
+>>> check("/products/firefox/+bugs-advanced")
+
+>>> check_not_found("/products/firefox/+milestone")
+>>> check("/products/firefox/+milestone/1.0")
+>>> check("/products/firefox/+branches")
+
+>>> check("/distros")
+>>> check("/distros/+bugs")
+>>> check("/distros/+add", auth=True)
+
+>>> check("/distros/ubuntu")
+>>> check("/distros/ubuntu/+bugs")
+>>> check("/distros/ubuntu/+bugs-open")
+>>> check("/distros/ubuntu/+bugs-assigned-to", auth=True)
+>>> check("/distros/ubuntu/+bugs-critical")
+>>> check("/distros/ubuntu/+bugs-untriaged")
+>>> check("/distros/ubuntu/+bugs-all")
+>>> check("/distros/ubuntu/+bugs-advanced")
+>>> check("/distros/ubuntu/+specs")
+>>> check("/distros/ubuntu/+cve")
+>>> check("/distros/ubuntu/+specplan")
+>>> check("/distros/ubuntu/+edit", auth=True)
+>>> check("/distros/ubuntu/+reassign", auth=True)
+>>> check("/distros/ubuntu/+selectmemberteam", auth=True)
+>>> check("/distros/ubuntu/+changetranslators", auth=True)
+>>> check("/distros/ubuntu/+addmilestone", auth=True)
+>>> check("/distros/ubuntu/+linkbounty", auth=True)
+>>> check("/distros/ubuntu/+addbounty", auth=True)
+>>> check("/distros/ubuntu/+addspec", auth=True)
+>>> check("/distros/ubuntu/+source/evolution/+bugs")
+
+>>> check("/distros/ubuntu/hoary")
+>>> check("/distros/ubuntu/hoary/+edit", auth=True)
+>>> check("/distros/ubuntu/hoary/+specs")
+>>> check("/distros/ubuntu/hoary/+reassign", auth=True)
+>>> check("/distros/ubuntu/hoary/+translations")
+>>> check("/distros/ubuntu/hoary/+packaging")
+>>> check("/distros/ubuntu/hoary/+bugs")
+>>> check("/distros/ubuntu/hoary/+bugs-open")
+>>> check("/distros/ubuntu/hoary/+bugs-assigned-to", auth=True)
+>>> check("/distros/ubuntu/hoary/+bugs-critical")
+>>> check("/distros/ubuntu/hoary/+bugs-untriaged")
+>>> check("/distros/ubuntu/hoary/+bugs-all")
+>>> check("/distros/ubuntu/hoary/+bugs-advanced")
+
+>>> check("/distros/ubuntu/hoary/i386")
+>>> check("/distros/ubuntu/hoary/i386/+search")
+
+>>> check("/distros/ubuntu/hoary/+source/mozilla-firefox")
+>>> check("/distros/ubuntu/hoary/+source/evolution/")
+>>> check("/distros/ubuntu/hoary/+source/evolution/+bugs")
+
+# FIXME: disable while HCT transitions to bzr. See bug #4117. -- RobertCollins.
+#>>> check("/distros/ubuntu/hoary/+source/evolution/+hctstatus")
+
+>>> check("/distros/ubuntu/hoary/+source/evolution/+changelog")
+>>> check("/distros/ubuntu/hoary/+source/evolution/+buildlog")
+>>> check("/distros/ubuntu/hoary/+source/evolution/+packaging", auth=True)
+>>> check("/distros/ubuntu/hoary/+source/evolution/+gethelp")
+>>> check("/distros/ubuntu/hoary/+source/evolution/+translate")
+>>> check_redirect("/distros/ubuntu/hoary/+source/mozilla-firefox/+pots")
+>>> check("/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+export",
+...       auth=True)
+
+>>> check("/malone")
+>>> check_redirect("/malone/assigned")
+>>> check_not_found("/malone/bugs/assigned")
+>>> check_redirect("/malone/bugs")
+>>> check_redirect("/malone/bugs/1")
+>>> check("/malone/distros")
+>>> check("/malone/distros/ubuntu")
+>>> check("/malone/projects")
+>>> check("/malone/products")
+>>> check("/malone/products/firefox")
+>>> check("/malone/bugtrackers")
+
+Viewing a bug in the context of an upstream where the bug has already
+been reported (including checking the various pages that hang off that
+one.)
+
+>>> check_redirect("/products/firefox/+bug")
+>>> check("/products/firefox/+bug/1", auth=True)
+>>> check("/products/firefox/+bug/1/+edit", auth=True)
+>>> check("/products/firefox/+bug/1/+secrecy", auth=True)
+>>> check("/products/firefox/+bug/1/+duplicate", auth=True)
+>>> check("/products/firefox/+bug/1/+subscribe", auth=True)
+>>> check("/products/firefox/+bug/1/+addsubscriber", auth=True)
+>>> check("/products/firefox/+bug/1/+addattachment", auth=True)
+>>> check("/products/firefox/+bug/1/+addurl", auth=True)
+>>> check("/products/firefox/+bug/1/+addwatch", auth=True)
+>>> check("/products/firefox/+bug/1/+activity", auth=True)
+
+Viewing a bug in the context of an upstream where the bug has not yet
+been reported.
+
+>>> check("/products/netapplet/+bug/1")
+>>> check_not_found("/products/netapplet/+bug/1/+viewstatus")
+>>> check_not_found("/products/netapplet/+bug/1/+editstatus")
+
+Viewing a bug in the context of a distribution where the bug has not
+yet been reported.
+
+>>> check_redirect("/distros/ubuntu/+bug")
+>>> check_not_found("/distros/ubuntu/+bug/3/+viewstatus")
+>>> check_not_found("/distros/ubuntu/+bug/3/+editstatus")
+
+Viewing a bug in the context of a distorelease where the bug has not
+yet been reported.
+
+>>> check_redirect("/distros/ubuntu/warty/+bug")
+>>> check("/distros/ubuntu/warty/+bug/3")
+>>> check_not_found("/distros/ubuntu/warty/+bug/3/+viewstatus")
+>>> check_not_found("/distros/ubuntu/warty/+bug/3/+editstatus")
+
+Viewing a bug in the context of a distro source package in which it's
+already been reported.
+
+>>> check("/distros/ubuntu/+source/mozilla-firefox/+bug/1")
+
+Viewing a bug in the context of a distro source package in which it's
+not yet been reported.
+
+>>> check_redirect("/distros/ubuntu/+source/thunderbird/+bug")
+>>> check("/distros/ubuntu/+source/thunderbird/+bug/1")
+>>> check_not_found("/distros/ubuntu/+source/thunderbird/+bug/1/+viewstatus")
+>>> check_not_found("/distros/ubuntu/+source/thunderbird/+bug/1/+editstatus")
+
+Viewing the bug in the context of a distro release source package in
+which the bug has already been reported.
+
+>>> check("/distros/ubuntu/warty/+source/mozilla-firefox/+bug/5")
+
+Viewing the bug in the context of a distro release source package in
+which the bug has not yet been reported.
+
+>>> check("/distros/ubuntu/warty/+source/mozilla-firefox/+bug/1")
+>>> check_not_found("/distros/ubuntu/warty/+source/mozilla-firefox/+bug/1/+viewstatus")
+>>> check_not_found("/distros/ubuntu/warty/+source/mozilla-firefox/+bug/1/+editstatus")
+
+The bug filing pages.
+
+>>> check("/products/firefox/+filebug", auth=True)
+>>> check("/distros/ubuntu/+filebug", auth=True)
+>>> check("/distros/ubuntu/+source/mozilla-firefox/+filebug", auth=True)
+
+Note that you should not be able to directly file a bug on a
+distrorelease or sourcepackage; an IBugTask reported against a
+distrorelease or sourcepackage is *targeted* to be fixed in that
+specific release. Instead, you get redirected to the appropriate distro
+or distrosourcepackage filebug page.
+
+>>> check_redirect("/distros/ubuntu/warty/+filebug", auth=True)
+>>> check_redirect(
+...     "/distros/ubuntu/warty/+source/mozilla-firefox/+filebug", auth=True)
+
+Test /people traversals.
+
+>>> check("/people/")
+>>> check("/people/+peoplelist")
+>>> check("/people/+teamlist")
+>>> check("/people/+ubuntitelist")
+>>> check("/people/+requestmerge", auth=True)
+>>> check("/people/+portlet-about")
+
+
+This is for a team:
+
+>>> check("/people/name18/+teamhierarchy")
+>>> check("/people/name18/+edit", auth=True)
+>>> check("/people/name18/+editemail", auth=True)
+>>> check("/people/name18/+members")
+>>> check("/people/name18/+packages")
+>>> check("/people/name18/+leave", auth=True)
+>>> check("/people/name18/+reassign", auth=True)
+>>> check("/people/name18/+review", auth=True)
+>>> check("/people/name18/+specs")
+>>> check_not_found("/people/name18/+calendar")
+>>> check("/people/name18/+bounties")
+>>> check("/people/name18/+translations")
+>>> check("/people/name18/+teamlist")
+>>> check("/people/name18/+polls")
+>>> check("/people/name18/+newpoll", auth=True)
+
+And this is for a person:
+
+>>> check("/people/name16/+edit", auth=True)
+>>> check("/people/name16/+branches")
+>>> check("/people/name16/+karma")
+>>> check_redirect("/people/name16/+bugs")
+>>> check("/people/name16/+reportedbugs")
+>>> check("/people/name16/+assignedbugs")
+>>> check("/people/name16/+packagebugs")
+>>> check("/people/name16/+editsshkeys", auth=True)
+>>> check("/people/name16/+editgpgkeys", auth=True)
+>>> check("/people/name16/+editwikinames", auth=True)
+>>> check("/people/name16/+editjabberids", auth=True)
+>>> check("/people/name16/+codesofconduct", auth=True)
+>>> check("/people/name16/+edithomepage", auth=True)
+>>> check("/people/name16/+edithackergotchi", auth=True)
+>>> check("/people/name16/+packages")
+>>> check("/people/name16/+review", auth=True)
+>>> check("/people/name16/+portlet-emails")
+>>> check("/people/name16/+portlet-details")
+>>> check("/people/name16/+portlet-editdetails")
+>>> check("/people/name16/+portlet-team-assignedbugs")
+>>> check("/people/name16/+calendar")
+>>> check("/people/name16/+calendar/+subscribe", auth=True)
+
+>>> check("/bazaar")
+>>> check("/bazaar/+portlet-importstats")
+>>> check("/bazaar/series", auth=True)
+>>> check("/bazaar/series/+bazaar-index", auth=True)
+
+# XXX: all broken, currently, because of subtraversals. See bug 2149.
+# >>> check("/people/name16/+rdf")
+# >>> check("/people/name18/+rdf")
+# >>> check("/products/firefox/+rdf")
+# >>> check("/products/firefox/series/1.0/+rdf")
+# >>> check("/codeofconduct/1.0/+download")
+
+# XXX: See bug 2151
+# >>> check("/distros/ubuntu/hoary/i386/+edit")
+
+>>> check_not_found(
+...     '/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/xxxx')
 

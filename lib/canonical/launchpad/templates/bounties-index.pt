@@ -1,0 +1,59 @@
+<html xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad"
+>
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-about" />
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <p class="documentDescription">
+    In Launchpad, a bounty is an offer of payment
+    for development work.
+    <tal:block condition="request/lp:person">
+      You can register bounties
+      or sign up for bounties offered by other people.
+    </tal:block>
+    <tal:block condition="not: request/lp:person">
+      <a href="+login">Log in</a>
+      and you&#8217;ll be able to register bounties,
+      or sign up for bounties offered by other people.
+    </tal:block>
+  </p>
+
+  <table class="listing sortable" width="100%" id="bountylist">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Title</th>
+        <th>USD Value<sup>*</sup></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="bounty context">
+        <td tal:content="bounty/datecreated/fmt:date">
+          date
+        </td>
+        <td><a tal:content="bounty/title/fmt:shorten/57"
+               tal:attributes="href bounty/fmt:url">title</a></td>
+        <td tal:content="bounty/usdvalue">usdvalue</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><sup>*</sup> A bounty may include contributions in several currencies.
+    This is an estimate of the bounty value in US dollars, based on recent
+    exchange rates.
+  </p>
+
+</div>
+</body>
+</html>
+

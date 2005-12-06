@@ -10,17 +10,9 @@ First make sure it has no translation group and permissions.
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
-  ...Network Applet...
-          <b>Translation Group:</b><br />
-          <img src="/++resource++languages.gif">
-  <BLANKLINE>
-  <BLANKLINE>
-          <i>Not assigned</i><br />
-  <BLANKLINE>
-          <b>Translation Perms:</b><br />
-          Open
-          <br />
-  ...
+  ...Network Applet
+  ...Not assigned...
+  ...Open...
 
 Now let's make sure we can see the page to let us change translation group
 and permissions.
@@ -33,10 +25,9 @@ and permissions.
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
-  ...Select A New Translation Group...
+  ...Select a New Translation Group...
 
-Now let's post to the form. We should see the same form back with a message
-about the update.
+Now let's post to the form. We should be redirected to the product page.
 
   >>> print http(r"""
   ... POST /products/netapplet/+changetranslators HTTP/1.1
@@ -66,13 +57,9 @@ about the update.
   ... Change
   ... -----------------------------6923855761766169312285474874--
   ... """)
-  HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...Select A New Translation Group...
-  <BLANKLINE>
-            <p class="portalMessage">Updated on ...</p>
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../products/netapplet
   ...
 
 Now these changes should show up in the product page.
@@ -86,14 +73,7 @@ Now these changes should show up in the product page.
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-          <b>Translation Group:</b><br />
-          <img src="/++resource++languages.gif">
-  <BLANKLINE>
-          <a href="/rosetta/groups/polyglot/">The PolyGlot Translation Group</a><br />
-  <BLANKLINE>
-  <BLANKLINE>
-          <b>Translation Perms:</b><br />
-          Open
-          <br />
+  ...href="/rosetta/groups/polyglot/"...The PolyGlot Translation Group...
+  ...Open...
   ...
 

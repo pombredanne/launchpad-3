@@ -2,24 +2,23 @@ Test that the page to add a new product loads.
 
   >>> print http(r"""
   ... GET /products/+new HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
-  ...
-          <h1>Register an Open Source (Upstream) Product</h1>
-  ...
+  ...Register an Upstream Open Source Product...
 
 Test that the page to add a new product works.
 
   >>> print http(r"""
   ... POST /products/+new HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1920
   ... Content-Type: multipart/form-data; boundary=---------------------------43746069110828506211603039137
   ... 
+  ... -----------------------------43746069110828506211603039137
+  ... Content-Disposition: form-data; name="field.project"
+  ... 
+  ... mozilla
   ... -----------------------------43746069110828506211603039137
   ... Content-Disposition: form-data; name="field.name"
   ... 
@@ -39,7 +38,7 @@ Test that the page to add a new product works.
   ... -----------------------------43746069110828506211603039137
   ... Content-Disposition: form-data; name="field.description"
   ... 
-  ... If you were describing a Test Produt this would be a little short but sweet.
+  ... If you were describing a Test Product this would be a little short but sweet.
   ... -----------------------------43746069110828506211603039137
   ... Content-Disposition: form-data; name="field.homepageurl"
   ... 
@@ -79,19 +78,305 @@ Test that the page to add a new product works.
   Content-Type: text/html;charset=utf-8
   Location: testing
   <BLANKLINE>
-  ...
-          <h1>Register an Open Source (Upstream) Product</h1>
-  ...
+  ...Register an Upstream Open Source Product...
 
+
+Test if we can see the page of the added product and tests if we can see the
+Project.
 
   >>> print http(r"""
   ... GET /products/testing HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  <BLANKLINE>
+  ...This is a Test Product...
+  ...<h4>The Mozilla Project:</h4>...
+
+
+Tests if the validator is working for the URL fields
+
+POST on Home-Page field without the HTTP://
+
+  >>> print http(r"""
+  ... POST /products/+new HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1788
+  ... Content-Type: multipart/form-data; boundary=---------------------------771328944209536205310608336
+  ... 
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... testing2
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.displayname"
+  ... 
+  ... Test Product
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... This is the title of a test product
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... Summary of the test product
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... Description of it
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.homepageurl"
+  ... 
+  ... www.test.com
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.sourceforgeproject"
+  ... 
+  ... test2
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.freshmeatproject"
+  ... 
+  ... testmeat2
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.wikiurl"
+  ... 
+  ... wiki.test.com
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.screenshotsurl"
+  ... 
+  ... screen.test.com
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.downloadurl"
+  ... 
+  ... www.test.com
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.programminglang"
+  ... 
+  ... Python
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------771328944209536205310608336--
+  ... """)
+  HTTP/1.1 200 Ok
   ...
-      <h2>This is a Test Product</h2>
+  ...An error occured...
   ...
+  ...Not a valid URL...
+  ...
+
+
+Now we fill in the Home-page field just the HTTP:// without the host
+
+  >>> print http(r"""
+  ... POST /products/+new HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1788
+  ... Content-Type: multipart/form-data; boundary=---------------------------771328944209536205310608336
+  ... 
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... testing2
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.displayname"
+  ... 
+  ... Test Product
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... This is the title of a test product
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... Summary of the test product
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... Description of it
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.homepageurl"
+  ... 
+  ... http://
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.sourceforgeproject"
+  ... 
+  ... test2
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.freshmeatproject"
+  ... 
+  ... testmeat2
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.wikiurl"
+  ... 
+  ... http://wiki.test.com
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.screenshotsurl"
+  ... 
+  ... http://screen.test.com
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.downloadurl"
+  ... 
+  ... http://www.test.com
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.programminglang"
+  ... 
+  ... Python
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------771328944209536205310608336--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...An error occured...
+  ...
+  ...Not a valid URL...
+  ...
+
+
+Now we test if we leave the Home-page field empty. This should work,
+since the field is not required.
+
+  >>> print http(r"""
+  ... POST /products/+new HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1788
+  ... Content-Type: multipart/form-data; boundary=---------------------------771328944209536205310608336
+  ... 
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... testing2
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.displayname"
+  ... 
+  ... Test Product
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... This is the title of a test product
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... Summary of the test product
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... Description of it
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.homepageurl"
+  ... 
+  ... 
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.sourceforgeproject"
+  ... 
+  ... test2
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.freshmeatproject"
+  ... 
+  ... testmeat2
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.wikiurl"
+  ... 
+  ... 
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.screenshotsurl"
+  ... 
+  ... 
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.downloadurl"
+  ... 
+  ... http://www.test.com
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="field.programminglang"
+  ... 
+  ... Python
+  ... -----------------------------771328944209536205310608336
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------771328944209536205310608336--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: testing2
+  ...
+
+
+
+  >>> print http(r"""
+  ... GET /products/testing2 HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...Test Product...
+  ...
+
+
+Now let's try to insert a product with the same name (testing).
+
+
+  >>> print http(r"""
+  ... POST /products/+new HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------367972547738338092465973618
+  ... 
+  ... -----------------------------367972547738338092465973618
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... testing
+  ... -----------------------------367972547738338092465973618
+  ... Content-Disposition: form-data; name="field.displayname"
+  ... 
+  ... dname
+  ... -----------------------------367972547738338092465973618
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... title
+  ... -----------------------------367972547738338092465973618
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... summaru
+  ... -----------------------------367972547738338092465973618
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... description
+  ... -----------------------------367972547738338092465973618
+  ... Content-Disposition: form-data; name="field.homepageurl"
+  ... 
+  ... 
+  ... -----------------------------367972547738338092465973618
+  ... Content-Disposition: form-data; name="field.sourceforgeproject"
+  ... 
+  ... 
+  ... -----------------------------367972547738338092465973618
+  ... Content-Disposition: form-data; name="field.freshmeatproject"
+  ... 
+  ... 
+  ... -----------------------------367972547738338092465973618
+  ... Content-Disposition: form-data; name="field.wikiurl"
+  ... 
+  ... 
+  ... -----------------------------367972547738338092465973618
+  ... Content-Disposition: form-data; name="field.screenshotsurl"
+  ... 
+  ... 
+  ... -----------------------------367972547738338092465973618
+  ... Content-Disposition: form-data; name="field.downloadurl"
+  ... 
+  ... 
+  ... -----------------------------367972547738338092465973618
+  ... Content-Disposition: form-data; name="field.programminglang"
+  ... 
+  ... 
+  ... -----------------------------367972547738338092465973618
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------367972547738338092465973618--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...An error occured...
+  ...This name is already in use by another product...

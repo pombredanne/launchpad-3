@@ -34,7 +34,7 @@ Get the set of POTMsgSets that are untranslated.
 
 >>> potmsgsets = list(pofile.getPOTMsgSetUntranslated())
 >>> len(potmsgsets)
-14
+15
 
 Test that the header is updated.
 
@@ -55,13 +55,18 @@ This is the new header.
 ... Content-Type: text/plain; charset=UTF-8
 ... Content-Transfer-Encoding: 8bit
 ... Report-Msgid-Bugs-To: serrador@hispalinux.es
-... X-Generator: Rosetta (http://launchpad.ubuntu.com/rosetta/)
+... X-Generator: Rosetta (https://launchpad.net/rosetta/)
 ... Plural-Forms: nplurals=2; plural=n != 1;'''
 
 Now, get a POHeader object with that information.
 
 >>> new_header = POHeader(commentText=comment, msgstr=msgstr)
->>> new_header.finish()
+>>> new_header.updateDict()
+
+We check that the plural forms expression is correctly parsed:
+
+>>> new_header.getPluralFormExpression() == 'n != 1'
+True
 
 To be sure the new header is being applied, here we have the old values:
 
@@ -104,3 +109,62 @@ False
 
 >>> pofile.pluralforms
 2
+
+Now I'm going to test creating a header with invalid plural-forms and
+trying to parse the number and type of plural forms it has.
+
+>>> msgstr = '''Project-Id-Version: es
+... POT-Creation-Date: 2004-08-18 11:10+0200
+... PO-Revision-Date: 2005-08-18 13:22+0000
+... Last-Translator: Carlos Perelló Marín <carlos@canonical.com>
+... Language-Team: Spanish <traductores@es.gnome.org>
+... MIME-Version: 1.0
+... Content-Type: text/plain; charset=UTF-8
+... Content-Transfer-Encoding: 8bit
+... Report-Msgid-Bugs-To: serrador@hispalinux.es
+... X-Generator: Rosetta (http://launchpad.ubuntu.com/rosetta/)
+... Plural-Forms: n != 1'''
+>>> new_header = POHeader(msgstr=msgstr)
+>>> new_header.updateDict()
+WARNING:root:The plural form header has an unknown error. Using the default value...
+>>> new_header.getPluralFormExpression() == None
+True
+
+
+isPORevisionDateOlder check
+---------------------------
+
+This method helps to compare two PO files header and decide if the given one
+is older than the one we have in the IPOFile object. We are using this
+method, for instance, to know if a new imported PO file should be ignored
+because we already have a newer one.
+
+This test is to be sure that the date comparation is working and that two
+headers with the same date will always be set as newer because lazy
+translators forget to update that field from time to time and sometimes we
+were losing translations because we were ignoring those imports too.
+
+    >>> from canonical.launchpad.components.poparser import POHeader
+
+    >>> print pofile.header.encode('utf-8')
+    Project-Id-Version: es
+    ...
+    PO-Revision-Date: 2005-08-18 13:22+0000
+    ...
+
+First, we check with the same date.
+
+    >>> header = POHeader(msgstr=u'PO-Revision-Date: 2005-08-18 13:22+0000')
+    >>> header.updateDict()
+    WARNING:root:PO file header entry has no content-type field
+    >>> pofile.isPORevisionDateOlder(header)
+    False
+
+Now, we check with a date that is in the past.
+
+    >>> header = POHeader(msgstr=u'PO-Revision-Date: 2005-08-18 13:21+0000')
+    >>> header.updateDict()
+    WARNING:root:PO file header entry has no content-type field
+    >>> pofile.isPORevisionDateOlder(header)
+    True
+

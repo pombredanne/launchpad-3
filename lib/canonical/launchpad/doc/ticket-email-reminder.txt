@@ -1,0 +1,80 @@
+Answered Ticket Email Reminder
+==============================
+
+In order to not let tickets that are in an answered state be forgotten,
+an email is sent to the submitter of the email daily, telling him to
+either close or reopen the answered ticket. The function responsible for
+that is send_ticket_email_reminders:
+
+    >>> from canonical.launchpad.scripts.ticketemailreminder import (
+    ...     send_ticket_email_reminders)
+
+There are two answered tickets in Launchpad, submitted by Sample Person
+and Foo Bar:
+
+    >>> from canonical.launchpad.database import Ticket
+    >>> from canonical.lp.dbschema import TicketStatus
+    >>> answered_tickets = list(
+    ... Ticket.selectBy(status=TicketStatus.ANSWERED, orderBy='id'))
+    >>> len(answered_tickets)
+    2
+
+    >>> [ticket.owner.displayname for ticket in answered_tickets]
+    [u'Sample Person', u'Foo Bar']
+
+So when we call send_ticket_email_reminders, reminders will be sent to
+Sample Person and Foo Bar:
+
+    >>> send_ticket_email_reminders()
+    >>> import transaction
+    >>> transaction.commit() # Need to commit, so that emails get sent.
+
+    >>> from canonical.launchpad.mail.stub import test_emails
+    >>> len(test_emails)
+    2
+
+    >>> import email
+    >>> messages = [email.message_from_string(raw_msg)
+    ...             for from_addr, to_addrs, raw_msg in test_emails
+    ...             if 'test@canonical.com' in to_addrs]
+    >>> print messages[0]['Subject']
+    Your Launchpad support request #6 on Mozilla Firefox has been answered
+
+    >>> print messages[0].get_payload() #doctest: -NORMALIZE_WHITESPACE
+    Sample,
+    <BLANKLINE>
+    Your support request, "Newly installed plug-in doesn't seem to be used",
+    has been answered by Foo Bar.
+    <BLANKLINE>
+    You can find the answer at
+    http://localhost:8086/products/firefox/+ticket/6. If this resolves the
+    issue for you, add a comment and mark the request as closed. If you need
+    more help, add a comment and reopen the request.
+    <BLANKLINE>
+    You will be sent a reminder daily until you either close or reopen the
+    support request.
+    <BLANKLINE>
+    Thanks,
+    <BLANKLINE>
+    The Launchpad Team
+
+All this is done by a cron script, let's see that it works as expected:
+
+    >>> import subprocess
+    >>> process = subprocess.Popen(
+    ...     'cronscripts/ticket-email-reminder.py', shell=True,
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
+    >>> (out, err) = process.communicate()
+    >>> out
+    ''
+
+    >>> print '\n' + err # Add a blankline, since otherwise we can't use
+    ...                  # to match the first timestamp.
+    <BLANKLINE>
+    ...Found 2 answered tickets in the database.
+    ...Sent reminder to test@canonical.com regarding ticket #6
+    ...Sent reminder to foo.bar@canonical.com regarding ticket #7
+
+    >>> process.returncode
+    0

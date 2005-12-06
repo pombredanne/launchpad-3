@@ -9,5 +9,5 @@ This is the Rosetta homepage (/rosetta).
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <h1>Welcome to Rosetta!</h1>
+      <h1>Welcome to Rosetta</h1>
   ...

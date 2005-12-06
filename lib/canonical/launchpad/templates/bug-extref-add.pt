@@ -1,0 +1,32 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xml:lang="en"
+  lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/bug/@@+portlet-reference" />
+</metal:rightportlets>
+
+<div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_addform/addform">
+
+    <p metal:fill-slot="extra_info">
+      Arbitrary external Web links can be associated with bugs.
+    </p>
+
+  </div>
+
+</div>
+
+</body>
+</html>
+

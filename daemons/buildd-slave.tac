@@ -9,16 +9,16 @@ from twisted.application import service, strports
 from canonical.buildd import XMLRPCBuildDSlave, DebianBuildManager
 from canonical.launchpad.daemons import tachandler
 
-from twisted.web import server
-from ConfigParser import ConfigParser
+from twisted.web import server, resource, static
+from ConfigParser import SafeConfigParser
 
 import os
 
 conffile = os.environ.get('BUILDD_SLAVE_CONFIG', 'buildd-slave-example.conf')
 
-c = ConfigParser()
-c.read(conffile)
-slave = XMLRPCBuildDSlave(c)
+conf = SafeConfigParser()
+conf.read(conffile)
+slave = XMLRPCBuildDSlave(conf)
 
 slave.registerBuilder(DebianBuildManager,"debian")
 
@@ -28,9 +28,13 @@ builddslaveService = service.IServiceCollection(application)
 # Service that announces when the daemon is ready
 tachandler.ReadyService().setServiceParent(builddslaveService)
 
-slavesite = server.Site(slave)
+root = resource.Resource()
+root.putChild('rpc', slave)
+root.putChild('filecache', static.File(conf.get('slave', 'filecache')))
+slavesite = server.Site(root)
 
-strports.service(slave.slave._config.get("slave","bindport"), slavesite).setServiceParent(builddslaveService)
+strports.service(slave.slave._config.get("slave","bindport"), 
+                 slavesite).setServiceParent(builddslaveService)
 
 # You can interact with a running slave like this:
 # (assuming the slave is on localhost:8221)

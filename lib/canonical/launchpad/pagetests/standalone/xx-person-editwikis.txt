@@ -1,0 +1,139 @@
+  Play with 'name16's wikinames.
+
+  First we check existing wikinames.
+
+  >>> print http(r"""
+  ... GET /people/name16/+editwikinames HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...Ubuntu Wiki Name...
+  ...https://wiki.ubuntu.com/...
+  ...FooBar...
+  ...
+
+
+  Now we try to add another WikiName with the Ubuntu wiki URL, but this is not
+  allowed.
+
+  >>> print http(r"""
+  ... POST /people/name16/+editwikinames HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... ubuntuwikiname=FooBar&newwiki=https%3A%2F%2Fwiki.ubuntu.com%2F&newwikiname=FooBar2&SAVE=Save+Changes""")
+  HTTP/1.1 200 Ok
+  ...
+  ...You cannot have two Ubuntu WikiNames...
+  ...
+
+
+  Now we try to add a WikiName that is already registered in Launchpad.
+
+  >>> print http(r"""
+  ... POST /people/name16/+editwikinames HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... ubuntuwikiname=FooBar&newwiki=https%3A%2F%2Fwiki.ubuntu.com%2F&newwikiname=GuilhermeSalgado&SAVE=Save+Changes""")
+  HTTP/1.1 200 Ok
+  ...
+  ...The WikiName https://wiki.ubuntu.com/GuilhermeSalgado is already registered by ...
+  ...
+
+
+  Trying to add a new WikiName with a blank URL will not work.
+
+  >>> print http(r"""
+  ... POST /people/name16/+editwikinames HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... ubuntuwikiname=FooBar&newwiki=&newwikiname=FooBar&SAVE=Save+Changes""")
+  HTTP/1.1 200 Ok
+  ...
+  ...Neither Wiki nor WikiName can be empty....
+  ...
+
+
+  Now we finally manage to add a WikiName. :)
+
+  >>> print http(r"""
+  ... POST /people/name16/+editwikinames HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... ubuntuwikiname=FooBar&newwiki=http%3A%2F%2Ffoo.bar%2Fwiki%2F&newwikiname=FooBar&SAVE=Save+Changes""")
+  HTTP/1.1 200 Ok
+  ...
+  ...Other Wiki Names...
+  ...http://foo.bar/wiki/...
+  ...FooBar...
+  ...
+
+
+  Let's try to add it again, to see if it's possible to have two identical
+  wikinames.
+
+  >>> print http(r"""
+  ... POST /people/name16/+editwikinames HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... ubuntuwikiname=FooBar&wiki_52=http%3A%2F%2Ffoo.bar.com%2Fwiki%2F&wikiname_52=FooBar&newwiki=http%3A%2F%2Ffoo.bar%2Fwiki%2F&newwikiname=FooBar&SAVE=Save+Changes""")
+  HTTP/1.1 200 Ok
+  ...
+  ...The WikiName ... already belongs to you...
+  ...
+
+
+  But the url/wikiname was wrong, so I'll fix it now.
+
+  >>> print http(r"""
+  ... POST /people/name16/+editwikinames HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... ubuntuwikiname=FooBar&wiki_52=http%3A%2F%2Ffoo.bar.com%2Fwiki%2F&wikiname_52=FooBar&newwiki=&newwikiname=&SAVE=Save+Changes""")
+  HTTP/1.1 200 Ok
+  ...
+  ...Other Wiki Names...
+  ...http://foo.bar.com/wiki/...
+  ...FooBar...
+  ...
+
+
+  >>> print http(r"""
+  ... POST /people/name16/+editwikinames HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... ubuntuwikiname=FooBar&wiki_52=http%3A%2F%2Ffoo.bar.com%2Fwiki%2F&wikiname_52=FooBar2&newwiki=&newwikiname=&SAVE=Save+Changes""")
+  HTTP/1.1 200 Ok
+  ...
+  ...Other Wiki Names...
+  ...http://foo.bar.com/wiki/...
+  ...FooBar2...
+  ...
+
+
+  Now remove the recently added WikiName.
+
+  >>> print http(r"""
+  ... POST /people/name16/+editwikinames HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... ubuntuwikiname=FooBar&wiki_52=http%3A%2F%2Ffoo.bar.com%2Fwiki%2F&wikiname_52=FooBar2&remove_52=Remove&newwiki=&newwikiname=&SAVE=Save+Changes""")
+  HTTP/1.1 200 Ok
+  ...
+
+  
+  And make sure it's not in the database anymore.
+
+  >>> from canonical.launchpad.database import WikiNameSet
+  >>> wiki = WikiNameSet().getByWikiAndName('http://foo.bar.com/wiki/', 'FooBar')
+  >>> wiki is None
+  True
+

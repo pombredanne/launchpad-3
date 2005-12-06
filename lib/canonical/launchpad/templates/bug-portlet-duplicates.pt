@@ -3,11 +3,11 @@
   <h4>Duplicates of this bug:</h4>
 
   <div class="portletBody">
-    <div class="portletContent odd">
+    <div class="portletContent">
 
-      <ul>
+      <ul tal:define="current_task view/currentBugTask">
         <li tal:repeat="dup context/duplicates">
-          <a tal:attributes="href dup/fmt:url; 
+          <a tal:attributes="href string:${current_task/target/fmt:url}/+bug/${dup/id};
                              title dup/title">
              Bug #<span tal:replace="dup/id">3445</span>
           </a>

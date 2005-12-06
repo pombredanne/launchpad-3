@@ -8,61 +8,61 @@
 
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/@@+portlet-preflangs" />
     <div tal:replace="structure context/@@+portlet-summary" />
     <div tal:condition="context/project"
          tal:replace="structure context/project/@@+portlet-details" />
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-preflangs" />
     <div tal:replace="structure context/@@+portlet-translatables" />
   </metal:rightportlets>
 
   <div metal:fill-slot="main">
 
-    <h1 i18n:translate="">Rosetta Translation Overview for
+    <h1 i18n:translate="">Translation overview for
       <span tal:replace="context/displayname" i18n:name="product_name">
         product displayname
       </span>
     </h1>
 
-    <!-- indicate if no templates are registered for this product that it is
-    possible to upload a po template -->
-    <tal:block condition="not: context/primary_translatable">
+    <tal:notemplatesregistered condition="not: context/primary_translatable">
 
-        <h2 i18n:translate="">Translation Setup Required</h2>
+        <h2 i18n:translate="">Translation setup required</h2>
 
         <p class="portalMessage" i18n:translate="">Administrator help
-        needed</p>
+        needed. <span tal:replace="context/displayname"
+        i18n:name="product_name">Product</span> has not yet been
+        setup for translation through Rosetta.</p>
 
-        <p i18n:translate=""><span tal:replace="context/displayname"
-        i18n:name="product_name">Product</span> has not yet been setup for
-        translation through Rosetta. If you have the latest PO Template for
-        <span tal:replace="context/displayname"
-        i18n:name="product_name">this product</span> then you should ask
-        administrators to set it up by sending an email to <a
-        href="mailto:rosetta-users@lists.ubuntu.com">the Rosetta mailing
-        list</a>. You should give them the URL to the .pot and .po files.
-        As soon as that has been done you will be able to start translating.
+        <p i18n:translate="">
+          If you would like to help translate <span
+          tal:replace="context/displayname" i18n:name="product_name"> this
+          product</span> then you should ask the Rosetta team to set it up by
+          sending an email to <a
+          href="mailto:rosetta-users@lists.ubuntu.com">the Rosetta mailing
+          list</a>. You should give them the URL to the
+          <span tal:replace="context/displayname">Mozilla</span>.pot and .po
+          files.  You will be able to start translating once they are
+          imported.
         </p>
 
-    </tal:block> <!-- not: context/primary_translatable -->
+    </tal:notemplatesregistered>
 
-    <tal:block condition="context/primary_translatable"
+    <tal:translatable condition="context/primary_translatable"
                define="target context/primary_translatable">
       
-      <p><strong>The recommended target for current translation activity is
-      <span tal:replace="target/displayname" />.</strong> If you wish to
-      provide translations for <span
-      tal:replace="context/displayname">product name</span> then we
-      recommend you translate one of the templates below from <span
-      tal:replace="target/displayname">primary translatable</span>.  You can
-      also choose any of the specific templates listed on the right which
-      are related to this product.</p>
+      <p>
+        The recommended target for current translation activity is
+        <strong><span tal:replace="target/displayname" />.</strong> 
+        Rosetta includes translations for upstream and Ubuntu, see
+        the "translatable branches" (on the right of this page)
+        for any upstream translation templates.
+      </p>
 
       <div tal:replace="structure target/@@+potlist" />
 
-    </tal:block> <!-- context/primary_translatable -->
+    </tal:translatable>
 
   </div>
 

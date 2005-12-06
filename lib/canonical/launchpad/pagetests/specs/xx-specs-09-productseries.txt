@@ -1,0 +1,81 @@
+
+Targeting to ProductSeries
+==========================
+
+In terms of feature management for release series and for distroreleases, we
+want to target one of these specs to the 1.0 series. We will use the "e4x"
+specification.
+
+First we load the page to target to the series. We can see two potential
+series candidates, the "milestones" and the "1.0" series.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+spec/e4x/+setseries HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  <option value="">(no value)</option>
+  <option value="2">firefox 1.0</option>
+  <option value="1">firefox milestones</option>
+  ...
+
+Now, we POST the form and expect to be redirected to the spec home page.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+spec/svg-support/+setseries HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 857
+  ... Content-Type: multipart/form-data; boundary=---------------------------351566716164150030996771236
+  ... 
+  ... -----------------------------351566716164150030996771236
+  ... Content-Disposition: form-data; name="field.productseries"
+  ... 
+  ... 2
+  ... -----------------------------351566716164150030996771236
+  ... Content-Disposition: form-data; name="field.productseries-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------351566716164150030996771236
+  ... Content-Disposition: form-data; name="field.delivery"
+  ... 
+  ... Unlikely
+  ... -----------------------------351566716164150030996771236
+  ... Content-Disposition: form-data; name="field.delivery-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------351566716164150030996771236
+  ... Content-Disposition: form-data; name="field.whiteboard"
+  ... 
+  ... would be great to have, but has high risk
+  ... -----------------------------351566716164150030996771236
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------351566716164150030996771236--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../products/firefox/+spec/svg-support
+  ...
+
+
+When we view that page, we see the targeted product series listed in the
+header.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+spec/svg-support HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...products/firefox/+series/1.0...
+
+
+And now it should show on the "+specs" page for that product series.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+series/1.0/+specs HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Support Native SVG Objects...
+
+

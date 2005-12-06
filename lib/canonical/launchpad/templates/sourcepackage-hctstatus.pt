@@ -8,32 +8,30 @@
 <metal:leftportlets fill-slot="portlets_one">
   <div class="portlet">
     <div class="portletBody portletContent">
-      
+
       <img src="/++resource++info_icon.gif" />
-      This page documents the HCT (Hypothetical Changeset Tool) status of
-      the package <span tal:replace="context/displayname">foobar in
-      hoary</span>.  Use the links and information below to ensure that HCT
-      correctly understands how this source package is connected to
-      upstream.
+
+      Use these links and information to ensure that <abbr>HCT</abbr>
+      (the Hypothetical Changeset Tool) correctly understands how
+      <tal:thing replace="context/displayname" /> is connected to upstream.
 
     </div>
   </div>
 
   <div class="portlet">
     <div class="portletBody portletContent">
-      
+
       <img src="/++resource++info_icon.gif" />
-      In order for HCT to function effectively, we need to have the
-      upstream branch published in the <a
+      For <abbr>HCT</abbr> to function effectively,
+      Launchpad needs the upstream branch to be published in the <a
       href="http://bazaar.canonical.com/">Bazaar revision control system</a>
       format.
     </div>
   </div>
-    
+
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-actions" />
   <div tal:replace="structure context/@@+portlet-hctstatus" />
 </metal:rightportlets>
 
@@ -47,10 +45,11 @@
   distribution to upstream product series.</p>
 
   <p class="portalMessage" tal:condition="not: context/productseries">
-    Unable to determine the upstream productseries for this package. Please
-    add packaging information for this package!
+    Launchpad doesn&#8217;t know which product and series this package
+    belongs to.
+    If you can, please <a href="+packaging">let us know</a>.
   </p>
-  
+
   <table class="listing"
          tal:condition="context/sourcepackagename/packagings">
     <caption>Packaging data for all source packages called
@@ -103,6 +102,6 @@
 
   </tal:block>
 
-</div> 
+</div>
 </body>
 </html>

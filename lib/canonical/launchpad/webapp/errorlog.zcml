@@ -1,0 +1,65 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser">
+
+    <content class="zope.app.errorservice.RootErrorReportingService">
+        <require
+            permission="zope.Public"
+            interface="zope.app.errorservice.interfaces.IErrorReportingService"
+            />
+        <require
+            permission="zope.Public"
+            interface="zope.app.errorservice.interfaces.ILocalErrorReportingService"
+            />
+    </content>
+
+    <content class="canonical.launchpad.webapp.errorlog.ErrorReport">
+        <allow
+            interface="canonical.launchpad.webapp.interfaces.IErrorReport"
+            />
+    </content>
+
+    <serviceType
+        id="ErrorLogging"
+        interface="zope.app.errorservice.interfaces.IErrorReportingService" 
+        />
+
+    <utility
+        provides="zope.app.errorservice.interfaces.ILocalErrorReportingService"
+        component="canonical.launchpad.webapp.errorlog.globalErrorUtility"
+        />
+
+    <service
+        serviceType="ErrorLogging"
+        permission="zope.Public"
+        component="canonical.launchpad.webapp.errorlog.globalErrorService" 
+        />
+
+    <browser:pages
+        for="zope.app.errorservice.interfaces.IErrorReportingService"
+        permission="zope.Public"
+        class="zope.app.errorservice.browser.EditErrorLog">
+
+        <browser:page
+            name="index.html"
+            template="../templates/errorservice-index.pt"
+            />
+        <browser:page
+            name="configure.html"
+            template="../templates/errorservice-config.pt"
+            />
+        <browser:page
+            name="edit.html"
+            attribute="updateProperties"
+            />
+        <browser:page
+            name="showEntry.html"
+            template="../templates/errorservice-entry.pt"
+            />
+        <browser:page
+            name="showTextTBEntry.html"
+            template="../templates/errorservice-tbentry.pt"
+            />
+    </browser:pages>
+
+</configure>

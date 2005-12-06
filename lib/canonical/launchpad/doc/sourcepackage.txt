@@ -31,6 +31,71 @@ To retrieve a specific source package name, use ISourcePackageNameSet.get:
     >>> print firefox.name
     mozilla-firefox
 
+To retrieve a specific source package name by its name, use
+ISourcePackageNameSet.queryByName:
+
+    >>> firefox = sourcepackagenameset.queryByName("mozilla-firefox")
+    >>> print firefox.name
+    mozilla-firefox
+
+If the package doesn't exist, queryByName returns None:
+
+    >>> foobar = sourcepackagenameset.queryByName("foobar")
+    >>> print foobar
+    None
+
+Distribution Source Packages
+----------------------------
+
+In some cases it's useful to be able to refer to a source package at a
+distribution level, independent of any particular distrorelease. For
+example, with Malone, a bug is usually filed on a distribution
+sourcepackage (filing a bug on a specific distrorelease actually means
+something quite different, but is outside the scope of this document.)
+
+To retrieve a distribution source package, use the getSourcePackage
+method on a distribution:
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IDistributionSourcePackage)
+    >>> ubuntu = getUtility(IDistributionSet).get(1)
+    >>> ubuntu_firefox = ubuntu.getSourcePackage(firefox)
+    >>> IDistributionSourcePackage.providedBy(ubuntu_firefox)
+    True
+    >>> print ubuntu_firefox.name
+    mozilla-firefox
+    >>> print ubuntu_firefox.title
+    Source Package "mozilla-firefox" in Ubuntu Linux
+    >>> print ubuntu_firefox.displayname
+    mozilla-firefox in ubuntu
+    >>> ubuntu_firefox.distribution == ubuntu
+    True
+    >>> ubuntu_firefox.sourcepackagename == firefox
+    True
+
+Distro sourcepackages know how to compare to each other:
+
+    >>> debian = getUtility(IDistributionSet).get(3)
+    >>> ubuntu_firefox_also = ubuntu.getSourcePackage(firefox)
+    >>> debian_firefox = debian.getSourcePackage(firefox)
+
+    >>> ubuntu_firefox_also == ubuntu_firefox
+    True
+    >>> ubuntu_firefox != debian_firefox
+    True
+
+You can search for bugs in an IDistroSourcePackage using the
+.searchTasks method:
+
+    >>> from canonical.launchpad.interfaces import BugTaskSearchParams
+    >>> from canonical.lp import dbschema
+    >>> params = BugTaskSearchParams(status=dbschema.BugTaskStatus.NEW, user=None)
+    >>> tasks = ubuntu_firefox.searchTasks(params)
+    >>> tasks.count()
+    1
+    >>> tasks[0].id
+    17
+
 Packaging
 ---------
 
@@ -44,6 +109,7 @@ First, let's get some useful objects from the db.
     >>> a52dec = SourcePackageName.byName('a52dec')
     >>> netapplet = SourcePackageName.byName('netapplet')
     >>> firefox = SourcePackageName.byName('mozilla-firefox')
+    >>> pmount = SourcePackageName.byName('pmount')
 
     >>> from canonical.launchpad.database import DistroRelease
     >>> warty = DistroRelease.get(1)
@@ -91,5 +157,22 @@ Now verify we still get a product for that source package
     >>> sp.productseries.product.name
     u'a52dec'
 
+Test the Changelog concatenation process:
 
+    >>> sp = SourcePackage(sourcepackagename=pmount, distrorelease=hoary)
+    >>> sp.changelog
+    u'This is a placeholder changelog for pmount 0.1-2 \n\nThis is a placeholder changelog for pmount 0.1-1 \n\n'
 
+Comparing Sourcepackages
+------------------------
+
+Lastly, note that sourcepackages know how to compare to each other:
+
+    >>> hoary_firefox_one = SourcePackage(sourcepackagename=firefox, distrorelease=hoary)
+    >>> hoary_firefox_two = SourcePackage(sourcepackagename=firefox, distrorelease=hoary)
+    >>> warty_firefox = SourcePackage(sourcepackagename=firefox, distrorelease=warty)
+
+    >>> hoary_firefox_one == hoary_firefox_two
+    True
+    >>> hoary_firefox_one != warty_firefox
+    True

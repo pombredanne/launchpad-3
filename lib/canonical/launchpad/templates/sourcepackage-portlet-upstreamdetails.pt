@@ -1,0 +1,32 @@
+<div class="portlet">
+  <h4> Upstream Details:</h4>
+
+  <div class="portletBody portletContent">
+  
+    <tal:has_series condition="context/productseries">
+      <tal:has_project condition="context/productseries/product/project">
+        <b>Project:</b>
+        <a tal:define="project context/productseries/product/project"
+           tal:content="project/displayname"
+           tal:attributes="href project/fmt:url">
+         Project</a><br />
+      </tal:has_project>
+      <b>Product:</b>
+      <a tal:define="product context/productseries/product"
+         tal:content="product/displayname"
+         tal:attributes="href product/fmt:url">
+        Product</a><br />
+      <b>Branch: </b>
+      <a tal:define="productseries context/productseries"
+         tal:content="productseries/name"
+         tal:attributes="href productseries/fmt:url">
+         ProductSeries</a><br />
+    </tal:has_series>
+    <p tal:condition="not:context/productseries">
+      <img src="/++resource++info_icon.gif" />
+      There are no upstream details for this source package.
+      If the upstream product and branch are registered in Launchpad,
+      please <a href="+packaging">link them up</a>.
+    </p>
+  </div>
+</div>

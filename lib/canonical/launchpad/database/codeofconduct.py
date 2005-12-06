@@ -9,13 +9,11 @@ __all__ = ['CodeOfConduct', 'CodeOfConductSet', 'CodeOfConductConf',
            'SignedCodeOfConduct', 'SignedCodeOfConductSet']
 
 import os
-import errno
 from sha import sha
 from datetime import datetime
 
 from zope.interface import implements
 from zope.component import getUtility
-from zope.exceptions import NotFoundError
 
 from sqlobject import ForeignKey, StringCol, BoolCol
 
@@ -23,12 +21,13 @@ from canonical.database.sqlbase import SQLBase, quote, flush_database_updates
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.mail.sendmail import simple_sendmail
+from canonical.launchpad.webapp import canonical_url
 
 from canonical.launchpad.interfaces import (
     ICodeOfConduct, ICodeOfConductSet, ICodeOfConductConf,
     ISignedCodeOfConduct, ISignedCodeOfConductSet, IGPGHandler,
-    IGPGKeySet
-    )
+    IGPGKeySet, NotFoundError, GPGVerificationError)
+
 
 class CodeOfConduct:
     """CoC class model.
@@ -41,6 +40,10 @@ class CodeOfConduct:
 
     def __init__(self, version):
         self.version = version
+        # verify if the respective file containing the code of conduct exists
+        if not os.path.exists(self._filename):
+            # raise something sane
+            raise NotFoundError(version)
 
     @property
     def title(self):
@@ -58,24 +61,9 @@ class CodeOfConduct:
     @property
     def content(self):
         """Return the content of the CoC file."""
-        # Recover the path for CoC from a Component
-        path = getUtility(ICodeOfConductConf).path
-
-        # Rebuild filename
-        filename = os.path.join(path, self.version + '.txt')
-
-        try:
-            fp = open(filename)
-        except IOError, e:
-            if e.errno == errno.EEXIST:
-                # File not found means the requested CoC was not found.
-                raise NotFoundError('CoC Release Not Found')
-
-            # All other IOErrors are a problem, though.
-            raise
-        else:
-            data = fp.read()
-            fp.close()
+        fp = open(self._filename)
+        data = fp.read()
+        fp.close()
 
         return data
 
@@ -83,6 +71,13 @@ class CodeOfConduct:
     def current(self):
         """Is this the current release of the Code of Conduct?"""
         return getUtility(ICodeOfConductConf).currentrelease == self.version
+
+    @property
+    def _filename(self):
+        """Rebuild filename according the local version."""
+        # Recover the path for CoC from a Component
+        path = getUtility(ICodeOfConductConf).path
+        return os.path.join(path, self.version + '.txt')
 
     
 class CodeOfConductSet:
@@ -99,8 +94,11 @@ class CodeOfConductSet:
         if version == 'console':
             return SignedCodeOfConductSet()
         # in normal conditions return the CoC Release
-        return CodeOfConduct(version)
-
+        try:
+            return CodeOfConduct(version)
+        except NotFoundError:
+            return None
+        
     def __iter__(self):
         """See ICodeOfConductSet."""
         releases = []
@@ -148,7 +146,7 @@ class SignedCodeOfConduct(SQLBase):
     signingkey = ForeignKey(foreignKey="GPGKey", dbName="signingkey",
                             notNull=False, default=None)
 
-    datecreated = UtcDateTimeCol(dbName='datecreated', notNull=False,
+    datecreated = UtcDateTimeCol(dbName='datecreated', notNull=True,
                                  default=UTC_NOW)
 
     recipient = ForeignKey(foreignKey="Person", dbName="recipient",
@@ -157,7 +155,7 @@ class SignedCodeOfConduct(SQLBase):
     admincomment = StringCol(dbName='admincomment', notNull=False,
                              default=None)
 
-    active = BoolCol(dbName='active', notNull=False, default=False)
+    active = BoolCol(dbName='active', notNull=True, default=False)
 
     @property
     def displayname(self):
@@ -175,8 +173,6 @@ class SignedCodeOfConduct(SQLBase):
 
     def sendAdvertisementEmail(self, subject, content):
         """See ISignedCodeOfConduct."""
-        # XXX cprov 20050705
-        # Until when it will be necessary ?
         assert self.owner.preferredemail
         template = open('lib/canonical/launchpad/emailtemplates/'
                         'signedcoc-acknowledge.txt').read()
@@ -226,11 +222,11 @@ class SignedCodeOfConductSet:
             sane_signedcode = signedcode.encode('utf-8')
         except UnicodeEncodeError:
             raise TypeError('Signed Code Could not be encoded as UTF-8')
-            
-        sig = gpghandler.verifySignature(sane_signedcode)
 
-        if sig is None:
-            return 'Signature has invalid format'
+        try:
+            sig = gpghandler.getVerifiedSignature(sane_signedcode)
+        except GPGVerificationError, e:
+            return str(e)
 
         if not sig.fingerprint:
             return ('Failed to verify the signature, check if the GPG key '
@@ -242,33 +238,32 @@ class SignedCodeOfConductSet:
         gpg = gpgkeyset.getByFingerprint(sig.fingerprint)
 
         if not gpg:
-            return ('The key you used to sign, which fingerprint is <kbd>%s'
-                    '</kbd>, is not properly registered in launchpad. Please '
-                    'access <a href="/people/%s/+editgpgkey">Edit GPG Keys'
-                    '</a> and follow the instructions.' % (sig.fingerprint,
-                                                           user.name))
+            return ('The key you used, which has the fingerprint <kbd>%s'
+                    '</kbd>, is not registered in Launchpad. Please '
+                    '<a href="%s/+editgpgkeys">follow the '
+                    'instructions</a> and try again.'
+                    % (sig.fingerprint, canonical_url(user)))
 
         if gpg.owner.id != user.id:
             return ('GPG key onwer (%s) and current Launchpad user (%s) '
                     'does not match.' % (gpg.owner.displayname,
                                          user.displayname))
         
-        if gpg.revoked:
-            return ('The GPG key used to sign (%s) is revoked. Please repair '
-                    'it in the global keyring before proceed.'
-                    % gpg.displayname)
+        if not gpg.active:
+            return ('The GPG key used to sign (%s) has been deactivated. '
+                    'Please <a href="%s/+editgpgkeys">reactivate</a> it '
+                    'again before proceeding.'
+                    % (gpg.displayname, canonical_url(user)))
 
         # recover the current CoC release
         coc = CodeOfConduct(getUtility(ICodeOfConductConf).currentrelease)
         current = coc.content
 
-        # calculate text digest 
-        plain_dig = sha(sig.plain_data).hexdigest()
-        current_dig = sha(current).hexdigest()
-
-        if plain_dig != current_dig:
-            return ('Code of Conduct digest do not match: %s vs. %s'
-                     % (plain_dig, current_dig))
+        # calculate text digest
+        if sig.plain_data.split() != current.split():
+            return ('The signed text does not match the Code of Conduct. '
+                    'Make sure that you signed the correct text (white '
+                    'space differences are acceptable.')
 
         # Store the signature 
         signed = SignedCodeOfConduct(owner=user.id, signingkey=gpg.id,
@@ -297,8 +292,9 @@ class SignedCodeOfConductSet:
         # entries. If it is it should be part of FTI queries,
         # isn't it ?
 
-        # if displayname was '%' return all SignedCoC entries
-        if displayname != '%':
+        # the name shoudl work like a filter, if you don't enter anything
+        # you get everything.
+        if displayname:
             query +=' AND Person.fti @@ ftq(%s)' % quote(displayname)
 
         # Attempt to search for directive

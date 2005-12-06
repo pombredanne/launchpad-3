@@ -1,12 +1,14 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['BugWatch', 'BugWatchSet', 'BugWatchFactory']
+__all__ = ['BugWatch', 'BugWatchSet']
 
 import re
+import cgi
+import urllib
+import urlparse
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 from zope.component import getUtility
 
 # SQL imports
@@ -18,13 +20,15 @@ from canonical.database.sqlbase import SQLBase, flush_database_updates
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
-from canonical.launchpad.interfaces import (IBugWatch, IBugWatchSet,
-    IBugTrackerSet)
+from canonical.launchpad.interfaces import (
+    IBugWatch, IBugWatchSet, IBugTrackerSet, NotFoundError)
 from canonical.launchpad.database.bugset import BugSetBase
+
 
 bugzillaref = re.compile(r'(https?://.+/)show_bug.cgi.+id=(\d+).*')
 roundupref = re.compile(r'(https?://.+/)issue(\d+).*')
 tracref = re.compile(r'(https?://.+/)tickets/(\d+)')
+
 
 class BugWatch(SQLBase):
     """See canonical.launchpad.interfaces.IBugWatch."""
@@ -58,14 +62,35 @@ class BugWatch(SQLBase):
             # slashes -- should we instead ensure when it is entered?
             # Filed bug 1434.
             BugTrackerType.BUGZILLA: '%s/show_bug.cgi?id=%s',
-            BugTrackerType.TRAC:     '%s/tickets/%s',
+            BugTrackerType.TRAC:     '%s/ticket/%s',
             BugTrackerType.DEBBUGS:  '%s/cgi-bin/bugreport.cgi?bug=%s',
             BugTrackerType.ROUNDUP:  '%s/issue%s'
         }
         bt = self.bugtracker.bugtrackertype
-        if not url_formats.has_key(bt):
+        if bt == BugTrackerType.SOURCEFORGE:
+            return self._sf_url()
+        elif not url_formats.has_key(bt):
             raise AssertionError('Unknown bug tracker type %s' % bt)
         return url_formats[bt] % (self.bugtracker.baseurl, self.remotebug)
+
+    def _sf_url(self):
+        # XXX: validate that the bugtracker URL has atid and group_id in
+        # it.
+        #
+        # Sourceforce has a pretty nasty URL model, with two codes that
+        # specify what project are looking at. This code disassembles
+        # it, sets the bug number and then reassembles it again.
+        # http://sourceforge.net/tracker/?atid=737291
+        #                                &group_id=136955
+        #                                &func=detail
+        #                                &aid=1337833
+        method, base, path, query, frag = \
+            urlparse.urlsplit(self.bugtracker.baseurl)
+        params = cgi.parse_qs(query)
+        params['func'] = "detail"
+        params['aid'] = self.remotebug
+        param_string = urllib.urlencode(params, doseq=True)
+        return urlparse.urlunsplit((method, base, path, param_string, frag))
 
     @property
     def needscheck(self):
@@ -88,6 +113,9 @@ class BugWatchSet(BugSetBase):
             return BugWatch.get(watch_id)
         except SQLObjectNotFound:
             raise NotFoundError, watch_id
+
+    def search(self):
+        return BugWatch.select()
 
     def _find_watches(self, pattern, trackertype, text, bug, owner):
         """Find the watches in a piece of text, based on a given pattern and
@@ -149,10 +177,10 @@ class BugWatchSet(BugSetBase):
                 raise AssertionError('MessageChunk without content or blob.')
         return sorted(watches, key=lambda a: a.remotebug)
 
-
-def BugWatchFactory(context, **kw):
-    bug = context.context.bug
-    return BugWatch(
-        bug=bug, owner=context.request.principal.id, datecreated=UTC_NOW,
-        lastchanged=UTC_NOW, lastchecked=UTC_NOW, **kw)
+    def createBugWatch(self, bug, owner, bugtracker, remotebug):
+        """See canonical.launchpad.interfaces.IBugWatchSet."""
+        return BugWatch(
+            bug=bug, owner=owner, datecreated=UTC_NOW,
+            lastchanged=UTC_NOW, lastchecked=UTC_NOW,
+            bugtracker=bugtracker, remotebug=remotebug)
 

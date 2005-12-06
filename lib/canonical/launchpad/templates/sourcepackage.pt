@@ -6,83 +6,114 @@
 <body>
 
   <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/distrorelease/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-hctstatus" />
   </metal:leftportlets>
 
-
   <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-actions" />
+    <div tal:replace="structure context/@@+portlet-upstream-details" />
+    <div tal:replace="structure context/@@+portlet-latesttickets" />
     <div tal:replace="structure context/@@+portlet-releases" />
-    <div tal:replace="structure context/@@+portlet-translations" />
   </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
-  <h1>Source Package Overview</h1>
-
-  <p class="documentDescription">
-    This page shows the specific versions of the
-    <span tal:replace="context/sourcepackagename/name">apache2</span> source
-    package that are published in each pocket of the
-    <span tal:replace="context/distrorelease/displayname">Hoary</span>
-    distribution release.
-  </p>
+  <h1>Versions published</h1>
 
   <p class="portalMessage" tal:condition="not:context/currentrelease">
-    This source package is not
-    published in <span tal:replace="context/distrorelease/title" />.
+    There is no current release of this source package 
+    in <span tal:replace="context/distrorelease/title" />.
+    You can still report bugs, make translations, and so on,
+    but they might not be used until the package is published.
   </p>
 
-  <tal:block repeat="pocket view/published_by_pocket">
-    <tal:block condition="pocket/packages">
-      <h2 tal:content="pocket/pocketdetails/title">Plain</h2>
-
-      <p tal:content="pocket/pocketdetails/description">
-        The description of the pocket.
-      </p>
-
-      <ul>
-        <li tal:repeat="spr pocket/packages">
-          <span tal:replace="spr/sourcepackagename/name">apache2</span>
-          <span tal:replace="spr/version">4.3.5-9</span>
-        </li>
-      </ul>
+  <dl tal:condition="view/published_by_pocket">
+    <tal:block repeat="pocket view/published_by_pocket">
+      <tal:block condition="pocket/packages">
+        <dt><dfn tal:content="pocket/pocketdetails/title">Plain</dfn></dt>
+        <dd>
+          <p tal:content="pocket/pocketdetails/description">
+            The description of the pocket.
+          </p>
+          <ul>
+            <li tal:repeat="spr pocket/packages">
+              <a tal:content="spr/displayname"
+                 tal:attributes="href spr/fmt:url">apache2</a>
+            </li>
+          </ul>
+        </dd>
+      </tal:block>
     </tal:block>
-  </tal:block>
+  </dl>
+  <tal:block tal:condition="context/currentrelease"
+             tal:define="current context/currentrelease">
 
-  <h2>Upstream Details</h2>
+    <h2>Download Files from Current Release (<span
+    tal:replace="current/version">2.1.3-4</span>)</h2>
 
-  <p tal:condition="context/productseries">
-    This shows the best guess of the Launchpad system as to the upstream
-    product series (or branch) which is being published in this source
-    package:
-  </p>
+      <div tal:define="files current/files">
+        <ul tal:condition="files">
+          <li class="file" tal:repeat="file files">
+            <a tal:content="file/url/filename"
+               tal:attributes="href file/url/fileurl" />
+          </li>
+          <li class="alert" tal:condition="not:files">
+            <i>No files available for download.</i>
+          </li>
+        </ul>
+      </div>
 
-    <ul tal:condition="context/productseries">
-      <li tal:condition="context/productseries/product/project"><b>Project: </b>
-        <a tal:define="project context/productseries/product/project"
-           tal:content="project/displayname"
-           tal:attributes="href string:/projects/${project/name}">
-         Project</a></li>
-      <li><b>Product: </b>
-        <a tal:define="product context/productseries/product"
-           tal:content="product/displayname"
-           tal:attributes="href string:/products/${product/name}">
-        Product</a></li>
-      <li><b>Branch: </b>
-        <a tal:define="productseries context/productseries"
-           tal:content="productseries/name"
-           tal:attributes="href string:/products/${productseries/product/name}/+series/${productseries/name}">
-         ProductSeries</a></li>
+    <h2>Binary Packages</h2>
+        
+    <ul tal:define="binaries view/binaries">
+      <li class="alert" tal:condition="not:binaries">
+        <i>No binaries generated for this SourcePackageRelease</i>
+      </li>
+      <li tal:repeat="bin_name binaries" >
+        <span tal:replace="bin_name" /> 
+        <span tal:repeat="archtag python:binaries[bin_name]">
+          (<a tal:content="archtag" tal:attributes="href 
+                           string:../../${archtag}/${bin_name}" />) 
+        </span>
+      </li>
     </ul>
 
-    <p class="portalMessage" tal:condition="not:context/productseries">
-      The Launchpad has no record of the upstream product for this source
-      package. Please <a href="+packaging">link the package to upstream</a>.
-    </p>
+    <h2 tal:condition="view/has_build_depends">
+        Package Relationship
+    </h2>
 
-  </div>
+    <table width="100%" valign="top">
+      <tr>
+        <td tal:condition="view/builddepends">
+          <h4>Build Dependencies</h4>
+          <ul>
+            <li tal:repeat="dep view/builddepends">
+              <a tal:content="dep/name"
+                 tal:attributes="href string:../../i386/${dep/name}" />
+              <span tal:condition="dep/signal"
+                    tal:content="string:(${dep/signal} ${dep/version})" />
+            </li>
+          </ul>
+        </td>
+
+        <td tal:condition="view/builddependsindep">
+          <h4>Platform-independent Build Dependencies</h4>
+          <ul>
+            <li tal:repeat="dep view/builddependsindep">
+              <a tal:content="dep/name"
+                 tal:attributes="href string:../../i386/${dep/name}" />
+              <span tal:condition="dep/signal"
+                    tal:content="string:(${dep/signal} ${dep/version})" />
+            </li>
+          </ul>
+        </td>
+      </tr>
+    </table>
+
+  </tal:block>
+
+</div>
 </body>
 </html>
  

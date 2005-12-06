@@ -6,8 +6,11 @@ lib/canonical/launchpad/doc.
 
 import unittest
 import os
-from canonical.functional import FunctionalDocFileSuite
+
+from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
 import sqlos.connection
+
+from canonical.functional import FunctionalDocFileSuite
 from canonical.launchpad.ftests.harness import \
         LaunchpadTestSetup, LaunchpadZopelessTestSetup, \
         _disconnect_sqlos, _reconnect_sqlos
@@ -19,6 +22,8 @@ from canonical.launchpad.ftests import login, ANONYMOUS, logout
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 
 here = os.path.dirname(os.path.realpath(__file__))
+
+default_optionflags = REPORT_NDIFF | NORMALIZE_WHITESPACE | ELLIPSIS
 
 def setGlobs(test):
     test.globs['ANONYMOUS'] = ANONYMOUS
@@ -52,6 +57,16 @@ def poExportSetUp(test):
 def poExportTearDown(test):
     LaunchpadZopelessTestSetup().tearDown()
 
+def uploaderSetUp(test):
+    sqlos.connection.connCache = {}
+    LaunchpadZopelessTestSetup(dbuser='uploader').setUp()
+    setGlobs(test)
+    # Set up an anonymous interaction.
+    login(ANONYMOUS)
+
+def uploaderTearDown(test):
+    LaunchpadZopelessTestSetup().tearDown()
+
 def librarianSetUp(test):
     setUp(test)
     LibrarianTestSetup().setUp()
@@ -60,11 +75,22 @@ def librarianTearDown(test):
     LibrarianTestSetup().tearDown()
     tearDown(test)
 
+def importdSetUp(test):
+    sqlos.connection.connCache = {}
+    LaunchpadZopelessTestSetup(dbuser='importd').setUp()
+    setGlobs(test)
+
+def importdTearDown(test):
+    LaunchpadZopelessTestSetup().tearDown()
+
+
 # Files that have special needs can construct their own suite
 special = {
 
     # No setup or teardown at all, since it is demonstrating these features.
-    'testing.txt': DocFileSuite('../doc/testing.txt'),
+    'testing.txt': DocFileSuite(
+            '../doc/testing.txt', optionflags=default_optionflags
+            ),
 
     # And these tests want minimal environments too.
     'enumcol.txt': DocFileSuite('../doc/enumcol.txt'),
@@ -89,6 +115,17 @@ special = {
             '../doc/message.txt',
             setUp=librarianSetUp, tearDown=librarianTearDown
             ),
+    'cve-update.txt': FunctionalDocFileSuite(
+            '../doc/cve-update.txt',
+            setUp=librarianSetUp, tearDown=librarianTearDown
+            ),
+    'nascentupload.txt': FunctionalDocFileSuite(
+            '../doc/nascentupload.txt',
+            setUp=uploaderSetUp, tearDown=uploaderTearDown
+            ),
+    'revision.txt': FunctionalDocFileSuite(
+            '../doc/revision.txt',
+            setUp=importdSetUp, tearDown=importdTearDown)
     }
 
 def test_suite():

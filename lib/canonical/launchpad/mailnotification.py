@@ -4,11 +4,11 @@
 
 __metaclass__ = type
 
+import re
 import os.path
 import itertools
 import sets
-
-from contrib.docwrapper import DocWrapper
+import textwrap
 
 from zope.security.proxy import isinstance as zope_isinstance
 
@@ -25,6 +25,72 @@ from canonical.launchpad.webapp import canonical_url
 GLOBAL_NOTIFICATION_EMAIL_ADDRS = ("dilys@muse.19inch.net",)
 CC = "CC"
 
+
+class MailWrapper:
+    """Wraps text that should be included in an email.
+
+        :width: how long should the lines be
+        :indent: specifies how much indentation the lines should have
+        :indent_first_line: indicates whether the first line should be
+                            indented or not.
+
+    Note that MailWrapper doesn't guarantee that all lines will be less
+    than :width:, sometimes it's better not to break long lines in
+    emails. See textformatting.txt for more information.
+    """
+
+    def __init__(self, width=72, indent='', indent_first_line=True):
+        self.indent = indent
+        self.indent_first_line = indent_first_line
+        self._text_wrapper = textwrap.TextWrapper(
+            width=width, subsequent_indent=indent,
+            replace_whitespace=False, break_long_words=False)
+
+    def format(self, text):
+        """Format the text to be included in an email."""
+        wrapped_lines = []
+
+        if self.indent_first_line:
+            indentation = self.indent
+        else:
+            indentation = ''
+
+        # We don't care about trailing whitespace.
+        text = text.rstrip()
+
+        for paragraph in text.split('\n\n'):
+            lines = paragraph.split('\n')
+
+            if len(lines) == 1:
+                # We use TextWrapper only if the paragraph consists of a
+                # single line, like in the case where a person enters a
+                # comment via the web ui, without breaking the lines
+                # manually.
+                self._text_wrapper.initial_indent = indentation
+                wrapped_lines += self._text_wrapper.wrap(paragraph)
+            else:
+                # If the user has gone through the trouble of wrapping
+                # the lines, we shouldn't re-wrap them for him.
+                wrapped_lines += (
+                    [indentation + lines[0]] + 
+                    [self.indent + line for line in lines[1:]])
+
+            if not self.indent_first_line:
+                # 'indentation' was temporarily set to '' in order to
+                # prevent the first line from being indented. Set it
+                # back to self.indent so that the rest of the lines get
+                # indented.
+                indentation = self.indent
+
+            # Add an empty line so that the paragraphs get separated by
+            # a blank line when they are joined together again.
+            wrapped_lines.append('')
+
+        # We added one line too much, remove it.
+        wrapped_lines = wrapped_lines[:-1]
+        return '\n'.join(wrapped_lines)
+
+
 def get_email_template(filename):
     """Returns the email template with the given file name.
 
@@ -35,17 +101,26 @@ def get_email_template(filename):
     return open(fullpath).read()
 
 
-def get_bugmail_from_address(userpart, user):
+def get_bugmail_from_address(user):
     """Return an appropriate bugmail From address.
-
-    :userpart: the part before the '@' in the bugmail from address.
 
     :user: an IPerson whose name will appear in the From address, e.g.:
 
-        From: Foo Bar via Malone <...>
+        From: Foo Bar <foo.bar@canonical.com>
     """
-    return u"%s via Malone <%s@%s>" % (
-        user.displayname, userpart, config.launchpad.bugs_domain)
+    return u"%s <%s>" % (user.displayname, user.preferredemail.email)
+
+
+def get_bugmail_replyto_address(bug):
+    """Return an appropriate bugmail Reply-To address.
+
+    :bug: the IBug.
+
+    :user: an IPerson whose name will appear in the From address, e.g.:
+
+        From: Foo Bar via Malone <123@bugs...>
+    """
+    return u"Bug %d <%s@%s>" % (bug.id, bug.id, config.launchpad.bugs_domain)
 
 
 def get_bugmail_error_address():
@@ -64,13 +139,13 @@ def send_process_error_notification(to_addrs, subject, error_msg):
     simple_sendmail(get_bugmail_error_address(), to_addrs, subject, msg)
 
 
-def notify_errors_list(message, file_alias):
+def notify_errors_list(message, file_alias_url):
     """Sends an error to the Launchpad errors list."""
     template = get_email_template('notify-unhandled-email.txt')
     simple_sendmail(
         get_bugmail_error_address(), [config.launchpad.errors_address],
-        'Unhandled Email: %s' % file_alias.filename,
-        template % {'url': file_alias.url, 'error_msg': message})
+        'Unhandled Email: %s' % file_alias_url,
+        template % {'url': file_alias_url, 'error_msg': message})
 
 
 def generate_bug_add_email(bug):
@@ -96,7 +171,13 @@ def generate_bug_add_email(bug):
     for bugtask in bug.bugtasks:
         body += u"Affects: %s\n" % bugtask.targetname
         body += u"       Severity: %s\n" % bugtask.severity.title
-        body += u"       Priority: %s\n" % bugtask.priority.title
+
+        if bugtask.priority:
+            priority = bugtask.priority.title
+        else:
+            priority = "(none set)"
+        body += u"       Priority: %s\n" % priority
+
         if bugtask.assignee:
             # There's a person assigned to fix this task, so show that
             # information too.
@@ -117,8 +198,10 @@ def generate_bug_add_email(bug):
         description = bug.messages[0].contents
 
     body += u"\n"
-    docwrapper = DocWrapper(width=80, replace_whitespace=False)
-    body += u"Description:\n%s" % docwrapper.fill(description)
+    mailwrapper = MailWrapper(width=72)
+    body += u"Description:\n%s" % mailwrapper.format(description)
+
+    body = body.rstrip()
 
     return (subject, body)
 
@@ -131,9 +214,7 @@ def generate_bug_edit_email(bug_delta):
     """
     subject = u"[Bug %d] %s" % (bug_delta.bug.id, bug_delta.bug.title)
 
-    docwrapper = DocWrapper(
-        width=80, initial_indent=u"    ", subsequent_indent=u"    ",
-        replace_whitespace=False)
+    mailwrapper = MailWrapper(width=72, indent=u"    ")
 
     if bug_delta.bug.private:
         visibility = u"Private"
@@ -147,27 +228,37 @@ def generate_bug_edit_email(bug_delta):
     # figure out what's been changed; add that information to the
     # email as appropriate
     if bug_delta.duplicateof is not None:
-        body += (
-            u"*** This bug has been marked a duplicate of %d ***\n\n" %
-            bug_delta.duplicateof.id)
+        new_bug_dupe = bug_delta.duplicateof['new']
+        old_bug_dupe = bug_delta.duplicateof['old']
+        assert new_bug_dupe is not None or old_bug_dupe is not None
+        assert new_bug_dupe != old_bug_dupe
+        if old_bug_dupe is not None:
+            body += (
+                u"*** This bug is no longer a duplicate of bug %d ***\n\n" %
+                old_bug_dupe.id)
+        if new_bug_dupe is not None:
+            body += (
+                u"*** This bug has been marked a duplicate of bug %d ***\n\n" %
+                new_bug_dupe.id)
+
 
     if bug_delta.title is not None:
-        body += u"Title changed to:\n"
+        body += u"Summary changed to:\n"
         body += u"    %s\n" % bug_delta.title
 
     if bug_delta.summary is not None:
-        body += u"Summary changed to:\n"
-        body += docwrapper.fill(bug_delta.summary)
+        body += u"Short description changed to:\n"
+        body += mailwrapper.format(bug_delta.summary)
         body += u"\n"
 
     if bug_delta.description is not None:
         body += u"Description changed to:\n"
-        body += docwrapper.fill(bug_delta.description)
+        body += mailwrapper.format(bug_delta.description)
         body += u"\n"
 
     if bug_delta.private is not None:
-        body += u"Visibility changed to:\n"
-        if bug_delta.private:
+        body += u"Secrecy changed to:\n"
+        if bug_delta.private['new']:
             body += u"    Private\n"
         else:
             body += u"    Public\n"
@@ -190,14 +281,14 @@ def generate_bug_edit_email(bug_delta):
             body += u"    - Bug %s [%s]\n" % (
                 old_bug_watch.remotebug, old_bug_watch.bugtracker.title)
 
-    if bug_delta.cveref is not None:
-        new_cve_ref = bug_delta.cveref['new']
-        body += u"CVE references changed:\n"
-        body += u"    + %s [%s]\n" % (new_cve_ref.displayname, new_cve_ref.title)
-        old_cveref = bug_delta.cveref.get('old')
-        if old_cveref:
-            body += u"    - %s [%s]\n" % (
-                old_cveref.displayname, old_cveref.title)
+    if bug_delta.cve is not None:
+        new_cve = bug_delta.cve.get('new', None)
+        old_cve = bug_delta.cve.get('old', None)
+        body += u""
+        if new_cve:
+            body += u"Added %s\n" % new_cve.title
+        if old_cve:
+            body += u"Removed %s\n" % old_cve.title
 
     if bug_delta.attachment is not None:
         body += "    - Changed attachments:\n"
@@ -287,10 +378,9 @@ def generate_bug_edit_email(bug_delta):
             if bugtask_delta.statusexplanation is not None:
                 status_exp_line = u"%15s: %s" % (
                     u"Explanation", bugtask_delta.statusexplanation)
-                status_exp_wrapper = DocWrapper(
-                    width=80, subsequent_indent=u" " * 17,
-                    replace_whitespace=False)
-                body += status_exp_wrapper.fill(status_exp_line)
+                status_exp_wrapper = MailWrapper(
+                    width=72, indent=u" " * 17, indent_first_line=False)
+                body += status_exp_wrapper.format(status_exp_line)
                 body += u"\n"
 
     if bug_delta.added_bugtasks is not None:
@@ -305,29 +395,50 @@ def generate_bug_edit_email(bug_delta):
             added_bugtasks = [bug_delta.added_bugtasks]
 
         for added_bugtask in added_bugtasks:
-            upstream_task = IUpstreamBugTask(added_bugtask, None)
-            distro_task = IDistroBugTask(added_bugtask, None)
-            distrorelease_task = IDistroReleaseBugTask(added_bugtask, None)
-
-            if upstream_task:
-                body += u"Also affects: %s (upstream)\n" % (
-                    upstream_task.product.displayname)
-            elif distro_task:
-                body += u"Also affects: %s (%s)\n" % (
-                    distro_task.sourcepackagename.name,
-                    distro_task.distribution.displayname.capitalize())
-            elif distrorelease_task:
-                body += u"Also affects: %s (%s)\n" % (
-                    distrorelease_task.sourcepackagename.name,
-                    distrorelease_task.distrorelease.fullreleasename)
-
+            body += u"Also affects: %s" % added_bugtask.targetname
             body += u"%15s: %s\n" % (u"Severity", added_bugtask.severity.title)
-            body += u"%15s: %s\n" % (u"Priority", added_bugtask.priority.title)
+            if added_bugtask.priority:
+                priority_title = added_bugtask.priority.title
+            else:
+                priority_title = "(none set)"
+            body += u"%15s: %s\n" % (u"Priority", priority_title)
             if added_bugtask.assignee:
                 assignee = added_bugtask.assignee
                 body += u"%15s: %s <%s>\n" % (
                     u"Assignee", assignee.name, assignee.preferredemail.email)
             body += u"%15s: %s" % (u"Status", added_bugtask.status.title)
+
+    body = body.rstrip()
+
+    return (subject, body)
+
+
+def generate_bug_comment_email(bug_comment):
+    """Generate a bug comment notification from bug_comment.
+
+    bug_comment is expected to provide IBugMessage. The return value is
+    (subject, body).
+    """
+    subject = u"[Bug %d] %s" % (bug_comment.bug.id, bug_comment.bug.title)
+    bug = bug_comment.bug
+    if bug.private:
+        # This is a confidential bug.
+        visibility = u"Private"
+    else:
+        # This is a public bug.
+        visibility = u"Public"
+
+    comment_wrapper = MailWrapper(width=72)
+
+    body = (u"%(visibility)s bug report changed:\n"
+            u"%(bugurl)s\n\n"
+            u"Comment:\n"
+            u"%(comment)s"
+            % {'visibility' : visibility, 'bugurl' : canonical_url(bug),
+               'comment' : comment_wrapper.format(
+                    bug_comment.message.contents)})
+
+    body = body.rstrip()
 
     return (subject, body)
 
@@ -356,45 +467,77 @@ def _get_task_change_values(task_change, displayattrname):
     return (oldval_display, newval_display)
 
 
-def generate_bug_comment_email(bug_comment):
-    """Generate a bug comment notification from bug_comment.
+def send_bug_notification(bug, user, subject, body, to_addrs=None,
+                          headers=None):
+    """Sends a bug notification.
 
-    bug_comment is expected to provide IBugMessage. The return value is
-    (subject, body).
+    :bug: The bug the notification concerns.
+    :user: The user that did that action that caused a notification to
+           be sent.
+    :subject: The subject of the notification.
+    :body: The body of the notification.
+    :to_addrs: The addresses the notification should be sent to. If none
+               are provided, the default bug cc list will be used.
+    :headers: Any additional headers that should get added to the
+              message.
+
+    If no References header is given, one will be constructed to ensure
+    that the notification gets grouped together with other notifications
+    concerning the same bug (if the email client supports threading).
     """
-    subject = u"[Bug %d] %s" % (bug_comment.bug.id, bug_comment.bug.title)
-    bug = bug_comment.bug
-    if bug.private:
-        # This is a confidential bug.
-        visibility = u"Private"
-    else:
-        # This is a public bug.
-        visibility = u"Public"
 
-    comment_wrapper = DocWrapper(width=80, replace_whitespace=False)
+    assert user is not None, 'user is None'
 
-    body = (u"%(visibility)s bug report changed:\n"
-            u"%(bugurl)s\n\n"
-            u"Comment:\n"
-            u"%(comment)s"
-            % {'visibility' : visibility, 'bugurl' : canonical_url(bug),
-               'comment' : comment_wrapper.fill(bug_comment.message.contents)})
+    if headers is None:
+        headers = {}
+    if to_addrs is None:
+        to_addrs = get_cc_list(bug)
 
-    return (subject, body)
+    if not to_addrs:
+        # No recipients for this email means there's no point generating an
+        # email.
+        return
 
+    if ('Message-Id' not in headers or
+            headers['Message-Id'] != bug.initial_message.rfc822msgid):
+        # It's not the initial, message. Let's add the inital message id
+        # to the References header, so that it will be threaded properly.
+        if not 'References' in headers:
+            headers['References'] = ''
+        references = headers['References'].split()
+        if bug.initial_message.rfc822msgid not in references:
+            references.insert(0, bug.initial_message.rfc822msgid)
+        headers['References'] = ' '.join(references)
 
-def send_bug_edit_notification(from_addr, to_addrs, bug_delta):
+    # Use zope_isinstance, to ensure that this Just Works with
+    # security-proxied objects.
+    if not zope_isinstance(to_addrs, (list, tuple)):
+        to_addrs = [to_addrs]
+
+    if "Reply-To" not in headers:
+        headers["Reply-To"] = get_bugmail_replyto_address(bug)
+    if "Sender" not in headers:
+        headers["Sender"] = config.bounce_address
+
+    from_addr = get_bugmail_from_address(user)
+
+    # Add a header for each task on this bug, to help users organize their
+    # incoming mail in a way that's convenient for them.
+    x_launchpad_bug_values = []
+    for bugtask in bug.bugtasks:
+        x_launchpad_bug_values.append(bugtask.asEmailHeaderValue())
+
+    headers["X-Launchpad-Bug"] = x_launchpad_bug_values
+
+    for to_addr in to_addrs:
+        simple_sendmail(
+            from_addr=from_addr, to_addrs=to_addr, subject=subject, body=body,
+            headers=headers)
+
+def send_bug_edit_notification(bug_delta):
     """Send a notification email about a bug that was modified.
 
-    The email is sent from from_addr to to_addrs with subject.
-
-    Keyword arguments:
-    :from_addr: a string
-    :bugdelta: an IBugDelta
-    :to_addrs: a string, list, or tuple. If a list or tuple, an email
-               is delivered to each recipient individually.
-
-    A TypeError is raised if bugdelta does not implement IBugDelta.
+    :bug_delta: has to provide IBugDelta.
     """
     if not IBugDelta.providedBy(bug_delta):
         raise TypeError(
@@ -402,51 +545,30 @@ def send_bug_edit_notification(from_addr, to_addrs, bug_delta):
             repr(bug_delta))
 
     subject, body = generate_bug_edit_email(bug_delta)
-
-    # Use zope_isinstance, to ensure that this Just Works with
-    # security-proxied objects.
-    if not zope_isinstance(to_addrs, (list, tuple)):
-        to_addrs = [to_addrs]
-
-    for to_addr in to_addrs:
-        simple_sendmail(from_addr, to_addr, subject, body)
+    send_bug_notification(bug_delta.bug, bug_delta.user, subject, body)
 
 
-def send_bug_duplicate_notification(from_addr, dup_target_to_addrs,
-                                    duplicate_bug, original_bug_url):
+def send_bug_duplicate_notification(duplicate_bug, user):
     """Send a notification that a bug was marked a dup of a bug.
 
-    If dup_target_to_addrs is a list or tuple, an email will be
-    delivered to the recipient address(es) specified by each element.
-
-    The email is sent from from_addr to the dup_target_to_addrs
+    The email is sent the duplicate_bug.duplicateOf's subscribers
     telling them which bug ID has been marked as a dup of their bug.
     duplicate_bug is an IBug whose .duplicateof is not
-    None. original_bug_url is a string that is the URL of the dup
-    target.
+    None.
     """
-
-    assert duplicate_bug.duplicateof is not None, (
-        "Can't send bug duplicate notification on non-duplicate bug: %s" %
-            repr(duplicate_bug))
-
-    subject = u"[Bug %d] %s" % (
-        duplicate_bug.duplicateof.id, duplicate_bug.duplicateof.title)
+    bug = duplicate_bug.duplicateof
+    if bug is None:
+        return
+    subject = u"[Bug %d] %s" % (bug.id, bug.title)
 
     body = u"""\
 %(bugurl)s
 
 *** Bug %(duplicate_id)d has been marked a duplicate of this bug ***""" % {
-        'duplicate_id' : duplicate_bug.id, 'bugurl' : original_bug_url}
+        'duplicate_id' : duplicate_bug.id,
+        'bugurl' : canonical_url(bug)}
 
-    # Use zope_isinstance, to ensure that this Just Works with
-    # security-proxied objects.
-    if not zope_isinstance(dup_target_to_addrs, (list, tuple)):
-        dup_target_to_addrs = [dup_target_to_addrs]
-
-    for dup_target_to_addr in dup_target_to_addrs:
-        simple_sendmail(from_addr, dup_target_to_addr, subject, body)
-
+    send_bug_notification(bug, user, subject, body)
 
 def get_cc_list(bug):
     """Return the list of people that are CC'd on this bug.
@@ -496,7 +618,7 @@ def get_bug_delta(old_bug, new_bug, user):
     IBugDelta if there are changes, or None if there were no changes.
     """
     changes = {}
-    for field_name in ("title", "summary", "description", "duplicateof"):
+    for field_name in ("title", "summary", "description"):
         # fields for which we simply show the new value when they
         # change
         old_val = getattr(old_bug, field_name)
@@ -504,7 +626,7 @@ def get_bug_delta(old_bug, new_bug, user):
         if old_val != new_val:
             changes[field_name] = new_val
 
-    for field_name in ("name", "private"):
+    for field_name in ("name", "private", "duplicateof"):
         # fields for which we show old => new when their values change
         old_val = getattr(old_bug, field_name)
         new_val = getattr(new_bug, field_name)
@@ -583,15 +705,11 @@ def notify_bug_added(bug, event):
     Event must be an ISQLObjectCreatedEvent.
     """
 
-    to_addrs = get_cc_list(bug)
+    subject, body = generate_bug_add_email(bug)
 
-    if to_addrs:
-        subject, body = generate_bug_add_email(bug)
-
-        for to_addr in to_addrs:
-            simple_sendmail(
-                get_bugmail_from_address(bug.id, event.user),
-                to_addr, subject, body)
+    send_bug_notification(
+        bug, event.user, subject, body,
+        headers={'Message-Id': bug.initial_message.rfc822msgid})
 
 
 def notify_bug_modified(modified_bug, event):
@@ -600,29 +718,20 @@ def notify_bug_modified(modified_bug, event):
     modified_bug bug must be an IBug. event must be an
     ISQLObjectModifiedEvent.
     """
-    to_addrs = get_cc_list(modified_bug)
+    bug_delta = get_bug_delta(
+        old_bug=event.object_before_modification,
+        new_bug=event.object, user=event.user)
 
-    if to_addrs:
-        bug_delta = get_bug_delta(
-            old_bug=event.object_before_modification,
-            new_bug=event.object, user=event.user)
+    assert bug_delta is not None
 
-        send_bug_edit_notification(
-            from_addr=get_bugmail_from_address(event.object.id, event.user),
-            to_addrs=to_addrs, bug_delta=bug_delta)
+    send_bug_edit_notification(bug_delta)
 
-        if bug_delta.duplicateof is not None:
-            # This bug was marked as a duplicate, so notify the dup
-            # target subscribers of this as well.
-            dup_target_recipient_emails = get_cc_list(event.object.duplicateof)
-
-            for dup_target_recipient_email in dup_target_recipient_emails:
-                send_bug_duplicate_notification(
-                    from_addr=get_bugmail_from_address(
-                        event.object.duplicateof.id, event.user),
-                    dup_target_to_addrs=dup_target_recipient_email,
-                    duplicate_bug=bug_delta.bug,
-                    original_bug_url=canonical_url(bug_delta.bug.duplicateof))
+    if bug_delta.duplicateof is not None:
+        # This bug was marked as a duplicate, so notify the dup
+        # target subscribers of this as well.
+        send_bug_duplicate_notification(
+            duplicate_bug=bug_delta.bug,
+            user=event.user)
 
 
 def notify_bugtask_added(bugtask, event):
@@ -633,21 +742,16 @@ def notify_bugtask_added(bugtask, event):
     ISQLObjectModifiedEvent.
     """
     bugtask = event.object
-    to_addrs = get_cc_list(bugtask.bug)
 
-    if to_addrs:
-        bug_delta = BugDelta(
-            bug=bugtask.bug,
-            bugurl=canonical_url(bugtask.bug),
-            user=event.user,
-            added_bugtasks=bugtask)
+    bug_delta = BugDelta(
+        bug=bugtask.bug,
+        bugurl=canonical_url(bugtask.bug),
+        user=event.user,
+        added_bugtasks=bugtask)
 
-        subject, body = generate_bug_edit_email(bug_delta)
+    subject, body = generate_bug_edit_email(bug_delta)
 
-        for to_addr in to_addrs:
-            simple_sendmail(
-                get_bugmail_from_address(bugtask.bug.id, event.user),
-                to_addr, subject, body)
+    send_bug_notification(bugtask.bug, event.user, subject, body)
 
 
 def notify_bugtask_edited(modified_bugtask, event):
@@ -657,139 +761,15 @@ def notify_bugtask_edited(modified_bugtask, event):
     modified_bugtask must be an IBugTask. event must be an
     ISQLObjectModifiedEvent.
     """
-    task = event.object
-    to_addrs = get_cc_list(task.bug)
+    bugtask_delta = get_task_delta(
+        event.object_before_modification, event.object)
+    bug_delta = BugDelta(
+        bug=event.object.bug,
+        bugurl=canonical_url(event.object.bug),
+        bugtask_deltas=bugtask_delta,
+        user=event.user)
 
-    if to_addrs:
-        bugtask_delta = get_task_delta(
-            event.object_before_modification, event.object)
-        bug_delta = BugDelta(
-            bug=event.object.bug,
-            bugurl=canonical_url(event.object.bug),
-            bugtask_deltas=bugtask_delta,
-            user=event.user)
-
-        send_bug_edit_notification(
-            from_addr=get_bugmail_from_address(task.bug.id, event.user),
-            to_addrs=to_addrs, bug_delta=bug_delta)
-
-
-def notify_bug_product_infestation_added(product_infestation, event):
-    """Notify CC'd list that this bug has infested a product release.
-
-    product_infestation must be an IBugProductInfestation. event must
-    be an ISQLObjectCreatedEvent.
-    """
-    notification_recipient_emails = get_cc_list(product_infestation.bug)
-
-    if notification_recipient_emails:
-        msg = """\
-Product: %(product)s
-Infestation: %(infestation)s
-""" % {'product' :
-             product_infestation.productrelease.product.name + " " +
-             product_infestation.productrelease.version,
-           'infestation' : product_infestation.infestationstatus.title}
-
-        simple_sendmail(
-            get_bugmail_from_address(product_infestation.bug.id, event.user),
-            notification_recipient_emails,
-            "[Bug %d] %s" % (
-                product_infestation.bug.id,
-                product_infestation.bug.title),
-            msg)
-
-
-def notify_bug_product_infestation_modified(modified_product_infestation, 
-                                            event):
-    """Notify CC'd list that this product infestation has been edited.
-
-    modified_product_infestation must be an IBugProductInfestation. event must
-    be an ISQLObjectModifiedEvent.
-    """
-    notification_recipient_emails = get_cc_list(modified_product_infestation.bug)
-
-    if notification_recipient_emails:
-        changes = get_changes(
-            before=event.object_before_modification,
-            after=event.object,
-            fields=(
-                ("productrelease", lambda v: "%s %s" % (
-                    v.product.name, v.version)),
-                ("infestationstatus", lambda v: v.title)))
-
-        bug = modified_product_infestation.bug
-        productrelease = event.object_before_modification.productrelease
-        send_bug_edit_notification(
-            bug=bug,
-            from_addr=get_bugmail_from_address(bug.id, event.user),
-            to_addrs=notification_recipient_emails,
-            subject="[Bug %d] %s" % (bug.id, bug.title),
-            edit_header_line=(
-                "Edited infested product: %s" %
-                productrelease.product.displayname + " " +
-                productrelease.version),
-            changes=changes, user=event.user)
-
-
-def notify_bug_package_infestation_added(package_infestation, event):
-    """Notify CC'd list that this bug has infested a source package
-    release.
-
-
-    package_infestation must be an IBugPackageInfestation. event must
-    be an ISQLObjectCreatedEvent.
-    """
-    notification_recipient_emails = get_cc_list(package_infestation.bug)
-
-    if notification_recipient_emails:
-        msg = """\
-Source Package: %(package)s
-Infestation: %(infestation)s
-""" % {'package' :
-           package_infestation.sourcepackagerelease.name + " " +
-           package_infestation.sourcepackagerelease.version,
-       'infestation' : package_infestation.infestationstatus.title}
-
-        simple_sendmail(
-            get_bugmail_from_address(package_infestation.bug.id, event.user),
-            notification_recipient_emails,
-            "[Bug %d] %s" % (
-                package_infestation.bug.id,
-                package_infestation.bug.title),
-            msg)
-
-
-def notify_bug_package_infestation_modified(modified_package_infestation, event):
-    """Notify CC'd list that this package infestation has been
-    modified.
-
-    modified_package_infestation must be an IBugPackageInfestation. event
-    must be an ISQLObjectModifiedEvent.
-    """
-    notification_recipient_emails = get_cc_list(modified_package_infestation.bug)
-
-    if notification_recipient_emails:
-        changes = get_changes(
-            before=event.object_before_modification,
-            after=event.object,
-            fields=(
-                ("sourcepackagerelease", lambda v: "%s %s" % (
-                    v.sourcepackagename.name, v.version)),
-                ("infestationstatus", lambda v: v.title)))
-
-        bug = modified_package_infestation.bug
-        packagerelease = event.object_before_modification.sourcepackagerelease
-        send_bug_edit_notification(
-            bug=bug,
-            from_addr=get_bugmail_from_address(bug.id, event.user),
-            to_addrs=notification_recipient_emails,
-            subject="[Bug %d] %s" % (bug.id, bug.title),
-            edit_header_line=(
-                "Edited infested package: %s" %
-                packagerelease.sourcepackagename.name + " " +
-                packagerelease.version),
-            changes=changes, user=event.user)
+    send_bug_edit_notification(bug_delta)
 
 
 def notify_bug_comment_added(bugmessage, event):
@@ -822,20 +802,28 @@ def notify_bug_comment_added(bugmessage, event):
         to_addrs = list(sets.Set(to_addrs + duplicate_target_emails))
         to_addrs.sort()
 
-    if to_addrs:
-        msg = ""
+    msg = ""
 
-        if bug.duplicateof is not None:
-            msg += u"*** This bug is a duplicate of %d ***\n\n" % (
-                bug.duplicateof.id)
+    if bug.duplicateof is not None:
+        msg += u"*** This bug is a duplicate of %d ***\n\n" % (
+            bug.duplicateof.id)
 
-        subject, body = generate_bug_comment_email(bugmessage)
-        msg += body
+    subject, body = generate_bug_comment_email(bugmessage)
+    msg += body
 
-        for to_addr in to_addrs:
-            simple_sendmail(
-                get_bugmail_from_address(bug.id, event.user),
-                to_addr, subject, body)
+    message = bugmessage.message
+    headers = {'Message-Id': message.rfc822msgid}
+
+    references = []
+    reference = message.parent
+    while reference is not None:
+        references.insert(0, reference.rfc822msgid)
+        reference = reference.parent
+
+    headers['References'] = ' '.join(references)
+    send_bug_notification(
+        bug, event.user, subject, body,
+        to_addrs=to_addrs, headers=headers)
 
 
 def notify_bug_external_ref_added(ext_ref, event):
@@ -845,18 +833,13 @@ def notify_bug_external_ref_added(ext_ref, event):
     ext_ref must be an IBugExternalRef. event must be an
     ISQLObjectCreatedEvent.
     """
-    to_addrs = get_cc_list(ext_ref.bug)
+    bug_delta = BugDelta(
+        bug=ext_ref.bug,
+        bugurl=canonical_url(ext_ref.bug),
+        user=event.user,
+        external_reference={'new' : ext_ref})
 
-    if to_addrs:
-        bug_delta = BugDelta(
-            bug=ext_ref.bug,
-            bugurl=canonical_url(ext_ref.bug),
-            user=event.user,
-            external_reference={'new' : ext_ref})
-
-        send_bug_edit_notification(
-            get_bugmail_from_address(ext_ref.bug, event.user),
-            to_addrs, bug_delta)
+    send_bug_edit_notification(bug_delta)
 
 
 def notify_bug_external_ref_edited(edited_ext_ref, event):
@@ -865,23 +848,18 @@ def notify_bug_external_ref_edited(edited_ext_ref, event):
     edited_ext_ref must be an IBugExternalRef. event must be an
     ISQLObjectModifiedEvent.
     """
-    to_addrs = get_cc_list(edited_ext_ref.bug)
+    old = event.object_before_modification
+    new = event.object
+    if ((old.url != new.url) or (old.title != new.title)):
+        # A change was made that's worth sending an edit
+        # notification about.
+        bug_delta = BugDelta(
+            bug=new.bug,
+            bugurl=canonical_url(new.bug),
+            user=event.user,
+            external_reference={'old' : old, 'new' : new})
 
-    if to_addrs:
-        old = event.object_before_modification
-        new = event.object
-        if ((old.url != new.url) or (old.title != new.title)):
-            # A change was made that's worth sending an edit
-            # notification about.
-            bug_delta = BugDelta(
-                bug=new.bug,
-                bugurl=canonical_url(new.bug),
-                user=event.user,
-                external_reference={'old' : old, 'new' : new})
-
-            send_bug_edit_notification(
-                get_bugmail_from_address(new.bug.id, event.user),
-                to_addrs, bug_delta)
+        send_bug_edit_notification(bug_delta)
 
 
 def notify_bug_watch_added(watch, event):
@@ -890,18 +868,13 @@ def notify_bug_watch_added(watch, event):
     watch must be an IBugWatch. event must be an
     ISQLObjectCreatedEvent.
     """
-    to_addrs = get_cc_list(watch.bug)
+    bug_delta = BugDelta(
+        bug=watch.bug,
+        bugurl=canonical_url(watch.bug),
+        user=event.user,
+        bugwatch={'new' : watch})
 
-    if to_addrs:
-        bug_delta = BugDelta(
-            bug=watch.bug,
-            bugurl=canonical_url(watch.bug),
-            user=event.user,
-            bugwatch={'new' : watch})
-
-        send_bug_edit_notification(
-            get_bugmail_from_address(watch.bug.id, event.user),
-            to_addrs, bug_delta)
+    send_bug_edit_notification(bug_delta)
 
 
 def notify_bug_watch_modified(modified_bug_watch, event):
@@ -910,69 +883,46 @@ def notify_bug_watch_modified(modified_bug_watch, event):
     modified_bug_watch must be an IBugWatch. event must be an
     ISQLObjectModifiedEvent.
     """
-    to_addrs = get_cc_list(modified_bug_watch.bug)
-
-    if to_addrs:
-        old = event.object_before_modification
-        new = event.object
-        if ((old.bugtracker != new.bugtracker) or
-            (old.remotebug != new.remotebug)):
-            # there is a difference worth notifying about here
-            # so let's keep going
-            bug_delta = BugDelta(
-                bug=new.bug,
-                bugurl=canonical_url(new.bug),
-                user=event.user,
-                bugwatch={'old' : old, 'new' : new})
-
-            send_bug_edit_notification(
-                from_addr=get_bugmail_from_address(new.id, event.user),
-                to_addrs=to_addrs, bug_delta=bug_delta)
-
-
-def notify_bug_cveref_added(cveref, event):
-    """Notify CC'd list that a new cveref has been added to this bug.
-
-    cveref must be an ICVERef. event must be an
-    ISQLObjectCreatedEvent.
-    """
-    to_addrs = get_cc_list(cveref.bug)
-
-    if to_addrs:
+    old = event.object_before_modification
+    new = event.object
+    if ((old.bugtracker != new.bugtracker) or
+        (old.remotebug != new.remotebug)):
+        # there is a difference worth notifying about here
+        # so let's keep going
         bug_delta = BugDelta(
-            bug=cveref.bug,
-            bugurl=canonical_url(cveref.bug),
+            bug=new.bug,
+            bugurl=canonical_url(new.bug),
             user=event.user,
-            cveref={'new': cveref})
+            bugwatch={'old' : old, 'new' : new})
 
-        send_bug_edit_notification(
-            get_bugmail_from_address(cveref.bug.id, event.user),
-            to_addrs, bug_delta)
+        send_bug_edit_notification(bug_delta)
 
 
-def notify_bug_cveref_edited(edited_cveref, event):
-    """Notify CC'd list that a cveref has been edited.
+def notify_bug_cve_added(bugcve, event):
+    """Notify CC'd list that a new cve ref has been added to this bug.
 
-    edited_cveref must be an ICVERef. event must be an
-    ISQLObjectModifiedEvent.
+    bugcve must be an IBugCve. event must be an ISQLObjectCreatedEvent.
     """
-    to_addrs = get_cc_list(edited_cveref.bug)
+    bug_delta = BugDelta(
+        bug=bugcve.bug,
+        bugurl=canonical_url(bugcve.bug),
+        user=event.user,
+        cve={'new': bugcve.cve})
 
-    if to_addrs:
-        old = event.object_before_modification
-        new = event.object
-        if ((old.cveref != new.cveref) or (old.title != new.title)):
-            # There's a change worth notifying about, so let's go
-            # ahead and send a notification email.
-            bug_delta = BugDelta(
-                bug=new.bug,
-                bugurl=canonical_url(new.bug),
-                user=event.user,
-                cveref={'old' : old, 'new': new})
+    send_bug_edit_notification(bug_delta)
 
-            send_bug_edit_notification(
-                get_bugmail_from_address(new.id, event.user),
-                to_addrs, bug_delta)
+def notify_bug_cve_deleted(bugcve, event):
+    """Notify CC'd list that a cve ref has been removed from this bug.
+
+    bugcve must be an IBugCve. event must be an ISQLObjectDeletedEvent.
+    """
+    bug_delta = BugDelta(
+        bug=bugcve.bug,
+        bugurl=canonical_url(bugcve.bug),
+        user=event.user,
+        cve={'old': bugcve.cve})
+
+    send_bug_edit_notification(bug_delta)
 
 
 def notify_bug_attachment_added(bugattachment, event):
@@ -982,19 +932,13 @@ def notify_bug_attachment_added(bugattachment, event):
     ISQLObjectCreatedEvent.
     """
     bug = bugattachment.bug
-    notification_recipient_emails = get_cc_list(bug)
+    bug_delta = BugDelta(
+        bug=bug,
+        bugurl=canonical_url(bug),
+        user=event.user,
+        attachment={'new' : bugattachment})
 
-    if notification_recipient_emails:
-        bug_delta = BugDelta(
-            bug=bug,
-            bugurl=canonical_url(bug),
-            user=event.user,
-            attachment={'new' : bugattachment})
-
-        send_bug_edit_notification(
-            get_bugmail_from_address(bug.id, event.user),
-            notification_recipient_emails,
-            bug_delta)
+    send_bug_edit_notification(bug_delta)
 
 
 def notify_join_request(event):

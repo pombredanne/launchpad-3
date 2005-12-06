@@ -48,10 +48,15 @@ against the database and display the results:
     ...     '''Run an SQL query and return the results as text'''
     ...     colsize = 25
     ...     cur = cursor() # Get a cursor
-    ...     cur.execute(query, args)
+    ...     if args:
+    ...         cur.execute(query, args)
+    ...     else:
+    ...         cur.execute(query)
     ...     for row in cur.fetchall():
     ...         line = ''
     ...         for col in row:
+    ...             if isinstance(col, (float,int,long)):
+    ...                 col = '%1.2f' % col
     ...             col = col.encode('ascii', 'replace')
     ...             if len(col) > colsize:
     ...                 line += '%s... ' % col[:colsize-3]
@@ -105,6 +110,13 @@ We also support 'or' as a boolean operation:
     Carlos Valdivia Yag?e
     Mark Shuttleworth
 
+NULL searches will return nothing:
+
+    >>> runsql("""
+    ...     SELECT displayname FROM Person
+    ...         WHERE fti @@ ftq(NULL) ORDER BY displayname
+    ...     """)
+
 
 ftq(text) & _ftq(text)
 ----------------------
@@ -121,7 +133,8 @@ The following examples show the text version of the query using
     ...     cur = cursor()
     ...     cur.execute("SELECT _ftq(%s), ftq(%s)", (query, query))
     ...     uncompiled, compiled = cur.fetchone()
-    ...     uncompiled = uncompiled.replace(' ','')
+    ...     if uncompiled is not None:
+    ...         uncompiled = uncompiled.replace(' ','')
     ...     print '%s <=> %s' % (uncompiled, compiled)
 
 
@@ -164,7 +177,7 @@ Implicit boolean operation is AND
     (hi&ho|hoe)&work&go <=> ( 'hi' & 'ho' | 'hoe' ) & 'work' & 'go'
 
 
-|, & and ! characters are converted to whitespace, because they have
+|, &, !, : and \ characters are converted to whitespace, because they have
 special meaning to tsearch2. Other punctuation is just passed through to
 let the tsearch2 internals deal with it appropriatly.
 
@@ -177,8 +190,14 @@ let the tsearch2 internals deal with it appropriatly.
     >>> ftq('cool!')
     cool <=> 'cool'
 
-    >>> ftq('100%')
+    >>> ftq(':100%')
     100% <=> '100'
+
+    >>> ftq(r'foo\bar')
+    foo&bar <=> 'foo' & 'bar'
+
+    >>> ftq("shouldn't") # NB. This gets stemmed, see below
+    shouldn't <=> 'shouldn'
 
 
 Stop words (words deemed too common in English to search on) are removed
@@ -189,10 +208,24 @@ from queries by tsearch2.
 
 
 Note that some queries will return None after compilation, because they
-contained nothing but stop words.
+contained nothing but stop words or punctuation.
 
     >>> ftq("don't do it!")
     don't&do&it <=> None
+
+    >>> ftq(",,,")
+    ,,, <=> None
+
+
+Queries containing nothing except whitespace, boolean operators and
+punctuation will just return None.
+
+    >>> ftq(" ")
+    None <=> None
+    >>> ftq("and")
+    None <=> None
+    >>> ftq(" and (!)")
+    None <=> None
 
 
 Words are also stemmed by tsearch2 (using the English stemmer).
@@ -225,6 +258,27 @@ or invalid leading operators
     >>> ftq('(and hi or hello) and mom')
     (hi|hello)&mom <=> ( 'hi' | 'hello' ) & 'mom'
 
+    >>> ftq('() hi mom ( ) ((! |((&)))) :-)')
+    (hi&mom&-) <=> 'hi' & 'mom'
+
+    >>> ftq("(hi mom")
+    (hi&mom) <=> 'hi' & 'mom'
+
+    >>> ftq("(((hi mom")
+    (((hi&mom))) <=> 'hi' & 'mom'
+
+    >>> ftq("hi mom)")
+    (hi&mom) <=> 'hi' & 'mom'
+
+    >>> ftq("hi mom)))")
+    (((hi&mom))) <=> 'hi' & 'mom'
+
+    >>> ftq("hi (mom")
+    hi&(mom) <=> 'hi' & 'mom'
+
+    >>> ftq("hi) mom")
+    (hi)&mom <=> 'hi' & 'mom'
+
 
 Phrase Searching
 ----------------
@@ -234,4 +288,71 @@ simply be to make `ftq(text)` convert "a b" to (a&b). However, we then
 need to filter the returned results and that filter needs to be aware of
 what rows are being indexed.
 
+
+Ranking
+-------
+
+We have ranking information stored in the indexes, as specified in fti.py.
+The rank of a result is calculated using the tsearch2 rank() function.
+
+    >>> runsql(r"""
+    ...     SELECT
+    ...         name, rank(fti, ftq('gnome')) AS rank
+    ...     FROM product
+    ...     WHERE fti @@ ftq('gnome')
+    ...     ORDER BY rank DESC, name
+    ...     """)
+    applets                   1.00
+    gnome-terminal            1.00
+    gnomebaker                0.57
+    python-gnome2-dev         0.28
+    evolution                 0.20
+    ubuntu                    0.10
+
+
+You can also build complex multi table queries and mush all the
+ranked results together. This query does a full text search on
+the Bug and Message tables, as well as substring name searches on
+SourcepackageName.name and Product.name. The rank() function returns an
+float between 0 and 1, so I just chose some arbitrary constants for name
+matches that seemed appropriate. It is also doing a full text search
+against the Product table, and manually lowering the rank (again using
+an arbitrary constant that seemed appropriate).
+
+    >>> runsql(r"""
+    ...   SELECT title, max(ranking) FROM (
+    ...    SELECT Bug.title,rank(Bug.fti||Message.fti,ftq('firefox')) AS ranking
+    ...    FROM Bug, BugMessage, Message
+    ...    WHERE Bug.id = BugMessage.bug AND Message.id = BugMessage.message
+    ...       AND (Bug.fti @@ ftq('firefox') OR Message.fti @@ ftq('firefox'))
+    ...    UNION
+    ...    SELECT Bug.title, 0.70 AS ranking
+    ...    FROM Bug, BugTask, SourcepackageName
+    ...    WHERE Bug.id = BugTask.bug
+    ...       AND BugTask.sourcepackagename = SourcepackageName.id
+    ...       AND SourcepackageName.name LIKE lower('%firefox%')
+    ...    UNION
+    ...    SELECT Bug.title, 0.72 AS ranking
+    ...    FROM Bug, BugTask, Product
+    ...    WHERE Bug.id = BugTask.bug
+    ...       AND BugTask.product = Product.id
+    ...       AND Product.name LIKE lower('%firefox%')
+    ...    UNION
+    ...    SELECT Bug.title, rank(Product.fti, ftq('firefox')) - 0.3 AS ranking
+    ...    FROM Bug, BugTask, Product
+    ...    WHERE Bug.id = BugTask.bug
+    ...       AND BugTask.product = Product.id
+    ...       AND Product.fti @@ ftq('firefox')
+    ...    ) AS BugMatches
+    ...   GROUP BY title
+    ...   HAVING max(ranking) > 0.2
+    ...   ORDER BY max(ranking) DESC, title
+    ...   """)
+    Firefox crashes when S... 0.72
+    Firefox does not suppo... 0.72
+    Firefox install instru... 0.72
+    Reflow problems with c... 0.72
+    Blackhole Trash folder    0.70
+    Bug Title Test            0.70
+    Printing doesn't work     0.70
 

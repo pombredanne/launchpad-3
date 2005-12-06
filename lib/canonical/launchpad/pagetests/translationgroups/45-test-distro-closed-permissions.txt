@@ -9,7 +9,7 @@ Let's see if Foo Bar can see the translated strings in Southern Sotho. We
 expect them to be told they can only make contributions:
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/st/+translate HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/st/+translate HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -21,20 +21,20 @@ However, in Afrikaans, Foo Bar DOES have the ability to edit directly.
 First, we show that "evolution minicard" is not translated.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/af/+translate HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+translate HTTP/1.1
   ... Accept-Language: en-us,en;q=0.7,af;q=0.3
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...<input type="text"
-      name="set_137_translation_af_0" tabindex="15" />
+  ...<input type="text" lang="af"
+      dir="ltr" name="set_137_translation_af_0" tabindex="15" />
   ...
 
 Now, we need to show that it is translated after a post. Let's go ahead and
 POST and see that all goes well:
 
   >>> print http(r"""
-  ... POST /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/af/+translate HTTP/1.1
+  ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+translate HTTP/1.1
   ... Accept-Language: en-us,en;q=0.7,af;q=0.3
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 486
@@ -48,13 +48,13 @@ And finally, let's take a look again, and we should have a translation or
 two added:
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/af/+translate HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+translate HTTP/1.1
   ... Accept-Language: en-us,en;q=0.7,af;q=0.3
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...<input type="text"
-      name="set_137_translation_af_0"
+  ...<input type="text" lang="af"
+      dir="ltr" name="set_137_translation_af_0"
       value="evolution minikaart" tabindex="15" />
   ...
 

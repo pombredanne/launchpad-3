@@ -1,0 +1,119 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+  <metal:rightportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-editdetails" />
+  </metal:rightportlets>
+
+  <div metal:fill-slot="main">
+
+    <div tal:define="msg view/form_action" tal:condition="msg" 
+         tal:content="structure msg" class="portalMessage">
+    </div>
+
+    <h1>GPG Keys and Launchpad</h1> 
+
+    <p>Launchpad allows you to optionally indicate GPG keys. GPG keys
+    are required to sign the <a href="/codeofconduct">Ubuntu Code of
+    Conduct</a> and to build and upload packages using HCT.</p>
+
+    <form tal:condition="view/gpgkeysCount" 
+          name="gpg_actions" action="" method="POST">
+      <input type="hidden" name="action" value="deactivate_gpg" />
+
+      <h2>Valid Keys</h2>
+
+      <div tal:repeat="key context/gpgkeys">
+        <label>
+          <input type="checkbox" name="DEACTIVATE_GPGKEY"
+                 tal:attributes="value key/id"/>
+          <span tal:replace="key/displayname">KEY</span>
+          <tal:block condition="not:key/can_encrypt">(sign only)</tal:block>
+        </label>
+      </div>
+
+      <p>Note that <dfn>deactivating</dfn> a key <i>applies only to
+      Launchpad</i> and not anywhere else. If you deactivate a key, it
+      will automatically deactivate any feature that uses that key, such
+      as a signed code of conduct or the ability to comment on a bug
+      report by e-mail.</p>
+
+      <input type="submit" value="Deactivate Key" />
+    </form>
+
+    <form tal:condition="context/pendinggpgkeys" name="gpg_actions" 
+          action="" method="POST">
+      <input type="hidden" name="action" value="remove_gpgtoken" />
+
+      <h2>Keys Pending Validation</h2>
+
+      <div>
+        <label tal:repeat="fingerprint context/pendinggpgkeys">
+          <input type="checkbox" name="REMOVE_GPGTOKEN"
+                 tal:attributes="value fingerprint"/>
+          <span tal:replace="fingerprint">TOKEN</span>
+        </label>
+      </div>
+
+      <p>If any of the fingerprints above is not from one of your valid
+      keys, please select it and cancel its validation.</p>
+
+      <input type="submit" value="Cancel Validation for Selected Keys" />
+    </form>
+
+    <form tal:condition="context/inactivegpgkeys" name="gpg_actions"
+          action="" method="POST">
+      <input type="hidden" name="action" value="revalidate_gpg" />
+
+      <h2>Deactivated Keys</h2>
+
+      <p>If you changed your mind about deactivating a key, you can
+      <dfn>revalidate</dfn> it.</p>
+
+      <div tal:repeat="key context/inactivegpgkeys">
+        <label>
+        <input type="checkbox" name="REVALIDATE_GPGKEY"
+               tal:attributes="value key/id"/>
+          <span tal:replace="key/displayname">KEY</span>
+          <tal:block condition="not:key/can_encrypt">(sign only)</tal:block>
+        </label>
+      </div>
+      <input type="submit" value="Revalidate Key" />
+    </form>
+
+    <div>
+    <form name="gpg_actions" action="" method="POST">
+      <input type="hidden" name="action" value="claim_gpg" />
+      <h2>Importing a GPG Key</h2>
+      <div class="formHelp">
+        To import a GPG key, you must first ensure that:
+        <ul>
+          <li>You already have a GPG key (use <kbd>gpg --gen-key</kbd>)
+          <li>The key has already been uploaded to a keyserver (use
+          <kbd>gpg --send-key &lt;key-id&gt;</kbd>)
+        </ul>
+        <p>
+        You should paste your key fingerprint below. To find out what
+        your fingerprint is, use <kbd>gpg --fingerprint
+        &lt;key-id&gt;</kbd>; it is a sequence of hex digits like the
+        example below.
+        <p>
+        Launchpad will then send a message to <code
+        tal:content="context/preferredemail/email"/> containing the
+        instructions to conclude the process.
+      </div>
+      <label>Key Fingerprint</label>
+      <input type="text" name="fingerprint" size="60"/>
+      <div class="discreet" style="margin-bottom: 1em">
+      Example: 27E0 7815 B47C 0397 90D5  8589 27D9 A27B F3F9 6058</div>
+      <input type="submit" value="Find and Import"/>
+    </form>
+    </div>
+
+  </div>
+</body>
+</html>

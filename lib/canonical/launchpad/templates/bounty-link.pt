@@ -12,10 +12,6 @@
   <div tal:replace="structure context/@@+portlet-bounties" />
 </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-actions" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
@@ -24,16 +20,11 @@
             tal:content="view/label"
             metal:fill-slot="heading">Heading from ZCML label="xxx"</h1>
 
-    <div metal:fill-slot="extra_info" class="documentDescription">
-      Use this page to register that an existing Launchpad bounty is
-      related to
+    <p metal:fill-slot="extra_info">
+      A bounty that has already been created can be associated with
       <span tal:replace="context/displayname">Ubuntu</span>.
-    </div>
+    </p>
 
-  </div>
-
-  <div>
-    Thanks for linking to this bounty!
   </div>
 
 </div>

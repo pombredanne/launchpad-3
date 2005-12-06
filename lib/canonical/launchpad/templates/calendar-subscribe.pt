@@ -1,3 +1,4 @@
+<tal:do-this-first condition="view/setUpUserSubscriptions"/>
 <html xmlns="http://www.w3.org/1999/xhtml"
       xmlns:tal="http://xml.zope.org/namespaces/tal"
       xmlns:metal="http://xml.zope.org/namespaces/metal"
@@ -53,7 +54,7 @@
 
         <div class="separator"></div>
 
-        <div class="form actions">
+        <div class="actions">
             <input type='submit' value='Submit'
               name='UPDATE_SUBMIT'
               i18n:attributes='value submit-button' />

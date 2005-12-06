@@ -5,21 +5,32 @@
 
 <body>
 
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-translations" />
-  </metal:leftportlets>
-
-  <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-actions" />
-  </metal:rightportlets>
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-translations" />
+</metal:leftportlets>
 
 <div metal:fill-slot="main">
 
-  <h1>Translate This Package</h1>
+  <h1>Help translate
+    <span tal:replace="context/distribution/displayname">foo</span>!</h1>
 
-  <p class="portalMessage">
-    This is a placeholder page for LaunchpadIntegration
+  <p>
+    Are you fluent in a language other than English?
+    If so, you can contribute to <span tal:replace="context/title" />
+    by translating it with Launchpad&#8217;s 
+    <a href="/rosetta/">Rosetta</a> software.
+    You can translate as much as you like, whenever you like &#8212;
+    all you need is a Web browser.
   </p>
+
+  <p>
+    To start, <a href="+translate/+login">get a Launchpad account</a>
+    if you don&#8217;t already have one.
+    Then choose a language below, and start translating.
+    It&#8217;s that easy. 
+  </p>
+
+  <div tal:replace="structure context/@@+potlist" />
 
 </div>
 </body>

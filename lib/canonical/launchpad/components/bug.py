@@ -13,7 +13,7 @@ class BugDelta:
     implements(IBugDelta)
     def __init__(self, bug, bugurl, user, title=None, summary=None,
                  description=None, name=None, private=None, duplicateof=None,
-                 external_reference=None, bugwatch=None, cveref=None,
+                 external_reference=None, bugwatch=None, cve=None,
                  attachment=None, added_bugtasks=None, bugtask_deltas=None):
         self.bug = bug
         self.bugurl = bugurl
@@ -26,7 +26,7 @@ class BugDelta:
         self.duplicateof = duplicateof
         self.external_reference = external_reference
         self.bugwatch = bugwatch
-        self.cveref = cveref
+        self.cve = cve
         self.attachment = attachment
         self.added_bugtasks = added_bugtasks
         self.bugtask_deltas = bugtask_deltas

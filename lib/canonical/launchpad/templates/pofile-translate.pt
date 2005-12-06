@@ -1,7 +1,7 @@
 <tal:block replace="view/processTranslations" /><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="rosetta">
+      i18n:domain="launchpad">
 
   <body>
 
@@ -13,21 +13,84 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-      <div tal:replace="structure context/@@+portlet-actions" />
       <div tal:replace="structure context/@@+portlet-translators" />
       <div tal:replace="structure context/@@+portlet-contributors" />
 </metal:rightportlets>
 
+
     <div metal:fill-slot="main">
 
-      <p>This is a Rosetta translation page. The template you are translating
-        is the <strong tal:content="context/title">spanish for foo bar</strong>.
-        This page allows you to translate that template into
-        <span tal:replace="context/language/englishname">Portugese</span>.
-        Use the forms below to provide good translations of the strings listed
-        there, taking care to understand the context within which each string
-        is being used.
-      </p>
+      <tal:block condition="nothing">
+      <metal:suggestions define-macro="translation-suggestions">
+        <tal:block condition="submissions">
+          <tr class="secondary">
+            <th colspan="2" style="border: inherit;"
+            >
+              <label><metal:title define-slot="suggestion-title" />:</label>
+            </th>
+            <td class="icon left right" />
+            <td>
+
+          <tal:block condition="not:messageSet/isMultiline">
+            <tal:submission repeat="submission submissions">
+              <div
+                tal:define="submissionlang submission/pomsgset/pofile/language"
+                tal:attributes="
+                  lang submissionlang/dashedcode;
+                  dir submissionlang/abbreviated_text_dir
+                "
+                tal:content="submission/potranslation/translation"
+              >suggestion</div>
+              <div class="discreet">
+                &mdash;
+                <span tal:replace="submission/person/browsername">Foo Bar</span>
+              </div>
+            </tal:submission>
+          </tal:block>
+          <tal:block
+            condition="messageSet/isMultiline"
+            define="submission python:submissions[0]">
+            <pre
+              tal:define="submissionlang submission/pomsgset/pofile/language"
+              tal:attributes="
+                lang submissionlang/dashedcode;
+                dir submissionlang/abbreviated_text_dir
+              "
+              tal:content="submission/potranslation/translation"
+            >suggestion</pre>
+            <div class="discreet">
+              &mdash;
+              <span tal:replace="submission/person/browsername">Foo Bar</span>
+              <tal:block
+                define="submissions_remaining python:len(submissions)-1"
+                condition="submissions_remaining"
+              >
+                (<span tal:replace="submissions_remaining">3</span> more)
+              </tal:block>
+            </div>
+          </tal:block>
+          </td>
+          </tr>
+        </tal:block>
+      </metal:suggestions>
+      </tal:block>
+
+      <div>You are translating</div>
+      <h1>
+        <tal:productseries
+          condition="exists:context/potemplate/productseries/displayname"
+          tal:replace="context/potemplate/productseries/displayname"
+        />
+        <tal:sourcepackage
+          condition="exists:context/potemplate/sourcepackagename"
+          replace="context/potemplate/sourcepackagename"
+        />
+        into
+        <tal:language replace="context/language/englishname" />
+      </h1>
+      <div class="discreet">
+        Template: <tal:template replace="context/title" />
+      </div>
 
       <p class="portalMessage" tal:condition="not: view/is_editor">
         You are not an official translator for this file. You can still make
@@ -35,9 +98,10 @@
         acceptance later by the designated translators.
       </p>
 
-    <!-- Plural form error message. -->
-
-    <div tal:condition="view/lacksPluralFormInformation" class="portalMessage">
+    <div
+      tal:condition="view/lacksPluralFormInformation"
+      class="portalMessage"
+    >
         <p>
           Rosetta can&#8217;t handle the plural items in this file, because it doesn&#8217;t yet know how plural forms work for
           <span tal:replace="context/language/englishname">language</span>.
@@ -46,9 +110,9 @@
           To fix this, please e-mail the <a
           href="mailto:rosetta-users@lists.ubuntu.com">Rosetta users
           mailing list</a> with this information, preferably in the
-          format described in Rosetta's
-          <a href="http://www.ubuntulinux.org/wiki/RosettaFAQ">
-          FAQ</a>.
+          format described in the
+          <a href="https://wiki.ubuntu.com/RosettaFAQ">Rosetta FAQ</a>.
+        </p>
         <p>
           This only needs to be done once per language.
           Thanks for helping Rosetta.
@@ -57,14 +121,12 @@
     </div>
 
 
-    <!-- Make sure we have plural form details. -->
-    <div tal:condition="not: view/lacksPluralFormInformation">
+    <tal:havepluralforms condition="not: view/lacksPluralFormInformation">
 
       <!-- If we have errors, say so -->
       <p class="portalMessage" tal:condition="view/errorcount">
         There are <span tal:replace="view/errorcount">4</span> errors in the
-        translations you provided. Please correct them below and then
-        continue translating.
+        translations you provided. Please correct them before continuing.
       </p>
 
     <!-- Display settings. -->
@@ -152,10 +214,10 @@
              tal:content="alert">
              Error Message
           </p>
-          <table class="data" style="margin-top: 0.5em;">
+          <table class="listing" style="margin-top: 0.5em;">
             <thead>
               <tr class="results">
-                <td colspan="0">
+                <td colspan="4">
 
                   <!-- Show which messages are displayed. -->
                   <div style="width: 50%; float: left;">
@@ -201,58 +263,48 @@
                       <a tal:attributes="href view/endURL">Last</a>
                     </span>
                   </div>
-                  <br style="clear: both;">
                 </td>
               </tr>
             </thead>
             <tbody>
-              <tr tal:repeat="messageSet view/messageSets">
-                <td style="text-align: right;">
+              <tal:messageset repeat="messageSet view/messageSets">
+                <tr>
+                  <td style="text-align: right;">
                   <span tal:replace="messageSet/getSequence">1</span>.
-                </td>
-                <td>
                   <input type="hidden"
                     tal:attributes="
                     name string:set_${messageSet/id}_msgid"
                   />
-                  <tal:comment tal:replace="nothing">
-                    XXX mpt-20050407: Nested tables? Ick.
-                    Should eventually be
-                    replaced by fancy code to calculate the
-                    rowspan of the messageSet/sequence cell above.
-                  </tal:comment>
-                  <table width="100%">
-                    <tr>
-                      <th style="width: 25%">
+                  </td>
+                      <th style="border-style: dotted; border-width: 1px 0 0;">
                         <label class="language-code"
                                tal:condition="not:messageSet/isPlural">
-                          English (source):
+                          English:
                         </label>
                         <label class="language-code"
                                tal:condition="messageSet/isPlural">
                           English singular:
                         </label>
                       </th>
-                      <td style="width: 16px;">
+                      <td class="icon left right">
                       </td>
                       <td tal:content="structure messageSet/getMsgID">
                         The original text.
                       </td>
                     </tr>
-                    <tr tal:condition="messageSet/isPlural">
-                      <th>
+                    <tr class="secondary" tal:condition="messageSet/isPlural">
+                      <th colspan="2">
                         <label>English plural:</label>
                       </th>
-                      <td style="width: 16px;"></td>
+                      <td class="icon left right"></td>
                       <td tal:content="structure messageSet/getMsgIDPlural">
                         plural source
                       </td>
                     </tr>
-                    <tr class="discreet"
+                    <tr class="discreet secondary"
                         tal:condition="messageSet/msgidHasTab"
                     >
-                        <td/>
-                        <td/>
+                        <td colspan="3" />
                         <td>
                             <img
                               alt="Note:"
@@ -265,11 +317,10 @@
                         </td>
                     </tr>
                     <tr
-                      class="discreet"
+                      class="discreet secondary"
                       tal:condition="messageSet/getSourceComment"
                     >
-                      <td></td>
-                      <td></td>
+                      <td colspan="3" />
                       <td>
                         <img
                           alt="Developer note:"
@@ -283,8 +334,14 @@
                         </span>
                       </td>
                     </tr>
-                    <tr>
-                      <th>
+                    <tal:block
+                      tal:define="language_code context/language/code"
+                      repeat="index messageSet/getTranslationRange"
+                    >
+                    <tr
+                      class="secondary"
+                    >
+                      <th colspan="2">
                         <label class="language-code">
                           <span tal:replace="context/language/englishname">
                             Welsh
@@ -294,152 +351,165 @@
                       <td>
                         <!-- will eventually contain copy buttons -->
                       </td>
-                      <td tal:define="language_code context/language/code">
+                      <td>
                         <div tal:condition="messageSet/getError" class="error">
                           <strong>Error in Translation:</strong>
                           <span tal:replace="messageSet/getError" />
                         </div>
-                        <tal:block repeat="index messageSet/getTranslationRange">
-                        <tal:comment tal:replace="nothing">
-                          XXX: Carlos Perello Marin 2005-05-05
-                          This 'python:' expression should be fixed by SteveA.
-                        </tal:comment>
-                        <input
-                          type="text"
-                          tal:condition="not:messageSet/isMultiline"
-                          tal:attributes="
-                            name string:set_${messageSet/id}_translation_${language_code}_${index};
-                            value python:messageSet.getTranslation(index);
-                            tabindex view/makeTabIndex;
-                            " />
-                        <tal:block condition="messageSet/isMultiline">
-                        <tal:comment tal:replace="nothing">
-                          XXX: Carlos Perello Marin 2005-05-05
-                          This 'python:' expression should be fixed by SteveA.
-                        </tal:comment>
-                        <tal:with-content
-                          condition="python:messageSet.getTranslation(index)">
-                        <tal:comment tal:replace="nothing">
-                          Note that the lack of indentation for
-                          tal:content is deliberate or we would add extra
-                          whitespaces to the textarea, which causes us to
-                          potentially corrupt translations.
-                          For more information, please read:
-                          https://bugzilla.mozilla.org/show_bug.cgi?id=299009
-                        </tal:comment>
-                        <textarea
-                          tal:attributes="
-                            name string:set_${messageSet/id}_translation_${language_code}_${index};
-                            rows messageSet/getMaxLinesCount;
-                            tabindex view/makeTabIndex;
-                            ">
+                          <tal:comment tal:replace="nothing">
+                            XXX: Carlos Perello Marin 2005-05-05
+                            This 'python:' expression should be fixed by SteveA.
+                          </tal:comment>
+                          <input
+                            type="text"
+                            tal:condition="not:messageSet/isMultiline"
+                            tal:attributes="
+                              name string:set_${messageSet/id}_translation_${language_code}_${index};
+                              value python:messageSet.getTranslation(index);
+                              tabindex view/makeTabIndex;
+                              lang context/language/dashedcode;
+                              dir context/language/abbreviated_text_dir;
+                              " />
+                          <tal:block condition="messageSet/isMultiline">
+                            <tal:comment tal:replace="nothing">
+                              XXX: Carlos Perello Marin 2005-05-05
+                              This 'python:' expression should be fixed by SteveA.
+                            </tal:comment>
+                            <tal:with-content
+                              condition="python:messageSet.getTranslation(index)">
+                              <tal:comment tal:replace="nothing">
+                                The lack of indentation for
+                                tal:content is deliberate or we would add extra
+                                whitespaces to the textarea, which causes us to
+                                potentially corrupt translations.
+                                https://bugzilla.mozilla.org/show_bug.cgi?id=299009
+                              </tal:comment>
+                              <textarea
+                                tal:attributes="
+                                  name string:set_${messageSet/id}_translation_${language_code}_${index};
+                                  rows messageSet/getMaxLinesCount;
+                                  tabindex view/makeTabIndex;
+                                  lang context/language/dashedcode;
+                                  dir context/language/abbreviated_text_dir;
+                                ">
 <tal:content replace="structure python:messageSet.getTranslation(index)" /></textarea>
-                        </tal:with-content>
-                        <tal:without-content
-                          condition="python:not messageSet.getTranslation(index)">
-                        <tal:comment tal:replace="nothing">
-                          XXX: Carlos Perello Marin 2005-05-05
-                          This 'python:' expression should be fixed by SteveA.
+                            </tal:with-content>
+                            <tal:without-content
+                              condition="python:not messageSet.getTranslation(index)">
+                              <tal:comment tal:replace="nothing">
+                                XXX: Carlos Perello Marin 2005-05-05
+                                This 'python:' expression should be fixed by SteveA.
 
-                          We are using an special case if we don't have
-                          any content for this textarea because tal
-                          expressions leave empty lines behind so we get new
-                          lines added to the textarea for free and that causes
-                          erroneous translations.
-                        </tal:comment>
-                        <textarea
-                          tal:attributes="
-                            name string:set_${messageSet/id}_translation_${language_code}_${index};
-                            rows messageSet/getMaxLinesCount;
-                            tabindex view/makeTabIndex;
-                            "></textarea>
-                        </tal:without-content>
-                        </tal:block>
-                        <tal:block condition="not:messageSet/isMultiline">
+                                We are using an special case if we don't have
+                                any content for this textarea because tal
+                                expressions leave empty lines behind so we get new
+                                lines added to the textarea for free and that causes
+                                erroneous translations.
+                              </tal:comment>
+                              <textarea
+                                tal:attributes="
+                                  name string:set_${messageSet/id}_translation_${language_code}_${index};
+                                  rows messageSet/getMaxLinesCount;
+                                  tabindex view/makeTabIndex;
+                                  lang context/language/dashedcode;
+                                  dir context/language/abbreviated_text_dir;
+                                "></textarea>
+                            </tal:without-content>
+                          </tal:block>
+                        </td>
+                      </tr>
+                      <tr class="secondary">
+                        <td colspan="3" />
+                        <td>
+                          <div>
+                            <label class="fuzzy-checkbox">
+                              <input
+                                type="checkbox"
+                                value="fuzzy"
+                                tal:attributes="
+                                  checked messageSet/isFuzzy;
+                                  name string:set_${messageSet/id}_fuzzy_${language_code};
+                                  tabindex: view/makeTabIndex
+                              " />
+                              <tal:block condition="not:messageSet/isPlural">
+                                Someone should review this translation
+                              </tal:block>
+                              <tal:block condition="messageSet/isPlural">
+                                Someone should review these translations
+                              </tal:block>
+                            </label>
+                          </div>
+                        </td>
+                      </tr>
+
                           <tal:block define="submissions python:messageSet.getSuggestedSubmissions(index)">
-                            <tal:block condition="submissions">
-                              <pre><b>Suggestions:</b><br />
-<tal:block repeat="submission submissions"><span
-tal:replace="submission/potranslation/translation">submission</span> (<span
-tal:replace="submission/person/browsername">person name</span>)
-</tal:block></pre>
-                            </tal:block>
+                            <metal:use
+                              metal:use-macro="template/macros/translation-suggestions">
+                              <metal:fill metal:fill-slot="suggestion-title"><tal:block
+                                condition="not:messageSet/isMultiline"
+                                >Suggestions</tal:block><tal:block
+                                condition="messageSet/isMultiline"
+                                >Suggestion</tal:block></metal:fill>
+                            </metal:use>
                           </tal:block>
                           <tal:block define="submissions python:messageSet.getCurrentSubmissions(index)">
-                            <tal:block condition="submissions">
-                              <pre><b>Currently Published Elsewhere:</b><br />
-<tal:block repeat="submission submissions"><span
-tal:replace="submission/potranslation/translation">suggestion</span> (<span
-tal:replace="submission/person/browsername">person name</span>)
-</tal:block></pre>
-                            </tal:block>
+                            <metal:use
+                              metal:use-macro="template/macros/translation-suggestions">
+                              <metal:fill metal:fill-slot="suggestion-title"><tal:block
+                                condition="not:messageSet/isMultiline"
+                                >Used elsewhere</tal:block><tal:block
+                                condition="messageSet/isMultiline"
+                                >Used elsewhere</tal:block></metal:fill>
+                            </metal:use>
                           </tal:block>
                           <tal:block define="submissions python:messageSet.getWikiSubmissions(index)">
-                            <tal:block condition="submissions">
-                              <pre><b>From the Global Translation Wiki:</b><br />
-<tal:block repeat="submission submissions"><span
-tal:replace="submission/potranslation/translation">suggestion</span> (<span
-tal:replace="submission/person/browsername">person name</span>)
-</tal:block></pre>
-                            </tal:block>
+                            <metal:use
+                              metal:use-macro="template/macros/translation-suggestions">
+                              <metal:fill metal:fill-slot="suggestion-title"><tal:block
+                                condition="not:messageSet/isMultiline"
+                                >Suggested elsewhere</tal:block><tal:block
+                                condition="messageSet/isMultiline"
+                                >Suggested elsewhere</tal:block></metal:fill>
+                            </metal:use>
                           </tal:block>
                           <tal:block define="submissions python:messageSet.getAlternateLanguageSubmissions(index)">
-                            <tal:block condition="submissions">
-                              <pre><b><span tal:replace="view/second_lang_pofile/language/englishname" /> (Alternate Language):</b><br />
-<tal:block repeat="submission submissions"><span
-tal:replace="submission/potranslation/translation">submission</span> (<span
-tal:replace="submission/person/browsername">person name</span>)
-</tal:block></pre>
-                            </tal:block>
+                            <metal:use
+                              metal:use-macro="template/macros/translation-suggestions">
+                              <metal:fill metal:fill-slot="suggestion-title"><tal:block
+                                condition="not:messageSet/isMultiline"
+                                ><span tal:replace="view/second_lang_pofile/language/englishname"
+                                /> (Alternate Language)</tal:block><tal:block
+                                condition="messageSet/isMultiline"
+                                ><span tal:replace="view/second_lang_pofile/language/englishname"
+                                /> (Alternate Language)</tal:block></metal:fill>
+                            </metal:use>
                           </tal:block>
-                        </tal:block>
-                        </tal:block>
-                        <div>
-                          <label class="fuzzy-checkbox">
-                            <input
-                              type="checkbox"
-                              value="fuzzy"
-                              tal:attributes="
-                                checked messageSet/isFuzzy;
-                                name string:set_${messageSet/id}_fuzzy_${language_code};
-                                tabindex: view/makeTabIndex
-                                " />
-                            <tal:block condition="not:messageSet/isPlural">
-                              Someone should review this translation
-                            </tal:block>
-                            <tal:block condition="messageSet/isPlural">
-                              Someone should review these translations
-                            </tal:block>
-                          </label>
-                        </div>
-                        <div class="po-comment"
-                             tal:condition="messageSet/getComment">
-                          <label>Translator Note</label>
-                          <div tal:content="messageSet/getComment">
-                            Translator comment.
-                          </div>
-                        </div>
+
+                    </tal:block>
+                    <tr tal:condition="messageSet/getComment" class="secondary">
+                      <th colspan="2"><label>Translator note:</label></th>
+                      <td />
+                      <td tal:content="messageSet/getComment">
+                        Translator comment.
                       </td>
                     </tr>
-                    <tr class="discreet">
-                      <th style="width: 25%; padding-bottom: 1em;">
+                    <tr class="discreet secondary">
+                      <th colspan="2" style="padding-bottom: 1em;">
                         Located in:
                       </th>
-                      <td style="width: 16px;">
+                      <td class="icon left right">
                       </td>
                       <td style="overflow: auto;"
                         tal:content="messageSet/getFileReferences"
                         >
                         ./plone_forms/discussion_reply_form.pt
                       </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
+                </tr>
+              </tal:messageset>
             </tbody>
             <tfoot>
               <tr>
-                <th colspan="0">
+                <th colspan="4">
                   <input type="submit" name="SUBMIT" value="Save &amp; Continue" style="text-align: right;"
                       tal:attributes="tabindex: view/makeTabIndex" />
                 </th>
@@ -457,7 +527,7 @@ tal:replace="submission/person/browsername">person name</span>)
           >Spanish</span>
           <span tal:replace="view/completeness" tal:omit-tag="">0 %</span>
         </p>
-      </div> <!-- condition: not: view/lacksPluralFormInformation -->
+      </tal:havepluralforms>
     </div>
 
   </body>

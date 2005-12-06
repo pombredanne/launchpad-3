@@ -1,4 +1,5 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
+# pylint: disable-msg=W0613,E0201,R0911
 #
 """Implementation of the lp: htmlform: fmt: namespaces in TALES.
 
@@ -8,25 +9,25 @@ __metaclass__ = type
 import bisect
 import cgi
 import re
-import sets
 import os.path
-import warnings
+
 from zope.interface import Interface, Attribute, implements
-from zope.component import getAdapter, getUtility, queryAdapter
+from zope.component import getUtility, queryAdapter, getDefaultViewName
 
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.app.traversing.interfaces import ITraversable
 from zope.exceptions import NotFoundError
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import isinstance as zope_isinstance
+
 from canonical.launchpad.interfaces import (
-    IPerson, ILaunchBag, IFacetMenu, IExtraFacetMenu,
-    IApplicationMenu, IExtraApplicationMenu, NoCanonicalUrl,
-    IBugSet)
-import canonical.lp.dbschema
-from canonical.lp import decorates
+    IPerson, ILaunchBag, IFacetMenu, IApplicationMenu, IContextMenu,
+    NoCanonicalUrl, IBugSet)
+from canonical.lp import dbschema
 import canonical.launchpad.pagetitles
 from canonical.launchpad.webapp import canonical_url, nearest_menu
+from canonical.launchpad.webapp.menu import Url
 from canonical.launchpad.webapp.publisher import get_current_browser_request
 from canonical.launchpad.helpers import check_permission
 
@@ -39,17 +40,27 @@ class TraversalError(NotFoundError):
 class MenuAPI:
     """Namespace to give access to the facet menus.
 
-       thing/menu:facet       gives the facet menu of the nearest object
-                              along the canonical url chain that has an
-                              IFacetMenu adapter.
+       CONTEXTS/menu:facet       gives the facet menu of the nearest object
+                                 along the canonical url chain that has an
+                                 IFacetMenu adapter.
 
-       thing/menu:extrafacet  gives the facet menu of the nearest object
-                              along the canonical url chain that has an
-                              IFacetMenu adapter.
     """
 
     def __init__(self, context):
-        self._context = context
+        if zope_isinstance(context, dict):
+            # We have what is probably a CONTEXTS dict.
+            # We get the context out of here, and use that for self.context.
+            # We also want to see if the view has a __launchpad_facetname__
+            # attribute.
+            self._context = context['context']
+            view = context['view']
+            self._request = context['request']
+            self._selectedfacetname = getattr(
+                view, '__launchpad_facetname__', None)
+        else:
+            self._context = context
+            self._request = get_current_browser_request()
+            self._selectedfacetname = None
 
     def _nearest_menu(self, menutype):
         try:
@@ -57,35 +68,29 @@ class MenuAPI:
         except NoCanonicalUrl:
             return None
 
+    def _requesturl(self):
+        request = self._request
+        if request is None:
+            return None
+        requesturlobj = Url(request.getURL(), request.get('QUERY_STRING'))
+        # If the default view name is being used, we will want the url
+        # without the default view name.
+        defaultviewname = getDefaultViewName(self._context, request)
+        if requesturlobj.pathnoslash.endswith(defaultviewname):
+            requesturlobj = Url(request.getURL(1), request.get('QUERY_STRING'))
+        return requesturlobj
+
     def facet(self):
         menu = self._nearest_menu(IFacetMenu)
         if menu is None:
             return []
         else:
-            menu.request = get_current_browser_request()
-            return list(menu)
-
-    def extrafacet(self):
-        menu = self._nearest_menu(IExtraFacetMenu)
-        if menu is None:
-            return []
-        else:
-            menu.request = get_current_browser_request()
-            return list(menu)
-
-    def _get_selected_facetname(self):
-        """Returns the name of the selected facet, or None if there is no
-        selected facet.
-        """
-        facetmenu = self.facet()
-        selectedfacetname = None
-        for link in facetmenu:
-            if link.selected:
-                return link.name
-        return None
+            return list(menu.iterlinks(
+                requesturl=self._requesturl(),
+                selectedfacetname=self._selectedfacetname))
 
     def application(self):
-        selectedfacetname = self._get_selected_facetname()
+        selectedfacetname = self._selectedfacetname
         if selectedfacetname is None:
             # No facet menu is selected.  So, return empty list.
             return []
@@ -93,21 +98,14 @@ class MenuAPI:
         if menu is None:
             return []
         else:
-            menu.request = get_current_browser_request()
-            return list(menu)
+            return list(menu.iterlinks(requesturl=self._requesturl()))
 
-    def extraapplication(self):
-        selectedfacetname = self._get_selected_facetname()
-        if selectedfacetname is None:
-            # No facet menu is selected.  So, return empty list.
-            return []
-        menu = queryAdapter(
-            self._context, IExtraApplicationMenu, selectedfacetname)
+    def context(self):
+        menu = IContextMenu(self._context, None)
         if menu is None:
-            return []
+            return  []
         else:
-            menu.request = get_current_browser_request()
-            return list(menu)
+            return list(menu.iterlinks(requesturl=self._requesturl()))
 
 
 class CountAPI:
@@ -122,6 +120,35 @@ class CountAPI:
     def len(self):
         """somelist/count:len  gives you an int that is len(somelist)."""
         return len(self._context)
+
+
+class EnumValueAPI:
+    """Namespace to test whether a DBSchema Item has a particular value.
+
+    The value is given in the next path step.
+
+        tal:condition="somevalue/enumvalue:BISCUITS"
+
+    Registered for canonical.lp.dbschema.Item.
+    """
+    implements(ITraversable)
+
+    def __init__(self, item):
+        self.item = item
+
+    def traverse(self, name, furtherPath):
+        if self.item.name == name:
+            return True
+        else:
+            # Check whether this was an allowed value for this dbschema.
+            schema = self.item.schema
+            try:
+                schema.items[name]
+            except KeyError:
+                raise TraversalError(
+                    'The %s dbschema does not have a value %s.' %
+                    (schema.__name__, name))
+            return False
 
 
 class HTMLFormAPI:
@@ -204,10 +231,10 @@ class DBSchemaAPI:
     implements(ITraversable)
 
     _all = {}
-    for name in canonical.lp.dbschema.__all__:
-        schema = getattr(canonical.lp.dbschema, name)
-        if (schema is not canonical.lp.dbschema.DBSchema and
-            issubclass(schema, canonical.lp.dbschema.DBSchema)):
+    for name in dbschema.__all__:
+        schema = getattr(dbschema, name)
+        if (schema is not dbschema.DBSchema and
+            issubclass(schema, dbschema.DBSchema)):
             _all[name] = schema
 
     def __init__(self, number):
@@ -229,7 +256,7 @@ class NoneFormatter:
     """
     implements(ITraversable)
 
-    allowed_names = sets.Set([
+    allowed_names = set([
         'nl_to_br',
         'nice_pre',
         'breadcrumbs',
@@ -241,6 +268,7 @@ class NoneFormatter:
         'pagetitle',
         'text-to-html',
         'url',
+        'icon'
         ])
 
     def __init__(self, context):
@@ -252,6 +280,8 @@ class NoneFormatter:
                 raise TraversalError(
                     "you need to traverse a number after fmt:shorten")
             maxlength = int(furtherPath.pop())
+            # XXX: why is maxlength not used here at all?
+            #       - kiko, 2005-08-24
             return ''
         elif name in self.allowed_names:
             return ''
@@ -260,7 +290,10 @@ class NoneFormatter:
 
 
 class ObjectFormatterAPI:
-    """Adapter from any object to a formatted string.  Used for fmt:url."""
+    """Adapter from any object to a formatted string.
+
+    Used for fmt:url.
+    """
 
     def __init__(self, context):
         self._context = context
@@ -268,6 +301,45 @@ class ObjectFormatterAPI:
     def url(self):
         request = get_current_browser_request()
         return canonical_url(self._context, request)
+
+
+class BugTaskFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IBugTask objects to a formatted string.
+
+    Used for fmt:icon.
+    """
+
+    def icon(self):
+        """Return the appropriate <img> tag for the bugtask icon.
+
+        The icon displayed is calculated based on the IBugTask.priority.
+        """
+        if self._context.priority:
+            priority_title = self._context.priority.title.lower()
+        else:
+            priority_title = None
+
+        if not priority_title:
+            return '<img alt="(no priority)" title="no priority" src="/@@/bug" />'
+        elif priority_title == 'wontfix':
+            # Special-case Wontfix by returning the "generic" bug icon
+            # because we actually hope to eliminate Wontfix
+            # entirely. See
+            # https://wiki.launchpad.canonical.com/SimplifyingMalone
+            return '<img alt="(wontfix priority)" title="wontfix" src="/@@/bug" />'
+        else:
+            return '<img alt="(%s priority)" title="%s priority" src="/@@/bug-%s" />' % (priority_title, priority_title, priority_title)
+
+
+class MilestoneFormatterAPI(ObjectFormatterAPI):
+    """Adapter for IMilestone objects to a formatted string.
+
+    Used for fmt:icon.
+    """
+
+    def icon(self):
+        """Return the appropriate <img> tag for the milestone icon."""
+        return '<img alt="" src="/++resource++target" />'
 
 
 class DateTimeFormatterAPI:
@@ -465,38 +537,6 @@ def clean_path_segments(request):
     return clean_path_split
 
 
-class RequestFormatterAPI:
-    """Launchpad fmt:... namespace, available for IBrowserApplicationRequest.
-    """
-
-    def __init__(self, request):
-        self.request = request
-
-    def breadcrumbs(self):
-        # XXX stevea 7/7/05 let's replace this in due course with something
-        # better thought through
-        unclickable = set(['+lang'])
-        path_info = self.request.get('PATH_INFO')
-        last_path_info_segment = path_info.split('/')[-1]
-        clean_path_split = clean_path_segments(self.request)
-        last_clean_path_segment = clean_path_split[-1]
-        last_clean_path_index = len(clean_path_split) - 1
-        if last_clean_path_segment != last_path_info_segment:
-            clean_path_split = clean_path_split[:-1]
-        L = []
-        for index, segment in enumerate(clean_path_split):
-            if not (segment.startswith('++vh++') or segment == '++'):
-                if not (index == last_clean_path_index
-                        and last_path_info_segment == last_clean_path_index):
-                    if not segment:
-                        segment = 'Launchpad'
-                    if segment not in unclickable:
-                        L.append('<a rel="parent" href="%s">%s</a>' %
-                            (self.request.URL[index], segment))
-        sep = '<span class="breadcrumbSeparator"> &raquo; </span>'
-        return sep.join(L)
-
-
 class PageTemplateContextsAPI:
     """Adapter from page tempate's CONTEXTS object to fmt:pagetitle.
 
@@ -532,10 +572,10 @@ class PageTemplateContextsAPI:
         name = name.replace('-', '_')
         titleobj = getattr(canonical.launchpad.pagetitles, name, None)
         if titleobj is None:
-            warnings.warn(
+            # sabdfl 25/0805 page titles are now mandatory hence the assert
+            raise AssertionError(
                  "No page title in canonical.launchpad.pagetitles for %s"
                  % name)
-            return canonical.launchpad.pagetitles.DEFAULT_LAUNCHPAD_TITLE
         elif isinstance(titleobj, basestring):
             return titleobj
         else:
@@ -602,53 +642,37 @@ class FormattersAPI:
             url = match.group('url')
             # The url might end in a spurious &gt;.  If so, remove it
             # and put it outside the url text.
+            trail = ''
+            gt = ''
+            if url[-1] in (",", ".", "?", ":") or url[-2:] == ";;":
+                # These common punctuation symbols often trail URLs; we
+                # deviate from the specification slightly here but end
+                # up with less chance of corrupting a URL because
+                # somebody added punctuation after it in the comment.
+                #
+                # The special test for ";;" is done to catch the case
+                # where the URL is wrapped in greater/less-than and
+                # then followed with a semicolon. We can't just knock
+                # off a trailing semi-colon because it might have been
+                # part of an entity -- and that's what the next clauses
+                # handle.
+                trail = url[-1]
+                url = url[:-1]
             if url.lower().endswith('&gt;'):
                 gt = url[-4:]
                 url = url[:-4]
-            else:
-                gt = ''
-                url = url
-            return '<a rel="nofollow" href="%s">%s</a>%s' % (
-                url.replace('"', '&quot;'), url, gt)
+            elif url.endswith(";"):
+                # This is where a single semi-colon is consumed, for
+                # the case where the URL didn't end in an entity.
+                trail = url[-1]
+                url = url[:-1]
+            return '<a rel="nofollow" href="%s">%s</a>%s%s' % (
+                url.replace('"', '&quot;'), url, gt, trail)
         else:
             raise AssertionError("Unknown pattern matched.")
 
-    # Match <, >, & when they've been html-escaped, so that we can replace
-    # them with a single character to get the correct length of a line.
-    _re1 = re.compile('&lt;|&gt;|&amp;')
-
-    # Match for putting <div></div> around lines.
-    # Look back to check there was not a \n previously, match a single \n
-    # or the start of the text, some data we want, followed by a look-ahead
-    # of a single \n not followed by another \n, or the end of the text.
-    _re2 = re.compile('(?<!\n)(\n|^)([^\n]+)(?=\n[^\n]|\n$|$)')
-
-    # Match for putting <p></p> around paragraphs.
-    # Match two newlines, start of text and newline, or a </div>, then
-    # some data we want with no newlines or '<', then a look-ahead of
-    # a pair or newlines, or a single newline and the end of the string,
-    # or the end of the string, or a <div>.
-    _re3 = re.compile(
-        '(\n\n|^\n|^|</div>|</div>\n)([^\n<]+)(?=\n\n|\n$|$|<div>)')
-
-    # See if the output looks like a single div containing just text.
-    _re4 = re.compile('^<div>([^<>]*)</div>$')
-
-    # Whitespace following a <div>, so we can replace it with &nbsp;
-    # characters using _substitute_matchgroup_for_spaces().
-    _re5 = re.compile('(?<=<div>)( +)')
-
-    # Whitespace following a <p>, so we can replace it with &nbsp;
-    # characters using _substitute_matchgroup_for_spaces().
-    _re6 = re.compile('(?<=<p>)( +)')
-
-    # A </div> with any newlines after it, so we can ensure there's exactly
-    # one newline after a div.
-    _re7 = re.compile('</div>\n*')
-
-    # A <p> with any newlines after it, so we can ensure there's exactly
-    # one newline after a paragraph.
-    _re8 = re.compile('</p>\n*')
+    # match whitespace at the beginning of a line
+    _re_leadingspace = re.compile(r'^(\s+)')
 
     # Match urls or bugs.
     _re_linkify = re.compile(r'''
@@ -658,91 +682,87 @@ class FormattersAPI:
         (?P<urlchars>[a-zA-Z0-9/:;@_%~#=&\.\-\?\+\$,]*)
       ) |
       (?P<bug>
-        bug\s+(?:\#|number\.?|num\.?|no\.?)?\s*
+        bug\s*(?:\#|number\.?|num\.?|no\.?)?\s*
         0*(?P<bugnum>\d+)
       )
     ''', re.IGNORECASE | re.VERBOSE)
 
+    @staticmethod
+    def _split_paragraphs(text):
+        """Split text into paragraphs.
+
+        This function yields lists of strings that represent
+        paragraphs of text.
+
+        Paragraphs are split by one or more blank lines.
+
+        Each paragraph is further split into one or more logical lines
+        of text.  Two adjacent lines are considered to be part of the
+        same logical line if the following conditions hold:
+          1. the first line is between 60 and 80 characters long
+          2. the second line does not begin with whitespace.
+          3. the second line does not begin with '>' (commonly used for
+             reply quoting in emails).
+        """
+        paragraph = []
+        continue_logical_line = False
+        for line in text.splitlines():
+            line = line.rstrip()
+
+            # blank lines split paragraphs
+            if not line:
+                if paragraph:
+                    yield paragraph
+                paragraph = []
+                continue_logical_line = False
+                continue
+
+            # continue the run of text if the last line was between 60
+            # and 80 characters, and this line doesn't begin with
+            # whitespace.
+            if continue_logical_line and not (line[0].isspace() or
+                                              line[0] == '>'):
+                paragraph[-1] += '\n' + line
+            else:
+                paragraph.append(line)
+
+            continue_logical_line = 60 < len(line) < 80
+        if paragraph:
+            yield paragraph
+
     def text_to_html(self):
         """Quote text according to DisplayingParagraphsOfText."""
-        text = cgi.escape(self._stringtoformat)
-
         # This is based on the algorithm in the
         # DisplayingParagraphsOfText spec, but is a little more
         # complicated.
 
-        # 1. Trailing whitespace is removed from each line.
-        # 2. For each line in the text, if (when unescaped) it is between
-        #    60 and 80 characters long, and the next line exists and is
-        #    non-empty, replace the newline between them with a space
-        #    character. (We're assuming such line breaks are the result of
-        #    hard-wrapped text, such as an e-mail message.)
+        # 1. Blank lines are used to detect paragraph boundaries.
+        # 2. Two lines are considered to be part of the same logical line
+        #    only if the first is between 60 and 80 characters and the
+        #    second does not begin with white space.
+        # 3. Use <br /> to split logical lines within a paragraph.
 
         output = []
-        continuous_logical_paragraph = False
-        for line in text.splitlines():
-            line = line.rstrip()
-            output.append(line)
-            # Substitute the unescaped values for measuring the length of the
-            # line.  An 'X' is used to make it clearly show up if we use the
-            # output for anything else.
-            if 60 < len(self._re1.sub('X', line)) < 80:
-                if not continuous_logical_paragraph:
-                    output.insert(-1, '<parastartmarker>\n\n')
-                output.append(' ')
-                continuous_logical_paragraph = True
-            else:
-                if continuous_logical_paragraph:
-                    # Put a special marker in to separate the paragraph from
-                    # whatever is to come next.  This marker cannot occur in
-                    # the real text because the real text has been cgi escaped.
-                    # The marker effectively separates the set of newlines
-                    # that come immediately after the paragraph from the
-                    # newlines that come before the following text.
-                    output.append('\n\n<paraendmarker>')
-                    continuous_logical_paragraph = False
-                    if not line.strip():
-                        # Remove the trailing space, which is the second to
-                        # last item in output.
-                        output.pop(-3)
-                        # This was a deliberately blank line, so add another
-                        # \n.
-                        output.append('\n')
+        first_para = True
+        for para in self._split_paragraphs(self._stringtoformat):
+            if not first_para:
                 output.append('\n')
-        output = output[:-1]
+            first_para = False
+            output.append('<p>')
+            first_line = True
+            for line in para:
+                if not first_line:
+                    output.append('<br />\n')
+                first_line = False
+                # escape ampersands, etc in text
+                line = cgi.escape(line)
+                # convert leading space in logical line to non-breaking space
+                line = self._re_leadingspace.sub(
+                    self._substitute_matchgroup_for_spaces, line)
+                output.append(line)
+            output.append('</p>')
+
         text = ''.join(output)
-
-        # 3. Put <div>...</div> around non-whitespace lines that
-        #   - start with a single newline or the start of the entire text, and
-        #   - end with a single newline or the end of the entire text.
-
-        text = self._re2.sub(r'<div>\2</div>', text)
-
-        # 4. Put <p>...</p> around non-whitespace lines that:
-        #   - start with multiple newlines or the start of the entire text,
-        #     or where the previous line now ends in </div>, and
-        #   - end with multiple newlines or the end of the entire text,
-        #     or where the following line now starts with <div>.
-
-        text = self._re3.sub(r'\1<p>\2</p>', text)
-
-        # Need to move the <parastartmarker> and <paraendmarker> now.
-        text = text.replace('<parastartmarker>', '')
-        text = text.replace('<paraendmarker>', '')
-
-        # 5. If the entire text now consists of a single <div>...</div>
-        # element, change it to a <p>...</p> element.
-
-        text = self._re4.sub(r'<p>\1</p>', text)
-
-        # 6. Leading spaces on each line are converted to &nbsp;.
-        text = self._re5.sub(self._substitute_matchgroup_for_spaces, text)
-        text = self._re6.sub(self._substitute_matchgroup_for_spaces, text)
-
-        # Only one newline after closing tags, except at the end.
-        text = self._re7.sub('</div>\n', text)
-        text = self._re8.sub('</p>\n', text)
-        text = text.rstrip()
 
         # Linkify the text.
         text = self._re_linkify.sub(self._linkify_substitution, text)
@@ -773,7 +793,7 @@ class FormattersAPI:
                     )
 
     def shorten(self, maxlength):
-        """Use like tal:content="context/foo/fmt:shorten/60"""
+        """Use like tal:content="context/foo/fmt:shorten/60"."""
         if len(self._stringtoformat) > maxlength:
             return '%s...' % self._stringtoformat[:maxlength-3]
         else:

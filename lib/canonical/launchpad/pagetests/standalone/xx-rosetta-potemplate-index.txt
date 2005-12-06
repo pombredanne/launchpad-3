@@ -3,7 +3,7 @@ Check that the index page for a POTemplate is listing all available
 translations.
 
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/ HTTP/1.1
+  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/ HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...

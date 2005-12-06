@@ -126,18 +126,22 @@ class POMsgSet(SQLBase):
                      self.pofile.canEditTranslations(person))
 
         # First, check that the translations are correct.
-        pot_set = self.potmsgset
+        potmsgset = self.potmsgset
         msgids_text = [messageid.msgid
-                       for messageid in pot_set.messageIDs()]
+                       for messageid in potmsgset.messageIDs()]
 
         # By default all translations are correct.
         validation_status = TranslationValidationStatus.OK
+
+        # Fix the trailing and leading whitespaces
+        for index, value in new_translations.items():
+            new_translations[index] = potmsgset.apply_sanity_fixes(value)
 
         # Validate the translation we got from the translation form
         # to know if gettext is unhappy with the input.
         try:
             helpers.validate_translation(msgids_text, new_translations,
-                                         pot_set.flags())
+                                         potmsgset.flags())
         except gettextpo.error:
             if fuzzy or ignore_errors:
                 # The translations are stored anyway, but we set them as
@@ -384,8 +388,6 @@ class POMsgSet(SQLBase):
         object_before_modification = helpers.Snapshot(selection,
             providing=providedBy(selection))
 
-        # Update the latestsubmission field.
-        self.pofile.latestsubmission = submission
 
         # next, we need to update the existing active and possibly also
         # published selections
@@ -395,6 +397,9 @@ class POMsgSet(SQLBase):
             # activesubmission is updated only if the translation is valid and
             # it's an editor.
             selection.activesubmission = submission
+
+            # Same with the latestsubmission field.
+            self.pofile.latestsubmission = submission
 
         # List of fields that would be updated.
         fields = ['publishedsubmission', 'activesubmission']
@@ -468,7 +473,7 @@ class POMsgSet(SQLBase):
         """See IPOMsgSet."""
         selection = self.selection(pluralform)
         active = None
-        if selection is not None and selection.activesubmission:
+        if selection is not None and selection.activesubmission is not None:
             active = selection.activesubmission
         query = '''pomsgset = %s AND
                    pluralform = %s''' % sqlvalues(self.id, pluralform)

@@ -16,34 +16,32 @@
 
 <div metal:fill-slot="main" >
 
-    <h1>Your language preferences</h1>
+  <h1>Your language preferences</h1>
 
-    <div tal:content="view/submit" />
+  <div tal:content="view/submit" />
 
-    <p>
-    Select languages in the list below to tell Rosetta which ones you're
-    interested in translating into.
-    </p>
+  <p>
+    Select the languages that you&#8217;re interested in translating into,
+    or that you want to keep track of the status of.
+  </p>
 
-    <form action="prefs" method="post">
-        <div class="listbox">
-            <div tal:repeat="language view/visible_languages">
-                <label>
-                    <input type="checkbox"
-                        tal:attributes="
-                            name language/code;
-                            checked language/checked;"
-                        />
-                    <span tal:replace="language/englishname"
-                        >Spanish</span>
-                </label>
-            </div>
-        </div>
+  <form action="" method="post">
+    <div class="listbox">
+      <div tal:repeat="language view/visible_languages">
+        <label>
+          <input type="checkbox"
+                 tal:attributes="name language/code;
+                                 checked language/checked;" />
+          <span tal:replace="language/englishname">Spanish</span>
+        </label>
+      </div>
+    </div>
 
-        <div class="actions" style="text-align: right;">
-            <input type="submit" name="SAVE-LANGS" value="Save" />
-        </div>
-    </form>
+    <div class="actions" style="text-align: right;">
+      <input type="submit" name="SAVE-LANGS" value="Save" />
+    </div>
+  </form>
+
 </div>
 
 </body>

@@ -1,0 +1,80 @@
+<configure
+  xmlns="http://namespaces.zope.org/zope"
+  xmlns:browser="http://namespaces.zope.org/browser"
+  xmlns:lp="http://launchpad.canonical.com"
+  xmlns:i18n="http://namespaces.zope.org/i18n"
+  i18n_domain="launchpad">
+
+  <!-- BinaryPackageRelease -->
+  <content class="canonical.launchpad.database.BinaryPackageRelease">
+    <allow interface="canonical.launchpad.interfaces.IBinaryPackageRelease" />
+  </content>
+
+  <browser:defaultView
+    for="canonical.launchpad.interfaces.IBinaryPackageRelease"
+    name="+index" />
+
+  <browser:navigation
+    module="canonical.launchpad.browser"
+    classes="BinaryPackageReleaseNavigation"
+    />
+
+  <browser:pages
+    for="canonical.launchpad.database.BinaryPackageRelease" 
+    class="canonical.launchpad.browser.BinaryPackageView"
+    facet="overview"
+    permission="zope.Public">
+    <browser:page
+      name="+index"
+      template="../templates/binarypackagerelease-index.pt"
+      />
+    <browser:page
+      name="+portlet-latestversions"
+      template="../templates/binarypackagerelease-portlet-latestversions.pt"
+      />
+    <browser:page
+      name="+portlet-details"
+      template="../templates/binarypackagerelease-portlet-details.pt"
+      />
+    <browser:page
+      name="+portlet-conflicts"
+      template="../templates/binarypackagerelease-portlet-conflicts.pt"
+      />
+    <browser:page
+      name="+portlet-depends"
+      template="../templates/binarypackagerelease-portlet-depends.pt"
+      />
+    <browser:page
+      name="+portlet-provides"
+      template="../templates/binarypackagerelease-portlet-provides.pt"
+      />
+    <browser:page
+      name="+portlet-recommends"
+      template="../templates/binarypackagerelease-portlet-recommends.pt"
+      />
+    <browser:page
+      name="+portlet-replaces"
+      template="../templates/binarypackagerelease-portlet-replaces.pt"
+      />
+    <browser:page
+      name="+portlet-suggests"
+      template="../templates/binarypackagerelease-portlet-suggests.pt"
+      />
+  </browser:pages>
+
+
+  <!-- BinaryPackageReleaseSet -->
+  <content class="canonical.launchpad.database.BinaryPackageReleaseSet">
+    <allow interface="canonical.launchpad.interfaces.IBinaryPackageReleaseSet" />
+    <implements interface="zope.app.container.interfaces.IItemContainer"/>
+  </content>
+
+
+  <securedutility
+    class="canonical.launchpad.database.BinaryPackageReleaseSet"
+    provides="canonical.launchpad.interfaces.IBinaryPackageReleaseSet">
+    <allow interface="canonical.launchpad.interfaces.IBinaryPackageReleaseSet" />
+  </securedutility>
+
+
+</configure>

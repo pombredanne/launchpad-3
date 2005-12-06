@@ -1,0 +1,56 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-latestspecs" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Roadmap of Spec Implementation</h1>
+
+  <p class="documentDescription">
+    Based on the current specifications, their dependencies, priorities and
+    statuses, Launchpad recommends the following implementation plan.
+  </p>
+
+  <p class="portalMessage" tal:condition="not: view/specPlan">
+    Currently, there are no specifications for
+    <span tal:replace="context/displayname">Ubuntu Hoary</span>
+    that can be scheduled.
+  </p>
+
+  <tal:block condition="view/specPlan">
+    <h2>Implementation Strategy</h2>
+
+    <p>
+      The following specifications should be implemented in the order given.
+      This will ensure that most important specifications are implemented
+      first, and that specification dependencies are respected.
+    </p>
+
+      <div tal:repeat="spec view/specPlan"
+           tal:replace="structure spec/@@+listing-detailed" />
+  </tal:block>
+
+  <tal:block condition="view/danglingSpecs">
+    <h2>Dangling Specifications</h2>
+
+    <p>
+      The following specifications are "dangling", in that they are currently
+      in a state which cannot be scheduled. For example, they may have
+      circular dependencies.
+    </p>
+
+      <div tal:repeat="spec view/danglingSpecs"
+           tal:replace="structure spec/@@+listing-detailed" />
+  </tal:block>
+
+</div>
+</body>
+</html>

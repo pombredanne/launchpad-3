@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 from canonical.poppy.server import run_server
-from canonical.lucille.uploader import PoppyInterface
+from canonical.lucille.poppyinterface import PoppyInterface
 
 import sys
 import logging

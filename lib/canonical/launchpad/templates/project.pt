@@ -12,7 +12,6 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-actions" />
     <div tal:replace="structure context/@@+portlet-trackers" />
     <div tal:replace="structure context/@@+portlet-calendar" />
 </metal:rightportlets>
@@ -43,25 +42,33 @@
 
     <h2>Products</h2>
 
-    <p><span tal:replace="context/displayname">project displayname</span> has the following products:</p>
+    <div tal:condition="context/products">
+      <p>The following products are registered for 
+        <span tal:replace="context/displayname">project displayname</span>:</p>
+
+      <ul tal:repeat="product context/products">
+          <li><b><a href="." tal:attributes="href product/name" 
+                  tal:content="product/title">Product title</a></b>
+              <span tal:condition="product/homepageurl">
+                [<a href="."
+                   tal:content="product/homepageurl"
+                   tal:attributes="href product/homepageurl">homepage</a>]
+              </span>
+              <br />
+              <span tal:content="product/summary">Product short
+              description goes here.</span></li>
+      </ul>
+    <br />
+    </div>
+
+    <div tal:condition="not: context/products">
+      <p>There are no products registered for <span
+         tal:replace="context/displayname">project displayname</span>.</p>
+    </div>
 
     <div>
-	<ul tal:repeat="product context/products">
-		<li><b><a href="." tal:attributes="href product/name" 
-                tal:content="product/title">Product title</a></b>
-            <span tal:condition="exists:product/homepageurl"> [
-            <a href="."
-               tal:content="product/homepageurl"
-               tal:attributes="href product/homepageurl">homepage</a>
-            ] </span>
-            <br />
-            <span tal:content="product/summary">Product short
-            description goes here.</span></li>
-	</ul>
-    </div>
-    <div>
         <img src="/++resource++add.gif"><a href="+newproduct">Add a product</a>
-	</div>
+    </div>
 
 </div>
 

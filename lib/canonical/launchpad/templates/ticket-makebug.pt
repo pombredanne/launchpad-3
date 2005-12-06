@@ -1,0 +1,51 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Create bug report based on support request</h1>
+
+  <p>
+    If these fields do not reflect what you want the bug report to contain,
+    go back and edit them first.
+  </p>
+
+  <p>
+    <label>Proposed Bug Title:</label><br />
+    "<span tal:replace="context/title">bug title here</span>"
+  </p>
+
+  <p>
+    <label>Proposed Bug Description:</label><br />
+    <span tal:replace="context/description" />
+  </p>
+
+  <form action="." method="POST">
+
+    <div>
+    </div>
+    <div class="actions">
+      <input type="submit"
+             name="makebug"
+             value="Cancel" />
+      <input tal:condition="not: context/bugs"
+             type="submit"
+             name="makebug"
+             value="Create Bug Report" />
+    </div>
+  </form>
+
+</div>
+
+</body>
+</html>

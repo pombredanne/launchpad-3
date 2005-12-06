@@ -9,20 +9,43 @@ __all__ = [
     'IProductSet',
     ]
 
+from textwrap import dedent
 from zope.schema import Bool, Choice, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
+from zope.component import getUtility
 
 from canonical.launchpad.fields import Title, Summary, Description
-from canonical.launchpad.interfaces import IHasOwner, IBugTarget
+from canonical.launchpad.interfaces import (
+    IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget)
 from canonical.launchpad.validators.name import name_validator
+from canonical.launchpad.interfaces.validation import valid_webref
+from canonical.launchpad.validators import LaunchpadValidationError
 
 _ = MessageIDFactory('launchpad')
 
-class IProduct(IHasOwner, IBugTarget):
+class ProductNameField(TextLine):
+
+    def _validate(self, value):
+        TextLine._validate(self, value)
+        if (IProduct.providedBy(self.context) and 
+            value == getattr(self.context, self.__name__)):
+            # The name wasn't changed.
+            return
+
+        try:
+            product = getUtility(IProductSet)[value]
+        except KeyError:
+            pass
+        else:
+            raise LaunchpadValidationError(_(dedent("""
+                This name is already in use by another product.
+                """))) 
+
+class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
     """A Hatchery Product.
 
-    TheHatchery describes the open source world as Projects and
+    The Launchpad Registry describes the open source world as Projects and
     Products. Each Project may be responsible for several Products.
     For example, the Mozilla Project has Firefox, Thunderbird and The
     Mozilla App Suite as Products, among others.
@@ -47,7 +70,7 @@ class IProduct(IHasOwner, IBugTarget):
         description=_("""Product owner, it can either a valid Person or Team
             inside Launchpad context."""))
 
-    name = TextLine(
+    name = ProductNameField(
         title=_('Name'),
         constraint=name_validator,
         description=_("""The short name of this product, which must be
@@ -81,23 +104,29 @@ class IProduct(IHasOwner, IBugTarget):
     homepageurl = TextLine(
         title=_('Homepage URL'),
         required=False,
+        constraint=valid_webref,
         description=_("""The product home page. Please include 
             the http://"""))
 
     wikiurl = TextLine(
         title=_('Wiki URL'),
         required=False,
-        description=_("""The URL of this product's wiki, if it has one.
+        constraint=valid_webref,
+        description=_("""The full URL of this product's wiki, if it has one.
             Please include the http://"""))
 
     screenshotsurl = TextLine(
         title=_('Screenshots URL'),
         required=False,
-        description=_("""The location of screenshots of this product.
-            Please include the http://"""))
+        constraint=valid_webref,
+        description=_("""The full URL for screenshots of this product,
+            if available. Please include the http://"""))
 
     downloadurl = TextLine(
         title=_('Download URL'),
+        description=_("""The full URL where downloads for this product
+            are located, if available. Please include the http://"""),
+        constraint=valid_webref,
         required=False)
 
     programminglang = TextLine(
@@ -147,14 +176,28 @@ class IProduct(IHasOwner, IBugTarget):
     reviewed = Bool(title=_('Reviewed'), description=_("""Whether or not
         this product has been reviewed."""))
 
+    official_malone = Bool(title=_('Uses Malone Officially'),
+        required=True, description=_('Check this box to indicate that '
+        'this application officially uses Malone for bug tracking '
+        'upstream. This will remove the caution from the product page.'
+        ))
+
+    official_rosetta = Bool(title=_('Uses Rosetta Officially'),
+        required=True, description=_('Check this box to indicate that '
+        'this application officially uses Rosetta for upstream '
+        'translation. This will remove the caution from the '
+        'pages for this product in Launchpad.'))
+
     sourcepackages = Attribute(_("List of distribution packages for this \
         product"))
 
-    bugtasks = Attribute(
-        """A list of BugTasks for this Product.""")
-
     serieslist = Attribute(_("""An iterator over the ProductSeries for this
         product"""))
+
+
+    name_with_project = Attribute(_("Returns the product name prefixed "
+        "by the project name, if a project is associated with this "
+        "product; otherwise, simply returns the product name."))
 
     releases = Attribute(_("""An iterator over the ProductReleases for this
         product."""))
@@ -174,18 +217,18 @@ class IProduct(IHasOwner, IBugTarget):
     bounties = Attribute(_("The bounties that are related to this product."))
 
     translatable_packages = Attribute(
-        "A list of the source packages for this product that can be"
-        " translated sorted by distrorelease.name and sourcepackage.name.")
+        "A list of the source packages for this product that can be "
+        "translated sorted by distrorelease.name and sourcepackage.name.")
 
     translatable_series = Attribute(
-        "A list of the series of this product for which we have translation"
-        " templates.")
+        "A list of the series of this product for which we have translation "
+        "templates.")
 
     primary_translatable = Attribute(
-        "The best guess we have for what new translators will want to"
-        " translate for a given product. First, tries the current development"
-        " Ubuntu package. Then tries the latest series for which we have"
-        " potemplates.")
+        "The best guess we have for what new translators will want to "
+        "translate for a given product. First, tries the current development "
+        "Ubuntu package. Then tries the latest series for which we have "
+        "potemplates.")
 
     translationgroups = Attribute("The list of applicable translation "
         "groups for a product. There can be several: one from the product, "
@@ -195,6 +238,8 @@ class IProduct(IHasOwner, IBugTarget):
         "that applies to translations in this product, based on the "
         "permissions that apply to the product as well as its project.")
 
+    # XXX: shouldn't this be validated with valid_webref?
+    #   -- kiko, 2005-10-11
     releaseroot = Text(title=_("The URL of the root directory for the product "
         "used when the series doesn't supply one."))
 
@@ -203,14 +248,15 @@ class IProduct(IHasOwner, IBugTarget):
 
     def getMilestone(name):
         """Return a milestone with the given name for this product, or
-        raise NotFoundError.
+        None.
         """
 
     def newSeries(name, displayname, summary):
-        """Creates a new ProductSeries for this series."""
+        """Creates a new ProductSeries for this product."""
 
     def getSeries(name):
-        """Returns the series for this product that has the name given."""
+        """Returns the series for this product that has the name given, or
+        None."""
 
     def getRelease(version):
         """Returns the release for this product that has the version
@@ -222,6 +268,10 @@ class IProduct(IHasOwner, IBugTarget):
     def ensureRelatedBounty(bounty):
         """Ensure that the bounty is linked to this product. Return None.
         """
+
+    def newBranch(name, title, url, home_page, lifecycle_status, summary,
+                  whiteboard):
+        """Create a new Branch for this product."""
 
 
 class IProductSet(Interface):
@@ -261,6 +311,9 @@ class IProductSet(Interface):
         hints as to whether the search should be limited to products
         that are active in those Launchpad applications."""
 
+    def latest(quantity=5):
+        """Return the latest products registered in the Launchpad."""
+
     def translatables():
         """Return an iterator over products that have resources translatables.
         """
@@ -284,3 +337,4 @@ class IProductSet(Interface):
     def count_reviewed(self):
         """return a count of the number of products in the Launchpad that
         are both active and reviewed."""
+

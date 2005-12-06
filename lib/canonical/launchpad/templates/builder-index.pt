@@ -1,0 +1,177 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:block fill-slot="head_epilogue">
+    <meta http-equiv="refresh" content="300">
+</metal:block>
+
+    <div metal:fill-slot="body">
+      <h1>Build machine &#8220;<span tal:replace="context/name"/>&#8221;</h1>
+      <p>
+        <dfn tal:replace="context/name">BUILDER</dfn> is part of
+        <a href="/+builds">the Launchpad Build Farm</a>.
+      </p>
+      <table>
+        <tr>
+          <th><label>URL:</label></th>
+          <td tal:content="context/url">http://harry.canonical.com/</td>
+        </tr>
+        <tr>
+          <th><label>Name:</label></th>
+          <td tal:content="context/name">harry</td>
+        </tr>
+        <tr>
+          <th><label>Owner:</label></th>
+          <td tal:content="context/owner/displayname">Horace Hacker</td>
+        </tr>
+        <tr>
+          <th><label>Architecture:</label></th>
+          <td tal:content="context/processor/name">X-Box</td>
+        <tr>
+          <th><label>Compilation speed:</label></th>
+          <td>very slow indeed</td>
+        </tr>
+        <tr>
+          <th><label>Description:</label></th>
+          <td tal:content="context/description">The wizard of compiling.</td>
+        </tr>
+        <tr>
+          <th><label>This machine is:</label></th>
+          <td tal:condition="context/trusted">Trusted</td>
+          <td tal:condition="not: context/trusted">Not trusted</td>
+        </tr>
+        <tr>
+          <th>
+            <img alt="" src="/++resource++edit.gif" />
+          </th>
+          <td>
+            <a href="+edit">Edit Details&hellip;</a>
+          </td>
+        </tr>
+      </table>
+      <h2>Current status</h2>
+      <table class="listing">
+        <tr class="thead">
+          <th>Source Package</th>
+          <th>Distribution / Distribution Release</th>
+          <th>Created</th>
+          <th>Started</th>
+          <th colspan="2">Duration So Far</th>
+        </tr>
+        <tal:currentjob define="job context/currentjob">
+          <tr tal:condition="job">
+            <td>
+              <a tal:attributes="href job/build/fmt:url">
+                 <img alt="[package]" src="/++resource++package-binary" />
+                 <span tal:replace="job/build/title">NAME</span>
+              </a>
+            </td>
+            <td tal:define="archrelease job/build/distroarchrelease">
+             <a tal:content="archrelease/distrorelease/distribution/title"
+                tal:attributes="href 
+                    archrelease/distrorelease/distribution/fmt:url"
+                title="To show the Distribution, click here."/> /
+             <a tal:content="archrelease/distrorelease/title"
+                tal:attributes="href archrelease/distrorelease/fmt:url"
+                title="To show the Distribution Release, click here."/>
+            </td>
+            <td></td>
+            <td tal:content="job/buildstart/fmt:datetime">STARTED</td>
+            <td>
+              <img alt="[progress]" src="/++resource++progress" />
+              <span tal:replace="job/buildduration/fmt:approximateduration" />&hellip;
+            </td>
+            <td style="text-align: right;">
+              <a href="+cancel">
+                 <input alt="(Cancel)" type="image" src="/++resource++stop" />
+              </a>
+            </td>
+          </tr>
+          <tr tal:condition="not: job">
+            <td>&#8212;</td>
+            <td>&#8212;</td>
+            <td>&#8212;</td>
+            <td>&#8212;</td>
+            <td>&#8212;</td>
+            <td>
+              <img alt="[idle]" src="/++resource++idle" />
+              <span tal:replace="context/status">STATUS</span>
+            </td>
+          </tr>
+          <tal:block condition="job">
+          <tr tal:condition="job/logtail">
+            <td
+              tal:content="structure job/logtail/fmt:nice_pre"
+              colspan="5"
+            >Things are crashing and burning all over the place.</td>
+          </tr>
+          </tal:block>
+        </tal:currentjob>
+        <tr>
+          <td colspan="6">
+            <div style="text-align: right;">
+              <a href="+mode">
+                Change <span tal:replace="context/name" /> Mode
+                <!-- XXX cprov 20051013 we should have MANUAL/AUTO icons -->
+                <img tal:condition="context/manual" alt="" 
+                     src="/++resource++stop" />
+                <img tal:condition="not:context/manual" alt="" 
+                     src="/++resource++stop" />
+              </a>
+            </div>
+            <h2>Recently completed</h2>
+          </td>
+        </tr>
+        <tr class="thead">
+            <th>Source Package</th>
+            <th>Distribution / Distribution Release / Architecture</th>
+            <th>Created</th>
+            <th>Started</th>
+            <th>Result</th>
+            <th>Build log</th>
+            <th>Duration</th>
+        </tr>
+        <tr tal:repeat="build view/lastBuilds">
+            <td>
+              <a tal:attributes="href build/fmt:url">
+                 <img alt="[package]" src="/++resource++package-binary" />
+                 <span tal:replace="build/title">NAME</span>
+              </a>
+            </td>
+            <td tal:define="archrelease build/distroarchrelease">
+             <a tal:content="archrelease/distrorelease/distribution/title"
+                tal:attributes="href 
+                    archrelease/distrorelease/distribution/fmt:url"
+                title="To show the Distribution, click here."/> /
+             <a tal:content="archrelease/distrorelease/title"
+                tal:attributes="href archrelease/distrorelease/fmt:url"
+                title="To show the Distribution Release, click here."/> /
+             <a tal:content="archrelease/title"
+                tal:attributes="href archrelease/fmt:url"
+                title="To show the Distribution Architecture Release, click here."/>
+            </td>
+            <td tal:content="build/datecreated/fmt:datetime">CREATED</td>
+            <td tal:content="build/datebuilt/fmt:datetime">BUILT</td>
+            <td>
+              <img tal:attributes="alt build/buildstate/name; 
+                                   src build/build_icon" />
+            </td>
+            <td>
+              <a tal:attributes="href build/buildlog/url">
+                 <img alt="[BuildLog]" src="/++resource++info" />
+              </a>
+            </td>
+            <td>
+               <span tal:replace="build/buildduration/fmt:approximateduration"
+               >4 minutes</span>     
+            </td>
+        </tr>
+      </table>
+      <p class="discreet">Last updated <span tal:replace="view/now"/></p>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,38 @@
+<tal:tag condition="view/update"/>
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure view/bug/@@+portlet-details" />
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure view/bug/@@+portlet-attachments" />
+</metal:rightportlets>
+
+  <div metal:fill-slot="main">
+
+    <div metal:use-macro="context/@@launchpad_editform/editform">
+
+          <h1 tal:condition="view/label"
+              tal:content="view/label"
+              metal:fill-slot="heading"
+              >Form Label will come from ZCML label="xxx"</h1>
+
+    <div metal:fill-slot="extra_info" class="documentDescription">
+      An attachment can provide valuable information about the bug. It
+      can also provide a direct solution to a bug - for example a patch
+      that fixes the bug.
+      <br /><br />
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

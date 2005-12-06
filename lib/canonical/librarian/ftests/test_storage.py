@@ -51,22 +51,16 @@ class LibrarianStorageDBTests(LaunchpadZopelessTestSetup, unittest.TestCase):
         newfile2 = self.storage.startAddFile('file2', len(data))
         newfile1.append(data)
         newfile2.append(data)
-
-        # Store the first...
         id1, alias1 = newfile1.store()
-
-        # Now store the second, and make sure the second's temporary file is
-        # *not* moved, i.e. it must be using the existing file
-        def dontMove(x):
-            self.fail("Second file should not be renamed")
-        newfile2._move = dontMove
         id2, alias2 = newfile2.store()
 
         # Make sure we actually got an id
         self.assertNotEqual(None, id1)
+        self.assertNotEqual(None, id2)
 
-        # And make sure both ids match
-        self.assertEqual(id1, id2)
+        # But they are two different ids, because we leave duplicate handling
+        # to the garbage collector
+        self.failIfEqual(id1, id2)
 
     def test_badDigest(self):
         data = 'data ' * 50
@@ -86,7 +80,7 @@ class LibrarianStorageDBTests(LaunchpadZopelessTestSetup, unittest.TestCase):
         fileid, aliasid = newfile.store()
 
         # Check that its alias has the right mimetype
-        fa = self.storage.getFileAlias(fileid, 'file1')
+        fa = self.storage.getFileAlias(aliasid)
         self.assertEqual('text/unknown', fa.mimetype)
 
         # Re-add the same file, with the same name and mimetype...
@@ -95,18 +89,8 @@ class LibrarianStorageDBTests(LaunchpadZopelessTestSetup, unittest.TestCase):
         newfile2.append(data)
         fileid2, aliasid2 = newfile2.store()
 
-        # Verify that the new alias ID (and thus also name and mimetype) is in
-        # fact the same as the first alias ID
-        self.assertEqual(fa.id, self.storage.getFileAlias(fileid2, 'file1').id)
-
-        # Now add the file again, with the same filename but different
-        # mimetype...
-        newfile3 = self.storage.startAddFile('file1', len(data))
-        newfile3.mimetype = 'text/foo'
-        newfile3.append(data)
-        # ...which should work, and give us a new alias id
-        fileid3, aliasid3 = newfile3.store()
-        self.assertNotEqual(aliasid2, aliasid3)
+        # Verify that we didn't get back the same alias ID
+        self.assertNotEqual(fa.id, self.storage.getFileAlias(aliasid2).id)
 
     def test_clientProvidedDuplicateIDs(self):
         # This test checks the new behaviour specified by LibrarianTransactions
@@ -116,26 +100,13 @@ class LibrarianStorageDBTests(LaunchpadZopelessTestSetup, unittest.TestCase):
         newfile = LibraryFileUpload(self.storage, 'filename', 0)
 
         # Set a content ID on the file (same as would happen with a
-        # client-generated ID).
+        # client-generated ID) and store it
         newfile.contentID = 666
+        newfile.store()
 
-        # Make sure that _determineContentAndAliasIDs notices this is a new
-        # file...
-        new, contentID, aliasID = newfile._determineContentAndAliasIDs(None)
-        self.assertEqual(True, new)
-        # ...with the ID we gave it...
-        self.assertEqual(666, contentID)
-        # ...and the alias ID is irrelevant (it would be taken care of
-        # client-side), so it should be None.
-        self.assertEqual(None, aliasID)
-
-        # Now manually add content ID 666 to the database, and commit.
-        contentClash = LibraryFileContent(filesize=0, sha1='foo', id=666)
-        self.txn.commit()
-
-        # Now _determineContentAndAliasIDs will raise DuplicateFileIDError.
-        self.assertRaises(DuplicateFileIDError,
-                newfile._determineContentAndAliasIDs, None)
+        newfile = LibraryFileUpload(self.storage, 'filename', 0)
+        newfile.contentID = 666
+        self.assertRaises(DuplicateFileIDError, newfile.store)
 
     def test_clientProvidedDuplicateContent(self):
         # Check the new behaviour specified by LibrarianTransactions spec: allow

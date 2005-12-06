@@ -9,7 +9,8 @@ from sqlobject import ForeignKey, StringCol, MultipleJoin
 from sqlobject import RelatedJoin, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 
-from canonical.launchpad.interfaces import ISchemaSet, ISchema, ILabel
+from canonical.launchpad.interfaces import (
+    ISchemaSet, ISchema, ILabel, NotFoundError)
 
 
 class SchemaSet:
@@ -20,7 +21,7 @@ class SchemaSet:
         try:
             schema = Schema.byName(name)
         except SQLObjectNotFound:
-            raise KeyError, name
+            raise NotFoundError(name)
         else:
             return schema
 
@@ -40,7 +41,7 @@ class Schema(SQLBase):
         StringCol(name='title', dbName='title', notNull=True),
         StringCol(name='description', dbName='description', notNull=True),
         #BoolCol(name='extensible', dbName='extensible', notNull=True),
-    ]
+        ]
 
     _labelsJoin = MultipleJoin('Label', joinColumn='schema')
 
@@ -53,7 +54,7 @@ class Schema(SQLBase):
         label = Label.selectOne('Label.schema = %d AND Label.name = %s' %
             sqlvalues(self.id, name))
         if label is None:
-            raise KeyError, name
+            raise NotFoundError(name)
         return label
 
 

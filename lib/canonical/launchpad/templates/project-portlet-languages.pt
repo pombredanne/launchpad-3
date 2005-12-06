@@ -2,9 +2,9 @@
     <h4>Your Languages:</h4>
 
     <div class="portletBody">
-        <div class="portletContent even">
+        <div class="portletContent">
 
-        <table class="listing rowNavigation" border="0" width="100%">
+        <table class="listing" border="0" width="100%">
             <tr><th></th></tr>
             <tr tal:repeat="language view/languages">
                 <td><b><span tal:replace="language/englishname">language</span></b>

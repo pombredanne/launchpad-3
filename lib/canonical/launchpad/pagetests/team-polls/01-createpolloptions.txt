@@ -1,23 +1,24 @@
-
+  Let's add a new option for the dpl-2080 poll we've just created.
 
   >>> print http(r"""
-  ... GET /people/name17/+poll/dpl-2080/+options/+new HTTP/1.1
+  ... GET /people/name17/+poll/dpl-2080/+newoption HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 403 Forbidden
   ...
 
 
+  First, go to the +newoption page.
+
   >>> print http(r"""
   ... GET /people/name17/+poll/dpl-2080/+newoption HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...
-            Create a new option for poll
-            &#8220;Debian Project Leader Election 2080&#8221;
-  ...
+  ...Add a Poll Option...
 
+
+  And now, actually add the option.
 
   >>> print http(r"""
   ... POST /people/name17/+poll/dpl-2080/+newoption HTTP/1.1
@@ -29,7 +30,7 @@
   ... 
   ... Bill amazingly-huge-middle-name-almost-impossible-to-read Graham
   ... -----------------------------787692318512460570977813785
-  ... Content-Disposition: form-data; name="field.shortname"
+  ... Content-Disposition: form-data; name="field.title"
   ... 
   ... Bill Graham
   ... -----------------------------787692318512460570977813785
@@ -44,9 +45,63 @@
   ...
 
 
+  And here we see the option listed as one of the active options for this
+  poll.
+
   >>> print http(r"""
-  ... GET /people/name17/+poll/dpl-2080 HTTP/1.1
+  ... GET /people/name17/+poll/dpl-2080/+options HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
   ...
+  ...Options...
+  ...Bill amazingly-huge-middle-name-almost-impossible-to-read Graham...
+  ...
+
+
+  If we try to add a new option without providing a title, we'll get an error
+  message because the title is required.
+
+  >>> print http(r"""
+  ... POST /people/name17/+poll/dpl-2080/+newoption HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------787692318512460570977813785
+  ... 
+  ... -----------------------------787692318512460570977813785
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... Will amazingly-huge-middle-name-almost-impossible-to-read Graham
+  ... -----------------------------787692318512460570977813785
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... 
+  ... -----------------------------787692318512460570977813785
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------787692318512460570977813785--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...An error occured...
+  ...Required input is missing...
+  ...
+
+
+  It's not possible to add/edit a poll option after a poll is open or closed.
+  That's only possible when the poll is not yet open.
+
+  >>> print http(r"""
+  ... GET /people/name17/+poll/director-2004/+newoption HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...This poll is already closed, you can't add new options...
+
+  >>> print http(r"""
+  ... GET /people/name17/+poll/never-closes/+newoption HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...This poll is already open, you can't add new options...
+

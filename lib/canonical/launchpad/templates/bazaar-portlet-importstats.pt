@@ -3,9 +3,9 @@
   <h4>Upstream Imports:</h4>
 
   <div class="portletBody">
-    <div class="portletContent even">
+    <div class="portletContent">
 	
-	  <ul>
+      <ul class="statistics">
         <li>Testing: <span tal:replace="view/testing_count">3</span></li>
         <li>Autotested: <span tal:replace="view/autotested_count">3</span></li>
         <li>Test Failed: <span tal:replace="view/testfailed_count">3</span></li>
@@ -14,8 +14,7 @@
         <li>Stopped: <span tal:replace="view/stopped_count">3</span></li>
         <li>Total: <span tal:replace="view/import_count">23</span></li>
         <li>HCT Enabled: <span tal:replace="view/hct_count">21</span></li>
-	  </ul>
-
+      </ul>
     </div>
   </div>
 </div>

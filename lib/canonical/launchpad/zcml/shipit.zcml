@@ -1,0 +1,333 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+  <browser:navigation
+      module="canonical.launchpad.browser"
+      classes="ShipItNavigation ShippingRequestSetNavigation
+               StandardShipItRequestSetNavigation"
+      />
+
+  <view
+      type="zope.publisher.interfaces.browser.IBrowserRequest"
+      for="canonical.launchpad.interfaces.shipit.IEmptyDefaultChoice
+           zope.schema.interfaces.IIterableVocabulary"
+      provides="zope.app.form.interfaces.IInputWidget"
+      factory="canonical.launchpad.interfaces.shipit.EmptyDefaultDropdownWidget"
+      permission="zope.Public"
+      />
+
+
+    <browser:page
+        for="*"
+        permission="zope.Public"
+        name="main_template"
+        template="../templates/shipit-main-template.pt"
+        layer="canonical.launchpad.layers.ShipItLayer" />
+
+    <browser:page
+        for="*"
+        permission="zope.Public"
+        name="+maintenancemessage"
+        class="canonical.launchpad.browser.MaintenanceMessage"
+        template="../templates/shipit-maintenance.pt"
+        layer="canonical.launchpad.layers.ShipItLayer" />
+
+    <browser:page
+        layer="canonical.launchpad.layers.ShipItLayer"
+        for="zope.exceptions.IUnauthorized"
+        name="index.html"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.ShipItUnauthorizedView"
+        attribute="__call__" />
+
+    <browser:page
+        layer="canonical.launchpad.layers.ShipItLayer"
+        for="zope.publisher.interfaces.NotFound"
+        name="index.html"
+        permission="zope.Public"
+        template="../templates/shipit-notfound.pt"
+        class="zope.app.exception.browser.notfound.NotFound" />
+
+    <browser:page
+        layer="canonical.launchpad.layers.ShipItLayer"
+        for="zope.interface.common.interfaces.IException"
+        name="index.html"
+        template="../templates/shipit-default-error.pt"
+        permission="zope.Public"
+        class="canonical.launchpad.webapp.error.SystemErrorView" />
+
+
+    <!-- ShipItApplication -->
+    <content class="canonical.launchpad.systemhomes.ShipItApplication">
+        <allow interface="canonical.launchpad.interfaces.IShipItApplication" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.systemhomes.ShipItApplication"
+        provides="canonical.launchpad.interfaces.IShipItApplication">
+        <allow interface="canonical.launchpad.interfaces.IShipItApplication" />
+    </securedutility>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        name="robots.txt"
+        template="../templates/robotstxt.pt"
+        permission="zope.Public"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        name="+index" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        permission="launchpad.Admin"
+        name="+portlet-navigation"
+        template="../templates/shipit-portlet-navigation.pt"
+        lp:url="/shipit/requests/+portlet-navigation">
+    </browser:page>
+
+    <browser:page
+        layer="canonical.launchpad.layers.ShipItLayer"
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        class="canonical.launchpad.browser.ShipItLoginView"
+        permission="zope.Public"
+        name="+index"
+        template="../templates/shipit-index.pt"
+        lp:url="/shipit/+index" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        template="../templates/shipit-myrequest.pt"
+        class="canonical.launchpad.browser.ShipItRequestView"
+        permission="launchpad.AnyPerson"
+        name="myrequest" />
+
+    <browser:page
+        name="exports"
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        class="canonical.launchpad.browser.ShipItExportsView"
+        permission="launchpad.Admin" 
+        template="../templates/shipit-exports.pt" />
+
+    <browser:page
+        name="reports"
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        class="canonical.launchpad.browser.ShipItReportsView"
+        permission="launchpad.Admin" 
+        template="../templates/shipit-reports.pt" />
+
+
+    <!-- ShippingRequest -->
+    <content class="canonical.launchpad.database.ShippingRequest">
+        <allow interface="canonical.launchpad.interfaces.IShippingRequest" />
+        <require 
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IShippingRequest" />
+    </content>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IShippingRequest"
+        urldata="canonical.launchpad.browser.ShippingRequestURL" />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IShippingRequest"
+        name="+edit" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShippingRequest"
+        facet="overview"
+        class="canonical.launchpad.browser.ShippingRequestAdminView"
+        permission="launchpad.Admin"
+        name="+edit"
+        template="../templates/shipitrequest-edit.pt"
+        lp:url="/shipitrequests/$request.id/+edit">
+    </browser:page>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShippingRequest"
+        permission="launchpad.Admin"
+        name="+portlet-navigation"
+        template="../templates/shipit-portlet-navigation.pt"
+        lp:url="/shipit/requests/+portlet-navigation">
+    </browser:page>
+
+    <!-- ShippingRequestSet -->
+    <content class="canonical.launchpad.database.ShippingRequestSet">
+        <allow interface="canonical.launchpad.interfaces.IShippingRequestSet" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.ShippingRequestSet"
+        provides="canonical.launchpad.interfaces.IShippingRequestSet">
+        <allow interface="canonical.launchpad.interfaces.IShippingRequestSet" />
+    </securedutility>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IShippingRequestSet"
+        name="+index" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShippingRequestSet"
+        facet="overview"
+        class="canonical.launchpad.browser.ShippingRequestsView"
+        permission="launchpad.Admin"
+        name="+index"
+        template="../templates/shipitrequests-index.pt"
+        lp:url="shipitrequests/+index">
+    </browser:page>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShippingRequestSet"
+        permission="launchpad.Admin"
+        class="canonical.launchpad.browser.RedirectToOldestPendingRequest"
+        attribute="__call__"
+        name="+oldestpending">
+    </browser:page>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IShippingRequestSet"
+        permission="launchpad.Admin"
+        name="+portlet-navigation"
+        template="../templates/shipit-portlet-navigation.pt"
+        lp:url="/shipit/requests/+portlet-navigation">
+    </browser:page>
+
+
+    <!-- StandardShipItRequest -->
+    <content class="canonical.launchpad.database.StandardShipItRequest">
+        <allow interface="canonical.launchpad.interfaces.IStandardShipItRequest" />
+        <require 
+            permission="launchpad.Admin"
+            set_schema="canonical.launchpad.interfaces.IStandardShipItRequest" />
+    </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IStandardShipItRequest"
+        name="+index" />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IStandardShipItRequest"
+        urldata="canonical.launchpad.browser.StandardShipItRequestURL" />
+
+    <browser:editform
+        name="+index"
+        for="canonical.launchpad.interfaces.IStandardShipItRequest"
+        facet="overview"
+        class="canonical.launchpad.browser.editview.SQLObjectEditView"
+        schema="canonical.launchpad.interfaces.IStandardShipItRequest"
+        fields="quantityx86 quantityamd64 quantityppc description isdefault"
+        label="Edit Standard Option"
+        permission="launchpad.Admin"
+        template="../templates/standardshipitrequest-edit.pt"
+        lp:url="standardshipitrequests/$request.id/+index">
+    </browser:editform>
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IStandardShipItRequest"
+        permission="launchpad.Admin"
+        name="+portlet-navigation"
+        template="../templates/shipit-portlet-navigation.pt"
+        lp:url="/shipit/requests/+portlet-navigation">
+    </browser:page>
+
+
+    <!-- StandardShipItRequestSet -->
+    <content class="canonical.launchpad.database.StandardShipItRequestSet">
+        <allow interface="canonical.launchpad.interfaces.IStandardShipItRequestSet" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.StandardShipItRequestSet"
+        provides="canonical.launchpad.interfaces.IStandardShipItRequestSet">
+        <allow interface="canonical.launchpad.interfaces.IStandardShipItRequestSet" />
+    </securedutility>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
+        name="+index" />
+
+    <browser:page
+        name="+index"
+        for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
+        class="canonical.launchpad.browser.StandardShipItRequestsView"
+        facet="overview"
+        permission="launchpad.Admin" 
+        template="../templates/standardshipitrequests-index.pt"
+        lp:url="standardshipitrequests/$request.id/+index" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
+        permission="launchpad.Admin"
+        name="+portlet-navigation"
+        template="../templates/shipit-portlet-navigation.pt"
+        lp:url="/shipit/requests/+portlet-navigation">
+    </browser:page>
+
+    <browser:addform
+        name="+new"
+        for="canonical.launchpad.interfaces.IStandardShipItRequestSet"
+        facet="overview"
+        schema="canonical.launchpad.interfaces.IStandardShipItRequest"
+        class="canonical.launchpad.browser.StandardShipItRequestAddView"
+        fields="quantityx86 quantityamd64 quantityppc description isdefault"
+        label="Create a New Standard Option"
+        permission="launchpad.Admin"
+        template="../templates/standardshipitrequest-new.pt"
+        lp:url="standardshipitrequests/$request.id/+new" />
+
+
+    <!-- RequestedCDs -->
+    <content class="canonical.launchpad.database.RequestedCDs">
+        <allow interface="canonical.launchpad.interfaces.IRequestedCDs" />
+        <require 
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IRequestedCDs" />
+    </content>
+
+
+    <!-- Shipment -->
+    <content class="canonical.launchpad.database.Shipment">
+        <allow interface="canonical.launchpad.interfaces.IShipment" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.ShipmentSet"
+        provides="canonical.launchpad.interfaces.IShipmentSet">
+        <allow interface="canonical.launchpad.interfaces.IShipmentSet" />
+    </securedutility>
+
+
+    <!-- ShippingRun -->
+    <content class="canonical.launchpad.database.ShippingRun">
+        <allow interface="canonical.launchpad.interfaces.IShippingRun" />
+        <require 
+            permission="launchpad.Admin"
+            set_schema="canonical.launchpad.interfaces.IShippingRun" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.ShippingRunSet"
+        provides="canonical.launchpad.interfaces.IShippingRunSet">
+        <allow interface="canonical.launchpad.interfaces.IShippingRunSet" />
+    </securedutility>
+
+    <!-- ShipItReport -->
+    <content class="canonical.launchpad.database.ShipItReport">
+        <allow interface="canonical.launchpad.interfaces.IShipItReport" />
+        <require 
+            permission="launchpad.Admin"
+            set_schema="canonical.launchpad.interfaces.IShipItReport" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.ShipItReportSet"
+        provides="canonical.launchpad.interfaces.IShipItReportSet">
+        <allow interface="canonical.launchpad.interfaces.IShipItReportSet" />
+    </securedutility>
+
+</configure>

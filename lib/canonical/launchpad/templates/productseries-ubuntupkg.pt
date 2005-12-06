@@ -12,13 +12,11 @@
 </metal:rightportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-actions" />
     <div tal:replace="structure context/@@+portlet-source" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
 
-<!-- process a form submission -->
 <div tal:condition="view/setCurrentUbuntuPackage" />
 
     <h1>Ubuntu Packaging</h1>
@@ -55,7 +53,7 @@
 
           <label>Source Package</label>
 
-          <span class="fieldRequired" title="Required">(Required)</span>
+          <span class="fieldRequired">(Required)</span>
 
             <div class="formHelp">
               The name of the SOURCE package in the current release of

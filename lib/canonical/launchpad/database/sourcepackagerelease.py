@@ -1,33 +1,33 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['SourcePackageRelease', 'SourcePackageReleaseSet']
+__all__ = ['SourcePackageRelease']
 
 import sets
-from urllib2 import URLError
 
 from zope.interface import implements
-from zope.component import getUtility
 
 from sqlobject import StringCol, ForeignKey, MultipleJoin
 
-from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.helpers import shortlist
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.lp.dbschema import \
-    EnumCol, SourcePackageUrgency, SourcePackageFormat
+from canonical.lp.dbschema import (
+    EnumCol, SourcePackageUrgency, SourcePackageFormat,
+    SourcePackageFileType, BuildStatus, TicketStatus)
 
-from canonical.launchpad.interfaces import (ISourcePackageRelease,
-    ISourcePackageReleaseSet)
+from canonical.launchpad.interfaces import ISourcePackageRelease
 
-from canonical.launchpad.database.binarypackage import (BinaryPackage,
-    DownloadURL)
+from canonical.launchpad.database.binarypackagerelease import (
+     BinaryPackageRelease)
+
+from canonical.launchpad.database.ticket import Ticket
 from canonical.launchpad.database.build import Build
-from canonical.launchpad.database.publishing import \
-     SourcePackagePublishing
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishing)
 
-from canonical.librarian.interfaces import ILibrarianClient
-
+from canonical.launchpad.database.files import SourcePackageReleaseFile
 
 class SourcePackageRelease(SQLBase):
     implements(ISourcePackageRelease)
@@ -37,36 +37,32 @@ class SourcePackageRelease(SQLBase):
     creator = ForeignKey(foreignKey='Person', dbName='creator', notNull=True)
     component = ForeignKey(foreignKey='Component', dbName='component')
     sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
-                                   dbName='sourcepackagename', notNull=True)
+        dbName='sourcepackagename', notNull=True)
     maintainer = ForeignKey(foreignKey='Person', dbName='maintainer',
-                            notNull=True)
+        notNull=True)
     dscsigningkey = ForeignKey(foreignKey='GPGKey', dbName='dscsigningkey')
     manifest = ForeignKey(foreignKey='Manifest', dbName='manifest')
     urgency = EnumCol(dbName='urgency', schema=SourcePackageUrgency,
-                      notNull=True)
+        default=SourcePackageUrgency.LOW, notNull=True)
     dateuploaded = UtcDateTimeCol(dbName='dateuploaded', notNull=True,
-                                  default=UTC_NOW)
+        default=UTC_NOW)
     dsc = StringCol(dbName='dsc')
     version = StringCol(dbName='version', notNull=True)
     changelog = StringCol(dbName='changelog')
     builddepends = StringCol(dbName='builddepends')
     builddependsindep = StringCol(dbName='builddependsindep')
     architecturehintlist = StringCol(dbName='architecturehintlist')
-    format = EnumCol(dbName='format',
-                     schema=SourcePackageFormat,
-                     default=SourcePackageFormat.DPKG,
-                     notNull=True)
+    format = EnumCol(dbName='format', schema=SourcePackageFormat,
+        default=SourcePackageFormat.DPKG, notNull=True)
     uploaddistrorelease = ForeignKey(foreignKey='DistroRelease',
-                                     dbName='uploaddistrorelease')
+        dbName='uploaddistrorelease')
 
-    builds = MultipleJoin('Build', joinColumn='sourcepackagerelease')
+    builds = MultipleJoin('Build', joinColumn='sourcepackagerelease',
+        orderBy=['-datecreated'])
     files = MultipleJoin('SourcePackageReleaseFile',
-                         joinColumn='sourcepackagerelease')
-
-    @property
-    def builds(self):
-        return Build.selectBy(sourcepackagereleaseID=self.id,
-            orderBy=['-datecreated'])
+        joinColumn='sourcepackagerelease')
+    publishings = MultipleJoin('SourcePackagePublishing',
+        joinColumn='sourcepackagerelease')
 
     @property
     def latest_build(self):
@@ -78,6 +74,15 @@ class SourcePackageRelease(SQLBase):
     @property
     def name(self):
         return self.sourcepackagename.name
+
+    @property
+    def sourcepackage(self):
+        """See ISourcePackageRelease."""
+        return self.uploaddistrorelease.getSourcePackage(self.name)
+
+    @property
+    def title(self):
+        return '%s - %s' % (self.sourcepackagename.name, self.version)
 
     @property
     def productrelease(self):
@@ -120,57 +125,93 @@ class SourcePackageRelease(SQLBase):
             return None
 
     @property
-    def binaries(self):
-        clauseTables = ['SourcePackageRelease', 'BinaryPackage', 'Build']
-        query = ('SourcePackageRelease.id = Build.sourcepackagerelease'
-                 ' AND BinaryPackage.build = Build.id '
-                 ' AND Build.sourcepackagerelease = %i' % self.id)
-        return BinaryPackage.select(query, clauseTables=clauseTables)
+    def open_tickets_count(self):
+        """See ISourcePackageRelease."""
+        results = Ticket.select("""
+            status IN (%s, %s) AND
+            distribution = %s AND
+            sourcepackagename = %s
+            """ % sqlvalues(TicketStatus.NEW, TicketStatus.OPEN,
+                            self.uploaddistrorelease.distribution.id,
+                            self.sourcepackagename.id))
+        return results.count()
 
     @property
-    def files_url(self):
-        downloader = getUtility(ILibrarianClient)
+    def binaries(self):
+        clauseTables = ['SourcePackageRelease', 'BinaryPackageRelease',
+                        'Build']
+        query = ('SourcePackageRelease.id = Build.sourcepackagerelease'
+                 ' AND BinaryPackageRelease.build = Build.id '
+                 ' AND Build.sourcepackagerelease = %i' % self.id)
+        return BinaryPackageRelease.select(query, clauseTables=clauseTables)
 
-        urls = []
+    @property
+    def meta_binaries(self):
+        """See ISourcePackageRelease."""        
+        return [binary.build.distroarchrelease.distrorelease.getBinaryPackage(
+                                    binary.binarypackagename)
+                for binary in self.binaries]
 
-        for _file in self.files:
-            try:
-                url = downloader.getURLForAlias(_file.libraryfile.id)
-            except URLError:
-                # Librarian not running or file not available.
-                pass
-            else:
-                name = _file.libraryfile.filename
-                urls.append(DownloadURL(name, url))
+    @property
+    def current_publishings(self):
+        """See ISourcePackageRelease."""
+        from canonical.launchpad.database.distroreleasesourcepackagerelease \
+            import DistroReleaseSourcePackageRelease
+        return[DistroReleaseSourcePackageRelease(
+            publishing.distrorelease,
+            self) for publishing in self.publishings]
 
-        return urls
 
     def architecturesReleased(self, distroRelease):
         # The import is here to avoid a circular import. See top of module.
         from canonical.launchpad.database.soyuz import DistroArchRelease
-        clauseTables = ['PackagePublishing', 'BinaryPackage', 'Build']
+        clauseTables = ['BinaryPackagePublishing', 'BinaryPackageRelease',
+                        'Build']
 
         archReleases = sets.Set(DistroArchRelease.select(
-            'PackagePublishing.distroarchrelease = DistroArchRelease.id '
+            'BinaryPackagePublishing.distroarchrelease = DistroArchRelease.id '
             'AND DistroArchRelease.distrorelease = %d '
-            'AND PackagePublishing.binarypackage = BinaryPackage.id '
-            'AND BinaryPackage.build = Build.id '
+            'AND BinaryPackagePublishing.binarypackagerelease = '
+            'BinaryPackageRelease.id '
+            'AND BinaryPackageRelease.build = Build.id '
             'AND Build.sourcepackagerelease = %d'
             % (distroRelease.id, self.id),
             clauseTables=clauseTables))
         return archReleases
 
+    def addFile(self, file):
+        """See ISourcePackageRelease."""
+        determined_filetype = None
+        if file.filename.endswith(".dsc"):
+            determined_filetype = SourcePackageFileType.DSC
+        elif file.filename.endswith(".orig.tar.gz"):
+            determined_filetype = SourcePackageFileType.ORIG
+        elif file.filename.endswith(".diff.gz"):
+            determined_filetype = SourcePackageFileType.DIFF
+        elif file.filename.endswith(".tar.gz"):
+            determined_filetype = SourcePackageFileType.TARBALL
 
-class SourcePackageReleaseSet:
+        return SourcePackageReleaseFile(sourcepackagerelease=self.id,
+                                        filetype=determined_filetype,
+                                        libraryfile=file.id)
 
-    implements(ISourcePackageReleaseSet)
+    def createBuild(self, distroarchrelease, processor=None,
+                    status=BuildStatus.NEEDSBUILD):
+        """See ISourcePackageRelease."""
+        # Guess a processor if one is not provided
+        if processor is None:
+            pf = distroarchrelease.processorfamily
+            # We guess at the first processor in the family
+            processor = shortlist(pf.processors)[0]
 
-    def getByCreatorID(self, personID):
-        querystr = """sourcepackagerelease.creator = %d AND
-                      sourcepackagerelease.sourcepackagename = 
-                        sourcepackagename.id""" % personID
-        return SourcePackageRelease.select(
-            querystr,
-            orderBy='SourcePackageName.name',
-            clauseTables=['SourcePackageRelease', 'SourcePackageName'])
+        return Build(distroarchrelease=distroarchrelease.id,
+                     sourcepackagerelease=self.id,
+                     processor=processor.id, buildstate=status)
+
+
+    def getBuildByArch(self, distroarchrelease):
+        """See ISourcePackageRelease."""
+        return Build.selectOneBy(sourcepackagereleaseID=self.id,
+                                 distroarchreleaseID=distroarchrelease.id)
+
 

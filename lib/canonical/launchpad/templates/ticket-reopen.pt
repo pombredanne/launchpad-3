@@ -1,0 +1,40 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-subscribers" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Reopen the support request</h1>
+
+  <p>
+    If you believe that this request is not resolved, and needs to be reopened
+    for further discussion, choose "Reopen".
+  </p>
+
+  <form action="." method="POST">
+
+    <div class="actions">
+      <input type="submit"
+             name="cancel"
+             value="Cancel" />
+      <input tal:condition="context/can_be_reopened"
+             type="submit"
+             name="reopen"
+             value="Reopen" />
+    </div>
+  </form>
+
+</div>
+
+</body>
+</html>

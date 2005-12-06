@@ -6,39 +6,42 @@ __metaclass__ = type
 
 import re, sys
 
-first_re = re.compile(r"^[a-z][a-z0-9\\+\\.\\-]+ ")
-prio_re = re.compile(r'(?:urgency|priority)=([^ ]+)')
+first_re = re.compile(r"^([a-z0-9][a-z0-9\\+\\.\\-]+)\s+\(([^ ]+)\)")
+urgency_re = re.compile(r'(?:urgency|priority)=([^ ,;:.]+)')
 
 from sourcerer.deb.version import Version
 
 def parse_first_line(line):
     # SRCPKGNAME (VERSION).*((urgency|priority)=\S+)?
-    if not first_re.match(line):
+    match = first_re.match(line)
+    if not match:
         raise ValueError, line
-    srcpkg = line[:line.find(" ")]
-    version = line[line.find("(")+1:line.find(")")]
-    priority = "low"
-    if prio_re.match(line):
-        priority = prio_re.group(0).lower()
+    srcpkg = match.group(1)
+    version = match.group(2)
 
-    return (srcpkg, version, priority)
+    urgency = None
+    match = urgency_re.search(line)
+    if match:
+        # XXX: why do we do lower() here?
+        urgency = match.group(1).lower()
+
+    return (srcpkg, version, urgency)
 
 
 def parse_last_line(line):
     maint = line[:line.find(">")+1].strip()
     date = line[line.find(">")+1:].strip()
-    return (maint,date)
-    
+    return (maint, date)
+
 
 def parse_changelog_stanza(firstline, stanza, lastline):
-    srcpkg, version, priority = parse_first_line(firstline)
+    srcpkg, version, urgency = parse_first_line(firstline)
     maint, date = parse_last_line(lastline)
 
     return {
-        "package": srcpkg.lower(),
-        "version": version.lower(),
-        # forgot to take my medicine
-        "urgency": priority.lower(),
+        "package": srcpkg,
+        "version": version,
+        "urgency": urgency,
         "maintainer": maint,
         "date": date,
         "changes": "".join(stanza).strip("\n")
@@ -50,16 +53,17 @@ def parse_changelog(changelines):
     firstline = ""
     stanza = []
     rets = []
-   
+
     for line in changelines:
         #print line[:-1]
         if state == 0:
-            if line.startswith(" ") or line.startswith("\t") or not line.rstrip():
+            if (line.startswith(" ") or line.startswith("\t") or 
+                not line.rstrip()):
                 #print "State0 skip"
                 continue
             try:
-                (p,ver,pp) = parse_first_line(line.strip())
-                Version(ver)
+                (source, version, urgency) = parse_first_line(line.strip())
+                Version(version)
             except:
                 stanza.append(line)
                 #print "state0 Exception skip"
@@ -75,7 +79,9 @@ def parse_changelog(changelines):
             if line.startswith(" --") and "@" in line:
                 #print "state1 accept"
                 # Last line of stanza
-                rets.append(parse_changelog_stanza(firstline,stanza,line.strip()[3:]))
+                rets.append(parse_changelog_stanza(firstline,
+                                                   stanza,
+                                                   line.strip()[3:]))
                 state = 0
 
     # leftovers with no close line
@@ -89,5 +95,5 @@ def parse_changelog(changelines):
 
 if __name__ == '__main__':
     import pprint
-    pprint.pprint(parse_changelog(file(sys.argv[1],"r")))
-    
+    pprint.pprint(parse_changelog(file(sys.argv[1], "r")))
+

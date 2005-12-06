@@ -11,6 +11,7 @@ __all__ = [
     'ICalendarSet',
     'ICalendarEventSet',
     'ICalendarSubscriptionSubset',
+    'ICalendarRange',
     'ICalendarDay',
     'ICalendarWeek',
     'ICalendarMonth',
@@ -47,8 +48,10 @@ class ILaunchpadCalendar(IEditCalendar, IHasOwner):
 
     parent = Attribute(_("""The parent object that owns the calendar."""))
 
+
 class ILaunchpadMergedCalendar(Interface):
     """Marker interface to identify the user's merged calendar."""
+
 
 class ICalendarOwner(Interface):
     """An object that has a calendar."""
@@ -61,13 +64,16 @@ class ICalendarOwner(Interface):
     def getOrCreateCalendar():
         """Get the calendar.  Create it if it doesn't exist."""
 
+
 class ICalendarSet(Interface):
     def __getitem__(id):
         """Get a calendar by ID."""
 
+
 class ICalendarEventSet(Interface):
     def __getitem__(id):
         """Get an event by ID."""
+
 
 class ICalendarSubscriptionSubset(Interface):
     """A list of calendars a user is subscribed to."""
@@ -90,17 +96,33 @@ class ICalendarSubscriptionSubset(Interface):
         """Get the colour used to display events from this calendar"""
 
     def setColour(calendar, colour):
-        """Set the colour used to display events from this calendar"""        
+        """Set the colour used to display events from this calendar"""
 
-class ICalendarDay(Interface):
-    """Represents a particular day of events in a calendar"""
+
+class ICalendarRange(Interface):
+    """Represent a range of time on the calendar to display"""
     calendar = Object(
         title=_('Calendar'),
         schema=ILaunchpadCalendar,
         description=_("""The calendar"""))
     name = TextLine(
         title=_('Name'), required=True, readonly=True,
-        description=_("""A string describing the day"""))
+        description=_("""A string describing the range"""))
+    date = Attribute(_("""A time within the range"""))
+
+    start = Attribute(_("""The timestamp representing the closed start of
+        the range."""))
+    end = Attribute(_("""The timestamp representing the open end of
+        the range."""))
+
+    prevRange = Attribute(_("""The previous range in the calendar.
+        This will typically be the same length as this range"""))
+
+    nextRange = Attribute(_("""The next range in the calendar.
+        This will typically be the same length as this range"""))
+
+class ICalendarDay(ICalendarRange):
+    """Represents a particular day of events in a calendar"""
     year = Int(
         title=_('Year'), required=True, readonly=True,
         description=_("""The year to display."""))
@@ -111,15 +133,8 @@ class ICalendarDay(Interface):
         title=_('Day'), required=True, readonly=True,
         description=_("""The day number to display."""))
 
-class ICalendarWeek(Interface):
+class ICalendarWeek(ICalendarRange):
     """Represents a particular week of events in a calendar"""
-    calendar = Object(
-        title=_('Calendar'),
-        schema=ILaunchpadCalendar,
-        description=_("""The calendar"""))
-    name = TextLine(
-        title=_('Name'), required=True, readonly=True,
-        description=_("""A string describing the week"""))
     year = Int(
         title=_('Year'), required=True, readonly=True,
         description=_("""The year to display."""))
@@ -127,15 +142,8 @@ class ICalendarWeek(Interface):
         title=_('Week'), required=True, readonly=True,
         description=_("""The ISO week number to display."""))
 
-class ICalendarMonth(Interface):
+class ICalendarMonth(ICalendarRange):
     """Represents a particular week of events in a calendar"""
-    calendar = Object(
-        title=_('Calendar'),
-        schema=ILaunchpadCalendar,
-        description=_("""The calendar"""))
-    name = TextLine(
-        title=_('Name'), required=True, readonly=True,
-        description=_("""A string describing the month"""))
     year = Int(
         title=_('Year'), required=True, readonly=True,
         description=_("""The year to display."""))
@@ -143,15 +151,8 @@ class ICalendarMonth(Interface):
         title=_('Month'), required=True, readonly=True,
         description=_("""The month number to display."""))
 
-class ICalendarYear(Interface):
+class ICalendarYear(ICalendarRange):
     """Represents a particular year of events in a calendar"""
-    calendar = Object(
-        title=_('Calendar'),
-        schema=ILaunchpadCalendar,
-        description=_("""The calendar"""))
-    name = TextLine(
-        title=_('Name'), required=True, readonly=True,
-        description=_("""A string describing the year"""))
     year = Int(
         title=_('Year'), required=True, readonly=True,
         description=_("""The year to display."""))

@@ -27,11 +27,31 @@ To retrieve a specific distribution, use IDistributionSet.get:
 Once you've got a distribution, you can retrieve a source package if you
 have a SourcePackageName object for it.
 
-    >>> from canonical.launchpad.database.sourcepackagename import SourcePackageName
+    >>> from canonical.launchpad.database.sourcepackagename import (
+    ...                                          SourcePackageName)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSourcePackage,
+    ...     IDistributionSourcePackageRelease)
+
     >>> evo = SourcePackageName.byName("evolution")
     >>> evo_ubuntu = ubuntu.getSourcePackage(evo)
     >>> print evo_ubuntu.name
     evolution
+  
+    >>> IDistributionSourcePackage.providedBy(evo_ubuntu)
+    True
+
+    >>> from canonical.launchpad.database.sourcepackagerelease import (
+    ...                                           SourcePackageRelease)
+    >>> sourcepackagerelease = SourcePackageRelease.selectOneBy(
+    ...     sourcepackagenameID=evo.id, version='1.0')
+    >>> sourcepackagerelease.name
+    u'evolution'
+
+    >>> evo_ubuntu_rel = ubuntu.getSourcePackageRelease(
+    ...                    sourcepackagerelease)
+    >>> IDistributionSourcePackageRelease.providedBy(evo_ubuntu_rel)
+    True
 
 You can also get a release by name:
 
@@ -74,3 +94,88 @@ There should be NO resolved CVE tasks:
 [1] https://wiki.launchpad.canonical.com/DerivationOverview
 
 
+Finding distroreleases and pockets from distribution names
+----------------------------------------------------------
+
+A distribution knows what distroreleases it has. Those distroreleases have
+pockets which have suffixes used by the archive publisher. Because we sometimes
+need to talk about distroreleases such as ubuntu/hoary-security we need some
+way to decompose that into the distrorelease and the pocket. Distribution
+can do that for us.
+
+If we ask for a totally unknown distrorelease, we raise NotFoundError
+    >>> ubuntu.getDistroReleaseAndPocket('unknown') 
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 'unknown'
+
+If we ask for a plain distrorelease, it should come back with the RELEASE
+pocket as the pocket.
+    >>> dr, pocket = ubuntu.getDistroReleaseAndPocket('hoary')
+    >>> print dr.name
+    hoary
+    >>> print pocket.name
+    RELEASE
+
+If we ask for a security pocket in a known distrorelease it should come out
+on the other side.
+    >>> dr, pocket = ubuntu.getDistroReleaseAndPocket('hoary-security')
+    >>> print dr.name
+    hoary
+    >>> print pocket.name
+    SECURITY
+
+Find the backports pocket, too:
+    >>> dr, pocket = ubuntu.getDistroReleaseAndPocket('hoary-backports')
+    >>> print dr.name
+    hoary
+    >>> print pocket.name
+    BACKPORTS
+
+If we ask for a valid distrorelease which doesn't have a given pocket it should
+raise NotFoundError for us
+    >>> ubuntu.getDistroReleaseAndPocket('hoary-bullshit')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 'hoary-bullshit'
+
+
+
+Upload related stuff
+--------------------
+
+When uploading to a distribution we need to query its uploaders. Each
+uploader record is in fact a DistroComponentUploader record which
+tells us what component is uploadable to by what person or group of
+people.
+
+   >>> for dcu in ubuntu.uploaders:
+   ...     assert dcu.distribution == ubuntu
+   ...     print dcu.component.name
+   ...     print dcu.uploader.displayname
+   main
+   Ubuntu Team
+
+When processing an upload we may want to find a file (E.g. if an
+incomplete source is uploaded).
+
+   >>> ubuntu.getFileByName('evolution-1.0.tar.gz').url
+   'http://localhost:58000/4/evolution-1.0.tar.gz'
+   >>> ubuntu.getFileByName('evolution-1.0.tar.gz', binary=False).url
+   'http://localhost:58000/4/evolution-1.0.tar.gz'
+   >>> ubuntu.getFileByName('evolution-1.0.tar.gz', source=False).url
+   Traceback (most recent call last):
+   ...
+   NotFoundError: 'evolution-1.0.tar.gz'
+   >>> ubuntu.getFileByName('firefox-0.9.2.tar.gz').url
+   'http://localhost:58000/3/firefox-0.9.2.tar.gz'
+   >>> ubuntu.getFileByName('firefox-0.9.2.tar.gz', source=False).url
+   'http://localhost:58000/3/firefox-0.9.2.tar.gz'
+   >>> ubuntu.getFileByName('firefox-0.9.2.tar.gz', binary=False).url
+   Traceback (most recent call last):
+   ...
+   NotFoundError: 'firefox-0.9.2.tar.gz'
+   >>> ubuntu.getFileByName('', source=False, binary=False)
+   Traceback (most recent call last):
+   ...
+   AssertionError: searching in an explicitly empty space is pointless

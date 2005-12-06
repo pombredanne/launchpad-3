@@ -1,0 +1,14 @@
+<div class="portlet">
+
+  <h4>About The Ticket Tracker:</h4>
+
+  <div class="portletBody portletContent">
+
+    Launchpad includes a full tech support request tracker. Your users can
+    file tech support requests and your community can help to resolve those
+    requests. This page shows the latest requests made across all upstream
+    applications and distributions using this feature of the launchpad.
+	
+  </div>
+
+</div>

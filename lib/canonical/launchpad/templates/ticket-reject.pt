@@ -1,0 +1,39 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <h1>Reject support request</h1>
+
+  <p class="documentDescription">
+    If this support request is a hoax, a test, or sample data, it should be
+    rejected.
+    It is better to reject fake or bogus requests than to mark them closed,
+    because rejected requests are not included in most reports.
+  </p>
+
+  <form action="." method="POST">
+
+    <div class="actions">
+      <input type="submit"
+             name="cancel"
+             value="Cancel" />
+      <input tal:condition="context/can_be_rejected"
+             type="submit"
+             name="reject"
+             value="Reject" />
+    </div>
+
+  </form>
+
+</div>
+</body>
+</html>

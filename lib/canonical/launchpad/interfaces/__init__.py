@@ -2,39 +2,58 @@
 
 __metaclass__ = type
 
+# README:
+# Please DO NOT put interfaces in this file. Put them in the correct
+# file, one file for each interface type: person, project, bug, etc.
+
 from zope.interface import Interface, Attribute
-from persistent import IPersistent
 
-#
-# Please DO NOT put interfaces here. put them in the correct
-# file, one of person, project, bug, etc.
-#
 from canonical.launchpad.interfaces.launchpad import *
+from canonical.launchpad.interfaces.validation import *
 
-from canonical.launchpad.interfaces.archuser import *
-from canonical.launchpad.interfaces.binarypackage import *
+# these need to be at the top, because the others depend on them sometimes
+from canonical.launchpad.interfaces.specificationtarget import *
+from canonical.launchpad.interfaces.tickettarget import *
+from canonical.launchpad.interfaces.messagetarget import *
+
+from canonical.launchpad.interfaces.binarypackagerelease import *
 from canonical.launchpad.interfaces.binarypackagename import *
 from canonical.launchpad.interfaces.bounty import *
+from canonical.launchpad.interfaces.bountymessage import *
 from canonical.launchpad.interfaces.bountysubscription import *
+from canonical.launchpad.interfaces.branch import *
+from canonical.launchpad.interfaces.branchsubscription import *
 from canonical.launchpad.interfaces.bugactivity import *
 from canonical.launchpad.interfaces.bugattachment import *
 from canonical.launchpad.interfaces.bugextref import *
 from canonical.launchpad.interfaces.bug import *
+from canonical.launchpad.interfaces.bugcve import *
+from canonical.launchpad.interfaces.buglink import *
 from canonical.launchpad.interfaces.bugmessage import *
 from canonical.launchpad.interfaces.bugsubscription import *
 from canonical.launchpad.interfaces.bugtask import *
 from canonical.launchpad.interfaces.bugtracker import *
 from canonical.launchpad.interfaces.bugwatch import *
 from canonical.launchpad.interfaces.build import *
+from canonical.launchpad.interfaces.builder import *
 from canonical.launchpad.interfaces.codeofconduct import *
 from canonical.launchpad.interfaces.component import *
 from canonical.launchpad.interfaces.country import *
-from canonical.launchpad.interfaces.cveref import *
+from canonical.launchpad.interfaces.cve import *
+from canonical.launchpad.interfaces.cvereference import *
 from canonical.launchpad.interfaces.distribution import *
 from canonical.launchpad.interfaces.distributionbounty import *
+from canonical.launchpad.interfaces.distributionsourcepackage import *
+from canonical.launchpad.interfaces.distributionsourcepackagecache import *
+from canonical.launchpad.interfaces.distributionsourcepackagerelease import *
 from canonical.launchpad.interfaces.distroarchrelease import *
+from canonical.launchpad.interfaces.distroarchreleasebinarypackage import *
+from canonical.launchpad.interfaces.distroarchreleasebinarypackagerelease import *
 from canonical.launchpad.interfaces.distrorelease import *
+from canonical.launchpad.interfaces.distroreleasebinarypackage import *
 from canonical.launchpad.interfaces.distroreleaselanguage import *
+from canonical.launchpad.interfaces.distroreleasepackagecache import *
+from canonical.launchpad.interfaces.distroreleasesourcepackagerelease import *
 from canonical.launchpad.interfaces.files import *
 from canonical.launchpad.interfaces.general import *
 from canonical.launchpad.interfaces.geoip import *
@@ -52,6 +71,7 @@ from canonical.launchpad.interfaces.logintoken import *
 from canonical.launchpad.interfaces.mail import *
 from canonical.launchpad.interfaces.mailbox import *
 from canonical.launchpad.interfaces.maintainership import *
+from canonical.launchpad.interfaces.manifestancestry import *
 from canonical.launchpad.interfaces.manifestentry import *
 from canonical.launchpad.interfaces.manifest import *
 from canonical.launchpad.interfaces.message import *
@@ -82,63 +102,39 @@ from canonical.launchpad.interfaces.project import *
 from canonical.launchpad.interfaces.projectbounty import *
 from canonical.launchpad.interfaces.publishedpackage import *
 from canonical.launchpad.interfaces.publishing import *
-from canonical.launchpad.interfaces.pyarch import *
 from canonical.launchpad.interfaces.queue import *
 from canonical.launchpad.interfaces.rawfiledata import *
+from canonical.launchpad.interfaces.rosetta import *
+from canonical.launchpad.interfaces.revision import *
 from canonical.launchpad.interfaces.rosettastats import *
 from canonical.launchpad.interfaces.schema import *
 from canonical.launchpad.interfaces.section import *
+from canonical.launchpad.interfaces.shipit import *
 from canonical.launchpad.interfaces.sourcepackage import *
-from canonical.launchpad.interfaces.sourcepackageindistro import *
 from canonical.launchpad.interfaces.sourcepackagename import *
 from canonical.launchpad.interfaces.sourcepackagerelease import *
+from canonical.launchpad.interfaces.specification import *
+from canonical.launchpad.interfaces.specificationbug import *
+from canonical.launchpad.interfaces.specificationdependency import *
+from canonical.launchpad.interfaces.specificationfeedback import *
+from canonical.launchpad.interfaces.specificationsubscription import *
 from canonical.launchpad.interfaces.spokenin import *
+from canonical.launchpad.interfaces.sprint import *
+from canonical.launchpad.interfaces.sprintattendance import *
+from canonical.launchpad.interfaces.sprintspecification import *
 from canonical.launchpad.interfaces.ssh import *
+from canonical.launchpad.interfaces.ticket import *
+from canonical.launchpad.interfaces.ticketbug import *
+from canonical.launchpad.interfaces.ticketmessage import *
+from canonical.launchpad.interfaces.ticketreopening import *
+from canonical.launchpad.interfaces.ticketsubscription import *
 from canonical.launchpad.interfaces.translationgroup import *
 from canonical.launchpad.interfaces.translator import *
 from canonical.launchpad.interfaces.vpoexport import *
-from canonical.launchpad.interfaces.vsourcepackagereleasepublishing import *
 from canonical.launchpad.interfaces.wikiname import *
 from canonical.launchpad.interfaces.poexportrequest import *
+from canonical.launchpad.interfaces.developmentmanifest import *
+from canonical.launchpad.interfaces.distrocomponentuploader import *
 
 from canonical.launchpad.interfaces.cal import *
-
-# XXX sabdfl 29/03/05 given the comments at the top of the file, should
-# these not be elsewhere?
-
-class IAuthApplication(Interface):
-    """ Interface for AuthApplication """
-    def __getitem__(name):
-        """ The __getitem__ method used to traversing """
-
-    def sendPasswordChangeEmail(longurlsegment, toaddress):
-        """Send an Password change special link for a user."""
-
-    def getPersonFromDatabase(emailaddr):
-        """Returns the Person in the database who has the given email address.
-
-        If there is no Person for that email address, returns None.
-        """
-
-    def newLongURL(person):
-        """Creates a new long url for the given person.
-
-        Returns the long url segment.
-        """
-
-class IPasswordResets(IPersistent):
-    """Interface for PasswordResets"""
-
-    lifetime = Attribute("Maximum time between request and reset password")
-    
-    def newURL(person):
-        """Create a new URL and store person and creation time"""
-        
-        
-    def getPerson(long_url):
-        """Get the person object using the long_url if not expired"""
-
-class IPasswordChangeApp(Interface):
-    """Interface for PasswdChangeApp."""
-    code = Attribute("The transaction code")
 

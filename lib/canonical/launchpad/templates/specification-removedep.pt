@@ -1,0 +1,29 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xml:lang="en"
+  lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-dependencies" />
+</metal:leftportlets>
+
+<div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_generalform/generalform">
+
+    <p metal:fill-slot="extra_info">
+      This will <em>remove</em> the dependency on the selected specification.
+    </p>
+
+  </div>
+
+</div>
+    
+</body>
+</html>
+

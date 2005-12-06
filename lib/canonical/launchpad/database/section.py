@@ -18,5 +18,5 @@ class Section(SQLBase):
 
     _table = 'Section'
 
-    name = StringCol(notNull=True)
+    name = StringCol(notNull=True, alternateID=True)
 

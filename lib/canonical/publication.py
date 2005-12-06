@@ -1,114 +1,47 @@
-# (c) Canonical Software Ltd. 2004, all rights reserved.
-#
+# (c) Canonical Ltd. 2004-2005, all rights reserved.
 
 __metaclass__ = type
 
-
-from zope.security.interfaces import Unauthorized
-from zope.security.management import newInteraction
-import transaction
-from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
-import canonical.launchpad.webapp.zodb
-
-from zope.app import zapi
-from zope.publisher.interfaces.browser import IDefaultSkin
-from zope.publisher.interfaces import NotFound, IPublishTraverse
-
-from zope.event import notify
-from zope.interface import implements, Interface
-from zope.interface import providedBy
-
-import canonical.launchpad.layers as layers
-
-from zope.component import getUtility
-from zope.component import queryView
-
-from zope.publisher.http import HTTPRequest
-from zope.publisher.browser import BrowserRequest
-
-from zope.app.publication.interfaces import (
-    IPublicationRequestFactory, BeforeTraverseEvent
-    )
-from zope.app.publication.zopepublication import Cleanup
-from zope.app.publication.http import HTTPPublication
-from zope.app.publication.browser import BrowserPublication as BrowserPub
-from zope.publisher.publish import publish
-
-from zope.app.errorservice import (
-    globalErrorReportingService, RootErrorReportingService
-    )
-from zope.app.errorservice.interfaces import ILocalErrorReportingService
-
-from zope.app.applicationcontrol.applicationcontrol import (
-    applicationControllerRoot
-    )
-
-from zope.app.location import Location
-from zope.app.traversing.interfaces import IContainmentRoot
-from zope.security.checker import ProxyFactory, NamesChecker
-from zope.security.proxy import removeSecurityProxy
-
-from zope.app.server.servertype import ServerType
-from zope.server.http.commonaccesslogger import CommonAccessLogger
-from zope.server.http.publisherhttpserver import PublisherHTTPServer
-from zope.interface.common.interfaces import IException
-from zope.exceptions.exceptionformatter import format_exception
-
-from canonical.launchpad.interfaces import (
-    IOpenLaunchBag, ILaunchpadRoot, ILaunchpadApplication
-    )
-
-import sqlos.connection
-from sqlos.interfaces import IConnectionName
-
-import sys, thread
+# python standard library
+import sys
+import thread
 import traceback
 from new import instancemethod
 
+# interfaces and components
+from zope.interface import implements, providedBy
+from zope.component import getUtility, queryView
+from zope.event import notify
+from zope.app import zapi  # used to get at the adapters service
 
-class RootObject(Location):
-    implements(IContainmentRoot, ILaunchpadApplication, ILaunchpadRoot)
+# zope publication and traversal
+import zope.app.publication.browser
+from zope.app.publication.zopepublication import Cleanup
+from zope.publisher.interfaces.browser import IDefaultSkin
+from zope.publisher.interfaces import IPublishTraverse
 
+# zope transactions
+import transaction
 
-class DebugView:
-    """Helper class for views on exceptions for the Debug layer."""
+# zope security
+from zope.security.proxy import removeSecurityProxy
+from zope.security.interfaces import Unauthorized
+from zope.security.management import newInteraction
 
-    __used_for__ = IException
+# launchpad
+from canonical.launchpad.interfaces import (
+    IOpenLaunchBag, ILaunchpadRoot, AfterTraverseEvent, BeforeTraverseEvent)
+import canonical.launchpad.layers as layers
+from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
+import canonical.launchpad.webapp.zodb
+import canonical.launchpad.webapp.adapter as da
 
-    def __init__(self, context, request):
-
-        self.context = context
-        self.request = request
-
-        self.error_type, self.error_object, tb = sys.exc_info()
-        try:
-            self.traceback_lines = traceback.format_tb(tb)
-            self.htmltext = '\n'.join(
-                format_exception(self.error_type, self.error_object,
-                                 tb, as_html=True)
-                )
-        finally:
-            del tb
-
-
-class IAfterTraverseEvent(Interface):
-    """An event which gets sent after publication traverse; this
-    should really be pushed into Zope proper """
-
-
-class AfterTraverseEvent(object):
-    """An event which gets sent after publication traverse"""
-    implements(IAfterTraverseEvent)
-    def __init__(self, ob, request):
-        self.object = ob
-        self.request = request
+# sqlos
+import sqlos.connection
+from sqlos.interfaces import IConnectionName
 
 
-class ErrorReportingService(RootErrorReportingService):
-    """Error reporting service that copies tracebacks to the log by default.
-    """
-    copy_to_zlog = True
-
+__all__ = ['LoginRoot', 'LaunchpadBrowserPublication']
 
 class LoginRoot:
     """Object that provides IPublishTraverse to return only itself.
@@ -121,13 +54,15 @@ class LoginRoot:
 
     def publishTraverse(self, request, name):
         if not request.getTraversalStack():
-            view = queryView(rootObject, name, request)
+            root_object = getUtility(ILaunchpadRoot)
+            view = queryView(root_object, name, request)
             return view
         else:
             return self
 
 
-class BrowserPublication(BrowserPub):
+class LaunchpadBrowserPublication(
+    zope.app.publication.browser.BrowserPublication):
     """Subclass of z.a.publication.BrowserPublication that removes ZODB.
 
     This subclass undoes the ZODB-specific things in ZopePublication, a
@@ -144,7 +79,6 @@ class BrowserPublication(BrowserPub):
         This method is not part of the `IPublication` interface, since
         it's specific to this particular implementation.
         """
-
         # It is possible that request.principal is None if the principal has
         # not been set yet.
 
@@ -159,24 +93,19 @@ class BrowserPublication(BrowserPub):
         return txn
 
     def getDefaultTraversal(self, request, ob):
-        return BrowserPub.getDefaultTraversal(self, request, ob)
+        superclass = zope.app.publication.browser.BrowserPublication
+        return superclass.getDefaultTraversal(self, request, ob)
 
     def getApplication(self, request):
-        # If the first name is '++etc++process', then we should
-        # get it rather than look in the database!
-        stack = request.getTraversalStack()
-
-        if '++etc++process' in stack:
-            return applicationControllerRoot
-
         end_of_traversal_stack = request.getTraversalStack()[:1]
         if end_of_traversal_stack == ['+login']:
             return LoginRoot()
         else:
             bag = getUtility(IOpenLaunchBag)
             assert bag.site is None, 'Argh! Steve was wrong!'
-            bag.add(rootObject)
-            return rootObject
+            root_object = getUtility(ILaunchpadRoot)
+            bag.add(root_object)
+            return root_object
 
     # the below ovverrides to zopepublication (callTraversalHooks,
     # afterTraversal, and _maybePlacefullyAuthenticate) make the
@@ -223,6 +152,8 @@ class BrowserPublication(BrowserPub):
 
         self.clearSQLOSCache()
         getUtility(IOpenLaunchBag).clear()
+
+        da.set_request_started()
 
         # Set the default layer.
         adapters = zapi.getService(zapi.servicenames.Adapters)
@@ -273,34 +204,9 @@ class BrowserPublication(BrowserPub):
         reason, raise an error """
         raise NotImplementedError
 
-    def handleException(self, object, request, exc_info, retry_allowed=True,
-                        counter=[0]):
-        # XXX: Debugging code.  Please leave.  SteveAlexander 2005-03-23
-        #counter[0] += 1
-        #import traceback, sys
-
-        #from zope.exceptions.exceptionformatter import format_exception
-        #error_type, error_object, tb = sys.exc_info()
-        #try:
-        #    tbtext = '\n'.join(
-        #        format_exception(error_type, error_object, tb, as_html=False)
-        #        )
-        #finally:
-        #    del tb
-
-        #f = open('/tmp/traceback.txt', 'a')
-        #print >>f, '----------------------------------------'
-        #print >>f, 'Count:', counter[0]
-        #print >>f, 'Request: %r' % request
-        #print >>f, 'object: %r' % object
-        #print >>f
-        #etype, value, tb = sys.exc_info()
-        #traceback.print_exception(etype, value, tb, file=f)
-        #print >>f
-        #print >>f, tbtext
-
-        #f.close()
-        BrowserPub.handleException(self, object, request, exc_info,
+    def handleException(self, object, request, exc_info, retry_allowed=True):
+        superclass = zope.app.publication.browser.BrowserPublication
+        superclass.handleException(self, object, request, exc_info,
                                    retry_allowed)
         # If it's a HEAD request, we don't care about the body, regardless of
         # exception.
@@ -310,84 +216,8 @@ class BrowserPublication(BrowserPub):
         if request.method == 'HEAD':
             request.response.setBody('')
 
-
-_browser_methods = 'GET', 'POST', 'HEAD'
-
-class HTTPPublicationRequestFactory:
-    implements(IPublicationRequestFactory)
-
-    def __init__(self, db):
-        ## self._http = HTTPPublication(db)
-        self._browser = BrowserPublication(db)
-
-    def __call__(self, input_stream, output_steam, env):
-        """See zope.app.publication.interfaces.IPublicationRequestFactory"""
-        method = env.get('REQUEST_METHOD', 'GET').upper()
-
-        if method in _browser_methods:
-            request = BrowserRequest(input_stream, output_steam, env)
-            request.setPublication(self._browser)
-        else:
-            raise NotImplementedError()
-            ## request = HTTPRequest(input_stream, output_steam, env)
-            ## request.setPublication(self._http)
-
-        return request
-
-
-class DebugLayerRequestFactory(HTTPPublicationRequestFactory):
-    """RequestFactory that sets the DebugLayer on a request."""
-
-    def __call__(self, input_stream, output_steam, env):
-        """See zope.app.publication.interfaces.IPublicationRequestFactory"""
-        # Mark the request with the 'canonical.launchpad.layers.debug' layer
-        request = HTTPPublicationRequestFactory.__call__(
-            self, input_stream, output_steam, env)
-        layers.setFirstLayer(request, layers.DebugLayer)
-        return request
-
-
-class PMDBHTTPServer(PublisherHTTPServer):
-    """Enter the post-mortem debugger when there's an error"""
-
-    def executeRequest(self, task):
-        """Overrides HTTPServer.executeRequest()."""
-        env = task.getCGIEnvironment()
-        instream = task.request_data.getBodyStream()
-
-        request = self.request_factory(instream, task, env)
-        response = request.response
-        response.setHeaderOutput(task)
-        try:
-            publish(request, handle_errors=False)
-        except:
-            import sys, pdb
-            print "%s:" % sys.exc_info()[0]
-            print sys.exc_info()[1]
-            pdb.post_mortem(sys.exc_info()[2])
-            raise
-
-
-http = ServerType(PublisherHTTPServer,
-                  HTTPPublicationRequestFactory,
-                  CommonAccessLogger,
-                  8080, True)
-
-pmhttp = ServerType(PMDBHTTPServer,
-                    HTTPPublicationRequestFactory,
-                    CommonAccessLogger,
-                    8081, True)
-
-debughttp = ServerType(PublisherHTTPServer,
-                       DebugLayerRequestFactory,
-                       CommonAccessLogger,
-                       8082, True)
-
-globalErrorService = ErrorReportingService()
-globalErrorUtility = ProxyFactory(
-    removeSecurityProxy(globalErrorService),
-    NamesChecker(ILocalErrorReportingService.names())
-    )
-
-rootObject = ProxyFactory(RootObject(), NamesChecker(["__class__"]))
+    def endRequest(self, request, object):
+        da.clear_request_started()
+        superclass = zope.app.publication.browser.BrowserPublication
+        superclass.endRequest(self, request, object)
 

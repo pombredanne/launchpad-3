@@ -1,0 +1,123 @@
+
+Editing Tickets
+===============
+
+We should be able to edit the title and description of the ticket.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+ticket/2/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+When we post the form, we should be redirected back to the ticket page.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+ticket/2/+edit HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 591
+  ... Content-Type: multipart/form-data; boundary=---------------------------17140377397995372101692325465
+  ... 
+  ... -----------------------------17140377397995372101692325465
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Problem showing the SVG demo on W3C web site
+  ... -----------------------------17140377397995372101692325465
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... Hi! I'm trying to learn about SVG but I can't get it to work at all in firefox. Maybe there is a plugin? Help! Thanks. Mark
+  ... -----------------------------17140377397995372101692325465
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------17140377397995372101692325465--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../products/firefox/+ticket/2
+  ...
+
+And viewing that page should show the updated information.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+ticket/2 HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Problem showing the SVG demo on W3C web s...
+  ...Thanks. Mark...
+
+We should also be able to edit the priority, assignee and status whiteboard.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+ticket/2/+priority HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+POSTing the form should redirect to the ticket page.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+ticket/2/+priority HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 689
+  ... Content-Type: multipart/form-data; boundary=---------------------------1096313169858343073413109827
+  ... 
+  ... -----------------------------1096313169858343073413109827
+  ... Content-Disposition: form-data; name="field.priority"
+  ... 
+  ... High
+  ... -----------------------------1096313169858343073413109827
+  ... Content-Disposition: form-data; name="field.priority-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------1096313169858343073413109827
+  ... Content-Disposition: form-data; name="field.assignee"
+  ... 
+  ... sabdfl
+  ... -----------------------------1096313169858343073413109827
+  ... Content-Disposition: form-data; name="field.whiteboard"
+  ... 
+  ... bling=t
+  ... -----------------------------1096313169858343073413109827
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------1096313169858343073413109827--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../products/firefox/+ticket/2
+  ...
+
+And looking at that page should show the new details.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+ticket/2 HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...bling=t...
+  ...High...
+  ...Mark Shuttleworth...
+
+There should be a +admin page for the ticket. it should only be visible to
+Foo Bar as an administrator.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+ticket/2 HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Administer...
+
+And the page should be visible too.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+ticket/2/+admin HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+

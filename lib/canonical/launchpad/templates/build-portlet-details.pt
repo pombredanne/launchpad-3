@@ -1,0 +1,43 @@
+<div class="portlet">
+
+  <h4>Build Details:</h4>
+
+  <div class="portletBody portletContent">
+
+    <b>Package:</b>
+    <span tal:replace="context/sourcepackagerelease/name">foobar</span>
+    <span tal:replace="context/sourcepackagerelease/version">2.6.5-1</span>
+    <br />
+
+    <b>Built on:</b>
+    <span tal:replace="context/distroarchrelease/distrorelease/distribution/name">
+      ubuntu
+    </span>
+    <span tal:replace="context/distroarchrelease/distrorelease/name">
+      hoary
+    </span>
+    <br />
+
+    <b>Architecture:</b>
+    <span tal:replace="context/distroarchrelease/architecturetag">
+      i386
+    </span>
+    <br />
+
+    <b>Status:</b>
+    <span tal:replace="context/buildstate/title">Fully built</span>
+    <br />
+
+    <b>Date recorded:</b><br />
+    <span tal:replace="context/datecreated/fmt:datetime">2005-10-05 5:45</span>
+    <br />
+
+    <tal:is_build condition="context/datebuilt">
+      <b>Date built:</b><br />
+      <span tal:replace="context/datebuilt/fmt:datetime">2005-10-05 5:45</span>
+      <br />
+    </tal:is_build>
+
+  </div>
+
+</div>

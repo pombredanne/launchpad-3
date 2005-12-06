@@ -6,6 +6,7 @@ import _pythonpath
 import sys
 from optparse import OptionParser
 
+from canonical.config import config
 from canonical.lp import initZopeless
 from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.scripts.rosetta import URLOpener, attach
@@ -53,7 +54,7 @@ def main(argv):
     try:
         # Setup zcml machinery to be able to use getUtility
         execute_zcml_for_scripts()
-        ztm = initZopeless()
+        ztm = initZopeless(dbuser=config.rosetta.poattach.dbuser)
         urlopener = URLOpener()
 
         attach(urlopener, options.archive_uri, ztm, logger_object)

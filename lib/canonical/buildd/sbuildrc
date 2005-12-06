@@ -1,6 +1,8 @@
 # Mail address where logs are sent to (mandatory, no default!)
 $mailto = "buildd-maint@canonical.com";
 
+$srcdep_lock_dir = "/home/buildd/";
+
 %mailto = (
 );
 

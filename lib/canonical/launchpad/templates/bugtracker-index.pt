@@ -2,7 +2,6 @@
       lang="en"
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
-
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -10,9 +9,39 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-actions" />
     <div tal:replace="structure context/@@+portlet-projects" />
 </metal:rightportlets>
+
+<metal:macros fill-slot="bogus">
+  <metal:macro define-macro="watchlisting">
+    <table class="sortable listing" id="latestwatches">
+      <thead>
+        <tr>
+          <th>Malone bug</th>
+          <th>Remote #</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        <tr tal:repeat="watch watches">
+          <td>
+            <img alt="" src="/++resource++bug" />
+            <a href="#" tal:attributes="href watch/bug/fmt:url">
+              #<span tal:replace="watch/bug/id">34</span>:
+               <span tal:replace="watch/bug/title">Malone Bug Title</span>
+            </a>
+          </td>
+          <td><a tal:content="watch/remotebug"
+                 tal:attributes="href watch/url">53656
+              </a>
+          </td>
+          <td tal:content="watch/remotestatus" />
+        </tr>
+      </tbody>
+    </table>
+  </metal:macro>
+</metal:macros>
 
 <div metal:fill-slot="main">
 
@@ -34,34 +63,25 @@
     The contact details for the admins of this bug tracker go here, so we
     can get to them in an emergency.
   </div>
-    
-  <tal:block condition="context/latestwatches">
-    <h2>Latest Watches:</h2>
 
-    <table class="sortable listing" id="latestwatches">
-      <thead>
-        <tr>
-          <th>Malone bug</th>
-          <th>Remote #</th>
-        </tr>
-      </thead>
+  <tal:block condition="context/watches">
 
-      <tbody>
-        <tr tal:repeat="watch context/latestwatches">
-          <td>
-            <img alt="" src="/++resource++bug" />
-            <a href="#" tal:attributes="href watch/bug/fmt:url">
-              #<span tal:replace="watch/bug/id">34</span>:
-               <span tal:replace="watch/bug/title">Malone Bug Title</span>
-            </a>
-          </td>
-          <td><a tal:content="watch/remotebug"
-                 tal:attributes="href watch/url">53656
-              </a>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+    <tal:block condition="request/display-all-watches|nothing"
+               define="watches context/watches">
+      <h2>All Active Bug Watches</h2>
+      <metal:watches use-macro="template/macros/watchlisting" />
+    </tal:block>
+
+    <tal:block condition="not: request/display-all-watches|nothing"
+               define="watches context/latestwatches">
+      <h2>Latest Bug Watches</h2>
+      <metal:watches use-macro="template/macros/watchlisting" />
+      <ul>
+        <li class="list"><a href="?display-all-watches=1">Show all bug
+        watches</a></li>
+      </ul>
+    </tal:block>
+
   </tal:block>
 
 </div>

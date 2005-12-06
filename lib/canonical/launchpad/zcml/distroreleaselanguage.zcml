@@ -23,6 +23,7 @@
   <browser:pages
     for="canonical.launchpad.interfaces.IDistroReleaseLanguage"
     permission="zope.Public"
+    facet="translations"
     class="canonical.launchpad.browser.DistroReleaseLanguageView">
     <browser:page
       name="+index"

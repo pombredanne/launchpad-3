@@ -1,0 +1,33 @@
+<html metal:use-macro="context/@@main_template/master">
+  <body>
+        <div metal:fill-slot="body">
+          <h1 class="exception">
+            Timeout error
+          </h1>
+          <p>
+            Sorry, Launchpad took too long to process your request.
+          </p>
+          <p>
+            Please <a href="/products/launchpad/+bugs">report this as a bug</a>,
+            after checking that it isn&#8217;t reported already.
+            In your bug report
+            include the <abbr>URL</abbr> of this page,
+            and what you were trying to do.
+          </p>
+          <p>
+            (If this error is preventing you <em>from</em> reporting bugs,
+            <a href="mailto:system-error@launchpad.ubuntu.com">e-mail us</a>
+            instead, with &#8220;Bug&#8221; in the Subject line.)
+          </p>
+          <p tal:condition="request/oopsid">
+            The reference for this error is
+            <tt class="oopsid" tal:content="request/oopsid">OOPS-A1234</tt>.
+            Please include it in your bug report or email.
+          </p>
+          <p>
+            Thanks for helping improve Launchpad, and sorry for the inconvenience.
+          </p>
+        <tal:replace tal:replace="structure view/maybeShowTraceback" />
+        </div>
+  </body>
+</html>

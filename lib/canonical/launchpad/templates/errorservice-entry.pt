@@ -3,67 +3,67 @@
 <div metal:fill-slot="main"
      tal:define="entry python:context.getLogEntryById(request.get('id'))">
 
-  <h1 i18n:translate="">Header</h1>
+  <h1 i18n:translate="">Exception Traceback</h1>
 
-  <h3 i18n:translate="">Exception traceback</h3>
-
-  <em tal:condition="not:entry">
+  <p tal:condition="not:entry">
     The specified log entry was not found.  It may have expired.
-  </em>
+  </p>
 
   <div tal:condition="entry">
 
     <div class="row">
-      <div class="label" i18n:translate="">Time</div>
+      <label i18n:translate="">Time:</label>
       <div class="field" tal:content="entry/time">Time</div>
     </div>
 
     <div class="row">
-      <div class="label" i18n:translate="">User</div>
+      <label i18n:translate="">User:</label>
       <div class="field" tal:content="entry/username">joe</div>
     </div>
 
     <div class="row">
-      <div class="label" i18n:translate="">Request URL</div>
+      <label i18n:translate="">Request URL:</label>
       <div class="field" tal:content="entry/url">http://zeomega.com</div>
     </div>
 
     <div class="row">
-      <div class="label" i18n:translate="">Exception Type</div>
+      <label i18n:translate="">Exception Type:</label>
       <div class="field" tal:content="entry/type">AttributeError</div>
     </div>
 
     <div class="row">
-      <div class="label" i18n:translate="">Exception Value</div>
+      <label i18n:translate="">Exception Value:</label>
       <div class="field" tal:content="entry/value">zzope</div>
     </div>
 
     <div class="row">
-      <div class="label" i18n:translate="">Traceback</div>
+      <label i18n:translate="">Traceback:</label>
       <div class="field">&nbsp;</div>
     </div>
     <br/>
 
-    <div tal:condition="entry/tb_html" tal:content="structure entry/tb_html">
-      Traceback (HTML)
-    </div>
-
-    <pre tal:condition="not:entry/tb_html" tal:content="entry/tb_text">
+    <pre tal:content="entry/tb_text">
       Traceback (text)
     </pre>
 
-    <p tal:condition="entry/tb_text">
-      <a href="." 
-         tal:attributes="href string:showTextTBEntry.html?id=${entry/id}" 
-         i18n:translate="">Display traceback as text</a>
-    </p>
+    <div tal:condition="entry/req_vars">
 
+      <h1 i18n:translate="">Request</h1>
 
-    <div tal:condition="entry/req_html">
-
-      <h3 i18n:translate="">REQUEST</h3>
-
-      <div tal:replace="structure entry/req_html"></div>
+      <table class="listing">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Value</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="row entry/req_vars">
+            <td tal:content="python:row[0]">Name</td>
+            <td tal:content="python:row[1]">Value</td> 
+         </tr>
+        </tbody>
+      </table>
 
     </div>
 
@@ -71,10 +71,8 @@
 
   <form action="index.html" method="get">
     <div class="row">
-      <div class="controls">
         <input type="submit" name="submit" value="Return to log" 
                 i18n:attributes="value return-to-log-button" />
-        </div>
     </div>
   </form>
 
