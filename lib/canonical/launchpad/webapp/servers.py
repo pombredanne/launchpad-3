@@ -23,6 +23,7 @@ from canonical.launchpad.webapp.notification import (
 from canonical.launchpad.webapp.interfaces import (
         INotificationRequest, INotificationResponse, BrowserNotificationLevel
         )
+from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 
 
 class StepsToGo:
@@ -102,7 +103,8 @@ class StepsToGo:
         return bool(self._stack)
 
 
-class LaunchpadBrowserRequest(BrowserRequest, NotificationRequest):
+class LaunchpadBrowserRequest(BrowserRequest, NotificationRequest,
+                              ErrorReportRequest):
 
     implements(ILaunchpadBrowserApplicationRequest)
 

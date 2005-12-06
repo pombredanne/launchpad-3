@@ -1065,3 +1065,8 @@ Calendar stuff.
   padding: 0.5em 1em 0.5em 3em;
   background-repeat: no-repeat;
 }
+
+.oopsid {
+  font-weight: bold;
+  color: red;
+}

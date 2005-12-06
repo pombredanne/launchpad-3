@@ -11,7 +11,7 @@
 
   <div metal:fill-slot="main">
 
-    <tal:block condition="not: context/poll/isClosed">
+    <tal:block condition="context/poll/isNotYetOpened">
       <div metal:use-macro="context/@@launchpad_editform/editform">
 
         <h1 metal:fill-slot="heading">
@@ -22,9 +22,12 @@
       </div>
     </tal:block>
     
-    <tal:block condition="context/poll/isClosed">
-      <p class="portalMessage">
+    <tal:block condition="not: context/poll/isNotYetOpened">
+      <p class="portalMessage" tal:condition="context/poll/isClosed">
         This poll is already closed, you can't edit any of its options.
+      </p>
+      <p class="portalMessage" tal:condition="context/poll/isOpen">
+        This poll is already open, you can't edit any of its options.
       </p>
     </tal:block>
 
