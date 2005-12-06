@@ -111,7 +111,7 @@ class IBugTaskEmailCommand(IEmailCommand):
 class IBugEditEmailCommand(IEmailCommand):
     """An email command specific to editing a bug."""
 
-    def execute(bug):
+    def execute(bug, current_event):
         """Execute the command in the context of the bug.
 
         The modified bug and an event is returned.
@@ -121,7 +121,7 @@ class IBugEditEmailCommand(IEmailCommand):
 class IBugTaskEditEmailCommand(IEmailCommand):
     """An email command specific to editing a bug task."""
 
-    def execute(bugtask):
+    def execute(bugtask, current_event):
         """Execute the command in the context of the bug task.
 
         The modified bug task and an event is returned.

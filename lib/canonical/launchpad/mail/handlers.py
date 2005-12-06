@@ -39,14 +39,6 @@ def get_main_body(signed_msg):
         return msg.get_payload(decode=True)
 
 
-def get_edited_fields(modified_event, another_event):
-    """Combines two events' edited_fields."""
-    edited_fields = modified_event.edited_fields
-    if ISQLObjectModifiedEvent.providedBy(another_event):
-        edited_fields += another_event.edited_fields
-    return edited_fields
-
-
 def get_bugtask_type(bugtask):
     """Returns the specific IBugTask interface the the bugtask provides.
 
@@ -173,11 +165,7 @@ class MaloneHandler:
             bug_event = None
             bugtask = None
             bugtask_event = None
-            bugtask_snapshot = None
 
-            # XXX: Parts of this loop could be generalized. I'll do that
-            #      in the next patch, though.
-            #      -- Bjorn Tillenius, 2005-11-30
             while len(commands) > 0:
                 command = commands.pop(0)
                 try:
@@ -198,33 +186,13 @@ class MaloneHandler:
                             bugmessage = bug.linkMessage(message)
                             notify(SQLObjectCreatedEvent(bugmessage))
                             add_comment_to_bug = False
-                        bug_snapshot = Snapshot(bug, providing=IBug)
                     elif IBugTaskEmailCommand.providedBy(command):
                         if bugtask_event is not None:
                             notify(bugtask_event)
                             bugtask_event = None
-                            bugtask_snapshot = None
                         bugtask, bugtask_event = command.execute(bug)
-                        if (bugtask_snapshot is None and
-                            ISQLObjectModifiedEvent.providedBy(bugtask_event)):
-                            bugtask_snapshot = (
-                                bugtask_event.object_before_modification)
-                        elif bugtask_snapshot is None:
-                            bugtask_snapshot = Snapshot(
-                                bugtask, providing=IBugTask)
                     elif IBugEditEmailCommand.providedBy(command):
-                        ob, ob_event = command.execute(bug, bug_event)
-                        # The bug can be edited by several commands. Let's wait
-                        # firing off the event until all commands related to
-                        # the bug have been executed.
-                        if ob_event is not None:
-                            if ob != bug:
-                                notify(ob_event)
-                            elif ISQLObjectModifiedEvent.providedBy(ob_event):
-                                edited_fields = get_edited_fields(
-                                    ob_event, bug_event)
-                                bug_event = SQLObjectModifiedEvent(
-                                    bug, bug_snapshot, edited_fields)
+                        bug, bug_event = command.execute(bug, bug_event)
                     elif IBugTaskEditEmailCommand.providedBy(command):
                         if bugtask is None:
                             bugtask = guess_bugtask(
@@ -234,21 +202,8 @@ class MaloneHandler:
                                     'no-default-affects.txt') % {
                                         'bug_id': bug.id,
                                         'nr_of_bugtasks': len(bug.bugtasks)})
-                            bugtask_snapshot = Snapshot(
-                                bugtask, providing=get_bugtask_type(bugtask))
-                        ob, ob_event = command.execute(bugtask, bugtask_event)
-                        # The bug task can be edited by several
-                        # commands. Let's wait firing off the event
-                        # until all commands related to the bug task
-                        # have been executed.
-                        if ob_event is not None:
-                            if ob != bugtask:
-                                notify(ob_event)
-                            elif ISQLObjectModifiedEvent.providedBy(ob_event):
-                                edited_fields = get_edited_fields(
-                                    ob_event, bugtask_event)
-                                bugtask_event = SQLObjectModifiedEvent(
-                                    bugtask, bugtask_snapshot, edited_fields)
+                        bugtask, bugtask_event = command.execute(
+                            bugtask, bugtask_event)
 
                 except EmailProcessingError, error:
                     raise IncomingEmailError(

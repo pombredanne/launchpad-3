@@ -19,7 +19,8 @@ from canonical.launchpad.interfaces import (
         IDistributionSourcePackage, EmailProcessingError)
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
-from canonical.launchpad.event.interfaces import ISQLObjectCreatedEvent
+from canonical.launchpad.event.interfaces import (
+    ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
 from canonical.launchpad.mailnotification import get_email_template
 
 from canonical.lp.dbschema import (
@@ -147,8 +148,14 @@ class EditEmailCommand(EmailCommand):
         """See IEmailCommand."""
         self._ensureNumberOfArguments()
         args = self.convertArguments()
-        context_snapshot = Snapshot(
-            context, providing=providedBy(context))
+
+        edited_fields = set()
+        if ISQLObjectModifiedEvent.providedBy(current_event):
+            context_snapshot = current_event.object_before_modification
+            edited_fields.update(current_event.edited_fields)
+        else:
+            context_snapshot = Snapshot(context, providing=providedBy(context))
+
         if not ISQLObjectCreatedEvent.providedBy(current_event):
             notify(SQLObjectToBeModifiedEvent(context, args))
         edited = False
@@ -157,12 +164,11 @@ class EditEmailCommand(EmailCommand):
                 setattr(context, attr_name, attr_value)
                 edited = True
         if edited and not ISQLObjectCreatedEvent.providedBy(current_event):
-            event = SQLObjectModifiedEvent(
-                context, context_snapshot, args.keys())
-        else:
-            event = None
+            edited_fields.update(args.keys())
+            current_event = SQLObjectModifiedEvent(
+                context, context_snapshot, list(edited_fields))
 
-        return context, event
+        return context, current_event
 
 
 class PrivateEmailCommand(EditEmailCommand):
@@ -216,8 +222,6 @@ class SubscribeEmailCommand(EmailCommand):
                 " Got %s: %s" % (len(string_args), ' '.join(string_args)))
 
         if bug.isSubscribed(person):
-            # the person is already subscribe so there is no event
-            event = None
             # but we still need to find the subscription
             for bugsubscription in bug.subscriptions:
                 if bugsubscription.person == person:
@@ -225,9 +229,9 @@ class SubscribeEmailCommand(EmailCommand):
 
         else:
             bugsubscription = bug.subscribe(person)
-            event = SQLObjectCreatedEvent(bugsubscription)
+            notify(SQLObjectCreatedEvent(bugsubscription))
 
-        return bugsubscription, event
+        return bug, current_event
 
 
 class UnsubscribeEmailCommand(EmailCommand):
@@ -260,7 +264,7 @@ class UnsubscribeEmailCommand(EmailCommand):
         if bug.isSubscribed(person):
             bug.unsubscribe(person)
 
-        return None, None
+        return bug, current_event
 
 
 class SummaryEmailCommand(EditEmailCommand):
@@ -372,9 +376,7 @@ class AffectsEmailCommand(EditEmailCommand):
         bug_tasks = list(
             target.searchTasks(BugTaskSearchParams(user, bug=bug)))
 
-        if len(bug_tasks) > 1:
-            # XXX: This shouldn't happen
-            raise ValueError('Found more than one bug task.')
+        assert len(bug_tasks) <= 1, 'Found more than one bug task.'
         if len(bug_tasks) == 0:
             return None
         else:
