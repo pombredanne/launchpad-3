@@ -109,7 +109,7 @@ class Build(SQLBase):
         return sorted(bpklist, key=lambda a: a.binarypackagename.name)
 
     @property
-    def is_resetable(self):
+    def can_be_reset(self):
         """See IBuild."""
         return self.buildstate in [BuildStatus.FAILEDTOBUILD,
                                    BuildStatus.MANUALDEPWAIT,
@@ -123,7 +123,6 @@ class Build(SQLBase):
         self.builder = None
         self.gpgsigningkey = None
         self.changes = None
-        # XXX cprov 20051127: achive LibrarianGC requirements 
         self.buildlog = None
         
 

@@ -44,8 +44,8 @@ class IBuild(Interface):
         "details for this sourcepackagerelease in this distribution.")
     binarypackages = Attribute("A list of binary packages that resulted "
         "from this build.")
-    is_resetable = Attribute(
-        "Whether or not this build record can be reseted.")
+    can_be_reset = Attribute(
+        "Whether or not this build record can be reset.")
 
     def reset():
         """Restore the build record to its initial state.

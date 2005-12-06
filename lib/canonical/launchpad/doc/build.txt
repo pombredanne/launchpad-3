@@ -40,7 +40,7 @@ Let's check the complex properties of a build object.
 
 Test "reset" functionality: 
 
-  >>> firefox_build.is_resetable
+  >>> firefox_build.can_be_reset
   False
 
   >>> resetable_build = Build.get(9)
@@ -51,7 +51,7 @@ Test "reset" functionality:
   >>> resetable_build.buildstate.title
   'Failed to build'
 
-  >>> resetable_build.is_resetable
+  >>> resetable_build.can_be_reset
   True
 
   >>> resetable_build.builder.name

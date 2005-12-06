@@ -52,7 +52,7 @@ class BuildOverviewMenu(ApplicationMenu):
         """Only enabled for build records that are resetable."""
         text = 'Reset Build'
         return Link('+reset', text, icon='edit',
-                    enabled=self.context.is_resetable)
+                    enabled=self.context.can_be_reset)
 
 
 class BuildView(LaunchpadView):
@@ -61,9 +61,9 @@ class BuildView(LaunchpadView):
 
     def reset_build(self):
         """Check user confirmation and perform the build record reset."""
-        # dismiss if builder is not resetable and return a user warn.
-        if not self.context.is_resetable:
-            return '<p>Build Record is already reseted.</p>'
+        # dismiss if builder can't be reset and return a user warn.
+        if not self.context.can_be_reset:
+            return '<p>Build Record is already reset.</p>'
 
         # retrieve user confirmation
         action = self.request.form.get('RESET', None)
@@ -73,7 +73,7 @@ class BuildView(LaunchpadView):
 
         # invoke context method to reset the build record
         self.context.reset()
-        return '<p>Build Record reseted.</p>'
+        return '<p>Build Record reset.</p>'
         
 
 class BuildRecordsView(LaunchpadView):
