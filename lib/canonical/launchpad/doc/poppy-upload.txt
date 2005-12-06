@@ -243,10 +243,20 @@ Assign the loaded GPG key to the katie user.
 
 
 Now we want to turn on the zeca key server to provide the key we
-just imported.
+just imported. Remember that process-upload.py is running as
+a different process.
 
   >>> from canonical.zeca.ftests.harness import ZecaTestSetup
   >>> ZecaTestSetup().setUp()
+
+
+Include non-free in the database. This will be done by the
+NascentUpload in the autosync policy in the future.
+
+  >>> from canonical.launchpad.interfaces import IComponentSet
+  >>> component_set = getUtility(IComponentSet)
+  >>> non_free = component_set.new("non-free")
+  >>> transaction.commit()
 
 
 That's all for the FTP server. Now we must process the uploaded packages.
@@ -265,6 +275,87 @@ This is done by running process-upload.py on each upload directory.
   >>> for upload_num in range(1, len(uploads)+1):
   ...     assert process_upload(upload_num) == 0
 
+
+Let's check if packages where uploaded correctly.
+
+  >>> from canonical.launchpad.database import (
+  ...     SourcePackageRelease, SourcePackageName)
+  >>> from pprint import pprint
+
+  >>> spn = SourcePackageName.selectOneBy(name="drdsl")
+  >>> spn.name
+  u'drdsl'
+  >>> spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
+  >>> spr.title
+  u'drdsl - 1.2.0-0ubuntu1'
+  >>> spr.name
+  u'drdsl'
+  >>> spr.version
+  u'1.2.0-0ubuntu1'
+  >>> spr.component.name
+  u'non-free'
+  >>> spr.section.name
+  u'comm'
+  >>> spr.maintainer.displayname
+  u'Matthias Klose'
+  >>> pprint(sorted([sprf.libraryfile.filename for sprf in spr.files]))
+  [u'drdsl_1.2.0-0ubuntu1.diff.gz',
+   u'drdsl_1.2.0-0ubuntu1.dsc',
+   u'drdsl_1.2.0.orig.tar.gz']
+  >>> spr.format.name
+  'DPKG'
+  >>> spr.urgency.name
+  'LOW'
+  >>> spr.uploaddistrorelease.name
+  u'breezy-autotest'
+
+
+It should also be in the distroreleasequeuesource table marked as NEW.
+
+  >>> from canonical.launchpad.database import DistroReleaseQueueSource
+  >>> drqs = DistroReleaseQueueSource.selectOneBy(sourcepackagereleaseID=spr.id)
+  >>> drqs.distroreleasequeue.status.name
+  'NEW'
+  >>> drqs.distroreleasequeue.pocket.name
+  'RELEASE'
+
+
+Same thing for etherwake:
+
+  >>> spn = SourcePackageName.selectOneBy(name="etherwake")
+  >>> spn.name
+  u'etherwake'
+  >>> spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
+  >>> spr.title
+  u'etherwake - 1.08-1'
+  >>> spr.name
+  u'etherwake'
+  >>> spr.version
+  u'1.08-1'
+  >>> spr.component.name
+  u'main'
+  >>> spr.section.name
+  u'net'
+  >>> spr.maintainer.displayname
+  u'Alain Schroeder'
+  >>> pprint(sorted([sprf.libraryfile.filename for sprf in spr.files]))
+  [u'etherwake_1.08-1.diff.gz',
+   u'etherwake_1.08-1.dsc',
+   u'etherwake_1.08.orig.tar.gz']
+  >>> spr.format.name
+  'DPKG'
+  >>> spr.urgency.name
+  'LOW'
+  >>> spr.uploaddistrorelease.name
+  u'breezy-autotest'
+
+  >>> drqs = DistroReleaseQueueSource.selectOneBy(sourcepackagereleaseID=spr.id)
+  >>> drqs.distroreleasequeue.status.name
+  'NEW'
+  >>> drqs.distroreleasequeue.pocket.name
+  'RELEASE'
+
+  #>>> import pdb; pdb.set_trace()
 
 Nice! That's enough for now.. let's kill the process and clean
 everything up.
