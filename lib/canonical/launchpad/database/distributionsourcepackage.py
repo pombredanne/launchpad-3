@@ -132,10 +132,7 @@ class DistributionSourcePackage:
 
     def addBugContact(self, person):
         """See IDistributionSourcePackage."""
-        contact_already_exists = PackageBugContact.selectOneBy(
-            distributionID=self.distribution.id,
-            sourcepackagenameID=self.sourcepackagename.id,
-            bugcontactID=person.id)
+        contact_already_exists = self.isBugContact(person)
 
         if contact_already_exists:
             raise DuplicateBugContactError(
@@ -149,15 +146,24 @@ class DistributionSourcePackage:
 
     def removeBugContact(self, person):
         """See IDistributionSourcePackage."""
-        contact_to_remove = PackageBugContact.selectOneBy(
-            distributionID=self.distribution.id,
-            sourcepackagenameID=self.sourcepackagename.id,
-            bugcontactID=person.id)
+        contact_to_remove = self.isBugContact(person)
 
         if not contact_to_remove:
             raise DeleteBugContactError("%s is not a bug contact for this package.")
         else:
             contact_to_remove.destroySelf()
+
+    def isBugContact(self, person):
+        """See IDistributionSourcePackage."""
+        package_bug_contact = PackageBugContact.selectOneBy(
+            distributionID=self.distribution.id,
+            sourcepackagenameID=self.sourcepackagename.id,
+            bugcontactID=person.id)
+
+        if package_bug_contact:
+            return package_bug_contact
+        else:
+            return False
 
     @property
     def binary_package_names(self):

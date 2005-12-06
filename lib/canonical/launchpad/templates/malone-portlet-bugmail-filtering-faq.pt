@@ -1,0 +1,18 @@
+<div class="portlet">
+
+  <h4>Frequently Asked Questions</h4>
+
+  <div class="portletBody portletContent">
+
+    <b>What can I do to help manage the volume of bugmail I receive?</b>
+    <p>Every bugmail sent by Malone includes one or more <span style="white-space: nowrap">X-Launchpad-Bug</span>
+    headers. You can use tools such
+    as <a href="http://www.procmail.org">procmail</a> to create custom filters
+    based on this header.</p>
+
+    <a href="https://wiki.launchpad.canonical.com/InitialBugContacts#xlpbug">
+      <span style="white-space: nowrap">X-Launchpad-Bug</span> docs
+    </a>
+  </div>
+
+</div>

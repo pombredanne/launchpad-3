@@ -96,3 +96,14 @@ DeleteBugContactError.
     Traceback (most recent call last):
       ...
     DeleteBugContactError: ...
+
+To find out if an IPerson or ITeam is bug contact, use
+IDistributionSourcePackage.isBugContact. For pragmatic reasons (in particular,
+it makes the implementation of some of IDistributionSourcePackage's other
+methods simpler) IDistributionSourcePackage.isBugContact will return either the
+appropriate PackageBugContact record or False:
+
+    >>> debian_firefox.isBugContact(ubuntu_team)
+    <PackageBugContact ...>
+    >>> debian_firefox.isBugContact(foobar)
+    False

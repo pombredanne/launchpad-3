@@ -308,6 +308,8 @@ distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
 distributionsourcepackage_index = ContextTitle('%s')
 
+distributionsourcepackage_manage_bugcontacts = ContextTitle('Bug Contacts for %s')
+
 distributionsourcepackagerelease_index = ContextTitle('%s')
 
 distro_add = 'Adding New Distribution'

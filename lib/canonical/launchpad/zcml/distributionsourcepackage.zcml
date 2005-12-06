@@ -11,10 +11,11 @@
       attributes="distribution sourcepackagename name displayname title
                   distro by_distroreleases subscribers currentrelease
                   releases publishing_history binary_package_names
-                  bugcontacts __getitem__ getVersion bugtasks __eq__ __ne__" />
+                  bugcontacts __getitem__ getVersion bugtasks __eq__ __ne__
+                  tickets getTicket searchTasks isBugContact" />
     <require
       permission="launchpad.AnyPerson"
-      attributes="addBugContact removeBugContact subscribe" />
+      attributes="addBugContact removeBugContact newTicket subscribe" />
   </content>
 
   <browser:defaultView
@@ -36,24 +37,20 @@
     module="canonical.launchpad.browser.distributionsourcepackage"
     classes="DistributionSourcePackageFacets
              DistributionSourcePackageOverviewMenu
-             DistributionSourcePackageBugsMenu"
-    />
+             DistributionSourcePackageBugsMenu" />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
     class="canonical.launchpad.browser.DistributionSourcePackageView"
-    permission="zope.Public"
-    >
+    permission="zope.Public">
     <browser:page
       name="+index"
       facet="overview"
-      template="../templates/distributionsourcepackage-index.pt"
-      />
+      template="../templates/distributionsourcepackage-index.pt" />
     <browser:page
       name="+translations"
       facet="translations"
-      template="../templates/sourcepackage-translations.pt"
-      />
+      template="../templates/sourcepackage-translations.pt" />
 
     <!-- DistributionSourcePackage Portlets -->
     <browser:page
@@ -61,6 +58,10 @@
       facet="overview"
       template="../templates/distributionsourcepackage-portlet-details.pt"
       />
+    <browser:page
+      name="+portlet-bugcontacts"
+      facet="bugs"
+      template="../templates/distributionsourcepackage-portlet-bugcontacts.pt" />
     <browser:page
       name="+portlet-releases"
       template="../templates/distributionsourcepackage-portlet-releases.pt"
@@ -85,6 +86,14 @@
       template="../templates/distributionsourcepackage-bugs.pt"
       />
   </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistributionSourcePackage"
+    name="+subscribe"
+    permission="launchpad.AnyPerson"
+    facet="bugs"
+    class="canonical.launchpad.browser.distributionsourcepackage.DistributionSourcePackageBugContactsView"
+    template="../templates/distributionsourcepackage-manage-bugcontacts.pt" />
 
   <browser:addform
     name="+filebug"

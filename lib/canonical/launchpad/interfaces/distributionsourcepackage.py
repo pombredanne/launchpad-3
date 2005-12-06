@@ -74,6 +74,12 @@ class IDistributionSourcePackage(ITicketTarget, IBugTarget):
         :person: An IPerson or ITeam.
         """
 
+    def isBugContact(person):
+        """Is person a bug contact for this package?
+
+        If yes, the PackageBugContact is returned. Otherwise False is returned.
+        """
+
     def subscribe(person):
         """Subscribe a person to this package.
 

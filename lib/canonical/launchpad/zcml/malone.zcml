@@ -69,6 +69,13 @@
             template="../templates/malone-portlet-bugtrackers.pt" />
     </browser:pages>
 
+    <!-- Global Malone portlets -->
+    <browser:page
+       for="*"
+       name="+portlet-malone-bugmail-filtering-faq"
+       template="../templates/malone-portlet-bugmail-filtering-faq.pt"
+       permission="zope.Public" />
+
     <!-- Preserve the /malone/assigned link to prevent linkrot. This will now
          redirect into the FOAF +assignedbugs. -->
     <browser:page
