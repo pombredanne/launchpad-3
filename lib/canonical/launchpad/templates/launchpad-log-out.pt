@@ -1,0 +1,31 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xml:lang="en"
+  lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+>
+  <head metal:fill-slot="head_epilogue">
+    <meta name="robots" content="noindex">
+  </head>
+  <body>
+    <div metal:fill-slot="main">
+      <h1>Log out</h1>
+      <p>
+        Are you sure you want to log out from Launchpad?
+      </p>
+      <form action="." method="POST" class="actions">
+        <input
+          type="submit"
+          name="logout"
+          value="Log Out"
+        />
+        <input
+          type="submit"
+          name="cancel"
+          value="Cancel"
+        />
+      </form>
+    </div>
+  </body>
+</html>

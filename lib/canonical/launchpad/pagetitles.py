@@ -432,7 +432,7 @@ launchpad_legal = 'Launchpad - Legalese'
 
 launchpad_login = 'Log in or register with Launchpad'
 
-launchpad_logout = 'Launchpad Logout'
+launchpad_log_out = 'Log out from Launchpad'
 
 launchpad_notfound = 'Launchpad Page Not Found'
 
