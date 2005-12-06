@@ -283,4 +283,8 @@ except:
     txn.abort()
     sys.exit(1)
 
+debug("All done, committing before bed.")
+
 txn.commit()
+
+debug("Ciao")
