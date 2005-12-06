@@ -1,0 +1,165 @@
+     Components and Sections
+     ^^^^^^^^^^^^^^^^^^^^^^^
+
+Component reffers to a group of packages within a DistroRelease that
+are related by their need, shipment condition and or licencement.
+
+Zope auxiliary test toolchain:
+
+ >>> from zope.interface.verify import verifyObject 
+ >>> from zope.component import getUtility
+
+Importing Component content class and its interface:
+
+ >>> from canonical.launchpad.database import Component
+ >>> from canonical.launchpad.interfaces import IComponent
+
+Get an Compoenent instance from the current sampledata:
+
+ >>> component = Component.get(1) 
+
+Test some attributes:
+
+ >>> component.id, component.name
+ (1, u'main')
+
+Check if the instace corresponds to the declared interface:
+
+ >>> verifyObject(IComponent, component)
+ True
+
+Now perform the tests for the Component ContentSet class, ComponentSet.
+
+Check if it can be imported:
+
+ >>> from canonical.launchpad.interfaces import IComponentSet
+ 
+Check we can use the set as a utility:
+
+ >>> component_set = getUtility(IComponentSet)
+
+Test iteration over the sampledata defaul components:
+
+ >>> for c in component_set:
+ ...    c.name
+ u'main'
+ u'restricted'
+ u'universe'
+
+Test __getitem__ method, retrieving a component by name:
+
+ >>> component_set['universe'].name
+ u'universe'
+
+Test get method, retrieving a component by its id:
+
+ >>> component_set.get(2).name
+ u'restricted'
+
+New component creation for a given name:
+
+ >>> new_comp = component_set.new('test')
+ >>> new_comp.id, new_comp.name
+ (4L, u'test')
+
+Ensuring a component (if not found, create it):
+
+ >>> component_set.ensure('test').id
+ 4L
+
+ >>> component_set.ensure('test2').id
+ 5L
+
+
+Importing Section content class and its interface:
+
+ >>> from canonical.launchpad.database import Section
+ >>> from canonical.launchpad.interfaces import ISection
+
+Get a Section instance from the current sampledata:
+
+ >>> section = Section.get(1) 
+
+Test some attributes:
+
+ >>> section.id, section.name
+ (1, u'base')
+
+Check if the instace corresponds to the declared interface:
+
+ >>> verifyObject(ISection, section)
+ True
+
+Now perform the tests for the Section ContentSet class, SectionSet.
+
+Check if it can be imported:
+
+ >>> from canonical.launchpad.interfaces import ISectionSet
+ 
+Check we can use the set as a utility:
+
+ >>> section_set = getUtility(ISectionSet)
+
+Test iteration over the sampledata default sections:
+
+ >>> for s in section_set:
+ ...    s.name
+ u'base'
+ u'web'
+ u'editors'
+ u'admin'
+ u'comm'
+ u'debian-installer'
+ u'devel'
+ u'doc'
+ u'games'
+ u'gnome'
+ u'graphics'
+ u'interpreters'
+ u'kde'
+ u'libdevel'
+ u'libs'
+ u'mail'
+ u'math'
+ u'misc'
+ u'net'
+ u'news'
+ u'oldlibs'
+ u'otherosfs'
+ u'perl'
+ u'python'
+ u'shells'
+ u'sound'
+ u'tex'
+ u'text'
+ u'translations'
+ u'utils'
+ u'x11'
+ u'electronics'
+ u'embedded'
+ u'hamradio'
+ u'science'
+
+Test __getitem__ method, retrieving a section by name:
+
+ >>> section_set['science'].name
+ u'science'
+
+Test get method, retrieving a section by its id:
+
+ >>> section_set.get(2).name
+ u'web'
+
+New section creation for a given name:
+
+ >>> new_sec = section_set.new('test')
+ >>> new_sec.id, new_sec.name
+ (36L, u'test')
+
+Ensuring a section (if not found, create it):
+
+ >>> section_set.ensure('test').id
+ 36L
+
+ >>> section_set.ensure('test2').id
+ 37L

@@ -22,7 +22,6 @@ from sqlobject.main import SQLObjectIntegrityError
 
 from canonical.lp import initZopeless
 from canonical.config import config
-from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 
@@ -126,7 +125,7 @@ class UploaderTester:
                 user_email = getUtility(IEmailAddressSet).getByEmail(email)
                 user_email.status = dbschema.EmailAddressStatus.PREFERRED
                 # ensure the DB content is modified immediately
-                flush_database_updates()
+                self.ztm.commit()
                 self.log.info('Setting PREFERRED email to: %s'
                               % user.preferredemail.email)
                                 
