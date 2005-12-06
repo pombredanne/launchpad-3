@@ -1,6 +1,7 @@
+<tal:layout define="columns1 default">
 <html metal:use-macro="context/@@main_template/master">
   <body>
-        <div metal:fill-slot="body">
+        <div metal:fill-slot="main">
           <h1 class="exception">
             Timeout error
           </h1>
@@ -31,3 +32,4 @@
         </div>
   </body>
 </html>
+</tal:layout>
