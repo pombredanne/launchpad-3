@@ -6,10 +6,16 @@
 __metaclass__ = type
 
 import unittest
+import tempfile
 
-import bzrlib
+from bzrlib.branch import ScratchBranch
 
-from canonical.launchpad.database.branch import Branch as lpBranch
+from canonical.launchpad import database
+
+def compare_branches(a, b):
+    a.last_revision() == b.last_revision()
+
+    
 
 class AcceptanceTests(unittest.TestCase):
     """ 
@@ -17,6 +23,12 @@ class AcceptanceTests(unittest.TestCase):
     initial implementation of bzr support, converted from the English at
     https://wiki.launchpad.canonical.com/SupermirrorTaskList
     """
+
+    def setUp(self):
+        # Create a local branch with one revision
+        self.local_branch = ScratchBranch(files=['foo'])
+        self.local_branch.add('foo')
+        self.local_branch.commit('Added foo')
 
     def test_1_bzr_sftp(self):
         """
@@ -29,19 +41,20 @@ class AcceptanceTests(unittest.TestCase):
         user has permission to read or write to those URLs.
         """
         
-        # set up test branch
-        local_path = xxx
-        local_branch = make_new_branch(local_path) # bzr init; echo hello > world.txt; bzr add; bzr ci -m "test."
+        # Start test server
+        server = start_test_sftp_server()
+
+        # Push the local branch to the server
+        remote_branch = bzrlib.branch.Branch.initialize(
+            server.base + '~testuser/+junk/test-branch')
+        remote_branch.pull(self.local_branch)
         
-        # start test server
-        remote_prefix = start_test_sftp_server()
-        remote_path = remote_prefix + '~testuser/+junk/test-branch'
-        
-        # bzr push works
-        bzr_push(local_branch, remote_path) # expect no errors
-        
-        # bzr log works
-        self.assertEqual(bzr_log(local_path), bzr_log(remote_path))
+        # Check that the pushed branch looks right
+        self.assertEqual(
+            self.local_branch.last_revision(), remote_branch.last_revision())
+
+        # Tear down test server
+        server.stop()
 
     def test_2_namespace_restrictions(self):        
         """
@@ -53,62 +66,100 @@ class AcceptanceTests(unittest.TestCase):
             * `bzr push sftp://testinstance/~team/+junk/anything`
         should fail.
         """
-        # set up test branch
-        local_path = xxx
-        local_branch = make_new_branch(local_path) # bzr init; echo hello > world.txt; bzr add; bzr ci -m "test."
 
-        # start test server
-        remote_prefix = start_test_sftp_server()
+        # Start test server
+        server = start_test_sftp_server()
 
-        # cannot push branches to products that don't exist
+        # Cannot push branches to products that don't exist
         self.assertRaises(
             PermissionError, 
-            bzr_push, 
-            local_branch, remote_prefix + '~testuser/fake-product/hello')
+            bzrlib.branch.Branch.initialize,
+            server.base + '~testuser/fake-product/hello')
 
-        # teams cannot have +junk products
+        # Teams cannot have +junk products
         self.assertRaises(
             PermissionError,
-            bzr_push, 
-            local_branch, remote_prefix + '~testteam/+junk/hello')
+            bzrlib.branch.Branch.initialize,
+            server.base + '~testteam/+junk/hello')
 
-        # cannot push to team directories that the user isn't a member of
+        # Cannot push to team directories that the user isn't a member of
         self.assertRaises(
             PermissionError,
-            bzr_push, 
-            local_branch, remote_prefix + '~not-my-team/real-product/hello')
+            bzrlib.branch.Branch.initialize,
+            server.base + '~not-my-team/real-product/hello')
 
         # XXX: what about lp-incompatible branch dir names (e.g. capital
-        # letters) -- Are they disallowed or accepted?
+        # Letters) -- Are they disallowed or accepted?  If accepted, what will
+        # that branch's Branch.name be in the database?
 
-
-    def test_3_rename_branch(self)
+    def test_3_rename_branch(self):
         """
         Branches should be able to be renamed in the Launchpad webapp, and those
         renames should be immediately reflected in subsequent SFTP connections.
+
+        Also, the renames may happen in the database for other reasons, e.g. if
+        the DBA running a one-off script.
         """
 
-        # set up test branch
-        local_path = xxx
-        local_branch = make_new_branch(local_path) # bzr init; echo hello > world.txt; bzr add; bzr ci -m "test."
+        # Start test server
+        server = start_test_sftp_server()
         
-        # start test server
-        remote_prefix = start_test_sftp_server()
-        remote_path = remote_prefix + '~testuser/+junk/test-branch'
-        
-        # bzr push
-        bzr_push(local_branch, remote_path) # expect no errors
+        # Push the local branch to the server
+        remote_branch = bzrlib.branch.Branch.initialize(
+            server.base + '~testuser/+junk/test-branch')
+        remote_branch.pull(self.local_branch)
 
-        # rename branch in the webapp
-        # XXX: should really be a page test here.
+        # Rename branch in the database
         lp_txn.begin()
-        branch = lpBranch.selectOneBy(name='test-branch')
+        branch = database.Branch.selectOneBy(name='test-branch')
+        branch_id = branch.id
         branch.name = 'renamed-branch'
         lp_txn.commit()
+        remote_branch = bzrlib.branch.Branch.initialize(
+            server.base + '~testuser/+junk/renamed-branch')
+        self.assertEqual(
+            self.local_branch.last_revision(), remote_branch.last_revision())
 
-        # compare bzr log output to compare branches
-        remote_path = remote_prefix + '~testuser/+junk/renamed-branch'
-        self.assertEqual(bzr_log(local_path), bzr_log(remote_yypath))
+        # Assign to a different product in the database.  This is effectively a
+        # Rename as far as bzr is concerned: the URL changes.
+        lp_txn.begin()
+        branch = database.Branch.get(branch_id)
+        branch.product = database.Product.get('mozilla-firefox')
+        lp_txn.commit()
+        remote_branch = bzrlib.branch.Branch.initialize(
+            server.base + '~testuser/mozilla-firefox/renamed-branch')
+        self.assertEqual(
+            self.local_branch.last_revision(), remote_branch.last_revision())
+
+        # Rename person in the database.  Again, the URL changes.
+        lp_txn.begin()
+        branch = database.Branch.get(branch_id)
+        branch.person.name = 'renamed-user'
+        lp_txn.commit()
+        remote_branch = bzrlib.branch.Branch.initialize(
+            server.base + '~renamed-user/mozilla-firefox/renamed-branch')
+        self.assertEqual(
+            self.local_branch.last_revision(), remote_branch.last_revision())
+
+    def _push_branch_to_sftp_server(self):
+        """
+        Helper function that starts a test sftp server, and uploads
+        self.local_branch to it.
+
+        Returns branch_id.
+        """
+          
+        # Start test server
+        server = start_test_sftp_server()
+        
+        # Push the local branch to the server
+        remote_branch = bzrlib.branch.Branch.initialize(
+            server.base + '~testuser/+junk/test-branch')
+        remote_branch.pull(self.local_branch)
+
+        branch_id = server.last_accessed_branch_id
+        server.stop()
+        return branch_id
 
     def test_4_url_for_mirror(self):
         """
@@ -117,28 +168,41 @@ class AcceptanceTests(unittest.TestCase):
         ID of 0xabcdef12, the URL may be something like
         `/srv/supermirrorsftp/branches/ab/cd/ef/12`.
         """
-        # push branch to sftp server
-        branch_id = push_branch_to_sftp_server() # similar boilerplate to 1,2,3?
+        # Push branch to sftp server
+        branch_id = self._push_branch_to_sftp_server()
 
-        # generate the path for copy-to-mirror script to use
+        # Generate the path for copy-to-mirror script to use
         mirror_from_path = get_path_for_copy_to_mirror(branch_id)
 
-        # check that it's the branch we're looking for
-        self.assertEqual(bzr_log(local_path), bzr_log(mirror_from_path))
+        # Construct a Branch object that reads directly from the on-disk storage
+        # of the server.
+        server_branch = bzrlib.branch.Branch.initialize(mirror_from_path)
+
+        # Check that it's the branch we're looking for
+        self.assertEqual(
+            self.local_branch.last_revision(), server_branch.last_revision())
         
     def test_5_mod_rewrite_data(self):
         """
         A mapping file for use with Apache's mod_rewrite should be generated
         correctly.
         """
-        # push branch to sftp server
-        branch_id = push_branch_to_sftp_server() # similar boilerplate to 1,2,3,4?
+        # Push branch to sftp server
+        branch_id = self._push_branch_to_sftp_server()
 
-        # ... boilerplate ...
-
-        # check the generated mapping file has the right contents        
+        # Check the generated mapping file has the right contents        
         self.assertEqual(
             '~testuser/+junk/test-branch %d\n' % branch_id,
             generate_path_mapping([branch_id]))
 
+
+class TestSFTPServer:
+    """This is the object returned by start_test_sftp_server."""
+    # XXX: stub implementation for now.
+    base = 'sftp://localhost:22222/'
+
+    def stop(self):
+        pass
+
+    last_accessed_branch_id = -1
 
