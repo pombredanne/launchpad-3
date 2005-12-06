@@ -8,6 +8,8 @@ import time
 import psycopg
 import cPickle as pickle
 from UserDict import DictMixin
+from random import random
+from datetime import datetime, timedelta
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -37,7 +39,8 @@ class PGSessionDataContainer:
         );
     CREATE INDEX sessiondata_last_accessed_idx ON SessionData(last_accessed);
     CREATE TABLE SessionPkgData (
-        client_id  text NOT NULL REFERENCES SessionData(client_id),
+        client_id  text NOT NULL
+            REFERENCES SessionData(client_id) ON DELETE CASCADE,
         product_id text NOT NULL,
         key        text NOT NULL,
         pickle     bytea NOT NULL,
@@ -62,10 +65,11 @@ class PGSessionDataContainer:
 
     def __getitem__(self, client_id):
         """See zope.app.session.interfaces.ISessionDataContainer"""
+        cursor = self.cursor
+        self._sweep(cursor)
         query = "SELECT COUNT(*) FROM %s WHERE client_id = %%(client_id)s" % (
                 self.session_data_tablename
                 )
-        cursor = self.cursor
         cursor.execute(query.encode(PG_ENCODING), vars())
         if cursor.fetchone()[0] == 0:
             raise KeyError(client_id)
@@ -78,6 +82,24 @@ class PGSessionDataContainer:
                 )
         client_id = client_id.encode(PG_ENCODING)
         self.cursor.execute(query, vars())
+
+    _last_sweep = datetime.utcnow() - timedelta(days=6)
+    fuzz = 10 # Our sweeps may occur +- this many seconds to minimize races.
+
+    def _sweep(self, cursor):
+        interval = timedelta(
+                seconds=self.resolution - self.fuzz + 2 * self.fuzz * random()
+                )
+        now = datetime.utcnow()
+        if self._last_sweep + interval > now:
+            return
+        self._last_sweep = now
+        query = """
+            DELETE FROM SessionData WHERE last_accessed
+                < CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - '%d seconds'::interval
+            """ % self.timeout
+        cursor = self.cursor
+        cursor.execute(query)
 
 
 class PGSessionData:

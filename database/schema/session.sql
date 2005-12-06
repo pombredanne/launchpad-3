@@ -13,7 +13,8 @@ CREATE TABLE SessionData (
 CREATE INDEX sessiondata_last_accessed_idx ON SessionData(last_accessed);
 
 CREATE TABLE SessionPkgData (
-    client_id  text NOT NULL REFERENCES SessionData(client_id),
+    client_id  text NOT NULL
+        REFERENCES SessionData(client_id) ON DELETE CASCADE,
     product_id text NOT NULL,
     key        text NOT NULL,
     pickle     bytea NOT NULL,
