@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces import (
         ISourcePackage, IBugEmailCommand, IBugTaskEmailCommand,
         IBugEditEmailCommand, IBugTaskEditEmailCommand, IBugSet, ILaunchBag,
         IBugTaskSet, BugTaskSearchParams, IBugTarget, IMessageSet,
-        IDistributionSourcePackage, EmailProcessingError)
+        IDistributionSourcePackage, EmailProcessingError, NotFoundError)
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
@@ -133,8 +133,18 @@ class BugEmailCommand(EmailCommand):
                 owner=getUtility(ILaunchBag).user)
             return bug, SQLObjectCreatedEvent(bug)
         else:
-            bugid = int(bugid)
-            bug = getUtility(IBugSet).get(bugid)
+            try:
+                bugid = int(bugid)
+                bug = getUtility(IBugSet).get(bugid)
+            except ValueError:
+                raise EmailProcessingError(
+                    "'bug' expects either 'new' or a bug id. For example:\n"
+                    "    bug new\n"
+                    "or:\n"
+                    "    bug 1")
+            except NotFoundError:
+                raise EmailProcessingError(
+                    "There is no such bug in Launchpad: %s" % bugid)
             return bug, None
 
 
@@ -196,7 +206,7 @@ class SubscribeEmailCommand(EmailCommand):
 
     def execute(self, bug, current_event):
         """See IEmailCommand."""
-        string_args = self.string_args
+        string_args = list(self.string_args)
         # preserve compatibility with the original command that let you
         # specify a subscription type
         if len(string_args) == 2:
@@ -241,7 +251,7 @@ class UnsubscribeEmailCommand(EmailCommand):
 
     def execute(self, bug, current_event):
         """See IEmailCommand."""
-        string_args = self.string_args
+        string_args = list(self.string_args)
         if len(string_args) == 1:
             person_name_or_email = string_args.pop()
             valid_person_vocabulary = ValidPersonOrTeamVocabulary()
@@ -272,6 +282,17 @@ class SummaryEmailCommand(EditEmailCommand):
 
     implements(IBugEditEmailCommand)
     _numberOfArguments = 1
+
+    def execute(self, bug, current_event):
+        """See IEmailCommand."""
+        # Do a manual control of the number of arguments, in order to
+        # provide a better error message than the default one.
+        if len(self.string_args) > 1:
+            raise EmailProcessingError(
+                'Please enclose the new summary within quotes. For example:\n '
+                '    summary "This is a new summary"')
+
+        return EditEmailCommand.execute(self, bug, current_event)
 
     def convertArguments(self):
         """See EmailCommand."""

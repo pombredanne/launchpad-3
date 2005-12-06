@@ -244,12 +244,58 @@ to edit bug 4:
     ...     process_email(edit_mail)
     ...     transaction.commit()
 
+We define a function which makes it easier to look at the error
+messages as well:
+
+    >>> def print_latest_email():
+    ...     transaction.commit()
+    ...     from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    ...     error_mail = email.message_from_string(raw_message)
+    ...     print "Subject: %s" % error_mail['Subject']
+    ...     print "To: %s" % ', '.join(to_addrs)
+    ...     print
+    ...     print error_mail.get_payload(decode=True)
+
 
 bug $bugid
 ^^^^^^^^^^
 Switches what bug you want to edit. Example:
 
     bug 42
+
+If we specify a bug number that doesn't exist, an error message is
+returned:
+
+    >>> submit_commands(bug_four, 'bug 42')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        bug 42
+    ...
+    There is no such bug in Launchpad: 42
+    ...
+
+And if we specify neither 'new' or an integer:
+
+    >>> submit_commands(bug_four, 'bug foo')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        bug foo
+    ...
+    'bug' expects either 'new' or a bug id. For example:
+    <BLANKLINE>
+        bug new
+    or:
+        bug 1
+    ...
+
 
 summary "$summary"
 ^^^^^^^^^^^^^^^^^^
@@ -266,6 +312,23 @@ Whitespace will be preserved in the title:
     >>> print bug_four.title #doctest: -NORMALIZE_WHITESPACE
     New             summary
 
+If we omit the quotes, there will be an error:
+
+    >>> submit_commands(bug_four, 'summary New summary')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        summary New summary
+    ...
+    Please enclose the new summary within quotes. For example:
+    <BLANKLINE>
+        summary "This is a new summary"
+    ...
+
+
 private yes|no
 ^^^^^^^^^^^^^^
 Changes the secrecy of the bug. Example:
@@ -278,8 +341,22 @@ Changes the secrecy of the bug. Example:
     >>> bug_four.private
     False
 
-subscribe [$name|$email] [cc|watch|ignore]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Specifying something else than 'yes' or 'no' produces an error:
+
+    >>> submit_commands(bug_four, 'private whatever')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        private whatever
+    ...
+    'private' expects either 'yes' or 'no'
+    ...
+
+subscribe [$name|$email]
+^^^^^^^^^^^^^^^^^^^^^^^^
 Subscribes yourself or someone else to the bug. All arguments are
 optional. If you don't specify a name, the sender of the email will
 be subscribed. Examples:
@@ -304,8 +381,23 @@ be subscribed. Examples:
     ...                         for subscription in bug_four.subscriptions]
     True
 
+If we specify a non-existant user, an error message will be sent:
+
+    >>> submit_commands(bug_four, 'subscribe non_existant@canonical.com')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        subscribe non_existant@canonical.com
+    ...
+    Couldn't find a person with the specified name or email:
+    non_existant@canonical.com
+    ...
+
 unsubscribe [$name|$email]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 Unsubscribes yourself or someone else from the bug.
 If you don't specify a name or email, the sender of the email will be
 unsubscribed. Examples:
@@ -322,6 +414,21 @@ unsubscribed. Examples:
     >>> 'Sample Person' in [subscription.person.displayname
     ...                     for subscription in bug_four.subscriptions]
     False
+
+If we specify a non-existant user, an error message will be sent:
+
+    >>> submit_commands(bug_four, 'unsubscribe non_existant')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        unsubscribe non_existant
+    ...
+    Couldn't find a person with the specified name or email: non_existant
+    ...
+
 
 affects $path [assignee $name|$email]
               [status $status]
@@ -382,11 +489,15 @@ To set which source package the bug affects, we use:
     >>> print debian_task.sourcepackagename.name
     mozilla-firefox
 
-Let's take on the upstream task as well:
+Let's take on the upstream task as well. This time we'll sneak in a
+'subscribe' command between the 'affects' and the other commands, to
+show that the commands acting on the bug task don't have to be grouped
+together:
 
     >>> submit_commands(
     ...     bug_four,
     ...     'affects /products/firefox severity critical',
+    ...     'subscribe no-priv',
     ...     'status accepted', 'assignee test@canonical.com',
     ...     'priority high')
 
@@ -558,14 +669,6 @@ him about the error. Let's start with trying to submit a bug without
 signing the mail:
 
     >>> login('test@canonical.com')
-    >>> def print_latest_email():
-    ...     transaction.commit()
-    ...     from_addr, to_addrs, raw_message = stub.test_emails[-1]
-    ...     error_mail = email.message_from_string(raw_message)
-    ...     print "Subject: %s" % error_mail['Subject']
-    ...     print "To: %s" % ', '.join(to_addrs)
-    ...     print
-    ...     print error_mail.get_payload(decode=True)
 
     >>> from canonical.launchpad.mail import SignedMessage
     >>> msg = email.message_from_string(submit_mail, _class=SignedMessage)
