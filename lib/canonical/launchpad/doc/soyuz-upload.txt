@@ -1,3 +1,23 @@
+Soyuz Upload Test
+-----------------
+
+This test will:
+
+  * Turn the poppy FTP server on
+  * Upload packages
+  * Check result
+  * Kill the FTP server
+  * Import gpg key for katie
+  * Register gpg key for katie
+  * Register the katie user in the right team
+  * Turn on the zeca keyserver
+  * Include the non_free component in the database
+  * Run process-upload.py
+  * Check result
+  * Mark packages as ACCEPTED
+  * Runs process-accepted.py
+  * Check results
+  * Cleanup
 
 
 Uploading Packages
@@ -55,8 +75,6 @@ Good.. let's send all packages we have in the test directory to
 the poppy server. We send each package set on a different ftp
 session.
 
-  #>>> from canonical.tagfile import TagFile
-
   >>> from canonical.archivepublisher.tagfiles import parse_tagfile
   >>> from cStringIO import StringIO
   >>> import glob
@@ -96,7 +114,7 @@ session.
 
 
 We don't want to block forever reading data from the process, since
-it's a deamon and should not die until we ask it to. So, we first
+it's a daemon and should not die until we ask it to. So, we first
 set the stdout to non-blocking...
 
   >>> import fcntl
@@ -147,7 +165,9 @@ data in the given number seconds, we report a failure.
   ...                 break
   ...     time.sleep(0.5)
   ... else:
-  ...     raise RuntimeError("FTP server is not responding correctly, bad boy")
+  ...     raise RuntimeError("FTP server is not responding correctly, bad boy\n"
+  ...                        "The following lines were still expected: %s\n"
+  ...                        % "\n".join(line for line in expected))
   
 
 At that point we must have a bunch of directories in the upload
@@ -354,7 +374,59 @@ Same thing for etherwake:
   >>> drqs.distroreleasequeue.pocket.name
   'RELEASE'
 
-  #>>> import pdb; pdb.set_trace()
+
+
+Processing Empty Items
+----------------------
+
+Ok, packages were uploaded, processed, and are now on the distroreleasequeue
+waiting for someone. We'll accept them here "by hand", doing the work of
+someone (with some tool) who should look at them and accept the package
+if they're fine.
+
+  >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
+
+  >>> def set_accepted(name):
+  ...     spn = SourcePackageName.selectOneBy(name=name)
+  ...     spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
+  ...     drqs = DistroReleaseQueueSource.selectOneBy(
+  ...         sourcepackagereleaseID=spr.id)
+  ...     drqs.distroreleasequeue.status = DistroReleaseQueueStatus.ACCEPTED
+
+  >>> set_accepted("drdsl")
+  >>> set_accepted("etherwake")
+
+We must flush these changes so that it gets out of the cache and
+into the database. Without this process-accepted.py wouldn't see
+the changes.
+
+  >>> from canonical.database.sqlbase import flush_database_updates
+  >>> flush_database_updates()
+  >>> transaction.commit()
+
+Now we process them, one more time.
+
+  >>> script = os.path.join(config.root, "scripts", "process-accepted.py")
+  >>> process = subprocess.Popen([sys.executable, script, "-vvv", "ubuntu"])
+  >>> process.wait()
+  0
+
+These packages must now be in the publishing history. Let's check it.
+
+  >>> from canonical.launchpad.database import (
+  ...    SecureSourcePackagePublishingHistory as SSPPH)
+  >>> from canonical.lp.dbschema import PackagePublishingStatus
+  >>> def is_pending(name):
+  ...     spn = SourcePackageName.selectOneBy(name=name)
+  ...     spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
+  ...     sspph = SSPPH.selectOneBy(sourcepackagereleaseID=spr.id)
+  ...     return sspph.status == PackagePublishingStatus.PENDING
+
+  >>> is_pending("drdsl")
+  True
+  >>> is_pending("etherwake")
+  True
+
 
 Nice! That's enough for now.. let's kill the process and clean
 everything up.

@@ -1532,17 +1532,32 @@ class NascentUpload:
 
     def build_recipients(self):
         """Build self.recipients up to include every address we trust."""
+        recipients = []
         if self.signer:
-            self.recipients.append(self.signer_address['rfc2047'])
-            if (self.changes_maintainer['person'] != self.signer and
-                self.is_person_in_keyring(self.changes_maintainer['person'])):
-                self.recipients.append(self.changes_maintainer['rfc2047'])
-            if (self.changed_by['person'] != self.signer and
-                self.changed_by['person'] != self.changes_maintainer['person']
-                and self.is_person_in_keyring(self.changed_by['person'])):
-                self.recipients.append(self.changed_by['rfc2047'])
+            recipients.append(self.signer_address['rfc2047'])
 
-        self.recipients = self.policy.filterRecipients(self, self.recipients)
+            maintainer = self.changes_maintainer['person']
+            maintainer_email = self.changes_maintainer['rfc2047']
+            changer = self.changed_by['person']
+            changer_email = self.changed_by['rfc2047']
+
+            if (maintainer != self.signer and
+                self.is_person_in_keyring(maintainer)):
+                recipients.append(maintainer_email)
+
+            if (changer != self.signer and changer != maintainer
+                and self.is_person_in_keyring(changer)):
+                recipients.append(changer_email)
+
+        recipients = self.policy.filterRecipients(self, recipients)
+        for r in recipients:
+            # We should only actually send mail to people that are
+            # registered Launchpad users; this is a sanity check to
+            # avoid spamming the innocent. Not that we do that sort of
+            # thing.
+            person = getUtility(IPersonSet).getByEmail(r)
+            if person is not None and person.preferredemail is not None:
+                self.recipients.append(r)
 
     def do_reject(self, template=rejection_template):
         """Reject the current upload given the reason provided."""
