@@ -1,0 +1,205 @@
+Ticket Email Notifications
+==========================
+
+When a ticket is created or changed, an email notification is sent out,
+informing the subscribers about the change. Let's start with creating a
+ticket, and see what the resulting notification looks like:
+
+    >>> from zope.event import notify
+    >>> from canonical.launchpad.event import SQLObjectCreatedEvent
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> login('test@canonical.com')
+    >>> sample_person = getUtility(ILaunchBag).user
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu_ticket = ubuntu.newTicket(
+    ...     sample_person, "Can't install Ubuntu",
+    ...    "I insert the install CD in the CD-ROM drive, but it won't boot.")
+    >>> notify(SQLObjectCreatedEvent(ubuntu_ticket))
+
+In order for the mails to be sent, we need to commit the transaction:
+
+    >>> import transaction
+    >>> transaction.commit()
+
+The notifications get sent to the ticket's subscribers. Initially, only
+the submitter, Sample Person, is subscribed to it:
+
+    >>> from canonical.launchpad.mail import stub
+    >>> len(stub.test_emails)
+    1
+
+    >>> import email
+    >>> notifications = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    >>> add_notification = notifications[0]
+    >>> add_notification['To']
+    'test@canonical.com'
+    >>> add_notification['Subject']
+    "[Support #8]: Can't install Ubuntu"
+    >>> notification_body = add_notification.get_payload()
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    New support request #8 on ubuntu:
+    http://.../distros/ubuntu/+ticket/8
+    <BLANKLINE>
+    I insert the install CD in the CD-ROM drive, but it won't boot.
+    <BLANKLINE>
+
+    >>> stub.test_emails = []
+
+Let's simulate that the no-priv answers the support ticket. This
+involves creating a new message, and to set the status to ANSWERED. We
+also subscribe the Ubuntu Team, so that they get notified about the
+changes as well:
+
+    >>> from canonical.launchpad.event import SQLObjectModifiedEvent
+    >>> from canonical.launchpad.helpers import Snapshot
+    >>> from canonical.launchpad.interfaces import ITicket, IPersonSet
+
+    >>> ubuntu_team = getUtility(IPersonSet).getByName('name17')
+    >>> ubuntu_ticket.subscribe(ubuntu_team)
+    <TicketSubscription...>
+    >>> login('no-priv@canonical.com')
+    >>> no_priv = getUtility(ILaunchBag).user
+    >>> unmodified_ticket = Snapshot(ubuntu_ticket, providing=ITicket)
+    >>> comment = ubuntu_ticket.newMessage(
+    ...     no_priv, ubuntu_ticket.followup_subject,
+    ...     'You have to change the boot order in the BIOS.')
+    >>> ubuntu_ticket.mark_resolved(no_priv)
+    >>> notify(SQLObjectModifiedEvent(
+    ...     ubuntu_ticket, unmodified_ticket, ['messages', 'status']))
+
+Now two copies of the notification got sent, one to Sample Person, and
+one to Ubuntu Team:
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    2
+
+    >>> notifications = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    >>> edit_notification = notifications[0]
+    >>> edit_notification['Subject']
+    "[Support #8]: Re: Can't install Ubuntu"
+
+    >>> notification_body = edit_notification.get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Support request #8 on ubuntu changed:
+    http://.../distros/ubuntu/+ticket/8
+    <BLANKLINE>
+        Status: New => Answered
+    <BLANKLINE>
+    Comment:
+    You have to change the boot order in the BIOS.
+    <BLANKLINE>
+
+    >>> stub.test_emails = []
+
+If we trigger a modification event, even though no changes worth
+notifying about was made, no notification is sent:
+
+    >>> unmodified_ticket = Snapshot(ubuntu_ticket, providing=ITicket)
+    >>> ubuntu_ticket.mark_resolved(no_priv) # The ticket is already resolved.
+    >>> notify(SQLObjectModifiedEvent(
+    ...     ubuntu_ticket, unmodified_ticket, ['status']))
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    0
+
+If we create a bug from the support request, it will be reported as a
+bug that has been linked to the request:
+
+    >>> unmodified_ticket = Snapshot(ubuntu_ticket, providing=ITicket)
+    >>> bug = unmodified_ticket.target.createBug(
+    ...     no_priv, unmodified_ticket.title, unmodified_ticket.description)
+    >>> ubuntu_ticket.linkBug(bug)
+    <TicketBug...>
+    >>> notify(SQLObjectModifiedEvent(
+    ...     ubuntu_ticket, unmodified_ticket, ['bugs']))
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    2
+
+    >>> notifications = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    >>> edit_notification = notifications[0]
+    >>> notification_body = edit_notification.get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Support request #8 on ubuntu changed:
+    http://.../distros/ubuntu/+ticket/8
+    <BLANKLINE>
+        Linked to bug: #9
+        http://.../malone/bugs/9
+    <BLANKLINE>
+
+    >>> stub.test_emails = []
+
+And if we remove the link again, we get:
+
+    >>> unmodified_ticket = Snapshot(ubuntu_ticket, providing=ITicket)
+    >>> ubuntu_ticket.unLinkBug(bug)
+    <TicketBug...>
+    >>> notify(SQLObjectModifiedEvent(
+    ...     ubuntu_ticket, unmodified_ticket, ['bugs']))
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    2
+
+    >>> notifications = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    >>> edit_notification = notifications[0]
+    >>> notification_body = edit_notification.get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Support request #8 on ubuntu changed:
+    http://.../distros/ubuntu/+ticket/8
+    <BLANKLINE>
+        Removed link to bug: #9
+        http://.../malone/bugs/9
+    <BLANKLINE>
+
+    >>> stub.test_emails = []
+
+Edits to the title and description also causes notifications to be sent:
+
+    >>> unmodified_ticket = Snapshot(ubuntu_ticket, providing=ITicket)
+    >>> ubuntu_ticket.title = 'Better Title'
+    >>> ubuntu_ticket.description = """A better description.
+    ...
+    ... The description spans more than one line."""
+    >>> notify(SQLObjectModifiedEvent(
+    ...     ubuntu_ticket, unmodified_ticket, ['title', 'description']))
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    2
+
+    >>> notifications = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    >>> edit_notification = notifications[0]
+    >>> notification_body = edit_notification.get_payload(decode=True)
+    >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
+    Support request #8 on ubuntu changed:
+    http://.../distros/ubuntu/+ticket/8
+    <BLANKLINE>
+    Summary changed to:
+    Better Title
+    <BLANKLINE>
+    Description changed to:
+    A better description.
+    <BLANKLINE>
+    The description spans more than one line.
+    <BLANKLINE>
+
+    >>> stub.test_emails = []
