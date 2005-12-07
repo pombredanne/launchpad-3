@@ -35,7 +35,7 @@ class SubsystemOnlySession(session.SSHSession, object):
 
 
 class SFTPOnlyAvatar(avatar.ConchUser):
-    def __init__(self, avatarId, homeDirsRoot, productMapFilename, userDict):
+    def __init__(self, avatarId, homeDirsRoot, fetchProductID, userDict):
         # Double-check that we don't get unicode -- directory names on the file
         # system are a sequence of bytes as far as we're concerned.  We don't
         # want any tricky login names turning into a security problem.
@@ -52,11 +52,16 @@ class SFTPOnlyAvatar(avatar.ConchUser):
 
         self.avatarId = avatarId
         self.homeDirsRoot = homeDirsRoot
-        self.productMapFilename = productMapFilename
-        self.productIDs = dict(line.split() 
-                               for line in open(productMapFilename, 'r')
-                               if not line.startswith('#'))
-        self.productNames = dict((v, k) for k, v in self.productIDs.iteritems())
+        #self.productMapFilename = productMapFilename
+        #self.productIDs = dict(line.split() 
+        #                       for line in open(productMapFilename, 'r')
+        #                       if not line.startswith('#'))
+        #self.productIDs = productIDs
+        #self.productNames = dict((v, k) for k, v in self.productIDs.iteritems())
+        self.productIDs = self.productNames = {}
+        self._fetchProductID = fetchProductID
+        self._productIDs = {}
+        self._productNames = {}
 
         # Fetch user details from the authserver
         self.lpid = userDict['id']
@@ -69,6 +74,33 @@ class SFTPOnlyAvatar(avatar.ConchUser):
         self.channelLookup = {'session': SubsystemOnlySession}
         # ...and set the only subsystem to be SFTP.
         self.subsystemLookup = {'sftp': filetransfer.FileTransferServer}
+
+    def fetchProductID(self, productName):
+        """Fetch the product ID for productName.
+
+        Returns a Deferred of the result, which may be None if no product by
+        that name exists.
+
+        This method guarantees repeatable reads: on a particular instance of
+        SFTPOnlyAvatar, fetchProductID will always return the same value for a
+        given productName.
+        """
+        productID = self._productIDs.get(productName)
+        if productID is not None:
+            # XXX: should the None result be remembered too, to ensure
+            #      repeatable reads?
+            return defer.succeed(productID)
+        deferred = self._fetchProductID(productName)
+        deferred.addCallback(self._cbRememberProductID, productName)
+        return deferred
+
+    def _cbRememberProductID(self, productID, productName):
+        if productID is None:
+            return None
+        productID = str(productID)
+        self._productIDs[productName] = productID
+        self._productNames[productID] = productName
+        return productID
 
     def _runAsUser(self, f, *args, **kwargs):
         # Version of UnixConchUser._runAsUser with the setuid bits stripped out

@@ -3,6 +3,7 @@ import os
 import shutil
 
 from twisted.trial import unittest
+from twisted.internet import defer
 from twisted.vfs.ivfs import VFSError, PermissionError
 
 from supermirrorsftp.sftponly import SFTPOnlyAvatar
@@ -35,7 +36,7 @@ class AvatarTestBase(unittest.TestCase):
 class TestTopLevelDir(AvatarTestBase):
     def testListDirNoTeams(self):
         # list only user dir + team dirs
-        avatar = SFTPOnlyAvatar('alice', self.tmpdir, '/dev/null',
+        avatar = SFTPOnlyAvatar('alice', self.tmpdir, {},
                                 self.aliceUserDict)
         root = SFTPServerRoot(avatar)
         self.assertEqual(
@@ -46,7 +47,7 @@ class TestTopLevelDir(AvatarTestBase):
         # list only user dir + team dirs
         
         # Add a team to Alice's user dict
-        avatar = SFTPOnlyAvatar('bob', self.tmpdir, '/dev/null',
+        avatar = SFTPOnlyAvatar('bob', self.tmpdir, {},
                                 self.bobUserDict)
         root = SFTPServerRoot(avatar)
         self.assertEqual(
@@ -54,7 +55,7 @@ class TestTopLevelDir(AvatarTestBase):
             ['.', '..', '~bob', '~test-team'])
 
     def testAllWriteOpsForbidden(self):
-        avatar = SFTPOnlyAvatar('alice', self.tmpdir, '/dev/null',
+        avatar = SFTPOnlyAvatar('alice', self.tmpdir, {},
                                 self.aliceUserDict)
         root = SFTPServerRoot(avatar)
         self.assertRaises(PermissionError, root.createDirectory, 'xyz')
@@ -62,7 +63,7 @@ class TestTopLevelDir(AvatarTestBase):
         self.assertRaises(PermissionError, root.child('~alice').remove)
 
     def testUserDirPlusJunk(self):
-        avatar = SFTPOnlyAvatar('alice', self.tmpdir, '/dev/null',
+        avatar = SFTPOnlyAvatar('alice', self.tmpdir, {},
                                 self.aliceUserDict)
         root = avatar.filesystem.root
         userDir = root.child('~alice')
@@ -72,7 +73,7 @@ class TestTopLevelDir(AvatarTestBase):
             ['.', '..', '+junk'])
 
     def testTeamDirPlusJunk(self):
-        avatar = SFTPOnlyAvatar('bob', self.tmpdir, '/dev/null',
+        avatar = SFTPOnlyAvatar('bob', self.tmpdir, {},
                                 self.bobUserDict)
         root = avatar.filesystem.root
         userDir = root.child('~test-team')
@@ -80,9 +81,48 @@ class TestTopLevelDir(AvatarTestBase):
 
 
 class UserDirsTestCase(AvatarTestBase):
-    def testCreateValidProduct(self): pass
-    def testCreateInvalidProduct(self): pass
+    def testCreateValidProduct(self):
+        # Test creating a product dir.
+
+        # XXX: Deferred rabbit-hole: need to make VFS deferrable... productIDs
+        # should dynamically queried (unless already known to this connection).
+        def fetchProductID(productName):
+            if productName == 'mozilla-firefox':
+                return defer.succeed(123)
+            else:
+                return defer.succeed(None)
+        #productIDs = {'mozilla-firefox': '123'}
+        #avatar = SFTPOnlyAvatar('alice', self.tmpdir, productIDs,
+        #                        self.aliceUserDict)
+        productIDs = {'mozilla-firefox': '123'}
+        avatar = SFTPOnlyAvatar('alice', self.tmpdir, fetchProductID,
+                                self.aliceUserDict)
+        root = avatar.filesystem.root
+        userDir = root.child('~alice')
+        deferred = userDir.createDirectory('mozilla-firefox')
+        def cb(result):
+            self.assertEqual(
+                [name for name, child in userDir.children()], 
+                ['.', '..', 'mozilla-firefox'])
+        deferred.addCallback(cb)
+        return deferred
+
+    def testCreateInvalidProduct(self):
+        avatar = SFTPOnlyAvatar('alice', self.tmpdir, 
+                                lambda productID: defer.succeed(None),
+                                self.aliceUserDict)
+        root = avatar.filesystem.root
+        userDir = root.child('~alice')
+        def cb(result):
+            self.fail('Unexpected result: %r' % (result,))
+        def eb(failure):
+            failure.trap(PermissionError)
+        return userDir.createDirectory('mozilla-firefox').addCallbacks(cb, eb)
+        #self.assertRaises(PermissionError, 
+        #                  userDir.createDirectory, 'mozilla-firefox')
 
 #class TeamDirsTestCase(AvatarTestBase):
 #    """Same as UserDirsTestCase, except with a team dir."""
     
+
+

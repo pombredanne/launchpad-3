@@ -68,6 +68,9 @@ class SFTPServerUserDir(osfs.OSDirectory):
             "creating files in user directory %r is not allowed." % self.name)
 
     def createDirectory(self, childName):
+        # XXX: this sometimes returns Deferred, but not sometimes not!  It
+        # should be consistent.
+
         # Check that childName is either a product name registered in Launchpad,
         # or '+junk' (if self.junkAllowed).
         if childName == '+junk':
@@ -75,43 +78,52 @@ class SFTPServerUserDir(osfs.OSDirectory):
                 productID = '+junk'
             else:
                 raise PermissionError("Team directories cannot have +junk.")
+            return osfs.OSDirectory.createDirectory(self, productID)
         else:
-            productID = self.avatar.productIDs.get(childName)
-            if productID is None:
-                msg = ( 
-                    "Directories directly under a user directory must be named "
-                    "after a product name registered in Launchpad "
-                    "<https://launchpad.net>")
-                if self.junkAllowed:
-                    msg += ", or named '+junk'."
-                else:
-                    msg += "."
-                raise PermissionError(msg)
-            productID = str(productID)
+            deferred = self.avatar.fetchProductID(childName)
+            def cb(productID):
+                if productID is None:
+                    msg = ( 
+                        "Directories directly under a user directory must be named "
+                        "after a product name registered in Launchpad "
+                        "<https://launchpad.net/>")
+                    if self.junkAllowed:
+                        msg += ", or named '+junk'."
+                    else:
+                        msg += "."
+                    raise PermissionError(msg)
+                productID = str(productID)
+                return osfs.OSDirectory.createDirectory(self, productID)
+            deferred.addCallback(cb)
+            return deferred
 
         # Ok, we have a productID.  Create a directory for it.
-        return osfs.OSDirectory.createDirectory(self, productID)
+        #return osfs.OSDirectory.createDirectory(self, productID)
 
     def _getName(self, productName):
         """Get the on-disk name for a given product name."""
-        if productName == '+junk':
-            return productName
-        return self.avatar.productNames.get(productName)
 
     def child(self, childName):
         # Translate product names to product ids
-        return osfs.OSDirectory.child(self, str(self._getName(childName)))
+        if childName == '+junk':
+            productID = '+junk'
+        else:
+            productID = self.avatar._productIDs.get(childName)
+        return osfs.OSDirectory.child(self, productID)
 
     def children(self):
         # Like osfs.OSDirectory's children method, except it translates from
         # on-disk product ids to external product names.
-        def childTuple(name):
-            onDiskName = self._getName(name)
-            return (onDiskName, self.child(onDiskName))
+        def childTuple(productID):
+            if productID == '+junk':
+                productName = '+junk'
+            else:
+                productName = self.avatar._productNames.get(productID)
+            return (productName, self.child(productName))
 
         return ([('.', self), ('..', self.parent)] +
-                [childTuple(childName)
-                 for childName in os.listdir(self.realPath)])
+                [childTuple(productID)
+                 for productID in os.listdir(self.realPath)])
                
     def remove(self):
         raise PermissionError(
