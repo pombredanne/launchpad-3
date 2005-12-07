@@ -75,7 +75,6 @@ def librarianTearDown(test):
     LibrarianTestSetup().tearDown()
     tearDown(test)
     
-
 def importdSetUp(test):
     sqlos.connection.connCache = {}
     LaunchpadZopelessTestSetup(dbuser='importd').setUp()

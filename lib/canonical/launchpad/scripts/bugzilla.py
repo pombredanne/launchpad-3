@@ -33,7 +33,7 @@ from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, IDistributionSet, IBugSet,
     IBugTaskSet, IBugTrackerSet, IBugExternalRefSet,
     IBugAttachmentSet, IMessageSet, ILibraryFileAliasSet, ICveSet,
-    IBugWatchSet, ILaunchpadCelebrities, NotFoundError)
+    IBugWatchSet, ILaunchpadCelebrities, IMilestoneSet, NotFoundError)
 from canonical.lp.dbschema import (
     BugTaskSeverity, BugTaskStatus, BugTaskPriority, BugAttachmentType)
 
@@ -288,6 +288,7 @@ class Bugzilla:
         self.bugtaskset = getUtility(IBugTaskSet)
         self.bugwatchset = getUtility(IBugWatchSet)
         self.cveset = getUtility(ICveSet)
+        self.milestoneset = getUtility(IMilestoneSet)
         self.extrefset = getUtility(IBugExternalRefSet)
         self.personset = getUtility(IPersonSet)
         self.emailset = getUtility(IEmailAddressSet)
@@ -353,7 +354,33 @@ class Bugzilla:
             'binarypackagename': binpkg
             }
 
+    def getLaunchpadMilestone(self, bug):
+        """Return the Launchpad milestone for a Bugzilla bug.
+
+        If the milestone does not exist, then it is created.
+        """
+        if bug.product != 'Ubuntu':
+            raise ValueError('product must be Ubuntu')
+
+        if bug.target_milestone is None or bug.target_milestone == '---':
+            return None
+
+        # generate a Launchpad name from the Milestone name:
+        name = re.sub(r'[^a-z0-9\+\.\-]', '-', bug.target_milestone.lower())
+
+        for milestone in self.ubuntu.milestones:
+            if milestone.name == name:
+                return milestone
+        else:
+            milestone = self.milestoneset.new(name, distribution=self.ubuntu)
+            return milestone
+
     def getLaunchpadUpstreamProduct(self, bug):
+        """Find the upstream product for the given Bugzilla bug.
+
+        This function relies on the package -> product linkage having been
+        entered in advance.
+        """
         # we currently only support mapping Ubuntu bugs ...
         if bug.product != 'Ubuntu':
             raise ValueError('product must be Ubuntu')
@@ -497,8 +524,8 @@ class Bugzilla:
                     logger.warning('Could not find upstream product to link '
                                    'bug %d to', lp_bug.id)
 
-        # XXX: 20051124 jamesh
         # translate milestone linkage
+        task.milestone = self.getLaunchpadMilestone(bug)
 
         # import attachments
         for (attach_id, creation_ts, description, mimetype, ispatch,
