@@ -61,7 +61,6 @@
     <include file="launchpadstatistic.zcml" />
     <include file="librarian.zcml" />
     <include file="logintoken.zcml" />
-    <include file="maintainership.zcml" />
     <include file="message.zcml" />
     <include file="milestone.zcml" />
     <include file="package.zcml" />

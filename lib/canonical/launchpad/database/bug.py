@@ -29,7 +29,6 @@ from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugtask import BugTask, bugtask_sort_key
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
-from canonical.launchpad.database.maintainership import Maintainership
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 
@@ -148,20 +147,6 @@ class Bug(SQLBase):
             for task in self.bugtasks:
                 if task.assignee is not None:
                     emails.update(contactEmailAddresses(task.assignee))
-
-                if task.sourcepackagename is not None:
-                    if task.distribution is not None:
-                        distribution = task.distribution
-                    else:
-                        distribution = task.distrorelease.distribution
-
-                    maintainership = Maintainership.selectOneBy(
-                        sourcepackagenameID = task.sourcepackagename.id,
-                        distributionID = distribution.id)
-
-                    if maintainership is not None:
-                        maintainer = maintainership.maintainer
-                        emails.update(contactEmailAddresses(maintainer))
 
         emails.update(contactEmailAddresses(self.owner))
         emails = list(emails)
@@ -336,9 +321,14 @@ class BugSet(BugSetBase):
             BugTask(bug=bug, product=product, owner=owner)
 
             # If a product bug contact has been provided, subscribe that contact
-            # to all public bugs.
-            if product.bugcontact and not bug.private:
-                bug.subscribe(product.bugcontact)
+            # to all public bugs. Otherwise subscribe the product owner to all
+            # public bugs.
+            if product.bugcontact:
+                if not bug.private:
+                    bug.subscribe(product.bugcontact)
+            else:
+                if not bug.private:
+                    bug.subscribe(product.owner)
 
         # Create the task on a source package name if one was passed.
         if distribution:

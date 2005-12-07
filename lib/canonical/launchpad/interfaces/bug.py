@@ -313,6 +313,9 @@ class IBugSet(IAddFormCustomization):
             applicable based on the bug report target) will bug subscribed to
             all *public bugs only*
 
+          * for public upstreams bugs where there is no upstream bug contact,
+            the product owner will be subscribed instead
+
           * if either product or distribution is specified, an appropiate
             bug task will be created
         """

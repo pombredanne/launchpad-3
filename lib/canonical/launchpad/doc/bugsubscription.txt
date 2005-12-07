@@ -85,8 +85,8 @@ explicit Cc subscribers to the bug:
   * The package bug contact(s). There may be zero, one or more package
     bug contacts.
 
-XXX: Brad Bollenbach, 2005-11-25: This part is a dirty sampledata hack until I
-change the real sample data. See XXX
+XXX: Brad Bollenbach, 2005-11-25: These bits need real sample data. See
+https://launchpad.net/malone/bugs/5484.
 
 Let's have a look at an example for a distribution bug:
 
@@ -126,6 +126,19 @@ Another example, this time for an upstream:
 
     >>> sorted(new_bug.notificationRecipientAddresses())
     [u'foo.bar@canonical.com', u'mark@hbd.com']
+
+When an upstream does *not* have a specific bug contact set, the
+product.owner is used instead. So, if Firefox's bugcontact is unset,
+Sample Person, the Firefox "owner" will get subscribed instead:
+
+    >>> firefox.bugcontact = None
+
+    >>> new_bug = getUtility(IBugSet).createBug(
+    ...     title="a test bug", comment="a test description",
+    ...     owner=foobar, product=firefox)
+
+    >>> sorted(new_bug.notificationRecipientAddresses())
+    [u'foo.bar@canonical.com', u'test@canonical.com']
 
 The upstream bug contact will *not* be automatically subscribed to
 private bugs:

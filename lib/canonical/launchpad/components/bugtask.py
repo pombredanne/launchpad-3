@@ -14,8 +14,7 @@ from zope.component import getUtility
 from zope.interface import implements, directlyProvides, directlyProvidedBy
 
 from canonical.launchpad.interfaces import (
-    IBugTaskDelta, IMaintainershipSet, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, 
+    IBugTaskDelta, IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask,
     INullBugTask)
 from canonical.lp.dbschema import BugTaskStatus
 
@@ -54,11 +53,6 @@ class BugTaskMixin:
         """See canonical.launchpad.interfaces.IBugTask."""
         if self.product:
             return self.product.owner
-        if self.distribution and self.sourcepackagename:
-            maintainer = getUtility(IMaintainershipSet).get(
-                distribution=self.distribution,
-                sourcepackagename=self.sourcepackagename)
-            return maintainer
 
         return None
 

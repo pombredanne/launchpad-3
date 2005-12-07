@@ -22,7 +22,6 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.database.maintainership import Maintainership
 from canonical.launchpad.database.publishing import SourcePackagePublishing
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
@@ -157,9 +156,9 @@ class SourcePackage:
 
     @property
     def maintainer(self):
-        querystr = "distribution=%s AND sourcepackagename=%s"
-        querystr %= sqlvalues(self.distribution, self.sourcepackagename)
-        return Maintainership.select(querystr)
+        # For backwards compatibility purposes only, since "Maintainership" is
+        # gone. See https://launchpad.net/malone/bugs/5485.
+        return None
 
     @property
     def releases(self):

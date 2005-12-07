@@ -378,19 +378,8 @@ The maintainer of an upstream task is simply the Product.owner:
     >>> bugtask.maintainer.id
     17
 
-The maintainer of a distribution task is the source package maintainer:
-
-    >>> bugtask = bugtaskset.get(4)
-    >>> bugtask.maintainer.id
-    1
-
-or None, if the task is not yet assigned to a specific source
-package. So, borrowing the distro task we filed earlier:
-
-    >>> print distro_task.maintainer
-    None
-    >>> print distro_task.maintainer_displayname
-    None
+"Maintainership" of distribution source packages has been deprecated. See
+https://wiki.launchpad.canonical.com/InitialBugContacts.
 
 Editing Bug Tasks
 -----------------
