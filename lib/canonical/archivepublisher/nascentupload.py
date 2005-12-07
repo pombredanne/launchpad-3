@@ -43,9 +43,6 @@ from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
     IComponentSet, ISectionSet, NotFoundError)
 
-from sourcerer.deb.version import (
-    Version as DebianVersion, BadUpstreamError, VersionError)
-
 from canonical.config import config
 from zope.component import getUtility
 from canonical.database.constants import UTC_NOW
@@ -65,7 +62,7 @@ changes_mandatory_fields = set([
     ])
 
 dsc_mandatory_fields = set([
-    "format", "source", "version", "binary", "maintainer", "architecture",
+    "source", "version", "binary", "maintainer", "architecture",
     "files"
     ])
 
@@ -337,6 +334,12 @@ class NascentUpload:
             self.changes_filename,
             allow_unsigned = self.policy.unsigned_changes_ok)
         format = float(changes["format"])
+        # XXX cprov 20051207: adopting a default format for missed ones
+        # It assumes the normally accepted version 
+        if not format:
+            format = 1.5
+            return changes
+            
         if format < 1.5 or format > 2.0:
             raise UploadError(
                 "Format out of acceptable range for changes file. Range "
@@ -1023,19 +1026,25 @@ class NascentUpload:
         for uploaded_file in self.files:
             if uploaded_file.type == "byhand" or uploaded_file.custom:
                 continue
-            # Check the priority is mapable
             if uploaded_file.priority is None:
                 self.reject("%s: Priority is 'None'" % uploaded_file.filename)
-            if (uploaded_file.priority != "" and
-                uploaded_file.priority != "-" and
-                uploaded_file.priority not in priority_map):
-                self.reject("Unable to map priority %r for file %s" % (
-                    uploaded_file.priority, uploaded_file.filename))
-            # Map the priority
-            if (uploaded_file.priority != "" and
-                uploaded_file.priority != "-" and
-                uploaded_file.priority in priority_map):
-                uploaded_file.priority = priority_map[uploaded_file.priority]
+            # XXX cprov 20051207: dak is delivering some packages with
+            # a 'None' priority, which is utterly annoying, this 
+            # workarround should be removed as soon as dak got fixed.
+            # For now we use the same policy applied in gina, missed
+            # priority are assumed as "extra".
+            if uploaded_file.priority == "None":
+                uploaded_file.priority = "extra"
+            # XXX cprov 20051207: why do we care about empty priority
+            # if the split() in line 152 never generate something like
+            # that, priority can only be a 'valid string'
+            if uploaded_file.priority not in ["", "-"]:
+                if uploaded_file.priority in priority_map:
+                    uploaded_file.priority = \
+                        priority_map[uploaded_file.priority]
+                else:
+                    self.reject("Unable to map priority %r for file %s" % (
+                        uploaded_file.priority, uploaded_file.filename))
 
             # check component and section 
             self.verify_components_and_sections(uploaded_file)
@@ -1120,7 +1129,11 @@ class NascentUpload:
         if not re_valid_version.match(dsc['version']):
             self.reject("%s: invalid version %s" % (
                 dsc_file.filename, dsc['version']))
-
+        
+        # XXX cprov 20051207: assume DSC "1.0" format for missed value
+        if 'format' not in dsc.keys():
+           dsc['format'] = "1.0"
+           
         # .dsc files must be version 1.0
         if dsc['format'] != "1.0":
             self.reject("%s: Format is not 1.0. This is incompatible with "
@@ -1178,38 +1191,23 @@ class NascentUpload:
             self.reject("%s: does not mention any tar.gz or orig.tar.gz." % (
                         dsc_file.filename))
 
-        # Confirm that the published versions are younger.
-        try:
-            version = DebianVersion(dsc['version'])
-            spn = getUtility(ISourcePackageNameSet).getOrCreateByName(
+        # XXX cprov 20051207: It was originally using sourcerer
+        # implementation of Debian version comparision which seems
+        # to fail for versions containing letters. Until we fix, let's
+        # use apt_pkg for this task.
+        version = dsc['version']
+        spn = getUtility(ISourcePackageNameSet).getOrCreateByName(
                 dsc['source'])
-            self.spn = spn
-            releases = self.distrorelease.getPublishedReleases(
+        self.spn = spn
+        releases = self.distrorelease.getPublishedReleases(
                 spn, self.policy.pocket)
-            beaten = False
-            for pub_record in releases:
-                try:
-                    pub_version = pub_record.sourcepackagerelease.version
-                    pub_version = DebianVersion(pub_version)
-                    if pub_version >= version:
-                        beaten = True
-                except BadUpstreamError:
-                    # We beat the published version if we're parseable and
-                    # they're not.
-                    pass
-            if beaten:
-                self.reject("%s: Version younger than that in the archive." % (
-                            dsc_file.filename))
-                            
-        except VersionError, e:
-            self.reject("%s: Exception verifying version is newer: %s\n"
-                        "%s: %s" % (
-                dsc_file.filename, e, sys.exc_type, sys.exc_value))
-        except NotFoundError, e:
-            self.reject("%s: Exception verifying version is newer: %s\n"
-                        "%s: %s" % (
-                dsc_file.filename, e, sys.exc_type, sys.exc_value))
-            
+        beaten = False
+        apt_pkg.InitSystem()
+        for pub_record in releases:
+             pub_version = pub_record.sourcepackagerelease.version
+             if apt_pkg.VersionCompare(version, pub_version) <= 0:
+                 self.reject("%s: Version younger than that in the archive."
+                             % (dsc_file.filename))
 
         # For any file mentioned in the upload which does not exist in the
         # upload, go ahead and find it from the database.
@@ -1782,3 +1780,5 @@ class NascentUpload:
             self.reject("Exception while accepting: %s" % e)
             return False, self.do_reject()
     
+
+

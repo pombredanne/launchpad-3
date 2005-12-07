@@ -253,6 +253,7 @@ NascentUpload in the autosync policy in the future.
   >>> from canonical.launchpad.interfaces import IComponentSet
   >>> component_set = getUtility(IComponentSet)
   >>> non_free = component_set.new("non-free")
+  >>> contrib = component_set.new("contrib")
   >>> import transaction
   >>> transaction.commit()
 
