@@ -57,12 +57,6 @@ class TestBranchPullWithBranches(unittest.TestCase):
         self.assertEqual(
             self.view.get_line_for_branch(self.branch_with_product),
             "3 http://foo/bar")
-        self.assertEqual(
-            self.view.get_line_for_branch(self.branch_with_another_product),
-            "7 http://foo/gam")
-        self.assertEqual(
-            self.view.get_line_for_branch(self.branch_with_no_product),
-            "19 sftp://example.com")
 
     def test_branches_page(self):
         branches = [self.branch_with_product,
