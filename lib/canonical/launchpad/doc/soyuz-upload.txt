@@ -85,8 +85,9 @@ session.
   ...                               "ftests/upload_test_files/")
   ...
   >>> changes = glob.glob(test_files_dir + "*.changes")
-  >>> sent_filenames = set()
+  >>> sent_filenames = []
   >>> uploads = []
+  >>> package_names = []
   >>>
   >>> for changes_filepath in changes:
   ...
@@ -96,11 +97,13 @@ session.
   ...
   ...     tf = parse_tagfile(changes_filepath)
   ...
+  ...     package_names.append(tf["source"])
+  ...
   ...     send_filepaths = [changes_filepath]
   ...     send_filepaths.extend([os.path.join(test_files_dir, line.split()[-1])
   ...                            for line in tf["files"].splitlines() if line])
   ...
-  ...     sent_filenames.update(os.path.basename(filepath)
+  ...     sent_filenames.extend(os.path.basename(filepath)
   ...                           for filepath in send_filepaths)
   ...
   ...     for filepath in send_filepaths:
@@ -136,7 +139,7 @@ timeout between output data. If the process doesn't provide new
 data in the given number seconds, we report a failure.
 
   >>> import errno
-  >>> expected = sent_filenames.copy()
+  >>> expected = list(sent_filenames)
   >>> timeout = 600
   >>> ping = time.time()
   >>> buffer = ""
@@ -329,16 +332,6 @@ Let's check if packages where uploaded correctly.
   u'breezy-autotest'
 
 
-It should also be in the distroreleasequeuesource table marked as NEW.
-
-  >>> from canonical.launchpad.database import DistroReleaseQueueSource
-  >>> drqs = DistroReleaseQueueSource.selectOneBy(sourcepackagereleaseID=spr.id)
-  >>> drqs.distroreleasequeue.status.name
-  'NEW'
-  >>> drqs.distroreleasequeue.pocket.name
-  'RELEASE'
-
-
 Same thing for etherwake:
 
   >>> spn = SourcePackageName.selectOneBy(name="etherwake")
@@ -368,11 +361,17 @@ Same thing for etherwake:
   >>> spr.uploaddistrorelease.name
   u'breezy-autotest'
 
-  >>> drqs = DistroReleaseQueueSource.selectOneBy(sourcepackagereleaseID=spr.id)
-  >>> drqs.distroreleasequeue.status.name
-  'NEW'
-  >>> drqs.distroreleasequeue.pocket.name
-  'RELEASE'
+
+Now let's see if all of them are in the DistroReleaseQueue marked
+as NEW and RELEASE.
+
+  >>> from canonical.launchpad.database import DistroReleaseQueueSource
+  >>> for name in package_names:
+  ...     spn = SourcePackageName.selectOneBy(name=name)
+  ...     spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
+  ...     drqs = DistroReleaseQueueSource.selectOneBy(sourcepackagereleaseID=spr.id)
+  ...     assert drqs.distroreleasequeue.status.name == 'NEW'
+  ...     assert drqs.distroreleasequeue.pocket.name == 'RELEASE'
 
 
 
@@ -386,15 +385,13 @@ if they're fine.
 
   >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
 
-  >>> def set_accepted(name):
+  >>> for name in package_names:
   ...     spn = SourcePackageName.selectOneBy(name=name)
   ...     spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
   ...     drqs = DistroReleaseQueueSource.selectOneBy(
   ...         sourcepackagereleaseID=spr.id)
   ...     drqs.distroreleasequeue.status = DistroReleaseQueueStatus.ACCEPTED
 
-  >>> set_accepted("drdsl")
-  >>> set_accepted("etherwake")
 
 We must flush these changes so that it gets out of the cache and
 into the database. Without this process-accepted.py wouldn't see
@@ -416,16 +413,11 @@ These packages must now be in the publishing history. Let's check it.
   >>> from canonical.launchpad.database import (
   ...    SecureSourcePackagePublishingHistory as SSPPH)
   >>> from canonical.lp.dbschema import PackagePublishingStatus
-  >>> def is_pending(name):
+  >>> for name in package_names:
   ...     spn = SourcePackageName.selectOneBy(name=name)
   ...     spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
   ...     sspph = SSPPH.selectOneBy(sourcepackagereleaseID=spr.id)
-  ...     return sspph.status == PackagePublishingStatus.PENDING
-
-  >>> is_pending("drdsl")
-  True
-  >>> is_pending("etherwake")
-  True
+  ...     assert sspph.status == PackagePublishingStatus.PENDING
 
 
 Nice! That's enough for now.. let's kill the process and clean
@@ -442,3 +434,4 @@ Feito! ;-)
 
 
 vim:ft=doctest:ts=4:sw=4:et
+
