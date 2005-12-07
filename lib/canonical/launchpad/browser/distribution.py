@@ -26,12 +26,18 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
-    GetitemNavigation, stepthrough, stepto)
+    GetitemNavigation, stepthrough, stepto, redirection)
 
 
 class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
     usedfor = IDistribution
+
+    # XXX
+    # This redirects too shallowly (to /distros/) if the URL doesn't have a /
+    # on the end. See https://launchpad.net/products/launchpad/+bug/5461.
+    # -- Dafydd Harries 2005/12/07
+    redirection('+source', '..')
 
     def breadcrumb(self):
         return self.context.displayname
