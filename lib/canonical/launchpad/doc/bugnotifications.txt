@@ -152,9 +152,9 @@ let's hang a bug onto the ILaunchBag utility.
     >>> debian = getUtility(IDistributionSet).get(3)
     >>> firefox_source = getUtility(ISourcePackageNameSet).get(1)
     >>> firefox_crashes_in_debian = BugTaskFactory(
-    ...     None, distribution = debian.id,
-    ...     sourcepackagename = firefox_source.id,
-    ...     owner = bug_submitter.id)
+    ...     None, distribution=debian.id,
+    ...     sourcepackagename=firefox_source.id,
+    ...     owner=bug_submitter.id)
     >>> notify(SQLObjectCreatedEvent(firefox_crashes_in_debian))
 
     >>> transaction.commit()
@@ -162,11 +162,11 @@ let's hang a bug onto the ILaunchBag utility.
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    3
+    2
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
+    [['dilys@muse.19inch.net'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
@@ -209,11 +209,11 @@ let's hang a bug onto the ILaunchBag utility.
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    3
+    2
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
+    [['dilys@muse.19inch.net'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
@@ -261,11 +261,11 @@ let's hang a bug onto the ILaunchBag utility.
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    3
+    2
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
+    [['dilys@muse.19inch.net'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
@@ -310,11 +310,11 @@ let's hang a bug onto the ILaunchBag utility.
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    3
+    2
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
+    [['dilys@muse.19inch.net'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
@@ -372,11 +372,11 @@ task Accepted, assigns himself to it, and adds a status note.
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    3
+    2
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
+    [['dilys@muse.19inch.net'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
@@ -421,11 +421,11 @@ pretending we've just added a watch to a bug.
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    4
+    3
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
+    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
@@ -472,11 +472,11 @@ the changes made:
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    4
+    3
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
+    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
@@ -524,11 +524,11 @@ this document:
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    4
+    3
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
+    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
@@ -565,8 +565,8 @@ publishing an object created event.
 
     >>> from canonical.launchpad.interfaces import IBugExternalRefSet
     >>> extref = getUtility(IBugExternalRefSet).createBugExternalRef(
-    ...     bug = 1, url = "http://www.example.com", title="test",
-    ...     owner = 12)
+    ...     bug=1, url="http://www.example.com", title="test",
+    ...     owner=12)
     >>> extref_added = SQLObjectCreatedEvent(extref)
     >>> notify(extref_added)
 
@@ -575,11 +575,11 @@ publishing an object created event.
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    4
+    3
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
+    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
@@ -615,9 +615,9 @@ When a link is edited, the notification will look as follows:
     >>> extref.url = "http://www.example.com/somewhere.html"
 
     >>> extref_changed = SQLObjectModifiedEvent(
-    ...     object_before_modification = extref_before_modification,
-    ...     object = extref,
-    ...     edited_fields = ("url",))
+    ...     object_before_modification=extref_before_modification,
+    ...     object=extref,
+    ...     edited_fields=("url",))
     >>> notify(extref_changed)
 
     >>> transaction.commit()
@@ -625,11 +625,11 @@ When a link is edited, the notification will look as follows:
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    4
+    3
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
+    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
@@ -679,14 +679,12 @@ duplicate.
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    8
+    5
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
     [['dilys@muse.19inch.net'], ['dilys@muse.19inch.net'],
-     ['mark@hbd.com'], ['mark@hbd.com'],
-     ['support@ubuntu.com'], ['support@ubuntu.com'],
-     ['test@canonical.com'], ['test@canonical.com']]
+     ['mark@hbd.com'], ['test@canonical.com'], ['test@canonical.com']]
 
     >>> sample_person_mails = [email.message_from_string(raw_message)
     ...                        for from_, to, raw_message in test_emails
@@ -713,34 +711,34 @@ duplicate.
 
     >>> stub.test_emails = []
 
-
-Now we change the target of a bug that's already marked as a dupe and check if the correct notification message is sent.
-
+Now we change the target of a bug that's already marked as a dupe and
+check if the correct notification message is sent.
 
     >>> bug_six = getUtility(IBugSet).get(6)
     >>> bug_three = getUtility(IBugSet).get(3)
     >>> bug_six_unmodified = Snapshot(bug_six, providing=IBug)
-    >>> bug_six.duplicateof = bug_three 
+    >>> bug_six.duplicateof = bug_three
     >>> marked_duplicate = SQLObjectModifiedEvent(
     ...     bug_six, bug_six_unmodified, edited_fields=['duplicateof'])
     >>> notify(marked_duplicate)
 
     >>> transaction.commit()
-    
+
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    5
+    2
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['dilys@muse.19inch.net'], ['foo.bar@canonical.com'], ['mark@hbd.com'], ['test@canonical.com']]
-    >>> sample_person_mails = [email.message_from_string(raw_message)
-    ...                        for from_, to, raw_message in test_emails
-    ...                        if 'test@canonical.com' in to]
-    >>> sample_person_mails.sort(key=lambda msg: msg['Subject'])
+    [['dilys@muse.19inch.net'], ['dilys@muse.19inch.net']]
+    >>> all_dup_notifications = [
+    ...     email.message_from_string(raw_message)
+    ...     for ignored, ignored, raw_message in test_emails]
+    >>> all_dup_notifications.sort(
+    ...     lambda x, y: cmp(x['Subject'], y['Subject']))
 
-    >>> bug_six_notification = sample_person_mails[0]
+    >>> bug_six_notification = all_dup_notifications.pop()
     >>> print bug_six_notification['Subject']
     [Bug 6] Firefox crashes when Save As dialog for a nonexistent...
     >>> body = bug_six_notification.get_payload(decode=True)
@@ -756,30 +754,30 @@ Now we change the target of a bug that's already marked as a dupe and check if t
 
 Now we unduplicate the above bug and check if the correct notification message is sent.
 
-
     >>> bug_six = getUtility(IBugSet).get(6)
     >>> bug_six_unmodified = Snapshot(bug_six, providing=IBug)
-    >>> bug_six.duplicateof = None 
+    >>> bug_six.duplicateof = None
     >>> marked_duplicate = SQLObjectModifiedEvent(
     ...     bug_six, bug_six_unmodified, edited_fields=['duplicateof'])
     >>> notify(marked_duplicate)
 
     >>> transaction.commit()
-    
+
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    2
+    1
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['test@canonical.com']]
-    >>> sample_person_mails = [email.message_from_string(raw_message)
-    ...                        for from_, to, raw_message in test_emails
-    ...                        if 'test@canonical.com' in to]
-    >>> sample_person_mails.sort(key=lambda msg: msg['Subject'])
+    [['dilys@muse.19inch.net']]
+    >>> all_dup_notifications = [
+    ...     email.message_from_string(raw_message)
+    ...     for ignored, ignored, raw_message in test_emails]
+    >>> all_dup_notifications.sort(
+    ...     lambda x, y: cmp(x['Subject'], y['Subject']))
 
-    >>> bug_six_notification = sample_person_mails[0]
+    >>> bug_six_notification = all_dup_notifications.pop()
     >>> print bug_six_notification['Subject']
     [Bug 6] Firefox crashes when Save As dialog for a nonexistent...
     >>> body = bug_six_notification.get_payload(decode=True)
@@ -850,7 +848,7 @@ the SourcePackage table is going to be blown away anyway.
 
     >>> applets = getUtility(IProductSet).get(9)
     >>> applets_crashes_too = BugTaskFactory(
-    ...     None, product = applets.id, owner = bug_submitter.id)
+    ...     None, product=applets.id, owner=bug_submitter.id)
 
 Normally, you might expect to see the maintainer of applets (Foo Bar,
 email foo.bar@canonical.com) now be included in the list of recipients
@@ -861,15 +859,14 @@ private, and Foo Bar is not an explicit subscriber to the bug, he will
     >>> notify(SQLObjectCreatedEvent(applets_crashes_too))
 
     >>> transaction.commit()
-
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    2
+    1
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
-    [['mark@hbd.com'], ['test@canonical.com']]
+    [['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com

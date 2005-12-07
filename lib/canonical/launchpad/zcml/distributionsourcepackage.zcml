@@ -15,7 +15,8 @@
                   tickets getTicket searchTasks isBugContact" />
     <require
       permission="launchpad.AnyPerson"
-      attributes="addBugContact removeBugContact newTicket subscribe" />
+      attributes="addBugContact removeBugContact newTicket subscribe
+                  createBug" />
   </content>
 
   <browser:defaultView

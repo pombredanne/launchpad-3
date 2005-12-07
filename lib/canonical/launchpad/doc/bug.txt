@@ -90,16 +90,20 @@ We have to be logged in, so let's do that:
 
     >>> login("test@canonical.com")
 
-Now we can toggle the privacy flag on a bug, but before we do, let's note what
-happens to subscriptions on a bug before and after it's marked private. So,
-there are currently no explicit subscripitions to this bug.
+There are currently no people subscribed to this bug:
 
     >>> print firefox_crashes.subscriptions
     []
 
-The maintainer is "implicitly" subscribed to the bug. However, the rule with
-private bugs is that only explicit subscribers can view the bug after it's been
-marked private. So, when we mark bug #6 private:
+he rule with private bugs is that only explicit subscribers can view the
+bug after it's been marked private. So, if Sample Person is to mark the
+firefox_crashes bug private, we must first ensure that Sample Person is
+subscribed to the bug!
+
+    >>> sample_person = getUtility(ILaunchBag).user
+    >>> subscription = firefox_crashes.subscribe(sample_person)
+
+Now we can mark bug #6 private:
 
     >>> from zope.event import notify
     >>> from canonical.launchpad.event import (
@@ -129,15 +133,6 @@ marked private. So, when we mark bug #6 private:
 
     >>> notify(bug_set_private)
     >>> flush_database_updates()
-
-The maintainer is automatically explicitly subscribed.
-
-    >>> people_ids_subscribed = [
-    ...     subscription.person.id
-    ...     for subscription in list(firefox_crashes.subscriptions)]
-    >>> people_ids_subscribed.sort()
-    >>> print people_ids_subscribed
-    [12]
 
 How Privacy Affects Access to a Bug
 -----------------------------------
@@ -202,6 +197,15 @@ And again, let's fake setting the bug private:
     >>> notify(bug_set_private)
     >>> flush_database_updates()
 
+Then let's permit the Ubuntu Team to access this bug by adding them to
+the Cc list:
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> personset = getUtility(IPersonSet)
+
+    >>> ubuntu_team = personset.get(17)
+    >>> subscription = blackhole_trash_folder.subscribe(ubuntu_team)
+
 Jeff Waugh, a member of the Ubuntu Team, is able to access this bug:
 
     >>> login("jeff.waugh@ubuntulinux.com")
@@ -253,10 +257,8 @@ Let's log back in as Foo Bar to continue our examples:
 When a public bug is filed:
 
 >>> from canonical.launchpad.interfaces import IProductSet
->>> from canonical.launchpad.interfaces import IPersonSet
 >>> from canonical.launchpad.interfaces import IBugSet
 >>> productset = getUtility(IProductSet)
->>> personset = getUtility(IPersonSet)
 >>> bugset = getUtility(IBugSet)
 
 >>> firefox = productset.get(4)
@@ -267,11 +269,10 @@ When a public bug is filed:
 >>> notify(SQLObjectCreatedEvent(added_bug))
 >>> public_bug = bugset.get(added_bug.id)
 
-the submitter is explicitly subscribed. The maintainer is considered implicitly
-subscribed:
+the submitter and the maintainer are explicitly subscribed.
 
 >>> print [subscription.person.id for subscription in public_bug.subscriptions]
-[16]
+[16, 12]
 
 The first comment made (this is submitted in the bug report) is set to
 the description of the bug:

@@ -534,9 +534,16 @@ Let's log in as the user Foo Bar (to be allowed to edit bugs):
     >>> login('foo.bar@canonical.com')
     >>> foobar = getUtility(ILaunchBag).user
 
-and mark one of the Firefox bugs private:
+and mark one of the Firefox bugs private. While we do this, we're also
+going to subscribe the Ubuntu team to the bug report to help demonstrate
+later on the interaction between privacy and teams (see the section
+entitled _Privacy and Team Awareness_):
 
     >>> bug_upstream_firefox_no_svg_support = bugtaskset.get(2)
+
+    >>> ubuntu_team = personset.get(17)
+    >>> subscription = bug_upstream_firefox_no_svg_support.bug.subscribe(ubuntu_team)
+
     >>> notify(SQLObjectToBeModifiedEvent(
     ...     bug_upstream_firefox_no_svg_support.bug, {'private' : True}))
 

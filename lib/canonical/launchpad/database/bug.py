@@ -148,7 +148,6 @@ class Bug(SQLBase):
                 if task.assignee is not None:
                     emails.update(contactEmailAddresses(task.assignee))
 
-        emails.update(contactEmailAddresses(self.owner))
         emails = list(emails)
         emails.sort()
         return emails
@@ -349,7 +348,7 @@ class BugSet(BugSetBase):
             if sourcepackagename:
                 package = distribution.getSourcePackage(sourcepackagename.name)
                 if package.bugcontacts and not bug.private:
-                    for bugcontact in package.bugcontacts:
-                        bug.subscribe(bugcontact)
+                    for pkg_bugcontact in package.bugcontacts:
+                        bug.subscribe(pkg_bugcontact.bugcontact)
 
         return bug

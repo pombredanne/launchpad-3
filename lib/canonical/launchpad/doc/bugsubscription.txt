@@ -170,17 +170,19 @@ Adding a package bug contact for ubuntu_mozilla_firefox will mean that
 that package bug contact gets subscribed to all bugmail on bugs filed
 after the point that the bug contact was set.
 
-So, if sabdfl is added as a bug contact to ubuntu_mozilla_firefox:
+So, if the Ubuntu team is added as a bug contact to
+ubuntu_mozilla_firefox:
 
-    >>> ubuntu_mozilla_firefox.addBugContact(sabdfl)
+    >>> ubuntu_team = personset.get(17)
+    >>> ubuntu_mozilla_firefox.addBugContact(ubuntu_team)
 
-He is still *not* going to be a recipient of bugmail from the previous
+The team will still *not* be a recipient of bugmail from the previous
 bug we created:
 
     >>> sorted(new_bug.notificationRecipientAddresses())
     [u'foo.bar@canonical.com', u'test@canonical.com']
 
-But he will be subscribed to bugmail for future bugs:
+But the team will be subscribed to bugmail for future bugs:
 
     >>> new_bug = getUtility(IBugSet).createBug(
     ...     title="yet another test bug",
@@ -189,7 +191,7 @@ But he will be subscribed to bugmail for future bugs:
     ...     sourcepackagename=ubuntu_mozilla_firefox.sourcepackagename)
 
     >>> sorted(new_bug.notificationRecipientAddresses())
-    [u'foo.bar@canonical.com', u'mark@hbd.com', u'test@canonical.com']
+    [u'foo.bar@canonical.com', u'support@ubuntu.com', u'test@canonical.com']
 
 The distribution and package contacts do not get subscribed to private
 bug reports automatically:

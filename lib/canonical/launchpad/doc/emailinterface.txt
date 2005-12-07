@@ -270,6 +270,11 @@ private yes|no
 ^^^^^^^^^^^^^^
 Changes the secrecy of the bug. Example:
 
+(We'll subscribe Sample Person to this bug before marking it private, otherwise
+permission to complete the operation will be denied.)
+
+    >>> subscription = bug_four.subscribe(bug_four.owner)
+
     >>> submit_commands('private yes')
     >>> bug_four.private
     True
