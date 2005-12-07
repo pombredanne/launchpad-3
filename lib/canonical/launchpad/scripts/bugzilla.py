@@ -121,8 +121,14 @@ class BugzillaBackend:
                             '  FROM longdescs '
                             '  WHERE bug_id = %d '
                             '  ORDER BY bug_when' % bug_id)
+        # XXX: 2005-12-07 jamesh
+        # Due to a bug in Debzilla, Ubuntu bugzilla bug 248 has > 7800
+        # duplicate comments,consisting of someone's signature.
+        # For the import, just ignore those comments.
         return [(who, _add_tz(when), self._decode(thetext))
-                 for (who, when, thetext) in self.cursor.fetchall()]
+                 for (who, when, thetext) in self.cursor.fetchall()
+                 if thetext != '\n--=20\n   Jacobo Tarr=EDo     |     '
+                               'http://jacobo.tarrio.org/\n\n\n']
 
     def getBugAttachments(self, bug_id):
         """Get the attachments for the bug."""
