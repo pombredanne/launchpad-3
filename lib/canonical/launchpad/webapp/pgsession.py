@@ -146,30 +146,32 @@ class PGSessionPkgData(DictMixin):
     def cursor(self):
         return self.session_data.cursor
 
-    def __init__(self, session_data, product_id):
+    def __init__(self, session_data, product_id, caching=True):
         self.session_data = session_data
         self.product_id = product_id
         self.tablename = \
                 session_data.session_data_container.session_pkg_data_tablename
+        self._populate()
 
-    def __getitem__(self, key):
+    _data_cache = None
+
+    def _populate(self):
+        self._data_cache = {}
         query = """
-            SELECT pickle FROM %s
-            WHERE client_id = %%(client_id)s
-                AND product_id = %%(product_id)s AND key = %%(key)s
+            SELECT key, pickle FROM %s
+            WHERE client_id = %%(client_id)s AND product_id = %%(product_id)s
             """ % self.tablename
-
         client_id = self.session_data.client_id.encode(PG_ENCODING)
         product_id = self.product_id.encode(PG_ENCODING)
-        org_key = key
-        key = key.encode(PG_ENCODING)
-
         cursor = self.cursor
         cursor.execute(query, vars())
-        row = cursor.fetchone()
-        if row is None:
-            raise KeyError(org_key)
-        return pickle.loads(row[0])
+        for key, pickled_value in cursor.fetchall():
+            key = key.decode('UTF-8')
+            value = pickle.loads(pickled_value)
+            self._data_cache[key] = value
+
+    def __getitem__(self, key):
+        return self._data_cache[key]
 
     def __setitem__(self, key, value):
         pickled_value = psycopg.Binary(
@@ -177,28 +179,43 @@ class PGSessionPkgData(DictMixin):
                 )
         cursor = self.cursor
 
-        # Try UPDATE first
-        query = """
-            UPDATE %s SET pickle = %%(pickled_value)s
-            WHERE client_id = %%(client_id)s AND product_id = %%(product_id)s
-                AND key = %%(key)s
-            """ % self.tablename
+        org_key = key
+        key = key.encode(PG_ENCODING)
         client_id = self.session_data.client_id.encode(PG_ENCODING)
         product_id = self.product_id.encode(PG_ENCODING)
-        key = key.encode(PG_ENCODING)
-        cursor.execute(query, vars())
-
-        if cursor.rowcount == 1:
-            return
-
-        # If no rows where UPDATEd, we need to INSERT
-        query = """
-            INSERT INTO %s (client_id, product_id, key, pickle) VALUES (
-                %%(client_id)s, %%(product_id)s, %%(key)s, %%(pickled_value)s)
-            """ % self.tablename
-        cursor.execute(query, vars())
+        if self._data_cache.has_key(org_key):
+            query = """
+                UPDATE %s SET pickle = %%(pickled_value)s
+                WHERE client_id = %%(client_id)s
+                    AND product_id = %%(product_id)s AND key = %%(key)s
+                """ % self.tablename
+            # NB. This might update 0 rows if another thread has deleted
+            # the key. If this happens we just don't care.
+            cursor.execute(query, vars())
+        
+        else:
+            # Inserting a new row. Because we are running in SERIALIZED
+            # transaction isolation level, if another thread has inserted
+            # this key already a serialization exception will be raised,
+            # which we need to deal with as normal.
+            query = """
+                INSERT INTO %s (client_id, product_id, key, pickle) VALUES (
+                    %%(client_id)s, %%(product_id)s, %%(key)s,
+                    %%(pickled_value)s)
+                """ % self.tablename
+            cursor.execute(query, vars())
 
     def __delitem__(self, key):
+        """Delete an item.
+        
+        Note that this will never fail in order to avoid
+        race conditions in code using the session machinery (well - it might
+        raise a normal serialization exception).
+        """
+        try:
+            del self._data_cache[key]
+        except KeyError:
+            return # Not in the cache, then it won't be in the DB.
         query = """
             DELETE FROM %s
             WHERE client_id = %%(client_id)s AND product_id = %%(product_id)s
@@ -206,25 +223,14 @@ class PGSessionPkgData(DictMixin):
             """ % self.tablename
         client_id = self.session_data.client_id.encode(PG_ENCODING)
         product_id = self.session_data.product_id.encode(PG_ENCODING)
-        org_key = key
         key = key.encode(PG_ENCODING)
         cursor = self.cursor
         cursor.execute(query, [
                 self.session_data.client_id, self.product_id, key
                 ])
-        if cursor.rowcount == 0:
-            raise KeyError(org_key)
 
     def keys(self):
-        query = """
-            SELECT key FROM %s WHERE client_id = %%(client_id)s
-                AND product_id = %%(product_id)s
-            """ % self.tablename
-        client_id = self.session_data.client_id.encode(PG_ENCODING)
-        product_id = self.product_id.encode(PG_ENCODING)
-        cursor = self.cursor
-        cursor.execute(query, vars())
-        return [row[0] for row in cursor.fetchall()]
+        return self._data_cache.keys()
 
 
 data_container = PGSessionDataContainer()
