@@ -173,8 +173,8 @@ class Product(SQLBase):
 
     def newTicket(self, owner, title, description):
         """See ITicketTarget."""
-        return Ticket(title=title, description=description, owner=owner,
-            product=self)
+        return Ticket(
+            title=title, description=description, owner=owner, product=self)
 
     def getTicket(self, ticket_num):
         """See ITicketTarget."""
