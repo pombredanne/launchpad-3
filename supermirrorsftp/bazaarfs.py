@@ -28,6 +28,9 @@ class SFTPServerRoot(adhoc.AdhocDirectory):  # was SFTPServerForPushMirrorUser
 
         # Create the ~teamname directory
         for team in avatar.teams:
+            if team['name'] == avatar.lpname:
+                # skip the team of just the user
+                continue
             self.putChild('~' + team['name'], 
                           SFTPServerUserDir(avatar, team['id'], team['name'],
                                             junkAllowed=False))
@@ -89,18 +92,25 @@ class SFTPServerUserDir(osfs.OSDirectory):
         # Ok, we have a productID.  Create a directory for it.
         return osfs.OSDirectory.createDirectory(self, productID)
 
+    def _getName(self, productName):
+        """Get the on-disk name for a given product name."""
+        if productName == '+junk':
+            return productName
+        return self.avatar.productNames.get(productName)
+
     def child(self, childName):
         # Translate product names to product ids
-        return osfs.OSDirectory.child(
-            self, str(self.avatar.productIDs.get(childName)))
+        return osfs.OSDirectory.child(self, str(self._getName(childName)))
 
     def children(self):
         # Like osfs.OSDirectory's children method, except it translates from
         # on-disk product ids to external product names.
-        def getName(productID):
-            return self.avatar.productNames.get(productID)
+        def childTuple(name):
+            onDiskName = self._getName(name)
+            return (onDiskName, self.child(onDiskName))
+
         return ([('.', self), ('..', self.parent)] +
-                [(getName(childName), self.child(getName(childName)))
+                [childTuple(childName)
                  for childName in os.listdir(self.realPath)])
                
     def remove(self):
