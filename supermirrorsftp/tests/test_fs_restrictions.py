@@ -84,8 +84,6 @@ class UserDirsTestCase(AvatarTestBase):
     def testCreateValidProduct(self):
         # Test creating a product dir.
 
-        # XXX: Deferred rabbit-hole: need to make VFS deferrable... productIDs
-        # should dynamically queried (unless already known to this connection).
         def fetchProductID(productName):
             if productName == 'mozilla-firefox':
                 return defer.succeed(123)
@@ -108,11 +106,16 @@ class UserDirsTestCase(AvatarTestBase):
         return deferred
 
     def testCreateInvalidProduct(self):
+        def alwaysNoneFetchProductID(productName):
+            return defer.succeed(None)
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, 
-                                lambda productID: defer.succeed(None),
+                                alwaysNoneFetchProductID,
                                 self.aliceUserDict)
         root = avatar.filesystem.root
         userDir = root.child('~alice')
+
+        # XXX: make a helper (assertDeferredRaises?) to make this clearer:
+        # We expect PermissionError from a userDir.createDirectory:
         def cb(result):
             self.fail('Unexpected result: %r' % (result,))
         def eb(failure):
