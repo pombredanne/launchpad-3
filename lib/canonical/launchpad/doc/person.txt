@@ -98,8 +98,10 @@ Or a name that is not already in use.
 But you can't use Mark's name, of course. ;)
 >>> field.validate(u'sabdfl')
 Traceback (most recent call last):
+  ...
+LaunchpadValidationError: ...
+This name is already in use by another person/team.
 ...
-NameAlreadyTaken: The name sabdfl is already in use.
 
 In the case of your displayname, the only constraint is that it can't contain
 only spaces. To ensure that, we use a StrippingTextLine in the displayname,

@@ -54,6 +54,9 @@ class ILoginToken(Interface):
     # used for launchpad page layout
     title = Attribute('Title')
 
+    # Quick fix for Bug #2481
+    password = Attribute('Password')
+
     def destroySelf():
         """Remove this LoginToken from the database.
 

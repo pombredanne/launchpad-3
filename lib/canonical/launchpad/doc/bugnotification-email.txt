@@ -64,10 +64,6 @@ Let's take a look at what the notification email looks like:
     Description:
     Malone pages that use more complex layouts with portlets and fancy CSS are
     sometimes not getting properly reflowed after rendering.
-    <BLANKLINE>
-    -- 
-    You are receiving this message because you are on the Cc list of this bug,
-    or are a member of a team that is, or you are assigned to fix it.
 
 Adding a bug comment
 --------------------
@@ -91,10 +87,6 @@ demonstrate how the comment notification is formatted:
     emails for Mr Gates... everything they delete would actually
     disappear! I'm sure Redmond will switch over as soon as they hear
     about this. It's not a bug, it's a feature!
-    <BLANKLINE>
-    -- 
-    You are receiving this message because you are on the Cc list of this bug,
-    or are a member of a team that is, or you are assigned to fix it.
 
 Editing a bug
 -------------
@@ -134,10 +126,6 @@ returns the subject and body of the email, as a tuple.
         that gets sent.
     <BLANKLINE>
         it's also smart enough to preserve whitespace, finally!
-    <BLANKLINE>
-    -- 
-    You are receiving this message because you are on the Cc list of this bug,
-    or are a member of a team that is, or you are assigned to fix it.
 
 Another edit, this time the summary:
 
@@ -158,10 +146,6 @@ Another edit, this time the summary:
     Short description changed to:
         this summary isn't particularly short is it? after all, what kind of
         summary is so long that it needs to be wrapped?
-    <BLANKLINE>
-    -- 
-    You are receiving this message because you are on the Cc list of this bug,
-    or are a member of a team that is, or you are assigned to fix it.
 
 Let's set the bug private (for demo purposes, we need to switch logins
 to a user that is explicitly subscribed to this bug):
@@ -183,10 +167,6 @@ to a user that is explicitly subscribed to this bug):
     <BLANKLINE>
     Secrecy changed to:
         Private
-    <BLANKLINE>
-    -- 
-    You are receiving this message because you are on the Cc list of this bug,
-    or are a member of a team that is, or you are assigned to fix it.
 
 Now we set the bug public and check if the e-mail sent changed as well.
 
@@ -205,10 +185,6 @@ Now we set the bug public and check if the e-mail sent changed as well.
     <BLANKLINE>
     Secrecy changed to:
         Public
-    <BLANKLINE>
-    -- 
-    You are receiving this message because you are on the Cc list of this bug,
-    or are a member of a team that is, or you are assigned to fix it.
 
 Adding a new bug task
 ---------------------
@@ -237,10 +213,6 @@ pretend we had just added task five:
            Priority: High
            Assignee: name12 <test@canonical.com>
              Status: Accepted
-    <BLANKLINE>
-    -- 
-    You are receiving this message because you are on the Cc list of this bug,
-    or are a member of a team that is, or you are assigned to fix it.
 
 Editing a bug task
 ------------------
@@ -278,10 +250,6 @@ bugmail when a bug task is edited.
              Status: New => Accepted
         Explanation: i'm just babbling here to ensure line wrapping works in
                      the explanation.
-    <BLANKLINE>
-    -- 
-    You are receiving this message because you are on the Cc list of this bug,
-    or are a member of a team that is, or you are assigned to fix it.
 
 Adding and editing web links
 ----------------------------
@@ -317,10 +285,6 @@ Adding a web link can be seen as "editing" a bug.
     <BLANKLINE>
     Web links changed:
         + http://www.example.com/foo/bar (some title)
-    <BLANKLINE>
-    -- 
-    You are receiving this message because you are on the Cc list of this bug,
-    or are a member of a team that is, or you are assigned to fix it.
 
 Editing a web link shows the previous link as "Removed" and the newly
 modified link as having been "Added" (though no actual "adding" or
@@ -348,10 +312,6 @@ modified link as having been "Added" (though no actual "adding" or
     Web links changed:
         + http://www.example.com/foo/bar (some better title)
         - http://www.example.com/foo/bar (some title)
-    <BLANKLINE>
-    -- 
-    You are receiving this message because you are on the Cc list of this bug,
-    or are a member of a team that is, or you are assigned to fix it.
 
 Adding and editing bug watches
 ------------------------------
@@ -387,10 +347,6 @@ generated when a bug watch is added:
     <BLANKLINE>
     Bug watches changed:
         + Bug 123 [The Mozilla.org Bug Tracker]
-    <BLANKLINE>
-    -- 
-    You are receiving this message because you are on the Cc list of this bug,
-    or are a member of a team that is, or you are assigned to fix it.
 
 When edited, we display the change to a bug watch as though the
 previous data was "removed" and the new, current data was "added."
@@ -417,10 +373,6 @@ Let's demonstrate with an example:
     Bug watches changed:
         + Bug 12 [The Mozilla.org Bug Tracker]
         - Bug 123 [The Mozilla.org Bug Tracker]
-    <BLANKLINE>
-    -- 
-    You are receiving this message because you are on the Cc list of this bug,
-    or are a member of a team that is, or you are assigned to fix it.
 
 Adding and editing CVE relationships
 ------------------------------------
@@ -458,10 +410,6 @@ Adding a CVE will generate a notification that looks as follows:
     http://www.example.com/bugs/2
     <BLANKLINE>
     Added CVE-2004-0718 (Candidate)
-    <BLANKLINE>
-    -- 
-    You are receiving this message because you are on the Cc list of this bug,
-    or are a member of a team that is, or you are assigned to fix it.
 
 Similarly, removing a CVE ref will result in an email:
 
@@ -483,10 +431,6 @@ Similarly, removing a CVE ref will result in an email:
     http://www.example.com/bugs/2
     <BLANKLINE>
     Removed CVE-2004-0719 (Candidate)
-    <BLANKLINE>
-    -- 
-    You are receiving this message because you are on the Cc list of this bug,
-    or are a member of a team that is, or you are assigned to fix it.
 
 Adding an infestation
 ---------------------

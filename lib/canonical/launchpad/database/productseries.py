@@ -207,7 +207,8 @@ class ProductSeries(SQLBase):
         """Has the series source failed automatic testing by roomba?"""
         return self.importstatus == ImportStatus.TESTFAILED
 
-
+# XXX matsubara, 2005-11-30: This class should be renamed to ProductSeriesSet
+# https://launchpad.net/products/launchpad/+bug/5247
 class ProductSeriesSourceSet:
     """See IProductSeriesSourceSet"""
     implements(IProductSeriesSourceSet)
@@ -271,3 +272,17 @@ class ProductSeriesSourceSet:
             query += 'ProductSeries.importstatus = %d' % importstatus
         return query, clauseTables
 
+    def getByCVSDetails(self, cvsroot, cvsmodule, cvsbranch, default=None):
+        """See IProductSeriesSourceSet."""
+        result = ProductSeries.selectOneBy(
+            cvsroot=cvsroot, cvsmodule=cvsmodule, cvsbranch=cvsbranch)
+        if result is None:
+            return default
+        return result
+
+    def getBySVNDetails(self, svnrepository, default=None):
+        """See IProductSeriesSourceSet."""
+        result = ProductSeries.selectOneBy(svnrepository=svnrepository)
+        if result is None:
+            return default
+        return result

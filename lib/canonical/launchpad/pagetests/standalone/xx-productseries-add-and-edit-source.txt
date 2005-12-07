@@ -1,0 +1,109 @@
+Open the "Upstream Source Import" page for a series.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+series/milestones/+source HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...<h1>Upstream Source Import</h1>...
+  ...
+
+Add CVS source import details, but no Source Package.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+series/milestones/+source HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.5
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ...
+  ... ubuntupkg=&rcstype=cvs&cvsroot=%3Apserver%3Aanonymous%40cvs-mirror.mozilla.org%3A%2Fcvsroot&cvsmodule=mozilla&cvsbranch=main&Update+RCS+Details=Update+RCS+Details""")
+  HTTP/1.1 303 See Other 
+  ...
+  Location: http://localhost:9000/products/firefox/+series/milestones
+  ...
+
+We check if the info we just entered on the form is displayed correctly
+
+  >>> print http(r"""
+  ... GET /products/firefox/+series/milestones/ HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...<td>CVS Root:</td>...
+  ...<td>:pserver:anonymous@cvs-mirror.mozilla.org:/cvsroot</td>...
+  ...
+
+Now add a Source Package name, but try a non-existent one.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+series/milestones/+source HTTP/1.1
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... 
+  ... ubuntupkg=moz&rcstype=cvs&cvsroot=%3Apserver%3Aanonymous%40cvs-mirror.mozilla.org%3A%2Fcvsroot&cvsmodule=mozilla&cvsbranch=main&Update+RCS+Details=Update+RCS+Details""")
+  HTTP/1.1 200 Ok
+  ...
+  ...<h1>Upstream Source Import</h1>...
+  ...
+  ...<p class="portalMessage">Invalid source package name moz</p>...
+  ...
+
+Now put in a valid Source Package Name.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+series/milestones/+source HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.5
+  ... Content-Length: 192
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Referer: http://localhost:9000/products/firefox/+series/milestones/+source
+  ... 
+  ... ubuntupkg=mozilla-firefox&rcstype=cvs&cvsroot=%3Apserver%3Aanonymous%40cvs-mirror.mozilla.org%3A%2Fcvsroot&cvsmodule=mozilla&cvsbranch=main&Update+RCS+Details=Update+RCS+Details""")
+  HTTP/1.1 303 See Other 
+  ...
+  Location: http://localhost:9000/products/firefox/+series/milestones
+  ...
+
+Test if we can add the FTP Details
+
+  >>> print http(r"""
+  ... POST /products/alsa-utils/+series/main/+source HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... ubuntupkg=&rcstype=cvs&cvsroot=%3Apserver%3Aanonymous%40anoncvs.gnome.org%3A%2Fcvs%2Falsa&cvsmodule=alsa-utils&cvsbranch=alsa&releaseroot=ftp%3A%2F%2Fwww.mozilla.org%2Fpub%2Falsa&releasefileglob=alsa.*.src.tgz&Update+RCS+Details=Update+RCS+Details""")
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/products/alsa-utils/+series/main
+  ...
+
+And we test if we can edit again changing the RCS
+
+  >>> print http(r"""
+  ... POST /products/alsa-utils/+series/main/+source HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... ubuntupkg=alsa-utils&rcstype=svn&svnrepository=svn%3A%2F%2Falsa.com&releaseroot=ftp%3A%2F%2Fwww.mozilla.org%2Fpub%2Falsa&releasefileglob=alsa.*.src.tgz&Update+RCS+Details=Update+RCS+Details""")
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/products/alsa-utils/+series/main
+  ...
+
+Test if the RCS details validator is working properly by adding the same
+svnrepository to another ProductSeries
+
+  >>> print http(r"""
+  ... POST /products/firefox/+series/1.0/+source HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: application/x-www-form-urlencoded
+  ... 
+  ... ubuntupkg=mozilla&rcstype=svn&svnrepository=svn%3A%2F%2Falsa.com&releaseroot=ftp%3A%2F%2Fwww.mozilla.org%2Fpub%2Falsa&releasefileglob=alsa.*.src.tgz&Update+RCS+Details=Update+RCS+Details""")
+  HTTP/1.1 200 Ok 
+  ...
+  ...SVN repository details already in use by another product...
+  ...

@@ -28,7 +28,7 @@ class LoginToken(SQLBase):
 
     requester = ForeignKey(dbName='requester', foreignKey='Person')
     requesteremail = StringCol(dbName='requesteremail', notNull=False,
-                               default=None) 
+                               default=None)
     email = StringCol(dbName='email', notNull=True)
     token = StringCol(dbName='token', unique=True)
     tokentype = EnumCol(dbName='tokentype', notNull=True,
@@ -36,6 +36,7 @@ class LoginToken(SQLBase):
     created = UtcDateTimeCol(dbName='created', notNull=True)
     fingerprint = StringCol(dbName='fingerprint', notNull=False,
                             default=None)
+    password = '' # Quick fix for Bug #2481
 
     title = 'Launchpad Email Verification'
 

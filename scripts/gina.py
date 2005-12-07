@@ -30,6 +30,7 @@ from canonical.config import config
 from canonical.launchpad.scripts import logger_options, log
 from canonical.launchpad.scripts.lockfile import LockFile
 
+from canonical.launchpad.scripts.gina import ExecutionError
 from canonical.launchpad.scripts.gina.katie import Katie
 from canonical.launchpad.scripts.gina.archive import (ArchiveComponentItems,
     PackagesMap, MangledArchiveError)
@@ -39,7 +40,6 @@ from canonical.launchpad.scripts.gina.handlers import (ImporterHandler,
 from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
     BinaryPackageData, MissingRequiredArguments, DisplayNameDecodingError,
     PoolFileNotFound, InvalidVersionError)
-
 
 
 def _get_keyring(keyrings_root):
@@ -218,7 +218,7 @@ def import_sourcepackages(packages_map, kdb, package_root,
                                      importer_handler)
             except psycopg.Error:
                 log.exception("Database error: unable to create "
-                              "Source Package for %s. Retrying once.."
+                              "SourcePackage for %s. Retrying once.."
                               % package_name)
                 importer_handler.abort()
                 time.sleep(15)
@@ -229,14 +229,14 @@ def import_sourcepackages(packages_map, kdb, package_root,
             log.exception("Unable to create SourcePackageData for %s" % 
                           package_name)
             continue
-        except PoolFileNotFound:
+        except (PoolFileNotFound, ExecutionError):
             # Problems with katie db stuff of opening files
             log.exception("Error processing package files for %s" %
                           package_name)
             continue
         except psycopg.Error:
             log.exception("Database errors made me give up: unable to create "
-                          "Source Package for %s" % package_name)
+                          "SourcePackage for %s" % package_name)
             importer_handler.abort()
             continue
         except MultiplePackageReleaseError:
@@ -282,8 +282,8 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
                     do_one_binarypackage(binary, archtag, kdb, package_root,
                                          keyrings, importer_handler)
                 except psycopg.Error:
-                    log.exception("Database errors when importing a"
-                                  "Binary Package for %s. Retrying once.."
+                    log.exception("Database errors when importing a "
+                                  "BinaryPackage for %s. Retrying once.."
                                   % package_name)
                     importer_handler.abort()
                     time.sleep(15)
@@ -293,7 +293,7 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
                 log.exception("Unable to create BinaryPackageData for %s" % 
                               package_name)
                 continue
-            except PoolFileNotFound:
+            except (PoolFileNotFound, ExecutionError):
                 # Problems with katie db stuff of opening files
                 log.exception("Error processing package files for %s" %
                               package_name)
@@ -304,7 +304,7 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
                 continue
             except psycopg.Error:
                 log.exception("Database errors made me give up: unable to "
-                              "create Binary Package for %s" % package_name)
+                              "create BinaryPackage for %s" % package_name)
                 importer_handler.abort()
                 continue
             except NoSourcePackageError:
