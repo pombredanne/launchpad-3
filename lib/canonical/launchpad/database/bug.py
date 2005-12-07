@@ -297,25 +297,10 @@ class BugSet(BugSetBase):
         binarypackagename=None, product=None, comment=None,
         description=None, msg=None, summary=None, datecreated=None,
         title=None, private=False, owner=None):
-        """Create a bug and return it.
-
-        Things to note when using this factory:
-
-          * if no description is passed, the comment will be used as the
-            description
-
-          * if summary is not passed then the summary will be the
-            first sentence of the description
-
-          * the submitter will be subscribed to the bug
-
-          * if either product or distribution is specified, an appropiate
-            bug task will be created
-
-        """
+        """See IBugSet."""
         # Make sure that the factory has been passed enough information.
         if comment is description is msg is None:
-            raise ValueError(
+            raise AssertionError(
                 'createBug requires a comment, msg, or description')
 
         # make sure we did not get TOO MUCH information
@@ -368,5 +353,13 @@ class BugSet(BugSetBase):
             # contact to all public bugs.
             if distribution.bugcontact and not bug.private:
                 bug.subscribe(distribution.bugcontact)
+
+            # Subscribe package bug contacts to public bugs, if package
+            # information was provided.
+            if sourcepackagename:
+                package = distribution.getSourcePackage(sourcepackagename.name)
+                if package.bugcontacts and not bug.private:
+                    for bugcontact in package.bugcontacts:
+                        bug.subscribe(bugcontact)
 
         return bug

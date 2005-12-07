@@ -76,18 +76,19 @@ Automatic Subscriptions on Bug Creation
 When a new bug is opened, the following people are automatically added as
 explicit Cc subscribers to the bug:
 
-  * the bug reporter
+  * The bug reporter
 
-  * the distribution bug contact, if there is one
+  * The distribution bug contact, if there is one
 
-  * the product bug contact, if there is one
+  * The product bug contact, if there is one
 
-  * the package bug contact, if there is one
-
-Let's have a look at an example for a distribution bug:
+  * The package bug contact(s). There may be zero, one or more package
+    bug contacts.
 
 XXX: Brad Bollenbach, 2005-11-25: This part is a dirty sampledata hack until I
-change the real sample data. IF YOU'RE A CODE REVIEWER READING THIS I SUCK.
+change the real sample data. See XXX
+
+Let's have a look at an example for a distribution bug:
 
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).get(1)
@@ -103,10 +104,16 @@ change the real sample data. IF YOU'RE A CODE REVIEWER READING THIS I SUCK.
     >>> sorted(new_bug.notificationRecipientAddresses())
     [u'foo.bar@canonical.com', u'test@canonical.com']
 
-Another example, this time for an upstream:
+The distro contact will *not* be subscribed to private bugs:
 
-XXX: Brad Bollenbach, 2005-11-25: This part is a dirty sampledata hack until I
-change the real sample data. IF YOU'RE A CODE REVIEWER READING THIS I SUCK.
+    >>> new_bug = getUtility(IBugSet).createBug(
+    ...     title="a test bug", comment="a test description",
+    ...     owner=foobar, distribution=ubuntu, private=True)
+
+    >>> sorted(new_bug.notificationRecipientAddresses())
+    [u'foo.bar@canonical.com']
+
+Another example, this time for an upstream:
 
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> sabdfl = personset.get(1)
@@ -119,3 +126,67 @@ change the real sample data. IF YOU'RE A CODE REVIEWER READING THIS I SUCK.
 
     >>> sorted(new_bug.notificationRecipientAddresses())
     [u'foo.bar@canonical.com', u'mark@hbd.com']
+
+The upstream bug contact will *not* be automatically subscribed to
+private bugs:
+
+    >>> new_bug = getUtility(IBugSet).createBug(
+    ...     title="a test bug", comment="a test description",
+    ...     owner=foobar, product=firefox, private=True)
+
+    >>> sorted(new_bug.notificationRecipientAddresses())
+    [u'foo.bar@canonical.com']
+
+Now let's create a bug on a specific package, which has no package bug
+contacts:
+
+    >>> ubuntu_mozilla_firefox = ubuntu.getSourcePackage("mozilla-firefox")
+    >>> ubuntu_mozilla_firefox.bugcontacts
+    []
+
+    >>> new_bug = getUtility(IBugSet).createBug(
+    ...     title="another test bug",
+    ...     comment="another test description",
+    ...     owner=foobar, distribution=ubuntu,
+    ...     sourcepackagename=ubuntu_mozilla_firefox.sourcepackagename)
+
+    >>> sorted(new_bug.notificationRecipientAddresses())
+    [u'foo.bar@canonical.com', u'test@canonical.com']
+
+Adding a package bug contact for ubuntu_mozilla_firefox will mean that
+that package bug contact gets subscribed to all bugmail on bugs filed
+after the point that the bug contact was set.
+
+So, if sabdfl is added as a bug contact to ubuntu_mozilla_firefox:
+
+    >>> ubuntu_mozilla_firefox.addBugContact(sabdfl)
+
+He is still *not* going to be a recipient of bugmail from the previous
+bug we created:
+
+    >>> sorted(new_bug.notificationRecipientAddresses())
+    [u'foo.bar@canonical.com', u'test@canonical.com']
+
+But he will be subscribed to bugmail for future bugs:
+
+    >>> new_bug = getUtility(IBugSet).createBug(
+    ...     title="yet another test bug",
+    ...     comment="yet another test description",
+    ...     owner=foobar, distribution=ubuntu,
+    ...     sourcepackagename=ubuntu_mozilla_firefox.sourcepackagename)
+
+    >>> sorted(new_bug.notificationRecipientAddresses())
+    [u'foo.bar@canonical.com', u'mark@hbd.com', u'test@canonical.com']
+
+The distribution and package contacts do not get subscribed to private
+bug reports automatically:
+
+    >>> new_bug = getUtility(IBugSet).createBug(
+    ...     title="yet another test bug",
+    ...     comment="yet another test description",
+    ...     owner=foobar, distribution=ubuntu,
+    ...     sourcepackagename=ubuntu_mozilla_firefox.sourcepackagename,
+    ...     private=True)
+
+    >>> sorted(new_bug.notificationRecipientAddresses())
+    [u'foo.bar@canonical.com']
