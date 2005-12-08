@@ -15,9 +15,9 @@ from canonical.launchpad.interfaces import (
     IMailHandler, IBugMessageSet, CreatedBugWithNoBugTasksError,
     EmailProcessingError, IUpstreamBugTask, IDistroBugTask,
     IDistroReleaseBugTask)
-from canonical.launchpad.mail.commands import emailcommands
+from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mailnotification import (
-    send_process_error_notification, get_email_template)
+    send_process_error_notification)
 
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectCreatedEvent)
@@ -198,10 +198,10 @@ class MaloneHandler:
                             bugtask = guess_bugtask(
                                 bug, getUtility(ILaunchBag).user)
                             if bugtask is None:
-                                raise IncomingEmailError(get_email_template(
-                                    'no-default-affects.txt') % {
-                                        'bug_id': bug.id,
-                                        'nr_of_bugtasks': len(bug.bugtasks)})
+                                raise IncomingEmailError(get_error_message(
+                                    'no-default-affects.txt',
+                                    bug_id=bug.id,
+                                    nr_of_bugtasks=len(bug.bugtasks)))
                         bugtask, bugtask_event = command.execute(
                             bugtask, bugtask_event)
 
@@ -213,8 +213,8 @@ class MaloneHandler:
                 try:
                     notify(bug_event)
                 except CreatedBugWithNoBugTasksError:
-                    raise IncomingEmailError(get_email_template(
-                        'no-affects-target-on-submit.txt'))
+                    raise IncomingEmailError(
+                        get_error_message('no-affects-target-on-submit.txt'))
             if bugtask_event is not None:
                 notify(bugtask_event)
 

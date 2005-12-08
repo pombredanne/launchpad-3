@@ -1,7 +1,9 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['emailcommands']
+__all__ = ['emailcommands', 'get_error_message']
+
+import os.path
 
 from zope.component import getUtility
 from zope.event import notify
@@ -21,10 +23,23 @@ from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
-from canonical.launchpad.mailnotification import get_email_template
 
 from canonical.lp.dbschema import (
     BugTaskStatus, BugTaskSeverity, BugTaskPriority)
+
+
+def get_error_message(filename, **interpolation_items):
+    """Returns the error message that's in the given filename.
+
+    If the error message requires some parameters, those are given in
+    interpolation_items.
+
+    The files are searched for in lib/canonical/launchpad/mail/errortemplates.
+    """
+    base = os.path.dirname(__file__)
+    fullpath = os.path.join(base, 'errortemplates', filename)
+    error_template = open(fullpath).read()
+    return error_template % interpolation_items
 
 
 def normalize_arguments(string_args):
@@ -125,7 +140,7 @@ class BugEmailCommand(EmailCommand):
                 parsed_message=parsed_msg)
             if message.contents.strip() == '':
                  raise EmailProcessingError(
-                    get_email_template('no-affects-target-on-submit.txt'))
+                    get_error_message('no-affects-target-on-submit.txt'))
 
             bug = getUtility(IBugSet).createBug(
                 msg=message,
@@ -454,11 +469,11 @@ class DBSchemaEditEmailCommand(EditEmailCommand):
             possible_items = [item.name.lower() for item in dbschema.items]
             possible_values = ', '.join(possible_items)
             raise EmailProcessingError(
-                    get_email_template(
-                        'dbschema-command-wrong-argument.txt') % {
-                            'command_name': self.name,
-                            'arguments': possible_values,
-                            'example_argument': possible_items[0]})
+                    get_error_message(
+                        'dbschema-command-wrong-argument.txt',
+                         command_name=self.name,
+                         arguments=possible_values,
+                         example_argument=possible_items[0]))
 
 
 class StatusEmailCommand(DBSchemaEditEmailCommand):
