@@ -45,7 +45,7 @@ When the bug is marked as a duplicate, each subscriber will receive,
 individually, a bugmail notification of this event.
 
     >>> len(stub.test_emails)
-    8
+    5
 
 Let's sort the emails by subject and talk a bit more about each
 notification:
@@ -60,15 +60,12 @@ notification:
 
   1. To the subscribers of the duplicate bug.
 
-    There are four subscribers to the duplicate bug in the test data
-    used in this example. These emails are the last four emails in the
-    list of sent_emails:
+    There is only one subscriber to the duplicate bug in this example
+    (i.e. only one that also has a preferred email address set.)
 
-    >>> all_to_addrs = [
-    ...     to_addrs for x, to_addrs, y in sent_emails[:4]]
-    >>> all_to_addrs.sort()
-    >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
+    >>> not_used, dup_bug_assignee_email, not_used = sent_emails[-1]
+    >>> print dup_bug_assignee_email
+    ['test@canonical.com']
 
     Let's grab the last email in the list to illustrate what the email
     itself looks like:
@@ -90,15 +87,17 @@ notification:
 
   2. To the subscribers of the dup-target bug.
 
-    There are four subscribers to the duplicate bug target in the test
-    data used in this example. These emails are the first four emails
-    in the list of sent_emails:
+    There are two subscribers to the duplicate bug target in the test
+    data used in this example (i.e. only two that have preferred email
+    addresses set.) Of course, dilys--the IRC bot--also gets a copy of
+    each mail.
 
     >>> all_to_addrs = [
-    ...     to_addrs for x, to_addrs, y in sent_emails[4:]]
+    ...     to_addrs for x, to_addrs, y in sent_emails[:-1]]
     >>> all_to_addrs.sort()
     >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
+    [['dilys@muse.19inch.net'], ['dilys@muse.19inch.net'],
+     ['mark@hbd.com'], ['test@canonical.com']]
 
     Let's grab the first email in the list to illustrate:
 
