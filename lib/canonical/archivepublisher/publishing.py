@@ -31,11 +31,14 @@ def package_name(filename):
     """Extract a package name from a debian package filename."""
     return (os.path.basename(filename).split("_"))[0]
 
-
 def filechunks(file, chunk_size=256*1024):
     """Return an iterator which reads chunks of the given file."""
     return iter(lambda: file.read(chunk_size), '')
 
+def f_touch(*parts):
+    """Touch the file named by the arguments concatenated as a path."""
+    fname = os.path.join(*parts)
+    open(fname, "w").close()
 
 class Publisher(object):
     """Publisher is the class used to provide the facility to publish
@@ -692,3 +695,57 @@ Description: %s
                                              distrorelease,
                                              full_distrorelease_name)
                 
+    def createEmptyPocketRequests(self):
+        """Write out empty file lists etc for pockets we want to have
+        Packages or Sources for but lack anything in them currently."""
+        all_pockets = [ suffix for _, suffix in pocketsuffix.items() ]
+        for distrorelease in self.distro:
+            comps = self._config.componentsForRelease(distrorelease.name)
+            archs = self._config.archTagsForRelease(distrorelease.name)
+            pockets = all_pockets
+            #if distrorelease.releasestatus <= DistributionReleaseStatus.FROZEN:
+            #    pockets = [""]
+            for suffix in pockets:
+                full_distrorelease_name = distrorelease.name + suffix
+                for comp in comps:
+                    # dr/comp to _di_r_c
+                    self._di_release_components.setdefault(
+                        full_distrorelease_name, set()).add(comp)
+                    # Touch the source file lists and override files
+                    f_touch(self._config.overrideroot,
+                            "_".join([full_distrorelease_name,
+                                      comp, "source"]))
+                    f_touch(self._config.overrideroot,
+                            ".".join(["override",
+                                      full_distrorelease_name, comp]))
+                    f_touch(self._config.overrideroot,
+                            ".".join(["override",
+                                      full_distrorelease_name, "extra", comp]))
+                    f_touch(self._config.overrideroot,
+                            ".".join(["override",
+                                      full_distrorelease_name, comp, "src"]))
+                    f_touch(self._config.overrideroot,
+                            ".".join(["override",
+                                      full_distrorelease_name,
+                                     comp,
+                                     "debian-installer"]))
+                    
+                    self._release_files_needed.setdefault(
+                        full_distrorelease_name, {}).setdefault(
+                        comp, set()).add("source")
+                    for arch in archs:
+                        # dr/comp/arch into _r_f_n
+                        self._release_files_needed.setdefault(
+                            full_distrorelease_name, {}).setdefault(
+                            comp, set()).add("binary-"+arch)
+                        # Touch more file lists for the archs.
+                        f_touch(self._config.overrideroot,
+                                "_".join([full_distrorelease_name,
+                                         comp,
+                                         "binary-"+arch]))
+                        f_touch(self._config.overrideroot,
+                                "_".join([full_distrorelease_name,
+                                         comp,
+                                         "debian-installer",
+                                         "binary-"+arch]))
+

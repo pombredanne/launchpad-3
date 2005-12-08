@@ -180,6 +180,14 @@ except:
     sys.exit(1)
 
 try:
+    debug("Preparing file lists and overrides.")
+    pub.createEmptyPocketRequests()
+except:
+    logging.getLogger().exception("Bad muju while preparing file lists etc.")
+    txn.abort()
+    sys.exit(1)
+
+try:
     # Now we generate overrides
     debug("Generating overrides for the distro.")
     spps = SourcePackagePublishingView.select(
