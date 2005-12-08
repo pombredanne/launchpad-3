@@ -4,6 +4,10 @@
 Provides an API for displaying arbitrary  notifications to users after
 an action has been performed, independant of what page the user
 ends up on after the action is done.
+
+Note that the current implementation is deliberatly broken - the only way
+to do this correctly is by passing a token in the URL to identify the
+browser window the request came from.
 """
 
 __metaclass__ = type
@@ -23,8 +27,7 @@ from canonical.launchpad.webapp.interfaces import (
         )
 from canonical.launchpad.webapp.publisher import LaunchpadView
 
-NOTIFICATION_PARAMETER = 'lpnotification'
-SESSION_KEY = 'launchpad.notifications'
+SESSION_KEY = 'launchpad'
 
 class NotificationRequest:
     """NotificationRequest extracts notifications to display to the user
@@ -37,16 +40,13 @@ class NotificationRequest:
     >>> request = NotificationRequest()
     >>> len(request.notifications)
     0
-
-    If we stuff some notifications in the session, the NotificationRequest
-    will provide access to them if the relevant information was passed in
-    via the URL.
+    >>> INotificationRequest.providedBy(request)
+    True
 
     >>> request = NotificationRequest()
-    >>> IBrowserRequest(request).form[NOTIFICATION_PARAMETER] = 'UUID'
     >>> session = ISession(request)[SESSION_KEY]
     >>> notifications = NotificationList()
-    >>> session['UUID'] = notifications
+    >>> session['notifications'] = notifications
     >>> notifications.append(Notification(0, 'Fnord'))
     >>> [notification.message for notification in request.notifications]
     ['Fnord']
@@ -61,15 +61,6 @@ class NotificationRequest:
     ['Fnord', 'Aargh']
     """
     implements(INotificationRequest)
-
-    @property
-    def uuid(self):
-        form = IBrowserRequest(self).form
-        uuid = form.get(NOTIFICATION_PARAMETER, None)
-        if uuid is None:
-            uuid = generate_uuid()
-            form[NOTIFICATION_PARAMETER] = uuid
-        return uuid
 
     @property
     def notifications(self):
@@ -88,8 +79,9 @@ class NotificationResponse:
     >>> class MyNotificationResponse(NotificationResponse, MockResponse):
     ...     pass
     >>> response = MyNotificationResponse()
+    >>> INotificationResponse.providedBy(response)
+    True
     >>> request = NotificationRequest()
-    >>> IBrowserRequest(request).form[NOTIFICATION_PARAMETER] = 'UUID'
     >>> request.response = response
     >>> response._request = request
 
@@ -121,15 +113,13 @@ class NotificationResponse:
     30 -- Warning
     40 -- Error
 
-    >>> response.redirect("http://example.com")
-    302: http://example.com?lpnotification=UUID
     >>> response.redirect("http://example.com?foo=bar")
-    302: http://example.com?foo=bar&lpnotification=UUID
+    302: http://example.com?foo=bar
 
     Once redirect has been called, any notifications that have been set
     are stored in the session
 
-    >>> for notification in ISession(request)[SESSION_KEY]['UUID']:
+    >>> for notification in ISession(request)[SESSION_KEY]['notifications']:
     ...     print "%d -- %s" % (notification.level, notification.message)
     ...     break
     25 -- <b>&lt;Fnord&gt;</b>
@@ -139,19 +129,23 @@ class NotificationResponse:
 
     >>> response = MyNotificationResponse()
     >>> request = NotificationRequest()
-    >>> IBrowserRequest(request).form[NOTIFICATION_PARAMETER] = 'UUID2'
     >>> request.response = response
     >>> response._request = request
+
+    >>> session = ISession(request)[SESSION_KEY]
+    >>> del ISession(request)[SESSION_KEY]['notifications']
+    >>> session.has_key('notifications')
+    False
     >>> len(response.notifications)
     0
     >>> response.redirect("http://example.com")
     302: http://example.com
-    >>> ISession(request)[SESSION_KEY].has_key('UUID2')
+    >>> session.has_key('notifications')
     False
     """
     implements(INotificationResponse)
 
-    # We stuff our Notifications here until we are sure we shold persist it
+    # We stuff our Notifications here until we are sure we should persist it
     # in the request. This avoids needless calls to the session machinery
     # which would be bad.
     _notifications = None
@@ -170,54 +164,33 @@ class NotificationResponse:
         self.notifications.append(Notification(level, msg))
 
     @property
-    def uuid(self):
-        return INotificationRequest(self._request).uuid
-
-    @property
     def notifications(self):
         # If we have already retrieved our INotificationList this request,
         # just return it
         if self._notifications is not None:
             return self._notifications
 
-        # Clean out old notifications
         session = ISession(self)[SESSION_KEY]
-        for key, notification in list(session.items()):
-            if notification.created > datetime.utcnow() + timedelta(hours=1):
-                try:
-                    del session[key]
-                except KeyError:
-                    # Ignore, as there is possible race condition
-                    # when two pages are loaded simultaneously
-                    pass
+        try:
+            # Use notifications stored in the session.
+            self._notifications = session['notifications']
+            # Remove them from the session so they don't propogate to
+            # subsequent pages, unless redirect() is called which will
+            # push the notifications back into the session.
+            del session['notifications']
+        except KeyError:
+            # No stored notifications - create a new NotificationList
+            self._notifications = NotificationList()
 
-        # If we have a uuid passed in via the URL, then attempt to
-        # extract the INotificationList from the session
-        uuid = self.uuid
-        if uuid is not None:
-            try:
-                self._notifications = session[uuid]
-                return self._notifications
-            except KeyError:
-                pass
-
-        # Otherwise, create a new INotificationList
-        self._notifications = NotificationList()
         return self._notifications
 
     def redirect(self, location, status=None):
         """See canonical.launchpad.webapp.interfaces.ISessionNotifications"""
-        (scheme, location, path, query, fragment) = urlsplit(location)
-
         # We are redirecting, so we need to stuff our notifications into
         # the session
         if self._notifications is not None and len(self._notifications) > 0:
             session = ISession(self)[SESSION_KEY]
-            uuid = self.uuid
-            session[uuid] = self._notifications
-            query = querystring_inject(query, NOTIFICATION_PARAMETER, uuid)
-
-        location = urlunsplit((scheme, location, path, query, fragment))
+            session['notifications'] = self._notifications
         return super(NotificationResponse, self).redirect(location, status)
 
     def addDebugNotification(self, msg, **kw):
@@ -240,38 +213,6 @@ class NotificationResponse:
         """See canonical.launchpad.webapp.interfaces.INotificationResponse"""
         self.addNotification(msg, BrowserNotificationLevel.ERROR, **kw)
 
-
-def querystring_inject(querystring, key, value):
-    """Inject extra items into a query string, returning it.
-    
-    >>> querystring_inject('', 'key', 'value')
-    'key=value'
-    >>> querystring_inject('foo=bar', 'key', 'value')
-    'foo=bar&key=value'
-
-    This method overwrites existing items with the same key
-
-    >>> querystring_inject('key=oldvalue&foo=bar&foo=bar', 'key', 'newvalue')
-    'foo=bar&foo=bar&key=newvalue'
-
-    If value is None, that key is removed form the query string if it is
-    there.
-
-    >>> querystring_inject('', 'key', None)
-    ''
-    >>> querystring_inject('key=value', 'key', None)
-    ''
-    >>> querystring_inject('key=value&key=value', 'key', None)
-    ''
-    >>> querystring_inject('foo=bar&key=value', 'key', None)
-    'foo=bar'
-    """
-    query = cgi.parse_qsl(querystring, True)
-    query = [item for item in query if item[0] != key]
-    if value is not None:
-        query.append((key, value))
-    return urllib.urlencode(query)
-    
 
 class NotificationList(list):
     """
