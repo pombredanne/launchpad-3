@@ -146,9 +146,7 @@ class MaloneHandler:
                 commands.insert(0, emailcommands.get('bug', ['new']))
                 if signed_msg.signature is None:
                     raise IncomingEmailError(
-                        'In order to submit bugs via email you have to sign '
-                        'the message with a GPG key that is registered in '
-                        'Launchpad.')
+                        get_error_message('not-gpg-signed.txt'))
             elif user.isdigit():
                 # A comment to a bug. We set add_comment_to_bug to True so
                 # that the comment gets added to the bug later. We don't add

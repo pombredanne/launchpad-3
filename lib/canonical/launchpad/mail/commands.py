@@ -95,10 +95,14 @@ class EmailCommand:
         Raise an EmailProcessingError 
         """
         if self._numberOfArguments is not None:
-            if self._numberOfArguments != len(self.string_args):
+            num_arguments_got = len(self.string_args)
+            if self._numberOfArguments != num_arguments_got:
                 raise EmailProcessingError(
-                    "'%s' expects exactly %s argument(s)." % (
-                        self.name, self._numberOfArguments))
+                    get_error_message(
+                        'num-arguments-mismatch.txt',
+                        command_name=self.name,
+                        num_arguments_expected=self._numberOfArguments,
+                        num_arguments_got=num_arguments_got))
 
     def convertArguments(self):
         """Converts the string argument to Python objects.
@@ -153,13 +157,10 @@ class BugEmailCommand(EmailCommand):
                 bug = getUtility(IBugSet).get(bugid)
             except ValueError:
                 raise EmailProcessingError(
-                    "'bug' expects either 'new' or a bug id. For example:\n"
-                    "    bug new\n"
-                    "or:\n"
-                    "    bug 1")
+                    get_error_message('bug-argument-mismatch.txt'))
             except NotFoundError:
                 raise EmailProcessingError(
-                    "There is no such bug in Launchpad: %s" % bugid)
+                    get_error_message('no-such-bug.txt', bug_id=bugid))
             return bug, None
 
 
@@ -211,7 +212,8 @@ class PrivateEmailCommand(EditEmailCommand):
         elif private_arg == 'no':
             return {'private': False}
         else:
-            raise EmailProcessingError("'private' expects either 'yes' or 'no'")
+            raise EmailProcessingError(
+                get_error_message('private-parameter-mismatch.txt'))
 
 
 class SubscribeEmailCommand(EmailCommand):
@@ -235,16 +237,16 @@ class SubscribeEmailCommand(EmailCommand):
                     person_name_or_email)
             except LookupError:
                 raise EmailProcessingError(
-                    "Couldn't find a person with the specified name or email:"
-                    " %s" % person_name_or_email)
+                    get_error_message(
+                        'no-such-person.txt',
+                        name_or_email=person_name_or_email))
             person = person_term.value
         elif len(string_args) == 0:
             # Subscribe the sender of the email.
             person = getUtility(ILaunchBag).user
         else:
             raise EmailProcessingError(
-                "'subscribe' commands expects at most two arguments."
-                " Got %s: %s" % (len(string_args), ' '.join(string_args)))
+                get_error_message('subscribe-too-many-arguments.txt'))
 
         if bug.isSubscribed(person):
             # but we still need to find the subscription
@@ -275,16 +277,16 @@ class UnsubscribeEmailCommand(EmailCommand):
                     person_name_or_email)
             except LookupError:
                 raise EmailProcessingError(
-                    "Couldn't find a person with the specified name or email:"
-                    " %s" % person_name_or_email)
+                    get_error_message(
+                        'no-such-person.txt',
+                        name_or_email=person_name_or_email))
             person = person_term.value
         elif len(string_args) == 0:
             # Subscribe the sender of the email.
             person = getUtility(ILaunchBag).user
         else:
             raise EmailProcessingError(
-                "'subscribe' commands expects at most one arguments."
-                " Got %s: %s" % (len(string_args), ' '.join(string_args)))
+                get_error_message('unsubscribe-too-many-arguments.txt'))
 
         if bug.isSubscribed(person):
             bug.unsubscribe(person)
@@ -304,8 +306,7 @@ class SummaryEmailCommand(EditEmailCommand):
         # provide a better error message than the default one.
         if len(self.string_args) > 1:
             raise EmailProcessingError(
-                'Please enclose the new summary within quotes. For example:\n '
-                '    summary "This is a new summary"')
+                get_error_message('summary-too-many-arguments.txt'))
 
         return EditEmailCommand.execute(self, bug, current_event)
 
@@ -327,13 +328,14 @@ class AffectsEmailCommand(EditEmailCommand):
             path = string_args.pop(0)
         except IndexError:
             raise EmailProcessingError(
-                "'affects' command requires at least one argument.")
+                get_error_message('affects-no-arguments.txt'))
         try:
             path_target = get_object(path, path_only=True)
         except PathStepNotFoundError, error:
             raise EmailProcessingError(
-                "'%s' couldn't be found in command 'affects %s'" % (
-                    error.step, path))
+                get_error_message(
+                    'affects-path-not-found.txt',
+                    pathstep_not_found=error.step, path=path))
         if ISourcePackage.providedBy(path_target):
             bug_target = path_target.distribution
         else:
@@ -394,7 +396,9 @@ class AffectsEmailCommand(EditEmailCommand):
                 command = emailcommands.get(subcmd_name, [subcmd_arg])
             except NoSuchCommand:
                 raise EmailProcessingError(
-                    "'affects' got an unexpected argument: %s" % subcmd_name)
+                    get_error_message(
+                        'affects-unexpected-argument.txt',
+                        argument=subcmd_name))
             args.update(command.convertArguments())
         return args
 
@@ -437,8 +441,8 @@ class AssigneeEmailCommand(EditEmailCommand):
                 person_name_or_email)
         except LookupError:
             raise EmailProcessingError(
-                "Couldn't find a person with the specified name or email:"
-                " %s" % person_name_or_email)
+                get_error_message(
+                    'no-such-person.txt', name_or_email=person_name_or_email))
 
         return {self.name: person_term.value}
 

@@ -1,0 +1,2 @@
+In order to submit bugs via email you have to sign the message with a
+GPG key that is registered in Launchpad.

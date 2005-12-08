@@ -289,10 +289,14 @@ And if we specify neither 'new' or an integer:
     Failing command:
         bug foo
     ...
-    'bug' expects either 'new' or a bug id. For example:
+    The 'bug' command expects either 'new' or a bug id.
+    <BLANKLINE>
+    For example, to create a new bug:
     <BLANKLINE>
         bug new
-    or:
+    <BLANKLINE>
+    To edit or comment on an existing bug:
+    <BLANKLINE>
         bug 1
     ...
 
@@ -352,7 +356,11 @@ Specifying something else than 'yes' or 'no' produces an error:
     Failing command:
         private whatever
     ...
-    'private' expects either 'yes' or 'no'
+    The 'private' command expects either 'yes' or 'no'.
+    <BLANKLINE>
+    For example:
+    <BLANKLINE>
+        private yes
     ...
 
 subscribe [$name|$email]
@@ -392,7 +400,7 @@ If we specify a non-existant user, an error message will be sent:
     Failing command:
         subscribe non_existant@canonical.com
     ...
-    Couldn't find a person with the specified name or email:
+    There's no such person with the specified name or email:
     non_existant@canonical.com
     ...
 
@@ -426,7 +434,7 @@ If we specify a non-existant user, an error message will be sent:
     Failing command:
         unsubscribe non_existant
     ...
-    Couldn't find a person with the specified name or email: non_existant
+    There's no such person with the specified name or email: non_existant
     ...
 
 
@@ -584,7 +592,7 @@ Invalid assignee:
     Failing command:
         assignee foo
     ...
-    Couldn't find a person with the specified name or email: foo
+    There's no such person with the specified name or email: foo
     ...
 
 
@@ -798,7 +806,8 @@ Submit a bug on a distribution that doesn't exist:
     Failing command:
         affects /distros/foo
     ...
-    'foo' couldn't be found in command 'affects /distros/foo'
+    The path you specified isn't valid. 'foo' in the path '/distros/foo'
+    couldn't be found.
     ...
 
 
