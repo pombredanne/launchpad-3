@@ -1,0 +1,31 @@
+Setting the bug contact for an upstream requires launchpad.Edit
+permission on the product. Let's use mark@hbd.com to demonstrate.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+editbugcontact HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+  >>> print http(r"""
+  ... POST /products/firefox/+editbugcontact HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... Content-Length: 239
+  ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
+  ... Referer: http://192.168.1.3:9000/products/firefox/+editbugcontact
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.bugcontact"
+  ... 
+  ... robertc@robertcollins.net
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... ------------0xKhTmLbOuNdArY--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: .../products/firefox?lpnotification=...
+  ...

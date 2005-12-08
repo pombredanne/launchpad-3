@@ -132,7 +132,6 @@ class DistributionSourcePackageBugContactsView:
         pkg = self.context
         user = getUtility(ILaunchBag).user
 
-        came_from_url = form.get("came_from_url", canonical_url(pkg) + "/+bugs")
         save_clicked = form.get("save")
 
         if save_clicked:
@@ -213,4 +212,4 @@ class DistributionSourcePackageBugContactsView:
             # processing is required.
             return None
 
-        self.request.response.redirect(came_from_url)
+        self.request.response.redirect(canonical_url(pkg) + "/+bugs")

@@ -1,0 +1,36 @@
+Anyone with launchpad.Edit permission can edit the distribution bug
+contact. In this example, we'll use mark@hbd.com to set the distribution
+bug contact.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+editbugcontact HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+The Edit Bug Contact page takes just one simple value: the bug contact
+email or nickname. Let's set carlos@canonical.com as the bug contact for
+Ubuntu.
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+editbugcontact HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... Content-Length: 234
+  ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
+  ... Referer: http://192.168.1.3:9000/distros/ubuntu/+editbugcontact
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.bugcontact"
+  ... 
+  ... carlos@canonical.com
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... ------------0xKhTmLbOuNdArY--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: .../distros/ubuntu?lpnotification=...
+  ...

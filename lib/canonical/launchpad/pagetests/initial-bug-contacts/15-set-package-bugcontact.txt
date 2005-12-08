@@ -1,0 +1,27 @@
+Any logged in user can change their bugmail settings and the bugmail
+settings of teams to which they belong.
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+source/mozilla-firefox/+subscribe HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... Content-Length: 207
+  ... Content-Type: application/x-www-form-urlencoded
+  ... Referer: http://192.168.1.3:9000/distros/ubuntu/+source/mozilla-firefox/+subscribe
+  ... 
+  ... make_me_a_bugcontact=on&bugmail_contact_team.subscribe=admins&bugmail_contact_team.visible=admins&bugmail_contact_team.visible=name17&bugmail_contact_team.visible=testing-spanish-team&save=Save+these+changes""")
+  HTTP/1.1 303 See Other
+  ...
+  Location: .../distros/ubuntu/+source/mozilla-firefox/+bugs?lpnotification=...
+  ...
+
+The bug contacts are now sabdfl and the Launchpad admin team.
+
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from canonical.launchpad.ftests import login, ANONYMOUS
+  >>> login(ANONYMOUS)
+  >>> ubuntu = getUtility(IDistributionSet).get(1)
+  >>> ubuntu_mozilla_firefox = ubuntu.getSourcePackage("mozilla-firefox")
+  >>> sorted([pkg_bug_contact.bugcontact.id for pkg_bug_contact in
+  ...         ubuntu_mozilla_firefox.bugcontacts])
+  [1, 25]

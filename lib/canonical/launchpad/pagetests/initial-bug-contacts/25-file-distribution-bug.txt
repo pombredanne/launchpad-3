@@ -1,0 +1,95 @@
+Filing a public bug on a distribution source package subscribes the bug
+reporter, the distribution contact (if there is one) and all the package
+bug contacts (if there are any.)
+
+Let's demonstrate
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+source/mozilla-firefox/+filebug HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... Content-Length: 416
+  ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
+  ... Referer: http://192.168.1.3:9000/distros/ubuntu/+source/mozilla-firefox/+filebug
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... a public bug
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.comment"
+  ... 
+  ... anyone can see this
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.private.used"
+  ... 
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... ------------0xKhTmLbOuNdArY--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: .../distros/ubuntu/+source/mozilla-firefox/+bug/11?lpnotification=...
+  ...
+
+We should have three subscribers now. The bug reporter (also a package
+contact), sabdfl, the distro contact, carlos, and the other package
+contact, the Launchpad Admins team.
+
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.interfaces import IBugSet
+  >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+
+  >>> login(ANONYMOUS)
+
+  >>> bugset = getUtility(IBugSet)
+  >>> sorted([s.person.name for s in bugset.get(11).subscriptions])
+  [u'admins', u'carlos', u'sabdfl']
+
+  >>> logout()
+
+Filing a private bug, only the bug reporter is explicitly Cc'd.
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+source/mozilla-firefox/+filebug HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
+  ... Referer: http://192.168.1.3:9000/distros/ubuntu/+source/mozilla-firefox/+filebug
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... a PRIVATE bug
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.comment"
+  ... 
+  ... top sekrit
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.private.used"
+  ... 
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.private"
+  ... 
+  ... on
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... ------------0xKhTmLbOuNdArY--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: .../distros/ubuntu/+source/mozilla-firefox/+bug/12?lpnotification=...
+  ...
+
+Let's login as sabdfl to verify that sabdfl is in fact the only
+subscriber (because noone else but sabdfl will be able to access this
+bug information but sabdfl or an admin.)
+
+  >>> login("mark@hbd.com")
+
+  >>> [s.person.name for s in bugset.get(12).subscriptions]
+  [u'sabdfl']

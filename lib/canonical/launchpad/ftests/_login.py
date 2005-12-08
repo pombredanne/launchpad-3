@@ -3,7 +3,7 @@
 __metaclass__ = type
 
 from zope.component import getUtility
-from zope.security.management import endInteraction
+from zope.security.management import queryInteraction, endInteraction
 from canonical.launchpad.helpers import setupInteraction
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 
@@ -23,6 +23,10 @@ def login(email, participation=None):
     The participation passed in must allow setting of its principal.
     """
     authutil = getUtility(IPlacelessAuthUtility)
+
+    # Bootstrap the interaction.
+    if not queryInteraction():
+        setupInteraction(authutil.unauthenticatedPrincipal())
 
     if email == ANONYMOUS:
         principal = authutil.unauthenticatedPrincipal()

@@ -23,8 +23,6 @@
   <form name="addbugcontact" action="" method="POST"
         tal:define="current_user_is_bugcontact view/currentUserIsBugContact;
                     team_memberships request/lp:person/myactivememberships">
-    <input type="hidden" name="came_from_url"
-           tal:attributes="value request/HTTP_REFERER|nothing" />
     <p>
       A <a href="https://wiki.launchpad.canonical.com/InitialBugContacts">bug
       contact</a> automatically receives email notifications (aka, "bugmail") of all

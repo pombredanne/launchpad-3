@@ -1,0 +1,91 @@
+Filing a PUBLIC bug on an upstream will subscribe the bug contact, as well.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+filebug HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... Content-Length: 412
+  ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
+  ... Referer: http://192.168.1.3:9000/products/firefox/+filebug
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... bugcontact test
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.comment"
+  ... 
+  ... a public bug
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.private.used"
+  ... 
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... ------------0xKhTmLbOuNdArY--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: .../products/firefox/+bug/9?lpnotification=...
+  ...
+
+Now sabdfl, because he's the bug reporter, and lifeless, because he's the
+product bug contact are subscribed to this bug:
+
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.interfaces import IBugSet
+  >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
+
+  >>> login(ANONYMOUS)
+  >>> bugset = getUtility(IBugSet)
+  >>> sorted([s.person.name for s in bugset.get(9).subscriptions])
+  [u'lifeless', u'sabdfl']
+  >>> logout()
+
+For a PRIVATE bug, only the reporter will be subscribed. There will be
+mechanisms in the future to subscribe other people to non-disclosed
+bugs. See https://wiki.launchpad.canonical.com/SecurityTeams.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+filebug HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ... Content-Length: 502
+  ... Content-Type: multipart/form-data; boundary=----------0xKhTmLbOuNdArY
+  ... Referer: http://192.168.1.3:9000/products/firefox/+filebug
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... bugcontact test
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.comment"
+  ... 
+  ... a PRIVATE bug
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.private.used"
+  ... 
+  ... 
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="field.private"
+  ... 
+  ... on
+  ... ------------0xKhTmLbOuNdArY
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... ------------0xKhTmLbOuNdArY--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: .../products/firefox/+bug/10?lpnotification=...
+  ...
+
+  >>> logout()
+
+  >>> login("mark@hbd.com")
+
+  >>> [s.person.name for s in bugset.get(10).subscriptions]
+  [u'sabdfl']
+
+  >>> logout()
