@@ -79,12 +79,12 @@ def main(argv):
     db = make_connection(options)
     bz = bugzilla.Bugzilla(db)
 
-    bz.importBugs(ztm,
-                  product=['Ubuntu'],
-                  component=options.component,
-                  status=options.status)
+    bz.import_bugs(ztm,
+                   product=['Ubuntu'],
+                   component=options.component,
+                   status=options.status)
 
-    bz.processDuplicates(ztm)
+    bz.process_duplicates(ztm)
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))

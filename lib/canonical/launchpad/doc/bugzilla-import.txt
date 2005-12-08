@@ -92,17 +92,17 @@ it to return:
   ...     ]
 
   >>> class FakeBackend:
-  ...     def lookupUser(self, user_id):
+  ...     def lookup_user(self, user_id):
   ...         return users[user_id - 1]
-  ...     def getBugInfo(self, bug_id):
+  ...     def get_bug_info(self, bug_id):
   ...         return buginfo[bug_id - 1]
-  ...     def getBugCcs(self, bug_id):
+  ...     def get_bug_ccs(self, bug_id):
   ...         return ccs[bug_id - 1]
-  ...     def getBugComments(self, bug_id):
+  ...     def get_bug_comments(self, bug_id):
   ...         return comments[bug_id - 1]
-  ...     def getBugAttachments(self, bug_id):
+  ...     def get_bug_attachments(self, bug_id):
   ...         return attachments[bug_id - 1]
-  ...     def getDuplicates(self):
+  ...     def get_duplicates(self):
   ...         return duplicates
 
   >>> from zope.component import getUtility
@@ -181,7 +181,7 @@ function will be used:
 
 Now we import bug #1 and check the results:
 
-  >>> bug = bz.handleBug(1)
+  >>> bug = bz.handle_bug(1)
   >>> bugInfo(bug)
   Title: Test bug 1
   Reporter: Sample Person
@@ -220,7 +220,7 @@ Launchpad bug to the original Bugzilla bug:
 This bug watch link is used to prevent multiple imports of the same
 bug.
 
-  >>> second_import = bz.handleBug(1)
+  >>> second_import = bz.handle_bug(1)
   >>> bug == second_import
   True
 
@@ -238,7 +238,7 @@ to notice:
 
   >>> print getUtility(IPersonSet).getByEmail('new.user@canonical.com')
   None
-  >>> bug = bz.handleBug(2)
+  >>> bug = bz.handle_bug(2)
   WARNING:canonical.launchpad.scripts.bugzilla:could not find package name for "unknown"
   Traceback (most recent call last):
     ...
@@ -278,7 +278,7 @@ Now import an ASSIGNED bug.  Things to note about this import:
    and CVE to be established.
  * The attachment on this bug is imported
 
-  >>> bug = bz.handleBug(3)
+  >>> bug = bz.handle_bug(3)
   >>> bugInfo(bug)
   Title: Test bug 3
   Reporter: Sample Person
@@ -320,7 +320,7 @@ Now import an ASSIGNED bug.  Things to note about this import:
 
 Next we import a fixed bug:
 
-  >>> bug = bz.handleBug(4)
+  >>> bug = bz.handle_bug(4)
   >>> bugInfo(bug)
   Title: Test bug 4
   Reporter: Sample Person
@@ -351,7 +351,7 @@ upstream bug tracker URL is included in the URL field of the bug.
 The Malone equivalent of this is to create a second task on the bug,
 and attach a watch to the upstream bug tracker:
 
-  >>> bug = bz.handleBug(5)
+  >>> bug = bz.handle_bug(5)
   >>> bugInfo(bug)
   Title: Test bug 5
   Reporter: Sample Person
@@ -399,7 +399,7 @@ Bugzilla severities are mapped to the equivalent Launchpad values:
   >>> for severity in ['blocker', 'critical', 'major', 'normal',
   ...                  'minor', 'trivial', 'enhancement']:
   ...     bug.bug_severity = severity
-  ...     bug.mapSeverity(bugtask)
+  ...     bug.map_severity(bugtask)
   ...     print '%-11s  %s' % (severity, bugtask.severity.name)
   blocker      CRITICAL
   critical     CRITICAL
@@ -415,7 +415,7 @@ Priority Mapping
 
   >>> for priority in ['P1', 'P2', 'P3', 'P4', 'P5']:
   ...     bug.priority = priority
-  ...     bug.mapPriority(bugtask)
+  ...     bug.map_priority(bugtask)
   ...     print '%-2s  %s' % (priority, bugtask.priority.name)
   P1  HIGH
   P2  MEDIUM
@@ -432,7 +432,7 @@ Status Mapping
   ...                'RESOLVED', 'VERIFIED', 'CLOSED']:
   ...     bug.bug_status = status
   ...     bugtask.statusexplanation = ''
-  ...     bug.mapStatus(bugtask)
+  ...     bug.map_status(bugtask)
   ...     print '%-13s  %s' % (status, bugtask.status.name)
   UNCONFIRMED    NEW
   NEW            NEW
@@ -458,8 +458,8 @@ If the bug has been resolved, the resolution will affect the status:
   ...                    'DUPLICATE', 'WORKSFORME', 'MOVED']:
   ...     bug.resolution = resolution
   ...     bugtask.statusexplanation = ''
-  ...     bug.mapPriority(bugtask)
-  ...     bug.mapStatus(bugtask)
+  ...     bug.map_priority(bugtask)
+  ...     bug.map_status(bugtask)
   ...     print '%-10s  %-8s  %s' % (resolution, bugtask.status.name,
   ...                                bugtask.priority.name)
   FIXED       FIXED     MEDIUM
@@ -478,9 +478,9 @@ If the bug has been resolved, the resolution will affect the status:
 Bug Target Mapping
 ------------------
 
-The Bugzilla.getLaunchpadTarget() method is used to map bugzilla bugs
-to Launchpad bug targets.  This is not general purpose logic: it only
-applies to the Ubuntu bugzilla.
+The Bugzilla.get_launchpad_bug_target() method is used to map bugzilla
+bugs to Launchpad bug targets.  This is not general purpose logic: it
+only applies to the Ubuntu bugzilla.
 
 The current mapping only handles bugs filed under the "Ubuntu"
 product.  If the component the bug is filed under is a known package
@@ -490,7 +490,7 @@ then the bug is filed directly against the distribution.
   >>> def showMapping(product, component):
   ...     bug.product = product
   ...     bug.component = component
-  ...     target = bz.getLaunchpadBugTarget(bug)
+  ...     target = bz.get_launchpad_bug_target(bug)
   ...     distribution = target.get('distribution')
   ...     if distribution:
   ...         print 'Distribution:', distribution.name
@@ -538,7 +538,7 @@ corresponding Launchpad bugs as duplicates too:
   ...         pass
   ...     abort = commit = begin
   ...
-  >>> bz.processDuplicates(FakeTransactionManager())
+  >>> bz.process_duplicates(FakeTransactionManager())
 
 Now check that the bugs have been marked duplicate:
 
