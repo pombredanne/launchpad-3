@@ -13,10 +13,9 @@
 
   <h1>Specification Workload</h1>
 
-  <p class="portalMessage" tal:condition="not: view/workload">
-    There are no specifications assigned to people for 
-    <span tal:replace="context/displayname">Ubuntu</span>
-    at the moment.
+  <p tal:condition="not: view/workload">
+    No specifications are currently assigned to people for 
+    <span tal:replace="context/displayname">Ubuntu</span>.
   </p>
 
   <tal:workload condition="view/workload">
