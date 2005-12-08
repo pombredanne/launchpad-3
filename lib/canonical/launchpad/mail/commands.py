@@ -81,13 +81,11 @@ class EmailCommand:
 
     Both name the values in the args list are strings.
     """
-    _subCommandNames = []
     _numberOfArguments = None
 
     def __init__(self, name, string_args):
         self.name = name
         self.string_args = normalize_arguments(string_args)
-        self._subCommandsToBeExecuted = []
 
     def _ensureNumberOfArguments(self):
         """Check that the number of arguments is correct.
@@ -112,13 +110,6 @@ class EmailCommand:
         """
         raise NotImplementedError
 
-    def isSubCommand(self, command):
-        """See IEmailCommand."""
-        return command.name in self._subCommandNames
-
-    def addSubCommandToBeExecuted(self, sub_command):
-        """See IEmailCommand."""
-        self.string_args += [sub_command.name] + sub_command.string_args
 
     def __str__(self):
         """See IEmailCommand."""
@@ -315,7 +306,7 @@ class SummaryEmailCommand(EditEmailCommand):
         return {'title': self.string_args[0]}
 
 
-class AffectsEmailCommand(EditEmailCommand):
+class AffectsEmailCommand(EmailCommand):
     """Either creates a new task, or edits an existing task."""
 
     implements(IBugTaskEmailCommand)
@@ -357,7 +348,27 @@ class AffectsEmailCommand(EditEmailCommand):
             event = SQLObjectModifiedEvent(
                 bugtask, bugtask_before_edit, ['sourcepackagename'])
 
-        return EditEmailCommand.execute(self, bugtask, event)
+        # Process the sub commands.
+        while len(string_args) > 0:
+            # Get the sub command name.
+            subcmd_name = string_args.pop(0)
+            # Get the sub command's argument
+            try:
+                subcmd_args = [string_args.pop(0)]
+            except IndexError:
+                # Let the sub command handle the error.
+                subcmd_args = []
+
+            if subcmd_name not in self._subCommandNames:
+                raise EmailProcessingError(
+                    get_error_message(
+                        'affects-unexpected-argument.txt',
+                        argument=subcmd_name))
+
+            command = emailcommands.get(subcmd_name, subcmd_args)
+            bugtask, event = command.execute(bugtask, event)
+
+        return bugtask, event
 
     def _create_bug_task(self, bug, bug_target):
         """Creates a new bug task with bug_target as the target."""
@@ -378,29 +389,6 @@ class AffectsEmailCommand(EditEmailCommand):
         else:
             assert False, "Not a valid bug target: %r" % bug_target
 
-    def convertArguments(self):
-        """See EmailCommand."""
-        args = {}
-        string_args = list(self.string_args[1:])
-        while len(string_args) > 0:
-            # Get the sub command name.
-            subcmd_name = string_args.pop(0)
-            # Get the sub command's argument
-            try:
-                subcmd_arg = string_args.pop(0)
-            except IndexError:
-                raise EmailProcessingError(
-                    "'affects' sub command '%s' requires at least"
-                    " one argument." % subcmd_name)
-            try:
-                command = emailcommands.get(subcmd_name, [subcmd_arg])
-            except NoSuchCommand:
-                raise EmailProcessingError(
-                    get_error_message(
-                        'affects-unexpected-argument.txt',
-                        argument=subcmd_name))
-            args.update(command.convertArguments())
-        return args
 
     #XXX: This method should be moved to helpers.py or BugTaskSet.
     #     -- Bjorn Tillenius, 2005-06-10

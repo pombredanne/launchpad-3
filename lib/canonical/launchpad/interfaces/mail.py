@@ -70,16 +70,9 @@ class IEmailCommand(Interface):
 
     in order to make the bug private.
     """
-    subCommands = Attribute("A list of subcommand names.")
 
     def execute(context):
         """Execute the command in a context."""
-
-    def isSubCommand(command):
-        """Return whether the command is a sub command or not."""
-
-    def addSubCommandToBeExecuted(subcommand):
-        """Adds a sub command to be executed when this command is."""
 
     def __str__():
         """Return a textual representation of the command and its arguments."""
