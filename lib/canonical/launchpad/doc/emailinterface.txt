@@ -573,6 +573,20 @@ Invalid priority:
         priority wontfix
     ...
 
+Invalid assignee:
+
+    >>> submit_commands(bug_four, 'assignee foo')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        assignee foo
+    ...
+    Couldn't find a person with the specified name or email: foo
+    ...
+
 
     >>> stub.test_emails = []
 

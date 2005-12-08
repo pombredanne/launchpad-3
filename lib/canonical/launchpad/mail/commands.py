@@ -415,15 +415,15 @@ class AssigneeEmailCommand(EditEmailCommand):
 
     def convertArguments(self):
         """See EmailCommand."""
-        string_args = list(self.string_args)
-        person_name = string_args.pop()
+        person_name_or_email = self.string_args[0]
         valid_person_vocabulary = ValidPersonOrTeamVocabulary()
         try:
-            person_term = valid_person_vocabulary.getTermByToken(person_name)
+            person_term = valid_person_vocabulary.getTermByToken(
+                person_name_or_email)
         except LookupError:
             raise EmailProcessingError(
-                    "Couldn't find a person named '%s' in 'assignee %s'" % (
-                        person_name, person_name))
+                "Couldn't find a person with the specified name or email:"
+                " %s" % person_name_or_email)
 
         return {self.name: person_term.value}
 
