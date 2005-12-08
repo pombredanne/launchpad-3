@@ -68,7 +68,7 @@ class BugzillaBackend:
                             '  FROM profiles '
                             '  WHERE userid = %d' % user_id)
         if self.cursor.rowcount != 1:
-            raise ValueError('could not look up user %d' % user_id)
+            raise NotFoundError('could not look up user %d' % user_id)
         (login_name, realname) = self.cursor.fetchone()
         realname = self._decode(realname)
         return (login_name, realname)
@@ -86,7 +86,7 @@ class BugzillaBackend:
             '    INNER JOIN components ON bugs.component_id = components.id '
             '  WHERE bug_id = %d' % bug_id)
         if self.cursor.rowcount != 1:
-            raise ValueError('could not look up bug %d' % bug_id)
+            raise NotFoundError('could not look up bug %d' % bug_id)
         (bug_id, assigned_to, bug_file_loc, bug_severity, bug_status,
          creation_ts, short_desc, op_sys, priority, product,
          rep_platform, reporter, version, component, resolution,
@@ -343,8 +343,10 @@ class Bugzilla:
         """
         # we currently only support mapping Ubuntu bugs ...
         if bug.product != 'Ubuntu':
-            raise ValueError('product must be Ubuntu')
+            raise AssertionError('product must be Ubuntu')
         
+        # XXX: 20051208 jamesh
+        # ValueError is caught here because of https://launchpad.net/bugs/4810
         try:
             srcpkg, binpkg = self.ubuntu.getPackageNames(
                 bug.component.encode('ASCII'))
@@ -365,8 +367,10 @@ class Bugzilla:
         If the milestone does not exist, then it is created.
         """
         if bug.product != 'Ubuntu':
-            raise ValueError('product must be Ubuntu')
+            raise AssertionError('product must be Ubuntu')
 
+        # Bugzilla uses a value of "---" to represent "no selected Milestone"
+        # Launchpad represents this by setting the milestone column to NULL.
         if bug.target_milestone is None or bug.target_milestone == '---':
             return None
 
@@ -388,8 +392,10 @@ class Bugzilla:
         """
         # we currently only support mapping Ubuntu bugs ...
         if bug.product != 'Ubuntu':
-            raise ValueError('product must be Ubuntu')
-        
+            raise AssertionError('product must be Ubuntu')
+
+        # XXX: 20051208 jamesh
+        # ValueError is caught here because of https://launchpad.net/bugs/4810
         try:
             srcpkgname, binpkgname = self.ubuntu.getPackageNames(
                 bug.component.encode('ASCII'))
