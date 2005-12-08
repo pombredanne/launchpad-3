@@ -17,7 +17,11 @@ def main(ztm, outfile):
         else:
             product_name = branch.product.name
         branch_name = branch.name
-        outfile.write('~%s/%s/%s\t%d\n' % 
-            (person_name, product_name, branch_name, branch.id))
+
+        h = "%08x" % int(branch.id)
+        branch_location = '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])
+
+        outfile.write('~%s/%s/%s\t%s\n' % 
+            (person_name, product_name, branch_name, branch_location))
     ztm.abort()
 

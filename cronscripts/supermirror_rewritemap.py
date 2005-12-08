@@ -3,6 +3,20 @@
 
 """Generate a file mapping ~user/product/branch to on-disk paths, suitable for
 use with Apache's RewriteMap directive.
+
+Apache config notes:
+
+  - magic incantation::
+      
+      RewriteMap branch-list txt:/path/to/map-file.txt
+      ...
+      RewriteEngine On
+      # Assume branch dirs are kept in a directory 'branches' under the
+      # DocumentRoot
+      RewriteRule ^(~[^/]+/[^/]+/[^/]+)/ branches/${branch-list:$1}/
+
+  - UserDir directive must not be in effect if you want to be able to rewrite
+    top-level ~user paths.
 """
 
 __metaclass__ = type
