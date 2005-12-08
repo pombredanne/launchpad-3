@@ -56,10 +56,11 @@
 
   <p class="lesser" tal:condition="context/whiteboard">
     <b>Whiteboard:</b>
-    <i tal:content="context/whiteboard">
-      white board text goes here
-    </i>
   </p>
+  <div
+    class="lesser"
+    tal:content="structure context/whiteboard/fmt:text-to-html"
+  >Whiteboard text goes here</div>
 
   <p class="lesser">
     <b>Priority:</b>
