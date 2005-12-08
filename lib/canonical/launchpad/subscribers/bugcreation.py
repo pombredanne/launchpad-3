@@ -7,7 +7,7 @@ from canonical.launchpad.interfaces import CreatedBugWithNoBugTasksError
 def at_least_one_task(bug, event):
     """Make sure that the created bug has at least one task.
 
-    If not a ValueError is raised.
+    CreatedBugWithNoBugTasksError is raised it if the bug has no tasks.
     """
     if len(bug.bugtasks) == 0:
         raise CreatedBugWithNoBugTasksError(
