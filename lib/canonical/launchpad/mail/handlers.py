@@ -128,10 +128,7 @@ class MaloneHandler:
                 if words and words[0] in command_names:
                     command = emailcommands.get(
                         name=words[0], string_args=words[1:])
-                    if commands and commands[-1].isSubCommand(command): 
-                        commands[-1].addSubCommandToBeExecuted(command)
-                    else:
-                        commands.append(command)
+                    commands.append(command)
         return commands
 
 

@@ -564,7 +564,7 @@ Invalid severity:
 
 Invalid priority:
 
-    >>> submit_commands(bug_four, 'priority foo')
+    >>> submit_commands(bug_four, 'affects /products/firefox', 'priority foo')
     >>> print_latest_email()
     Subject: Submit Request Failure
     To: test@canonical.com
@@ -744,8 +744,8 @@ user, telling him that he has to use the 'affects' command.
     affects command.
     ...
 
-Error Handling
---------------
+More About Error Handling
+-------------------------
 
 If an error is encountered, an email is sent to the sender informing
 him about the error. Let's start with trying to submit a bug without
