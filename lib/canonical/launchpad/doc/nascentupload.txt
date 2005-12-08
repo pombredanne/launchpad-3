@@ -250,7 +250,7 @@ Finally we can ask the upload to process itself.
   >>> for msg in msgs:
   ...     print msg, "END"
   From: Root <root@localhost>
-  To: Root <root@localhost>, Daniel Silverstone <daniel.silverstone@canonical.com>
+  To: Root <root@localhost>
   Precedence: bulk
   Subject: ed_0.2-20_i386.changes is NEW
   <BLANKLINE>
