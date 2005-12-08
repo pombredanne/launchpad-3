@@ -156,11 +156,7 @@ class LoginOrRegister:
                 return
 
             logInPerson(self.request, principal, email)
-            # Redirect only when we're not at the root /+login.
-            # If we're on the root page, then show the page which will say
-            # "You're logged in".
-            if not self.request.URL[1].endswith('+login'):
-                self.redirectMinusLogin()
+            self.redirectMinusLogin()
         else:
             self.login_error = "The email address and password do not match."
 
