@@ -447,13 +447,18 @@ class DBSchemaEditEmailCommand(EditEmailCommand):
     def convertArguments(self):
         """See EmailCommand."""
         item_name = self.string_args[0]
+        dbschema = self.dbschema
         try:
-            return {self.name: self.dbschema.items[item_name.upper()]}
+            return {self.name: dbschema.items[item_name.upper()]}
         except KeyError:
-            possible_values = ', '.join(
-                [item.name.lower() for item in self.dbschema.items])
+            possible_items = [item.name.lower() for item in dbschema.items]
+            possible_values = ', '.join(possible_items)
             raise EmailProcessingError(
-                    "'%s' expects any of: %s" % (self.name, possible_values))
+                    get_email_template(
+                        'dbschema-command-wrong-argument.txt') % {
+                            'command_name': self.name,
+                            'arguments': possible_values,
+                            'example_argument': possible_items[0]})
 
 
 class StatusEmailCommand(DBSchemaEditEmailCommand):
