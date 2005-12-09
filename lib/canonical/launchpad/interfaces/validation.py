@@ -144,8 +144,9 @@ def valid_emblem(emblem):
 def valid_hackergotchi(hackergotchi):
     return _valid_image(hackergotchi, 54000, (150,150))
 
-# XXX: matsubara 2005-12-08 This validator shouldn't be used in an editform. 
-# Editing an already registered e-mail would fail if this constraint is set.
+# XXX: matsubara 2005-12-08 This validator shouldn't be used in an editform, 
+# because editing an already registered e-mail would fail if this constraint
+# is used.
 def valid_unregistered_email(email):
     """Check that the given email is valid and that isn't registered to
     another user."""
