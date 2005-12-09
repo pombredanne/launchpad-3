@@ -68,7 +68,7 @@ class BugzillaBackend:
         else:
             return None
 
-    def lookup_user(self, user_id):
+    def lookupUser(self, user_id):
         """Look up information about a particular Bugzilla user ID"""
         self.cursor.execute('SELECT login_name, realname '
                             '  FROM profiles '
@@ -79,7 +79,7 @@ class BugzillaBackend:
         realname = self._decode(realname)
         return (login_name, realname)
 
-    def get_bug_info(self, bug_id):
+    def getBugInfo(self, bug_id):
         """Retrieve information about a bug."""
         self.cursor.execute(
             'SELECT bug_id, assigned_to, bug_file_loc, bug_severity, '
@@ -114,13 +114,13 @@ class BugzillaBackend:
                 resolution, target_milestone, qa_contact,
                 status_whiteboard, keywords, alias)
 
-    def get_bug_ccs(self, bug_id):
+    def getBugCcs(self, bug_id):
         """Get the IDs of the people CC'd to the bug."""
         self.cursor.execute('SELECT who FROM cc WHERE bug_id = %d'
                             % bug_id)
         return [row[0] for row in self.cursor.fetchall()]
 
-    def get_bug_comments(self, bug_id):
+    def getBugComments(self, bug_id):
         """Get the comments for the bug."""
         self.cursor.execute('SELECT who, bug_when, thetext '
                             '  FROM longdescs '
@@ -135,7 +135,7 @@ class BugzillaBackend:
                  if thetext != '\n--=20\n   Jacobo Tarr=EDo     |     '
                                'http://jacobo.tarrio.org/\n\n\n']
 
-    def get_bug_attachments(self, bug_id):
+    def getBugAttachments(self, bug_id):
         """Get the attachments for the bug."""
         self.cursor.execute('SELECT attach_id, creation_ts, description, '
                             '    mimetype, ispatch, filename, thedata, '
@@ -150,7 +150,7 @@ class BugzillaBackend:
                      mimetype, ispatch, filename, thedata,
                      submitter_id) in self.cursor.fetchall()]
 
-    def find_bugs(self, product=[], component=[], status=[]):
+    def findBugs(self, product=[], component=[], status=[]):
         """Returns the requested bug IDs as a list"""
         joins = []
         conditions = []
@@ -173,7 +173,7 @@ class BugzillaBackend:
                             (' '.join(joins), conditions))
         return [bug_id for (bug_id,) in self.cursor.fetchall()]
 
-    def get_duplicates(self):
+    def getDuplicates(self):
         """Returns a list of (dupe_of, dupe) relations."""
         self.cursor.execute('SELECT dupe_of, dupe FROM duplicates '
                             'ORDER BY dupe, dupe_of')
@@ -188,7 +188,7 @@ class Bug:
          self.priority, self.product, self.rep_platform, self.reporter,
          self.version, self.component, self.resolution,
          self.target_milestone, self.qa_contact, self.status_whiteboard,
-         self.keywords, self.alias) = backend.get_bug_info(bug_id)
+         self.keywords, self.alias) = backend.getBugInfo(bug_id)
 
         self._ccs = None
         self._comments = None
@@ -198,24 +198,24 @@ class Bug:
     def ccs(self):
         """Return the IDs of people CC'd to this bug"""
         if self._ccs is not None: return self._ccs
-        self._ccs = self.backend.get_bug_ccs(self.bug_id)
+        self._ccs = self.backend.getBugCcs(self.bug_id)
         return self._ccs
 
     @property
     def comments(self):
         """Return the comments attached to this bug"""
         if self._comments is not None: return self._comments
-        self._comments = self.backend.get_bug_comments(self.bug_id)
+        self._comments = self.backend.getBugComments(self.bug_id)
         return self._comments
 
     @property
     def attachments(self):
         """Return the attachments for this bug"""
         if self._attachments is not None: return self._attachments
-        self._attachments = self.backend.get_bug_attachments(self.bug_id)
+        self._attachments = self.backend.getBugAttachments(self.bug_id)
         return self._attachments
 
-    def map_severity(self, bugtask):
+    def mapSeverity(self, bugtask):
         """Set a Launchpad bug task's severity based on this bug's severity."""
         bugtask.severity = {
             'blocker': BugTaskSeverity.CRITICAL,
@@ -227,7 +227,7 @@ class Bug:
             'enhancement': BugTaskSeverity.WISHLIST
             }.get(self.bug_severity, BugTaskSeverity.NORMAL)
 
-    def map_priority(self, bugtask):
+    def mapPriority(self, bugtask):
         """Set a Launchpad bug task's priority based on this bug's priority."""
         bugtask.priority = {
             'P1': BugTaskPriority.HIGH,
@@ -237,7 +237,7 @@ class Bug:
             'P5': BugTaskPriority.LOW
             }.get(self.priority, BugTaskPriority.MEDIUM)
 
-    def map_status(self, bugtask):
+    def mapStatus(self, bugtask):
         """Set a Launchpad bug task's status based on this bug's status.
 
         If the bug is in the RESOLVED, VERIFIED or CLOSED states, the
@@ -326,7 +326,7 @@ class Bugzilla:
 
         # look up the person
         if person is None:
-            email, displayname = self.backend.lookup_user(bugzilla_id)
+            email, displayname = self.backend.lookupUser(bugzilla_id)
 
             person = self.personset.ensurePerson(
                 email=email, displayname=displayname)
@@ -343,7 +343,7 @@ class Bugzilla:
 
         return person
 
-    def get_launchpad_bug_target(self, bug):
+    def getLaunchpadBugTarget(self, bug):
         """Returns a dictionary of arguments to createBug() that correspond
         to the given bugzilla bug.
         """
@@ -367,7 +367,7 @@ class Bugzilla:
             'binarypackagename': binpkg
             }
 
-    def get_launchpad_milestone(self, bug):
+    def getLaunchpadMilestone(self, bug):
         """Return the Launchpad milestone for a Bugzilla bug.
 
         If the milestone does not exist, then it is created.
@@ -390,7 +390,7 @@ class Bugzilla:
             milestone = self.milestoneset.new(name, distribution=self.ubuntu)
             return milestone
 
-    def get_launchpad_upstream_product(self, bug):
+    def getLaunchpadUpstreamProduct(self, bug):
         """Find the upstream product for the given Bugzilla bug.
 
         This function relies on the package -> product linkage having been
@@ -424,7 +424,7 @@ class Bugzilla:
             return None
         
     _bug_re = re.compile('bug\s*#?\s*(?P<id>\d+)', re.IGNORECASE)
-    def replace_bug_ref(self, match):
+    def replaceBugRef(self, match):
         # XXX: 20051024 jamesh
         # this is where bug number rewriting would be plugged in
         bug_id = int(match.group('id'))
@@ -433,7 +433,7 @@ class Bugzilla:
         return '%s [%s]' % (match.group(0), url)
 
 
-    def handle_bug(self, bug_id):
+    def handleBug(self, bug_id):
         """Maybe import a single bug.
 
         If the bug has already been imported (detected by checking for
@@ -457,14 +457,14 @@ class Bugzilla:
         # create a message for the initial comment:
         msgset = getUtility(IMessageSet)
         who, when, text = comments.pop(0)
-        text = self._bug_re.sub(self.replace_bug_ref, text)
+        text = self._bug_re.sub(self.replaceBugRef, text)
         # the initial comment can't be empty
         if not text.strip():
             text = '<empty comment>'
         msg = msgset.fromText(bug.short_desc, text, self.person(who), when)
 
         # create the bug
-        target = self.get_launchpad_bug_target(bug)
+        target = self.getLaunchpadBugTarget(bug)
         lp_bug = self.bugset.createBug(msg=msg,
                                        datecreated=bug.creation_ts,
                                        title=bug.short_desc,
@@ -477,7 +477,7 @@ class Bugzilla:
         # add remaining comments, and add CVEs found in all text
         lp_bug.findCvesInText(text)
         for (who, when, text) in comments:
-            text = self._bug_re.sub(self.replace_bug_ref, text)
+            text = self._bug_re.sub(self.replaceBugRef, text)
             msg = msgset.fromText(msg.followup_title, text,
                                   self.person(who), when)
             lp_bug.linkMessage(msg)
@@ -500,9 +500,9 @@ class Bugzilla:
         task.datecreated = bug.creation_ts
         task.assignee = self.person(bug.assigned_to)
         task.statusexplanation = bug.status_whiteboard
-        bug.map_severity(task)
-        bug.map_priority(task)
-        bug.map_status(task)
+        bug.mapSeverity(task)
+        bug.mapPriority(task)
+        bug.mapStatus(task)
 
         # bugs with an alias of the form "deb1234" have been imported
         # from the Debian bug tracker by the "debzilla" program.  For
@@ -527,7 +527,7 @@ class Bugzilla:
             watches = self.bugwatchset.fromText(bug.bug_file_loc,
                                                 lp_bug, lp_bug.owner)
             # find the upstream product for this bug
-            product = self.get_launchpad_upstream_product(bug)
+            product = self.getLaunchpadUpstreamProduct(bug)
 
             # if we created a watch, and there is an upstream product,
             # create a new task and link it to the watch.
@@ -542,7 +542,7 @@ class Bugzilla:
                                    'bug %d to', lp_bug.id)
 
         # translate milestone linkage
-        task.milestone = self.get_launchpad_milestone(bug)
+        task.milestone = self.getLaunchpadMilestone(bug)
 
         # import attachments
         for (attach_id, creation_ts, description, mimetype, ispatch,
@@ -583,7 +583,7 @@ class Bugzilla:
 
         return lp_bug
 
-    def process_duplicates(self, trans):
+    def processDuplicates(self, trans):
         """Mark Launchpad bugs as duplicates based on Bugzilla duplicates.
 
         Launchpad bug A will be marked as a duplicate of bug B if:
@@ -614,7 +614,7 @@ class Bugzilla:
                     bugmap[bugid] = 0
             return lpbug
 
-        for (dupe_of, dupe) in self.backend.get_duplicates():
+        for (dupe_of, dupe) in self.backend.getDuplicates():
             # get the Launchpad bugs corresponding to the two Bugzilla bugs:
             trans.begin()
             lpdupe_of = getlpbug(dupe_of)
@@ -628,20 +628,20 @@ class Bugzilla:
                 lpdupe.duplicateof = lpdupe_of
             trans.commit()
 
-    def import_bugs(self, trans, product=[], component=[], status=[]):
+    def importBugs(self, trans, product=[], component=[], status=[]):
         """Import Bugzilla bugs matching the given constraints.
 
         Each of product, component and status gives a list of
         products, components or statuses to limit the import to.  An
         empty list matches all products, components or statuses.
         """
-        bugs = self.backend.find_bugs(product=product,
-                                      component=component,
-                                      status=status)
+        bugs = self.backend.findBugs(product=product,
+                                     component=component,
+                                     status=status)
         for bug_id in bugs:
             trans.begin()
             try:
-                self.handle_bug(bug_id)
+                self.handleBug(bug_id)
             except (SystemExit, KeyboardInterrupt):
                 raise
             except:
