@@ -108,12 +108,6 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
         raise PermissionError(
             "removing user directory %r is not allowed." % self.name)
 
-    def childDirFactory(self):
-        # Subdirectories of this will be SFTPServerProductDirs
-        def factory(realPath, name, parent):
-            return SFTPServerProductDir(self.avatar, realPath, name, parent)
-        return factory
-
 
 class SFTPServerProductDir(adhoc.AdhocDirectory):
     """For /~username/product
