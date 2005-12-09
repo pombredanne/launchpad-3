@@ -288,8 +288,8 @@ This is done by running process-upload.py on each upload directory.
   >>> def process_upload(num):
   ...     upload_dir = get_upload_dir(num)
   ...     process = subprocess.Popen([sys.executable, script, "--no-mails",
-  ...                                 "-C", "autosync", "-d", "ubuntu",
-  ...                                 upload_dir],
+  ...                                "-q","-C", "autosync", "-d", "ubuntu",
+  ...                                upload_dir],
   ...                                stdin=subprocess.PIPE,
   ...                                stdout=subprocess.PIPE)
   ...     return process.wait()
@@ -374,24 +374,28 @@ as NEW and RELEASE.
   ...     assert drqs.distroreleasequeue.pocket.name == 'RELEASE'
 
 
-
-Processing Empty Items
+Processing NEW Items
 ----------------------
 
-Ok, packages were uploaded, processed, and are now on the distroreleasequeue
-waiting for someone. We'll accept them here "by hand", doing the work of
-someone (with some tool) who should look at them and accept the package
-if they're fine.
+The proccess new checks the integrity of uploads candidates (NEW) and
+promote them to ACCEPTED, the failures are kept as NEW
 
+  >>> from canonical.launchpad.interfaces import (
+  ...     IDistributionSet, QueueInconsistentStateError)
   >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
-
-  >>> for name in package_names:
-  ...     spn = SourcePackageName.selectOneBy(name=name)
-  ...     spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
-  ...     drqs = DistroReleaseQueueSource.selectOneBy(
-  ...         sourcepackagereleaseID=spr.id)
-  ...     drqs.distroreleasequeue.status = DistroReleaseQueueStatus.ACCEPTED
-
+	
+  >>> distro = getUtility(IDistributionSet).getByName('ubuntu')
+  >>> release = distro['breezy-autotest'] 
+  >>> queue_items = release.getQueueItems(DistroReleaseQueueStatus.NEW)
+  >>> for queue_item in queue_items:
+  ...      try:
+  ...          queue_item.set_accepted()
+  ...      except QueueInconsistentStateError, e:
+  ...          print queue_item.sourcepackagename.name, e
+  ...      else:
+  ...          print queue_item.sourcepackagename.name, 'ACCEPTED'
+  etherwake ACCEPTED
+  drdsl Component "non-free" is not allowed in breezy-autotest
 
 We must flush these changes so that it gets out of the cache and
 into the database. Without this process-accepted.py wouldn't see
@@ -404,7 +408,7 @@ the changes.
 Now we process them, one more time.
 
   >>> script = os.path.join(config.root, "scripts", "process-accepted.py")
-  >>> process = subprocess.Popen([sys.executable, script, "-vvv", "ubuntu"])
+  >>> process = subprocess.Popen([sys.executable, script, "ubuntu"])
   >>> process.wait()
   0
 
@@ -417,8 +421,12 @@ These packages must now be in the publishing history. Let's check it.
   ...     spn = SourcePackageName.selectOneBy(name=name)
   ...     spr = SourcePackageRelease.selectOneBy(sourcepackagenameID=spn.id)
   ...     sspph = SSPPH.selectOneBy(sourcepackagereleaseID=spr.id)
-  ...     assert sspph.status == PackagePublishingStatus.PENDING
-
+  ...     if sspph:
+  ...         print name, sspph.status.title
+  ...     else:
+  ...         print name, 'not Published'
+  drdsl not Published
+  etherwake Pending
 
 Nice! That's enough for now.. let's kill the process and clean
 everything up.

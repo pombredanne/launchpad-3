@@ -219,10 +219,12 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         DistroReleaseBinaryPackage objects that match the given text.
         """
 
-    def createQueueEntry(pocket, changesfile,
-                         status=DistroReleaseQueueStatus.ACCEPTED):
+    def createQueueEntry(pocket, changesfile):
         """Create a queue item attached to this distrorelease and the given
-        pocket. If status is not supplied, then default to an ACCEPTED item.
+        pocket. 
+
+        The default state is NEW, sorted sqlobject declaration, any
+        modification should be performed via Queue state-machine.
         The changesfile argument should be the text of the .changes for this
         upload. The contents of this may be used later.
         """
@@ -230,7 +232,7 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
     def newArch(architecturetag, processorfamily, official, owner):
         """Create a new port or DistroArchRelease for this DistroRelease."""
 
-    def getQueueItems(status=DistroReleaseQueueStatus):
+    def getQueueItems(status=DistroReleaseQueueStatus.ACCEPTED):
         """Get the queue items for this distrorelease that are in the given
         queue state. If status is not supplied, default to the ACCEPTED items
         in the queue.
