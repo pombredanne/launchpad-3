@@ -36,7 +36,7 @@ class AvatarTestBase(unittest.TestCase):
 class TestTopLevelDir(AvatarTestBase):
     def testListDirNoTeams(self):
         # list only user dir + team dirs
-        avatar = SFTPOnlyAvatar('alice', self.tmpdir, {},
+        avatar = SFTPOnlyAvatar('alice', self.tmpdir, None,
                                 self.aliceUserDict)
         root = SFTPServerRoot(avatar)
         self.assertEqual(
@@ -47,7 +47,7 @@ class TestTopLevelDir(AvatarTestBase):
         # list only user dir + team dirs
         
         # Add a team to Alice's user dict
-        avatar = SFTPOnlyAvatar('bob', self.tmpdir, {},
+        avatar = SFTPOnlyAvatar('bob', self.tmpdir, None,
                                 self.bobUserDict)
         root = SFTPServerRoot(avatar)
         self.assertEqual(
@@ -55,29 +55,34 @@ class TestTopLevelDir(AvatarTestBase):
             ['.', '..', '~bob', '~test-team'])
 
     def testAllWriteOpsForbidden(self):
-        avatar = SFTPOnlyAvatar('alice', self.tmpdir, {},
+        avatar = SFTPOnlyAvatar('alice', self.tmpdir, None,
                                 self.aliceUserDict)
         root = SFTPServerRoot(avatar)
-        self.assertRaises(PermissionError, root.createDirectory, 'xyz')
         self.assertRaises(PermissionError, root.createFile, 'xyz')
         self.assertRaises(PermissionError, root.child('~alice').remove)
+        return self.assertFailure(
+            defer.maybeDeferred(root.createDirectory, 'xyz'), PermissionError)
 
     def testUserDirPlusJunk(self):
-        avatar = SFTPOnlyAvatar('alice', self.tmpdir, {},
+        avatar = SFTPOnlyAvatar('alice', self.tmpdir, None,
                                 self.aliceUserDict)
         root = avatar.filesystem.root
         userDir = root.child('~alice')
-        userDir.createDirectory('+junk')
-        self.assertEqual(
-            [name for name, child in userDir.children()], 
-            ['.', '..', '+junk'])
+        deferred = defer.maybeDeferred(userDir.createDirectory, '+junk')
+        def cb(ignore):
+            self.assertEqual(
+                [name for name, child in userDir.children()], 
+                ['.', '..', '+junk'])
+        return deferred.addCallback(cb)
 
     def testTeamDirPlusJunk(self):
-        avatar = SFTPOnlyAvatar('bob', self.tmpdir, {},
+        avatar = SFTPOnlyAvatar('bob', self.tmpdir, None,
                                 self.bobUserDict)
         root = avatar.filesystem.root
         userDir = root.child('~test-team')
-        self.assertRaises(PermissionError, userDir.createDirectory, '+junk')
+        return self.assertFailure(
+            defer.maybeDeferred(userDir.createDirectory, '+junk'),
+            PermissionError)
 
 
 class UserDirsTestCase(AvatarTestBase):
@@ -93,7 +98,8 @@ class UserDirsTestCase(AvatarTestBase):
                                 self.aliceUserDict)
         root = avatar.filesystem.root
         userDir = root.child('~alice')
-        deferred = userDir.createDirectory('mozilla-firefox')
+        deferred = defer.maybeDeferred(
+            userDir.createDirectory, 'mozilla-firefox')
         def cb(result):
             self.assertEqual(
                 [name for name, child in userDir.children()], 
@@ -112,7 +118,8 @@ class UserDirsTestCase(AvatarTestBase):
 
         # We expect PermissionError from a userDir.createDirectory:
         return self.assertFailure(
-            userDir.createDirectory('mozilla-firefox'), PermissionError)
+            defer.maybeDeferred(userDir.createDirectory, 'mozilla-firefox'), 
+            PermissionError)
 
 #class TeamDirsTestCase(AvatarTestBase):
 #    """Same as UserDirsTestCase, except with a team dir."""

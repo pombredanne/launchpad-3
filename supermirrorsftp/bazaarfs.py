@@ -8,6 +8,7 @@ Currently assumes twisted.vfs as of SVN revision 14976.
 
 __metaclass__ = type
 
+from twisted.internet import defer
 from twisted.vfs.backends import adhoc, osfs
 from twisted.vfs.ivfs import VFSError, PermissionError
 
@@ -68,8 +69,8 @@ class SFTPServerUserDir(osfs.OSDirectory):
             "creating files in user directory %r is not allowed." % self.name)
 
     def createDirectory(self, childName):
-        # XXX: this sometimes returns Deferred, but not sometimes not!  It
-        # should be consistent.
+        # XXX: this returns a Deferred, but the upstream VFS code is still
+        # synchronous.  Upstream needs fixing.
 
         # Check that childName is either a product name registered in Launchpad,
         # or '+junk' (if self.junkAllowed).
@@ -77,8 +78,10 @@ class SFTPServerUserDir(osfs.OSDirectory):
             if self.junkAllowed:
                 productID = '+junk'
             else:
-                raise PermissionError("Team directories cannot have +junk.")
-            return osfs.OSDirectory.createDirectory(self, productID)
+                return defer.fail(
+                    PermissionError("Team directories cannot have +junk."))
+            return defer.succeed(
+                osfs.OSDirectory.createDirectory(self, productID))
         else:
             deferred = self.avatar.fetchProductID(childName)
             def cb(productID):
@@ -91,7 +94,7 @@ class SFTPServerUserDir(osfs.OSDirectory):
                         msg += ", or named '+junk'."
                     else:
                         msg += "."
-                    raise PermissionError(msg)
+                    return defer.fail(PermissionError(msg))
                 productID = str(productID)
                 return osfs.OSDirectory.createDirectory(self, productID)
             deferred.addCallback(cb)
