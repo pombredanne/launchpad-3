@@ -129,9 +129,6 @@ class SFTPServerProductDir(adhoc.AdhocDirectory):
                           SFTPServerBranch(avatar, branchID, branchName,
                                            parent))
             
-    def childDirFactory(self):
-        return SFTPServerBranch
-
 
 class SFTPServerBranch(osfs.OSDirectory):
     """For /~username/product/branch, and below.
