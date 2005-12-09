@@ -124,12 +124,15 @@ class UserDirsTestCase(AvatarTestBase):
 class ProductDirsTestCase(AvatarTestBase):
     def testCreateBranch(self):
         def fetchProductID(productName):
-            if productName == 'mozilla-firefox':
-                return defer.succeed(0x123)
-            else:
-                return defer.succeed(None)
+            self.assertEqual(productName, 'mozilla-firefox')
+            return defer.succeed(0x123)
+        def createBranch(userID, productID, branchName):
+            self.assertEqual(1, userID)
+            self.assertEqual(str(0x123), productID)
+            self.assertEqual('new-branch', branchName)
+            return defer.succeed(0xabcdef12)
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, fetchProductID,
-                                self.aliceUserDict)
+                                self.aliceUserDict, createBranch=createBranch)
         root = avatar.filesystem.root
         userDir = root.child('~alice')
         deferred = defer.maybeDeferred(
@@ -139,8 +142,8 @@ class ProductDirsTestCase(AvatarTestBase):
         def _cb2(branchDirectory):
             self.failUnless(isinstance(branchDirectory, SFTPServerBranch))
             self.failUnless(
-                branchDirectory.realPath.endswith('00/00/01/23'),
-                'branch directory is %r, should end with 00/00/01/23'
+                branchDirectory.realPath.endswith('ab/cd/ef/12'),
+                'branch directory is %r, should end with ab/cd/ef/12'
                 % branchDirectory.realPath)
         deferred.addCallback(_cb1).addCallback(_cb2)
         return deferred
