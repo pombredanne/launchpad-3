@@ -89,10 +89,6 @@ class UserDirsTestCase(AvatarTestBase):
                 return defer.succeed(123)
             else:
                 return defer.succeed(None)
-        #productIDs = {'mozilla-firefox': '123'}
-        #avatar = SFTPOnlyAvatar('alice', self.tmpdir, productIDs,
-        #                        self.aliceUserDict)
-        productIDs = {'mozilla-firefox': '123'}
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, fetchProductID,
                                 self.aliceUserDict)
         root = avatar.filesystem.root
@@ -114,15 +110,9 @@ class UserDirsTestCase(AvatarTestBase):
         root = avatar.filesystem.root
         userDir = root.child('~alice')
 
-        # XXX: make a helper (assertDeferredRaises?) to make this clearer:
         # We expect PermissionError from a userDir.createDirectory:
-        def cb(result):
-            self.fail('Unexpected result: %r' % (result,))
-        def eb(failure):
-            failure.trap(PermissionError)
-        return userDir.createDirectory('mozilla-firefox').addCallbacks(cb, eb)
-        #self.assertRaises(PermissionError, 
-        #                  userDir.createDirectory, 'mozilla-firefox')
+        return self.assertFailure(
+            userDir.createDirectory('mozilla-firefox'), PermissionError)
 
 #class TeamDirsTestCase(AvatarTestBase):
 #    """Same as UserDirsTestCase, except with a team dir."""
