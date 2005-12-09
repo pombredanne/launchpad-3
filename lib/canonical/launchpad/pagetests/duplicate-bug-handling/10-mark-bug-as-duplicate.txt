@@ -45,7 +45,7 @@ When the bug is marked as a duplicate, each subscriber will receive,
 individually, a bugmail notification of this event.
 
     >>> len(stub.test_emails)
-    8
+    7
 
 Let's sort the emails by subject and talk a bit more about each
 notification:
@@ -68,8 +68,7 @@ notification:
     ...     if '[Bug 2] Blackhole Trash folder' in raw_mail]
     >>> all_to_addrs.sort()
     >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['no-priv@canonical.com'],
-     ['support@ubuntu.com'], ['test@canonical.com']]
+    [['dilys@muse.19inch.net'], ['support@ubuntu.com'], ['test@canonical.com']]
 
     Let's grab the last email in the list to illustrate what the email
     itself looks like:
@@ -99,8 +98,7 @@ notification:
     ...     if '[Bug 1] Firefox does not support SVG' in raw_mail]
     >>> all_to_addrs.sort()
     >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['no-priv@canonical.com'],
-     ['test@canonical.com']]
+    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
 
     Let's grab the first email in the list to illustrate:
 

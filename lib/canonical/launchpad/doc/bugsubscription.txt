@@ -42,7 +42,7 @@ notification email on a bug, call
 IBug.notificationRecipientAddresses().
 
    >>> bug.notificationRecipientAddresses()
-   [u'mark@hbd.com', u'no-priv@canonical.com', u'test@canonical.com']
+   [u'mark@hbd.com', u'test@canonical.com']
 
 To find out if someone is already explicitly subscribed to a bug, call
 IBug.isSubscribed, passing in an IPerson:

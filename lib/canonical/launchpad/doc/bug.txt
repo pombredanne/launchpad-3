@@ -225,7 +225,7 @@ If we login as someone who *isn't* a member of the Ubuntu Team (and
 isn't otherwise someone who should be allowed to access the properties
 of this bug) though:
 
-    >>> login("kreutzm@itp.uni-hannover.de")
+    >>> login("no-priv@canonical.com")
 
 Trying to access a property of this bug will again raise an
 Unauthorized:
@@ -236,7 +236,7 @@ Unauthorized:
     Unauthorized: ('title', 'launchpad.View')
 
 And, as you might have guessed, is once again invisible in searches
-(notice that bug #6 is also invisible to Helge):
+(notice that bug #6 is also invisible to No Privileges Person):
 
     >>> all_bugs = bugset.searchAsUser(
     ...     user=getUtility(ILaunchBag).user, orderBy="id")

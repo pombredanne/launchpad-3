@@ -2641,7 +2641,7 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'maintainership'::pg_catalog.regclass;
 
-INSERT INTO maintainership (id, distribution, sourcepackagename, maintainer) VALUES (1, 3, 1, 52);
+INSERT INTO maintainership (id, distribution, sourcepackagename, maintainer) VALUES (1, 3, 1, 1);
 INSERT INTO maintainership (id, distribution, sourcepackagename, maintainer) VALUES (2, 1, 9, 1);
 INSERT INTO maintainership (id, distribution, sourcepackagename, maintainer) VALUES (3, 1, 14, 1);
 
