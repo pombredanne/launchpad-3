@@ -58,7 +58,13 @@ class BugzillaBackend:
 
     def _decode(self, s):
         if s is not None:
-            return s.decode(self.charset, 'replace')
+            value = s.decode(self.charset, 'replace')
+            # Postgres doesn't like values outside of the basic multilingual
+            # plane (U+0000 - U+FFFF), so replace them (and surrogates) with
+            # U+FFFD (replacement character).
+            # Existance of these characters generally indicate an encoding
+            # problem in the existing Bugzilla data.
+            return re.sub(u'[^\u0000-\ud7ff\ue000-\uffff]', u'\ufffd', value)
         else:
             return None
 
@@ -541,6 +547,9 @@ class Bugzilla:
         # import attachments
         for (attach_id, creation_ts, description, mimetype, ispatch,
              filename, thedata, submitter_id) in bug.attachments:
+            # if the filename is missing for some reason, use a generic one.
+            if filename is None or filename.strip() == '':
+                filename = 'untitled'
             logger.debug('Creating attachment %s for bug %d',
                          filename, bug.bug_id)
             if ispatch:
