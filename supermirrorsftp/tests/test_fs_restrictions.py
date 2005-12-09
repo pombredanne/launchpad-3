@@ -7,7 +7,7 @@ from twisted.internet import defer
 from twisted.vfs.ivfs import VFSError, PermissionError
 
 from supermirrorsftp.sftponly import SFTPOnlyAvatar
-from supermirrorsftp.bazaarfs import SFTPServerRoot
+from supermirrorsftp.bazaarfs import SFTPServerRoot, SFTPServerBranch
 
 class AvatarTestBase(unittest.TestCase):
     def setUp(self):
@@ -125,4 +125,30 @@ class UserDirsTestCase(AvatarTestBase):
 #    """Same as UserDirsTestCase, except with a team dir."""
     
 
+class ProductDirsTestCase(AvatarTestBase):
+    def testCreateBranch(self):
+        def fetchProductID(productName):
+            if productName == 'mozilla-firefox':
+                return defer.succeed(0x123)
+            else:
+                return defer.succeed(None)
+        avatar = SFTPOnlyAvatar('alice', self.tmpdir, fetchProductID,
+                                self.aliceUserDict)
+        root = avatar.filesystem.root
+        userDir = root.child('~alice')
+        deferred = defer.maybeDeferred(
+            userDir.createDirectory, 'mozilla-firefox')
+        def _cb1(productDirectory):
+            return productDirectory.createDirectory('new-branch')
+        def _cb2(branchDirectory):
+            self.failUnless(isinstance(branchDirectory, SFTPServerBranch))
+            print dir(branchDirectory)
+            self.failUnless(
+                branchDirectory.realPath.endswith('00/00/01/23'),
+                'branch directory is %r, should end with 00/00/01/23'
+                % branchDirectory.realPath)
+        deferred.addCallback(_cb1).addCallback(_cb2)
+        return deferred
 
+
+    
