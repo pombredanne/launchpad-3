@@ -138,7 +138,6 @@ class ProductDirsTestCase(AvatarTestBase):
             return productDirectory.createDirectory('new-branch')
         def _cb2(branchDirectory):
             self.failUnless(isinstance(branchDirectory, SFTPServerBranch))
-            print dir(branchDirectory)
             self.failUnless(
                 branchDirectory.realPath.endswith('00/00/01/23'),
                 'branch directory is %r, should end with 00/00/01/23'

@@ -61,6 +61,9 @@ class SFTPOnlyAvatar(avatar.ConchUser):
         #self.productNames = dict((v, k) for k, v in self.productIDs.iteritems())
         self.productIDs = self.productNames = {}
         self._fetchProductID = fetchProductID
+        # XXX: evil stub function
+        from twisted.internet import defer
+        self.createBranch = lambda *args: defer.succeed(1)
 
         if initialBranches is None:
             self.branches = []

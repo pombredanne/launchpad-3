@@ -79,10 +79,8 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
     def createDirectory(self, childName):
         # XXX: this returns a Deferred, but the upstream VFS code is still
         # synchronous.  Upstream needs fixing.
-
-        # Check that childName is either a product name registered in Launchpad,
-        # or '+junk' (if self.junkAllowed).
         assert childName != '+junk'
+        # Check that childName is a product name registered in Launchpad.
         deferred = self.avatar.fetchProductID(childName)
         def cb(productID):
             if productID is None:
@@ -129,6 +127,17 @@ class SFTPServerProductDir(adhoc.AdhocDirectory):
                           SFTPServerBranch(avatar, branchID, branchName,
                                            parent))
             
+    def createDirectory(self, childName):
+        deferred = self.avatar.createBranch(self.userID, self.productID,
+                                            childName)
+        def cb(branchID):
+            branchID = str(branchID)
+            branchDirectory = SFTPServerBranch(self.avatar, branchID, childName,
+                                               self)
+            self.putChild(childName, branchDirectory)
+            return branchDirectory
+        return deferred.addCallback(cb)
+        
 
 class SFTPServerBranch(osfs.OSDirectory):
     """For /~username/product/branch, and below.
@@ -142,6 +151,6 @@ class SFTPServerBranch(osfs.OSDirectory):
         # XXX: this snippet is duplicated in a few places...
         h = "%08x" % int(branchID)
         path = '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:]) 
-        osfs.OSDirectory(
-            os.path.join(self.avatar.homeDirsRoot, path), branchName, parent)
+        osfs.OSDirectory.__init__(self,
+            os.path.join(avatar.homeDirsRoot, path), branchName, parent)
 
