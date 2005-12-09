@@ -19,10 +19,6 @@ from zope.app.session.interfaces import (
         )
 from psycopgda.adapter import PG_ENCODING
 
-# XXX: This is only needed for bootstrapping. Final implementation should
-# connect via a named PsycopgDA
-from canonical.database.sqlbase import cursor
-
 SECONDS = 1
 MINUTES = 60 * SECONDS
 HOURS = 60 * MINUTES
@@ -83,7 +79,7 @@ class PGSessionDataContainer:
         client_id = client_id.encode(PG_ENCODING)
         self.cursor.execute(query, vars())
 
-    _last_sweep = datetime.utcnow() - timedelta(days=6)
+    _last_sweep = datetime.utcnow()
     fuzz = 10 # Our sweeps may occur +- this many seconds to minimize races.
 
     def _sweep(self, cursor):

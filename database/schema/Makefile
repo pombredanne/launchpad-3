@@ -65,8 +65,10 @@ test: create
 	@ echo "* Creating session database '${SESSION_DBNAME}' (if necessary)"
 	@if [ "$$((`psql -l | grep ${SESSION_DBNAME} | wc -l`))" = '0' ]; \
 	    then createdb -E UNICODE ${SESSION_DBNAME} | grep : | cat ; \
-	    psql -q -d ${SESSION_DBNAME} -f session.sql ; \
+	    psql -q -d ${SESSION_DBNAME} -f launchpad_session.sql ; \
 	fi
+	@ echo "* Adding session tables to '${TEST_DBNAME}'"
+	psql -q -d ${TEST_DBNAME} -f launchpad_session.sql
 
 dev: test
 	@ echo "* Creating ${DBNAME}"
