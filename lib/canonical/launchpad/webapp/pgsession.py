@@ -201,6 +201,9 @@ class PGSessionPkgData(DictMixin):
                 """ % self.tablename
             cursor.execute(query, vars())
 
+        # Store the value in the cache too
+        self._data_cache[org_key] = value
+
     def __delitem__(self, key):
         """Delete an item.
         
@@ -218,12 +221,10 @@ class PGSessionPkgData(DictMixin):
                 AND key = %%(key)s
             """ % self.tablename
         client_id = self.session_data.client_id.encode(PG_ENCODING)
-        product_id = self.session_data.product_id.encode(PG_ENCODING)
+        product_id = self.product_id.encode(PG_ENCODING)
         key = key.encode(PG_ENCODING)
         cursor = self.cursor
-        cursor.execute(query, [
-                self.session_data.client_id, self.product_id, key
-                ])
+        cursor.execute(query, vars())
 
     def keys(self):
         return self._data_cache.keys()

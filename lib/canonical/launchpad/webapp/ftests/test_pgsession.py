@@ -14,6 +14,16 @@ from canonical.launchpad.webapp.pgsession import (
         )
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 
+
+class PicklingTest:
+    '''This class is used to ensure we can store arbitrary pickles'''
+    def __init__(self, value):
+        self.value = value
+
+    def __eq__(self, obj):
+        return self.value == obj.value
+
+
 class TestPgSession(LaunchpadFunctionalTestCase):
     dbuser = 'session'
     def setUp(self):
@@ -107,6 +117,65 @@ class TestPgSession(LaunchpadFunctionalTestCase):
         cursor.execute("SeLECT COUNT(*) FROM SessionData")
         self.failUnlessEqual(cursor.fetchone()[0], 2)
 
+    def test_storage(self):
+        client_id1 = 'Client Id #1'
+        client_id2 = 'Client Id #2'
+        product_id1 = 'Product Id #1'
+        product_id2 = 'Product Id #2'
+
+        # Create some SessionPkgData storages
+        self.sdc[client_id1] = 'whatever'
+        self.sdc[client_id2] = 'whatever'
+        session1a = self.sdc[client_id1][product_id1]
+
+        # Set some values in the session
+        session1a['key1'] = 'value1'
+        session1a['key2'] = PicklingTest('value2')
+        self.failUnlessEqual(session1a['key1'], 'value1')
+        self.failUnlessEqual(session1a['key2'].value, 'value2')
+
+        # Make sure no leakage between sessions
+        session1b = self.sdc[client_id1][product_id2]
+        session2a = self.sdc[client_id2][product_id1]
+        self.assertRaises(KeyError, session1b.__getitem__, 'key')
+        self.assertRaises(KeyError, session2a.__getitem__, 'key')
+
+        # Make sure data can be retrieved from the db
+        session1a_dupe = self.sdc[client_id1][product_id1]
+
+        # This new session should not be the same object
+        self.failIf(session1a is session1a_dupe)
+
+        # But it should contain copies of the same data, unpickled from the
+        # database
+        self.failUnlessEqual(session1a['key1'], session1a_dupe['key1'])
+        self.failUnlessEqual(session1a['key2'], session1a_dupe['key2'])
+
+        # They must be copies - not the same object
+        self.failIf(session1a['key2'] is session1a_dupe['key2'])
+
+        # Ensure the keys method works as it is suppsed to
+        self.failUnlessEqual(sorted(session1a.keys()), ['key1', 'key2'])
+        self.failUnlessEqual(session2a.keys(), [])
+
+        # Ensure we can delete and alter things from the session
+        del session1a['key1']
+        session1a['key2'] = 'new value2'
+        self.assertRaises(KeyError, session1a.__getitem__, 'key1')
+        self.failUnlessEqual(session1a['key2'], 'new value2')
+        self.failUnlessEqual(session1a.keys(), ['key2'])
+
+        # Note that deleting will not raise a KeyError
+        del session1a['key1']
+        del session1a['key1']
+        del session1a['whatever']
+
+        # And ensure that these changes are persistent
+        session1a_dupe = self.sdc[client_id1][product_id1]
+        self.assertRaises(KeyError, session1a_dupe.__getitem__, 'key1')
+        self.failUnlessEqual(session1a_dupe['key2'], 'new value2')
+        self.failUnlessEqual(session1a_dupe.keys(), ['key2'])
+        
 
 def test_suite():
     suite = unittest.TestSuite()
