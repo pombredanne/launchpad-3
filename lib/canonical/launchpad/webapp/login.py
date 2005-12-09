@@ -56,7 +56,7 @@ class UnauthorizedView(SystemErrorView):
                 query_string = '?' + query_string
             target = self.request.getURL() + '/+login' + query_string
             self.request.response.addNoticeNotification(_(
-                    'The requested page is protected. You will need to login.'
+                    'To continue, you must log in to Launchpad.'
                     ))
             self.request.response.redirect(target)
             # Maybe render page with a link to the redirection?
@@ -156,11 +156,7 @@ class LoginOrRegister:
                 return
 
             logInPerson(self.request, principal, email)
-            # Redirect only when we're not at the root /+login.
-            # If we're on the root page, then show the page which will say
-            # "You're logged in".
-            if not self.request.URL[1].endswith('+login'):
-                self.redirectMinusLogin()
+            self.redirectMinusLogin()
         else:
             self.login_error = "The email address and password do not match."
 

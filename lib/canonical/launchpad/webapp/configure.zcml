@@ -5,6 +5,7 @@
 
     <include file="servers.zcml" />
     <include file="errorlog.zcml" />
+    <include file="bug-5133.zcml" />
 
     <content class="canonical.launchpad.webapp.LaunchpadBrowserRequest">
       <allow

@@ -243,7 +243,8 @@ class Distribution(SQLBase):
 
     def newTicket(self, owner, title, description):
         """See ITicketTarget."""
-        return Ticket(title=title, description=description, owner=owner,
+        return Ticket(
+            title=title, description=description, owner=owner,
             distribution=self)
 
     def getTicket(self, ticket_num):

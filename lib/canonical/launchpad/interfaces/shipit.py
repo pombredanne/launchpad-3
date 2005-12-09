@@ -4,7 +4,7 @@ __all__ = ['IStandardShipItRequest', 'IStandardShipItRequestSet',
            'IRequestedCDs', 'IShippingRequest', 'IShippingRequestSet',
            'ShippingRequestStatus', 'IShipment', 'IShippingRun',
            'IShipItCountry', 'IShippingRunSet', 'IShipmentSet',
-           'ShippingRequestPriority']
+           'ShippingRequestPriority', 'IShipItReport', 'IShipItReportSet']
 
 from zope.schema import Bool, Choice, Int, Datetime, Text, TextLine
 from zope.interface import Interface, Attribute, implements
@@ -258,6 +258,20 @@ class IShippingRequestSet(Interface):
         address match <recipient_name>.
         """
 
+    def generateShipmentSizeBasedReport():
+        """Generate a csv file with the size of shipments and the number of
+        shipments of that size.
+        """
+
+    def generateCountryBasedReport():
+        """Generate a csv file with statiscs about orders placed by country."""
+
+    def generateWeekBasedReport(start_date, end_date):
+        """Generate a csv file with statistics about orders placed by week.
+
+        Only the orders placed between start_date and end_date are considered.
+        """
+
 
 class IRequestedCDs(Interface):
 
@@ -406,3 +420,25 @@ class ShippingRequestPriority:
 
     HIGH = 'high'
     NORMAL = 'normal'
+
+
+class IShipItReport(Interface):
+    """A report based on shipit data."""
+
+    datecreated = Datetime(
+        title=_('Date of Creation'), required=True, readonly=True)
+
+    csvfile = Int(
+        title=_('A csv file with all requests of this run.'),
+        required=True, readonly=True)
+
+
+class IShipItReportSet(Interface):
+    """The set of ShipItReport"""
+
+    def new(csvfile):
+        """Create a new ShipItReport object."""
+
+    def getAll():
+        """Return all ShipItReport objects."""
+
