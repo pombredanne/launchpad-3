@@ -6,6 +6,7 @@ __all__ = [
     'valid_bug_number',
     'valid_emblem',
     'valid_hackergotchi',
+    'valid_unregistered_email',
     ]
 
 import urllib
@@ -18,6 +19,7 @@ from zope.exceptions import NotFoundError
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.validators.email import valid_email
 
 def validate_url(url, valid_schemes):
     """Returns a boolean stating whether 'url' is a valid URL.
@@ -142,3 +144,20 @@ def valid_emblem(emblem):
 def valid_hackergotchi(hackergotchi):
     return _valid_image(hackergotchi, 54000, (150,150))
 
+# XXX: matsubara 2005-12-08 This validator shouldn't be used in an editform. 
+# Editing an already registered e-mail would fail if this constraint is set.
+def valid_unregistered_email(email):
+    """Check that the given email is valid and that isn't registered to
+    another user."""
+
+    from canonical.launchpad.interfaces import IEmailAddressSet
+    if valid_email(email):
+        emailset = getUtility(IEmailAddressSet)
+        if emailset.getByEmail(email) is not None:
+            raise LaunchpadValidationError(_(dedent("""
+                %s is already taken.""" % email)))
+        else:
+            return True
+    else:
+        raise LaunchpadValidationError(_(dedent("""
+            %s isn't a valid email address.""" % email)))
