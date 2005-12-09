@@ -33,7 +33,12 @@
   <table id="sourcepackagebugs">
     <tr>
       <td colspan="3">
-        <h2 tal:content="string:To be fixed in ${context/distrorelease/displayname}">
+        <h2 tal:condition="not: view/unresolved_release_bugs"
+          tal:content="string: No bugs to be fixed in
+          ${context/distrorelease/displayname}">
+          No bugs to be fixed in warty
+        </h2>
+        <h2 tal:condition="view/unresolved_release_bugs" tal:content="string:To be fixed in ${context/distrorelease/displayname}">
           To be fixed in hoary
         </h2>
       <td>
