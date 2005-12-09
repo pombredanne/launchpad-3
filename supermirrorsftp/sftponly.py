@@ -35,7 +35,8 @@ class SubsystemOnlySession(session.SSHSession, object):
 
 
 class SFTPOnlyAvatar(avatar.ConchUser):
-    def __init__(self, avatarId, homeDirsRoot, fetchProductID, userDict):
+    def __init__(self, avatarId, homeDirsRoot, fetchProductID, userDict,
+            initialBranches=None):
         # Double-check that we don't get unicode -- directory names on the file
         # system are a sequence of bytes as far as we're concerned.  We don't
         # want any tricky login names turning into a security problem.
@@ -60,6 +61,11 @@ class SFTPOnlyAvatar(avatar.ConchUser):
         #self.productNames = dict((v, k) for k, v in self.productIDs.iteritems())
         self.productIDs = self.productNames = {}
         self._fetchProductID = fetchProductID
+
+        if initialBranches is None:
+            self.branches = []
+        else:
+            self.branches = initialBranches
         self._productIDs = {}
         self._productNames = {}
 

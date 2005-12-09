@@ -68,21 +68,14 @@ class TestTopLevelDir(AvatarTestBase):
                                 self.aliceUserDict)
         root = avatar.filesystem.root
         userDir = root.child('~alice')
-        deferred = defer.maybeDeferred(userDir.createDirectory, '+junk')
-        def cb(ignore):
-            self.assertEqual(
-                [name for name, child in userDir.children()], 
-                ['.', '..', '+junk'])
-        return deferred.addCallback(cb)
+        self.assertIn('+junk', [name for name, child in userDir.children()])
 
     def testTeamDirPlusJunk(self):
         avatar = SFTPOnlyAvatar('bob', self.tmpdir, None,
                                 self.bobUserDict)
         root = avatar.filesystem.root
         userDir = root.child('~test-team')
-        return self.assertFailure(
-            defer.maybeDeferred(userDir.createDirectory, '+junk'),
-            PermissionError)
+        self.assertNotIn('+junk', [name for name, child in userDir.children()])
 
 
 class UserDirsTestCase(AvatarTestBase):
@@ -98,12 +91,15 @@ class UserDirsTestCase(AvatarTestBase):
                                 self.aliceUserDict)
         root = avatar.filesystem.root
         userDir = root.child('~alice')
+        self.assertEqual(
+            [name for name, child in userDir.children()], 
+            ['.', '..', '+junk'])
         deferred = defer.maybeDeferred(
             userDir.createDirectory, 'mozilla-firefox')
         def cb(result):
             self.assertEqual(
                 [name for name, child in userDir.children()], 
-                ['.', '..', 'mozilla-firefox'])
+                ['.', '..', '+junk', 'mozilla-firefox'])
         deferred.addCallback(cb)
         return deferred
 
