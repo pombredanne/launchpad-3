@@ -33,7 +33,7 @@ from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.app.security.permission import (
     checkPermission as check_permission_is_registered)
 
-import canonical.base
+import canonical
 from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import (
     RosettaImportStatus, SourcePackageFileType,
@@ -1182,4 +1182,13 @@ def positiveIntOrZero(value):
     if value < 0:
         return 0
     return value
+
+def get_email_template(filename):
+    """Returns the email template with the given file name.
+
+    The templates are located in 'lib/canonical/launchpad/emailtemplates'.
+    """
+    base = os.path.dirname(canonical.launchpad.__file__)
+    fullpath = os.path.join(base, 'emailtemplates', filename)
+    return open(fullpath).read()
 

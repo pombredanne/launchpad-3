@@ -28,7 +28,8 @@
 
           <p>To make orders, or view or change existing orders, you need to
           sign in using your <a href="https://launchpad.net">Launchpad</a>
-          account first. You can <a href="https://launchpad.net/+login">create
+          account first. You can 
+          <a href="https://launchpad.net/+login?origin=shipit">create
           a new account</a> if you don't have one already.</p>
 
           <p>If you have questions about shipments and dates please read the

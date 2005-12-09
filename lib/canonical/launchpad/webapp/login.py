@@ -18,8 +18,8 @@ from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.interfaces import CookieAuthLoggedInEvent
 from canonical.launchpad.webapp.interfaces import LoggedOutEvent
 from canonical.launchpad.webapp.error import SystemErrorView
-from canonical.launchpad.interfaces import ILoginTokenSet, IPersonSet
-from canonical.launchpad.mail.sendmail import simple_sendmail
+from canonical.launchpad.interfaces import (
+    ILoginTokenSet, IPersonSet, UBUNTU_WIKI_URL, SHIPIT_URL)
 from canonical.lp.dbschema import LoginTokenType
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from canonical.launchpad.webapp.notification import NOTIFICATION_PARAMETER
@@ -122,8 +122,36 @@ class LoginOrRegister:
         elif self.request.form.get(self.submit_registration):
             self.process_registration_form()
 
-    def get_application_url(self):
+    def getApplicationURL(self): 
+        # XXX: This method is needed because this view is used on shipit and
+        # we have to use an application URL different than the one we have in
+        # the request. -- Guilherme Salgado 2005-12-09
         return self.request.getApplicationURL()
+
+    def getRedirectionURL(self):
+        """Return the URL we should redirect the user to, after finishing a
+        registration or password reset process.
+        
+        If the request has an 'origin' query parameter, that means the user came
+        from either the ubuntu wiki or shipit, and thus we return the URL for
+        either shipit or the wiki. When there's no 'origin' query parameter, we
+        check the HTTP_REFERER header and if it's in the Launchpad namespace we
+        return that URL, otherwise we return None.
+        """
+        request = self.request
+        origin = request.get('origin')
+        if origin == 'ubuntuwiki':
+            return UBUNTU_WIKI_URL
+        elif origin == 'shipit':
+            return SHIPIT_URL
+        else:
+            referrer = request.getHeader('Referer')
+            if referrer:
+                for url in (request.getApplicationURL(), UBUNTU_WIKI_URL,
+                            SHIPIT_URL):
+                    if referrer.startswith(url):
+                        return referrer
+            return None
 
     def process_login_form(self):
         """Process the form data.
@@ -137,7 +165,7 @@ class LoginOrRegister:
             self.login_error = _("Enter your email address and password.")
             return
 
-        appurl = self.get_application_url()
+        appurl = self.getApplicationURL()
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
         if principal is not None and principal.validate(password):
@@ -166,7 +194,8 @@ class LoginOrRegister:
         Check if everything is ok with the email address and send an email
         with a link to the user complete the registration process.
         """
-        self.email = self.request.form.get(self.input_email).strip()
+        request = self.request
+        self.email = request.form.get(self.input_email).strip()
         person = getUtility(IPersonSet).getByEmail(self.email)
         if person is not None:
             msg = ('The email address %s is already registered in our system. '
@@ -184,11 +213,11 @@ class LoginOrRegister:
             return
 
         logintokenset = getUtility(ILoginTokenSet)
-        # This is a new user, so requester and requesteremail (first two
-        # parameters of LoginTokenSet.new()) are None.
-        token = logintokenset.new(None, None, self.email,
-                                  LoginTokenType.NEWACCOUNT)
-        sendNewUserEmail(token, self.request.getApplicationURL())
+        token = logintokenset.new(
+            requester=None, requesteremail=None, email=self.email, 
+            tokentype=LoginTokenType.NEWACCOUNT,
+            redirectionurl=request.form.get('redirection_url'))
+        token.sendNewUserEmail(request.getApplicationURL())
 
     def login_success(self):
         return (self.submitted and
@@ -282,10 +311,11 @@ class ForgottenPasswordPage:
     submitted = False
 
     def process_form(self):
-        if self.request.method != "POST":
+        request = self.request
+        if request.method != "POST":
             return
 
-        email = self.request.form.get("email").strip()
+        email = request.form.get("email").strip()
         person = getUtility(IPersonSet).getByEmail(email)
         if person is None:
             self.errortext = ("Your account details have not been found. "
@@ -294,38 +324,12 @@ class ForgottenPasswordPage:
             return
 
         logintokenset = getUtility(ILoginTokenSet)
-        token = logintokenset.new(person, email, email,
-                                  LoginTokenType.PASSWORDRECOVERY)
-        sendPasswordResetEmail(token, self.request.getApplicationURL())
+        token = logintokenset.new(
+            person, email, email, LoginTokenType.PASSWORDRECOVERY)
+        token.sendPasswordResetEmail(request.getApplicationURL())
         self.submitted = True
         return
 
     def success(self):
         return self.submitted and not self.errortext
-
-
-def sendPasswordResetEmail(token, appurl):
-    template = open(
-        'lib/canonical/launchpad/emailtemplates/forgottenpassword.txt').read()
-    fromaddress = "Launchpad Team <noreply@canonical.com>"
-
-    replacements = {'longstring': token.token,
-                    'toaddress': token.email, 
-                    'appurl': appurl}
-    message = template % replacements
-
-    subject = "Launchpad: Forgotten Password"
-    simple_sendmail(fromaddress, token.email, subject, message)
-
-
-
-def sendNewUserEmail(token, appurl):
-    template = open(
-        'lib/canonical/launchpad/emailtemplates/newuser-email.txt').read()
-    replacements = {'longstring': token.token, 'appurl': appurl}
-    message = template % replacements
-
-    fromaddress = "The Launchpad Team <noreply@canonical.com>"
-    subject = "Launchpad Account Creation Instructions"
-    simple_sendmail(fromaddress, token.email, subject, message)
 
