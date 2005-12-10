@@ -26,7 +26,8 @@ from canonical.config import config
 from canonical.launchpad.scripts import (execute_zcml_for_scripts,
                                          logger, logger_options)
 
-from canonical.launchpad.interfaces import IDistributionSet
+from canonical.launchpad.interfaces import (
+    IDistributionSet, QueueInconsistentStateError)
 from canonical.lp.dbschema import (
     DistroReleaseQueueStatus, PackagePublishingPriority)
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
@@ -65,13 +66,17 @@ def filter_queue(queue, must_filter=False):
     """
     if not must_filter and len(args) < 2:
         return queue
+
     if len(args) < 2:
         print "Unable to filter queue. No filter provided. If you really meant"
         print "to act on everything then provide the filter '*'"
         sys.exit(1)
+
     full_filter = args[1]
+
     if full_filter == "*":
         return queue
+
     if "/" in full_filter:
         (spn_filter, vers_filter) = full_filter.split("/")
     else:
@@ -170,12 +175,12 @@ def action_ACCEPT(distro, distrorelease, queue):
     print "Accepting %d/%d items from %s/%s (%s)" % (
         len(filtered_queue), len(queue), options.distro, options.distrorelease,
         options.queue)
-    # XXX: dsilvers: 20051115: Should not need this, but until ZCML makes more
-    # sense to me, it's quicker than fighting the security model.
-    from zope.security.proxy import removeSecurityProxy
     for queue_item in filtered_queue:
-        removeSecurityProxy(queue_item).status = \
-            DistroReleaseQueueStatus.ACCEPTED
+        try:
+            queue_item.set_accepted()
+        except QueueInconsistentStateError, info:
+            print ('** %s could not be accepted due %s'
+                   % (queue_item.sourcepackagename.name, info))
         # XXX: Send accept and announce mails here. May not commit without
         # fixing this.
 
@@ -190,12 +195,13 @@ def action_REJECT(distro, distrorelease, queue):
     print "Rejecting %d/%d items from %s/%s (%s)" % (
         len(filtered_queue), len(queue), options.distro, options.distrorelease,
         options.queue)
-    # XXX: dsilvers: 20051115: Should not need this, but until ZCML makes more
-    # sense to me, it's quicker than fighting the security model.
-    from zope.security.proxy import removeSecurityProxy
     for queue_item in filtered_queue:
-        removeSecurityProxy(queue_item).status = \
-            DistroReleaseQueueStatus.REJECTED
+        try:
+            queue_item.set_rejected()
+        except QueueInconsistentStateError, info:
+            print ('** %s could not be rejected due %s'
+                   % (queue_item.sourcepackagename.name, info))
+
         # XXX: Send reject mails here. May not commit without fixing this.
 
     return True # Tell the main loop to commit.
@@ -392,7 +398,7 @@ def main():
 
     action = args[0].upper()
 
-    if "action_"+action not in globals():
+    if "action_" + action not in globals():
         log.error("Unable to map action %s" % action)
         return 1
 
