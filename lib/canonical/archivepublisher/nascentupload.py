@@ -123,7 +123,7 @@ def filechunks(file, chunk_size=256*1024):
     """Return an iterator which reads chunks of the given file."""
     return iter(lambda: file.read(chunk_size), '')
 
-        
+
 class UploadError(Exception):
     """All upload errors are returned in this form."""
 
@@ -198,7 +198,7 @@ class NascentUploadedFile:
 
         Raise UploadError if the digest or size does not match or if the
         file is not found on the disk.
-        
+
         Populate self._sha_digest with the calculated sha1 digest of the
         file on disk.
         """
@@ -234,7 +234,7 @@ class NascentUploadedFile:
         # Record the sha1 digest and note that we have checked things.
         self._sha_digest = sha_cksum.hexdigest()
         self._values_checked = True
-        
+
     @property
     def digest(self):
         self.checkValues()
@@ -282,7 +282,7 @@ class NascentUpload:
     upload to a launchpad managed archive.
 
     The collaborative international dictionary of English defines nascent as:
-    
+
      1. Commencing, or in process of development; beginning to
         exist or to grow; coming into being; as, a nascent germ.
         [1913 Webster +PJC]
@@ -335,11 +335,11 @@ class NascentUpload:
             allow_unsigned = self.policy.unsigned_changes_ok)
         format = float(changes["format"])
         # XXX cprov 20051207: adopting a default format for missed ones
-        # It assumes the normally accepted version 
+        # It assumes the normally accepted version
         if not format:
             format = 1.5
             return changes
-            
+
         if format < 1.5 or format > 2.0:
             raise UploadError(
                 "Format out of acceptable range for changes file. Range "
@@ -384,15 +384,15 @@ class NascentUpload:
 
         if self._arch_verified:
             return
-        
+
         arch = self.changes['architecture']
         think_sourceful = False
         think_binaryful = False
         think_archindep = False
         think_archdep = False
-        
+
         arch_contents = set(arch.split())
-        
+
         if 'source' in arch_contents:
             think_sourceful = True
             arch_contents.remove('source')
@@ -473,7 +473,7 @@ class NascentUpload:
     def archindep(self):
         self._verify_architecture()
         return self._archindep
-    
+
     @cachedproperty
     def archdep(self):
         self._verify_architecture()
@@ -487,7 +487,7 @@ class NascentUpload:
         a list: ['source', 'i386']
         """
         return set(self.changes['architecture'].strip().split())
-    
+
     @cachedproperty
     def native(self):
         self._check_native()
@@ -507,11 +507,11 @@ class NascentUpload:
         """
         if self._native_checked:
             return True
-        
+
         if not self.sourceful:
             raise UploadError("Attempted to ask a non-sourceful upload "
                               "if it is native or not.")
-        
+
         dsc = 0
         diff = 0
         orig = 0
@@ -547,7 +547,7 @@ class NascentUpload:
         self._native = tar != 0
         self._has_orig = orig != 0
         self._native_checked = True
-        
+
     def verify_sig(self, filename):
         """Verify the signature on the filename.
 
@@ -573,7 +573,7 @@ class NascentUpload:
                 raise UploadError("Signing key not found within launchpad.")
 
             return key.owner, key, sig
-            
+
         except GPGVerificationError, e:
             raise UploadError("GPG verification of %s failed: %s" % (filename,
                                                                     str(e)))
@@ -718,7 +718,7 @@ class NascentUpload:
         except NotFoundError:
             raise UploadError("Unable to find distrorelease: %s" % dr_name)
         return self.policy.distrorelease
-    
+
     @cachedproperty
     def pocket(self):
         """The pocket pertaining to this upload.
@@ -963,7 +963,7 @@ class NascentUpload:
         if not self.sourceful:
             self.reject("Found file %s but upload allegedly non-sourceful" % (
                 uploaded_file.filename))
-            
+
         source_match = re_issource.match(uploaded_file.filename)
         uploaded_file.package = source_match.group(1)
         uploaded_file.version = source_match.group(2)
@@ -972,7 +972,7 @@ class NascentUpload:
         if self.changes['source'] != uploaded_file.package:
             self.reject("%s: changes file doesn't say %s for Source" % (
                 uploaded_file.filename, uploaded_file.package))
-            
+
         if uploaded_file.type == "orig.tar.gz":
             changes_version = self.changes['chopversion2']
         else:
@@ -993,7 +993,7 @@ class NascentUpload:
                 self.dsc_signing_key = key
             except UploadError, e:
                 self.reject("%s: %s" % (uploaded_file.filename, str(e)))
-        
+
     def verify_uploaded_files(self):
         """Verify each file provided in the upload passes some checks.
 
@@ -1022,7 +1022,7 @@ class NascentUpload:
                 # It's byhand.
                 uploaded_file.is_source=False
                 uploaded_file.type = "byhand"
-                
+
         self.logger.debug("Performing overall file verification checks.")
         for uploaded_file in self.files:
             # dismiss for special upload types
@@ -1056,9 +1056,9 @@ class NascentUpload:
                     self.reject("Unable to map priority %r for file %s" % (
                         uploaded_file.priority, uploaded_file.filename))
 
-            # check component and section 
+            # check component and section
             self.verify_components_and_sections(uploaded_file)
-            
+
         # Finally verify that sourceful/binaryful match the policy
         if self.sourceful and not self.policy.can_upload_source:
             self.reject(
@@ -1083,7 +1083,7 @@ class NascentUpload:
         valid_components = [component.name for component in
                             getUtility(IComponentSet)]
         valid_sections = [section.name for section in getUtility(ISectionSet)]
-        
+
         if uploaded_file.component not in valid_components:
             self.reject("%s: Component %s is not valid" % (
                 uploaded_file.filename, uploaded_file.component))
@@ -1098,7 +1098,7 @@ class NascentUpload:
             if uploaded_file.type == "dsc":
                 return uploaded_file
         return None
-    
+
     def verify_uploaded_dsc(self):
         """Verify the uploaded .dsc file.
 
@@ -1110,7 +1110,7 @@ class NascentUpload:
         if dsc_file is None:
             self.reject("Unable to find the dsc file in the sourceful upload?")
             return False
-        
+
         # Try to parse the dsc
         dsc = {}
         try:
@@ -1131,7 +1131,7 @@ class NascentUpload:
         self.dsc_contents = dsc
         self.dsc_files = self._parse_files(dsc['files'], is_dsc=True)
         dsc_files = self.dsc_files
-        
+
         # Validate the 'Source' and 'Version' fields
         if not re_valid_pkg_name.match(dsc['source']):
             self.reject("%s: invalid source name %s" % (
@@ -1139,11 +1139,11 @@ class NascentUpload:
         if not re_valid_version.match(dsc['version']):
             self.reject("%s: invalid version %s" % (
                 dsc_file.filename, dsc['version']))
-        
+
         # XXX cprov 20051207: assume DSC "1.0" format for missed value
         if 'format' not in dsc.keys():
            dsc['format'] = "1.0"
-           
+
         # .dsc files must be version 1.0
         if dsc['format'] != "1.0":
             self.reject("%s: Format is not 1.0. This is incompatible with "
@@ -1264,7 +1264,7 @@ class NascentUpload:
         dsc_file = self._find_dsc()
         if dsc_file is None:
             return
-        
+
         # Get a temporary dir together.
         tmpdir = tempfile.mkdtemp(dir=self.fsroot)
 
@@ -1273,7 +1273,7 @@ class NascentUpload:
         os.chdir(tmpdir)
 
         self.dsc_files.append(dsc_file)
-        
+
         try:
             for source_file in self.dsc_files:
                 os.symlink(source_file.full_filename,
@@ -1359,7 +1359,7 @@ class NascentUpload:
                             ancient_files[0],
                             time.ctime(
                             tar_checker.ancient_files[ancient_files[0]])))
-                    
+
                 except:
                     # There is a very large number of places where we
                     # might get an exception while checking the timestamps.
@@ -1372,7 +1372,7 @@ class NascentUpload:
 
     def _components_valid_for(self, person):
         """Return the set of components this person could upload to."""
-        
+
         possible_components = set()
         for acl in self.distro.uploaders:
             if person in acl:
@@ -1381,7 +1381,7 @@ class NascentUpload:
                 possible_components.add(acl.component.name)
 
         return possible_components
-    
+
     def is_person_in_keyring(self, person):
         """Return whether or not the specified person is in the keyring."""
         self.logger.debug("Attempting to decide if %s is in the keyring." % (
@@ -1417,7 +1417,7 @@ class NascentUpload:
         """
 
         self.logger.debug("Finding and applying overrides.")
-        
+
         for uploaded_file in self.files:
             if uploaded_file.is_source and uploaded_file.type == "dsc":
                 # Look up the source package overrides in the distrorelease
@@ -1471,7 +1471,7 @@ class NascentUpload:
                 except NotFoundError:
                     self.reject("%s: Unable to find arch: %s" % (
                         uploaded_file.filename, archtag))
-                                      
+
 
     def verify_acl(self):
         """Verify that the uploaded files are okay for their named components
@@ -1500,14 +1500,14 @@ class NascentUpload:
         """
         self.logger.debug("Beginning processing.")
 
-        # Verify the changes information. 
+        # Verify the changes information.
         self._find_signer()
         if self.signer is not None:
             self.policy.considerSigner(self.signer, self.signingkey)
-    
+
         self.verify_changes()
         self.verify_uploaded_files()
-        
+
         if self.sourceful:
             self.verify_uploaded_dsc()
 
@@ -1524,7 +1524,7 @@ class NascentUpload:
         #    self.reject("Unable to find a component acl OK for the uploader")
         #    return
 
-        # check rights for OLD packages, the NEW ones goes straight to queue 
+        # check rights for OLD packages, the NEW ones goes straight to queue
         if not self.is_new():
             self.process_signer_acl()
             self.verify_acl()
@@ -1534,7 +1534,7 @@ class NascentUpload:
 
         # That's all folks.
         self.logger.debug("Finished checking upload.")
-        
+
     @property
     def rejected(self):
         """Returns whether or not this upload was rejected."""
@@ -1584,7 +1584,7 @@ class NascentUpload:
         interpolations = self.policy.filterInterpolations(self,
                                                           interpolations)
         outgoing_msg = template % interpolations
-        
+
         return [outgoing_msg]
 
     def build_summary(self):
@@ -1596,7 +1596,7 @@ class NascentUpload:
             else:
                 summary.append(" OK: %s" % uploaded_file.filename)
         return "\n".join(summary)
-    
+
     def is_new(self):
         """Return true if any portion of the upload is NEW."""
         for uploaded_file in self.files:
@@ -1653,14 +1653,14 @@ class NascentUpload:
                 uploaded_file.size,
                 open(uploaded_file.full_filename, "rb"),
                 uploaded_file.content_type)
-            
+
             self.policy.sourcepackagerelease.addFile(library_file)
 
     def find_build(self, archtag):
         """Find and return a build for the given archtag."""
         if getattr(self.policy, 'build', None) is not None:
             return self.policy.build
-        
+
         build_id = getattr(self.policy.options, 'buildid', None)
         if build_id is None:
             spr = self.policy.sourcepackagerelease
@@ -1669,7 +1669,7 @@ class NascentUpload:
             self.policy.build = build
         else:
             self.policy.build = getUtility(IBuildSet).getBuildByID(build_id)
-        
+
         return self.policy.build
 
     def insert_binary_into_db(self):
@@ -1716,21 +1716,21 @@ class NascentUpload:
                 architecturespecific=control.get("Architecture",
                                                  "").lower()!='all'
                 ) # the binarypackagerelease constructor
-            
+
             library_file = self.librarian.create(
                 uploaded_file.filename,
                 uploaded_file.size,
                 open(uploaded_file.full_filename, "rb"),
                 uploaded_file.content_type)
             binary.addFile(library_file)
-            
+
     def insert_into_queue(self):
         """Insert this nascent upload into the database."""
         if self.sourceful:
             self.insert_source_into_db()
         if self.binaryful:
             self.insert_binary_into_db()
-            
+
         filecontents = guess_encoding(self.changes["filecontents"])
         # create a DRQ entry in new state
         self.logger.debug("Creating a New queue entry")
@@ -1742,7 +1742,7 @@ class NascentUpload:
         if not self.is_new():
             self.logger.debug("Setting it to ACCEPTED")
             queue_root.set_accepted()
-            
+
         # Next, if we're sourceful, add a source to the queue
         if self.sourceful:
             queue_root.addSource(self.policy.sourcepackagerelease)
@@ -1758,7 +1758,7 @@ class NascentUpload:
                     open(uploaded_file.full_filename, "rb"),
                     uploaded_file.content_type),
                     uploaded_file.custom_type)
-                                     
+
     def do_accept(self, new_msg=new_template, accept_msg=accepted_template,
                   announce_msg=announce_template):
         """Accept the upload into the queue.
@@ -1792,7 +1792,7 @@ class NascentUpload:
                 interpolations['ANNOUNCE'] = 'nowhere'
             self.build_recipients()
             interpolations['TO'] = ", ".join(self.recipients)
-            
+
             interpolations = self.policy.filterInterpolations(
                 self, interpolations)
             self.insert_into_queue()
@@ -1808,6 +1808,3 @@ class NascentUpload:
             # reject message rather than being swallowed up.
             self.reject("Exception while accepting: %s" % e)
             return False, self.do_reject()
-    
-
-
