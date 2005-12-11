@@ -18,13 +18,12 @@ from canonical.database.constants import DEFAULT
 
 from canonical.launchpad.interfaces import (
     IDistroArchRelease, IBinaryPackageReleaseSet, IPocketChroot,
-    IHasBuildRecords, IBinaryPackageName, IDistroArchReleaseSet
-    )
+    IHasBuildRecords, IBinaryPackageName, IDistroArchReleaseSet,
+    IBuildSet)
 
 from canonical.launchpad.database.binarypackagename import BinaryPackageName
 from canonical.launchpad.database.distroarchreleasebinarypackage import (
     DistroArchReleaseBinaryPackage)
-from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.publishing import BinaryPackagePublishing
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.processor import Processor
@@ -58,7 +57,7 @@ class DistroArchRelease(SQLBase):
     def default_processor(self):
         """See IDistroArchRelease"""
         return self.processors[0]
-        
+
     @property
     def processors(self):
         """See IDistroArchRelease"""
@@ -77,11 +76,11 @@ class DistroArchRelease(SQLBase):
     def displayname(self):
         """See IDistroArchRelease."""
         return '%s %s' % (self.distrorelease.name, self.architecturetag)
-   
+
     def updatePackageCount(self):
         """See IDistroArchRelease """
         query = """
-            BinaryPackagePublishing.distroarchrelease = %s AND 
+            BinaryPackagePublishing.distroarchrelease = %s AND
             BinaryPackagePublishing.status = %s AND
             BinaryPackagePublishing.pocket = %s
             """ % sqlvalues(
@@ -120,7 +119,7 @@ class DistroArchRelease(SQLBase):
         """See IDistroArchRelease."""
         bprs = BinaryPackageRelease.select("""
             BinaryPackagePublishing.distroarchrelease = %s AND
-            BinaryPackagePublishing.binarypackagerelease = 
+            BinaryPackagePublishing.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.fti @@ ftq(%s)
             """ % sqlvalues(self.id, text),
@@ -149,15 +148,8 @@ class DistroArchRelease(SQLBase):
 
     def getBuildRecords(self, status=None):
         """See IHasBuildRecords"""
-        # specific status or simply touched.
-        status_clause = ''
-        if status:
-            status_clause = "AND buildstate=%s" % sqlvalues(status)
-
-        return Build.select(
-            "distroarchrelease=%s %s" % (self.id, status_clause),
-            orderBy="-datebuilt"
-            )
+        # use facility provided by IBuildSet to retrieve the records
+        return getUtility(IBuildSet).get_builds_by_arch_ids([self.id], status)
 
     def getReleasedPackages(self, name, pocket=None):
         """See IDistroArchRelease."""
@@ -177,7 +169,7 @@ class DistroArchRelease(SQLBase):
                             name.id))+pocketclause,
             clauseTables = ['BinaryPackageRelease'])
         return shortlist(published)
-        
+
     def findDepCandidateByName(self, name):
         """See IPublishedSet."""
         return PublishedPackage.selectOneBy(
@@ -193,7 +185,7 @@ class DistroArchReleaseSet:
 
     def __iter__(self):
         return iter(DistroArchRelease.select())
-        
+
     def get(self, dar_id):
         """See canonical.launchpad.interfaces.IDistributionSet."""
         return DistroArchRelease.get(dar_id)

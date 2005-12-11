@@ -4,6 +4,7 @@ __metaclass__ = type
 __all__ = ['Distribution', 'DistributionSet', 'DistroPackageFinder']
 
 from zope.interface import implements
+from zope.component import getUtility
 
 from sqlobject import (
     RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey, MultipleJoin)
@@ -34,7 +35,6 @@ from canonical.launchpad.database.ticket import Ticket
 from canonical.launchpad.database.publishing import (
     SourcePackageFilePublishing, BinaryPackageFilePublishing)
 from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.database.build import Build
 
 from canonical.lp.dbschema import (
     EnumCol, BugTaskStatus, DistributionReleaseStatus,
@@ -42,7 +42,7 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IDistroPackageFinder, NotFoundError,
-    IHasBuildRecords, ISourcePackageName)
+    IHasBuildRecords, ISourcePackageName, IBuildSet)
 
 from sourcerer.deb.version import Version
 
@@ -308,28 +308,13 @@ class Distribution(SQLBase):
     def getBuildRecords(self, status=None):
         """See IHasBuildRecords"""
         # Find out the distroarchreleases in question.
-        ids_list = []
+        arch_ids = []
+        # concatenate architectures list since they are distinct.
         for release in self.releases:
-            ids = ','.join(
-                '%d' % arch.id for arch in release.architectures)
-            # Do not mess pgsql sintaxe with empty chunks.
-            if ids:
-                ids_list.append(ids)
+            arch_ids += [arch.id for arch in release.architectures]
 
-        arch_ids = ','.join(ids_list)
-
-        # If not distroarchrelease was found return None.
-        if not arch_ids:
-            return None
-
-        # Specific status.
-        status_clause = ''
-        if status:
-            status_clause = "AND buildstate=%s" % sqlvalues(status)
-
-        return Build.select(
-            "distroarchrelease IN (%s) %s" % (arch_ids, status_clause), 
-            orderBy="-datebuilt")
+        # use facility provided by IBuildSet to retrieve the records
+        return getUtility(IBuildSet).get_builds_by_arch_ids(arch_ids, status)
 
     def removeOldCacheItems(self):
         """See IDistribution."""

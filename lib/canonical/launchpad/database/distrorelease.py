@@ -27,7 +27,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
     IPublishedPackageSet, IHasBuildRecords, NotFoundError,
-    IBinaryPackageName)
+    IBinaryPackageName, IBuildSet)
 
 from canonical.database.constants import DEFAULT, UTC_NOW
 
@@ -50,7 +50,6 @@ from canonical.launchpad.database.distroreleaselanguage import (
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.bugtask import BugTaskSet, BugTask
 from canonical.launchpad.database.binarypackagerelease import (
         BinaryPackageRelease)
@@ -388,21 +387,9 @@ class DistroRelease(SQLBase):
     def getBuildRecords(self, status=None):
         """See IHasBuildRecords"""
         # find out the distroarchrelease in question
-        arch_ids = ','.join(
-            '%d' % arch.id for arch in self.architectures)
-
-        # if no distroarchrelease was found return None
-        if not arch_ids:
-            return None
-
-        # specific status or simply worked
-        status_clause = ''
-        if status:
-            status_clause = "AND buildstate=%s" % sqlvalues(status)
-
-        return Build.select(
-            "distroarchrelease IN (%s) %s" % (arch_ids, status_clause),
-            orderBy="-datebuilt")
+        arch_ids = [arch.id for arch in self.architectures]
+        # use facility provided by IBuildSet to retrieve the records
+        return getUtility(IBuildSet).get_builds_by_arch_ids(arch_ids, status)
 
     def createUploadedSourcePackageRelease(self, sourcepackagename,
             version, maintainer, dateuploaded, builddepends,

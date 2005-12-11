@@ -41,7 +41,7 @@ class BuilderSlave(xmlrpclib.Server):
         xmlrpclib.Server.__init__(self, urlparse.urljoin(urlbase,"/rpc/"),
                                   *args, **kwargs)
         self.urlbase = urlbase
-    
+
     def getFile(self, sha_sum):
         """Construct a file-like object to return the named file."""
         return urllib2.urlopen(urlparse.urljoin(self.urlbase,
@@ -52,7 +52,7 @@ class Builder(SQLBase):
     implements(IBuilder, IHasBuildRecords)
     _table = 'Builder'
 
-    processor = ForeignKey(dbName='processor', foreignKey='Processor', 
+    processor = ForeignKey(dbName='processor', foreignKey='Processor',
                            notNull=True)
     url = StringCol(dbName='url', notNull=True)
     name = StringCol(dbName='name', notNull=True)
@@ -64,12 +64,12 @@ class Builder(SQLBase):
     trusted = BoolCol(dbName='trusted', default=False, notNull=True)
     speedindex = IntCol(dbName='speedindex', default=0)
     manual = BoolCol(dbName='manual', default=False)
-    
+
     @property
     def currentjob(self):
         """See IBuilder"""
         return BuildQueue.selectOneBy(builderID=self.id)
-    
+
     @property
     def slave(self):
         """See IBuilder"""
@@ -82,7 +82,7 @@ class Builder(SQLBase):
             mode = 'MANUAL'
         else:
             mode = 'AUTO'
-            
+
         if not self.builderok:
             return 'NOT OK : %s (%s)' % (self.failnotes, mode)
 
@@ -100,7 +100,7 @@ class Builder(SQLBase):
     def getBuildRecords(self, status=None):
         """See IHasBuildRecords."""
         return getUtility(IBuildSet).getBuildsForBuilder(self.id, status)
-        
+
 
 class BuilderSet(object):
     """See IBuilderSet"""
@@ -165,7 +165,7 @@ class BuildQueue(SQLBase):
     def urgency(self):
         """See IBuildQueue"""
         return self.build.sourcepackagerelease.urgency
-    
+
     @property
     def component_name(self):
         """See IBuildQueue"""
@@ -175,7 +175,7 @@ class BuildQueue(SQLBase):
     def archhintlist(self):
         """See IBuildQueue"""
         return self.build.sourcepackagerelease.architecturehintlist
-    
+
     @property
     def name(self):
         """See IBuildQueue"""
@@ -188,7 +188,7 @@ class BuildQueue(SQLBase):
 
     @property
     def files(self):
-        """See IBuildQueue"""        
+        """See IBuildQueue"""
         return self.build.sourcepackagerelease.files
 
     @property
@@ -205,7 +205,7 @@ class BuildQueue(SQLBase):
             return now - self.buildstart
         return None
 
-        
+
 class BuildQueueSet(object):
     """See IBuildQueueSet"""
     implements(IBuildQueueSet)
@@ -233,7 +233,7 @@ class BuildQueueSet(object):
     def getActiveBuildJobs(self):
         """See IBuildQueueSet."""
         return BuildQueue.select('buildstart is not null')
-    
+
     def calculateCandidates(self, archreleases, state):
         """See IBuildQueueSet."""
         alternatives = ["build.distroarchrelease=%d"

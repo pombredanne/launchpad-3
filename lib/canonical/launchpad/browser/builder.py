@@ -24,6 +24,7 @@ from zope.component import getUtility
 from zope.event import notify
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent
+
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
@@ -113,8 +114,8 @@ class BuilderOverviewMenu(ApplicationMenu):
         return Link('+cancel', text, icon='edit')
 
 
-class CommonView:
-    """Common methods used in this file."""
+class CommonBuilderView:
+    """Common builder methods used in this file."""
 
     def now(self):
         """Offers the timestamp for page rendering."""
@@ -122,15 +123,15 @@ class CommonView:
         return datetime.datetime.now(UTC)
 
 
-class BuilderSetView(CommonView):
+class BuilderSetView(CommonBuilderView):
     """Default BuilderSet view class
 
-    Implements useful actions and colect useful set for the pagetemplate.
+    Simply provides CommonBuilderView for the BuilderSet pagetemplate.
     """
     __used_for__ = IBuilderSet
 
 
-class BuilderView(CommonView, BuildRecordsView):
+class BuilderView(CommonBuilderView, BuildRecordsView):
     """Default Builder view class
 
     Implements useful actions and colect useful set for the pagetemplate.

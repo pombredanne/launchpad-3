@@ -10,8 +10,8 @@ Builder View Classes and Pages
   >>> builder = getUtility(IBuilderSet).get(1)
 
 Get a "mock" request:
-
-  >>> request = TestRequest()
+  >>> mock_form = {'batch_start': 1}
+  >>> request = TestRequest(form=mock_form)
 
 Let's instantiate the view for +index:
 
@@ -19,21 +19,18 @@ Let's instantiate the view for +index:
 
   >>> builder_view.now().isoformat()
   '...'
-  
+
   setupBuildList, build a batched list of build records and store it
   in view.batch, also store the batch navigator in view.batchnav. it
   simply returns None:
 
   >>> builder_view.setupBuildList()
 
-XXX cprov 20051121: view.batch is a Batching instance,
-                    is there a more reliable way to test it ?
+As expected we have a 'batched' list with the size requested in
+mock_form:
 
   >>> len(builder_view.batch)
-  3
-
-  >>> IBatchNavigator.providedBy(builder_view.batchnav)
-  True  
+  2
 
 Let's instantiate the view for +cancel:
 
@@ -55,7 +52,7 @@ by mark. we nee to log in as mark or any other member of admin team
 
 Build an special request containing the fields we want to change:
 
-  >>> request = TestRequest(form={'field.manual': 'on', 
+  >>> request = TestRequest(form={'field.manual': 'on',
   ...                             'UPDATE_SUBMIT': 'Change'})
 
 Instantiate the correspondent view:
@@ -82,7 +79,7 @@ Let's instantiate the view for +edit:
 
 Build an special request containing the fields we want to change:
 
-  >>> request = TestRequest(form={'field.processor': builder.processor.id, 
+  >>> request = TestRequest(form={'field.processor': builder.processor.id,
   ...                             'field.url': builder.url,
   ...                             'field.name': u'biscoito',
   ...                             'field.title': builder.title,

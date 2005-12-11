@@ -37,7 +37,7 @@ class BuildFacets(StandardLaunchpadFacets):
 
 class BuildRecordsView(LaunchpadView):
     """Base class used to present objects that contains build records.
-    
+
     It retrieves the UI build_state selector action and setup a proper
     batched list with the requested results. See further UI details in
     template/builds-list.pt and callsite details in Builder, Distribution,
@@ -82,5 +82,3 @@ class BuildRecordsView(LaunchpadView):
         in its result table or not. It's only ommited in builder-index page.
         """
         return True
-
-

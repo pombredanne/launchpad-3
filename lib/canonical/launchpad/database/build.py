@@ -37,9 +37,9 @@ class Build(SQLBase):
     _table = 'Build'
 
     datecreated = UtcDateTimeCol(dbName='datecreated', default=UTC_NOW)
-    processor = ForeignKey(dbName='processor', foreignKey='Processor', 
+    processor = ForeignKey(dbName='processor', foreignKey='Processor',
         notNull=True)
-    distroarchrelease = ForeignKey(dbName='distroarchrelease', 
+    distroarchrelease = ForeignKey(dbName='distroarchrelease',
         foreignKey='DistroArchRelease', notNull=True)
     buildstate = EnumCol(dbName='buildstate', notNull=True, schema=BuildStatus)
     sourcepackagerelease = ForeignKey(dbName='sourcepackagerelease',
@@ -127,9 +127,9 @@ class Build(SQLBase):
                                    essential, installedsize,
                                    copyright, licence,
                                    architecturespecific):
-        
+
         """See IBuild."""
-        
+
         return BinaryPackageRelease(buildID=self.id,
                                     binarypackagenameID=binarypackagename,
                                     version=version,
@@ -182,8 +182,8 @@ class BuildSet:
         return Build.select(
             AND(Build.q.buildstate==BuildStatus.NEEDSBUILD,
                 IN(Build.q.distroarchreleaseID, archrelease_ids))
-            )                                  
-        
+            )
+
     def getBuildsForBuilder(self, builder_id, status=None):
         """See IBuildSet."""
         status_clause = ''
@@ -193,3 +193,24 @@ class BuildSet:
         return Build.select(
             "builder=%s %s" % (builder_id, status_clause),
             orderBy="-datebuilt")
+
+    def get_builds_by_arch_ids(self, arch_ids, status=None):
+        """See IBuildSet."""
+        # If not distroarchrelease was found return None.
+        if not arch_ids:
+            return None
+
+        # format clause according single/multiple architecture(s) form
+        if len(arch_ids) == 1:
+            condition_clauses = [('distroarchrelease=%s'
+                                  % sqlvalues(arch_ids[0]))]
+        else:
+            condition_clauses = [('distroarchrelease IN %s'
+                                  % sqlvalues(arch_ids))]
+
+        # attempt to given status
+        if status:
+            condition_clauses.append('buildstate=%s' % sqlvalues(status))
+
+        return Build.select(' AND '.join(condition_clauses),
+                            orderBy="-datebuilt")

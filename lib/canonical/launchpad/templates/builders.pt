@@ -12,7 +12,7 @@
   <div metal:fill-slot="main">
 
       <h1>Build machines for Launchpad</h1>
- 
+
       <p class="highlighted">
         The Launchpad build farm works tirelessly to compile packages,
         performing checks on them and generating several distribution formats.

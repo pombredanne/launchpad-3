@@ -69,7 +69,7 @@ class IBuild(Interface):
         """
 
     def createBuildQueueEntry():
-        """Create a BuildQueue entry for this build record.""" 
+        """Create a BuildQueue entry for this build record."""
 
 class IBuildSet(Interface):
     """Interface for BuildSet"""
@@ -85,14 +85,22 @@ class IBuildSet(Interface):
         """
 
     def getPendingBuildsForArchSet(archrelease):
-        """Return all pending build records within a group of ArchReleases 
+        """Return all pending build records within a group of ArchReleases
 
         Pending means that buildstatus is NEEDSBUILDING.
         """
     def getBuildsForBuilder(builder_id, status=None):
         """Return build records touched by a builder.
 
-        If 'status' is ommited return all records.
+        If status is provided, only builders with that status will
+        be returned.
+        """
+
+    def get_builds_by_arch_ids(arch_ids, status=None):
+        """Retrieve Build Records for a given arch_ids list.
+
+        Optionally, for a given status, if status is ommited return all
+        records.
         """
 
 class IHasBuildRecords(Interface):
@@ -102,6 +110,5 @@ class IHasBuildRecords(Interface):
         """Return build records owned by the object.
 
         The optional 'status' argument selects build records in a specific
-        state. If the 'status' argument is omitted, it returns the all
-        entries.
+        state.
         """

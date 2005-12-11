@@ -65,9 +65,9 @@
 
       </div>
 
-      <h2>Recently Builds</h2>
+      <h2>Recent Builds</h2>
 
-      <div tal:replace="structure context/@@+builds-list"/>    
+      <div tal:replace="structure context/@@+builds-list"/>
 
       <p class="discreet">Last updated <span tal:replace="view/now"/></p>
 

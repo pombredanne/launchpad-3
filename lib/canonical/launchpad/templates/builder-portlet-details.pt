@@ -10,7 +10,7 @@
 
      <b>Trusted</b>: <span tal:replace="context/trusted"/><br/>
 
-     <b>Description</b> 
+     <b>Description</b>
      <div tal:content="structure context/description/fmt:text-to-html"/>
 
      <b>Status</b>
@@ -18,7 +18,7 @@
 
      <b>Owner</b>
      <a tal:attributes="href context/owner/fmt:url"
-        tal:content="context/owner/displayname">OWNER</a>       
+        tal:content="context/owner/displayname">OWNER</a>
    </div>
 </div>
 
