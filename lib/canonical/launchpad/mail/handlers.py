@@ -48,6 +48,15 @@ def get_bugtask_type(bugtask):
         >>> class BugTask:
         ...     pass
 
+    :bugtask: has to provide a specific bugtask interface:
+
+        >>> get_bugtask_type(BugTask()) #doctest: +ELLIPSIS
+        Traceback (most recent call last):
+        ...
+        AssertionError...
+
+    When it does, the specific interface is returned:
+
         >>> classImplementsOnly(BugTask, IUpstreamBugTask)
         >>> get_bugtask_type(BugTask()) #doctest: +ELLIPSIS
         <...IUpstreamBugTask>
@@ -67,7 +76,7 @@ def get_bugtask_type(bugtask):
         if interface.providedBy(bugtask):
             return interface
     # The bugtask didn't provide any specific interface.
-    raise TypeError(
+    raise AssertionError(
         'No specific bugtask interface was provided by %r' % bugtask)
 
 

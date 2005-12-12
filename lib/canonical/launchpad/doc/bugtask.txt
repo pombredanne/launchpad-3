@@ -381,8 +381,8 @@ The maintainer of an upstream task is simply the Product.owner:
 The maintainer of a distribution task is the source package maintainer:
 
     >>> bugtask = bugtaskset.get(4)
-    >>> bugtask.maintainer.name
-    u'no-priv'
+    >>> bugtask.maintainer.id
+    1
 
 or None, if the task is not yet assigned to a specific source
 package. So, borrowing the distro task we filed earlier:
@@ -569,11 +569,11 @@ and mark one of the Firefox bugs private:
     >>> transaction.commit()
 
 If we now login as someone who was neither implicitly nor explicitly subscribed
-to this bug, e.g. Helge, they will not be able to access or set
+to this bug, e.g. No Privileges Person, they will not be able to access or set
 properties of the bugtask.
 
-    >>> login("kreutzm@itp.uni-hannover.de")
-    >>> helge = getUtility(ILaunchBag).user
+    >>> login("no-priv@canonical.com")
+    >>> mr_no_privs = getUtility(ILaunchBag).user
 
     >>> bug_upstream_firefox_no_svg_support.status
     Traceback (most recent call last):
@@ -585,11 +585,12 @@ properties of the bugtask.
       ...
     Unauthorized: ('status', 'launchpad.Edit')
 
-The private bugs will be invisible to Helge in the search results:
+The private bugs will be invisible to No Privileges Person in the search
+results:
 
     >>> params = BugTaskSearchParams(
     ...     status=any(STATUS_NEW, STATUS_ACCEPTED),
-    ...     orderby="id", user=helge)
+    ...     orderby="id", user=mr_no_privs)
     >>> bugtasks = upstream_mozilla.searchTasks(params)
     >>> print bugtasks.count()
     3
@@ -597,10 +598,11 @@ The private bugs will be invisible to Helge in the search results:
     >>> print sorted(bug_ids)
     [4, 5, 6]
 
-Likewise when Helge tries to do a search on tasks maintained by Foo Bar.
+Likewise when the No Privileges Person tries to do a search on tasks
+maintained by Foo Bar.
 
     >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
-    ...     foobar, user=helge)
+    ...     foobar, user=mr_no_privs)
     >>> [bugtask.bug.id for bugtask in foobar_maintained_tasks]
     [2]
 
@@ -649,16 +651,14 @@ will see the private bug.
     [1, 4, 5, 6]
 
 
-If we query for all bugtasks reported on all packages/products that No
-Priviliges Person maintains, we'll see that bug 1 is there (we'll not
-see it if we query logged in as a user who can't see that bug).
+If we query for all bugtasks reported on all packages/products that
+Sample Person maintains, we'll see that bug 1 is there (we'll not see it
+if we query logged in as a user who can't see that bug).
 
-    >>> login("no-priv@canonical.com")
-    >>> nopriv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
-    >>> nopriv_maintained_tasks = bugtaskset.maintainedBugTasks(
-    ...     nopriv, user=nopriv)
-    >>> [bugtask.bug.id for bugtask in nopriv_maintained_tasks]
-    [1, 2, 3]
+    >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
+    ...     sample_person, user=foobar)
+    >>> [bugtask.bug.id for bugtask in foobar_maintained_tasks]
+    [1, 4, 5, 7]
 
 Privacy and Launchpad Admins
 ----------------------------
@@ -680,14 +680,13 @@ administrator.
     [1, 4, 5, 6]
 
 If, still logged in as David Allouche, we query for all bugtasks
-reported on packages/products for which No Privileges Person is the
-maintainer, we'll also see bug 1 again in the results, even though it's
-private.
+reported on packages/products for which Sample Person is the maintainer,
+we'll also see bug 1 again in the results, even though it's private.
 
-    >>> nopriv_maintained_tasks = bugtaskset.maintainedBugTasks(
-    ...     nopriv, user=ddaa)
-    >>> [bugtask.bug.id for bugtask in nopriv_maintained_tasks]
-    [1, 2, 3]
+    >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
+    ...     sample_person, user=ddaa)
+    >>> [bugtask.bug.id for bugtask in foobar_maintained_tasks]
+    [1, 4, 5, 7]
 
 Trying to retrieve the bug directly will work fine:
 

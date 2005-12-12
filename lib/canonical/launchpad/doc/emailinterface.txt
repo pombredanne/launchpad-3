@@ -50,9 +50,9 @@ to sign each email, we'll create a class which fakes a signed email:
     >>> import email
     >>> import email.Utils
     >>> class MockSignedMessage(email.Message.Message):
+    ...     @property
     ...     def signedMessage(self):
     ...         return self
-    ...     signedMessage = property(signedMessage)
     ...     signature = object()
 
 And since we'll pass the email directly to the correct handler,
@@ -660,7 +660,27 @@ The user is a bug contact of the upstream product
 The user is a package bug contact
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    >>> login('no-priv@canonical.com')
+    XXX: The closest thing we have to a bug contact is a maintainer.
+         This is going away, though, so let's create a new Maintainership
+         record in the test instead of adding sample data. When this
+         test fails, it means that the Maintainership table has been
+         removed, and this test should be updated to deal with real bug
+         contacts instead. guess_bugtask in mail/handlers.py will have
+         to be updated as well, since it depends on IBugtask.maintainer.
+         -- Bjorn Tillenius, 2005-12-12
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, ISourcePackageNameSet, IPersonSet)
+    >>> from canonical.launchpad.database import Maintainership
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> mozilla_name = getUtility(ISourcePackageNameSet)['mozilla-firefox']
+    >>> helge = getUtility(IPersonSet).getByName('kreutzm')
+    >>> mozilla_maintainership = Maintainership(
+    ...     distribution=ubuntu, sourcepackagename=mozilla_name,
+    ...     maintainer=helge)
+
+
+    >>> login('kreutzm@itp.uni-hannover.de')
     >>> submit_commands(
     ...     bug_one, 'status accepted', 'assignee no-priv@canonical.com')
     >>> for bugtask in bug_one.bugtasks:
@@ -668,8 +688,8 @@ The user is a package bug contact
     ...         bugtask.targetname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     firefox (upstream): Accepted, assigned to Sample Person
-    mozilla-firefox (ubuntu): New, assigned to no one
-    mozilla-firefox (debian): Accepted, assigned to No Privileges Person
+    mozilla-firefox (ubuntu): Accepted, assigned to No Privileges Person
+    mozilla-firefox (debian): Accepted, assigned to no one
 
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
@@ -699,7 +719,7 @@ The user is a distribution member
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     firefox (upstream): Accepted, assigned to Sample Person
     mozilla-firefox (ubuntu): New, assigned to Sample Person
-    mozilla-firefox (debian): Accepted, assigned to No Privileges Person
+    mozilla-firefox (debian): Accepted, assigned to no one
 
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
@@ -708,7 +728,7 @@ The user is a distribution member
     >>> print msg.get_payload(decode=True)
     Public bug report changed:
     ...
-        Assignee: (unassigned) => Sample Person
+        Assignee: No Privileges Person => Sample Person
     ...
 
 
@@ -727,7 +747,7 @@ user, telling him that he has to use the 'affects' command.
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     firefox (upstream): Accepted, assigned to Sample Person
     mozilla-firefox (ubuntu): New, assigned to Sample Person
-    mozilla-firefox (debian): Accepted, assigned to No Privileges Person
+    mozilla-firefox (debian): Accepted, assigned to no one
 
     >>> transaction.commit()
     >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
