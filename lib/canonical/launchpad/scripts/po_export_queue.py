@@ -219,7 +219,7 @@ class ExportResult:
         else:
             recipients = [person.preferredemail.email]
 
-        for recipient in recipients:
+        for recipient in [str(recipient) for recipient in recipients]:
             simple_sendmail(
                 from_addr='rosetta@canonical.com',
                 to_addrs=[recipient],

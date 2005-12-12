@@ -1644,7 +1644,7 @@ def sendMergeRequestEmail(token, dupename, appurl):
     message = template % replacements
 
     subject = "Launchpad: Merge of Accounts Requested"
-    simple_sendmail(fromaddress, token.email, subject, message)
+    simple_sendmail(fromaddress, str(token.email), subject, message)
 
 
 class ObjectReassignmentView:

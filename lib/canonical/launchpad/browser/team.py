@@ -190,6 +190,6 @@ def sendEmailValidationRequest(team, email, appurl):
                     'appurl': appurl,
                     'admin_email': config.admin_address}
     message = template % replacements
-    simple_sendmail(fromaddress, token.email, subject, message)
+    simple_sendmail(fromaddress, str(token.email), subject, message)
 
 

@@ -966,7 +966,7 @@ def send_ticket_notification(ticket_event, subject, body):
         for address in contactEmailAddresses(notified_person):
             if address not in sent_addrs:
                 simple_sendmail_from_person(
-                    ticket_even.user, address, subject, body)
+                    ticket_event.user, address, subject, body)
                 sent_addrs.add(address)
 
 

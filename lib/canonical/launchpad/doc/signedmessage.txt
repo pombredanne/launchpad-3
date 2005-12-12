@@ -7,7 +7,7 @@ You can create it from a string using email.message_from_string passing
 SignedMessage as the _class parameter.  Let's start with a simple
 message, where the signature is inline with the signed content:
 
-    >>> from canonical.launchpad.helpers import read_test_message
+    >>> from canonical.launchpad.mail.ftests import read_test_message
     >>> msg = read_test_message('signed_inline.txt')
 
 You can access the headers of the message:

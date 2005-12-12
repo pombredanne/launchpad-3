@@ -79,7 +79,7 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
 
     # It's the caller's responsibility to encode the address fields to
     # ASCII strings.
-    for address in [from_addr] + to_addrs:
+    for address in [from_addr] + list(to_addrs):
         if not isinstance(address, str) or not is_ascii_only(address):
             raise AssertionError(
                 'Expected an ASCII str object, got: %r' % address)

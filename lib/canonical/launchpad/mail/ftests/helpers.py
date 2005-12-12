@@ -5,6 +5,7 @@ __all__ = ['read_test_message']
 
 __metaclass__ = type
 
+import email
 import os.path
 
 from canonical.launchpad.mail.signedmessage import SignedMessage

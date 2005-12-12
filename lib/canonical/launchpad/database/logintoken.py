@@ -54,7 +54,7 @@ class LoginToken(SQLBase):
         message = template % replacements
 
         subject = "Launchpad: Validate your email address"
-        simple_sendmail(fromaddress, self.email, subject, message)
+        simple_sendmail(fromaddress, str(self.email), subject, message)
 
     def sendGPGValidationRequest(self, appurl, key):
         """See ILoginToken."""
@@ -86,7 +86,7 @@ class LoginToken(SQLBase):
                                                 key.fingerprint)
 
         subject = "Launchpad: Validate your GPG Key"
-        simple_sendmail(fromaddress, self.email, subject, message)
+        simple_sendmail(fromaddress, str(self.email), subject, message)
 
 
 class LoginTokenSet:
