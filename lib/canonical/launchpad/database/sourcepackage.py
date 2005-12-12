@@ -5,6 +5,8 @@ __all__ = [
     'SourcePackage',
     ]
 
+from warnings import warn
+
 from zope.interface import implements
 
 from sqlobject import SQLObjectNotFound
@@ -158,6 +160,11 @@ class SourcePackage:
     def maintainer(self):
         # For backwards compatibility purposes only, since "Maintainership" is
         # gone. See https://launchpad.net/malone/bugs/5485.
+        warn("SourcePackage.maintainer was deprecated with the "
+             "InitialBugContacts implementation. Please talk to "
+             "bradb about removing this property in the UI and code.",
+             DeprecationWarning)
+
         return None
 
     @property
@@ -222,7 +229,6 @@ class SourcePackage:
     @property
     def product(self):
         # we have moved to focusing on productseries as the linker
-        from warnings import warn
         warn('SourcePackage.product is deprecated, use .productseries',
              DeprecationWarning, stacklevel=2)
         ps = self.productseries

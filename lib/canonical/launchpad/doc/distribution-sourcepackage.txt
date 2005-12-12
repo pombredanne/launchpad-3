@@ -62,8 +62,8 @@ Let's login then to add a bugcontact:
     >>> login("foo.bar@canonical.com")
 
     >>> debian_firefox.addBugContact(sample_person)
-    >>> [pbc.bugcontact.id for pbc in debian_firefox.bugcontacts]
-    [12]
+    >>> [pbc.bugcontact.name for pbc in debian_firefox.bugcontacts]
+    [u'name12']
 
 Trying to add a bug contact to a package when that person or team is
 already one of the bug contacts on that package will raise a
@@ -79,8 +79,8 @@ Let's add an ITeam as one of the bug contacts:
     >>> ubuntu_team = getUtility(IPersonSet).get(17)
     >>> debian_firefox.addBugContact(ubuntu_team)
 
-    >>> sorted([pbc.bugcontact.id for pbc in debian_firefox.bugcontacts])
-    [12, 17]
+    >>> sorted([pbc.bugcontact.name for pbc in debian_firefox.bugcontacts])
+    [u'name12', u'name17']
 
 To remove a bug contact, use IDistributionSourcePackage.removeBugContact:
 
@@ -92,6 +92,8 @@ Trying to remove a bug contact that doesn't exist on a source package raises a
 DeleteBugContactError.
 
     >>> foobar = getUtility(IPersonSet).get(16)
+    >>> print foobar.name
+    name16
     >>> debian_firefox.removeBugContact(foobar)
     Traceback (most recent call last):
       ...

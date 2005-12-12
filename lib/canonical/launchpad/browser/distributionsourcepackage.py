@@ -158,10 +158,10 @@ class DistributionSourcePackageBugContactsView:
                 else:
                     # The user has been removed as a bug contact, so tell them
                     # this.
-                    self.request.response.addNotification((
+                    self.request.response.addNotification(
                         "You have been removed as a bug contact for %s. You "
                         "will no longer automatically receive bugmail for this "
-                        "package.") % pkg.displayname)
+                        "package." % pkg.displayname)
 
             personset = getUtility(IPersonSet)
 
@@ -190,8 +190,8 @@ class DistributionSourcePackageBugContactsView:
                     pass
                 else:
                     self.request.response.addNotification(
-                        ('The "%s" team was successfully subscribed to all bugmail '
-                         'in %s') % (team.displayname, self.context.displayname))
+                        'The "%s" team was successfully subscribed to all bugmail '
+                        'in %s' % (team.displayname, self.context.displayname))
 
                 unsubscribe_teams.remove(team)
 
@@ -204,8 +204,8 @@ class DistributionSourcePackageBugContactsView:
                     pass
                 else:
                     self.request.response.addNotification(
-                        ('The "%s" team was successfully UNsubscribed from all '
-                         'bugmail in %s') % (
+                        'The "%s" team was successfully unsubscribed from all '
+                        'bugmail in %s' % (
                             team.displayname, self.context.displayname))
         else:
             # The user seems to be coming into this page from elsewhere, so no

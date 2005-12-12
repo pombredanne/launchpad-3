@@ -148,9 +148,7 @@ class Bug(SQLBase):
                 if task.assignee is not None:
                     emails.update(contactEmailAddresses(task.assignee))
 
-        emails = list(emails)
-        emails.sort()
-        return emails
+        return sorted(emails)
 
     # messages
     def newMessage(self, owner=None, subject=None, content=None,
@@ -288,7 +286,9 @@ class BugSet(BugSetBase):
                 'createBug requires a comment, msg, or description')
 
         # make sure we did not get TOO MUCH information
-        assert (comment is None or msg is None), "Too much information"
+        assert (
+            (comment is None or msg is None),
+            "Expected either a comment or a msg, but got both")
 
         # Create the bug comment if one was given.
         if comment:
@@ -322,11 +322,10 @@ class BugSet(BugSetBase):
             # If a product bug contact has been provided, subscribe that contact
             # to all public bugs. Otherwise subscribe the product owner to all
             # public bugs.
-            if product.bugcontact:
-                if not bug.private:
+            if not bug.private:
+                if product.bugcontact:
                     bug.subscribe(product.bugcontact)
-            else:
-                if not bug.private:
+                else:
                     bug.subscribe(product.owner)
 
         # Create the task on a source package name if one was passed.
@@ -346,7 +345,7 @@ class BugSet(BugSetBase):
             # Subscribe package bug contacts to public bugs, if package
             # information was provided.
             if sourcepackagename:
-                package = distribution.getSourcePackage(sourcepackagename.name)
+                package = distribution.getSourcePackage(sourcepackagename)
                 if package.bugcontacts and not bug.private:
                     for pkg_bugcontact in package.bugcontacts:
                         bug.subscribe(pkg_bugcontact.bugcontact)

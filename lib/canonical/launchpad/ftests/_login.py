@@ -24,17 +24,16 @@ def login(email, participation=None):
     """
     authutil = getUtility(IPlacelessAuthUtility)
 
-    # Bootstrap the interaction.
-    if not queryInteraction():
-        setupInteraction(authutil.unauthenticatedPrincipal())
+    # Login in anonymously even if we're going to log in as a user. We
+    # need to do this because there is a check that the email address
+    # is valid. This check goes via a security proxy, so we need an
+    # interaction in order to log in with an email address.
+    setupInteraction(authutil.unauthenticatedPrincipal())
 
-    if email == ANONYMOUS:
-        principal = authutil.unauthenticatedPrincipal()
-    else:
+    if email != ANONYMOUS:
         principal = authutil.getPrincipalByLogin(email)
         assert principal is not None, "Invalid login"
-
-    setupInteraction(principal, login=email, participation=participation)
+        setupInteraction(principal, login=email, participation=participation)
 
 def logout():
     """Tear down after login(...), ending the current interaction.
