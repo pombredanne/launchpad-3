@@ -64,7 +64,7 @@ from canonical.launchpad.database import (
     Bounty, Country, Specification, Bug, Processor, ProcessorFamily,
     KarmaCategory)
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ITeam, ITeamMembershipSubset, IPersonSet, IEmailAddressSet)
+    ILaunchBag, ITeam, IPersonSet, IEmailAddressSet)
 
 class IHugeVocabulary(IVocabulary):
     """Interface for huge vocabularies.
@@ -534,14 +534,12 @@ class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
     def __init__(self, context):
         if not context:
             raise ValueError('ValidTeamMemberVocabulary needs a context.')
-        if ITeamMembershipSubset.providedBy(context):
-            self.team = context.team
-        elif ITeam.providedBy(context):
+        if ITeam.providedBy(context):
             self.team = context
         else:
             raise ValueError(
-                "ValidTeamMemberVocabulary's context must implement ITeam or "
-                "ITeamMembershipSubset. Got %s" % str(context))
+                "ValidTeamMemberVocabulary's context must implement ITeam."
+                "Got %s" % str(context))
 
         ValidPersonOrTeamVocabulary.__init__(self, context)
         self.extra_clause = """
