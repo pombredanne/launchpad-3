@@ -55,6 +55,7 @@ class SFTPOnlyAvatar(avatar.ConchUser):
         self.homeDirsRoot = homeDirsRoot
         self._launchpad = launchpad
 
+        # XXX: initialBranches is totally broken for teams vs. users.
         if initialBranches is None:
             self.branches = []
         else:
