@@ -30,11 +30,11 @@ Now let's look at the sent email:
     >>> msg.get_payload(decode=True)
     'Content'
 
-In cases where the from address is a Person with a preferred email
-address, it's better to use simple_sendmail_from_person. It works just
-like simple_sendmail, except that it expects a person instead of an
-address. simple_sendmail_from_person makes sure that the person's name
-is encoded properly.
+In cases where the sender is a Person with a preferred email address,
+it's better to use simple_sendmail_from_person. It works just like
+simple_sendmail, except that it expects a person instead of an address.
+simple_sendmail_from_person has the advantage that it makes sure that
+the person's name is encoded properly.
 
     >>> from canonical.launchpad.mail import simple_sendmail_from_person
     >>> from canonical.launchpad.interfaces import IPersonSet

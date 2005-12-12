@@ -77,6 +77,8 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
     if zisinstance(to_addrs, basestring):
         to_addrs = [to_addrs]
 
+    # It's the caller's responsibility to encode the address fields to
+    # ASCII strings.
     for address in [from_addr] + to_addrs:
         if not isinstance(address, str) or not is_ascii_only(address):
             raise AssertionError(
