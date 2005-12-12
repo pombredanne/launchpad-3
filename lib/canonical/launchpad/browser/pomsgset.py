@@ -7,11 +7,14 @@ from zope.exceptions import NotFoundError
 from zope.component import getUtility
 
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import ILanguageSet, TranslationConstants
+from canonical.launchpad.interfaces import (
+    ILanguageSet, IPOMsgSet, TranslationConstants)
 
 
 class POMsgSetView:
     """Class that holds all data needed to show a POMsgSet."""
+
+    __used_for__ = IPOMsgSet
 
     def __init__(self, potmsgset, code, plural_form_counts,
                  web_translations=None, web_fuzzy=None, error=None,
