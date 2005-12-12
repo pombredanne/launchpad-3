@@ -131,9 +131,28 @@ class BranchSet:
 
     implements(IBranchSet)
 
+    def __getitem__(self, branch_id):
+        """See IBranchSet."""
+        branch = self.get(branch_id)
+        if branch is None:
+            raise NotFoundError(branch_id)
+        return branch
+
+    def get(self, branch_id, default=None):
+        """See IBranchSet."""
+        try:
+            return Branch.get(branch_id)
+        except SQLObjectNotFound:
+            return default
+
+    def __iter__(self):
+        """See IBranchSet."""
+        return iter(Branch.select())
+
     def new(self, name, owner, product, url, title,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, home_page=None):
+        """See IBranchSet."""
         if not home_page:
             home_page = None
         return Branch(

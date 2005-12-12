@@ -8,9 +8,9 @@ __all__ = [
     'IProductSeries',
     'IProductSeriesSource',
     'IProductSeriesSourceAdmin',
-    'IProductSeriesSet',
     'IProductSeriesSourceSet',
     ]
+
 
 from zope.schema import  Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
@@ -184,19 +184,8 @@ class IProductSeriesSourceAdmin(Interface):
     def enableAutoSync():
         """enable this series RCS for automatic baz syncronisation"""
 
-
-class IProductSeriesSet(Interface):
-    """A set of ProductSeries objects for a specific product."""
-
-    def __iter__():
-        """Return an interator over the ProductSeries', constrained by
-        self.product."""
-
-    def __getitem__(name):
-        """Return a specific ProductSeries, by name, constrained by the
-        self.product."""
-
-
+# XXX matsubara 2005-11-30: This class should be renamed to IProductSeriesSet
+# https://launchpad.net/products/launchpad/+bug/5247
 class IProductSeriesSourceSet(Interface):
     """The set of ProductSeries with a view to source imports"""
     def search(ready=None, text=None, forimport=None, importstatus=None,
@@ -210,3 +199,16 @@ class IProductSeriesSourceSet(Interface):
         the statuses are included, otherwise the count reflects the number
         of branches with that importstatus."""
 
+    def getByCVSDetails(cvsroot, cvsmodule, cvsbranch, default=None):
+        """Return the ProductSeries with the given CVS details.
+
+        Return the default value if there is no ProductSeries with the 
+        given details.
+        """
+
+    def getBySVNDetails(svnrepository, default=None):
+        """Return the ProductSeries with the given SVN details.
+
+        Return the default value if there is no ProductSeries with the
+        given details.
+        """

@@ -27,6 +27,22 @@ def main():
     parser = OptionParser(description=__doc__)
     logger_options(parser)
 
+    parser.add_option(
+            '', "--skip-duplicates", action="store_true", default=False,
+            dest="skip_duplicates",
+            help="Skip duplicate LibraryFileContent merging"
+            )
+    parser.add_option(
+            '', "--skip-aliases", action="store_true", default=False,
+            dest="skip_aliases",
+            help="Skip unreferenced LibraryFileAlias removal"
+            )
+    parser.add_option(
+            '', "--skip-content", action="store_true", default=False,
+            dest="skip_content",
+            help="Skip unreferenced LibraryFileContent removal"
+            )
+
     (options, args) = parser.parse_args()
 
     log = logger(options)
@@ -46,9 +62,14 @@ def main():
         # Note - no need to issue ztm.begin() or ztm.commit(),
         # as each of these next steps will issue these as appropriate
         # to make this script as transaction friendly as possible.
-        librariangc.merge_duplicates(ztm)
-        librariangc.delete_unreferenced_aliases(ztm)
-        librariangc.delete_unreferenced_content(ztm)
+        if not options.skip_content:
+            librariangc.delete_unreferenced_content(ztm) # first sweep
+        if not options.skip_duplicates:
+            librariangc.merge_duplicates(ztm)
+        if not options.skip_aliases:
+            librariangc.delete_unreferenced_aliases(ztm)
+        if not options.skip_content:
+            librariangc.delete_unreferenced_content(ztm) # second sweep
     finally:
         lockfile.release()
 

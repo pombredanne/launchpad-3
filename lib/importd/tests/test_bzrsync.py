@@ -17,9 +17,10 @@ from importd.bzrsync import BzrSync
 from importd.tests import helpers, TestUtil
 
 # Boilerplate to get getUtility(ILaunchpadCelebrities) working in BzrSync.
-from canonical.launchpad.interfaces import ILaunchpadCelebrities, IPersonSet
+from canonical.launchpad.interfaces import (
+    ILaunchpadCelebrities, IPersonSet, IBranchSet)
 from canonical.launchpad.utilities import LaunchpadCelebrities
-from canonical.launchpad.database import PersonSet
+from canonical.launchpad.database import PersonSet, BranchSet
 from zope.app.tests.placelesssetup import setUp as zopePlacelessSetUp
 from zope.app.tests.placelesssetup import tearDown as zopePlacelessTearDown
 from zope.app.tests import ztapi
@@ -42,6 +43,7 @@ class TestBzrSync(helpers.WebserverTestCase):
         zopePlacelessSetUp()
         ztapi.provideUtility(ILaunchpadCelebrities, LaunchpadCelebrities())
         ztapi.provideUtility(IPersonSet, PersonSet())
+        ztapi.provideUtility(IBranchSet, BranchSet())
 
     def tearDown(self):
         zopePlacelessTearDown()
@@ -134,6 +136,15 @@ class TestBzrSync(helpers.WebserverTestCase):
         self.commitRevision()
         counts = self.getCounts()
         BzrSync(self.trans_manager, self.db_branch.id).syncHistory()
+        self.assertCounts(counts, new_revisions=1, new_numbers=1)
+
+    def test_import_revision_with_url(self):
+        """Importing a revision passing the url parameter works."""
+        self.commitRevision()
+        counts = self.getCounts()
+        bzrsync = BzrSync(self.trans_manager, self.db_branch.id,
+                          self.bzr_branch_url)
+        bzrsync.syncHistory()
         self.assertCounts(counts, new_revisions=1, new_numbers=1)
 
     def test_new_author(self):
