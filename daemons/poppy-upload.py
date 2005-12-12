@@ -37,7 +37,7 @@ def main():
         else:
             log_option = ''
         cmd = ['python scripts/process-upload.py -C autosync '
-               '--no-mails -vv', log_option, '-d', '@distro@', '@fsroot@']
+               '--no-mails', log_option, '-d', '@distro@', '@fsroot@']
         background = True
     else:
         cmd = None

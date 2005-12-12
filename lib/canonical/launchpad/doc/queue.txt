@@ -52,24 +52,38 @@ what we expect the ed upload to produce. Let's find the queue item and
 convert it to an ACCEPTED item.
 
   >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from canonical.launchpad.interfaces import (
+  ...      IDistributionSet, QueueInconsistentStateError)
   >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
+  >>> from canonical.database.sqlbase import flush_database_updates
+
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
   >>> new_queue = hoary.getQueueItems(DistroReleaseQueueStatus.NEW)
 
-XXX: dsilvers: 20051021: Ugh, security proxy removal shouldn't be
-needed. Bug 3456
+Use state-machine method provided by DistroReleaseQueue to ACCEPT an
+upload. If some designed check according the request state do not
+pass, the state-machine methods will raise an exception indicating the
+upload can have that state.
 
-  >>> from zope.security.proxy import removeSecurityProxy
+XXX cprov 20051209: need to build a brken upload to test it properly
+
   >>> for item in new_queue:
-  ...     removeSecurityProxy(item).status = DistroReleaseQueueStatus.ACCEPTED
-  ...     removeSecurityProxy(item).sync()
+  ...     try:
+  ...         item.set_accepted()
+  ...     except QueueInconsistentStateError, info:
+  ...         print info
+
+Make the modification real in the DB (XXX cprov 20051209: see bug #3889)
+
+  >>> flush_database_updates()
+
   >>> accepted_queue = hoary.getQueueItems(DistroReleaseQueueStatus.ACCEPTED)
+
   >>> for item in accepted_queue:
-  ...     for source in removeSecurityProxy(item).sources:
+  ...     for source in item.sources:
   ...         print source.sourcepackagerelease.sourcepackagename.name
-  ...     removeSecurityProxy(item).realiseUpload(MockLogger(False))
+  ...     item.realiseUpload(MockLogger(False))
   ed
   DEBUG: Publishing source ed/0.2-20 to ubuntu/hoary
   DEBUG: Publishing build to ubuntu/hoary/i386

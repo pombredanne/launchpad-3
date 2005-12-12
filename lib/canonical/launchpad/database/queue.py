@@ -8,6 +8,7 @@ import os
 import tempfile
 import pytz
 from datetime import datetime
+from warnings import warn
 
 from zope.interface import implements
 
@@ -22,7 +23,8 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IDistroReleaseQueue, IDistroReleaseQueueBuild, IDistroReleaseQueueSource,
-    IDistroReleaseQueueCustom, NotFoundError)
+    IDistroReleaseQueueCustom, NotFoundError, QueueStateWriteProtectedError,
+    QueueInconsistentStateError, QueueSourceAcceptError)
 
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
@@ -52,7 +54,8 @@ class DistroReleaseQueue(SQLBase):
     """A Queue item for Lucille."""
     implements(IDistroReleaseQueue)
 
-    status = EnumCol(dbName='status', unique=False, default=None, notNull=True,
+    status = EnumCol(dbName='status', unique=False,
+                     default=DistroReleaseQueueStatus.NEW,
                      schema=DistroReleaseQueueStatus)
 
     distrorelease = ForeignKey(dbName="distrorelease",
@@ -72,6 +75,50 @@ class DistroReleaseQueue(SQLBase):
     # Also the custom files associated with the build.
     customfiles = MultipleJoin('DistroReleaseQueueCustom',
                                joinColumn='distroreleasequeue')
+
+    def _set_status(self, value):
+        """Directly write on 'status' is forbidden.
+
+        Force user to use the provided machine-state methods.
+        Raises QueueStateWriteProtectedError.
+        """
+        # allow 'status' write only in creation process.
+        if self._SO_creating:
+            self._SO_set_status(value)
+            return
+        # been facist 
+        raise QueueStateWriteProtectedError(
+            'Directly write on queue status is forbidden use the '
+            'provided methods to set it.')        
+    
+    def set_new(self):
+        """See IDistroReleaseQueue."""
+        self._SO_set_status(DistroReleaseQueueStatus.NEW)
+
+    def set_unapproved(self):
+        """See IDistroReleaseQueue."""
+        self._SO_set_status(DistroReleaseQueueStatus.UNAPPROVED)
+
+    def set_accepted(self):
+        """See IDistroReleaseQueue."""
+        for source in self.sources:
+            # if something goes wrong we will raise an exception
+            # (QueueSourceAcceptError) before setting any value.
+            # Mask the error with state-machine default exception 
+            try:
+                source.checkComponentAndSection()
+            except QueueSourceAcceptError, info:
+                raise QueueInconsistentStateError(info)
+        # if the previous checks applied and pass we do set the value
+        self._SO_set_status(DistroReleaseQueueStatus.ACCEPTED)
+
+    def set_done(self):
+        """See IDistroReleaseQueue."""
+        self._SO_set_status(DistroReleaseQueueStatus.DONE)
+
+    def set_rejected(self):
+        """See IDistroReleaseQueue."""
+        self._SO_set_status(DistroReleaseQueueStatus.REJECTED)
 
     @cachedproperty
     def changesfilename(self):
@@ -159,7 +206,7 @@ class DistroReleaseQueue(SQLBase):
         for customfile in self.customfiles:
             customfile.publish(logger)
 
-        self.status = DistroReleaseQueueStatus.DONE
+        self.set_done()
 
     def addSource(self, spr):
         """See IDistroReleaseQueue."""
@@ -246,6 +293,22 @@ class DistroReleaseQueueSource(SQLBase):
         dbName='sourcepackagerelease',
         foreignKey='SourcePackageRelease'
         )
+
+    def checkComponentAndSection(self):
+        """See IDistroReleaseQueueSource."""
+        distrorelease = self.distroreleasequeue.distrorelease
+        component = self.sourcepackagerelease.component
+        section = self.sourcepackagerelease.section
+
+        if (component not in distrorelease.components):
+            raise QueueSourceAcceptError(
+                'Component "%s" is not allowed in %s' % (component.name,
+                                                         distrorelease.name))
+
+        if (section not in distrorelease.sections):
+            raise QueueSourceAcceptError(
+                'Section "%s" is not allowed in %s' % (section.name,
+                                                       distrorelease.name))
 
     def publish(self, logger=None):
         """See IDistroReleaseQueueSource."""

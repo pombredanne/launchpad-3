@@ -429,7 +429,8 @@ class NascentUpload:
                       filename.endswith(".dsc")):
                     files_sourceful = True
                 else:
-                    raise UploadError("Unable to identify file %s in changes." % filename)
+                    raise UploadError("Unable to identify file %s in changes."
+                                      % filename)
 
         if files_sourceful != think_sourceful:
             self.reject(
@@ -1024,24 +1025,33 @@ class NascentUpload:
                 
         self.logger.debug("Performing overall file verification checks.")
         for uploaded_file in self.files:
+            # dismiss for special upload types
             if uploaded_file.type == "byhand" or uploaded_file.custom:
                 continue
+            # reject missed priority
             if uploaded_file.priority is None:
                 self.reject("%s: Priority is 'None'" % uploaded_file.filename)
-            # XXX cprov 20051207: dak is delivering some packages with
-            # a 'None' priority, which is utterly annoying, this 
-            # workarround should be removed as soon as dak got fixed.
-            # For now we use the same policy applied in gina, missed
-            # priority are assumed as "extra".
-            if uploaded_file.priority == "None":
-                uploaded_file.priority = "extra"
+
+
+            # XXX cprov 20051205: this chunk of code is used in several place
+            # in the entire file, reusing it is mandatory for first release
+            spn = getUtility(ISourcePackageNameSet).getOrCreateByName(
+                uploaded_file.package)
+            old = self.distrorelease.getPublishedReleases(
+                spn, self.policy.pocket)
+
             # XXX cprov 20051207: why do we care about empty priority
             # if the split() in line 152 never generate something like
             # that, priority can only be a 'valid string'
             if uploaded_file.priority not in ["", "-"]:
+                # map priority tag to dbschema
                 if uploaded_file.priority in priority_map:
-                    uploaded_file.priority = \
-                        priority_map[uploaded_file.priority]
+                    uf = uploaded_file
+                    uf.priority = priority_map[uf.priority]
+                # map unknown priority tags to "extra" if the file is new
+                elif not old:
+                    uploaded_file.priority = priority_map['extra']
+                # REJECT unknown tag & known file
                 else:
                     self.reject("Unable to map priority %r for file %s" % (
                         uploaded_file.priority, uploaded_file.filename))
@@ -1720,15 +1730,19 @@ class NascentUpload:
             self.insert_source_into_db()
         if self.binaryful:
             self.insert_binary_into_db()
-
-        # Create a Queue item for us to attach our uploads to.
-        status = DistroReleaseQueueStatus.ACCEPTED
-        if self.is_new():
-            status = DistroReleaseQueueStatus.NEW
-        self.logger.debug("Creating a %s queue entry" % status.title)
+            
         filecontents = guess_encoding(self.changes["filecontents"])
+        # create a DRQ entry in new state
+        self.logger.debug("Creating a New queue entry")
         queue_root = self.distrorelease.createQueueEntry(
-            self.policy.pocket, filecontents, status=status)
+            self.policy.pocket, filecontents)
+
+        # if it is known (already overriden properly), move it
+        # to ACCEPTED state automatically
+        if not self.is_new():
+            self.logger.debug("Setting it to ACCEPTED")
+            queue_root.set_accepted()
+            
         # Next, if we're sourceful, add a source to the queue
         if self.sourceful:
             queue_root.addSource(self.policy.sourcepackagerelease)
