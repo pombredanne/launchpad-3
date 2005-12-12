@@ -53,13 +53,6 @@ class SFTPOnlyAvatar(avatar.ConchUser):
 
         self.avatarId = avatarId
         self.homeDirsRoot = homeDirsRoot
-        #self.productMapFilename = productMapFilename
-        #self.productIDs = dict(line.split() 
-        #                       for line in open(productMapFilename, 'r')
-        #                       if not line.startswith('#'))
-        #self.productIDs = productIDs
-        #self.productNames = dict((v, k) for k, v in self.productIDs.iteritems())
-        self.productIDs = self.productNames = {}
         self._launchpad = launchpad
 
         if initialBranches is None:
@@ -101,14 +94,11 @@ class SFTPOnlyAvatar(avatar.ConchUser):
         return deferred
 
     def createBranch(self, userID, productID, branchName):
-        from twisted.internet import defer
-        return self._launchpad.createBranch(userID, productID, branchName)
+        """Register a new branch in Launchpad.
 
-        #if createBranch is None:
-        #    # XXX: evil stub function
-        #    self.createBranch = lambda *args: defer.succeed(1)
-        #else:
-        #    self.createBranch = createBranch
+        Returns a Deferred with the new branch ID.
+        """
+        return self._launchpad.createBranch(userID, productID, branchName)
 
     def _cbRememberProductID(self, productID, productName):
         if productID is None:
