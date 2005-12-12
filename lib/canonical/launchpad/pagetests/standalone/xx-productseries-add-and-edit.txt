@@ -1,0 +1,114 @@
+Test to add a product series
+
+  >>> print http(r"""
+  ... GET /products/firefox/+addseries HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  ...<h1>Register a new...
+  ...
+
+After checking that the page +addseries is there, we try to add a new serie.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+addseries HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------49080485113837823851913640861
+  ... 
+  ... -----------------------------49080485113837823851913640861
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... stable
+  ... -----------------------------49080485113837823851913640861
+  ... Content-Disposition: form-data; name="field.displayname"
+  ... 
+  ... Firefox Stable
+  ... -----------------------------49080485113837823851913640861
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... Product Series add testing
+  ... -----------------------------49080485113837823851913640861
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------49080485113837823851913640861--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: +series/stable
+  ...
+
+
+Now we are redirected to the Overview page of the product series we just added
+
+  >>> print http(r"""
+  ... GET /products/firefox/+series/stable HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...Series Overview...
+  ...Product Series add testing...
+  ...
+
+
+Now we test if we can edit the new added release serie. First we check if we
+can reach the +edit page.
+
+  >>> print http(r"""
+  ... GET /products/firefox/+series/stable/+edit HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...Edit <span>Firefox Stable</span> Release Series Details...
+  ...
+
+Then we edit the information about the release serie.
+
+  >>> print http(r"""
+  ... POST /products/firefox/+series/stable/+edit HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------49080485113837823851913640861
+  ... 
+  ... -----------------------------49080485113837823851913640861
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... unstable
+  ... -----------------------------49080485113837823851913640861
+  ... Content-Disposition: form-data; name="field.displayname"
+  ... 
+  ... Firefox UnStable
+  ... -----------------------------49080485113837823851913640861
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... Product Series add testing
+  ... Now we're testing the edit of productseries
+  ... -----------------------------49080485113837823851913640861
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------49080485113837823851913640861--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://.../products/firefox/+series/unstable
+  ...
+
+
+Finally we test if the edited product release is there
+
+  
+  >>> print http(r"""
+  ... GET /products/firefox/+series/unstable HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...Series Overview...
+  ...Product Series add testing...
+  ...Now we're testing the edit of productseries...
+  ...

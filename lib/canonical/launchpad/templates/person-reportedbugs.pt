@@ -19,6 +19,27 @@
         <h1>Bugs Reported by <span tal:replace="context/browsername" /></h1>
       </metal:heading>
 
+      <metal:extra_search_widgets_in_table
+          tal:condition="view/show_advanced_form"
+          metal:fill-slot="extra_search_widgets_in_table">
+
+        <input type="hidden" name="advanced" value="1" />
+
+        <metal:widget 
+          use-macro="context/@@+bugtask-macros-buglisting/assignee_widget_in_table" />
+        <metal:widget 
+          use-macro="context/@@+bugtask-macros-buglisting/include_dupes_widget_in_table" />
+        <metal:widget 
+          use-macro="context/@@+bugtask-macros-buglisting/statusexplanation_widget_in_table" />
+      </metal:extra_search_widgets_in_table>
+
+      <metal:extra_search_widgets_below_table
+          tal:condition="view/show_advanced_form"
+          metal:fill-slot="extra_search_widgets_below_table">
+        <metal:widget 
+          use-macro="context/@@+bugtask-macros-buglisting/extra_widgets_in_own_table" />
+      </metal:extra_search_widgets_below_table>
+
     </metal:page>
 
   </div>

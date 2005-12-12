@@ -705,8 +705,7 @@ duplicate.
     http://.../malone/bugs/2
     ...
     *** This bug has been marked a duplicate of bug 1 ***
-    ...
-   
+
     >>> stub.test_emails = []
 
 
@@ -747,7 +746,6 @@ Now we change the target of a bug that's already marked as a dupe and check if t
     *** This bug is no longer a duplicate of bug 5 ***
     <BLANKLINE>
     *** This bug has been marked a duplicate of bug 3 ***
-    ...
 
     >>> stub.test_emails = []
 
@@ -785,12 +783,9 @@ Now we unduplicate the above bug and check if the correct notification message i
     http://.../malone/bugs/6
     ...
     *** This bug is no longer a duplicate of bug 3 ***
-    ...
 
     >>> stub.test_emails = []
 
-
-    
 Implications of Bug Privacy
 ---------------------------
 
