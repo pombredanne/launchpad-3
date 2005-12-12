@@ -1,0 +1,292 @@
+Ticket Pages
+============
+
+Let's take a look at the pages that are defined for an ITicket. We
+start with +index, it's the most complex one.
+
+    >>> from zope.component import getView
+    >>> from zope.publisher.browser import TestRequest
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ticket_seven = ubuntu.getTicket(7)
+    >>> index = getView(ticket_seven, '+index', TestRequest())
+
+We can subscribe to a ticket:
+
+    >>> login('test@canonical.com')
+    >>> request = TestRequest(form={'subscribe': 'Subscribe'})
+    >>> request.method = 'POST'
+    >>> index = getView(ticket_seven, '+index', request)
+    >>> getUtility(ILaunchBag).user in [
+    ...     subscription.person for subscription in ticket_seven.subscriptions]
+    True
+    >>> for notice in index.notices:
+    ...     print notice
+    You have subscribed to this request.
+
+As well as unsubscribe:
+
+    >>> request = TestRequest(form={'subscribe': 'Unsubscribe'})
+    >>> request.method = 'POST'
+    >>> index = getView(ticket_seven, '+index', request)
+    >>> getUtility(ILaunchBag).user in [
+    ...     subscription.person for subscription in ticket_seven.subscriptions]
+    False
+    >>> for notice in index.notices:
+    ...     print notice
+    You have unsubscribed from this request.
+
+These two actions didn't generate any notification mails:
+
+    >>> from canonical.launchpad.mail import stub
+    >>> import transaction
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    0
+
+However, if we reopen a request, it will cause a notification to be
+sent:
+
+    >>> login('foo.bar@canonical.com')
+    >>> request = TestRequest(form={'reopen': ''})
+    >>> request.method = 'POST'
+    >>> index = getView(ticket_seven, '+index', request)
+    >>> for notice in index.notices:
+    ...     print notice
+    You have reopened this request.
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+
+    >>> import email
+    >>> notifications = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    >>> print notifications[0].get_payload(decode=True)
+    Support request #7...
+    ...
+        Status: Answered => Open
+    <BLANKLINE>
+
+    >>> stub.test_emails = []
+
+As well as if we reject it:
+
+    >>> login('foo.bar@canonical.com')
+    >>> request = TestRequest(form={'reject': ''})
+    >>> request.method = 'POST'
+    >>> index = getView(ticket_seven, '+index', request)
+    >>> for notice in index.notices:
+    ...     print notice
+    You have rejected this request.
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+
+    >>> notifications = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    >>> print notifications[0].get_payload(decode=True)
+    Support request #7...
+    ...
+        Status: Open => Rejected
+    <BLANKLINE>
+
+    >>> stub.test_emails = []
+
+If we create a bug, a "Linked to bug" notification is sent:
+
+    >>> request = TestRequest(form={'makebug': ''})
+    >>> request.method = 'POST'
+    >>> index = getView(ticket_seven, '+index', request)
+    >>> for notice in index.notices:
+    ...     print notice
+    Thank you! Bug #9 created.
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+
+    >>> notifications = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    >>> print notifications[0].get_payload(decode=True)
+    Support request #7...
+    ...
+        Linked to bug: #9
+    ...
+
+    >>> stub.test_emails = []
+
+Now, let's take a look at the '+linkbug' page. If we use that one to
+line a bug, we'll get a similar notification like above:
+
+    >>> request = TestRequest(form={'UPDATE_SUBMIT': '', 'field.bug': '2'})
+    >>> request.method = 'POST'
+    >>> index = getView(ticket_seven, '+linkbug', request)
+    >>> index.update()
+    ''
+    >>> 2 in [bug.id for bug in ticket_seven.bugs]
+    True
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+
+    >>> notifications = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    >>> print notifications[0].get_payload(decode=True)
+    Support request #7...
+    ...
+        Linked to bug: #2
+    ...
+
+    >>> stub.test_emails = []
+
+Let's take a look at the '+unlinkbug' page as well:
+
+    >>> request = TestRequest(form={'UPDATE_SUBMIT': '', 'field.bug': '2'})
+    >>> request.method = 'POST'
+    >>> index = getView(ticket_seven, '+unlinkbug', request)
+    >>> index.update()
+    ''
+    >>> 2 in [bug.id for bug in ticket_seven.bugs]
+    False
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+
+    >>> notifications = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    >>> print notifications[0].get_payload(decode=True)
+    Support request #7...
+    ...
+        Removed link to bug: #2
+    ...
+
+    >>> stub.test_emails = []
+
+To edit the title and description of a bug, +edit is used.
+
+    >>> request = TestRequest(form={
+    ...     'UPDATE_SUBMIT': '',
+    ...     'field.title': 'Better Title',
+    ...     'field.description': 'A better description.'})
+    >>> request.method = 'POST'
+    >>> index = getView(ticket_seven, '+edit', request)
+    >>> index.update()
+    u'Updated...'
+    >>> ticket_seven.title
+    u'Better Title'
+    >>> ticket_seven.description
+    u'A better description.'
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+
+    >>> notifications = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    >>> print notifications[0].get_payload(decode=True)
+    Support request #7...
+    ...
+    Summary changed to:
+    Better Title
+    <BLANKLINE>
+    Description changed to:
+    A better description.
+    <BLANKLINE>
+
+    >>> stub.test_emails = []
+
+Lastly, let's take a look at +addmessage. It's just to add a comment to
+the ticket, as well as changing it's state to Answered or Closed. First
+we change it to Answered.
+
+It needs to be open, for us to changed it to Answered:
+
+    >>> ticket_seven.reopen(getUtility(ILaunchBag).user)
+    <TicketReopening...>
+
+Currently we're logged in as Foo Bar, the submitter of the ticket. He
+can't set it to Answered, so we login as Sample Person instead:
+
+    >>> login('test@canonical.com')
+
+And now we can change the status to Answered:
+
+    >>> request = TestRequest(form={
+    ...     'UPDATE_SUBMIT': '',
+    ...     'field.subject': 'Re: Better Title',
+    ...     'field.content': 'An answer.',
+    ...     'field.resolved': 'on'})
+    >>> request.method = 'POST'
+    >>> index = getView(ticket_seven, '+addmessage', request)
+    >>> index.update()
+    ''
+    >>> ticket_seven.status.title
+    'Answered'
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+
+    >>> notifications = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    >>> print notifications[0].get_payload(decode=True)
+    Support request #7...
+    ...
+        Status: Open => Answered
+    <BLANKLINE>
+    Comment:
+    An answer.
+
+    >>> stub.test_emails = []
+
+And if we log in as Foo Bar again, we can close the ticket using the
+same view:
+
+    >>> login('foo.bar@canonical.com')
+    >>> request = TestRequest(form={
+    ...     'UPDATE_SUBMIT': '',
+    ...     'field.subject': 'Re: Better Title',
+    ...     'field.content': 'Good answer!',
+    ...     'field.resolved': 'on'})
+    >>> request.method = 'POST'
+    >>> index = getView(ticket_seven, '+addmessage', request)
+    >>> index.update()
+    ''
+    >>> ticket_seven.status.title
+    'Closed'
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+
+    >>> notifications = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    >>> print notifications[0].get_payload(decode=True)
+    Support request #7...
+    ...
+        Status: Answered => Closed
+    <BLANKLINE>
+    Comment:
+    Good answer!
+
+    >>> stub.test_emails = []
