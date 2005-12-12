@@ -465,7 +465,15 @@ The user is a bug contact of the upstream product
 The user is a package bug contact
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    >>> login('foo.bar@canonical.com')
+    XXX: The closest thing we have to a bug contact is a maintainer.
+         This is going away, though, so let's create a new Maintainership
+         record in the test instead of adding sample data. When this
+         test fails, it means that the Maintainership table has been
+         removed, and this test should be updated to deal with real bug
+         contacts instead. guess_bugtask in mail/handlers.py will have
+         to be updated as well, since it depends on IBugtask.maintainer.
+         -- Bjorn Tillenius, 2005-12-12
+
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, ISourcePackageNameSet, IPersonSet)
     >>> from canonical.launchpad.database import Maintainership
