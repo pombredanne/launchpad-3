@@ -50,9 +50,9 @@ to sign each email, we'll create a class which fakes a signed email:
     >>> import email
     >>> import email.Utils
     >>> class SignedMessage(email.Message.Message):
+    ...     @property
     ...     def signedMessage(self):
     ...         return self
-    ...     signedMessage = property(signedMessage)
 
 And since we'll pass the email directly to the correct handler,
 we'll have to authenticate the user manually:
