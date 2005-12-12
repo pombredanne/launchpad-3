@@ -55,18 +55,20 @@ class SFTPOnlyAvatar(avatar.ConchUser):
         self.homeDirsRoot = homeDirsRoot
         self._launchpad = launchpad
 
-        # XXX: initialBranches is totally broken for teams vs. users.
+        # Fetch user details from the authserver
+        self.lpid = userDict['id']
+        self.lpname = userDict['name']
+        self.teams = userDict['teams']
+
         if initialBranches is None:
-            self.branches = []
+            # XXX: backwards-compat hack
+            self.branches = dict(
+                    (lpid, []) for lpid in ([t['id'] for t in self.teams]))
         else:
             self.branches = initialBranches
         self._productIDs = {}
         self._productNames = {}
 
-        # Fetch user details from the authserver
-        self.lpid = userDict['id']
-        self.lpname = userDict['name']
-        self.teams = userDict['teams']
         self.filesystem = FileSystem(SFTPServerRoot(self))
 
         # Set the only channel as a session that only allows requests for

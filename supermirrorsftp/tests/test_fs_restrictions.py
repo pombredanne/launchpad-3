@@ -120,17 +120,28 @@ class UserDirsTestCase(AvatarTestBase):
     def testInitialBranches(self):
         # Check that already existing branches owned by a user appear as
         # expected.
-        initialBranches=[
-            (1, 'mozilla-firefox', [(1, 'branch-one'), (2, 'branch-two')]),
-            (1, 'product-x', [(3, 'branch-y')]),
-        ]
-        avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict, None,
+        initialBranches={
+            2: [ # bob
+                (1, 'mozilla-firefox', [(1, 'branch-one'), (2, 'branch-two')]),
+                (2, 'product-x', [(3, 'branch-y')]),
+            ],
+            3: [ # test-team
+                (3, 'thing', [(4, 'another-branch')]),
+            ]
+        }
+        avatar = SFTPOnlyAvatar('bob', self.tmpdir, self.bobUserDict, None,
                                 initialBranches=initialBranches)
         root = avatar.filesystem.root
-        userDir = root.child('~alice')
+
+        # The user's dir with have mozilla-firefox, product-x, and also +junk.
         self.assertEqual(
-            set([name for name, child in userDir.children()]), 
+            set([name for name, child in root.child('~bob').children()]), 
             set(['.', '..', '+junk', 'mozilla-firefox', 'product-x']))
+
+        # The team dir will have just 'thing'.
+        self.assertEqual(
+            set([name for name, child in root.child('~test-team').children()]),
+            set(['.', '..', 'thing']))
 
 
 
