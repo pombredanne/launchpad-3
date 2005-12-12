@@ -68,7 +68,8 @@ notification:
     ...     if '[Bug 2] Blackhole Trash folder' in raw_mail]
     >>> all_to_addrs.sort()
     >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['support@ubuntu.com'], ['test@canonical.com']]
+    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'],
+     ['test@canonical.com']]
 
     Let's grab the last email in the list to illustrate what the email
     itself looks like:
