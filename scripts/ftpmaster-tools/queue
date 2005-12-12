@@ -146,7 +146,7 @@ def action_FETCH(distro, distrorelease, queue):
     for queue_item in filtered_queue:
         print "Constructing %s" % queue_item.changesfilename
         changes_file = open(queue_item.changesfilename, "w")
-        changes_file.write(queue_item.changesfile)
+        changes_file.write(queue_item.changesfile.encode('utf-8'))
         changes_file.close()
         L = []
         for source in queue_item.sources:
