@@ -35,8 +35,8 @@ class SubsystemOnlySession(session.SSHSession, object):
 
 
 class SFTPOnlyAvatar(avatar.ConchUser):
-    def __init__(self, avatarId, homeDirsRoot, fetchProductID, userDict,
-            initialBranches=None, createBranch=None):
+    def __init__(self, avatarId, homeDirsRoot, userDict, launchpad,
+            initialBranches=None):
         # Double-check that we don't get unicode -- directory names on the file
         # system are a sequence of bytes as far as we're concerned.  We don't
         # want any tricky login names turning into a security problem.
@@ -60,13 +60,7 @@ class SFTPOnlyAvatar(avatar.ConchUser):
         #self.productIDs = productIDs
         #self.productNames = dict((v, k) for k, v in self.productIDs.iteritems())
         self.productIDs = self.productNames = {}
-        self._fetchProductID = fetchProductID
-        from twisted.internet import defer
-        if createBranch is None:
-            # XXX: evil stub function
-            self.createBranch = lambda *args: defer.succeed(1)
-        else:
-            self.createBranch = createBranch
+        self._launchpad = launchpad
 
         if initialBranches is None:
             self.branches = []
@@ -102,9 +96,19 @@ class SFTPOnlyAvatar(avatar.ConchUser):
             # XXX: should the None result be remembered too, to ensure
             #      repeatable reads?
             return defer.succeed(productID)
-        deferred = self._fetchProductID(productName)
+        deferred = self._launchpad.fetchProductID(productName)
         deferred.addCallback(self._cbRememberProductID, productName)
         return deferred
+
+    def createBranch(self, userID, productID, branchName):
+        from twisted.internet import defer
+        return self._launchpad.createBranch(userID, productID, branchName)
+
+        #if createBranch is None:
+        #    # XXX: evil stub function
+        #    self.createBranch = lambda *args: defer.succeed(1)
+        #else:
+        #    self.createBranch = createBranch
 
     def _cbRememberProductID(self, productID, productName):
         if productID is None:

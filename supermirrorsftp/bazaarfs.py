@@ -55,6 +55,8 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
         # Create directories for products that have branches
         #[(product id, product name, [(branch id, branch name), ...]), ...]
         for productID, productName, branches in avatar.branches:
+            if productID is None:
+                assert productName == '+junk'
             self.putChild(productName, 
                           SFTPServerProductDir(avatar, lpid, productID,
                                                productName, branches, self))

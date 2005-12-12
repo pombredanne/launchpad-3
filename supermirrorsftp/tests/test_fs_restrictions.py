@@ -36,8 +36,10 @@ class AvatarTestBase(unittest.TestCase):
 class TestTopLevelDir(AvatarTestBase):
     def testListDirNoTeams(self):
         # list only user dir + team dirs
-        avatar = SFTPOnlyAvatar('alice', self.tmpdir, None,
-                                self.aliceUserDict)
+        # XXX: all tests that use 'None' for the launchpad interface should
+        # perhaps have a special mock object that asserts on any getattr, to
+        # assert that the lp interface isn't used for certain ops?
+        avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict, None)
         root = SFTPServerRoot(avatar)
         self.assertEqual(
             [name for name, child in root.children()], 
@@ -47,16 +49,14 @@ class TestTopLevelDir(AvatarTestBase):
         # list only user dir + team dirs
         
         # Add a team to Alice's user dict
-        avatar = SFTPOnlyAvatar('bob', self.tmpdir, None,
-                                self.bobUserDict)
+        avatar = SFTPOnlyAvatar('bob', self.tmpdir, self.bobUserDict, None)
         root = SFTPServerRoot(avatar)
         self.assertEqual(
             [name for name, child in root.children()], 
             ['.', '..', '~bob', '~test-team'])
 
     def testAllWriteOpsForbidden(self):
-        avatar = SFTPOnlyAvatar('alice', self.tmpdir, None,
-                                self.aliceUserDict)
+        avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict, None)
         root = SFTPServerRoot(avatar)
         self.assertRaises(PermissionError, root.createFile, 'xyz')
         self.assertRaises(PermissionError, root.child('~alice').remove)
@@ -64,15 +64,13 @@ class TestTopLevelDir(AvatarTestBase):
             defer.maybeDeferred(root.createDirectory, 'xyz'), PermissionError)
 
     def testUserDirPlusJunk(self):
-        avatar = SFTPOnlyAvatar('alice', self.tmpdir, None,
-                                self.aliceUserDict)
+        avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict, None)
         root = avatar.filesystem.root
         userDir = root.child('~alice')
         self.assertIn('+junk', [name for name, child in userDir.children()])
 
     def testTeamDirPlusJunk(self):
-        avatar = SFTPOnlyAvatar('bob', self.tmpdir, None,
-                                self.bobUserDict)
+        avatar = SFTPOnlyAvatar('bob', self.tmpdir, self.bobUserDict, None)
         root = avatar.filesystem.root
         userDir = root.child('~test-team')
         self.assertNotIn('+junk', [name for name, child in userDir.children()])
@@ -82,13 +80,13 @@ class UserDirsTestCase(AvatarTestBase):
     def testCreateValidProduct(self):
         # Test creating a product dir.
 
-        def fetchProductID(productName):
-            if productName == 'mozilla-firefox':
+        class Launchpad:
+            test = self
+            def fetchProductID(self, productName):
+                self.test.assertEqual('mozilla-firefox', productName)
                 return defer.succeed(123)
-            else:
-                return defer.succeed(None)
-        avatar = SFTPOnlyAvatar('alice', self.tmpdir, fetchProductID,
-                                self.aliceUserDict)
+        avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
+                                Launchpad())
         root = avatar.filesystem.root
         userDir = root.child('~alice')
         self.assertEqual(
@@ -104,11 +102,14 @@ class UserDirsTestCase(AvatarTestBase):
         return deferred
 
     def testCreateInvalidProduct(self):
-        def alwaysNoneFetchProductID(productName):
-            return defer.succeed(None)
-        avatar = SFTPOnlyAvatar('alice', self.tmpdir, 
-                                alwaysNoneFetchProductID,
-                                self.aliceUserDict)
+        class Launchpad:
+            test = self
+            def fetchProductID(self, productName):
+                self.test.assertEqual('mozilla-firefox', productName)
+                # None signals that the product doesn't exist
+                return defer.succeed(None)
+        avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
+                                Launchpad())
         root = avatar.filesystem.root
         userDir = root.child('~alice')
 
@@ -123,16 +124,18 @@ class UserDirsTestCase(AvatarTestBase):
 
 class ProductDirsTestCase(AvatarTestBase):
     def testCreateBranch(self):
-        def fetchProductID(productName):
-            self.assertEqual(productName, 'mozilla-firefox')
-            return defer.succeed(0x123)
-        def createBranch(userID, productID, branchName):
-            self.assertEqual(1, userID)
-            self.assertEqual(str(0x123), productID)
-            self.assertEqual('new-branch', branchName)
-            return defer.succeed(0xabcdef12)
-        avatar = SFTPOnlyAvatar('alice', self.tmpdir, fetchProductID,
-                                self.aliceUserDict, createBranch=createBranch)
+        class Launchpad:
+            test = self
+            def fetchProductID(self, productName):
+                self.test.assertEqual(productName, 'mozilla-firefox')
+                return defer.succeed(123)
+            def createBranch(self, userID, productID, branchName):
+                self.test.assertEqual(1, userID)
+                self.test.assertEqual('123', productID)
+                self.test.assertEqual('new-branch', branchName)
+                return defer.succeed(0xabcdef12)
+        avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict,
+                                Launchpad())
         root = avatar.filesystem.root
         userDir = root.child('~alice')
         deferred = defer.maybeDeferred(
