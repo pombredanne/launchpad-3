@@ -1,4 +1,2 @@
-import os.path
+from canonical.launchpad.mail.ftests.helpers import *
 
-testmails_path = os.path.join(
-                    os.path.dirname(__file__), 'emails') + os.path.sep

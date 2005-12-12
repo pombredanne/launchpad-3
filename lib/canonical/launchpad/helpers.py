@@ -46,8 +46,6 @@ from canonical.launchpad.interfaces import (
     TranslationConstants)
 from canonical.launchpad.components.poparser import (
     POSyntaxError, POInvalidInputError, POParser)
-from canonical.launchpad.mail import SignedMessage
-from canonical.launchpad.mail.ftests import testmails_path
 
 from canonical.launchpad.validators.gpg import valid_fingerprint
 
@@ -1057,15 +1055,6 @@ def setupInteraction(principal, login=None, participation=None):
     participation.principal = principal
 
 
-def read_test_message(filename):
-    """Reads a test message and returns it as ISignedMessage.
-
-    The test messages are located in canonical/launchpad/mail/ftests/emails
-    """
-    return email.message_from_file(
-        open(testmails_path + filename), _class=SignedMessage)
-
-
 def check_permission(permission_name, context):
     """Like zope.security.management.checkPermission, but also ensures that
     permission_name is real permission.
@@ -1182,4 +1171,24 @@ def positiveIntOrZero(value):
     if value < 0:
         return 0
     return value
+
+
+def is_ascii_only(string):
+    """Ensure that the string contains only ASCII characters.
+
+        >>> is_ascii_only(u'ascii only')
+        True
+        >>> is_ascii_only('ascii only')
+        True
+        >>> is_ascii_only('\xf4')
+        False
+        >>> is_ascii_only(u'\xf4')
+        False
+    """
+    try:
+        string.encode('ascii')
+    except UnicodeError:
+        return False
+    else:
+        return True
 

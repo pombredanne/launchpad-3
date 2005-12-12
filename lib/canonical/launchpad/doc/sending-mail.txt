@@ -5,8 +5,8 @@ simple_mail can be used to send mail easily:
 
     >>> from canonical.launchpad.mail import simple_sendmail
     >>> msgid = simple_sendmail(
-    ...     from_addr=u'foo.bar@canonical.com',
-    ...     to_addrs=u'test@canonical.com',
+    ...     from_addr='foo.bar@canonical.com',
+    ...     to_addrs='test@canonical.com',
     ...     subject=u'Subject',
     ...     body=u'Content')
 
@@ -30,14 +30,41 @@ Now let's look at the sent email:
     >>> msg.get_payload(decode=True)
     'Content'
 
+In cases where the from address is a Person with a preferred email
+address, it's better to use simple_sendmail_from_person. It works just
+like simple_sendmail, except that it expects a person instead of an
+address. simple_sendmail_from_person makes sure that the person's name
+is encoded properly.
+
+    >>> from canonical.launchpad.mail import simple_sendmail_from_person
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> msgid = simple_sendmail_from_person(
+    ...     person=foo_bar,
+    ...     to_addrs='test@canonical.com',
+    ...     subject=u'Subject',
+    ...     body=u'Content')
+
+    >>> transaction.commit()
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg['To']
+    'test@canonical.com'
+    >>> msg['From']
+    'Foo Bar <foo.bar@canonical.com>'
+    >>> msg['Subject']
+    'Subject'
+    >>> msg.get_payload(decode=True)
+    'Content'
+
 To make a header appear more than once in the sent message (e.g.
 X-Launchpad-Bug), you can pass a headers dict whose keys are the header names
 and whose values are the header body values. If a value is a list or a tuple,
 the header will appear more than once in the output message.
 
     >>> msgid = simple_sendmail(
-    ...     from_addr=u'foo.bar@canonical.com',
-    ...     to_addrs=u'test@canonical.com',
+    ...     from_addr='foo.bar@canonical.com',
+    ...     to_addrs='test@canonical.com',
     ...     subject=u'Subject',
     ...     body=u'Content',
     ...     headers={
@@ -52,37 +79,47 @@ the header will appear more than once in the output message.
     >>> msg.get_all("X-Bar")
     ['first value', 'second value']
 
-All its input can be unicode strings, which will be encoded to ascii
-strings suitable in emails. Let's try to send an email with non-ascii
-characters:
+simple_sendmail accepts the subject and body as unicode strings, but
+the from_addr and to_addrs have to be str objects containing ASCII
+only.
 
     >>> msgid = simple_sendmail(
-    ...     from_addr=u'F\xf6\xf6 B\u0105r <foo.bar@canonical.com>',
-    ...     to_addrs=u'S\xe4mple Person <test@canonical.com>',
+    ...     from_addr='Foo Bar <foo.bar@canonical.com>',
+    ...     to_addrs='Sample Person <test@canonical.com>',
     ...     subject=u'\xc4mnesrad',
     ...     body=u'Inneh\xe5ll')
     >>> transaction.commit()
 
-Now let's look at the sent email again. Since the headers are encoded
-to preserve the non-ASCII characters, we need to import some functions
-so that we can decode them:
+Now let's look at the sent email again.
 
-    >>> from email.Utils import parseaddr
-    >>> from email.Header import decode_header
     >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
 
-Let's look at the name and address in the To-header:
+    >>> from email.Header import decode_header
+    >>> subject_str, charset = decode_header(msg['Subject'])[0]
+    >>> subject_str.decode(charset)
+    u'\xc4mnesrad'
 
-    >>> to_name_encoded, to_addr = parseaddr(msg['To'])
-    >>> to_name_str, charset = decode_header(to_name_encoded)[0]
-    >>> to_addr
-    'test@canonical.com'
-    >>> to_name_str.decode(charset)
-    u'S\xe4mple Person'
+    >>> msg.get_payload(decode=True).decode(msg.get_content_charset())
+    u'Inneh\xe5ll'
 
-From-header:
 
+If we use simple_sendmail_from_person, the person's displayname can
+contain non-ASCII characters:
+
+    >>> login('foo.bar@canonical.com')
+    >>> foo_bar.displayname = u'F\xf6\xf6 B\u0105r'
+    >>> msgid = simple_sendmail_from_person(
+    ...     person=foo_bar,
+    ...     to_addrs='Sample Person <test@canonical.com>',
+    ...     subject=u'\xc4mnesrad',
+    ...     body=u'Inneh\xe5ll')
+    >>> transaction.commit()
+
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+
+    >>> from email.Utils import parseaddr
     >>> from_name_encoded, from_addr = parseaddr(msg['From'])
     >>> from_name_str, charset = decode_header(from_name_encoded)[0]
     >>> from_addr
@@ -90,16 +127,52 @@ From-header:
     >>> from_name_str.decode(charset)
     u'F\xf6\xf6 B\u0105r'
 
-Subject-header:
-
     >>> subject_str, charset = decode_header(msg['Subject'])[0]
     >>> subject_str.decode(charset)
     u'\xc4mnesrad'
 
-And finally the body of the email:
-
     >>> msg.get_payload(decode=True).decode(msg.get_content_charset())
     u'Inneh\xe5ll'
+
+If we pass a unicode object or a non-ASCII str object to
+simple_sendmail as the from_addr or to_addrs, an error will occur.
+
+    >>> simple_sendmail(
+    ...     from_addr=u'foo.bar@canonical.com',
+    ...     to_addrs='test@canonical.com',
+    ...     subject=u'Subject',
+    ...     body=u'Content')
+    Traceback (most recent call last):
+    ...
+    AssertionError: Expected an ASCII str object, got: u'foo.bar@canonical.com'
+
+    >>> simple_sendmail(
+    ...     from_addr='F\xf4\xf4 Bar <foo.bar@canonical.com>',
+    ...     to_addrs='test@canonical.com',
+    ...     subject=u'Subject',
+    ...     body=u'Content')
+    Traceback (most recent call last):
+    ...
+    AssertionError: Expected an ASCII str object, got: 'F\xf4\xf4...'
+
+    >>> simple_sendmail(
+    ...     from_addr='foo.bar@canonical.com',
+    ...     to_addrs=u'test@canonical.com',
+    ...     subject=u'Subject',
+    ...     body=u'Content')
+    Traceback (most recent call last):
+    ...
+    AssertionError: Expected an ASCII str object, got: u'test@canonical.com'
+
+    >>> simple_sendmail(
+    ...     from_addr='Foo Bar <foo.bar@canonical.com>',
+    ...     to_addrs=['S\xc4\x85mple Person <test@canonical.com>'],
+    ...     subject=u'Subject',
+    ...     body=u'Content')
+    Traceback (most recent call last):
+    ...
+    AssertionError: Expected an ASCII str object, got: 'S\xc4\x85mple...'
+
 
 simple_sendmail creates a Message instance, and sends it via another
 function, sendmail. sendmail() can also be used directly if you want to
