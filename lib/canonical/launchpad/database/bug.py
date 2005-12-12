@@ -286,8 +286,7 @@ class BugSet(BugSetBase):
                 'createBug requires a comment, msg, or description')
 
         # make sure we did not get TOO MUCH information
-        assert (
-            (comment is None or msg is None),
+        assert comment is None or msg is None, (
             "Expected either a comment or a msg, but got both")
 
         # Create the bug comment if one was given.

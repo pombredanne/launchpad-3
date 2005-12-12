@@ -28,7 +28,8 @@ def login(email, participation=None):
     # need to do this because there is a check that the email address
     # is valid. This check goes via a security proxy, so we need an
     # interaction in order to log in with an email address.
-    setupInteraction(authutil.unauthenticatedPrincipal())
+    setupInteraction(
+        authutil.unauthenticatedPrincipal(), participation=participation)
 
     if email != ANONYMOUS:
         principal = authutil.getPrincipalByLogin(email)

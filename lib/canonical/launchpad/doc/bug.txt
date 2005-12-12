@@ -269,7 +269,20 @@ When a public bug is filed:
 >>> notify(SQLObjectCreatedEvent(added_bug))
 >>> public_bug = bugset.get(added_bug.id)
 
-the submitter and the maintainer are explicitly subscribed.
+the submitter and the maintainer are explicitly subscribed. Note that
+passing both a comment /and/ a msg would have raised an
+AssertionError:
+
+>>> added_bug = getUtility(IBugSet).createBug(
+...     product=firefox, title="test firefox bug",
+...     comment="blah blah blah", msg="foo foo foo",
+...     owner=foobar)
+Traceback (most recent call last):
+  ...
+AssertionError: Expected either a comment or a msg, but got both
+
+
+So, let's continue:
 
 >>> print [subscription.person.id for subscription in public_bug.subscriptions]
 [16, 12]
