@@ -134,6 +134,24 @@ contain non-ASCII characters:
     >>> msg.get_payload(decode=True).decode(msg.get_content_charset())
     u'Inneh\xe5ll'
 
+simple_sendmail_from_person also makes sure that the name gets
+surrounded by quotes and quoted if necessary:
+
+    >>> login('foo.bar@canonical.com')
+    >>> foo_bar.displayname = u'Foo [Baz] " Bar'
+    >>> msgid = simple_sendmail_from_person(
+    ...     person=foo_bar,
+    ...     to_addrs='Sample Person <test@canonical.com>',
+    ...     subject=u'\xc4mnesrad',
+    ...     body=u'Inneh\xe5ll')
+    >>> transaction.commit()
+
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> print msg['From']
+    "Foo \[Baz\] \" Bar" <foo.bar@canonical.com>
+
+
 If we pass a unicode object or a non-ASCII str object to
 simple_sendmail as the from_addr or to_addrs, an error will occur.
 
