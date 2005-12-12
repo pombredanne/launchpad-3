@@ -1,10 +1,11 @@
+<tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
   lang="en"
   metal:use-macro="context/@@main_template/master"
   i18n:domain="rosetta"
 >
   <body>
-    <div metal:fill-slot="body">
+    <div metal:fill-slot="main">
       <table>
         <tbody>
           <tr>
@@ -234,3 +235,4 @@
     <metal:nomenu fill-slot="column_two"></metal:nomenu>
   </body>
 </html>
+</tal:layout>
