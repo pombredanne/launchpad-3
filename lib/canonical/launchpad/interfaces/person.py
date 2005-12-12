@@ -22,18 +22,20 @@ __all__ = [
     'EmailAddressAlreadyTaken'
     ]
 
+from textwrap import dedent
+
 from zope.schema import (
     Choice, Datetime, Int, Text, TextLine, Password, ValidationError, Bytes)
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 from zope.i18nmessageid import MessageIDFactory
 
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.validation import (
-    valid_emblem, valid_hackergotchi)
+    valid_emblem, valid_hackergotchi, valid_unregistered_email)
 
 from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, EmailAddressStatus)
@@ -69,9 +71,9 @@ class PersonNameField(TextLine):
 
         person = getUtility(IPersonSet).getByName(value, ignore_merged=False)
         if person is not None:
-            raise NameAlreadyTaken(_(
-                "The name %s is already in use." % value))
-
+            raise LaunchpadValidationError(_(dedent("""
+                This name is already in use by another person/team.
+                """ )))
 
 class IPerson(IHasSpecifications):
     """A Person."""
@@ -891,5 +893,5 @@ class ITeamCreation(ITeam):
             "this team will be sent to all team members. After finishing the "
             "team creation, a new message will be sent to this address with "
             "instructions on how to finish its registration."),
-        constraint=valid_email)
+        constraint=valid_unregistered_email)
 

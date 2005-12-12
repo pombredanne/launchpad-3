@@ -1,3 +1,4 @@
+<tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
@@ -9,7 +10,7 @@
     <meta http-equiv="refresh" content="300">
 </metal:block>
 
-    <div metal:fill-slot="body">
+    <div metal:fill-slot="main">
       <h1>Build machines for Launchpad</h1>
       <p>
         The Launchpad build farm works tirelessly to compile packages,
@@ -40,7 +41,7 @@
             <td tal:content="builder/owner/displayname">Owner</td>
             <td tal:content="builder/status">STATUS</td>
           </tr>
-          <tr>
+          <tr class="secondary">
             <td
               class="discreet"
               colspan="6"
@@ -61,3 +62,4 @@
     </div>
   </body>
 </html>
+</tal:layout>
