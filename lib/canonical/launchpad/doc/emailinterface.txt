@@ -465,7 +465,19 @@ The user is a bug contact of the upstream product
 The user is a package bug contact
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-    >>> login('no-priv@canonical.com')
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, ISourcePackageNameSet, IPersonSet)
+    >>> from canonical.launchpad.database import Maintainership
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> mozilla_name = getUtility(ISourcePackageNameSet)['mozilla-firefox']
+    >>> helge = getUtility(IPersonSet).getByName('kreutzm')
+    >>> mozilla_maintainership = Maintainership(
+    ...     distribution=ubuntu, sourcepackagename=mozilla_name,
+    ...     maintainer=helge)
+
+
+    >>> login('kreutzm@itp.uni-hannover.de')
     >>> submit_commands(
     ...     bug_one, 'status accepted', 'assignee no-priv@canonical.com')
     >>> for bugtask in bug_one.bugtasks:
@@ -473,8 +485,8 @@ The user is a package bug contact
     ...         bugtask.targetname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     firefox (upstream): Accepted, assigned to Sample Person
-    mozilla-firefox (ubuntu): New, assigned to no one
-    mozilla-firefox (debian): Accepted, assigned to No Privileges Person
+    mozilla-firefox (ubuntu): Accepted, assigned to No Privileges Person
+    mozilla-firefox (debian): Accepted, assigned to no one
 
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
@@ -504,7 +516,7 @@ The user is a distribution member
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     firefox (upstream): Accepted, assigned to Sample Person
     mozilla-firefox (ubuntu): New, assigned to Sample Person
-    mozilla-firefox (debian): Accepted, assigned to No Privileges Person
+    mozilla-firefox (debian): Accepted, assigned to no one
 
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
@@ -513,7 +525,7 @@ The user is a distribution member
     >>> print msg.get_payload(decode=True)
     Public bug report changed:
     ...
-        Assignee: (unassigned) => Sample Person
+        Assignee: No Privileges Person => Sample Person
     ...
 
 
@@ -532,7 +544,7 @@ user, telling him that he has to use the 'affects' command.
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     firefox (upstream): Accepted, assigned to Sample Person
     mozilla-firefox (ubuntu): New, assigned to Sample Person
-    mozilla-firefox (debian): Accepted, assigned to No Privileges Person
+    mozilla-firefox (debian): Accepted, assigned to no one
 
     >>> transaction.commit()
     >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
