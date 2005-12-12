@@ -18,11 +18,11 @@ from canonical.authserver.database import DatabaseUserDetailsStorageV2
 
 
 application = service.Application("authserver_test")
-dbpool = ConnectionPool('psycopg', 'dbname=launchpad_test')
+dbpool = ConnectionPool('psycopg', 'dbname=launchpad_dev')
 storage = DatabaseUserDetailsStorage(dbpool)
 root = resource.Resource()
 versionOneAPI = UserDetailsResource(DatabaseUserDetailsStorage(dbpool))
-versionTwoAPI = UserDetailsResourceV2(DatabaseUserDetailsStorageV2(dbpool))
+versionTwoAPI = UserDetailsResourceV2(DatabaseUserDetailsStorageV2(dbpool), debug=True)
 root.putChild('', versionOneAPI)
 root.putChild('v2', versionTwoAPI)
 site = server.Site(root)
