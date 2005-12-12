@@ -548,7 +548,7 @@ def contactEmailAddresses(person):
     """
     emails = set()
     if person.preferredemail is not None:
-        emails.add(person.preferredemail.email)
+        emails.add(str(person.preferredemail.email))
         return emails
 
     if ITeam.providedBy(person):
