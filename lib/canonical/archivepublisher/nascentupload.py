@@ -287,7 +287,7 @@ class NascentUpload:
         exist or to grow; coming into being; as, a nascent germ.
         [1913 Webster +PJC]
 
-    A nascent upload is thus in the process of coming into being. Specifcally
+    A nascent upload is thus in the process of coming into being. Specifically
     a nascent upload is something we're trying to get into a shape we can
     insert into the database as a queued upload to be processed.
     """
