@@ -117,6 +117,23 @@ class UserDirsTestCase(AvatarTestBase):
             defer.maybeDeferred(userDir.createDirectory, 'mozilla-firefox'), 
             PermissionError)
 
+    def testInitialBranches(self):
+        # Check that already existing branches owned by a user appear as
+        # expected.
+        initialBranches=[
+            (1, 'mozilla-firefox', [(1, 'branch-one'), (2, 'branch-two')]),
+            (1, 'product-x', [(3, 'branch-y')]),
+        ]
+        avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict, None,
+                                initialBranches=initialBranches)
+        root = avatar.filesystem.root
+        userDir = root.child('~alice')
+        self.assertEqual(
+            set([name for name, child in userDir.children()]), 
+            set(['.', '..', '+junk', 'mozilla-firefox', 'product-x']))
+
+
+
 #class TeamDirsTestCase(AvatarTestBase):
 #    """Same as UserDirsTestCase, except with a team dir."""
     
@@ -146,7 +163,8 @@ class ProductDirsTestCase(AvatarTestBase):
         deferred = defer.maybeDeferred(
             userDir.createDirectory, 'mozilla-firefox')
 
-        # Once that's done, we'll create ~alice/mozilla-firefox/new-branch
+        # Once that's done, we'll create ~alice/mozilla-firefox/new-branch.
+        # This triggers a call to createBranch.
         def _cb1(productDirectory):
             return productDirectory.createDirectory('new-branch')
 
