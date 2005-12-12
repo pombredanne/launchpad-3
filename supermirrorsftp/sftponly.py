@@ -6,6 +6,7 @@ from twisted.conch.ssh import factory, userauth, connection
 from twisted.conch.checkers import SSHPublicKeyDatabase
 from twisted.cred.checkers import ICredentialsChecker
 from twisted.cred.portal import IRealm
+from twisted.internet import defer
 from twisted.python import components
 from twisted.python.filepath import FilePath, InsecurePath
 from twisted.vfs.pathutils import FileSystem
@@ -61,7 +62,7 @@ class SFTPOnlyAvatar(avatar.ConchUser):
         self.teams = userDict['teams']
 
         if initialBranches is None:
-            # XXX: backwards-compat hack
+            # XXX: testing hack
             self.branches = dict(
                     (lpid, []) for lpid in ([t['id'] for t in self.teams]))
         else:
@@ -136,17 +137,32 @@ components.registerAdapter(sftp.AdaptFileSystemUserToISFTP, SFTPOnlyAvatar,
 class Realm:
     implements(IRealm)
 
-    def __init__(self, homeDirsRoot, productMapFilename, authserver):
+    def __init__(self, homeDirsRoot, authserver):
         self.homeDirsRoot = homeDirsRoot
-        self.productMapFilename = productMapFilename
         self.authserver = authserver
 
     def requestAvatar(self, avatarId, mind, *interfaces):
+        def getInitialBranches(userDict):
+            # XXX: this makes many XML-RPC requests where a better API would
+            #      require only one (or include it in the team dict in the first
+            #      place).
+            deferreds = []
+            for teamDict in userDict['teams']:
+                deferred = self.authserver.getBranchesForUser(teamDict['id'])
+                def _gotBranches(branches, teamDict=teamDict):
+                    teamDict['initialBranches'] = branches
+                deferred.addCallback(_gotBranches)
+            def allDone(ignore):
+                return userDict
+            return defer.DeferredList(deferreds,
+                    fireOnOneErrback=True).addCallback(allDone)
+
         def gotUserDict(userDict):
-            avatar = SFTPOnlyAvatar(avatarId, self.homeDirsRoot,
-                                    self.productMapFilename, userDict)
+            avatar = SFTPOnlyAvatar(avatarId, self.homeDirsRoot, userDict,
+                                    self.authserver)
             return interfaces[0], avatar, lambda: None
-        return self.authserver.getUser(avatarId).addCallback(gotUserDict)
+        deferred = self.authserver.getUser(avatarId)
+        return deferred.addCallback(getInitialBranches).addCallback(gotUserDict)
 
 
 class Factory(factory.SSHFactory):
