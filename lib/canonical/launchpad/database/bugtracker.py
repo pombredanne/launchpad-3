@@ -12,7 +12,7 @@ from sqlobject import ForeignKey, StringCol, MultipleJoin, RelatedJoin
 from canonical.lp.dbschema import EnumCol, BugTrackerType
 from canonical.database.sqlbase import (SQLBase, flush_database_updates,
     quote)
-
+from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.interfaces import (
     IBugTracker, IBugTrackerSet, NotFoundError)
 
@@ -41,9 +41,9 @@ class BugTracker(SQLBase):
         orderBy='name')
 
     @property
-    def watchcount(self):
+    def watches(self):
         """See IBugTracker"""
-        return len(self.watches)
+        return BugWatch.selectBy(bugtrackerID=self.id)
 
     @property
     def latestwatches(self):

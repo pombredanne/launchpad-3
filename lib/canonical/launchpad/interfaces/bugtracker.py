@@ -49,11 +49,8 @@ class IBugTracker(Interface):
     watches = Attribute('The remote watches on this bug tracker.')
     projects = Attribute("The projects which use this bug tracker.")
 
-    # properties
-    watchcount = Attribute("Return the number of watches on this "
-        "bugtracker.")
-
     latestwatches = Attribute("Return the last 10 watches created.")
+
 
 class IBugTrackerSet(Interface):
     """A set of IBugTracker's.
