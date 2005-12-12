@@ -375,8 +375,8 @@ as NEW and RELEASE.
 
 
 
-Processing Empty Items
-----------------------
+Processing New Items
+--------------------
 
 Ok, packages were uploaded, processed, and are now on the distroreleasequeue
 waiting for someone. We'll accept them here "by hand", doing the work of
@@ -400,6 +400,7 @@ the changes.
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> flush_database_updates()
   >>> transaction.commit()
+
 
 Now we process them, one more time.
 
