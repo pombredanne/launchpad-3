@@ -57,6 +57,7 @@ class ILaunchpadCelebrities(Interface):
     debbugs = Attribute("The Debian Bug Tracker")
     shipit_admin = Attribute("The ShipIt Administrators.")
     launchpad_developers = Attribute("The Launchpad development team.")
+    ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
 
 
 class ICrowd(Interface):
