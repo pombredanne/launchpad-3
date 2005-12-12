@@ -12,6 +12,8 @@ from canonical.librarian.storage import _relFileLocation as relative_file_path
 from canonical.librarian.storage import _sameFile
 from canonical.database.postgresql import listReferences
 
+BATCH_SIZE = 1
+
 log = None
 
 def merge_duplicates(ztm):
@@ -110,10 +112,11 @@ def merge_duplicates(ztm):
                 "Making LibraryFileAliases referencing %s reference %s instead",
                 other_ids, prime_id
                 )
-        cur.execute("""
-            UPDATE LibraryFileAlias SET content=%(prime_id)s
-            WHERE content in (%(other_ids)s)
-            """ % vars())
+        for other_id in dupes[1:]:
+            cur.execute("""
+                UPDATE LibraryFileAlias SET content=%(prime_id)s
+                WHERE content = %(other_id)s
+                """, vars())
 
         log.debug("Committing")
         ztm.commit()
@@ -183,7 +186,7 @@ def delete_unreferenced_aliases(ztm):
             """ % vars())
         referenced_ids = set(row[0] for row in cur.fetchall())
         ztm.abort()
-        log.debug(
+        log.info(
                 "Found %d distinct LibraryFileAlias references in %s(%s)",
                 len(referenced_ids), table, column
                 )
@@ -196,7 +199,11 @@ def delete_unreferenced_aliases(ztm):
     # Delete unreferenced LibraryFileAliases. Note that this will raise a
     # database exception if we screwed up and attempt to delete an alias that
     # is still referenced.
-    for content_id in content_ids:
+    content_ids = list(content_ids)
+    for i in range(0, len(content_ids), BATCH_SIZE):
+        in_content_ids = ','.join(
+                (str(content_id) for content_id in content_ids[i:i+BATCH_SIZE])
+                )
         ztm.begin()
         cur = cursor()
         # First a sanity check to ensure we aren't removing anything we
@@ -204,22 +211,22 @@ def delete_unreferenced_aliases(ztm):
         cur.execute("""
             SELECT COUNT(*)
             FROM LibraryFileAlias
-            WHERE content=%(content_id)s
+            WHERE content in (%(in_content_ids)s)
                 AND (
                     expires + '1 week'::interval
                         > CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
                     OR last_accessed + '1 week'::interval
                         > CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
                     )
-            """, vars())
+            """ % vars())
         assert cur.fetchone()[0] == 0, "Logic error - sanity check failed"
         log.info(
                 "Deleting all LibraryFileAlias references to "
-                "LibraryFileContent %d", content_id
+                "LibraryFileContents %s", in_content_ids
                 )
         cur.execute("""
-            DELETE FROM LibraryFileAlias WHERE content=%(content_id)s
-            """, vars())
+            DELETE FROM LibraryFileAlias WHERE content IN (%(in_content_ids)s)
+            """ % vars())
         ztm.commit()
 
 
@@ -243,25 +250,29 @@ def delete_unreferenced_content(ztm):
     garbage_ids = [row[0] for row in cur.fetchall()]
     ztm.abort()
 
-    for garbage_id in garbage_ids:
+    for i in range(0, len(garbage_ids), BATCH_SIZE):
+        in_garbage_ids = ','.join(
+            (str(garbage_id) for garbage_id in garbage_ids[i:i+BATCH_SIZE])
+            )
         ztm.begin()
         cur = cursor()
 
         # Delete old LibraryFileContent entries. Note that this will fail
         # if we screwed up and still have LibraryFileAlias entries referencing
         # it.
-        log.info("Deleting LibraryFileContent %d", garbage_id)
+        log.info("Deleting LibraryFileContents %s", in_garbage_ids)
         cur.execute("""
-            DELETE FROM LibraryFileContent WHERE id = %(garbage_id)s
-            """, vars())
+            DELETE FROM LibraryFileContent WHERE id in (%s)
+            """ % in_garbage_ids)
 
-        # Remove the file from disk, if it hasn't already been
-        path = get_file_path(garbage_id)
-        if os.path.exists(path):
-            log.info("Deleting %s", path)
-            os.unlink(path)
-        else:
-            log.info("%s already deleted", path)
+        for garbage_id in garbage_ids[i:i+BATCH_SIZE]:
+            # Remove the file from disk, if it hasn't already been
+            path = get_file_path(garbage_id)
+            if os.path.exists(path):
+                log.info("Deleting %s", path)
+                os.unlink(path)
+            else:
+                log.info("%s already deleted", path)
 
         # And commit the database changes. It may be possible for this to
         # fail in rare cases, leaving a record in the DB with no corresponding

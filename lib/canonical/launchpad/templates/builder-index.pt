@@ -13,10 +13,7 @@
     <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
-
-<div metal:fill-slot="main">
-
-      <div tal:define="job context/currentjob">
+  <div metal:fill-slot="main" tal:define="job context/currentjob">
 
       <h2>Current status</h2>
 
@@ -62,8 +59,6 @@
         </tal:block>
 
       </table>
-
-      </div>
 
       <h2>Recent Builds</h2>
 

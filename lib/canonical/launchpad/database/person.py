@@ -23,7 +23,7 @@ from sqlobject import (
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 from canonical.database.sqlbase import (
-    SQLBase, quote, cursor, sqlvalues, flush_database_updates,
+    SQLBase, quote, quote_like, cursor, sqlvalues, flush_database_updates,
     flush_database_caches)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -871,7 +871,23 @@ class PersonSet:
         # indexes. Ideally we want to order by karma DESC, name but
         # that will not use the indexes (at least under PostgreSQL 7.4)
         # and be really slow.
-        return self.getAllValidPersons(orderBy=['-karma', '-id'])[:5]
+
+        # This is a simpler implementation, but is triggering Bug 4818
+        # return self.getAllValidPersons(orderBy=['-karma', '-id'])[:5]
+
+        query = """
+            id in (
+                SELECT Person.id
+                FROM Person, EmailAddress
+                WHERE Person.id = EmailAddress.person
+                    AND teamowner IS NULL
+                    AND merged IS NULL
+                    AND EmailAddress.status = %d
+                ORDER BY Person.karma DESC, Person.id DESC
+                LIMIT 5
+                )
+            """ % (EmailAddressStatus.PREFERRED.value,)
+        return Person.select(query, orderBy=['-karma', '-id'])
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
@@ -981,13 +997,12 @@ class PersonSet:
             orderBy = self._defaultOrder
         text = text.lower()
         # Teams may not have email addresses, so we need to either use a LEFT
-        # OUTER JOIN or do a UNION between two queries.
-        # XXX: I'll be using two queries and a union() here until we have
-        # support for JOINS in our sqlobject. -- Guilherme Salgado 2005-07-18
+        # OUTER JOIN or do a UNION between two queries. Using a UNION makes 
+        # it a lot faster than with a LEFT OUTER JOIN.
         email_query = """
             EmailAddress.person = Person.id AND 
-            lower(EmailAddress.email) LIKE %s
-            """ % quote(text + '%%')
+            lower(EmailAddress.email) LIKE %s || '%%'
+            """ % quote_like(text)
         results = Person.select(email_query, clauseTables=['EmailAddress'])
         name_query = "fti @@ ftq(%s) AND merged is NULL" % quote(text)
         return results.union(Person.select(name_query), orderBy=orderBy)
@@ -997,14 +1012,24 @@ class PersonSet:
         if orderBy is None:
             orderBy = self._defaultOrder
         text = text.lower()
-        query = ('Person.teamowner IS NULL AND Person.merged IS NULL AND '
-                 'EmailAddress.person = Person.id')
+        base_query = ('Person.teamowner IS NULL AND Person.merged IS NULL AND '
+                      'EmailAddress.person = Person.id')
+        clauseTables = ['EmailAddress']
         if text:
-            query += (' AND (lower(EmailAddress.email) LIKE %s OR '
-                      'Person.fti @@ ftq(%s))'
-                      % (quote(text + '%%'), quote(text)))
-        return Person.select(query, clauseTables=['EmailAddress'],
-                             orderBy=orderBy, distinct=True)
+            # We use a UNION here because this makes things *a lot* faster
+            # than if we did a single SELECT with the two following clauses
+            # ORed.
+            email_query = ("%s AND lower(EmailAddress.email) LIKE %s || '%%'"
+                           % (base_query, quote_like(text)))
+            name_query = ('%s AND Person.fti @@ ftq(%s)' 
+                          % (base_query, quote(text)))
+            results = Person.select(email_query, clauseTables=clauseTables)
+            results = results.union(
+                Person.select(name_query, clauseTables=clauseTables))
+        else:
+            results = Person.select(base_query, clauseTables=clauseTables)
+
+        return results.orderBy(orderBy)
 
     def findTeam(self, text, orderBy=None):
         """See IPersonSet."""
@@ -1012,14 +1037,13 @@ class PersonSet:
             orderBy = self._defaultOrder
         text = text.lower()
         # Teams may not have email addresses, so we need to either use a LEFT
-        # OUTER JOIN or do a UNION between two queries.
-        # XXX: I'll be using two queries and a union() here until we have
-        # support for JOINS in our sqlobject. -- Guilherme Salgado 2005-07-18
+        # OUTER JOIN or do a UNION between two queries. Using a UNION makes 
+        # it a lot faster than with a LEFT OUTER JOIN.
         email_query = """
             Person.teamowner IS NOT NULL AND 
             EmailAddress.person = Person.id AND 
-            lower(EmailAddress.email) LIKE %s
-            """ % quote(text + '%%')
+            lower(EmailAddress.email) LIKE %s || '%%'
+            """ % quote_like(text)
         results = Person.select(email_query, clauseTables=['EmailAddress'])
         name_query = """
              Person.teamowner IS NOT NULL AND 

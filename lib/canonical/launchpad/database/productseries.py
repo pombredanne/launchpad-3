@@ -1,7 +1,12 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['ProductSeries', 'ProductSeriesSet', 'ProductSeriesSourceSet']
+
+__all__ = [
+    'ProductSeries',
+    'ProductSeriesSourceSet',
+    ]
+
 
 import datetime
 import sets
@@ -16,7 +21,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 # canonical imports
 from canonical.launchpad.interfaces import (
     IProductSeries, IProductSeriesSource, IProductSeriesSourceAdmin,
-    IProductSeriesSet, IProductSeriesSourceSet, NotFoundError)
+    IProductSeriesSourceSet, NotFoundError)
 
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.potemplate import POTemplate
@@ -202,30 +207,8 @@ class ProductSeries(SQLBase):
         """Has the series source failed automatic testing by roomba?"""
         return self.importstatus == ImportStatus.TESTFAILED
 
-
-class ProductSeriesSet:
-    # XXX: this is in fact a subset of product series
-    implements(IProductSeriesSet)
-
-    def __init__(self, product=None):
-        self.product = product
-
-    def __iter__(self):
-        if self.product:
-            return iter(ProductSeries.selectBy(productID=self.product.id))
-        return iter(ProductSeries.select())
-
-    def __getitem__(self, name):
-        if not self.product:
-            raise AssertionError(
-                'ProductSeriesSet not initialised with product.')
-        series = ProductSeries.selectOneBy(productID=self.product.id,
-                                           name=name)
-        if series is None:
-            raise NotFoundError(name)
-        return series
-
-
+# XXX matsubara, 2005-11-30: This class should be renamed to ProductSeriesSet
+# https://launchpad.net/products/launchpad/+bug/5247
 class ProductSeriesSourceSet:
     """See IProductSeriesSourceSet"""
     implements(IProductSeriesSourceSet)
@@ -289,3 +272,17 @@ class ProductSeriesSourceSet:
             query += 'ProductSeries.importstatus = %d' % importstatus
         return query, clauseTables
 
+    def getByCVSDetails(self, cvsroot, cvsmodule, cvsbranch, default=None):
+        """See IProductSeriesSourceSet."""
+        result = ProductSeries.selectOneBy(
+            cvsroot=cvsroot, cvsmodule=cvsmodule, cvsbranch=cvsbranch)
+        if result is None:
+            return default
+        return result
+
+    def getBySVNDetails(self, svnrepository, default=None):
+        """See IProductSeriesSourceSet."""
+        result = ProductSeries.selectOneBy(svnrepository=svnrepository)
+        if result is None:
+            return default
+        return result

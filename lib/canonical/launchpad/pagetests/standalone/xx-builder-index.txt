@@ -1,6 +1,6 @@
 
 Check some important fields present in builder-index page, note that
-the overview-menu does not appear in public access. 
+the overview-menu does not appear in public access.
 
   >>> print http(r"""
   ... GET /+builds/bob HTTP/1.1
@@ -35,8 +35,8 @@ the overview-menu does not appear in public access.
 
 
 Check if the overview-menu appears for an authorized access (admins
-member): 
-  
+member):
+
   >>> print http(r"""
   ... GET /+builds/bob HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==

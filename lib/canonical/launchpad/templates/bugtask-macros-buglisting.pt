@@ -5,19 +5,129 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:content="structure context/@@+portlet-details" />
-  <div tal:content="structure context/distribution/@@+portlet-details|nothing" />
-</metal:leftportlets>
-
-<metal:rightportlets fill-slot="portlets_two">
-    <tal:block content="structure context/@@+portlet-bugtasklist-mybugs" />
-    <tal:releasebugs
-        tal:condition="context/@@+portlet-bugtasklist-releasebugs|nothing"
-        tal:content="structure context/@@+portlet-bugtasklist-releasebugs" />
-</metal:rightportlets>
-
 <div metal:fill-slot="main">
+
+<metal:assignee_widget define-macro="assignee_widget_in_table">
+  <tal:comment replace="nothing">
+    This macro expects that the view has the following attributes:
+    :assignee_widget: The widget rendered by a Choice field named assignee
+    :unassigned_widget: The widget rendered by a Bool field named unassignee
+  </tal:comment>
+
+  <tr tal:condition="view/assignee_widget">
+    <th>
+      <label
+        tal:attributes="for view/assignee_widget/name"
+        tal:content="view/assignee_widget/label"
+      >Assigned to:</label>
+    </th>
+    <td>
+      <div tal:content="structure view/assignee_widget" />
+      <div>
+        <tal:block content="structure view/unassigned_widget" />
+        <label style="font-weight: normal;"
+            tal:attributes="for view/unassigned_widget/name"
+            tal:content="structure view/unassigned_widget/label">
+          Unassigned bugs only
+        </label>
+      </div>
+      <div>
+    </td>
+  </tr>
+</metal:assignee_widget>
+
+
+<metal:include_dupes_widget define-macro="include_dupes_widget_in_table">
+  <tal:comment replace="nothing">
+    This macro expects that the view has the following attributes:
+    :include_dupes_widget: The widget rendered by a Bool field named
+                           include_dupes
+  </tal:comment>
+
+  <tr>
+    <th />
+    <td>
+          <tal:block content="structure view/include_dupes_widget" />
+          <label style="font-weight: normal;"
+              tal:attributes="for view/include_dupes_widget/name"
+              tal:content="structure view/include_dupes_widget/label">
+            Include duplicates
+          </label>
+    </td>
+  </tr>
+</metal:include_dupes_widget>
+
+<metal:statusexplanation_widget
+  define-macro="statusexplanation_widget_in_table">
+  <tal:comment replace="nothing">
+    This macro expects that the view has the following attributes:
+    :statusexplanation_widget: The widget rendered by a TextLine field named
+                               statusexplanation_widget
+  </tal:comment>
+
+  <tr tal:condition="view/statusexplanation_widget">
+    <th>
+      <label
+        tal:attributes="for view/statusexplanation_widget/name"
+        tal:content="view/statusexplanation_widget/label"
+      >Status notes:</label>
+    </th>
+    <td>
+      <tal:block content="structure view/statusexplanation_widget" />
+    </td>
+  </tr>
+</metal:statusexplanation_widget>
+
+<metal:extra_widgets_in_own_table define-macro="extra_widgets_in_own_table">
+  <tal:comment replace="nothing">
+    This macro has a table with some widgets to filter a search for bugs.
+    These widgets are: status_widget, severity_widget, attachmenttype_widget
+    and milestone_widget. If any of these widgets is missing on the view
+    class, they simply won't be displayed.
+  </tal:comment>
+
+  <table style="width: auto;">
+    <tbody>
+      <tr>
+        <td tal:condition="view/status_widget|nothing">
+          <label tal:attributes="for view/status_widget/name"
+                  tal:content="view/status_widget/label">
+            Status:
+          </label>
+        </td>
+        <td tal:condition="view/severity_widget|nothing">
+          <label tal:attributes="for view/severity_widget/name"
+                  tal:content="view/severity_widget/label">
+            Severity:
+          </label>
+        </td>
+        <td tal:condition="view/attachmenttype_widget|nothing">
+          <label tal:attributes="for view/attachmenttype_widget/name"
+                  tal:content="view/attachmenttype_widget/label">
+            Attachment:
+          </label>
+        </td>
+        <td tal:condition="view/milestone_widget|nothing">
+          <label tal:attributes="for view/milestone_widget/name"
+                  tal:content="view/milestone_widget/label">
+            Target:
+          </label>
+        </td>
+      </tr>
+
+      <tr>
+        <td tal:condition="view/status_widget"
+            tal:content="structure view/status_widget" />
+        <td tal:condition="view/severity_widget"
+            tal:content="structure view/severity_widget" />
+        <td tal:condition="view/attachmenttype_widget"
+            tal:content="structure view/attachmenttype_widget" />
+        <td tal:condition="view/milestone_widget|nothing"
+            tal:content="structure view/milestone_widget" />
+      </tr>
+    </tbody>
+  </table>
+</metal:extra_widgets_in_own_table>
 
 <metal:page
     define-macro="page"
@@ -40,6 +150,14 @@
         <td>
           <tal:searchtext content="structure view/searchtext_widget" />
           <input type="submit" name="search" value="Search" />
+          <tal:block condition="view/has_advanced_form|nothing">
+            <tal:block condition="view/show_advanced_form">
+              <input type="submit" name="simple" value="Simple..." />
+            </tal:block>
+            <tal:block condition="not: view/show_advanced_form">
+              <input type="submit" name="advanced" value="Advanced..." />
+            </tal:block>
+          </tal:block>
         </td>
       </tr>
       <tr>
@@ -102,11 +220,14 @@
 
   <tal:resultslist condition="not: task_batch_navigator/batch">
     <br />
-    No matching results found. Would you like to
-    <a href="#"
-       tal:attributes="href string:${context/fmt:url}/+filebug;
-                       title string:Report a bug on ${context/displayname}">
-                       open a new bug?</a>
+    No matching results found. 
+    <tal:block condition="not: view/_personContext">
+      Would you like to
+      <a href="#"
+         tal:attributes="href string:${context/fmt:url}/+filebug;
+                         title string:Report a bug on ${context/displayname}">
+                         open a new bug?</a>
+    </tal:block>
   </tal:resultslist>
 
   <script>

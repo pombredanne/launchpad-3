@@ -1845,44 +1845,41 @@ class PackagePublishingPocket(DBSchema):
     RELEASE = Item(0, """
         Release
 
-        This is the "release" pocket, it contains the versions of the
-        packages that were published when the release was made. For releases
-        that are still under development, this is the only pocket into which
-        packages will be published.
+        The package versions that were published
+        when the distribution release was made.
+        For releases that are still under development,
+        packages are published here only.
         """)
 
     SECURITY = Item(10, """
         Security
 
-        This is the pocket into which we publish only security fixes to the
-        released distribution. It is highly advisable to ensure that your
-        system has the security pocket enabled.
+        Package versions containing security fixes for the released
+        distribution.
+        It is a good idea to have security updates turned on for your system.
         """)
 
     UPDATES = Item(20, """
         Updates
 
-        This is the pocket into which we publish packages with new
-        functionality after a release has been made. It is usually
-        enabled by default after a fresh install.
+        Package versions including new features after the distribution
+        release has been made.
+        Updates are usually turned on by default after a fresh install.
         """)
 
     PROPOSED = Item(30, """
         Proposed
 
-        This is the pocket into which we publish packages with new
-        functionality after a release has been made, which we would like to
-        have widely tested but not yet made part of a default installation.
-        People who "live on the edge" will have enabled the "proposed"
-        pocket, and so will start testing these packages. Once they are
-        proven safe for wider deployment they will go into the updates
-        pocket.
+        Package versions including new functions that should be widely
+        tested, but that are not yet part of a default installation.
+        People who "live on the edge" will test these packages before they
+        are accepted for use in "Updates".
         """)
 
     BACKPORTS = Item(40, """
         Backports
 
-        This is where backported packages go.
+        Backported packages.
         """)
 
 class SourcePackageRelationships(DBSchema):
