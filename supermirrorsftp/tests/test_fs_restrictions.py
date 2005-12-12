@@ -36,9 +36,10 @@ class AvatarTestBase(unittest.TestCase):
 class TestTopLevelDir(AvatarTestBase):
     def testListDirNoTeams(self):
         # list only user dir + team dirs
-        # XXX: all tests that use 'None' for the launchpad interface should
-        # perhaps have a special mock object that asserts on any getattr, to
-        # assert that the lp interface isn't used for certain ops?
+        # XXX: all tests that use 'None' for the launchpad interface passed to
+        #      SFTPOnlyAvatar should perhaps have a special mock object that
+        #      asserts on any getattr, to assert that the lp interface isn't
+        #      used for certain ops?
         avatar = SFTPOnlyAvatar('alice', self.tmpdir, self.aliceUserDict, None)
         root = SFTPServerRoot(avatar)
         self.assertEqual(
@@ -47,8 +48,6 @@ class TestTopLevelDir(AvatarTestBase):
 
     def testListDirTeams(self):
         # list only user dir + team dirs
-        
-        # Add a team to Alice's user dict
         avatar = SFTPOnlyAvatar('bob', self.tmpdir, self.bobUserDict, None)
         root = SFTPServerRoot(avatar)
         self.assertEqual(
@@ -124,12 +123,15 @@ class UserDirsTestCase(AvatarTestBase):
 
 class ProductDirsTestCase(AvatarTestBase):
     def testCreateBranch(self):
+        # Define a mock launchpad RPC object.
         class Launchpad:
             test = self
             def fetchProductID(self, productName):
+                # expect fetchProductID('mozilla-firefox')
                 self.test.assertEqual(productName, 'mozilla-firefox')
                 return defer.succeed(123)
             def createBranch(self, userID, productID, branchName):
+                # expect createBranch(1, '123', 'new-branch')
                 self.test.assertEqual(1, userID)
                 self.test.assertEqual('123', productID)
                 self.test.assertEqual('new-branch', branchName)
@@ -138,18 +140,29 @@ class ProductDirsTestCase(AvatarTestBase):
                                 Launchpad())
         root = avatar.filesystem.root
         userDir = root.child('~alice')
+
+        # First create ~alice/mozilla-firefox.  This will trigger a call to
+        # fetchProductID.
         deferred = defer.maybeDeferred(
             userDir.createDirectory, 'mozilla-firefox')
+
+        # Once that's done, we'll create ~alice/mozilla-firefox/new-branch
         def _cb1(productDirectory):
             return productDirectory.createDirectory('new-branch')
+
+        # Then we'll inspect the resulting directory object
         def _cb2(branchDirectory):
+            # the branch directory should be an SFTPServerBranch
             self.failUnless(isinstance(branchDirectory, SFTPServerBranch))
-            self.failUnless(
-                branchDirectory.realPath.endswith('ab/cd/ef/12'),
-                'branch directory is %r, should end with ab/cd/ef/12'
-                % branchDirectory.realPath)
+
+            # its on disk path should be the branch id split into multiple
+            # directory levels
+            self.assertEqual(
+                os.path.join(self.tmpdir, 'ab/cd/ef/12'),
+                branchDirectory.realPath)
+
+        # Connect the callbacks, and wait for them to run.
         deferred.addCallback(_cb1).addCallback(_cb2)
         return deferred
 
 
-    
