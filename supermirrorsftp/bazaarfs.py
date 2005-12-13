@@ -52,8 +52,9 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
     def __init__(self, avatar, lpid, lpname, parent=None, junkAllowed=True):
         adhoc.AdhocDirectory.__init__(self, name=lpname, parent=parent)
 
-        # Create directories for products that have branches
-        #[(product id, product name, [(branch id, branch name), ...]), ...]
+        # Create directories for products that have branches.
+        # avatar.branches[lpid] is a list of the form:
+        #    [(product id, product name, [(branch id, branch name), ...]), ...]
         for productID, productName, branches in avatar.branches[lpid]:
             if productID is None:
                 assert productName == '+junk'
@@ -61,6 +62,8 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
                           SFTPServerProductDir(avatar, lpid, productID,
                                                productName, branches, self))
 
+        # Make sure +junk exists if this is a user dir, even if there are no
+        # branches in there yet.
         if junkAllowed and not self.exists('+junk'):
             self.putChild('+junk',
                           SFTPServerProductDir(avatar, lpid, None, '+junk',

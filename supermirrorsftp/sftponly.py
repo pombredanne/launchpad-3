@@ -60,15 +60,11 @@ class SFTPOnlyAvatar(avatar.ConchUser):
         self.lpname = userDict['name']
         self.teams = userDict['teams']
 
+        # Extract the initial branches from the user dict.
         self.branches = {}
         for teamDict in self.teams:
             self.branches[teamDict['id']] = teamDict['initialBranches']
-#        if initialBranches is None:
-#            # XXX: testing hack
-#            self.branches = dict(
-#                    (lpid, []) for lpid in ([t['id'] for t in self.teams]))
-#        else:
-#            self.branches = initialBranches
+
         self._productIDs = {}
         self._productNames = {}
 
@@ -94,6 +90,7 @@ class SFTPOnlyAvatar(avatar.ConchUser):
         if productID is not None:
             # XXX: should the None result be remembered too, to ensure
             #      repeatable reads?
+            #  -- Andrew Bennetts, 2005-12-13
             return defer.succeed(productID)
         deferred = self._launchpad.fetchProductID(productName)
         deferred.addCallback(self._cbRememberProductID, productName)
@@ -145,9 +142,10 @@ class Realm:
 
     def requestAvatar(self, avatarId, mind, *interfaces):
         def getInitialBranches(userDict):
-            # XXX: this makes many XML-RPC requests where a better API would
+            # XXX: this makes many XML-RPC requests where a better API could
             #      require only one (or include it in the team dict in the first
             #      place).
+            #  -- Andrew Bennetts, 2005-12-13
             deferreds = []
             for teamDict in userDict['teams']:
                 deferred = self.authserver.getBranchesForUser(teamDict['id'])
