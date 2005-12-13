@@ -141,6 +141,11 @@ class Realm:
         self.authserver = authserver
 
     def requestAvatar(self, avatarId, mind, *interfaces):
+        # Fetch the user's details from the authserver
+        deferred = self.authserver.getUser(avatarId)
+        
+        # Then fetch more details: the branches owned by this user (and the
+        # teams they are a member of).
         def getInitialBranches(userDict):
             # XXX: this makes many XML-RPC requests where a better API could
             #      require only one (or include it in the team dict in the first
@@ -157,13 +162,14 @@ class Realm:
                 return userDict
             return defer.DeferredList(deferreds,
                     fireOnOneErrback=True).addCallback(allDone)
+        deferred.addCallback(getInitialBranches)
 
+        # Once all those details are retrieved, we can construct the avatar.
         def gotUserDict(userDict):
             avatar = SFTPOnlyAvatar(avatarId, self.homeDirsRoot, userDict,
                                     self.authserver)
             return interfaces[0], avatar, lambda: None
-        deferred = self.authserver.getUser(avatarId)
-        return deferred.addCallback(getInitialBranches).addCallback(gotUserDict)
+        return deferred.addCallback(gotUserDict)
 
 
 class Factory(factory.SSHFactory):
