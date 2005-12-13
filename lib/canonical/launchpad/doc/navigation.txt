@@ -119,6 +119,7 @@ we'll define one here.
     ...         self.response = Response()
     ...         self.traversal_stack = []
     ...         self.breadcrumbs = []
+    ...         self.traversed_objects = []
     ...
     ...     @property
     ...     def stepstogo(self):
@@ -132,6 +133,14 @@ we'll define one here.
     ...
     ...     def getURL(self, idx=None):
     ...         return 'URL %s' % idx
+    ...
+    ...     def getNearest(self, *some_interfaces):
+    ...         for context in reversed(self.traversed_objects):
+    ...             for iface in some_interfaces:
+    ...                 if iface.providedBy(context):
+    ...                     return (context, iface)
+    ...         else:
+    ...             return None, None
 
     >>> request = Request()
 
@@ -146,7 +155,7 @@ we'll define one here.
     ...         self.value = value
     ...
     ...     def __repr__(self):
-    ...         return "Thing '%s'" % self.value
+    ...         return "<Thing '%s'>" % self.value
 
     >>> class ThingSet(object):
     ...     implements(IThingSet)
@@ -156,6 +165,9 @@ we'll define one here.
     ...             return Thing(name.upper())
     ...         else:
     ...             return None
+    ...
+    ...     def __repr__(self):
+    ...         return '<ThingSet>'
 
     >>> thingset = ThingSet()
 
@@ -239,7 +251,7 @@ Also, note that the request has been put onto the INewLayer layer.
 The name begins with a 't', so the thing's value is TTT.
 
     >>> navigation.publishTraverse(request, 'ttt')
-    Thing 'TTT'
+    <Thing 'TTT'>
 
 The request.breadcrumbs looks like this:
 
@@ -249,7 +261,7 @@ The request.breadcrumbs looks like this:
 The name begins with a 't', so the thing's value is THINGVIEW.
 
     >>> navigation.publishTraverse(request, 'thingview')
-    Thing 'THINGVIEW'
+    <Thing 'THINGVIEW'>
 
 The request.breadcrumbs looks like this:
 
@@ -334,7 +346,7 @@ Let's create a subclass of ThingSetNavigation, and add a 'stepto'.
     >>> navigation2 = ThingSetNavigation2(thingset, request)
 
     >>> navigation2.publishTraverse(request, 'ttt')
-    Thing 'TTT'
+    <Thing 'TTT'>
     >>> navigation2.publishTraverse(request, 'thingview')()
     'a view on a thingset'
     >>> navigation2.publishTraverse(request, 'thistle')
@@ -642,3 +654,80 @@ The doit() method still works though.
     >>> instance_of_dupenames.doit()
     'bar'
 
+
+== Inspecting the traversed objects ==
+
+As the object heirarchy is traversed, a list of the traversed objects
+is built up in the request.
+
+Create a navigation class for IThing's:
+
+    >>> class ThingNavigation(Navigation):
+    ...     usedfor = IThing
+    ... 
+    ...     @stepto('foo')
+    ...     def traverse_foo(self):
+    ...         return 'bar'
+    ...
+    ...     @stepto('something')
+    ...     def traverse_something(self):
+    ...         return Thing('something')
+
+
+Traverse from the thingset to a particular thing:
+
+    >>> request = Request()
+    >>> navigation = ThingSetNavigation(thingset, request)
+    >>> thing = navigation.publishTraverse(request, 'ttt')
+    >>> navigation2 = ThingNavigation(thing, request)
+    >>> navigation2.publishTraverse(request, 'foo')
+    'bar'
+
+
+The traversed objects are available, in the order they were traversed:
+
+    >>> request.traversed_objects
+    [<ThingSet>, <Thing 'TTT'>]
+
+We can ask the request for the nearest traversed object that
+implements a particular interface:
+
+    >>> request.getNearest(IThingSet)
+    (<ThingSet>, <InterfaceClass __builtin__.IThingSet>)
+    >>> request.getNearest(IThing)
+    (<Thing 'TTT'>, <InterfaceClass __builtin__.IThing>)
+
+The second argument is the matched interface.  This is useful when
+multiple interfaces are passed to getNearest():
+
+    >>> request.getNearest(IThingSet, IThing)
+    (<Thing 'TTT'>, <InterfaceClass __builtin__.IThing>)
+
+If more than one object of a particular interface type has been
+traversed, the last one is returned:
+
+    >>> request = Request()
+    >>> navigation = ThingSetNavigation(thingset, request)
+    >>> thing = navigation.publishTraverse(request, 'ttt')
+    >>> navigation2 = ThingNavigation(thing, request)
+    >>> thing2 = navigation2.publishTraverse(request, 'something')
+    >>> navigation3 = ThingNavigation(thing2, request)
+    >>> navigation3.publishTraverse(request, 'foo')
+    'bar'
+
+    >>> request.traversed_objects
+    [<ThingSet>, <Thing 'TTT'>, <Thing 'something'>]
+    >>> request.getNearest(IThing)
+    (<Thing 'something'>, <InterfaceClass __builtin__.IThing>)
+
+If a particular interface has not been traversed, the tuple (None,
+None) is returned:
+
+    >>> request = Request()
+    >>> navigation = ThingSetNavigation(thingset, request)
+    >>> thing = navigation.publishTraverse(request, 'xyz')
+    Traceback (most recent call last):
+    ...
+    NotFound: ...ThingSet..., name: 'xyz'
+    >>> request.getNearest(IThing)
+    (None, None)
