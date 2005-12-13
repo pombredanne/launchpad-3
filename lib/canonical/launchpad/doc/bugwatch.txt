@@ -34,11 +34,16 @@ the .watches attribute.
     >>> debbugs = bugtrackerset['debbugs']
     >>> list(debbugs.watches)
     []
-    >>> # bmo == bugzilla.mozilla.org
-    >>> bmo = bugtrackerset['mozilla.org']
-    >>> bmo_watches = list(bmo.watches)
-    >>> sorted([(watch.bug.id, watch.remotebug) for watch in bmo_watches])
+    >>> mozilla_bugtracker = bugtrackerset['mozilla.org']
+    >>> sorted([(watch.bug.id, watch.remotebug) for watch in
+    ...     mozilla_bugtracker.watches])
     [(1, u'123543'), (1, u'2000'), (2, u'42')]
+
+To get the latest 10 watches, use IBugTracker.latestwatches:
+
+    >>> [(watch.bug.id, watch.remotebug) for watch in
+    ...     mozilla_bugtracker.latestwatches]
+    [(1, u'2000'), (1, u'123543'), (2, u'42')]
 
 Creating Bug Watches
 --------------------
@@ -51,7 +56,7 @@ To create a bugwatch, use IBugWatchSet.createBugWatch:
     >>> sample_person = getUtility(IPersonSet).get(12)
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bugwatch = getUtility(IBugWatchSet).createBugWatch(
-    ...     bug=bug_one, owner=sample_person, bugtracker=bmo,
+    ...     bug=bug_one, owner=sample_person, bugtracker=mozilla_bugtracker,
     ...     remotebug='1234')
     >>> bugwatch.url
     u'http://bugzilla.mozilla.org//show_bug.cgi?id=1234'

@@ -1,0 +1,22 @@
+Monitoring External Bug Trackers in Malone
+==========================================
+
+Malone allows you to monitor bugs in external bug tracking systems. This
+document discusses the API of external bug trackers. To learn more about
+bug watches, the object that represents the link between a Malone bug
+and an external bug, see bugwatch.txt.
+
+Top Bug Trackers
+================
+
+The Malone front page shows a list of the top Malone bug trackers, as
+ordered by the number of bugs being monitored by Malone in each of
+them. Use IBugTrackerSet.getMostActiveBugTrackers to get this list.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+
+    >>> bugtrackerset = getUtility(IBugTrackerSet)
+    >>> top_trackers = bugtrackerset.getMostActiveBugTrackers(limit=3)
+    >>> [tracker.name for tracker in top_trackers]
+    [u'mozilla.org', u'gnome-bugzilla', u'debbugs']

@@ -47,9 +47,8 @@ class IBugTracker(Interface):
             'example, its administrators can be contacted about a security '
             'breach).'))
     watches = Attribute('The remote watches on this bug tracker.')
-    projects = Attribute("The projects which use this bug tracker.")
-
-    latestwatches = Attribute("Return the last 10 watches created.")
+    projects = Attribute('The projects which use this bug tracker.')
+    latestwatches = Attribute('The last 10 watches created.')
 
 
 class IBugTrackerSet(Interface):
@@ -89,4 +88,9 @@ class IBugTrackerSet(Interface):
         """Turn https into http, so that we do not create multiple
         bugtrackers unnecessarily."""
 
+    def getMostActiveBugTrackers(limit=None):
+        """Return the top IBugTrackers.
 
+        Returns a list of IBugTracker objects, ordered by the number
+        of bugwatches for each tracker, from highest to lowest.
+        """
