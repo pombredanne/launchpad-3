@@ -1731,11 +1731,10 @@ class NascentUpload:
         if self.binaryful:
             self.insert_binary_into_db()
             
-        filecontents = guess_encoding(self.changes["filecontents"])
         # create a DRQ entry in new state
         self.logger.debug("Creating a New queue entry")
-        queue_root = self.distrorelease.createQueueEntry(
-            self.policy.pocket, filecontents)
+        queue_root = self.distrorelease.createQueueEntry(self.policy.pocket,
+            self.changes_basename, self.changes["filecontents"])
 
         # if it is known (already overriden properly), move it
         # to ACCEPTED state automatically

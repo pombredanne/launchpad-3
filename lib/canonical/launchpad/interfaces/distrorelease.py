@@ -219,7 +219,7 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         DistroReleaseBinaryPackage objects that match the given text.
         """
 
-    def createQueueEntry(pocket, changesfile):
+    def createQueueEntry(pocket, changesfilename, changesfilecontent):
         """Create a queue item attached to this distrorelease and the given
         pocket. 
 
