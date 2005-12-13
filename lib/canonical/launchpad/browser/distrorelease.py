@@ -115,7 +115,7 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
 
     def builds(self):
         text = 'View Builds'
-        return Link('+builds', text, icon='info')        
+        return Link('+builds', text, icon='info')
 
 
 class DistroReleaseBugsMenu(ApplicationMenu):
@@ -166,7 +166,7 @@ class DistroReleaseView(BuildRecordsView):
 
     def searchresults(self):
         """Try to find the packages in this distro release that match
-        the given text, then present those as a list. 
+        the given text, then present those as a list.
         """
         if self._results is None:
             self._results = self.context.searchPackages(self.text)

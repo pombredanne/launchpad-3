@@ -52,7 +52,7 @@ class DistroArchReleaseContextMenu(ContextMenu):
 
     def builds(self):
         text = 'View Builds'
-        return Link('+builds', text, icon='info')        
+        return Link('+builds', text, icon='info')
 
 
 class DistroArchReleaseView(BuildRecordsView):

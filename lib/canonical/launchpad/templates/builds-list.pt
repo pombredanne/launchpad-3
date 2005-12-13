@@ -1,4 +1,4 @@
-<div class="builds_list">
+<div class="builds_list" tal:condition="not: view/setupBuildList">
 
      <table>
        <tr>
