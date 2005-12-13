@@ -1,0 +1,14 @@
+<div class="sitemap clearfix">
+  <ul id="pillars" tal:repeat="link view/pillar_links">
+    <li tal:attributes="class link/cssclass">
+      <a tal:attributes="href link/url" tal:content="link/title">link</a>
+    </li>
+  </ul>
+
+  <ul id="subpillars" tal:condition="nothing">
+    <li><a href="releases/">Releases</a></li>
+    <li><a href="ports/">Ports</a></li>
+    <li class="current">Packages</li>
+    <li><a href="packages/">Binary packages</a></li>
+  </ul>
+</div>

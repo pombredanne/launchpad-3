@@ -24,18 +24,19 @@ from zope.component import getUtility
 
 import canonical.launchpad.layers
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ILaunchpadRoot, IRosettaApplication, IMaloneApplication,
-    IProductSet, IShipItApplication, IPersonSet, IDistributionSet,
-    ISourcePackageNameSet, IBinaryPackageNameSet, IProjectSet,
-    ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
+    ILaunchBag, ILaunchpadRoot, IRosettaApplication,
+    IMaloneApplication, IProductSet, IShipItApplication, IPersonSet,
+    IDistributionSet, ISourcePackageNameSet, IBinaryPackageNameSet,
+    IProjectSet, ILoginTokenSet, IKarmaActionSet, IPOTemplateNameSet,
     IBazaarApplication, ICodeOfConductSet, IMaloneApplication,
-    IRegistryApplication, IRosettaApplication, ISpecificationSet, ISprintSet,
-    ITicketSet, IFOAFApplication, IBuilderSet, IBountySet, IBugSet,
-    IBugTrackerSet, ICveSet)
+    IRegistryApplication, IRosettaApplication, ISpecificationSet,
+    ISprintSet, ITicketSet, IFOAFApplication, IBuilderSet, IBountySet,
+    IBugSet, IBugTrackerSet, ICveSet, IProduct, IDistribution,
+    IPerson, IProject, ISprint)
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
-    stepto)
+    stepto, canonical_url)
 
 # XXX SteveAlexander, 2005-09-22, this is imported here because there is no
 #     general timedelta to duration format adapter available.  This should
@@ -128,6 +129,35 @@ class Breadcrumbs(LaunchpadView):
         last_htmltext = crumbhtml % (lastcrumb.url, cgi.escape(lastcrumb.text))
         last_htmltext = '<strong>%s</strong>' % last_htmltext
         return sep.join(all_but_last + [last_htmltext])
+
+
+class SiteMap(LaunchpadView):
+    """Page fragment to display the site map."""
+
+    _pillars = [
+        ('Products', IProduct, IProductSet),
+        ('Distributions', IDistribution, IDistributionSet),
+        ('People', IPerson, IPersonSet),
+        ('Projects', IProject, IProjectSet),
+        ('Meetings', ISprint, ISprintSet),
+        ]
+
+    def initialize(self):
+        pillar_types = [pillar_iface
+                        for (title, pillar_iface, pillar_set) in self._pillars]
+        obj, selected_iface = self.request.getNearest(*pillar_types)
+
+        self.pillar_links = []
+        for title, pillar_iface, pillar_set in self._pillars:
+            if selected_iface == pillar_iface:
+                cssclass = 'current'
+            else:
+                cssclass = None
+            self.pillar_links.append({
+                'title': title,
+                'url': canonical_url(getUtility(pillar_set)),
+                'cssclass': cssclass,
+                })
 
 
 class MaintenanceMessage:
