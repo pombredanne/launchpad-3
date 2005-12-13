@@ -149,7 +149,7 @@ class DistroArchRelease(SQLBase):
     def getBuildRecords(self, status=None):
         """See IHasBuildRecords"""
         # use facility provided by IBuildSet to retrieve the records
-        return getUtility(IBuildSet).get_builds_by_arch_ids([self.id], status)
+        return getUtility(IBuildSet).getBuildsByArchIds([self.id], status)
 
     def getReleasedPackages(self, name, pocket=None):
         """See IDistroArchRelease."""

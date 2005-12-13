@@ -96,7 +96,7 @@ class IBuildSet(Interface):
         be returned.
         """
 
-    def get_builds_by_arch_ids(arch_ids, status=None):
+    def getBuildsByArchIds(arch_ids, status=None):
         """Retrieve Build Records for a given arch_ids list.
 
         Optionally, for a given status, if status is ommited return all

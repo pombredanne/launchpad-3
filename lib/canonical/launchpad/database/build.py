@@ -194,7 +194,7 @@ class BuildSet:
             "builder=%s %s" % (builder_id, status_clause),
             orderBy="-datebuilt")
 
-    def get_builds_by_arch_ids(self, arch_ids, status=None):
+    def getBuildsByArchIds(self, arch_ids, status=None):
         """See IBuildSet."""
         # If not distroarchrelease was found return None.
         if not arch_ids:

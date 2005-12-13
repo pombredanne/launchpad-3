@@ -45,6 +45,10 @@ class BuildRecordsView(LaunchpadView):
     """
     __used_for__ = IHasBuildRecords
 
+    def initialize(self):
+        """Perform the required initialisation."""
+        self.setupBuildList()
+
     def setupBuildList(self):
         """Setup a batched build records list.
 

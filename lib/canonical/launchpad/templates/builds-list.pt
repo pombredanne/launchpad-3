@@ -1,10 +1,10 @@
-<div class="builds_list" tal:condition="not: view/setupBuildList">
-    
+<div class="builds_list">
+
      <table>
        <tr>
          <th><label>Build State:</label></th>
          <td>
-          <form name="build_records_state" action="" method="GET">       
+          <form name="build_records_state" action="" method="GET">
 
           <select name="build_state" size="1">
 
@@ -29,7 +29,7 @@
 
           </select>
 
-          <input type="submit" value="Update" />  
+          <input type="submit" value="Update" />
 
           </form>
          </td>
@@ -76,7 +76,7 @@
               </tal:block>
             </td>
             <td>
-              <img tal:attributes="alt build/buildstate/name; 
+              <img tal:attributes="alt build/buildstate/name;
                                    src build/build_icon" />
             </td>
             <td>
@@ -107,5 +107,5 @@
            replace="structure view/batchnav/@@+navigation-links"
            tal:condition="view/batch"/>
 
-     
+
 </div>

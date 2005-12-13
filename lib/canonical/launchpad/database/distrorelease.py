@@ -389,7 +389,7 @@ class DistroRelease(SQLBase):
         # find out the distroarchrelease in question
         arch_ids = [arch.id for arch in self.architectures]
         # use facility provided by IBuildSet to retrieve the records
-        return getUtility(IBuildSet).get_builds_by_arch_ids(arch_ids, status)
+        return getUtility(IBuildSet).getBuildsByArchIds(arch_ids, status)
 
     def createUploadedSourcePackageRelease(self, sourcepackagename,
             version, maintainer, dateuploaded, builddepends,
