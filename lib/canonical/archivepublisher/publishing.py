@@ -238,10 +238,14 @@ class Publisher(object):
                 # XXX: dsilvers: As above, this needs to be integrated into
                 # the database at some point.
                 # bug 3900
-                unpocketed_release = distrorelease.split('-')[0]
                 extra_extra_overrides = os.path.join(
                     self._config.miscroot,
-                    "more-extra.override.%s.main" % (unpocketed_release))
+                    "more-extra.override.%s.main" % (distrorelease))
+                if not os.path.exists(extra_extra_overrides):
+                    unpocketed_release = distrorelease.split('-')[0]
+                    extra_extra_overrides = os.path.join(
+                        self._config.miscroot,
+                        "more-extra.override.%s.main" % (unpocketed_release))
                 if os.path.exists(extra_extra_overrides):
                     eef = open(extra_extra_overrides, "r")
                     extras = {}
@@ -478,10 +482,6 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                         # apt-ftparchive will dtrt.
                         open(arch_path, "w").close()
                     archs.append(arch)
-                if len(archs) == 0:
-                    self.debug("Didn't find any archs to include in config "
-                               "for %s%s" % (dr, pocketsuffix[pocket]))
-                    continue
                 self.debug("Generating apt config for %s%s" % (
                     dr, pocketsuffix[pocket]))
                 # Replace those tokens
@@ -497,7 +497,8 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                     "HIDEEXTRA": ""
                     })
                 dr_full_name = dr + pocketsuffix[pocket]
-                if dr_full_name in self._di_release_components:
+                if (dr_full_name in self._di_release_components and
+                    len(archs) > 0):
                     for component in self._di_release_components[dr_full_name]:
                         cnf.write(stanza_template % {
                             "LISTPATH": self._config.overrideroot,
