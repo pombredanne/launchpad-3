@@ -380,7 +380,7 @@
         name="+viewstatus-page"
         for="canonical.launchpad.interfaces.IDistroBugTask"
         schema="canonical.launchpad.interfaces.IBugTask"
-        fields="sourcepackagename binarypackagename
+        fields="sourcepackagename binarypackagename milestone
                 status priority severity assignee bugwatch statusexplanation"
         label="Source Package Fix Request"
         permission="zope.Public"
