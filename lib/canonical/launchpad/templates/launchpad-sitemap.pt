@@ -1,14 +1,33 @@
 <div class="sitemap clearfix">
-  <ul id="pillars" tal:repeat="link view/pillar_links">
-    <li tal:attributes="class link/cssclass">
-      <a tal:attributes="href link/url" tal:content="link/title">link</a>
-    </li>
+
+  <ul id="pillars"
+      tal:repeat="link view/pillar_links">
+    <metal:block metal:use-macro="view/pillar_link" />
   </ul>
 
-  <ul id="subpillars" tal:condition="nothing">
-    <li><a href="releases/">Releases</a></li>
-    <li><a href="ports/">Ports</a></li>
-    <li class="current">Packages</li>
-    <li><a href="packages/">Binary packages</a></li>
+  <ul id="subpillars"
+      tal:condition="view/subpillar_links"
+      tal:repeat="link view/subpillar_links">
+    <metal:block metal:use-macro="view/pillar_link" />
   </ul>
 </div>
+
+<tal:macros replace="nothing">
+  <!-- defines a single list item for either the pillars or subpillars -->
+  <metal:block define-macro="pillar_link">
+    <li tal:condition="link/selected" class="current">
+      <a tal:condition="link/enabled"
+         tal:attributes="href link/target"
+         tal:content="link/text">link text</a>
+      <span tal:condition="not:link/enabled"
+            tal:replace="link/text">link text</span>
+    </li>
+    <li tal:condition="not:link/selected">
+      <a tal:condition="link/enabled"
+         tal:attributes="href link/target"
+         tal:content="link/text">link text</a>
+      <span tal:condition="not:link/enabled"
+            tal:replace="link/text">link text</span>
+    </li>
+  </metal:block>
+</tal:macros>

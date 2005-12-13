@@ -31,8 +31,9 @@ from canonical.launchpad.interfaces import (
     IBazaarApplication, ICodeOfConductSet, IMaloneApplication,
     IRegistryApplication, IRosettaApplication, ISpecificationSet,
     ISprintSet, ITicketSet, IFOAFApplication, IBuilderSet, IBountySet,
-    IBugSet, IBugTrackerSet, ICveSet, IProduct, IDistribution,
-    IPerson, IProject, ISprint)
+    IBugSet, IBugTrackerSet, ICveSet, IProduct, IProductSeries,
+    IMilestone, IDistribution, IDistroRelease, IDistroArchRelease,
+    IDistributionSourcePackage, IPerson, IProject, ISprint)
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
@@ -135,29 +136,110 @@ class SiteMap(LaunchpadView):
     """Page fragment to display the site map."""
 
     _pillars = [
-        ('Products', IProduct, IProductSet),
-        ('Distributions', IDistribution, IDistributionSet),
-        ('People', IPerson, IPersonSet),
-        ('Projects', IProject, IProjectSet),
-        ('Meetings', ISprint, ISprintSet),
+        # (name, title, utility)
+        ('product', 'Products',       IProductSet),
+        ('distro',  'Distributions',  IDistributionSet),
+        ('person',  'People',         IPersonSet),
+        ('project', 'Product Groups', IProjectSet),
+        ('sprint',  'Meetings',       ISprintSet),
         ]
 
+    def product_subpillar_links(self):
+        product, dummy = self.request.getNearest(IProduct)
+        if product is not None:
+            product_url = canonical_url(product)
+        else:
+            product_url = None
+
+        # Release Series
+        productseries, dummy = self.request.getNearest(IProductSeries)
+        self.subpillar_links.append({
+            'target': None,
+            'text': 'Release Series',
+            'enabled': False, # no +series page
+            'selected': productseries is not None,
+            })
+
+        # Branches
+        self.subpillar_links.append({
+            'target': '%s/+branches' % product_url,
+            'text': 'Branches',
+            'enabled': product is not None,
+            'selected': False, # should be True if +code is being viewed
+            })
+
+        # Milestones
+        milestone, dummy = self.request.getNearest(IMilestone)
+        self.subpillar_links.append({
+            'target': None,
+            'text': 'Milestones',
+            'enabled': False,
+            'selected': milestone is not None,
+            })
+
+    def distro_subpillar_links(self):
+        distro, dummy = self.request.getNearest(IDistribution)
+        if distro is not None:
+            distro_url = canonical_url(distro)
+        else:
+            distro_url = None
+
+        # Releases
+        distrorelease, dummy = self.request.getNearest(IDistroRelease)
+        self.subpillar_links.append({
+            'target': None,
+            'text': 'Release',
+            'enabled': False, # no +series page
+            'selected': distrorelease is not None,
+            })
+
+        # Ports
+        dar, dummy = self.request.getNearest(IDistroArchRelease)
+        self.subpillar_links.append({
+            'target': None,
+            'text': 'Ports',
+            'enabled': False, # no +series page
+            'selected': dar is not None,
+            })
+
+        # Source Packages
+        srcpkg, dummy = self.request.getNearest(IDistributionSourcePackage)
+        self.subpillar_links.append({
+            'target': None,
+            'text': 'Source Packages',
+            'enabled': False, # no +series page
+            'selected': srcpkg is not None,
+            })
+
+        # Binary Packages
+        # TODO
+
     def initialize(self):
-        pillar_types = [pillar_iface
-                        for (title, pillar_iface, pillar_set) in self._pillars]
-        obj, selected_iface = self.request.getNearest(*pillar_types)
+        # get the current pillar
+        pillar_utils = [utility
+                        for name, title, utility in self._pillars]
+        obj, selected_iface = self.request.getNearest(*pillar_utils)
+        for name, title, utility in self._pillars:
+            if utility == selected_iface:
+                current_pillar = name
+                break
+        else:
+            current_pillar = None
 
         self.pillar_links = []
-        for title, pillar_iface, pillar_set in self._pillars:
-            if selected_iface == pillar_iface:
-                cssclass = 'current'
-            else:
-                cssclass = None
+        for name, title, utility in self._pillars:
             self.pillar_links.append({
-                'title': title,
-                'url': canonical_url(getUtility(pillar_set)),
-                'cssclass': cssclass,
+                'target': canonical_url(getUtility(utility)),
+                'text': title,
+                'enabled': True,
+                'selected': name == current_pillar
                 })
+
+        # call a function to create subpillar links
+        self.subpillar_links = []
+        function = getattr(self, '%s_subpillar_links' % current_pillar, None)
+        if function is not None:
+            function()
 
 
 class MaintenanceMessage:
