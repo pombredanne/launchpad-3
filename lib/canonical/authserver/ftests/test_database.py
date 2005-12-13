@@ -144,6 +144,58 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
         userDict = storage._getUserInteraction(self.cursor, 'mark@hbd.com')
         self.assertEqual('sabdfl', userDict['name'])
 
+    def test_fetchProductID(self):
+        storage = DatabaseUserDetailsStorageV2(None)
+        productID = storage._fetchProductIDInteraction(self.cursor, 'firefox')
+        self.assertEqual(4, productID)
+    
+        # Invalid product names are signalled by a return value of ''
+        productID = storage._fetchProductIDInteraction(self.cursor, 'xxxxx')
+        self.assertEqual('', productID)
+
+    def test_getBranchesForUser(self):
+        storage = DatabaseUserDetailsStorageV2(None)
+        branches = storage._getBranchesForUserInteraction(self.cursor, 12)
+        gnomeTermProduct, junkProduct = branches
+        # Results could come back in either order, so swap if necessary.
+        if gnomeTermProduct[0] is None:
+            gnomeTermProduct, junkProduct = junkProduct, gnomeTermProduct
+        
+        # Check that the details and branches for the junk product are correct
+        junkID, junkName, junkBranches = junkProduct
+        self.assertEqual('', junkID)
+        self.assertEqual('', junkName)
+        self.assertEqual(
+            [(20, 'junk.dev'), (21, 'junk.contrib')],
+            sorted(junkBranches))
+
+        # Check that the details and branches for gnome-terminal are correct
+        gnomeTermID, gnomeTermName, gnomeTermBranches = gnomeTermProduct
+        self.assertEqual(6, gnomeTermID)
+        self.assertEqual('gnome-terminal', gnomeTermName)
+        self.assertEqual(
+            [(15, 'main'), (16, '2.6'), (17, '2.4'), (18, 'klingon'), 
+             (19, 'slowness')],
+            sorted(gnomeTermBranches)
+        )
+    
+    def test_createBranch(self):
+        storage = DatabaseUserDetailsStorageV2(None)
+        branchID = storage._createBranchInteraction(self.cursor, 12, 6, 'foo')
+        # assert branchID now appears in database
+        self.cursor.execute("""
+            SELECT owner, product, name FROM Branch
+            WHERE id = %d"""
+            % branchID)
+        self.assertEqual((12, 6, 'foo'), self.cursor.fetchone())
+
+        # Create a branch with NULL product too:
+        branchID = storage._createBranchInteraction(self.cursor, 1, None, 'foo')
+        self.cursor.execute("""
+            SELECT owner, product, name FROM Branch
+            WHERE id = %d"""
+            % branchID)
+        self.assertEqual((1, None, 'foo'), self.cursor.fetchone())
 
 class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
     # Tests that do some database writes (but makes sure to roll them back)

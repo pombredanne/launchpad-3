@@ -32,4 +32,12 @@ class TwistedAuthServer:
     def getSSHKeys(self, archiveName):
         return self.proxy.callRemote('getSSHKeys', archiveName)
 
+    def getBranchesForUser(self, personID):
+        return self.proxy.callRemote('getBranchesForUser', personID)
 
+    def fetchProductID(self, productName):
+        return self.proxy.callRemote('fetchProductID', productName)
+
+    def createBranch(self, personID, productID, branchName):
+        return self.proxy.callRemote('createBranch', personID, productID,
+                                     branchName)

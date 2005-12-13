@@ -569,6 +569,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         personID = userDict['id']
         newPasswordDigest = self.encryptor.encrypt(newPassword)
         
+        # XXX: typo in query ("'%s'")?
         transaction.execute(utf8('''
             UPDATE Person
             SET password = '%s'
@@ -577,4 +578,74 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         )
         
         return userDict
+
+    def getBranchesForUser(self, personID):
+        ri = self.connectionPool.runInteraction
+        return ri(self._getBranchesForUserInteraction, personID)
+
+    def _getBranchesForUserInteraction(self, transaction, personID):
+        transaction.execute(utf8('''
+            SELECT Product.id, Product.name, Branch.id, Branch.name
+            FROM Product RIGHT OUTER JOIN Branch ON Branch.product = Product.id
+            WHERE Branch.owner = %s
+            ORDER BY Product.id
+            '''
+            % sqlvalues(personID))
+        )
+        branches = []
+        prevProductID = 'x'  # can never be equal to a real integer ID.
+        for productID, productName, branchID, branchName in transaction.fetchall():
+            if productID != prevProductID:
+                prevProductID = productID
+                currentBranches = []
+                if productID is None:
+                    assert productName is None
+                    # Replace Nones with '', because standards-compliant XML-RPC
+                    # can't handle None :(
+                    productID, productName = '', ''
+                branches.append((productID, productName, currentBranches))
+            currentBranches.append((branchID, branchName))
+        return branches
+
+    def fetchProductID(self, productName):
+        ri = self.connectionPool.runInteraction
+        return ri(self._fetchProductIDInteraction, productName)
+
+    def _fetchProductIDInteraction(self, transaction, productName):
+        transaction.execute(utf8('''
+            SELECT id FROM Product WHERE name = %s'''
+            % sqlvalues(productName))
+        )
+        row = transaction.fetchone()
+        if row is None:
+            # No product by that name in the DB.
+            productID = ''
+        else:
+            (productID,) = row
+        return productID
+
+    def createBranch(self, personID, productID, branchName):
+        ri = self.connectionPool.runInteraction
+        return ri(self._createBranchInteraction, personID, productID,
+                  branchName)
+
+    def _createBranchInteraction(self, transaction, personID, productID,
+                                 branchName):
+        # Convert psuedo-None to real None (damn XML-RPC!)
+        if productID == '':
+            productID = None
+
+        # Get the ID of the new branch
+        transaction.execute(
+            "SELECT NEXTVAL('branch_id_seq'); "
+        )
+        branchID = transaction.fetchone()[0]
+
+        transaction.execute(utf8('''
+            INSERT INTO Branch (id, owner, product, name, title, summary)
+            VALUES (%s, %s, %s, %s, %s, %s)'''
+            % sqlvalues(branchID, personID, productID, branchName, branchName,
+                        branchName))
+        )
+        return branchID
 
