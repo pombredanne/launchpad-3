@@ -80,3 +80,105 @@
   >>> from canonical.launchpad.database import Person
   >>> [a.name for a in Person.byName('myemail').administrators]
   [u'foo']
+
+
+  When creating a new team you can optionally provide a contact email address  for that team. This contact address must not be registered in Launchpad.
+
+  >>> print http(r"""
+  ... POST /people/+newteam HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------149810134710777133371670652103
+  ... 
+  ... -----------------------------149810134710777133371670652103
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... newtestteam
+  ... -----------------------------149810134710777133371670652103
+  ... Content-Disposition: form-data; name="field.displayname"
+  ... 
+  ... newtestteam
+  ... -----------------------------149810134710777133371670652103
+  ... Content-Disposition: form-data; name="field.contactemail"
+  ... 
+  ... test@canonical.com
+  ... -----------------------------149810134710777133371670652103
+  ... Content-Disposition: form-data; name="field.teamdescription"
+  ... 
+  ... A test team
+  ... -----------------------------149810134710777133371670652103
+  ... Content-Disposition: form-data; name="field.defaultmembershipperiod"
+  ... 
+  ... 
+  ... -----------------------------149810134710777133371670652103
+  ... Content-Disposition: form-data; name="field.defaultrenewalperiod"
+  ... 
+  ... 
+  ... -----------------------------149810134710777133371670652103
+  ... Content-Disposition: form-data; name="field.subscriptionpolicy"
+  ... 
+  ... Moderated Team
+  ... -----------------------------149810134710777133371670652103
+  ... Content-Disposition: form-data; name="field.subscriptionpolicy-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------149810134710777133371670652103
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------149810134710777133371670652103--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...test@canonical.com is already taken...
+  ... 
+
+  We also check if the given email address is valid. 
+
+  
+  >>> print http(r"""
+  ... POST /people/+newteam HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------149810134710777133371670652103
+  ... 
+  ... -----------------------------149810134710777133371670652103
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... newtestteam
+  ... -----------------------------149810134710777133371670652103
+  ... Content-Disposition: form-data; name="field.displayname"
+  ... 
+  ... newtestteam
+  ... -----------------------------149810134710777133371670652103
+  ... Content-Disposition: form-data; name="field.contactemail"
+  ... 
+  ... testcanonical.com
+  ... -----------------------------149810134710777133371670652103
+  ... Content-Disposition: form-data; name="field.teamdescription"
+  ... 
+  ... A test team
+  ... -----------------------------149810134710777133371670652103
+  ... Content-Disposition: form-data; name="field.defaultmembershipperiod"
+  ... 
+  ... 
+  ... -----------------------------149810134710777133371670652103
+  ... Content-Disposition: form-data; name="field.defaultrenewalperiod"
+  ... 
+  ... 
+  ... -----------------------------149810134710777133371670652103
+  ... Content-Disposition: form-data; name="field.subscriptionpolicy"
+  ... 
+  ... Moderated Team
+  ... -----------------------------149810134710777133371670652103
+  ... Content-Disposition: form-data; name="field.subscriptionpolicy-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------149810134710777133371670652103
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------149810134710777133371670652103--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...testcanonical.com isn't a valid email address...
+  ... 
