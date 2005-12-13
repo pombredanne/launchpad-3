@@ -164,16 +164,16 @@ class TeamMembershipEditView:
         else:
             status = TeamMembershipStatus.APPROVED
         if self._setMembershipData(status):
-            self.request.response.redirect('%s/+members' % canonical_url(
-                self.context))
+            self.request.response.redirect(
+                '%s/+members' % canonical_url(self.context))
 
     def processInactiveMember(self):
         assert self.context.status in (TeamMembershipStatus.EXPIRED,
                                        TeamMembershipStatus.DEACTIVATED)
 
         if self._setMembershipData(TeamMembershipStatus.APPROVED):
-            self.request.response.redirect('%s/+members' % canonical_url(
-                self.context))
+            self.request.response.redirect(
+                '%s/+members' % canonical_url(self.context))
 
     def dateChooserForExpiredMembers(self):
         expires = self.context.team.defaultrenewedexpirationdate

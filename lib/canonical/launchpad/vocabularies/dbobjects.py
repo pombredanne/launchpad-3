@@ -533,11 +533,11 @@ class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
 
     def __init__(self, context):
         if not context:
-            raise ValueError('ValidTeamMemberVocabulary needs a context.')
+            raise AssertionError('ValidTeamMemberVocabulary needs a context.')
         if ITeam.providedBy(context):
             self.team = context
         else:
-            raise ValueError(
+            raise AssertionError(
                 "ValidTeamMemberVocabulary's context must implement ITeam."
                 "Got %s" % str(context))
 
@@ -559,9 +559,9 @@ class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
 
     def __init__(self, context):
         if not context:
-            raise ValueError('ValidTeamOwnerVocabulary needs a context.')
+            raise AssertionError('ValidTeamOwnerVocabulary needs a context.')
         if not ITeam.providedBy(context):
-            raise ValueError(
+            raise AssertionError(
                     "ValidTeamOwnerVocabulary's context must be a team.")
         ValidPersonOrTeamVocabulary.__init__(self, context)
         self.extra_clause = """
