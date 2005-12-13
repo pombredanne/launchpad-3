@@ -160,6 +160,10 @@ class Realm:
                 deferreds.append(deferred)
             def allDone(ignore):
                 return userDict
+
+            # This callback will complete when all the getBranchesForUser calls
+            # have completed and added initialBranches to each team dict, and
+            # will return the userDict.
             return defer.DeferredList(deferreds,
                     fireOnOneErrback=True).addCallback(allDone)
         deferred.addCallback(getInitialBranches)
