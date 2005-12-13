@@ -36,8 +36,7 @@ class SubsystemOnlySession(session.SSHSession, object):
 
 
 class SFTPOnlyAvatar(avatar.ConchUser):
-    def __init__(self, avatarId, homeDirsRoot, userDict, launchpad,
-            initialBranches=None):
+    def __init__(self, avatarId, homeDirsRoot, userDict, launchpad):
         # Double-check that we don't get unicode -- directory names on the file
         # system are a sequence of bytes as far as we're concerned.  We don't
         # want any tricky login names turning into a security problem.
@@ -61,12 +60,15 @@ class SFTPOnlyAvatar(avatar.ConchUser):
         self.lpname = userDict['name']
         self.teams = userDict['teams']
 
-        if initialBranches is None:
-            # XXX: testing hack
-            self.branches = dict(
-                    (lpid, []) for lpid in ([t['id'] for t in self.teams]))
-        else:
-            self.branches = initialBranches
+        self.branches = {}
+        for teamDict in self.teams:
+            self.branches[teamDict['id']] = teamDict['initialBranches']
+#        if initialBranches is None:
+#            # XXX: testing hack
+#            self.branches = dict(
+#                    (lpid, []) for lpid in ([t['id'] for t in self.teams]))
+#        else:
+#            self.branches = initialBranches
         self._productIDs = {}
         self._productNames = {}
 
@@ -152,6 +154,7 @@ class Realm:
                 def _gotBranches(branches, teamDict=teamDict):
                     teamDict['initialBranches'] = branches
                 deferred.addCallback(_gotBranches)
+                deferreds.append(deferred)
             def allDone(ignore):
                 return userDict
             return defer.DeferredList(deferreds,

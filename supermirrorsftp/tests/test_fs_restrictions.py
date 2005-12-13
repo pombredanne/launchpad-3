@@ -19,7 +19,7 @@ class AvatarTestBase(unittest.TestCase):
         self.aliceUserDict = {
             'id': 1, 
             'name': 'alice', 
-            'teams': [{'id': 1, 'name': 'alice'}],
+            'teams': [{'id': 1, 'name': 'alice', 'initialBranches': []}],
         }
 
         # An slightly more complex user dict for a user that is also a member of
@@ -27,8 +27,8 @@ class AvatarTestBase(unittest.TestCase):
         self.bobUserDict = {
             'id': 2, 
             'name': 'bob', 
-            'teams': [{'id': 2, 'name': 'bob'},
-                      {'id': 3, 'name': 'test-team'}],
+            'teams': [{'id': 2, 'name': 'bob', 'initialBranches': []},
+                      {'id': 3, 'name': 'test-team', 'initialBranches': []}],
         }
 
     def tearDown(self):
@@ -121,17 +121,14 @@ class UserDirsTestCase(AvatarTestBase):
     def testInitialBranches(self):
         # Check that already existing branches owned by a user appear as
         # expected.
-        initialBranches={
-            2: [ # bob
-                (1, 'mozilla-firefox', [(1, 'branch-one'), (2, 'branch-two')]),
-                (2, 'product-x', [(3, 'branch-y')]),
-            ],
-            3: [ # test-team
-                (3, 'thing', [(4, 'another-branch')]),
-            ]
-        }
-        avatar = SFTPOnlyAvatar('bob', self.tmpdir, self.bobUserDict, None,
-                                initialBranches=initialBranches)
+        self.bobUserDict['teams'][0]['initialBranches'] = [ # bob
+            (1, 'mozilla-firefox', [(1, 'branch-one'), (2, 'branch-two')]),
+            (2, 'product-x', [(3, 'branch-y')]),
+        ]
+        self.bobUserDict['teams'][1]['initialBranches'] = [ # test-team
+            (3, 'thing', [(4, 'another-branch')]),
+        ]
+        avatar = SFTPOnlyAvatar('bob', self.tmpdir, self.bobUserDict, None)
         root = avatar.filesystem.root
 
         # The user's dir with have mozilla-firefox, product-x, and also +junk.
