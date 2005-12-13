@@ -182,14 +182,17 @@ class ProductDirsTestCase(AvatarTestBase):
 
         # Then we'll inspect the resulting directory object
         def _cb2(branchDirectory):
-            # the branch directory should be an SFTPServerBranch
+            # The branch directory should be an SFTPServerBranch
             self.failUnless(isinstance(branchDirectory, SFTPServerBranch))
 
-            # its on disk path should be the branch id split into multiple
+            # Its on disk path should be the branch id split into multiple
             # directory levels
             self.assertEqual(
                 os.path.join(self.tmpdir, 'ab/cd/ef/12'),
                 branchDirectory.realPath)
+
+            # The directory should exist on the disk.
+            self.assert_(os.path.exists(branchDirectory.realPath))
 
         # Connect the callbacks, and wait for them to run.
         deferred.addCallback(_cb1).addCallback(_cb2)

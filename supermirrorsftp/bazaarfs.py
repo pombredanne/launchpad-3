@@ -155,4 +155,6 @@ class SFTPServerBranch(osfs.OSDirectory):
         path = '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:]) 
         osfs.OSDirectory.__init__(self,
             os.path.join(avatar.homeDirsRoot, path), branchName, parent)
+        if not os.path.exists(self.realPath):
+            os.makedirs(self.realPath)
 

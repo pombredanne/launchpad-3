@@ -3,6 +3,6 @@ SFTP server for the supermirror.
 It only allows SFTP (no shells), and authenticates users against keys stored in
 the launchpad database (these are retrieved via the authserver).
 
-It requires Twisted SVN r12886 or newer (when Twisted 2.0 is released, it will
+It requires Twisted SVN r15382 or newer (when Twisted 2.0 is released, it will
 do).
 
