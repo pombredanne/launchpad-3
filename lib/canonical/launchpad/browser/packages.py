@@ -5,8 +5,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistroSourcesView',
-    'DistrosReleaseBinariesSearchView',
     'SourcePackageBugsView',
     'BinaryPackageView',
     ]
@@ -38,43 +36,6 @@ from apt_pkg import ParseDepends
 ##XXX: (batch_size+global) cprov 20041003
 ## really crap constant definition for BatchPages
 BATCH_SIZE = 40
-
-
-class DistroSourcesView:
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-        release = urlquote(request.get("release", ""))
-        name = urlquote(request.get("name", ""))
-        if release and name:
-            redirect = request.response.redirect
-            redirect("%s/%s?name=%s" % (request.get('PATH_INFO'),
-                                        release, name))
-
-
-class DistrosReleaseBinariesSearchView:
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-
-    def searchBinariesBatchNavigator(self):
-
-        name = self.request.get("name", "")
-
-        if name:
-            binary_packages = list(self.context.findPackagesByName(name))
-            start = int(self.request.get('batch_start', 0))
-            # XXX: Why is end unused?
-            #   -- kiko, 2005-09-23
-            end = int(self.request.get('batch_end', BATCH_SIZE))
-            batch_size = BATCH_SIZE
-            batch = Batch(list = binary_packages, start = start,
-                          size = batch_size)
-            return BatchNavigator(batch = batch,
-                                  request = self.request)
-        else:
-            return None
 
 
 class SourcePackageBugsView:
@@ -230,13 +191,4 @@ class BinaryPackageView:
 
     def provides(self):
         return self._buildList(self.context.provides)
-
-
-################################################################
-
-# these are here because there is a bug in sqlobject that stub is fixing,
-# once fixed they should be nuked, and pages/traverse* set to use getters.
-# XXX
-def urlTraverseProjects(projects, request, name):
-    return projects[str(name)]
 
