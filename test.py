@@ -49,6 +49,13 @@ config.setDefaultSection('testrunner')
 #import canonical.database.debug
 #canonical.database.debug.install()
 
+# Unset the http_proxy environment variable, because we're going to make
+# requests to localhost and we don't wand this to be proxied.
+try:
+    os.environ.pop('http_proxy')
+except KeyError:
+    pass
+
 # Silence spurious warnings or turn them into errors
 import warnings
 # Our Z3 is still using whrandom

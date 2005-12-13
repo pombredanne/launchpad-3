@@ -437,41 +437,72 @@ class ValidPersonOrTeamVocabulary(
     """
     implements(IHugeVocabulary)
 
-    # XXX: It'll be possible to replace this raw query (and the usage of
-    # connection.queryAll()) as soon as we update our sqlobject branch to have
-    # support for JOINs (that already exists upstream). -- Guilherme Salgado,
-    # 2005-07-22
-    _joinclause = """
+    _join_clause = """
         SELECT DISTINCT Person.id, Person.displayname FROM Person
-            LEFT OUTER JOIN EmailAddress ON Person.id = EmailAddress.person"""
-    _whereclause = """
-        (Person.teamowner IS NULL AND Person.password IS NOT NULL AND
-         Person.merged IS NULL AND EmailAddress.status = %s) OR
-        (Person.teamowner IS NOT NULL)""" % EmailAddressStatus.PREFERRED
-    _textsearchclause = """
-        Person.fti @@ ftq(%s) OR
-        lower(EmailAddress.email) LIKE %s"""
-    _orderBy = 'ORDER BY displayname'
+            LEFT OUTER JOIN EmailAddress ON Person.id = EmailAddress.person
+        """
+    _all_valid_people_and_teams_clause = """
+        (teamowner IS NOT NULL OR (
+            teamowner IS NULL AND password IS NOT NULL AND
+            merged IS NULL AND EmailAddress.status = %s
+            ))
+        """ % EmailAddressStatus.PREFERRED
+    # This is what subclasses must change if they want any extra filtering of
+    # results.
+    extra_clause = ""
+
+    _orderBy = 'ORDER BY displayname, id'
 
     def __contains__(self, obj):
-        idfilter = 'Person.id = %s' % sqlvalues(obj.id)
-        where = '(%s) AND (%s)' % (self._whereclause, idfilter)
-        query = self._buildQuery(where)
+        extra_clause = 'Person.id = %s' % sqlvalues(obj.id)
+        if self.extra_clause:
+            # This class may have a non-empty extra_clause, so we need to
+            # append that to the condition we use to check if we contain the 
+            # given obj.
+            extra_clause += " AND %s" % self.extra_clause
+        query = self._buildQuery(extra_clause=extra_clause)
         return len(self._table._connection.queryAll(query)) > 0
 
     def __iter__(self):
         for id, dummy in self._table._connection.queryAll(self._buildQuery()):
             yield self._idToTerm(id)
 
-    def _buildQuery(self, where=None):
-        """Return a query suitable for use in connection.queryAll().
+    def _buildQuery(self, extra_clause=None, text=""):
+        """Return a query that will search for valid people and teams,
+        restricting the results with any given extra_clause and/or with
+        fti/emailaddress matching the given text.
 
-        :where: The "WHERE" part of an SQL query. If it is None
-                self._whereclause is used.
+        If extra_clause is None, then self.extra_clause is used.
         """
-        if where is None:
-            where = self._whereclause
-        return "%s WHERE %s %s" % (self._joinclause, where, self._orderBy)
+        where_clause = self._all_valid_people_and_teams_clause
+        if extra_clause is not None:
+            where_clause += " AND %s" % extra_clause
+        elif self.extra_clause:
+            where_clause += " AND %s" % self.extra_clause
+        else:
+            # No extra clause to filter the results
+            pass
+
+        base_query = "%s WHERE %s" % (self._join_clause, where_clause)
+        if not text:
+            # No text to filter, no need to do anything.
+            return "%s %s" % (base_query, self._orderBy)
+
+        # Here we have some text to filter the results, and this means we'll
+        # have to do an UNION between the results where text matches the fti
+        # column and the results where text matches the email address. We 
+        # need to do this because otherwise the query would be unacceptably
+        # slow.
+        fti_clause = "Person.fti @@ ftq(%s)" % quote(text)
+        fti_clause = "%s AND %s" % (base_query, fti_clause)
+        email_clause = (
+            "lower(EmailAddress.email) LIKE %s || '%%'" % quote_like(text))
+        email_clause = "%s AND %s" % (base_query, email_clause)
+        query_str = """
+            SELECT DISTINCT *
+            FROM (%s UNION %s %s) AS whatever;
+            """ % (fti_clause, email_clause, self._orderBy)
+        return query_str
 
     def _idToTerm(self, id):
         """Return the term for the object with the given id."""
@@ -484,10 +515,8 @@ class ValidPersonOrTeamVocabulary(
             return []
 
         text = text.lower()
-        textsearchclause = (
-            self._textsearchclause % (quote(text), quote(text + '%%')))
-        where = '(%s) AND (%s)' % (self._whereclause, textsearchclause)
-        results = self._table._connection.queryAll(self._buildQuery(where))
+        search_query = self._buildQuery(text=text)
+        results = self._table._connection.queryAll(search_query)
         ids = ', '.join([str(id) for id, dummy in results])
         if not ids:
             return []
@@ -515,11 +544,12 @@ class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
                 "ITeamMembershipSubset. Got %s" % str(context))
 
         ValidPersonOrTeamVocabulary.__init__(self, context)
-        extraclause = """
-            Person.id NOT IN (SELECT team FROM TeamParticipation WHERE
-                                  person = %d) AND Person.id != %d
+        self.extra_clause = """
+            Person.id NOT IN (
+                SELECT team FROM TeamParticipation 
+                WHERE person = %d
+                ) AND Person.id != %d
             """ % (self.team.id, self.team.id)
-        self._whereclause = '(%s) AND (%s)' % (self._whereclause, extraclause)
 
 
 class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
@@ -536,10 +566,9 @@ class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
             raise ValueError(
                     "ValidTeamOwnerVocabulary's context must be a team.")
         ValidPersonOrTeamVocabulary.__init__(self, context)
-        extraclause = ("""
+        self.extra_clause = """
             (person.teamowner != %d OR person.teamowner IS NULL) AND
-            person.id != %d""" % (context.id, context.id))
-        self._whereclause = '(%s) AND (%s)' % (self._whereclause, extraclause)
+            person.id != %d""" % (context.id, context.id)
 
 
 class ProductReleaseVocabulary(SQLObjectVocabularyBase):
