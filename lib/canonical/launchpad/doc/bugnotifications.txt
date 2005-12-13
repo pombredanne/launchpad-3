@@ -440,7 +440,6 @@ pretending we've just added a watch to a bug.
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
     ['product=firefox; status=New; priority=Wontfix;\n\tassignee=mark@hbd.com; ',
-     'product=ubuntu; status=New; priority=Medium; assignee=keybuk; ',
      'distribution=ubuntu; sourcepackage=mozilla-firefox;\n\tcomponent=main;
       status=New; priority=Medium; assignee=None; ',
      'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
@@ -491,7 +490,6 @@ the changes made:
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
     ['product=firefox; status=New; priority=Wontfix;\n\tassignee=mark@hbd.com; ',
-     'product=ubuntu; status=New; priority=Medium; assignee=keybuk; ',
      'distribution=ubuntu; sourcepackage=mozilla-firefox;\n\tcomponent=main;
       status=New; priority=Medium; assignee=None; ',
      'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
@@ -543,7 +541,6 @@ this document:
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
     ['product=firefox; status=New; priority=Wontfix;\n\tassignee=mark@hbd.com; ',
-     'product=ubuntu; status=New; priority=Medium; assignee=keybuk; ',
      'distribution=ubuntu; sourcepackage=mozilla-firefox;\n\tcomponent=main;
       status=New; priority=Medium; assignee=None; ',
      'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
@@ -594,7 +591,6 @@ publishing an object created event.
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
     ['product=firefox; status=New; priority=Wontfix;\n\tassignee=mark@hbd.com; ',
-     'product=ubuntu; status=New; priority=Medium; assignee=keybuk; ',
      'distribution=ubuntu; sourcepackage=mozilla-firefox;\n\tcomponent=main;
       status=New; priority=Medium; assignee=None; ',
      'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
@@ -644,7 +640,6 @@ When a link is edited, the notification will look as follows:
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
     ['product=firefox; status=New; priority=Wontfix;\n\tassignee=mark@hbd.com; ',
-     'product=ubuntu; status=New; priority=Medium; assignee=keybuk; ',
      'distribution=ubuntu; sourcepackage=mozilla-firefox;\n\tcomponent=main;
       status=New; priority=Medium; assignee=None; ',
      'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;

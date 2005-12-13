@@ -50,13 +50,15 @@ individually, a bugmail notification of this event.
 Let's sort the emails by subject and talk a bit more about each
 notification:
 
-    >>> def by_subject(a, b):
+    >>> def by_subject_then_recipients(a, b):
     ...     msg1 = email.message_from_string(a[2])
     ...     msg2 = email.message_from_string(b[2])
-    ...     return cmp(msg1["Subject"], msg2["Subject"])
+    ...     return cmp(
+    ...         (msg1["Subject"], msg1["To"]),
+    ...         (msg2["Subject"], msg2["To"]))
 
     >>> sent_emails = list(stub.test_emails)
-    >>> sent_emails.sort(by_subject)
+    >>> sent_emails.sort(by_subject_then_recipients)
 
   1. To the subscribers of the duplicate bug.
 
