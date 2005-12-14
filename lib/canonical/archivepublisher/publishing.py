@@ -490,7 +490,7 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                     "DISTRORELEASE": dr + pocketsuffix[pocket],
                     "DISTRORELEASEBYFILE": dr + pocketsuffix[pocket],
                     "DISTRORELEASEONDISK": dr + pocketsuffix[pocket],
-                    "ARCHITECTURES": " ".join(archs) + " source",
+                    "ARCHITECTURES": " ".join(archs + ["source"]),
                     "SECTIONS": " ".join(comps),
                     "EXTENSIONS": ".deb",
                     "CACHEINSERT": "",
