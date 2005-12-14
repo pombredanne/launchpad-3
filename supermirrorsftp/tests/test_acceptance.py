@@ -5,10 +5,14 @@
 
 __metaclass__ = type
 
-import unittest
+#import unittest
 import tempfile
 
 from bzrlib.branch import ScratchBranch
+import bzrlib.branch
+
+from twisted.trial import unittest
+from twisted.python.util import sibpath
 
 from canonical.launchpad import database
 
@@ -21,10 +25,39 @@ class AcceptanceTests(unittest.TestCase):
     """
 
     def setUp(self):
+        # XXX spiv 2005-12-14
+        # This should be unnecessary, but bzr's use of paramiko always tries
+        # password auth, even though Conch correctly tells it that only
+        # publickey is supported.  So, we temporarily monkey-patch getpass to
+        # stop the tests hanging at a password prompt if logging in breaks.
+        import getpass
+        self.getpass = getpass.getpass
+        def newgetpass(prompt=None):
+            self.fail('getpass should not be called.')
+        getpass.getpass = newgetpass
+
         # Create a local branch with one revision
         self.local_branch = ScratchBranch(files=['foo'])
         self.local_branch.add('foo')
         self.local_branch.commit('Added foo')
+
+        # Point $HOME at a test ssh config and key.
+        self.userHome = self.mktemp()
+        os.makedirs(os.path.join(self.userHome, '.ssh'))
+        shutil.copyfile(
+            sibpath(__file__, 'id_dsa'), 
+            os.path.join(self.userHome, '.ssh', 'id_dsa'))
+        shutil.copyfile(
+            sibpath(__file__, 'id_dsa.pub'), 
+            os.path.join(self.userHome, '.ssh', 'id_dsa.pub'))
+        os.chmod(os.path.join(self.userHome, '.ssh', 'id_dsa.pub'), 0600)
+        self.realHome = os.environ['HOME']
+        os.environ['HOME'] = self.userHome
+
+    def tearDown(self):
+        import getpass
+        getpass.getpass = self.getpass
+        os.environ['HOME'] = self.realHome
 
     def test_1_bzr_sftp(self):
         """
@@ -192,13 +225,41 @@ class AcceptanceTests(unittest.TestCase):
             generate_path_mapping([branch_id]))
 
 
+def start_test_sftp_server():
+    return TestSFTPServer()
+
+from canonical.launchpad.daemons import tachandler
+import os
+import shutil
+
+class SFTPSetup(tachandler.TacTestSetup):
+    root = '/tmp/sftp-test'
+    tacfile = '/home/andrew/warthogs/supermirrorsftp/devel/supermirrorsftp/tests/test.tac'
+    pidfile = root + '/twistd.pid'
+    logfile = root + '/twistd.log'
+    def setUpRoot(self):
+        if os.path.isdir(self.root):
+            shutil.rmtree(self.root)
+        os.makedirs(self.root, 0700)
+
 class TestSFTPServer:
     """This is the object returned by start_test_sftp_server."""
     # XXX: stub implementation for now.
-    base = 'sftp://localhost:22222/'
+    base = 'sftp://testuser@localhost:22222/'
+
+    def __init__(self):
+        #import os
+        #os.system('cd ..; SUPERMIRROR_PORT=22222 PYTHONPATH=%s
+        #/home/andrew/svn/Twisted/bin/twistd -oy
+        #/home/andrew/warthogs/supermirrorsftp/devel/sftp.tac' 
+        #    % os.environ.get('PYTHONPATH', ''))
+        self.sftp = SFTPSetup()
+        self.sftp.setUp()
 
     def stop(self):
-        pass
+        #import os
+        #os.kill(int(open('twistd.pid', 'r').read()))
+        self.sftp.tearDown()
 
     last_accessed_branch_id = -1
 

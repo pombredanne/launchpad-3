@@ -34,5 +34,6 @@ sftpfactory.portal = portal
 
 # Configure it to listen on a port
 application = service.Application('sftponly')
-internet.TCPServer(5022, sftpfactory).setServiceParent(application)
+portNo = int(os.environ.get('SUPERMIRROR_PORT', '5022'))
+internet.TCPServer(portNo, sftpfactory).setServiceParent(application)
 
