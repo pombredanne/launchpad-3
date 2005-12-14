@@ -1,11 +1,26 @@
 SignedMessage extends email.Message.Message in order to provide easy
-access to signed content and the signature of messages:
+access to signed content and the signature of messages.
 
-    >>> from canonical.launchpad.mail.signedmessage import SignedMessage
+You can create it from a string using signed_message_from_string. It
+basically the same as using email.message_from_string and passing
+SignedMessage as the _class parameter, but it also ensures that all
+the attributes are correctly set.
 
-You can create it from a string using email.message_from_string passing
-SignedMessage as the _class parameter.  Let's start with a simple
-message, where the signature is inline with the signed content:
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.mail import signed_message_from_string
+    >>> from canonical.launchpad.interfaces.mail import ISignedMessage
+    >>> msg = signed_message_from_string('To: someone\n\nHello.')
+    >>> verifyObject(ISignedMessage, msg)
+    True
+    >>> msg['To']
+    'someone'
+    >>> msg.parsed_string
+    'To: someone\n\nHello.'
+
+
+We have some test messages that can be easily accessed by
+read_test_message. Let's start with a simple message, where the
+signature is inline with the signed content:
 
     >>> from canonical.launchpad.helpers import read_test_message
     >>> msg = read_test_message('signed_inline.txt')
@@ -124,3 +139,9 @@ It handles signed multipart messages as well:
     cdC/h/xgiwwrHaUFTk/guuY=
     =fBjf
     -----END PGP SIGNATURE-----
+
+    >>> msg = read_test_message('signed_folded_header.txt')
+    >>> print msg.signedContent #doctest: -NORMALIZE_WHITESPACE
+    Content-Type: multipart/mixed;
+     boundary="--------------------EuxKj2iCbKjpUGkD"
+    ...

@@ -46,7 +46,7 @@ from canonical.launchpad.interfaces import (
     TranslationConstants)
 from canonical.launchpad.components.poparser import (
     POSyntaxError, POInvalidInputError, POParser)
-from canonical.launchpad.mail import SignedMessage
+from canonical.launchpad.mail import signed_message_from_string
 from canonical.launchpad.mail.ftests import testmails_path
 
 from canonical.launchpad.validators.gpg import valid_fingerprint
@@ -1064,8 +1064,8 @@ def read_test_message(filename):
 
     The test messages are located in canonical/launchpad/mail/ftests/emails
     """
-    return email.message_from_file(
-        open(testmails_path + filename), _class=SignedMessage)
+    message_string = open(testmails_path + filename).read()
+    return signed_message_from_string(message_string)
 
 
 def check_permission(permission_name, context):
