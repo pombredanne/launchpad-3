@@ -48,11 +48,11 @@ class SignedMessage(email.Message.Message):
 
     parsed_string = None
 
-    def _get_signature_signed_message(self):
-        """Returns the PGP signature and content that's signed.
+    def _getSignatureAndSignedContent(self):
+        """Returns the PGP signature and the content that's signed.
 
         The signature is returned as a string, and the content is
-        returned as a message instance.
+        returned as a string.
 
         If the message isn't signed, both signature and the content is
         None.
@@ -91,7 +91,7 @@ class SignedMessage(email.Message.Message):
 
         Returns None if the message wasn't signed.
         """
-        signature, signed_content = self._get_signature_signed_message()
+        signature, signed_content = self._getSignatureAndSignedContent()
         if signed_content is None:
             return None
         else:
@@ -107,7 +107,7 @@ class SignedMessage(email.Message.Message):
 
         Returns None if the message wasn't signed.
         """
-        signature, signed_content = self._get_signature_signed_message()
+        signature, signed_content = self._getSignatureAndSignedContent()
         return signed_content
 
     @property
@@ -116,5 +116,5 @@ class SignedMessage(email.Message.Message):
 
         Returns None if the message wasn't signed.
         """
-        signature, signed_message = self._get_signature_signed_message()
+        signature, signed_content = self._getSignatureAndSignedContent()
         return signature
