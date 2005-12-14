@@ -5,8 +5,11 @@
 
 <body>
 
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+  </metal:leftportlets>
+
   <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-editdetails" />
   </metal:rightportlets>
 
   <div metal:fill-slot="main">
@@ -31,7 +34,7 @@
           <td>
             <input tal:attributes="name string:jabberid_${jabber/jabberid};
                                    value jabber/jabberid"
-                   type="text" size="50" style="margin-bottom: 0.5em;"/>
+                   type="text" style="margin-bottom: 0.5em;"/>
           </td>
 
           <td>
@@ -55,7 +58,7 @@
 
     <tr>
       <td>
-        <input name="newjabberid" type="text" size="50" />
+        <input name="newjabberid" type="text" />
       </td>
     </tr>
 

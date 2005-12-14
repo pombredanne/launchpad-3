@@ -353,7 +353,7 @@ class CommonMenuLinks:
 
     def common_edit(self):
         target = '+edit'
-        text = 'Edit Details'
+        text = 'Edit Personal Details'
         return Link(target, text, icon='edit')
 
     def common_edithomepage(self):
@@ -373,16 +373,42 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     usedfor = IPerson
     facet = 'overview'
     links = ['karma', 'common_edit', 'common_edithomepage',
-             'common_edithackergotchi', 'editsshkeys', 'editgpgkeys',
-             'codesofconduct', 'administer', 'common_packages']
+             'editemailaddresses', 'editwikinames', 'editircnicknames',
+             'editjabberids', 'editpassword', 'edithackergotchi',
+             'editsshkeys', 'editgpgkeys', 'codesofconduct', 'administer',
+             'common_packages']
+
+    def editemailaddresses(self):
+        target = '+editemails'
+        text = 'Edit Email Addresses'
+        return Link(target, text, icon='edit')
+
+    def editwikinames(self):
+        target = '+editwikinames'
+        text = 'Edit Wiki Names'
+        return Link(target, text, icon='edit')
+
+    def editircnicknames(self):
+        target = '+editircnicknames'
+        text = 'Edit IRC Nicknames'
+        return Link(target, text, icon='edit')
+
+    def editjabberids(self):
+        target = '+editjabberids'
+        text = 'Edit Jabber IDs'
+        return Link(target, text, icon='edit')
+
+    def editpassword(self):
+        target = '+changepassword'
+        text = 'Change Password'
+        return Link(target, text, icon='edit')
 
     def karma(self):
         target = '+karma'
         text = 'Karma'
         summary = (
             u'%s\N{right single quotation mark}s activities '
-            u'in Launchpad' % self.context.browsername
-        )
+            u'in Launchpad' % self.context.browsername)
         return Link(target, text, summary, icon='info')
 
     def editsshkeys(self):
@@ -390,8 +416,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Edit SSH Keys'
         summary = (
             'Used if %s stores code on the Supermirror' %
-            self.context.browsername
-        )
+            self.context.browsername)
         return Link(target, text, summary, icon='edit')
 
     def editgpgkeys(self):
@@ -400,7 +425,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         summary = 'Used for the Supermirror, and when maintaining packages'
         return Link(target, text, summary, icon='edit')
 
-    def common_edithackergotchi(self):
+    def edithackergotchi(self):
         target = '+edithackergotchi'
         text = 'Edit Hackergotchi'
         return Link(target, text, icon='edit')
@@ -423,7 +448,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['common_edit', 'common_edithomepage', 'common_editemblem',
+    links = ['common_edit', 'common_edithomepage', 'editemblem',
              'members', 'editemail', 'polls', 'joinleave', 'reassign',
              'common_packages']
 
@@ -435,7 +460,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         # alt="(Change owner)"
         return Link(target, text, summary, icon='edit')
 
-    def common_editemblem(self):
+    def editemblem(self):
         target = '+editemblem'
         text = 'Edit Emblem'
         return Link(target, text, icon='edit')
@@ -1264,6 +1289,10 @@ class PersonEditView(SQLObjectEditView):
 
 class PersonEmblemView(GeneralFormView):
 
+    # XXX: This is a workaround, while https://launchpad.net/malone/bugs/5792
+    # isn't fixed. -- Guilherme Salgado, 2005-12-14
+    __launchpad_facetname__ = 'overview'
+
     def process(self, emblem=None):
         # XXX use Bjorn's nice file upload widget when he writes it
         if emblem is not None:
@@ -1278,6 +1307,10 @@ class PersonEmblemView(GeneralFormView):
 
 
 class PersonHackergotchiView(GeneralFormView):
+
+    # XXX: This is a workaround, while https://launchpad.net/malone/bugs/5792
+    # isn't fixed. -- Guilherme Salgado, 2005-12-14
+    __launchpad_facetname__ = 'overview'
 
     def process(self, hackergotchi=None):
         # XXX use Bjorn's nice file upload widget when he writes it
