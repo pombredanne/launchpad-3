@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces import (IPerson, IGPGHandler,
 from canonical.launchpad.helpers import (setupInteraction,
     get_filename_from_message_id)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
-from canonical.launchpad.mail.signedmessage import SignedMessage
+from canonical.launchpad.mail.signedmessage import signed_message_from_string
 from canonical.launchpad.mailnotification import notify_errors_list
 
 
@@ -114,7 +114,7 @@ def handleMail(trans=transaction):
     for mail_id, raw_mail in mailbox.items():
         trans.begin()
         try:
-            mail = email.message_from_string(raw_mail, _class=SignedMessage)
+            mail = signed_message_from_string(raw_mail)
         except email.Errors.MessageError, error:
             mailbox.delete(mail_id)
             log = getLogger('canonical.launchpad.mail')
