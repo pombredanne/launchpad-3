@@ -16,20 +16,7 @@ from canonical.launchpad.scripts import logger, logger_options, db_options
 # Defines parser and locale to use.
 DEFAULT_CONFIG = 'default'
 
-TSEARCH2_SQL = None
 PGSQL_BASE = '/usr/share/postgresql'
-if os.path.isdir('/usr/share/postgresql/7.4'):
-    TSEARCH2_SQL = os.path.join(PGSQL_BASE, '7.4', 'contrib', 'tsearch2.sql')
-    if not os.path.exists(TSEARCH2_SQL):
-        TSEARCH2_SQL = None
-if TSEARCH2_SQL is None and os.path.isdir('/usr/share/postgresql/8.0'):
-    TSEARCH2_SQL = os.path.join(PGSQL_BASE, '8.0', 'contrib', 'tsearch2.sql')
-if not os.path.exists(TSEARCH2_SQL):
-    # Can't log because logger not yet setup
-    raise RuntimeError('Unable to find tsearch2.sql')
-
-# This will no longer be required with PostgreSQL 8.0+
-PATCH_SQL = os.path.join(os.path.dirname(__file__), 'regprocedure_update.sql')
 
 A, B, C, D = 'ABCD' # tsearch2 ranking constants
 
@@ -207,6 +194,8 @@ def setup(con, configuration=DEFAULT_CONFIG):
         execute(con, 'SET search_path = ts2, public;')
         con.commit()
 
+    tsearch2_sql_path = get_tsearch2_sql_path(con)
+
     try:
         execute(con, 'SELECT * from pg_ts_cfg')
         log.debug('tsearch2 already installed')
@@ -223,8 +212,14 @@ def setup(con, configuration=DEFAULT_CONFIG):
         c = p.tochild
         print >> c, "SET client_min_messages=ERROR;"
         print >> c, "CREATE SCHEMA ts2;"
-        print >> c, open(TSEARCH2_SQL).read().replace('public;','ts2, public;')
-        print >> c, open(PATCH_SQL).read()
+        print >> c, open(tsearch2_sql_path).read().replace(
+                'public;','ts2, public;'
+                )
+        if get_pgversion(con).startswith('7.4.'):
+            patch_sql_path = os.path.join(
+                    os.path.dirname(__file__), 'regprocedure_update.sql'
+                    )
+            print >> c, open(patch_sql_path).read()
         p.tochild.close()
         rv = p.wait()
         if rv != 0:
@@ -409,6 +404,25 @@ def setup(con, configuration=DEFAULT_CONFIG):
     # Set the default schema search path so this stuff can be found
     #execute(con, 'ALTER DATABASE %s SET search_path = public,ts2;' % dbname)
     con.commit()
+
+
+def get_pgversion(con):
+    rows = execute(con, r"show server_version", results=True)
+    return rows[0][0]
+
+
+def get_tsearch2_sql_path(con):
+    pgversion = get_pgversion(con)
+    if pgversion.startswith('8.0.'):
+        path = os.path.join(PGSQL_BASE, '8.0', 'contrib', 'tsearch2.sql')
+    elif pgversion.startswith('7.4.'):
+        path = os.path.join(PGSQL_BASE, '7.4', 'contrib', 'tsearch2.sql')
+    else:
+        raise RuntimeError('Unknown version %s' % pgversion)
+
+    assert os.path.exists(path), '%s does not exist'
+
+    return path
 
 
 def main():
