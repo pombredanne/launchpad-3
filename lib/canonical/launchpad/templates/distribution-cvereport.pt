@@ -12,7 +12,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>CVE Report</h1>
+  <h1>CVE report</h1>
 
   <p class="documentDescription">This page shows the known CVE issues in
     <span tal:replace="context/displayname">Ubuntu</span>. See also the
@@ -22,7 +22,7 @@
 
   <tal:open_issues define="bugtasks context/open_cve_bugtasks">
 
-  <h2>Open Issues</h2>
+  <h2>Open issues</h2>
 
 
   <tal:listing condition="bugtasks"
@@ -37,7 +37,7 @@
 
   <tal:resolved_issues define="bugtasks context/resolved_cve_bugtasks">
 
-  <h2>Resolved Issues</h2>
+  <h2>Resolved issues</h2>
 
 
   <tal:listing condition="bugtasks"

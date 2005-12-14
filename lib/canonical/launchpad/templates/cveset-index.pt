@@ -68,7 +68,7 @@
   </tal:searching>
 
   <tal:not_searching condition="not: view/searchrequested">
-    <h2>Recently Updated CVE's</h2>
+    <h2>Recently updated CVEs</h2>
 
     <div tal:repeat="cve context/latest_modified"
          tal:replace="structure cve/@@+listing-detailed" />

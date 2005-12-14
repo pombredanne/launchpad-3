@@ -1,6 +1,6 @@
 <div class="builds_list">
     
-    <h2>Pending Build</h2>
+    <h2>Pending build</h2>
 
     <p>The are <span tal:replace="view/number_pending"/> sources pending
     build.</p>
@@ -30,7 +30,7 @@
         </tr>
       </table>
 
-    <h2>Recently Built</h2>
+    <h2>Recently built</h2>
 
     <p> There are <span tal:replace="view/number_built"/> sources
     succesfully built.</p>
@@ -86,10 +86,9 @@
       </table>
 
 
-    <h2>Failed to Build</h2>
+    <h2>Failed to build</h2>
 
-    <p> There are <span tal:replace="view/number_failed"/> sources
-    failed to build.</p>
+    <p><span tal:replace="view/number_failed"/> sources failed to build.</p>
 
      <table class="listing" tal:condition="view/number_failed">
         <tr class="thead">

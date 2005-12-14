@@ -16,7 +16,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1 i18n:translate="">Welcome to The Launchpad</h1>
+  <h1 i18n:translate="">Welcome to Launchpad</h1>
 
   <p i18n:translate="">
     Launchpad is a collection of services for
@@ -39,7 +39,7 @@
 
   </form>
 
-  <h2>Featured Products</h2>
+  <h2>Featured products</h2>
 
   <table>
     <tbody>
@@ -86,7 +86,7 @@
     </tbody>
   </table>
 
-  <h2>Other Services</h2>
+  <h2>Other services</h2>
 
   <table>
     <tr style="valign: top;">

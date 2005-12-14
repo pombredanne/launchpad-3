@@ -18,7 +18,7 @@
 
 <div metal:fill-slot="main">
 
-  <h2><span tal:replace="context/displayname"/> Source Package</h2>
+  <h2><span tal:replace="context/displayname"/> source package</h2>
 
   <p class="documentDescription">
     This page describes the '<span tal:replace="context/name" />' 
@@ -27,7 +27,7 @@
        tal:attributes="href context/distribution/fmt:url"/>.
   </p>
 
-  <h2>Publishing History</h2>
+  <h2>Publishing history</h2>
   <table class="listing">
   <tr>
     <td align="center">Datetime</td>

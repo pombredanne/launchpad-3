@@ -9,22 +9,24 @@
 <div metal:fill-slot="main">
 
   <tal:block condition="not: view/dupe">
-    <h1>No user account found to merge</h1>
+    <h1>No account found to merge</h1>
   </tal:block>
 
   <tal:block condition="view/dupe">
     <tal:block tal:condition="not: view/formProcessed">
-      <h1>Merge User Accounts</h1>
+      <h1>Merge accounts</h1>
 
-      <p>The account <em><span tal:replace="view/dupe/name" /></em>,
-        which you're trying to merge have more than one registered email
-        address. In order to complete the merge you have to prove that you
-        have access to all email addresses registered for this account. To do
-        so, just select all of them and click on <em>Submit</em>. If by any
-        case you don't have access to any of these email addresses, we'll not
-        be able to complete the merge of that account into your existing one,
-        but all email addresses that you prove you have access will be
-        available in your account.</p>
+      <p>
+        The account <code tal:content="view/dupe/name">foo</code>,
+        which you&#8217;re trying to merge,
+        has more than one registered e-mail address.
+        To complete the merge, you need to prove that you have access to
+        all e-mail addresses registered for this account.
+        To do this, select all of them and click <samp>Submit</samp>.
+        If you don&#8217;t have access to one or more of these addresses,
+        Launchpad will not be able to merge the account into your existing one,
+        but any other addresses will be transferred to your account.
+      </p>
 
       <form name="mergerequest" action="" method="POST">
       <input type="hidden" name="dupe" tal:attributes="value request/dupe" />
@@ -47,7 +49,7 @@
     </tal:block>
 
     <tal:block tal:condition="view/formProcessed">
-      <h1>Merge User Accounts</h1>
+      <h1>Merge accounts</h1>
 
       <p>Individual email messages were sent to
         <tal:block repeat="email view/notified_addresses">

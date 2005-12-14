@@ -1,10 +1,10 @@
 <div class="portlet">
-    <h4>this group translates for...</h4>
+    <h4>This group translates for:</h4>
 
     <div class="portletBody">
         <div class="portletContent">
 
-            <h4 tal:condition="context/distributions">distributions</h4>
+            <h5 tal:condition="context/distributions">Distributions:</h4>
             <ul>
                 <li tal:repeat="distribution context/distributions">
                   <a href="#"
@@ -14,8 +14,7 @@
                 </li>
             </ul>
 
-            <h4 style="margin-top: 1em"
-                tal:condition="context/products">products</h4>
+            <h5 tal:condition="context/products">Products:</h4>
             <ul>
                 <li tal:repeat="product context/products">
                   <a href="#"
@@ -25,7 +24,7 @@
                 </li>
             </ul>
 
-            <h5 tal:condition="context/projects">projects:</h5>
+            <h5 tal:condition="context/projects">Projects:</h5>
             <ul>
                 <li tal:repeat="project context/projects">
                   <a href="#"

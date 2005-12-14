@@ -10,11 +10,10 @@
         <a tal:content="release/version"
            tal:attributes="href release/fmt:url">2.1.6</a>
       </li>
-      <li class="info" tal:condition="not: context/releases">
-        <i>No releases registered yet.</i>
-      </li>
     </ul>
-	
+    <p tal:condition="not: context/releases">
+      <i>No releases registered yet.</i>
+    </p>
   </div>
 
 </div>

@@ -14,7 +14,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>All Source Packages</h1>
+  <h1>All source packages</h1>
 
   <p class="documentDescription">
     This is complete list of the source packages currently published in

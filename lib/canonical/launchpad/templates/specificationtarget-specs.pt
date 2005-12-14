@@ -26,7 +26,7 @@
   </p>
 
   <h1 tal:condition="view/view_title"
-      tal:content="view/view_title">Specs for Approval</h1>
+      tal:content="view/view_title">Specs for approval</h1>
 
   <p tal:condition="not: view/count">
     <img src="/++resource++alert" />

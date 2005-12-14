@@ -1,5 +1,5 @@
 <div class="portlet">
-  <h4>Subscribers to Bug #<span tal:replace="context/id">4</span>:</h4>
+  <h4>Subscribers to bug <span tal:replace="context/id">4</span>:</h4>
 
   <div class="portletBody portletContent">
 

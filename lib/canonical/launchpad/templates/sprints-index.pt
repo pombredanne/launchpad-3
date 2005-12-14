@@ -11,7 +11,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Meetings and Sprints</h1>
+  <h1>Meetings and sprints</h1>
 
   <p class="documentDescription">
     You can register a sprint or a meeting in Launchpad, and then keep track

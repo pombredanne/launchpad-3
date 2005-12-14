@@ -18,7 +18,7 @@
       <div metal:use-macro="context/@@launchpad_editform/editform">
 
           <div metal:fill-slot="extra_info" class="documentDescription">
-            Select the Launchpad Team which defines the members of
+            Select the Launchpad team that defines the members of
             <span tal:replace="context/title">Ubuntu Linux</span>.
           </div>
 

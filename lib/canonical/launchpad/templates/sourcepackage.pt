@@ -49,7 +49,7 @@
   <tal:block tal:condition="context/currentrelease"
              tal:define="current context/currentrelease">
 
-    <h2>Download Files from Current Release (<span
+    <h2>Download files from current release (<span
     tal:replace="current/version">2.1.3-4</span>)</h2>
 
       <div tal:define="files current/files">
@@ -64,7 +64,7 @@
         </ul>
       </div>
 
-    <h2>Binary Packages</h2>
+    <h2>Binary packages</h2>
         
     <ul tal:define="binaries view/binaries">
       <li class="alert" tal:condition="not:binaries">
@@ -80,13 +80,13 @@
     </ul>
 
     <h2 tal:condition="view/has_build_depends">
-        Package Relationship
+        Package relationship
     </h2>
 
     <table width="100%" valign="top">
       <tr>
         <td tal:condition="view/builddepends">
-          <h4>Build Dependencies</h4>
+          <h4>Build dependencies</h4>
           <ul>
             <li tal:repeat="dep view/builddepends">
               <a tal:content="dep/name"
@@ -98,7 +98,7 @@
         </td>
 
         <td tal:condition="view/builddependsindep">
-          <h4>Platform-independent Build Dependencies</h4>
+          <h4>Platform-independent build dependencies</h4>
           <ul>
             <li tal:repeat="dep view/builddependsindep">
               <a tal:content="dep/name"

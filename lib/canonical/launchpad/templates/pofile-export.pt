@@ -7,7 +7,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1>PO File Export</h1>
+    <h1>PO file export</h1>
 
       <tal:thing content="view/processForm" />
 
@@ -18,12 +18,6 @@
       </tal:block>
 
       <tal:block condition="not: view/formProcessed">
-          <p>
-          Once you have confirmed, an export of this file will be made
-          shortly, and a notification will be sent to your email address
-          <strong
-          tal:content="view/user/preferredemail/email">user@domain</strong>.
-          </p>
 
           <form action="" method="POST">
               <div class="field">
@@ -37,6 +31,13 @@
                       </select>
                   </label>
               </div>
+              <p>
+                Once you complete this form, the file will be exported,
+                and you will be notified by e-mail to
+                <code
+                  tal:content="view/user/preferredemail/email"
+                >user@domain</code>.
+              </p>
 
               <div class="formControls">
                   <input type="submit" value="Confirm Export" />

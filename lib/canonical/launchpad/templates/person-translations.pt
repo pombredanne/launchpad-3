@@ -11,7 +11,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Translation Activity</h1>
+  <h1>Translation activity</h1>
 
   <p class="documentDescription">This page lists any files that include
   contributions in some form from <span tal:replace="context/browsername">

@@ -18,8 +18,8 @@
 
 <div metal:fill-slot="main">
 
-  <h1 tal:condition="not: view/subscription">Subscribe to Bug</h1>
-  <h1 tal:condition="view/subscription">Unsubscribe From Bug</h1>
+  <h1 tal:condition="not: view/subscription">Subscribe to bug report</h1>
+  <h1 tal:condition="view/subscription">Unsubscribe from bug report</h1>
 
   <p tal:condition="not: view/subscription" class="documentDescription">
     If you subscribe to a bug it will show up on your

@@ -48,10 +48,10 @@
        
     </div>
 
-    <div tal:condition="not:job">
-    <h3><dfn tal:content="context/title">BUILDER</dfn> is IDLE, no need
-        to cancel.</h3>
-    </div>
+    <p tal:condition="not:job">
+      <dfn tal:content="context/title">BUILDER</dfn> is idle, no need
+      to cancel.
+    </p>
 
     </tal:block>
 

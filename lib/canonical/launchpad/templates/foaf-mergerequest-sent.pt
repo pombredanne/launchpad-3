@@ -7,7 +7,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Merge User Accounts</h1>
+  <h1>Merge accounts</h1>
 
   <p>An email message was sent to <strong tal:content="view/dupe_email" />.
     Please follow the instructions on that message to complete the merge.

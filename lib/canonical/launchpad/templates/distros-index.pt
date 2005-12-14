@@ -22,7 +22,7 @@
 
 <metal:rightportlets fill-slot="portlets_two">
   <div class="portlet">
-    <h4>About Read-Only Distributions:</h4>
+    <h4>About read-only distributions:</h4>
 
     <div class="portletBody portletContent">
       <img src="/++resource++info_icon.gif" />

@@ -18,7 +18,7 @@
 
   <div metal:use-macro="context/@@launchpad_generalform/generalform">
 
-    <h1 metal:fill-slot="heading">Edit Image</h1>
+    <h1 metal:fill-slot="heading">Edit image</h1>
 
     <div metal:fill-slot="extra_info" class="documentDescription">
       Please select an appropriate image, and press "Continue".

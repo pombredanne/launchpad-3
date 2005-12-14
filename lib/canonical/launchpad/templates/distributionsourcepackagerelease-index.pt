@@ -15,7 +15,7 @@
 
 <div metal:fill-slot="main">
 
-  <h2><span tal:replace="context/displayname"/> Source Package Release</h2>
+  <h2><span tal:replace="context/displayname"/> source package release</h2>
 
   <p>
     Binary packages produced in this distribution for this version of 
@@ -38,7 +38,7 @@
     </li>
   </ul>
 
-  <h2>Publishing History</h2>
+  <h2>Publishing history</h2>
   <table class="listing">
   <tr>
     <td align="center">DateTime</td>

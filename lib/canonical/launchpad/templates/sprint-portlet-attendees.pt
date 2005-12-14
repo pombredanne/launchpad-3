@@ -13,11 +13,9 @@
            <span tal:replace="attendance/time_ends/fmt:date">
              2005-08-15</span>
       </li>
-      <li class="alert" tal:condition="not: context/attendees">
-        <i>No attendees yet</i>
-      </li>
     </ul>
-
+    <p tal:condition="not: context/attendees">
+      <i>No attendees yet</i>
+    </p>
   </div>
-
 </div>

@@ -47,7 +47,7 @@
 
       <div tal:condition="view/isActive"> 
 
-        <h1>Active Member</h1>
+        <h1>Active member</h1>
 
         <p>
           <metal:person use-macro="template/macros/person" />
@@ -116,7 +116,7 @@
 
       <div tal:condition="view/isInactive"> 
 
-        <h1>Inactive Member</h1>
+        <h1>Inactive member</h1>
         <p tal:condition="view/isExpired">
           <metal:person use-macro="template/macros/person" />
           is an <em>Expired Member</em> of
@@ -187,7 +187,7 @@
 
       <div tal:condition="view/isProposed"> 
 
-        <h1>Proposed Member</h1>
+        <h1>Proposed member</h1>
         <p>
           <metal:person use-macro="template/macros/person" />
           wants to join this team.
@@ -231,7 +231,7 @@
 
       <div tal:condition="view/isDeclined"> 
 
-        <h1>Declined Member</h1>
+        <h1>Declined member</h1>
         <p>
           <metal:person use-macro="template/macros/person" />
           asked to join this team, but the request was declined.

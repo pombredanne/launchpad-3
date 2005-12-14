@@ -15,7 +15,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Package Maintenance Report</h1>
+  <h1>Package maintenance report</h1>
 
   <tal:maintained-packages condition="context/maintainedPackages">
     <h2>Maintained packages</h2>

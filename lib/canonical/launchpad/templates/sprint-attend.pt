@@ -19,7 +19,7 @@
 
   <div metal:use-macro="context/@@launchpad_generalform/generalform">
 
-    <h1 metal:fill-slot="heading">Register Your Attendance</h1>
+    <h1 metal:fill-slot="heading">Register your attendance</h1>
 
     <div metal:fill-slot="extra_info" class="documentDescription">
       Indicate the times during which you will be available for meetings at

@@ -1,13 +1,13 @@
 <div class="portlet">
-  <h4><span tal:replace="context/name" /> Details:</h4>
+  <h4><span tal:replace="context/name" /> details:</h4>
 
   <div class="portletBody portletContent">
     <tal:currentrelease tal:condition="context/currentrelease"
                         tal:define="current context/currentrelease">
-      <b>Current Version:</b>
+      <b>Current version:</b>
       <span tal:replace="current/version" /><br />
 
-      <b>Upload Date:</b>
+      <b>Upload date:</b>
       <span tal:replace="current/dateuploaded/fmt:date" /><br />
       
       <b>Urgency:</b>

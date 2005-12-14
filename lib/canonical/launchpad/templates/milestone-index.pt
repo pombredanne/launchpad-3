@@ -16,14 +16,14 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Targeted Features and Bugs</h1>
+  <h1>Targeted features and bugs</h1>
 
   <p class="documentDescription">
     This page lists the feature specifications and bugs that have been
     targeted to this milestone.
   </p>
 
-  <h2 tal:condition="context/specifications">Feature Specifications</h2>
+  <h2 tal:condition="context/specifications">Feature specifications</h2>
 
   <tal:block repeat="spec context/specifications">
     <div tal:replace="structure spec/@@+listing-detailed" />

@@ -21,7 +21,7 @@
     <h1>
       <span tal:condition="not: context/isStandardRequest">Custom</span>
       <span tal:condition="context/isStandardRequest">Standard</span>
-      Request #<span tal:replace="context/id" />
+      request #<span tal:replace="context/id" />
     </h1>
 
     <table>
@@ -76,7 +76,7 @@
       </tal:block>
     </tal:block>
 
-    <h2>Requested Quantities</h2>
+    <h2>Requested quantities</h2>
     <ul style="margin-left: 3em">
         <li>X86: <span tal:replace="context/quantityx86" /></li>
         <li>AMD64: <span tal:replace="context/quantityamd64" /></li>
@@ -89,7 +89,7 @@
       </form>
     </div>
 
-    <h2>Approved Quantities</h2>
+    <h2>Approved quantities</h2>
 
     <p>These are the quantities that will actually be shipped.</p>
 
@@ -160,7 +160,7 @@
     </div>
     </form>
 
-    <h2>Shipping Details</h2>
+    <h2>Shipping details</h2>
     <table>
       <tr>
         <td align="right"><strong>Recipient:</strong></td>

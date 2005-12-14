@@ -19,7 +19,7 @@
 
 <div tal:condition="view/setCurrentUbuntuPackage" />
 
-    <h1>Ubuntu Packaging</h1>
+    <h1>Ubuntu packaging</h1>
 
     <p class="documentDescription">
       This page allows you to link this branch of <span
@@ -81,7 +81,7 @@
     </form>
 
     <tal:block condition="view/ubuntu_history">
-      <h2>Complete History of Ubuntu Packages</h2>
+      <h2>Complete history of Ubuntu packages</h2>
 
       <p>Below we list all of the known links between Ubuntu and this branch
       of <span tal:replace="context/product/displayname">mozilla

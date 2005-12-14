@@ -3,7 +3,7 @@
                  url current_task/fmt:url">
 
     <h4 title="Bug watches keep track of this bug in other bug trackers.">
-    Remote Bug Watches:
+    Remote bug watches:
     </h4>
 
     <div class="portletBody">

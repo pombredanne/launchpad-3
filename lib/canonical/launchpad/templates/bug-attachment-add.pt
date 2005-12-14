@@ -20,7 +20,7 @@
 
     <h1 tal:condition="view/label"
         tal:content="view/label"
-        metal:fill-slot="heading">Add an Attachment</h1>
+        metal:fill-slot="heading">Add an attachment</h1>
 
     <div metal:fill-slot="extra_info" class="documentDescription">
       An attachment can provide valuable information about the bug. It

@@ -21,7 +21,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Series Overview</h1>
+    <h1>Series overview</h1>
 
     <p class="documentDescription">
       A "release series" or "branch" is a sequence of releases (and of
@@ -37,7 +37,7 @@
         this series of releases.
     </p>
 
-    <h2>This Branch in The Bazaar</h2>
+    <h2>This branch in the Bazaar</h2>
 
     <div tal:replace="structure context/@@+hctstatus-core" />
 

@@ -13,11 +13,10 @@
              tal:attributes="href string:/people/${contributor/name}/"
              >Mark Shuttleworth</a><br />
         </li>
-        <li class="alert" tal:condition="not: contributors">
-          <i>No contributors yet</i>.
-        </li>
+      </ul>
+      <p tal:condition="not: contributors">
+        <i>No contributors yet</i>.
+      </p>
     </div>
-
   </div>
-
 </div>

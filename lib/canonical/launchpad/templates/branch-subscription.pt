@@ -15,7 +15,7 @@
 <div metal:fill-slot="main">
 
 <tal:not_subscribed condition="not: view/user_is_subscribed">
-  <h1>Subscribe to Branch</h1>
+  <h1>Subscribe to branch</h1>
   <p class="documentDescription">
     If you subscribe to a branch it will show up on your
     personal pages.
@@ -27,7 +27,7 @@
 </tal:not_subscribed>
 
 <tal:subscribed condition="view/user_is_subscribed">
-  <h1>Unsubscribe From Branch</h1>
+  <h1>Unsubscribe from branch</h1>
   <p class="documentDescription">
     If you unsubscribe from a branch it will no longer show up on your
     personal pages.

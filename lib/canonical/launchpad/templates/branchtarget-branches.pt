@@ -11,7 +11,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Bazaar Branches</h1>
+  <h1>Bazaar branches</h1>
 
   <p class="documentDescription">
     This page shows the Bazaar branches that

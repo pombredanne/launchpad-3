@@ -7,7 +7,7 @@
        tal:define="cr context/currentrelease">
 
     <tal:has_currentrelease condition="cr">
-      <b>Current Release:</b>
+      <b>Current release:</b>
       <a tal:content="cr/version"
          tal:attributes="href cr/fmt:url">3.2.1-3</a><br />
       <div tal:replace="structure cr/sourcepackagerelease/@@+portlet-details-content" />

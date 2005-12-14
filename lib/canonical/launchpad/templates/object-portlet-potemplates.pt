@@ -1,6 +1,6 @@
 <div class="portlet" tal:condition="context/currentpotemplates">
 
-  <h4>Translation Templates on <span tal:replace="context/displayname">
+  <h4>Translation templates for <span tal:replace="context/displayname">
         Mozilla</span>:</h4>
 
   <div class="portletBody portletContent ">

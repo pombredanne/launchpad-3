@@ -1,6 +1,6 @@
 <div tal:condition="python: context.distributions or context.products or context.projects" class="portlet">
 
-    <h4 tal:condition="context/distributions">Related Distributions:</h4>
+    <h4 tal:condition="context/distributions">Related distributions:</h4>
 
     <div tal:condition="context/distributions"
          class="portletBody portletContent">
@@ -16,7 +16,7 @@
 
     </div>
 
-    <h4 tal:condition="context/products">Related Products:</h4>
+    <h4 tal:condition="context/products">Related products:</h4>
 
     <div tal:condition="context/products"
          class="portletBody portletContent">
@@ -32,7 +32,7 @@
 
     </div>
 
-    <h4 tal:condition="context/projects">Related Projects:</h4>
+    <h4 tal:condition="context/projects">Related projects:</h4>
 
     <div tal:condition="context/projects"
          class="portletBody portletContent">

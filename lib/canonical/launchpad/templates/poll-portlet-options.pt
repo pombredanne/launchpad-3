@@ -12,11 +12,9 @@
            >active</span><span
            tal:condition="not: option/active">inactive</span>)
       </li>
-      <li class="alert" tal:condition="not: options">
-        <i>No options on which to vote yet specified.</i>
-      </li>
     </ul>
-
+    <p tal:condition="not: options">
+      <i>No options yet specified.</i>
+    </p>
   </div>
-
 </div>

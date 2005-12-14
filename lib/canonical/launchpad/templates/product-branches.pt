@@ -11,7 +11,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Branch Listing</h1>
+  <h1>Branch listing</h1>
 
   <tal:block repeat="branch context/branches">
     <div tal:replace="structure branch/@@+summary-listing" />

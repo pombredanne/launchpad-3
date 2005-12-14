@@ -13,11 +13,10 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Specification Dependency Tree</h1>
+  <h1>Specification dependency tree</h1>
 
-  <p class="documentDescription">
-    This page shows the dependency tree - giving you some idea of the
-    sequence in which specifications related to this one must be
+  <p>
+    This is the sequence in which specifications related to this one must be
     implemented.
   </p>
 

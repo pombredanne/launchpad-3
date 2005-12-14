@@ -1,8 +1,8 @@
 <div class="portlet">
-  <h4>Package HCT Status:</h4>
+  <h4>Package HCT status:</h4>
   <div class="portletBody portletContent">
 
-  <b>Upstream Branch:</b><br />
+  <b>Upstream branch:</b><br />
   <a tal:condition="context/productseries"
      tal:content="context/productseries/title"
      tal:attributes="href

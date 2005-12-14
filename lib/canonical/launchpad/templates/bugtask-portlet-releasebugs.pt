@@ -3,7 +3,7 @@
   tal:define="release_buglistings view/release_buglistings"
 >
 
-  <h4>Release Bugs:</h4>
+  <h4>Release bugs:</h4>
 
   <div class="portletBody portletContent">
     <ul>

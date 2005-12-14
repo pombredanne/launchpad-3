@@ -1,10 +1,9 @@
 <div class="portlet">
 
-  <h4>About Remote Bug Trackers:</h4>
+  <h4>Bug trackers in Launchpad:</h4>
 
   <div class="portletBody portletContent">
 
-    <img src="/++resource++info_icon.gif">
     <span tal:replace="context/bugtracker_count">43</span> registered trackers
 	
   </div>

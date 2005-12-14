@@ -2,7 +2,7 @@
 <body>
 <div metal:fill-slot="main">
 
-    <h1 i18n:translate="">Exception Log (Most Recent First)</h1>
+    <h1 i18n:translate="">Exception log (most recent first)</h1>
 
     <p i18n:translate="">
       These are the most recent exceptions that have occurred in Launchpad.

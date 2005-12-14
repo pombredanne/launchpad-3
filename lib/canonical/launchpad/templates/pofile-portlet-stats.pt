@@ -9,7 +9,7 @@
             <b>Messages:</b>
             <span tal:replace="context/potemplate/count:len">N</span>
             <br/>
-            <b>Todo:</b>
+            <b>To do:</b>
             <span tal:replace="view/untranslated">N</span>
             <br />
             <tal:block condition="context/lasttranslator">

@@ -38,7 +38,7 @@
         </tal:block>
       </div>
 
-  <h2>Registered Details</h2>
+  <h2>Registered details</h2>
 
   <table>
     <tr tal:condition="context/allwikis">
@@ -175,7 +175,7 @@
 
   <tal:memberships condition="not: context/isTeam">
     <tal:block condition="context/myactivememberships">
-      <h2>Team Memberships</h2>
+      <h2>Team memberships</h2>
 
       <p><span tal:replace="context/browsername">Foo Bar</span> is
         a member of:

@@ -5,7 +5,7 @@
 
   <tal:block condition="not: context/currentpotemplates">
 
-    <h2 i18n:translate="">No Translatable Templates Available</h2>
+    <h2 i18n:translate="">No translatable templates available</h2>
 
     <p i18n:translate=""><span tal:replace="context/displayname" />
     does not have any strings to be translated through Rosetta. If

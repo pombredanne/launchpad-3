@@ -7,7 +7,7 @@
 
   <div metal:fill-slot="body">
 
-  <h1>ShipIt Exports</h1>
+  <h1>ShipIt exports</h1>
 
   <table>
   <tbody>

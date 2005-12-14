@@ -8,7 +8,7 @@
 
 <div metal:fill-slot="main">
 
-      <h1>Available Codes of Conduct</h1>
+      <h1>Available codes of conduct</h1>
 
       <p>
         Select a code of conduct to sign or download it.

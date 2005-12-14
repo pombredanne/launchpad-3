@@ -7,7 +7,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Bug Summary for <span tal:replace="context/title">Project
+    <h1>Bug summary for <span tal:replace="context/title">Project
     Title</span></h1>
 
     <div tal:content="context/summary">Project Summary</div>

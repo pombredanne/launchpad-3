@@ -21,7 +21,7 @@
         </div>
 
         <div tal:condition="not: view/error">
-            <h1>Request Sent</h1>
+            <h1>Request sent</h1>
 
             <p>
             Your project request has been sent for review.

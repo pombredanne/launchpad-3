@@ -1,6 +1,6 @@
 <div class="portlet">
 
-  <h4>Translation File Details:</h4>
+  <h4>Translation file details:</h4>
 
   <div class="portletBody">
   <div class="portletContent">
@@ -28,7 +28,7 @@
          Mozilla Main
       </a><br />
       <tal:has_prod_translationgrp condition="product/translationgroup">
-        <b>Translation Group:</b><br />
+        <b>Translation group:</b><br />
         <a tal:content="product/translationgroup/title"
            tal:attributes="href
              string:/rosetta/groups/${product/translationgroup/name}/"
@@ -40,7 +40,7 @@
           <a tal:content="project/displayname"
              tal:attributes="href string:/projects/${project/name}/" /><br />
         <tal:has_proj_translationgrp condition="project/translationgroup">
-          <b>Project Translation Group:</b><br />
+          <b>Project translation group:</b><br />
           <a tal:content="project/translationgroup/title"
              tal:attributes="href
                  string:/rosetta/groups/${project/translationgroup/name}/"
@@ -58,13 +58,13 @@
     <a tal:content="context/potemplate/distrorelease/name"
        tal:attributes="href
          string:/distros/${distro/name}/${context/potemplate/distrorelease/name}/" /><br />
-    <b>Source Package:</b><br />
+    <b>Source package:</b><br />
     <a tal:attributes="href
          string:/distros/${distro/name}/${context/potemplate/distrorelease/name}/+sources/${context/potemplate/sourcepackagename/name}/">
       <span tal:replace="context/potemplate/sourcepackagename/name" />
       <span tal:replace="context/potemplate/sourcepackageversion" />
     </a><br />
-    <b>Translation Group:</b><br />
+    <b>Translation group:</b><br />
     <tal:block condition="distro/translationgroup">
       <a tal:content="distro/translationgroup/title"
          tal:attributes="href
@@ -77,16 +77,16 @@
     <br />
     </tal:block>
     </tal:block>
-    <b>Permissions:</b>
+    <b>Contributions policy:</b>
     <span tal:replace="context/translationpermission/title" /><br />
-    <b>Plural Forms:</b>
+    <b>Plural forms:</b>
     <span tal:replace="context/pluralforms">2</span><br />
     <tal:block condition="view/header/getPluralFormExpression">
-      <b>Plural Expression:</b><br />
+      <b>Plural expression:</b><br />
       <span tal:replace="view/header/getPluralFormExpression">n=323</span><br />
     </tal:block>
     <tal:block condition="context/potemplate/description">
-      <b>Template Description:</b><br />
+      <b>Template description:</b><br />
       <span tal:replace="context/potemplate/description" /><br />
     </tal:block>
 

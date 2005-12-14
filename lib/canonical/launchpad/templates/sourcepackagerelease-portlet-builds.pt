@@ -15,11 +15,9 @@
       </a>
       <span tal:replace="build/buildstate/title">Failure</span>
     </li>
-    <li tal:condition="not: context/builds"
-        class="alert">
+  </ul>
+    <p tal:condition="not:context/builds">
       <i>No builds recorded.</i>
-    </li>
-
+    </p>
   </div>
-
 </div>

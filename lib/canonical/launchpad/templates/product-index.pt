@@ -24,7 +24,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Product Overview</h1>
+  <h1>Product overview</h1>
 
   <div class="documentDescription" tal:content="context/summary">
     $Product.summary goes here. This should be quite short,
@@ -85,7 +85,7 @@
 
   <tal:block condition="context/branches">
 
-    <h2>Bazaar Branches</h2>
+    <h2>Bazaar branches</h2>
 
     <div>
 

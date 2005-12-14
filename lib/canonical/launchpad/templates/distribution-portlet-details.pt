@@ -1,7 +1,7 @@
 <div class="portlet">
 
   <h4><span tal:replace="context/displayname">Ubuntu
-      </span> Distribution Details:</h4>
+      </span> distribution details:</h4>
 
   <div class="portletBody portletContent">
 
@@ -15,28 +15,13 @@
     <a tal:attributes="href string:${context/fmt:url}/+members"
        tal:content="context/members/browsername">members name</a><br /> 
 
-    <b>Translation Group:</b><br />
-    <img src="/++resource++languages.gif">
-    <tal:block condition="context/translationgroup">
-    <a tal:attributes="href context/translationgroup/fmt:url"
-       tal:content="context/translationgroup/title"
-    >Group</a><br />
-    </tal:block>
-    <tal:block condition="not: context/translationgroup">
-    <i>Not assigned</i><br />
-    </tal:block>
-    <b>Translation Perms:</b><br />
-    <span tal:replace="context/translationpermission/title">Open</span>
-    <br />
-
-    <b>Upload Perms:</b><br />
+    <b>Uploads:</b><br />
     <tal:per_component repeat="dcu context/uploaders">
       <span tal:replace="dcu/component/name">main</span>:
       <img src="/++resource++user" />
       <a tal:content="dcu/uploader/browsername"
          tal:attributes="href dcu/uploader/fmt:url" /><br />
     </tal:per_component>
-
 
     <b>Releases:</b><br />
     <ul tal:condition="context/releases">
@@ -56,4 +41,3 @@
 
   </div>
 </div>
-

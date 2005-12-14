@@ -17,7 +17,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1>PO Template Names in Launchpad</h1>
+    <h1>PO template names in Launchpad</h1>
 
     <form method="post">
         <table>

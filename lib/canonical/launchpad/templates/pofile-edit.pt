@@ -9,7 +9,7 @@
 
      <tal:dummy condition="view/submitForm" />
 
-        <h1>Edit the plural forms for this pofile</h1>
+        <h1>Edit the plural forms for this PO file</h1>
 
         <div class="portalMessage"
              tal:condition="view/status_message"
@@ -18,11 +18,11 @@
         <form action="+edit" method="POST" enctype="multipart/form-data">
 
         <fieldset>
-            Number of Pluralforms:
+            Number of plural forms:
             <input type="text" name="pluralforms"
                    tal:attributes="value context/pluralforms"/>
             <br/>
-            Pluralform Expression:
+            Plural form expression:
             <input type="text" name="expression"
                    tal:attributes="value view/header/getPluralFormExpression"/>
             <br/>

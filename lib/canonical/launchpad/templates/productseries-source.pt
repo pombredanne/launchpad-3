@@ -13,7 +13,7 @@
 
               <tal:processform condition="view/editSource" omit-tag="" />
 
-              <h1>Upstream Source Import</h1>
+              <h1>Upstream source import</h1>
               
               <p tal:condition="not:view/errormsgs">
                 Once you enter the details of the

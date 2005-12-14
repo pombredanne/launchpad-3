@@ -11,7 +11,7 @@
             tal:content="context/name">sabdfl</a>)<br />
 
       <tal:logged_in condition="request/lp:person">
-        <b>Preferred Email:</b><br />
+        <b>Preferred address:</b><br />
         <img tal:condition="context/preferredemail"
              src="/++resource++email" />
         <span tal:condition="context/preferredemail"

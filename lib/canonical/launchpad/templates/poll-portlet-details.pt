@@ -6,7 +6,7 @@
     <b>Title:</b>
     <span tal:replace="context/title" /><br />
 
-    <b>Voting Team:</b>
+    <b>Voting team:</b>
     <a tal:attributes="href context/team/fmt:url"
        tal:content="context/team/browsername" /><br />
 

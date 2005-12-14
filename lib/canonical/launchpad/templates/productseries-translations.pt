@@ -17,7 +17,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Translation Templates</h1>
+  <h1>Translation templates</h1>
 
   <div tal:replace="structure context/@@+potlist" />
 

@@ -19,7 +19,7 @@
     <tal:block condition="view/orderIsCancelledOrShipped">
       <h1 tal:condition="order/cancelled">This order was cancelled</h1>
       <h1 tal:condition="order/shipment">This order is being processed by the
-        shippin company</h1>
+        shipping company</h1>
     </tal:block>
 
     <tal:block condition="not: view/orderIsCancelledOrShipped">
@@ -148,11 +148,11 @@
       </tal:block>
 
       <tal:block condition="not: order">
-        <h2>Request Details</h2>
+        <h2>Request details</h2>
       </tal:block>
 
       <tal:block condition="order">
-        <h2>Change Request Details</h2>
+        <h2>Change request details</h2>
 
         <p>You can change your request details as many times you want, but
         doing so may require your request to be approved again.</p>
@@ -282,7 +282,7 @@
       </table>
       </tal:block>
 
-      <h1>Shipping Address</h1>
+      <h1>Shipping address</h1>
 
       <tal:block condition="view/addressFormMessages">
         <p class="portalError" tal:repeat="msg view/addressFormMessages" 

@@ -13,7 +13,7 @@
 <div metal:fill-slot="main"
      tal:define="listing_columns view/listing_columns">
 
-  <h1>Bug Listing</h1>
+  <h1>Bug listing</h1>
 
   <form name="bugtask_search" action="" method="GET">
     <p>

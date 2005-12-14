@@ -7,7 +7,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Registry Items Review</h1>
+    <h1>Registry items for review</h1>
 
       <p>Please review these items.</p>
       <dl>

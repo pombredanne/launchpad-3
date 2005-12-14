@@ -12,7 +12,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>CVE Report</h1>
+  <h1>CVE report</h1>
 
   <p class="documentDescription">This page shows the known CVE issues in
     <span tal:replace="context/fullreleasename">Ubuntu Hoary</span>. It also
@@ -21,7 +21,7 @@
 
   <tal:open_issues define="bugtasks context/open_cve_bugtasks">
 
-  <h2>Open Issues in <span
+  <h2>Open issues in <span
         tal:replace="context/fullreleasename">Ubuntu Hoary</span></h2>
 
 
@@ -37,7 +37,7 @@
 
   <tal:resolved_issues define="bugtasks context/resolved_cve_bugtasks">
 
-    <h2>Resolved Issues in <span
+    <h2>Resolved issues in <span
       tal:replace="context/fullreleasename">Ubuntu Hoary</span></h2>
 
 
@@ -54,7 +54,7 @@
 
   <tal:open_issues define="bugtasks context/distribution/open_cve_bugtasks">
 
-    <h2>Open Issues in <span
+    <h2>Open issues in <span
           tal:replace="context/distribution/displayname">Ubuntu</span></h2>
 
 
@@ -71,7 +71,7 @@
   <tal:resolved_issues
       define="bugtasks context/distribution/resolved_cve_bugtasks">
 
-    <h2>Resolved Issues in <span
+    <h2>Resolved issues in <span
         tal:replace="context/distribution/displayname">Ubuntu Hoary</span></h2>
 
 

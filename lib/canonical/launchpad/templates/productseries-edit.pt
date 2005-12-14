@@ -13,7 +13,7 @@
 
     <h1 metal:fill-slot="heading">Edit <span
         tal:content="context/displayname">Mozilla Firefox</span>
-        Release Series Details</h1>
+        release series details</h1>
   
   </div>
 

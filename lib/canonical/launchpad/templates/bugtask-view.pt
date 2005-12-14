@@ -58,7 +58,7 @@
           <h2>Status of
             <span tal:replace="context/targetname">upstream
             firefox</span> bug
-            #<span tal:replace="context/bug/id">3224</span></h2>
+            <span tal:replace="context/bug/id">3224</span></h2>
 
           <div class="field">
             <table>
@@ -174,7 +174,7 @@
             </div>
           </div>
 
-          <h2>Bug Description</h2>
+          <h2>Bug description</h2>
 
           <tal:description
             content="structure context/bug/description/fmt:text-to-html"

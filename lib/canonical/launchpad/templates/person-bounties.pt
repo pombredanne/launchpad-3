@@ -13,7 +13,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Bounties Issued and Claimed</h1>
+  <h1>Bounties issued and claimed</h1>
 
   <p class="documentDescription">This page lists bounties that are related to
   <span tal:replace="context/browsername">Context</span>.</p>
@@ -24,7 +24,7 @@
   </tal:block>
 
   <tal:block condition="context/ownedBounties">
-    <h2>Bounties Issued</h2>
+    <h2>Bounties issued</h2>
 
       <table width="100%" class="listing sortable" id="issued">
         <thead>
@@ -49,7 +49,7 @@
   </tal:block>
 
   <tal:block condition="context/claimedBounties">
-    <h2>Bounties Claimed</h2>
+    <h2>Bounties claimed</h2>
 
     <table width="100%" class="listing sortable" id="claimed">
       <thead>
@@ -74,7 +74,7 @@
   </tal:block>
 
   <tal:block condition="context/reviewerBounties">
-    <h2>Bounties Reviewed:</h2>
+    <h2>Bounties reviewed</h2>
 
     <table width="100%" class="listing sortable" id="reviewer">
       <thead>
@@ -99,7 +99,7 @@
   </tal:block>
 
   <tal:block condition="context/subscribedBounties">
-    <h2>Bounties Subscribed:</h2>
+    <h2>Bounties subscribed</h2>
 
     <table width="100%" class="listing sortable" id="subscribed">
       <thead>

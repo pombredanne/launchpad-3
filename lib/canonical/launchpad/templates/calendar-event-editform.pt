@@ -11,7 +11,7 @@
     <div metal:use-macro="context/@@launchpad_editform/editform">
 
       <h1 metal:fill-slot="heading">
-        Edit Event <q tal:content="context/title">Event title</q>
+        Edit event <q tal:content="context/title">Event title</q>
       </h1>
 
     </div>

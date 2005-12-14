@@ -1,6 +1,6 @@
 <div class="portlet">
 
-  <h4>Published As:</h4>
+  <h4>Published as:</h4>
 
   <div class="portletBody portletContent">
 
@@ -14,11 +14,9 @@
           <span tal:replace="pub/pocket/title">Release</span>
         </a>
       </li>
-      <li class="alert" tal:condition="not: context/current_publishings">
-        <i>Not published at present.</i>
-      </li>
     </ul>
-
+    <p tal:condition="not: context/current_publishings">
+      <i>Not published at present.</i>
+    </p>
   </div>
-
 </div>

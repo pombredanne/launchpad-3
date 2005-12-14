@@ -176,7 +176,7 @@
           </div>
         </form>
 
-        <h2>Bug Description</h2>
+        <h2>Bug description</h2>
 
         <div tal:content="structure context/bug/description/fmt:text-to-html">
           $Bug.description

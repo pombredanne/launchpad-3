@@ -11,7 +11,7 @@
 
       <h1 metal:fill-slot="heading">Register a new product release
         series for <span tal:content="context/displayname">Mozilla
-        Firefox</span>.</h1>
+        Firefox</span></h1>
 
       <div metal:fill-slot="extra_info" class="documentDescription">
         A product release series aggregates a set of releases. Examples

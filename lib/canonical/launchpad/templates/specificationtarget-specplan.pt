@@ -12,7 +12,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Roadmap of Spec Implementation</h1>
+  <h1>Roadmap of spec implementation</h1>
 
   <p class="documentDescription">
     Based on the current specifications, their dependencies, priorities and
@@ -26,11 +26,11 @@
   </p>
 
   <tal:block condition="view/specPlan">
-    <h2>Implementation Strategy</h2>
+    <h2>Implementation strategy</h2>
 
     <p>
-      The following specifications should be implemented in the order given.
-      This will ensure that most important specifications are implemented
+      These specifications should be implemented in the order given.
+      This will ensure that the most important specifications are implemented
       first, and that specification dependencies are respected.
     </p>
 
@@ -39,10 +39,10 @@
   </tal:block>
 
   <tal:block condition="view/danglingSpecs">
-    <h2>Dangling Specifications</h2>
+    <h2>Dangling specifications</h2>
 
     <p>
-      The following specifications are "dangling", in that they are currently
+      These specifications are "dangling", in that they are currently
       in a state which cannot be scheduled. For example, they may have
       circular dependencies.
     </p>

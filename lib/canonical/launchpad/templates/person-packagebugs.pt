@@ -16,7 +16,7 @@
         tal:define="task_batch_navigator view/search">
 
       <metal:heading fill-slot="heading">
-        <h1>Bugs on Software Maintained by <span tal:replace="context/browsername" /></h1>
+        <h1>Bugs on software maintained by <span tal:replace="context/browsername" /></h1>
       </metal:heading>
 
     </metal:page>

@@ -11,7 +11,7 @@
 
   <div metal:fill-slot="main">
 
-    <h1>Your Wiki Names</h1>
+    <h1>Your wiki names</h1>
 
     <div tal:define="feedback view/processWikiForm" tal:condition="feedback" 
          tal:content="structure feedback" class="portalMessage" />
@@ -19,7 +19,7 @@
     <form name="edit_wikiname" action="" method="POST">
     <table>
 
-      <tr><td colspan="2"><h2>Ubuntu Wiki Name</h2></td></tr>
+      <tr><td colspan="2"><h2>Ubuntu Wiki name</h2></td></tr>
       <tr>
         <td colspan="2">
           <p>This is your wiki name in the Ubuntu wiki. You cannot remove
@@ -28,8 +28,8 @@
       </tr>
 
       <tr>
-        <td><label>Wiki Base URL:</label></td>
-        <td><label>Wiki Name:</label></td>
+        <td><label>Wiki base URL:</label></td>
+        <td><label>Wiki name:</label></td>
       </tr>
 
       <tr>
@@ -43,11 +43,11 @@
 
       <tal:block condition="context/otherwikis">
 
-        <tr><td colspan="2"><h2>Other Wiki Names</h2></td></tr>
+        <tr><td colspan="2"><h2>Other wiki names</h2></td></tr>
 
         <tr>
-          <td><label>Wiki Base URL:</label></td>
-          <td><label>Wiki Name:</label></td>
+          <td><label>Wiki base URL:</label></td>
+          <td><label>Wiki name:</label></td>
         </tr>
 
         <tr tal:repeat="wiki context/otherwikis">
@@ -74,7 +74,7 @@
       </tal:block>
 
     <tr>
-      <td colspan="2"><h2>New Wiki Name</h2></td>
+      <td colspan="2"><h2>New wiki name</h2></td>
     </tr>
     
     <tr>

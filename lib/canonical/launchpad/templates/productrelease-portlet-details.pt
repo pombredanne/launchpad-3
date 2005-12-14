@@ -10,7 +10,7 @@
                tal:content="context/product/displayname"
                class="link">product displayname</a><br />
 
-            <b>Release Version:</b>
+            <b>Release version:</b>
             <span tal:replace="context/version" /><br />
 
             <b>Branch:</b>
@@ -22,7 +22,7 @@
             <b>Registered:</b>
             <span tal:replace="context/datecreated/fmt:date" /><br />
 
-            <b>Registered By:</b><br />
+            <b>Registered by:</b><br />
             <img src="/++resource++user.gif">
             <a tal:attributes="href string:/people/${context/owner/name}"
                tal:content="context/owner/browsername"

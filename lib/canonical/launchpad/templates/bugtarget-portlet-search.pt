@@ -1,7 +1,7 @@
 <div class="portlet">
 
   <h4 tal:content="string:Search ${context/targetname} bugs:">
-    Search Mozilla Firefox Bugs:
+    Search Mozilla Firefox bugs:
   </h4>
 
   <div class="portletBody portletContent"

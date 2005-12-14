@@ -16,7 +16,7 @@
 
   <div metal:fill-slot="main">
 
-    <h1>Condorcet Poll</h1>
+    <h1>Condorcet poll</h1>
 
     <tal:can-vote condition="view/userCanVote">
     <p class="portalMessage" tal:condition="view/feedback"
@@ -49,7 +49,7 @@
     <table cols="2">
       <tr>
         <td>
-          <h2>Your Current Vote</h2>
+          <h2>Your current vote</h2>
           <tal:block condition="not: view/userVoted">
             <p>You have not yet voted in this poll.</p>
           </tal:block>
@@ -82,11 +82,11 @@
         </td>
         <td>
           <tal:block condition="not: view/userVoted">
-            <h2>Rank Options in Order of Preference</h2>
+            <h2>Rank options in order of preference</h2>
           </tal:block>
 
           <tal:block condition="view/userVoted">
-            <h2>Change Your Vote</h2>
+            <h2>Change your vote</h2>
           </tal:block>
 
           <p>Enter 1 next to your most preferred option, 2 next to your second

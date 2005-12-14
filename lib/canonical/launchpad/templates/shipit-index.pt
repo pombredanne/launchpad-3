@@ -12,7 +12,7 @@
         <tal:block condition="not: view/login_success">
 
           <tal:block condition="view/login_error">
-            <h1>Your Login was Unsuccessful</h1>
+            <h1>Your login was unsuccessful</h1>
             <p class="error" tal:content="view/login_error" />
           </tal:block>
 

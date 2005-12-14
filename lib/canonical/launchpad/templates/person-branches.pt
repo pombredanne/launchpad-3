@@ -14,17 +14,17 @@
 /></metal:rightportlets>
 
 <div metal:fill-slot="main">
-  <h1>Bazaar Branches</h1>
+  <h1>Bazaar branches</h1>
 
   <tal:has_authored_branches condition="context/authored_branches"
-    ><h2>Branches Authored</h2>
+    ><h2>Branches authored</h2>
     <tal:block repeat="branch context/authored_branches"
       ><div tal:replace="structure branch/@@+summary-listing"
     /></tal:block
   ></tal:has_authored_branches
 
   ><tal:has_registered_branches condition="context/registered_branches"
-    ><h2>Branches Registered</h2>
+    ><h2>Branches registered</h2>
     <tal:block repeat="branch context/registered_branches"
       ><div tal:replace="structure branch/@@+summary-listing"
     /></tal:block

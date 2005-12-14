@@ -11,7 +11,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Build Log</h1>
+  <h1>Build log</h1>
 
   <div class="dummy">
     XXX: Daniel Debonzi 2004-10-05

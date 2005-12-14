@@ -1,6 +1,5 @@
-
 <div class="portlet">
-  <h4>Top Bug Trackers</h4>
+  <h4>Top bug trackers:</h4>
   <div class="portletBody portletContent">
     The top bug trackers in Malone (by remote bug watches):
     <ul class="webref">

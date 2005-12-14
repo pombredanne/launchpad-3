@@ -12,11 +12,9 @@
           <span tal:replace="drspr/distrorelease/name">hoary</span>
         </a>
       </li>
-      <li class="alert" tal:condition="not: context/current_publishings">
-        <i>Not published anywhere yet.</i>
-      </li>
     </ul>
-
+    <p tal:condition="not: context/current_publishings">
+      <i>Not published anywhere yet.</i>
+    </p>
   </div>
-
 </div>

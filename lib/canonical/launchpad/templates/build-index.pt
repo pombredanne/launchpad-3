@@ -15,7 +15,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Build Summary</h1>
+  <h1>Build summary</h1>
 
           <ul>
             <li><b>Date Created:</b> 

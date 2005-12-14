@@ -11,7 +11,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Your Email Addresses</h1>
+  <h1>Your e-mail addresses</h1>
 
   <tal:dummy tal:define="submitted view/emailFormSubmitted">
   <div tal:condition="submitted">

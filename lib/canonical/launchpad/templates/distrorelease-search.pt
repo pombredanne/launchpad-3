@@ -11,7 +11,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Binary Package Search</h1>
+  <h1>Binary package search</h1>
 
   <p class="documentDescription">
     Use this form to search through the

@@ -15,17 +15,20 @@
          tal:content="structure msg" class="portalMessage">
     </div>
 
-    <h1>GPG Keys and Launchpad</h1> 
+    <h1>OpenPGP keys and Launchpad</h1> 
 
-    <p>Launchpad allows you to optionally indicate GPG keys. GPG keys
-    are required to sign the <a href="/codeofconduct">Ubuntu Code of
-    Conduct</a> and to build and upload packages using HCT.</p>
+    <p>
+      Launchpad let you register OpenGPG keys, created by software such as GPG.
+      OpenPGP keys are required to sign the
+      <a href="/codeofconduct">Ubuntu Code of Conduct</a>,
+      and to build and upload packages using HCT.
+    </p>
 
     <form tal:condition="view/gpgkeysCount" 
           name="gpg_actions" action="" method="POST">
       <input type="hidden" name="action" value="deactivate_gpg" />
 
-      <h2>Valid Keys</h2>
+      <h2>Valid keys</h2>
 
       <div tal:repeat="key context/gpgkeys">
         <label>
@@ -36,10 +39,10 @@
         </label>
       </div>
 
-      <p>Note that <dfn>deactivating</dfn> a key <i>applies only to
-      Launchpad</i> and not anywhere else. If you deactivate a key, it
+      <p><dfn>Deactivating</dfn> a key <em>applies only to Launchpad</em>
+      and not anywhere else. If you deactivate a key, it
       will automatically deactivate any feature that uses that key, such
-      as a signed code of conduct or the ability to comment on a bug
+      as a signed code of conduct, or the ability to comment on a bug
       report by e-mail.</p>
 
       <input type="submit" value="Deactivate Key" />
@@ -49,7 +52,7 @@
           action="" method="POST">
       <input type="hidden" name="action" value="remove_gpgtoken" />
 
-      <h2>Keys Pending Validation</h2>
+      <h2>Keys pending validation</h2>
 
       <div>
         <label tal:repeat="fingerprint context/pendinggpgkeys">
@@ -69,7 +72,7 @@
           action="" method="POST">
       <input type="hidden" name="action" value="revalidate_gpg" />
 
-      <h2>Deactivated Keys</h2>
+      <h2>Deactivated keys</h2>
 
       <p>If you changed your mind about deactivating a key, you can
       <dfn>revalidate</dfn> it.</p>
@@ -88,11 +91,11 @@
     <div>
     <form name="gpg_actions" action="" method="POST">
       <input type="hidden" name="action" value="claim_gpg" />
-      <h2>Importing a GPG Key</h2>
+      <h2>Importing an OpenPGP key</h2>
       <div class="formHelp">
-        To import a GPG key, you must first ensure that:
+        To import an OpenPGP key, you must first ensure that:
         <ul>
-          <li>You already have a GPG key (use <kbd>gpg --gen-key</kbd>)
+          <li>You already have a key (use <kbd>gpg --gen-key</kbd>)
           <li>The key has already been uploaded to a keyserver (use
           <kbd>gpg --send-key &lt;key-id&gt;</kbd>)
         </ul>

@@ -34,7 +34,7 @@
     </div>
     <div tal:condition="view/user">
 
-      <h1>Bugs Assigned to <a tal:attributes="href view/user/fmt:url"><span tal:replace="view/user/browsername">
+      <h1>Bugs assigned to <a tal:attributes="href view/user/fmt:url"><span tal:replace="view/user/browsername">
       Person</span></a></h1>
 
       <div tal:condition="view/maintainedProductBugs"

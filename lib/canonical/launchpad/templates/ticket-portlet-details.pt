@@ -1,6 +1,6 @@
 <div class="portlet">
 
-  <h4><span tal:replace="context/target/displayname">Ubuntu</span> Ticket
+  <h4><span tal:replace="context/target/displayname">Ubuntu</span> ticket
       #<span tal:replace="context/id">234</span>:</h4>
 
   <div class="portletBody portletContent">
@@ -44,7 +44,7 @@
     </tal:block>
     <br />
 
-    <b>Answered By:</b><br />
+    <b>Answered by:</b><br />
     <tal:block condition="context/answerer">
       <img src="/++resource++user.gif" />
       <a tal:attributes="href context/answerer/fmt:url"
@@ -55,7 +55,7 @@
     </tal:block>
     <br />
 
-    <b>Last Query:</b>
+    <b>Last query:</b>
     <span tal:replace="context/datelastquery/fmt:date" /><br />
 
     <tal:block condition="context/datelastresponse">

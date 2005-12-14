@@ -17,7 +17,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Give Feedback on Specification</h1>
+  <h1>Give feedback on this specification</h1>
 
   <p class="documentDescription">
     Select the requests which you wish to remove from your queue.

@@ -16,7 +16,7 @@
 
   <tal:subscribed condition="view/subscription">
 
-    <h1>Unsubscribe From Specification</h1>
+    <h1>Unsubscribe from specification</h1>
 
     <p>
       Choose "Unsubscribe" to remove your subscription to this spec, or
@@ -41,7 +41,7 @@
 
   <tal:not_subscribed condition="not: view/subscription">
 
-    <h1>Subscribe to Specification</h1>
+    <h1>Subscribe to specification</h1>
 
     <p>
       Choose "Subscribe" to become a subscriber to this spec, or "Cancel" to

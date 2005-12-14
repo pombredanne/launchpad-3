@@ -1,40 +1,40 @@
 <div class="portlet">
-  <h4>Revision Control Details:</h4>
+  <h4>Revision control details:</h4>
 
   <div class="portletBody">
     <div class="portletContent">
-      <b>Revision Control System:</b><br />
+      <b>Revision control system:</b><br />
       <span tal:condition="context/rcstype"
       tal:replace="context/rcstype/title">CVS</span>
       <i tal:condition="not: context/rcstype">None given</i>
       <br />
       <tal:block condition="context/rcstype">
         <tal:block condition="python:context.rcstype.name=='CVS'">
-          <b>CVS Root:</b><br />
+          <b>CVS root:</b><br />
           <span tal:replace="context/cvsroot/fmt:shorten/25">cvsrt</span><br />
-          <b>CVS Module:</b>
+          <b>CVS module:</b>
           <span tal:replace="context/cvsmodule">cvs module</span><br />
-          <b>CVS Branch:</b>
+          <b>CVS branch:</b>
           <span tal:replace="context/cvsbranch">cvs branch</span><br />
         </tal:block>
         <tal:block condition="python:context.rcstype.name=='SVN'">
-          <b>SVN Repository:</b><br />
+          <b>SVN repository:</b><br />
           <span tal:replace="context/svnrepository/fmt:shorten/25">svn repo</span><br />
         </tal:block>
         
         <b>Import status:</b>
         <span tal:replace="context/importstatus/title">Syncing</span><br />
         <tal:block condition="context/datestarted">
-          <b>Date Last Sync Started:</b>
+          <b>Date last sync started:</b>
           <span tal:replace="context/datestarted/fmt:date">4-03-05</span>
           <br />
-          <b>Date Last Sync Finished:</b>
+          <b>Date last sync finished:</b>
           <span tal:replace="context/datefinished/fmt:date">4-03-05</span>
           <br />
         </tal:block>
       </tal:block>
       <tal:block condition="context/branch">
-        <b>Bazaar Branch:</b> Published<br />
+        <b>Bazaar branch:</b> Published<br />
       </tal:block>
     </div>
   </div>

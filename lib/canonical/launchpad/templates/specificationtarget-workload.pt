@@ -11,7 +11,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Specification Workload</h1>
+  <h1>Specification workload</h1>
 
   <p class="portalMessage" tal:condition="not: view/workload">
     There are no specifications assigned to people for 

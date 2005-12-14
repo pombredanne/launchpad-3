@@ -11,7 +11,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Launchpad Product Registry</h1>
+  <h1>Products in Launchpad</h1>
 
   <form method="get">
   
@@ -84,7 +84,7 @@
   </tal:searching>
   <tal:no_search condition="not: view/searchrequested">
     
-    <h2>Most Recently Registered...</h2>
+    <h2>Most recently registered</h2>
 
     <div tal:repeat="product context/latest"
          tal:replace="structure product/@@+listing-detailed" />

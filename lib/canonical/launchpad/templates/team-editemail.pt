@@ -12,7 +12,7 @@
 <div metal:fill-slot="main"> 
 <tal:dummy tal:condition="view/processForm" />
 
-  <h1>Contact Email Address</h1>
+  <h1>Contact address</h1>
 
   <form autocomplete="off" name="email" action="" method="POST">
 

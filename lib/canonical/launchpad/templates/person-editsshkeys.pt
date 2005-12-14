@@ -11,7 +11,7 @@
 
   <div metal:fill-slot="main">
 
-    <h1>SSH Key Management</h1> 
+    <h1>SSH key management</h1> 
 
     <p>You need to register an SSH key with Launchpad to be able to publish
     your Bazaar code branches in the Bazaar supermirror. For more

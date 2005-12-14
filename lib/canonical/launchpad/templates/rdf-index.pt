@@ -9,15 +9,11 @@
 
   <h1>Launchpad RDF</h1>
 
-    <p class="documentDescription">Launchpad provides RDF exports of
-    Project, Product, Branch and Release metadata.</p>
-
-  <h2>OWL Ontology</h2>
-
-    <p>The OWL Ontology defining the RDF specification for Launchpad
-    can be downloaded <a href="/@@/rdf/launchpad.owl">here</a>.</p>
-
-</div>
-
-</body>
+      <p>
+        Launchpad provides RDF exports of
+        project, product, branch, and release metadata,
+        using <a href="/@@/rdf/launchpad.owl">the OWL ontology</a>.
+      </p>
+    </div>
+  </body>
 </html>

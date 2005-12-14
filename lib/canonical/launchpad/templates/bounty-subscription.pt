@@ -14,8 +14,8 @@
 
 <div metal:fill-slot="main">
 
-  <h1 tal:condition="not: view/subscription">Subscribe to Bounty</h1>
-  <h1 tal:condition="view/subscription">Unsubscribe From Bounty</h1>
+  <h1 tal:condition="not: view/subscription">Subscribe to bounty</h1>
+  <h1 tal:condition="view/subscription">Unsubscribe from bounty</h1>
 
   <p class="documentDescription">
     Bounty subscribers will be emailed copies of any comments made on

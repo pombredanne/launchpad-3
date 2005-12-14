@@ -17,7 +17,7 @@
 
   <tal:createtasks condition="view/createTargetedTasks" />
 
-  <h1>Target Fix to Releases</h1>
+  <h1>Target fix to releases</h1>
 
   <p class="documentDescription">
     Select the releases in which this bug must be fixed, including
