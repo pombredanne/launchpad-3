@@ -15,7 +15,7 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces import ISignedMessage
 
-signed_re = re.compile(
+clearsigned_re = re.compile(
     r'-----BEGIN PGP SIGNED MESSAGE-----'
     '.*?(?:\r\n|\n)(?:\r\n|\n)(.*)(?:\r\n|\n)'
     '(-----BEGIN PGP SIGNATURE-----'
@@ -46,6 +46,8 @@ class SignedMessage(email.Message.Message):
     """Provides easy access to signed content and the signature"""
     implements(ISignedMessage)
 
+    parsed_string = None
+
     def _get_signature_signed_message(self):
         """Returns the PGP signature and content that's signed.
 
@@ -55,6 +57,8 @@ class SignedMessage(email.Message.Message):
         If the message isn't signed, both signature and the content is
         None.
         """
+        assert self.parsed_string is not None, (
+            'Use signed_message_from_string() to create the message.')
         signed_content = signature = None
         payload = self.get_payload() 
         if self.is_multipart():
@@ -73,11 +77,9 @@ class SignedMessage(email.Message.Message):
                     signed_content = match.group('signed_content')
                     signature = signature_part.get_payload()
         else:
-            match = signed_re.search(payload)
+            match = clearsigned_re.search(payload)
             if match is not None:
-                # Add a new line so that a message with no headers will
-                # be created.
-                signed_content_unescaped = "\n" + match.group(1)
+                signed_content_unescaped = match.group(1)
                 signed_content = dash_escaped.sub('', signed_content_unescaped)
                 signature = match.group(2)
 
@@ -93,6 +95,10 @@ class SignedMessage(email.Message.Message):
         if signed_content is None:
             return None
         else:
+            if clearsigned_re.search(self.get_payload()):
+                # Add a new line so that a message with no headers will
+                # be created.
+                signed_content = '\n' + signed_content
             return signed_message_from_string(signed_content)
 
     @property
