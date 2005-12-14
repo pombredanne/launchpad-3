@@ -9,6 +9,8 @@ __all__ = [
     'DistroReleaseSet',
     ]
 
+from cStringIO import StringIO
+
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -27,7 +29,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
     IPublishedPackageSet, IHasBuildRecords, NotFoundError,
-    IBinaryPackageName)
+    IBinaryPackageName, ILibraryFileAliasSet)
 
 from canonical.database.constants import DEFAULT, UTC_NOW
 
@@ -565,11 +567,15 @@ class DistroRelease(SQLBase):
             distrorelease=self, owner=owner)
         return dar
 
-    def createQueueEntry(self, pocket, changesfile):
+    def createQueueEntry(self, pocket, changesfilename, changesfilecontent):
         """See IDistroRelease."""
+        file_alias_set = getUtility(ILibraryFileAliasSet)
+        changes_file = file_alias_set.create(changesfilename,
+            len(changesfilecontent), StringIO(changesfilecontent),
+            'text/plain')
         return DistroReleaseQueue(distrorelease=self.id,
                                   pocket=pocket,
-                                  changesfile=changesfile)
+                                  changesfilealias=changes_file.id)
 
     def getQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED):
         """See IDistroRelease."""

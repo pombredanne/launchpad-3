@@ -405,6 +405,7 @@ the changes.
   >>> flush_database_updates()
   >>> transaction.commit()
 
+
 Now we process them, one more time.
 
   >>> script = os.path.join(config.root, "scripts", "process-accepted.py")
