@@ -41,13 +41,13 @@
         <td>
           <label for="existing">
             <input type="radio" value="existing" id="existing" 
-                   name="existing" checked />an existing person or team
+                   name="existing" checked />An existing person or team
           </label>
           <br />
 
           <label for="new">
             <input type="radio" value="new" id="new" 
-                   name="existing" />a new team I'm creating here
+                   name="existing" />A new team I'm creating here
           </label>
           <br />
 

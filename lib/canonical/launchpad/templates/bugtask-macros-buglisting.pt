@@ -144,7 +144,7 @@
       <tr>
         <th>
           <label tal:content="view/searchtext_widget/label">
-            Bug id or text:
+            Bug ID or text:
           </label>
         </th>
         <td>

@@ -27,12 +27,12 @@
     </div>
 
     <div class="row">
-      <label i18n:translate="">Exception Type:</label>
+      <label i18n:translate="">Exception type:</label>
       <div class="field" tal:content="entry/type">AttributeError</div>
     </div>
 
     <div class="row">
-      <label i18n:translate="">Exception Value:</label>
+      <label i18n:translate="">Exception value:</label>
       <div class="field" tal:content="entry/value">zzope</div>
     </div>
 

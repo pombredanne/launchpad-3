@@ -141,7 +141,7 @@
           <label>
             <input type="checkbox" name="highpriority"
                    tal:attributes="checked context/highpriority" />
-            High priority?
+            High priority
           </label>
         </td>
       </tr>

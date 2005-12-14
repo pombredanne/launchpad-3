@@ -21,12 +21,12 @@
   </p>
 
   <p>
-    <label>Proposed Bug Title:</label><br />
+    <label>Proposed bug title:</label><br />
     "<span tal:replace="context/title">bug title here</span>"
   </p>
 
   <p>
-    <label>Proposed Bug Description:</label><br />
+    <label>Proposed bug description:</label><br />
     <span tal:replace="context/description" />
   </p>
 

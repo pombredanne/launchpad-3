@@ -18,7 +18,7 @@
   <form name="bugtask_search" action="" method="GET">
     <p>
       <label tal:content="view/searchtext_widget/label">
-        Bug id or text:
+        Bug ID or text:
       </label>
       <tal:searchtext content="structure view/searchtext_widget" />
       <input type="submit" name="search" value="Search" />

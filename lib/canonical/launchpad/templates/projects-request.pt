@@ -48,12 +48,12 @@
         </p>
 
         <p>
-        <label>Project Homepage</label>
+        <label>Project home page</label>
             <input type="text" name="homepage" size="50" />
         </p>
 
         <p>
-        <label>Project Download Page</label>
+        <label>Project download page</label>
             <input type="text" name="download-page" size="50" />
         </p>
 
@@ -70,7 +70,7 @@
         <textarea name="description" rows="15"></textarea>
 
         <p>
-        <label>Revision Control Information</label>
+        <label>Revision control information</label>
         </p>
 
         <p>

@@ -15,7 +15,7 @@
                  tal:define="error widget/error">
 
               <label tal:attributes="for widget/name"
-                     tal:content="widget/label">The Label</label>
+                     tal:content="widget/label">Label</label>
 
               <span tal:condition="widget/required"
                     class="fieldRequired"
@@ -28,7 +28,7 @@
               <div tal:condition="error">
                 <img src="/++resource++info_icon.gif" />
                 <span tal:replace="structure error">
-                      An Error Message</span>
+                      An error message</span>
               </div>
 
             </div>

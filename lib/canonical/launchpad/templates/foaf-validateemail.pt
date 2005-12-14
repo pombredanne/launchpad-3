@@ -22,7 +22,7 @@
         <table>
           <tbody>
             <tr>
-              <th><label for="password">Launchpad Password:</label></th>
+              <th><label for="password">Launchpad password:</label></th>
               <td>
                 <input type="password" size="30" name="password" />
               </td>
@@ -32,7 +32,7 @@
               <td>
                 <label>
                   <input type="checkbox" checked="checked" name="logmein" />
-                  Log me in after validating my email address
+                  Log me in after confirming my e-mail address
                 </label>
               </td>
             </tr>

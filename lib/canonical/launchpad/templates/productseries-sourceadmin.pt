@@ -53,7 +53,7 @@
                         </td>
                       </tr>
                       <tr>
-                        <th><label>Branch Name:</label></th>
+                        <th><label>Branch name:</label></th>
                         <td>
                           <input type="text" name="cvsbranch" size="30"
                           tal:attributes="value view/cvsbranch" />
@@ -99,14 +99,14 @@
   </p>
   
   <div class="field">
-    <label>GPG Key ID</label>
+    <label>OpenPGP key ID</label>
     <span class="fieldRequired">(Required)</span>
     <input type="text" name="archsourcegpgkeyid" size="30"
        value="" />
   </div>
 
   <div class="field">
-    <label>Arch Archive Name</label>
+    <label>Arch archive name</label>
     <span class="fieldRequired">(Required)</span>
     <input type="text" name="archsourcename" size="30"
        value="" />
@@ -127,7 +127,7 @@
                   <table>
                     <tbody>
                       <tr>
-                        <th><label>Import From:</label></th>
+                        <th><label>Import from:</label></th>
                         <td>
                           <div>
                             <span tal:replace="structure view/rcs_selector" />
@@ -139,7 +139,7 @@
                         </td>
                       </tr>
                       <tr>
-                        <th><label>Arch Archive:</label></th>
+                        <th><label>Arch archive:</label></th>
                         <td>
                           <input type="text" name="targetarcharchive" size="30"
                           tal:attributes="value view/targetarcharchive" />
@@ -153,7 +153,7 @@
                         </td>
                       </tr>
                       <tr>
-                        <th><label>Arch Category:</label></th>
+                        <th><label>Arch category:</label></th>
                         <td>
                           <input type="text" name="targetarchcategory" size="30"
                           tal:attributes="value view/targetarchcategory" />
@@ -167,7 +167,7 @@
                         </td>
                       </tr>
                       <tr>
-                        <th><label>Arch Branch:</label></th>
+                        <th><label>Arch branch:</label></th>
                         <td>
                           <input type="text" name="targetarchbranch" size="30"
                           tal:attributes="value view/targetarchbranch" />
@@ -181,7 +181,7 @@
                         </td>
                       </tr>
                       <tr>
-                        <th><label>Arch Version:</label></th>
+                        <th><label>Arch version:</label></th>
                         <td>
                           <input type="text" name="targetarchversion" size="30"
                           tal:attributes="value view/targetarchversion" />
@@ -197,7 +197,7 @@
                 </fieldset>
 
   <fieldset tal:condition="context/autoTestFailed">
-    <legend>Failed Import Control</legend>
+    <legend>Failed import control</legend>
     <div>
       <label>
         <input type="checkbox" name="resetToAutotest" />
@@ -211,7 +211,7 @@
                   <table>
                     <tbody>
                       <tr>
-                        <th><label>Root Directory URL:</label></th>
+                        <th><label>Root directory URL:</label></th>
                         <td>
                           <input name="releaseroot" size=40
                           tal:attributes="value context/releaseroot" />
@@ -233,7 +233,7 @@
                         </td>
                       </tr>
                       <tr>
-                        <th><label>Filename Pattern:</label></th>
+                        <th><label>Filename pattern:</label></th>
                         <td>
                           <input name="releasefileglob" size=40
                           tal:attributes="value context/releasefileglob" />
@@ -287,20 +287,19 @@
       <div tal:condition="view/namesReviewed">
       
         <div class="field">
-          <label>Enabled</label>
-          <div class="formHelp">Is this source certified for syncronization?
-          </div>
+          <label>
             <input type="checkbox" name="syncCertified"
             tal:attributes="checked context/syncCertified" />
+            This source is certified for synchronization
+          </label>
         </div>
 
         <div class="field">
-          
-              <label>Source Syncing Enabled</label>
-              <div class="formHelp">Is this upstream source being syncronised
-              to Arch automatically?</div>
-              <input type="checkbox" name="autoSyncEnabled"
-                     tal:attributes="checked context/autoSyncEnabled" />
+          <label>
+            <input type="checkbox" name="autoSyncEnabled"
+            tal:attributes="checked context/autoSyncEnabled" />
+            The upstream source is being synchronised to Arch automatically
+          </label>
         </div>
 
     </div>

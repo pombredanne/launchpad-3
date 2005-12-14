@@ -21,7 +21,7 @@
         <b>Minimum Priority:</b>
         <div tal:replace="structure view/prioritySelector" />
         <div tal:replace="structure view/showClosedSelector" />
-        <label for="showclosed"><b>Show Closed Bugs</b></label>
+        <label for="showclosed"><b>Include closed bugs</b></label>
         <input type="submit" value="Update">
     </form>
 

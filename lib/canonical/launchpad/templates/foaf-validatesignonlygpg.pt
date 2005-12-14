@@ -17,12 +17,12 @@
            tal:content="structure view/errormessage">
       </div>
 
-      <p>To confirm your GPG key, please enter your Launchpad password.</p>
+      <p>To confirm your OpenPGP key, please enter your Launchpad password.</p>
 
       <form autocomplete="off" name="validate" action="" method="POST">
         <div class="field">
 
-          <label>Launchpad Password</label>
+          <label>Launchpad password:</label>
           <br>
           <input type="password" size="30" name="password" />
           <br>
@@ -30,7 +30,7 @@
           <tal:block condition="not: request/lp:person">
             <label>
               <input type="checkbox" checked="checked" name="logmein" />
-              Log me in after validating my key.
+              Log me in after validating my key
             </label><br />
           </tal:block>
 
