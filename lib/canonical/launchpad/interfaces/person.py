@@ -32,11 +32,10 @@ from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 from canonical.launchpad.interfaces.validation import (
-    valid_emblem, valid_hackergotchi)
+    valid_emblem, valid_hackergotchi, valid_unregistered_email)
 
 from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, EmailAddressStatus)
@@ -894,5 +893,5 @@ class ITeamCreation(ITeam):
             "this team will be sent to all team members. After finishing the "
             "team creation, a new message will be sent to this address with "
             "instructions on how to finish its registration."),
-        constraint=valid_email)
+        constraint=valid_unregistered_email)
 

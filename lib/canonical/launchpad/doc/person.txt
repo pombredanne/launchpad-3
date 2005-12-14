@@ -194,11 +194,9 @@ True
 >>> cur = Person._connection._connection.cursor()
 
 A merged account gets a -merged suffix on its name.
->>> empty.id
-59L
 >>> cur.execute("SELECT id FROM Person WHERE name='empty-merged'")
->>> cur.fetchone()[0]
-59
+>>> cur.fetchone()[0] == empty.id
+True
 
 
 >>> cur.execute("select person, team, status from teammembership where "
@@ -234,7 +232,7 @@ preferred email address.
 >>> empty.karma = 10000
 >>> flush_database_updates()
 >>> [(person.name, person.karma) for person in personset.topPeople()]
-[(u'name12', 171), (u'name16', 40), (u'jordi', 0), (u'marilize', 0), (u'no-priv', 0)]
+[(u'name12', 171), (u'name16', 40), (u'bugzilla-importer', 0), (u'jordi', 0), (u'marilize', 0)]
 
 
 People can have karma in Launchpad
