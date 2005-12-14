@@ -29,6 +29,8 @@ class DistroArchReleaseNavigation(GetitemNavigation):
 
     usedfor = IDistroArchRelease
 
+    def breadcrumb(self):
+        return self.context.architecturetag
 
 class DistroArchReleaseFacets(StandardLaunchpadFacets):
 

@@ -429,15 +429,25 @@ We need to test it with a breadcrumb too.
 == redirection ==
 
 You can register that particular names are to be redirected to other names.
-You do this using the class advisor function redirection(namefrom, nameto).
+You do this using the redirection() function in one of three ways:
+
+ 1. as a class advisor function:
+        redirection(namefrom, nameto)
+
+ 2. as a Navigation class method decorator:
+        @redirection(namefrom)
+        def redirect_namefrom(self):
+            return nameto
+
+ 3. returned by some other traversal function:
+        @stepto(namefrom)
+        def traverse_namefrom(self):
+            return redirection(nameto)
+
 
 This is step five:
 
     5. If a redirection is registered for that name, do the redirection.
-
-
-You can also return redirection('urlpath') from a traversal method to cause
-a redirect when you traverse that name.
 
 You can provide an optional status=30x keyword argument to redirection to
 make it redirect with a different status code.  The default is 'None' which
@@ -458,6 +468,10 @@ Let's make another navigation class to test redirection.
     ...     @stepthrough('outerspace')
     ...     def traverse_outerspace(self, name):
     ...         return redirection('/siberia/%s' % name)
+    ...
+    ...     @redirection('here', status=301)
+    ...     def redirect_here(self):
+    ...         return '/there'
 
     >>> navigation4 = ThingSetNavigation4(thingset, request)
     >>> navigation4.publishTraverse(request, 'tree')
@@ -490,6 +504,14 @@ Let's make another navigation class to test redirection.
     '/siberia/tundra'
     >>> print request.response.status
     None
+
+    >>> navigation4.publishTraverse(request, 'here')()
+    ''
+    >>> request.response.redirected_to
+    '/there'
+    >>> print request.response.status
+    301
+
 
 
 Make a clean request.
