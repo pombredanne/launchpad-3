@@ -95,7 +95,8 @@ class SignedMessage(email.Message.Message):
         if signed_content is None:
             return None
         else:
-            if clearsigned_re.search(self.get_payload()):
+            if (not self.is_multipart() and 
+                clearsigned_re.search(self.get_payload())):
                 # Add a new line so that a message with no headers will
                 # be created.
                 signed_content = '\n' + signed_content
