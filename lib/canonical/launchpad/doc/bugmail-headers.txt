@@ -62,6 +62,9 @@ Bugzilla.) For these cases, the assignee value will degrade to the .name value.
 Let's use an example where Scott James Remnant is assigned to a task, but
 doesn't have a "preferred email" set in Launchpad.
 
-    >>> ubuntu_upstream_task = bugtaskset.get(1)
-    >>> ubuntu_upstream_task.asEmailHeaderValue()
-    u'product=ubuntu; status=New; priority=Medium; assignee=keybuk;'
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> scott = getUtility(IPersonSet).getByName('keybuk')
+    >>> debian_firefox_bugtask.assignee = scott
+    >>> debian_firefox_bugtask.asEmailHeaderValue()
+    u'distribution=debian; sourcepackage=None; component=None;
+      status=Accepted; priority=High; assignee=keybuk;'
