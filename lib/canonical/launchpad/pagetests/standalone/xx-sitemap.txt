@@ -1,0 +1,356 @@
+The site map is displayed at the top of the left portlets column, and
+displays the "Pillars of Launchpad".
+
+  >>> print http(r"""
+  ... GET / HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <ul id="pillars">
+    <li><a href=".../products">Products</a></li>
+    <li><a href=".../distros">Distributions</a></li>
+    <li><a href=".../people">People</a></li>
+    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../sprints">Meetings</a></li>
+  </ul>
+  ...
+
+
+If we are under the "Products" pillar then that pillar is highlighted,
+and the subpillars are displayed.  Note that none of the subpillars
+are linked, because no specific product is being viewed:
+
+  >>> print http(r"""
+  ... GET /products HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <ul id="pillars">
+    <li class="current"><a href=".../products">Products</a></li>
+    <li><a href=".../distros">Distributions</a></li>
+    <li><a href=".../people">People</a></li>
+    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../sprints">Meetings</a></li>
+  </ul>
+  <ul id="subpillars">
+    <li>Release Series</li>
+    <li>Branches</li>
+    <li>Milestones</li>
+  </ul>
+  ...
+
+
+If we are viewing a particular product, then the subpillars that have
+actual pages get linked:
+
+  >>> print http(r"""
+  ... GET /products/firefox HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <ul id="pillars">
+    <li class="current"><a href=".../products">Products</a></li>
+    <li><a href=".../distros">Distributions</a></li>
+    <li><a href=".../people">People</a></li>
+    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../sprints">Meetings</a></li>
+  </ul>
+  <ul id="subpillars">
+    <li>Release Series</li>
+    <li><a href=".../products/firefox/+branches">Branches</a></li>
+    <li>Milestones</li>
+  </ul>
+  ...
+
+
+There is no release series page or milestones page, but those
+subpillars will be highlighted if a release series or milestone is
+being viewed:
+
+  >>> print http(r"""
+  ... GET /products/firefox/+series/1.0 HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <ul id="pillars">
+    <li class="current"><a href=".../products">Products</a></li>
+    <li><a href=".../distros">Distributions</a></li>
+    <li><a href=".../people">People</a></li>
+    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../sprints">Meetings</a></li>
+  </ul>
+  <ul id="subpillars">
+    <li class="current">Release Series</li>
+    <li><a href=".../products/firefox/+branches">Branches</a></li>
+    <li>Milestones</li>
+  </ul>
+  ...
+
+  >>> print http(r"""
+  ... GET /products/firefox/+milestone/1.0 HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <ul id="pillars">
+    <li class="current"><a href=".../products">Products</a></li>
+    <li><a href=".../distros">Distributions</a></li>
+    <li><a href=".../people">People</a></li>
+    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../sprints">Meetings</a></li>
+  </ul>
+  <ul id="subpillars">
+    <li>Release Series</li>
+    <li><a href=".../products/firefox/+branches">Branches</a></li>
+    <li class="current">Milestones</li>
+  </ul>
+  ...
+
+
+Similarly, if we are under the distributions pillar, then the
+associated pillar link is highlighted:
+
+  >>> print http(r"""
+  ... GET /distros HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <ul id="pillars">
+    <li><a href=".../products">Products</a></li>
+    <li class="current"><a href=".../distros">Distributions</a></li>
+    <li><a href=".../people">People</a></li>
+    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../sprints">Meetings</a></li>
+  </ul>
+  <ul id="subpillars">
+    <li>Releases</li>
+    <li>Ports</li>
+    <li>Source Packages</li>
+    <li>Binary Packages</li>
+  </ul>
+  ...
+
+
+As with the products pillar, some of the subpillar links are activated
+when a particular distribution is viewed:
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <ul id="pillars">
+    <li><a href=".../products">Products</a></li>
+    <li class="current"><a href=".../distros">Distributions</a></li>
+    <li><a href=".../people">People</a></li>
+    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../sprints">Meetings</a></li>
+  </ul>
+  <ul id="subpillars">
+    <li>Releases</li>
+    <li>Ports</li>
+    <li><a href=".../distros/ubuntu/+search">Source Packages</a></li>
+    <li>Binary Packages</li>
+  </ul>
+  ...
+
+
+The various subpillars are highlighted, depending on the context:
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <ul id="pillars">
+    <li><a href=".../products">Products</a></li>
+    <li class="current"><a href=".../distros">Distributions</a></li>
+    <li><a href=".../people">People</a></li>
+    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../sprints">Meetings</a></li>
+  </ul>
+  <ul id="subpillars">
+    <li class="current">Releases</li>
+    <li>Ports</li>
+    <li><a href=".../distros/ubuntu/+search">Source Packages</a></li>
+    <li>Binary Packages</li>
+  </ul>
+  ...
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/i386 HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <ul id="pillars">
+    <li><a href=".../products">Products</a></li>
+    <li class="current"><a href=".../distros">Distributions</a></li>
+    <li><a href=".../people">People</a></li>
+    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../sprints">Meetings</a></li>
+  </ul>
+  <ul id="subpillars">
+    <li>Releases</li>
+    <li class="current">Ports</li>
+    <li><a href=".../distros/ubuntu/+search">Source Packages</a></li>
+    <li>Binary Packages</li>
+  </ul>
+  ...
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+source/mozilla-firefox HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <ul id="pillars">
+    <li><a href=".../products">Products</a></li>
+    <li class="current"><a href=".../distros">Distributions</a></li>
+    <li><a href=".../people">People</a></li>
+    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../sprints">Meetings</a></li>
+  </ul>
+  <ul id="subpillars">
+    <li>Releases</li>
+    <li>Ports</li>
+    <li class="current"><a href=".../distros/ubuntu/+search">Source Packages</a></li>
+    <li>Binary Packages</li>
+  </ul>
+  ...
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/warty/+source/mozilla-firefox HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <ul id="pillars">
+    <li><a href=".../products">Products</a></li>
+    <li class="current"><a href=".../distros">Distributions</a></li>
+    <li><a href=".../people">People</a></li>
+    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../sprints">Meetings</a></li>
+  </ul>
+  <ul id="subpillars">
+    <li>Releases</li>
+    <li>Ports</li>
+    <li class="current"><a href=".../distros/ubuntu/+search">Source Packages</a></li>
+    <li>Binary Packages</li>
+  </ul>
+  ...
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/warty/i386/mozilla-firefox HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <ul id="pillars">
+    <li><a href=".../products">Products</a></li>
+    <li class="current"><a href=".../distros">Distributions</a></li>
+    <li><a href=".../people">People</a></li>
+    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../sprints">Meetings</a></li>
+  </ul>
+  <ul id="subpillars">
+    <li>Releases</li>
+    <li>Ports</li>
+    <li><a href=".../distros/ubuntu/+search">Source Packages</a></li>
+    <li class="current">Binary Packages</li>
+  </ul>
+  ...
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/warty/+package/mozilla-firefox HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <ul id="pillars">
+    <li><a href=".../products">Products</a></li>
+    <li class="current"><a href=".../distros">Distributions</a></li>
+    <li><a href=".../people">People</a></li>
+    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../sprints">Meetings</a></li>
+  </ul>
+  <ul id="subpillars">
+    <li>Releases</li>
+    <li>Ports</li>
+    <li><a href=".../distros/ubuntu/+search">Source Packages</a></li>
+    <li class="current">Binary Packages</li>
+  </ul>
+  ...
+
+
+The other main Launchpad pillars are highlighted when browsing the
+corresponding sections of the website.  There are no subpillars for
+them at this time:
+
+  >>> print http(r"""
+  ... GET /people HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <ul id="pillars">
+    <li><a href=".../products">Products</a></li>
+    <li><a href=".../distros">Distributions</a></li>
+    <li class="current"><a href=".../people">People</a></li>
+    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../sprints">Meetings</a></li>
+  </ul>
+  ...
+
+  >>> print http(r"""
+  ... GET /projects HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <ul id="pillars">
+    <li><a href=".../products">Products</a></li>
+    <li><a href=".../distros">Distributions</a></li>
+    <li><a href=".../people">People</a></li>
+    <li class="current"><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../sprints">Meetings</a></li>
+  </ul>
+  ...
+
+  >>> print http(r"""
+  ... GET /sprints HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  ...
+  <ul id="pillars">
+    <li><a href=".../products">Products</a></li>
+    <li><a href=".../distros">Distributions</a></li>
+    <li><a href=".../people">People</a></li>
+    <li><a href=".../projects">Product Groups</a></li>
+    <li class="current"><a href=".../sprints">Meetings</a></li>
+  </ul>
+  ...

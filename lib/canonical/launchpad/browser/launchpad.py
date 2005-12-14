@@ -198,7 +198,7 @@ class SiteMap(LaunchpadView):
         # Releases
         self.subpillar_links.append({
             'target': None,
-            'text': 'Release',
+            'text': 'Releases',
             'enabled': False, # no specific page for distro releases
             'selected': selected_iface == IDistroRelease,
             })
@@ -215,7 +215,7 @@ class SiteMap(LaunchpadView):
         self.subpillar_links.append({
             'target': '%s/+search' % distro_url,
             'text': 'Source Packages',
-            'enabled': True, 
+            'enabled': distro is not None, 
             'selected': selected_iface in [IDistributionSourcePackage,
                                            ISourcePackage],
             })

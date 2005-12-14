@@ -15,17 +15,17 @@
   <metal:macro define-macro="pillar_link"
     ><li tal:condition="link/selected" class="current"
       ><a tal:condition="link/enabled"
-         tal:attributes="href link/target"
-         tal:content="link/text">link text</a
+          tal:attributes="href link/target"
+          tal:content="link/text">link text</a
       ><span tal:condition="not:link/enabled"
-            tal:replace="link/text">link text</span
+             tal:replace="link/text">link text</span
     ></li
     ><li tal:condition="not:link/selected"
       ><a tal:condition="link/enabled"
-         tal:attributes="href link/target"
-         tal:content="link/text">link text</a
+          tal:attributes="href link/target"
+          tal:content="link/text">link text</a
       ><span tal:condition="not:link/enabled"
-            tal:replace="link/text">link text</span
+             tal:replace="link/text">link text</span
     ></li
   ></metal:macro>
 </tal:macros>
