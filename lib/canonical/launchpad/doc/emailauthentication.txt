@@ -142,3 +142,19 @@ authenticateEmail() doesn't have any problems verifying the signature:
     ...     print authenticated_person.preferredemail.email
     test@canonical.com
     test@canonical.com
+
+Python's email library unfolds the headers, which means that we have to
+be careful when extracting the signed content when folded headers are
+signed.
+
+    >>> msg = read_test_message('signed_folded_header.txt')
+    >>> print msg.parsed_string #doctest: -NORMALIZE_WHITESPACE
+    Date:...
+    ...
+    Content-Type: multipart/mixed;
+     boundary="--------------------EuxKj2iCbKjpUGkD"
+    ...
+
+    >>> principal = authenticateEmail(msg)
+    >>> print IPerson(principal).displayname
+    Sample Person
