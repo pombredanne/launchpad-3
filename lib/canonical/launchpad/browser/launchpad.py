@@ -33,7 +33,9 @@ from canonical.launchpad.interfaces import (
     ISprintSet, ITicketSet, IFOAFApplication, IBuilderSet, IBountySet,
     IBugSet, IBugTrackerSet, ICveSet, IProduct, IProductSeries,
     IMilestone, IDistribution, IDistroRelease, IDistroArchRelease,
-    IDistributionSourcePackage, IPerson, IProject, ISprint)
+    IDistributionSourcePackage, ISourcePackage,
+    IDistroArchReleaseBinaryPackage, IDistroReleaseBinaryPackage,
+    IPerson, IProject, ISprint)
 from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView, Navigation,
@@ -145,19 +147,22 @@ class SiteMap(LaunchpadView):
         ]
 
     def product_subpillar_links(self):
+        """Subpillars for the 'Products' pillar."""
         product, dummy = self.request.getNearest(IProduct)
         if product is not None:
             product_url = canonical_url(product)
         else:
             product_url = None
 
+        dummy, selected_iface = self.request.getNearest(
+            IProductSeries, IMilestone)
+
         # Release Series
-        productseries, dummy = self.request.getNearest(IProductSeries)
         self.subpillar_links.append({
             'target': None,
             'text': 'Release Series',
             'enabled': False, # no +series page
-            'selected': productseries is not None,
+            'selected': selected_iface == IProductSeries,
             })
 
         # Branches
@@ -169,50 +174,60 @@ class SiteMap(LaunchpadView):
             })
 
         # Milestones
-        milestone, dummy = self.request.getNearest(IMilestone)
         self.subpillar_links.append({
             'target': None,
             'text': 'Milestones',
             'enabled': False,
-            'selected': milestone is not None,
+            'selected': selected_iface == IMilestone,
             })
 
     def distro_subpillar_links(self):
+        """Subpillars for the 'Distributions' pillar."""
         distro, dummy = self.request.getNearest(IDistribution)
         if distro is not None:
             distro_url = canonical_url(distro)
         else:
             distro_url = None
 
+        dummy, selected_iface = self.request.getNearest(
+            IDistroRelease, IDistroArchRelease,
+            IDistributionSourcePackage, ISourcePackage,
+            IDistroArchReleaseBinaryPackage,
+            IDistroReleaseBinaryPackage)
+
         # Releases
-        distrorelease, dummy = self.request.getNearest(IDistroRelease)
         self.subpillar_links.append({
             'target': None,
             'text': 'Release',
-            'enabled': False, # no +series page
-            'selected': distrorelease is not None,
+            'enabled': False, # no specific page for distro releases
+            'selected': selected_iface == IDistroRelease,
             })
 
         # Ports
-        dar, dummy = self.request.getNearest(IDistroArchRelease)
         self.subpillar_links.append({
             'target': None,
             'text': 'Ports',
-            'enabled': False, # no +series page
-            'selected': dar is not None,
+            'enabled': False, # no specific page for ports
+            'selected': selected_iface == IDistroArchRelease,
             })
 
         # Source Packages
-        srcpkg, dummy = self.request.getNearest(IDistributionSourcePackage)
         self.subpillar_links.append({
-            'target': None,
+            'target': '%s/+search' % distro_url,
             'text': 'Source Packages',
-            'enabled': False, # no +series page
-            'selected': srcpkg is not None,
+            'enabled': True, 
+            'selected': selected_iface in [IDistributionSourcePackage,
+                                           ISourcePackage],
             })
 
         # Binary Packages
-        # TODO
+        self.subpillar_links.append({
+            'target': None,
+            'text': 'Binary Packages',
+            'enabled': False, # no specific page for binpkgs
+            'selected': selected_iface in [IDistroArchReleaseBinaryPackage,
+                                           IDistroReleaseBinaryPackage],
+            })
 
     def initialize(self):
         # get the current pillar
