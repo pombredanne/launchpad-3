@@ -9,24 +9,21 @@
 
     <h1>Registry Items Review</h1>
 
-    <div class="documentDescription">
-        Please review the following items.
+      <p>Please review these items.</p>
+      <dl>
+        <tal:item repeat="item context/forReview">
+          <dt>
+            <a
+              tal:attributes="href string:${item/name}"
+              tal:content="item/title"
+            >Name of the item</a>
+            (<a tal:attributes="href string:${item/name}/+review">Review</a>)
+          </dt>
+          <dd>
+            <p tal:content="item/summary">summary</p>
+          </dd>
+        </tal:item>
+      </dl>
     </div>
-
-    <div tal:repeat="item context/forReview" tal:omit-tag>
-
-        <p><b tal:content="item/title">title</b></p>
-
-        <p style="margin-left: 30px;">
-          <span tal:content="item/summary">summary</span>
-          <span tal:condition="not: item/reviewed">
-            [ <a tal:attributes="href string:${item/name}/+review">Review</a> ]
-          </span>
-        </p>
-
-    </div>
-
-</div>
-
-</body>
+  </body>
 </html>

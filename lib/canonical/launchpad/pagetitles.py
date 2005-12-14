@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# -*- coding: utf-8 -*-
 
 """This module is used by the Launchpad webapp to determine titles for pages.
 
@@ -42,18 +43,18 @@ DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
 class BugPageTitle:
     def __call__(self, context, view):
-        return "Bug #%d - %s" % (context.id, context.title)
+        return u"Bug #%d: “%s”" % (context.id, context.title)
 
 
 class BugTaskPageTitle:
     def __call__(self, context, view):
-        return "Bug #%d in %s - %s" % (
+        return u"Bug #%d in %s: “%s”" % (
             context.bug.id, context.targetname, context.bug.title)
 
 
 class BugTaskTargetingTitle:
     def __call__(self, context, view):
-        return "Bug #%d in %s - Target Fix to Releases" % (
+        return "Bug #%d in %s - Target fix to releases" % (
             context.bug.id, context.targetname)
 
 
@@ -92,10 +93,6 @@ class LaunchbagBugID(SubstitutionHelper):
 
 # Functions and strings used as the titles of pages.
 
-attachment_index = ContextTitle('Malone Bug Attachment: %s')
-
-attachments_index = 'Malone Bug Attachments'
-
 bazaar_index = 'The Launchpad Bazaar'
 
 bazaar_sync_review = 'Review upstream repositories for Launchpad Bazaar syncing'
@@ -105,31 +102,29 @@ def binarypackagerelease_index(context, view):
 
 binarypackagenames_index = 'Binary package name set'
 
-bounties_index = 'Launchpad Bounty Tracker'
+bounties_index = 'Bounties registered in Launchpad'
 
-bounty_add = 'Register a New Bounty in Launchpad'
-
-bounty_edit = ContextTitle('Edit Bounty: %s')
+bounty_add = 'Register a new bounty'
 
 bounty_add = 'Register a bounty in Launchpad'
 
+bounty_edit = ContextTitle(u'Edit bounty “%s”')
+
 bounty_link = ContextTitle('Link a bounty to %s')
 
-bounty_edit = ContextTitle('Edit bounty "%s"')
+bounty_index = ContextTitle(u'Bounty “%s”')
 
-bounty_index = ContextTitle('Launchpad Bounty: %s')
+bounty_subscription = ContextTitle(u'Subscription to bounty “%s”')
 
-bounty_subscription = 'Bounty Subscription'
+branch_edit = ContextTitle(u'Edit branch “%s”')
 
-branch_edit = 'Edit Branch Details'
+branch_index = ContextTitle(u'Bazaar branch “%s”')
 
-branch_index = ContextTitle('Bazaar Branch: %s')
-
-branch_subscription = ContextTitle('Subscription to Branch %s')
+branch_subscription = ContextTitle(u'Subscription to branch “%s”')
 
 branchtarget_branches = ContextTitle('Branches for %s')
 
-bug_activity = ContextId('Bug #%s - Activity Log')
+bug_activity = ContextId('Bug #%s - Activity log')
 
 def bug_add(context, view):
     # XXX, Brad Bollenbach, 2005-07-15: This is a hack until our fancy
@@ -146,46 +141,41 @@ def bug_add(context, view):
     else:
         return "Report a bug"
 
-bug_addsubscriber = LaunchbagBugID("Bug #%d - Add Subscriber")
+bug_addsubscriber = LaunchbagBugID("Bug #%d - Add a subscriber")
 
-bug_attachment_add = LaunchbagBugID('Bug #%d - Add an Attachment')
+bug_attachment_add = LaunchbagBugID('Bug #%d - Add an attachment')
 
 def bug_attachment_edit(context, view):
-    return 'Bug #%d - Edit Attachment (%s)' % (
+    return u'Bug #%d - Edit attachment “%s”' % (
         context.bug.id, context.title)
 
-bug_attachments = ContextId('Malone Bug Attachments for Bug #%s')
-
-bug_cve = LaunchbagBugID("Bug #%d - Add CVE Reference")
+bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
 
 bug_edit = BugPageTitle()
 
-bug_extref_add = LaunchbagBugID("Bug #%d - Add External Web Link")
+bug_extref_add = LaunchbagBugID("Bug #%d - Add a Web link")
 
 def bug_extref_edit(context, view):
-    return 'Bug #%d - Edit External Web Link (%s)' % (
-        context.bug.id, context.title)
+    return u'Bug #%d - Edit Web link “%s”' % (context.bug.id, context.title)
 
 bug_index = BugPageTitle()
 
-bug_mark_as_duplicate = ContextId('Bug #%d - Mark as Duplicate')
+bug_mark_as_duplicate = ContextId('Bug #%d - Mark as duplicate')
 
-bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE Reference")
+bug_removecve = LaunchbagBugID("Bug #%d - Remove CVE reference")
 
-bug_secrecy = ContextId('Set secrecy for bug #%s')
+bug_secrecy = ContextId('Bug #%d - Set visibility')
 
-bug_secrecy = ContextId('Bug #%d - Set Bug Secrecy')
+bug_subscription = ContextId('Subscription to bug #%s')
 
-bug_subscription = ContextId('Subscribe or unsubscribe from Bug #%s')
-
-bug_watch_add = LaunchbagBugID('Bug #%d - Add an External Bug Watch')
+bug_watch_add = LaunchbagBugID('Bug #%d - Add external bug watch')
 
 buglisting_advanced = ContextTitle("Bugs in %s")
 
 buglisting_default = ContextTitle("Bugs in %s")
 
 def bugwatch_editform(context, view):
-    return 'Bug #%d - Edit an External Bug Watch (%s in %s)' % (
+    return 'Bug #%d - Edit external bug watch (%s in %s)' % (
         context.bug.id, context.remotebug, context.bugtracker.title)
 
 # bugpackageinfestations_index is a redirect
@@ -198,10 +188,6 @@ def bugs_assigned(context, view):
     else:
         return 'No-one to display bugs for'
 
-bugs_createdby_index = 'Malone Bug Report by Creator'
-
-bugs_index = 'Malone Master Bug List'
-
 bugtask_index = BugTaskPageTitle()
 
 bugtask_release_targeting = BugTaskTargetingTitle()
@@ -213,43 +199,41 @@ bugtask_edit = BugTaskPageTitle()
 # bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
 
-bugtracker_edit = ContextTitle('Edit %s Details')
+bugtracker_edit = ContextTitle(u'Edit bug tracker “%s”')
 
-bugtracker_index = ContextTitle('Malone Bugtracker: %s')
+bugtracker_index = ContextTitle(u'Bug tracker “%s”')
 
-bugtrackers_add = 'Register External Bugtracker in Malone'
+bugtrackers_add = 'Register a bug tracker in Malone'
 
-bugtrackers_index = 'Malone-Registered Bug Trackers'
+bugtrackers_index = 'Bug trackers registered in Malone'
 
-build_buildlog = ContextTitle('%s: Build Log')
+build_buildlog = ContextTitle('Build log for %s')
 
-build_changes = ContextTitle('%s: Changes')
+build_changes = ContextTitle('Changes in %s')
 
-build_index = ContextTitle('%s: Overview')
+build_index = ContextTitle('Build details for %s')
 
-builders = 'Launchpad Build Farm Overview'
+builders = 'Launchpad build farm'
 
-builder_edit = ContextTitle('Editing %s details')
+builder_edit = ContextTitle(u'Edit build machine “%s”')
 
-builder_index = ContextTitle('%s Overview')
+builder_index = ContextTitle(u'Build machine “%s”')
 
-builder_cancel = ContextTitle('Cancel %s Job')
+builder_cancel = ContextTitle(u'Cancel job for “%s”')
 
-builder_mode = ContextTitle('Change %s Mode')
+builder_mode = ContextTitle('Change mode for “%s”')
 
-calendar = ContextTitle('%s')
+calendar_index = ContextTitle('Calendar for %s')
 
-calendar_index = ContextTitle('%s')
+calendar_event_addform = ContextTitle(u'Add event to %s’s calendar')
 
-calendar_event_addform = ContextTitle('Add Event to Calendar "%s"')
+calendar_event_display = ContextTitle(u'Event “%s”')
 
-calendar_event_display = ContextTitle('Event "%s"')
+calendar_event_editform = ContextTitle(u'Edit event “%s”')
 
-calendar_event_editform = ContextTitle('Edit Event "%s"')
+calendar_subscribe = ContextTitle(u'Subscribe to %s’s calendar')
 
-calendar_subscribe = ContextTitle('Subscribe to "%s"')
-
-calendar_subscriptions = 'Calendar Subscriptions'
+calendar_subscriptions = 'Calendar subscriptions'
 
 def calendar_view(context, view):
     return '%s - %s' % (context.calendar.title, view.datestring)
@@ -262,45 +246,41 @@ codeofconduct_admin = 'Administer codes of conduct in Launchpad'
 
 codeofconduct_index = ContextTitle('%s')
 
-codeofconduct_list = 'Codes of Conduct in Launchpad'
+codeofconduct_list = 'Codes of conduct in Launchpad'
 
-cveset_all = 'All CVE Entries Registered in the Launchpad'
+cveset_all = 'All CVE entries registered in Launchpad'
 
-cveset_index = 'Launchpad CVE Tracker'
+cveset_index = 'Launchpad CVE tracker'
 
 cve_index = ContextDisplayName('%s')
 
-cve_bug = ContextDisplayName('Link %s to a Malone  Bug')
+cve_bug = ContextDisplayName('Link %s to a bug report')
 
-cve_removebug = ContextDisplayName('Remove Link between %s and Malone Bug')
+cve_removebug = ContextDisplayName('Remove link between %s and a bug report')
 
-debug_error = 'Launchpad - Error Debug Page'
+debug_root_changelog = 'Launchpad changelog'
 
-debug_root_changelog = 'Launchpad Changelog'
-
-debug_root_index = 'Launchpad Debug Home Page'
-
-debug_unauthorized = 'Launchpad - Not Permitted'
+debug_root_index = 'Launchpad debugging home page'
 
 default_editform = 'Default "Edit" Page'
 
 distribution_allpackages = ContextTitle('All packages in %s')
 
-distribution_cvereport = ContextTitle('CVE Reports for %s')
+distribution_cvereport = ContextTitle('CVE reports for %s')
 
 distribution_members = ContextTitle('%s distribution members')
 
-distribution_memberteam = ContextTitle("Change %s's distribution team")
+distribution_memberteam = ContextTitle(u'Change %s’s distribution team')
 
 distribution_translations = ContextDisplayName('Translating %s')
 
-distribution_translators = 'Appoint Distribution Translation Group'
+distribution_translators = ContextTitle(u'Appoint %s’s translation group')
 
-distribution_search = ContextDisplayName('Search Packages in %s')
+distribution_search = ContextDisplayName(u'Search %s’s packages')
 
 distribution_index = ContextTitle('%s in Launchpad')
 
-distribution_builds = ContextTitle('%s Builds')
+distribution_builds = ContextTitle('%s builds')
 
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
@@ -308,41 +288,33 @@ distributionsourcepackage_index = ContextTitle('%s')
 
 distributionsourcepackagerelease_index = ContextTitle('%s')
 
-distro_add = 'Adding New Distribution'
-
-distro_edit = 'Create a new Distribution in Launchpad'
-
-# distro_sources.pt.OBSELETE
-# <title metal:fill-slot="title"><span tal:replace="context/title" />: Source
-# Packages</title>
-
 distroarchrelease_admin = ContextTitle('Administer %s')
 
-distroarchrelease_index = ContextTitle('%s overview')
+distroarchrelease_index = ContextTitle('%s in Launchpad')
 
-distroarchrelease_builds = ContextTitle('Builds for %s')
+distroarchrelease_builds = ContextTitle('%s builds')
 
-distroarchrelease_search = 'Binary Package Search'
+distroarchrelease_search = ContextTitle(u'Search %s’s binary packages')
 
 distroarchreleasebinarypackage_index = ContextTitle('%s')
 
 distroarchreleasebinarypackagerelease_index = ContextTitle('%s')
 
-distrorelease_addport = ContextTitle('Add Port for %s')
+distrorelease_addport = ContextTitle('Add a port of %s')
 
-distrorelease_bugs = ContextTitle('Release %s: Bugs')
+distrorelease_bugs = ContextTitle('Bugs in %s')
 
-distrorelease_cvereport = ContextDisplayName('CVE Report for %s')
+distrorelease_cvereport = ContextDisplayName('CVE report for %s')
 
 def distrorelease_index(context, view):
-    return '%s: %s' % (context.distribution.title, context.title)
+    return '%s %s in Launchpad' % (context.distribution.title, context.version)
 
 distrorelease_packaging = ContextDisplayName('Mapping packages to upstream '
     'for %s')
 
-distrorelease_search = ContextDisplayName('Search Packages in %s')
+distrorelease_search = ContextDisplayName('Search packages in %s')
 
-distrorelease_translations = ContextTitle('Translation of %s')
+distrorelease_translations = ContextTitle('Translations of %s')
 
 distrorelease_builds = ContextTitle('Builds for %s')
 
@@ -352,50 +324,42 @@ distroreleaselanguage = ContextTitle('%s')
 
 distroreleasesourcepackagerelease_index = ContextTitle('%s')
 
-distros_index = 'Overview of Distributions in Launchpad'
+distros_index = 'Distributions registered in Launchpad'
 
+errorservice_config = 'Configure error log'
 
-errorservice_config = 'Configure Error Log'
+errorservice_entry = 'Error log entry'
 
-errorservice_entry = 'View Error Log Report'
+errorservice_index = 'Error log report'
 
-errorservice_index = 'View Error Log Report'
+errorservice_tbentry = 'Traceback entry'
 
-errorservice_tbentry = 'Traceback Entry'
+foaf_mergepeople = 'Merge accounts'
+# XXX mpt 20051209: Include the account you're merging in the title
 
-foaf_about = 'About FOAF'
+foaf_mergerequest_sent = 'Merge request sent'
 
-foaf_dashboard = 'Your Launchpad Dashboard'
+foaf_newaccount = 'Get a Launchpad account'
 
-foaf_index = 'Foaf Home Page'
+foaf_newteam = 'Register a new team in Launchpad'
 
-foaf_mergepeople = 'Merge User Accounts'
+foaf_requestmerge_multiple = 'Merge Launchpad accounts'
 
-foaf_mergerequest_sent = 'Merge User Accounts'
+foaf_requestmerge = 'Merge Launchpad accounts'
 
-foaf_newaccount = 'Create a New Launchpad Account'
+foaf_resetpassword = 'Reset your Launchpad password'
 
-foaf_newteam = 'FOAF: Create a new Team'
+foaf_validateemail = 'Confirm e-mail address'
 
-foaf_requestmerge_multiple = 'Merge User Accounts'
+foaf_validateteamemail = 'Confirm e-mail address'
 
-foaf_requestmerge = 'Merge User Accounts'
+foaf_validategpg = 'Confirm OpenPGP key'
 
-foaf_resetpassword = 'Forgotten your Password?'
+foaf_validatesignonlygpg = 'Confirm sign-only OpenPGP key'
 
-foaf_todo = 'To-Do List'
+karmaaction_index = 'Karma actions'
 
-foaf_validateemail = 'Validate email address'
-
-foaf_validateteamemail = 'Validate email address'
-
-foaf_validategpg = 'Validate GPG Key'
-
-foaf_validatesignonlygpg = 'Validate Sign-Only GPG Key'
-
-karmaaction_index = 'Karma Actions'
-
-karmaaction_edit = 'Edit Karma Action'
+karmaaction_edit = 'Edit karma action'
 
 # launchpad_debug doesn't need a title.
 
@@ -409,11 +373,9 @@ launchpad_feedback = 'Help us improve Launchpad'
 
 launchpad_forbidden = 'Forbidden'
 
-launchpad_forgottenpassword = 'Forgot Your Launchpad Password?'
+launchpad_forgottenpassword = 'Forgotten your Launchpad password?'
 
-template_form = 'XXX PLEASE DO NOT USE TEMPLATE XXX'
-
-launchpad_join = 'Join the Launchpad'
+template_form = 'XXX PLEASE DO NOT USE THIS TEMPLATE XXX'
 
 # launchpad_css is a css file
 
@@ -424,17 +386,17 @@ launchpad_join = 'Join the Launchpad'
 #   -- kiko, 2005-09-29
 launchpad_generalform = "Launchpad - General Form (Should Not Be Displayed)"
 
-launchpad_legal = 'Launchpad - Legalese'
+launchpad_legal = 'Launchpad legalese'
 
 launchpad_login = 'Log in or register with Launchpad'
 
 launchpad_log_out = 'Log out from Launchpad'
 
-launchpad_notfound = 'Launchpad Page Not Found'
+launchpad_notfound = 'Error: Page not found'
 
-launchpad_oops = 'System Error'
+launchpad_oops = 'Error: Oops'
 
-launchpad_requestexpired = 'Request Took Too Long'
+launchpad_requestexpired = 'Error: Timeout'
 
 # launchpad_widget_macros doesn't need a title.
 
@@ -444,25 +406,21 @@ logintoken_index = 'Launchpad: redirect to the logintoken page'
 
 malone_about = 'About Malone'
 
-malone_dashboard = 'Malone Dashboard'
+malone_distros_index = 'Report a bug about a distribution'
 
-malone_distros_index = 'File a Bug in a Distribution'
-
-malone_index = 'Malone: Collaborative Open Source Bug Management'
+malone_index = 'Malone: Collaborative open-source bug management'
 
 # malone_people_index is a redirect
 
 # malone_template is a means to include the mainmaster template
 
-malone_to_do = 'Malone ToDo'
-
 # messagechunk_snippet is a fragment
 
 # messages_index is a redirect
 
-message_add = ContextId('Bug #%d - Add a Comment')
+message_add = ContextId('Bug #%d - Add a comment')
 
-milestone_add = ContextDisplayName('Add Milestone for %s')
+milestone_add = ContextDisplayName('Add milestone for %s')
 
 milestone_index = ContextTitle('%s')
 
@@ -481,17 +439,13 @@ object_potemplatenames = ContextDisplayName('Template names for %s')
 object_reassignment = ContextTitle('Reassign %s')
 
 def package_bugs(context, view):
-    return 'Package Bug Listing for %s' % context.name
+    return 'Bugs in %s' % context.name
 
-package_search = 'Package Search'
-
-packages_bugs = 'Packages With Bugs'
-
-people_index = 'Launchpad People'
+people_index = 'People registered with Launchpad'
 
 people_list = 'People registered with Launchpad'
 
-person_assignedbugs = ContextDisplayName('Bugs Assigned To %s')
+person_assignedbugs = ContextDisplayName('Bugs assigned to %s')
 
 person_bounties = ContextDisplayName('Bounties for %s')
 
@@ -499,52 +453,53 @@ person_branch_add = ContextDisplayName('Register a new branch for %s')
 
 person_changepassword = 'Change your password'
 
-person_codesofconduct = ContextDisplayName('%s Signed Codes of Conduct')
+person_codesofconduct = ContextDisplayName('%s Signed codes of conduct')
 
-person_edit = ContextDisplayName('Edit %s Information')
+person_edit = ContextDisplayName(u'%s’s details')
 
-person_editemails = ContextDisplayName('Edit %s Email Addresses')
+person_editemails = ContextDisplayName(u'%s’s e-mail addresses')
 
-person_editgpgkeys = ContextDisplayName('%s GPG Keys')
+person_editgpgkeys = ContextDisplayName(u'%s’s OpenPGP keys')
 
-person_edithomepage = ContextDisplayName('Edit %s Home Page')
+person_edithomepage = ContextDisplayName(u'%s’s home page')
 
-person_editircnicknames = ContextDisplayName('%s IRC Nicknames')
+person_editircnicknames = ContextDisplayName(u'%s’s IRC nicknames')
 
-person_editjabberids = ContextDisplayName('%s Jabber IDs')
+person_editjabberids = ContextDisplayName(u'%s’s Jabber IDs')
 
-person_editsshkeys = ContextDisplayName('%s SSH Keys')
+person_editsshkeys = ContextDisplayName(u'%s’s SSH keys')
 
-person_editwikinames = ContextDisplayName('%s Wiki Names')
+person_editwikinames = ContextDisplayName(u'%s’s wiki names')
 
 # person_foaf is an rdf file
 
-person_images = ContextDisplayName('%s Hackergotchi and Emblem')
+person_images = ContextDisplayName(u'%s’s hackergotchi and emblem')
 
-person_index = ContextDisplayName('%s: Launchpad Overview')
+person_index = ContextDisplayName('%s in Launchpad')
 
-person_karma = ContextDisplayName('Karma for %s')
+person_karma = ContextDisplayName(u'%s’s karma in Launchpad')
 
-person_packages = ContextDisplayName('Packages Maintained By %s')
+person_packages = ContextDisplayName('Packages maintained by %s')
 
-person_packagebugs = ContextDisplayName('Bugs on Software Maintained by %s')
+person_packagebugs = ContextDisplayName('Bugs on software %s maintains')
 
-person_reportedbugs = ContextDisplayName('Bugs Reported By %s')
+person_reportedbugs = ContextDisplayName('Bugs %s reported')
 
-person_review = ContextDisplayName("Review %s' Information")
+person_review = ContextDisplayName("Review %s")
 
 person_subscribedbugs = ContextDisplayName('Bugs %s is subscribed to')
 
-person_translations = ContextDisplayName('Translations Made By %s')
+person_translations = ContextDisplayName('Translations made by %s')
 
 person_teamhierarchy = ContextDisplayName('Team hierarchy for %s')
 
 pofile_edit = 'Rosetta: Edit PO file details'
+# XXX mpt 20051209: This should be more context-sensitive
 
 pofile_export = ContextTitle('%s file exports')
 
 def pofile_index(context, view):
-    return 'Rosetta: %s: %s' % (
+    return 'Rosetta: %s in %s' % (
         context.potemplate.title, context.language.englishname)
 
 def pofile_translate(context, view):
@@ -556,11 +511,11 @@ pofile_upload = ContextTitle('%s upload in Rosetta')
 
 # portlet_* are portlets
 
-poll_edit = ContextTitle('Edit poll %s')
+poll_edit = ContextTitle(u'Edit poll “%s”')
 
-poll_index = ContextTitle('%s')
+poll_index = ContextTitle(u'Poll: “%s”')
 
-poll_newoption = ContextTitle('Create a new Option in poll %s')
+poll_newoption = ContextTitle(u'New option for poll “%s”')
 
 def poll_new(context, view):
     return 'Create a new Poll in team %s' % context.team.displayname
@@ -568,115 +523,107 @@ def poll_new(context, view):
 def polloption_edit(context, view):
     return 'Edit option: %s' % context.title
 
-poll_options = ContextTitle('Options of Poll: %s')
+poll_options = ContextTitle(u'Options for poll “%s”')
 
-poll_vote_condorcet = ContextTitle('Vote on: %s')
+poll_vote_condorcet = ContextTitle(u'Vote in poll “%s”')
 
-poll_vote_simple = ContextTitle('Vote on: %s')
+poll_vote_simple = ContextTitle(u'Vote in poll “%s”')
 
 potemplate_add = 'Add a new template to Rosetta'
 
 # potemplate_chart is a fragment
 
-potemplate_edit = ContextTitle('%s edit in Rosetta')
+potemplate_edit = ContextTitle(u'Edit “%s” in Rosetta')
 
-potemplate_index = ContextTitle('%s in Rosetta')
+potemplate_index = ContextTitle(u'“%s” in Rosetta')
 
-potemplate_upload = ContextTitle('%s upload in Rosetta')
+potemplate_upload = ContextTitle(u'“%s” upload in Rosetta')
 
-potemplate_export = ContextTitle('Export %s\'s translations')
+potemplate_export = ContextTitle(u'Export translations of “%s”')
 
 potemplatename_add = 'Add a new template name to Rosetta'
 
-potemplatename_edit = ContextTitle('%s edit in Rosetta')
+potemplatename_edit = ContextTitle(u'Edit “%s” in Rosetta')
 
-potemplatename_index = ContextTitle('%s in Rosetta')
+potemplatename_index = ContextTitle(u'“%s” in Rosetta')
 
 potemplatenames_index = 'Template names in Launchpad'
 
 product_add = 'Register a product with Launchpad'
 
-product_bugs = ContextDisplayName('%s upstream bug reports')
+product_bugs = ContextDisplayName('Bugs in %s')
 
-product_branches = ContextDisplayName('%s\'s code branches in Launchpad')
+product_branches = ContextDisplayName(u'%s’s code branches in Launchpad')
 
 product_distros = ContextDisplayName('%s packages: Comparison of distributions')
 
-product_edit = ContextTitle('Edit Upstream Details: %s')
+product_edit = ContextTitle('%s in Launchpad')
 
-product_index = ContextTitle('Product: %s')
+product_index = ContextTitle('%s in Launchpad')
 
-product_packages = ContextDisplayName('Packages of %s')
+product_packages = ContextDisplayName('%s packages in Launchpad')
 
-product_translations = ContextTitle('Rosetta Translations for %s')
+product_translations = ContextTitle('Translations of %s in Launchpad')
 
 def productrelease(context, view):
-    return 'Details of %s %s' % (
+    return '%s %s in Launchpad' % (
         context.product.displayname, context.version)
 
 def productrelease_edit(context, view):
-    return 'Edit Details for %s %s' % (
+    return '%s %s in Launchpad' % (
         context.product.displayname, context.version)
 
-productrelease_add = ContextTitle('Register a new release of %s')
+productrelease_add = ContextTitle('Register a new %s release in Launchpad')
 
 productseries_translations = ContextTitle(
-    'Rosetta Translation Templates for %s')
+    'Translation remplates for %s')
 
-productseries_ubuntupkg = 'Ubuntu Source Package'
+productseries_ubuntupkg = 'Ubuntu source package'
 
-products_index = 'Launchpad Product / Applications Registry'
+products_index = 'Products registered in Launchpad'
 
-products_search = 'Launchpad: Advanced Upstream Product Search'
+productseries_source = 'Import product series'
 
-productseries_source = 'Add Source Import'
+productseries_sourceadmin = 'Add source import'
 
-productseries_sourceadmin = 'Add Source Import'
+project = ContextTitle('%s project in Launchpad')
 
-project = ContextTitle('Upstream Project: %s')
+project_branches = ContextTitle('Bazaar branches for %s')
 
-project_branches = ContextTitle('Bazaar Summary for %s')
+project_bugs = ContextTitle('Bugs in %s')
 
-project_bugs = ContextTitle('Malone Bug Summary for %s')
-
-project_edit = ContextTitle('Edit "%s" Details')
-
-project_index = ContextTitle('Project: %s')
+project_edit = ContextTitle('%s project details')
 
 project_interest = 'Rosetta: Project not translatable'
 
 project_rosetta_index = ContextTitle('Rosetta: %s')
 
-projects_index = 'Launchpad project registry'
+projects_index = 'Projects in Launchpad'
 
 projects_request = 'Rosetta: Request a project'
 
-projects_search = 'Launchpad: Advanced Upstream Project Search'
+projects_search = 'Search for projects in Launchpad'
 
 rdf_index = "Launchpad RDF"
 
 # redirect_up is a redirect
 
 def reference_index(context, view):
-    return 'Web References for Malone Bug # %s' % context.bug.id
+    return 'Web links for bug %s' % context.bug.id
 
 # references_index is a redirect
 
 registry_about = 'About the Launchpad Registry'
 
-registry_dashboard = 'Launchpad Project & Product Dashboard'
+registry_index = 'Product and group registration in Launchpad'
 
-registry_index = 'Project and Product Registration in Launchpad'
+registry_listall = 'Launchpad: Complete list' # bug 3508
 
-registry_listall = 'Launchpad: Complete List'
-
-registry_review = 'Launchpad Content Review'
-
-registry_to_do = 'Launchpad To-Do List'
+registry_review = 'Review Launchpad items'
 
 related_bounties = ContextDisplayName('Bounties for %s')
 
-root_index = 'The Launchpad Home Page'
+root_index = 'Launchpad'
 
 rosetta_about = 'About Rosetta'
 
@@ -684,40 +631,40 @@ rosetta_index = 'Rosetta'
 
 rosetta_preferences = 'Rosetta: Preferences'
 
-product_branch_add = ContextDisplayName('Register a new branch for %s')
+product_branch_add = ContextDisplayName('Register a new %s branch')
 
 def productseries_edit(context, view):
-    return 'Edit %s %s Details' % (context.product.displayname, context.name)
+    return '%s %s details' % (context.product.displayname, context.name)
 
 productseries_new = ContextDisplayName('Register a new %s release series')
 
 def productseries(context, view):
-    return '%s Release Series: %s' % (
+    return '%s release series: %s' % (
         context.product.displayname, context.displayname)
 
 shipit_index = 'ShipIt'
 
-shipit_exports = 'ShipIt Exports'
+shipit_exports = 'ShipIt exports'
 
-shipit_myrequest = "Your ShipIt Order"
+shipit_myrequest = "Your ShipIt order"
 
-shipit_reports = 'ShipIt Reports'
+shipit_reports = 'ShipIt reports'
 
-shipitrequests_index = 'ShipIt Requests'
+shipitrequests_index = 'ShipIt requests'
 
-shipitrequests_search = 'Search ShipIt Requests'
+shipitrequests_search = 'Search ShipIt requests'
 
-shipitrequest_edit = 'Edit ShipIt Request'
+shipitrequest_edit = 'Edit ShipIt request'
 
-shipit_notfound = 'Page Not Found'
+shipit_notfound = 'Error: Page not found'
 
-shipit_default_error = 'System Error'
+shipit_default_error = 'Error: Oops'
 
 signedcodeofconduct_index = ContextDisplayName('%s')
 
 signedcodeofconduct_add = ContextTitle('Sign %s')
 
-signedcodeofconduct_acknowledge = 'Acknowledge Code of Conduct Signature'
+signedcodeofconduct_acknowledge = 'Acknowledge code of conduct signature'
 
 signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 
@@ -727,49 +674,49 @@ sourcepackage = ContextTitle('%s')
 
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
 
-sourcepackage_buildlog = ContextTitle('%s Build Logs')
+sourcepackage_buildlog = ContextTitle('%s build logs')
 
-sourcepackage_builds = ContextTitle('%s Builds')
+sourcepackage_builds = ContextTitle('Builds for %s')
 
 sourcepackage_translate = ContextTitle('Help translate %s')
 
-sourcepackage_changelog = 'Source Package Changelog'
+sourcepackage_changelog = 'Source package changelog'
 
 sourcepackage_filebug = ContextTitle("Report a bug about %s")
 
 sourcepackage_gethelp = ContextTitle('Help and support options for %s')
 
-sourcepackage_hctstatus = ContextTitle('Source Package HCT Status - %s')
+sourcepackage_hctstatus = ContextTitle('%s HCT status')
 
 def sourcepackage_index(context, view):
-    return '%s Source Packages' % context.distrorelease.title
+    return '%s source packages' % context.distrorelease.title
 
-sourcepackage_packaging = ContextTitle('Define the Upstream Series of %s')
+sourcepackage_packaging = ContextTitle('Define upstream series for %s')
 
 sourcepackage_translate = ContextTitle('Help translate %s')
 
 sourcepackage_translations = ContextTitle(
-    'Rosetta Translation Templates for %s')
+    'Rosetta translation templates for %s')
 
-sourcepackagebuild_buildlog = 'Source Package Build Log'
+sourcepackagebuild_buildlog = 'Source package build log'
 
-sourcepackagebuild_changes = 'Source Package Changes'
+sourcepackagebuild_changes = 'Source package changes'
 
 def sourcepackagebuild_index(context, view):
-    return 'Builds: %s' % context.sourcepackagerelease.sourcepackage.summary
+    return 'Builds of %s' % context.sourcepackagerelease.sourcepackage.summary
 
 sourcepackagenames_index = 'Source package name set'
 
-sourcepackagerelease_index = ContextTitle('Source Package %s')
+sourcepackagerelease_index = ContextTitle('Source package %s')
 
 def sourcepackages(context, view):
-    return '%s Source Packages' % context.distrorelease.title
+    return '%s source packages' % context.distrorelease.title
 
 sourcepackages_comingsoon = 'Coming soon'
 
-sources_index = 'Bazaar: Upstream Revision Control Imports'
+sources_index = 'Bazaar: Upstream revision control imports'
 
-sourcesource_index = 'Upstream Source Import'
+sourcesource_index = 'Upstream source import'
 
 specification_add = 'Register a feature specification in Launchpad'
 
@@ -785,66 +732,65 @@ specification_retargeting = 'Attach spec to a different product or distribution'
 
 specification_superseding = 'Mark specification as superseded by another'
 
-specification_dependency = 'Create a Specification Dependency'
+specification_dependency = 'Create a specification dependency'
 
-specification_deptree = 'Complete Dependency Tree'
+specification_deptree = 'Complete dependency tree'
 
-specification_milestone = 'Target Feature to Milestone'
+specification_milestone = 'Target feature to milestone'
 
-specification_people = 'Change the Specification Assignee, Drafter and Reviewer'
+specification_people = 'Change specification assignee, drafter, and reviewer'
 
-specification_priority = 'Change the Specification Priority'
+specification_priority = 'Change specification priority'
 
-specification_distrorelease = ('Target Feature Specification at '
-                               'Distribution Release')
+specification_distrorelease = ('Target specification at a distribution release')
 
-specification_productseries = 'Target Feature Specification at Series'
+specification_productseries = 'Target specification at a series'
 
-specification_removedep = 'Remove a Dependency'
+specification_removedep = 'Remove a dependency'
 
-specification_givefeedback = 'Clear Feedback Requests'
+specification_givefeedback = 'Clear feedback requests'
 
-specification_requestfeedback = 'Request Feedback on This Specification'
+specification_requestfeedback = 'Request feedback on this specification'
 
-specification_edit = 'Edit Specification Details'
+specification_edit = 'Edit specification details'
 
-specification_linksprint = 'Put Specification on Sprint Agenda'
+specification_linksprint = 'Put specification on sprint agenda'
 
-specification_status = 'Edit Specification Status'
+specification_status = 'Edit specification status'
 
-specification_index = ContextTitle('Feature Specification: %s')
+specification_index = ContextTitle(u'Feature specification: “%s”')
 
-specification_subscription = 'Subscribe to Feature Specification'
+specification_subscription = 'Subscribe to specification'
 
-specification_queue = 'Queue Feature Specification for Review'
+specification_queue = 'Queue specification for review'
 
 specifications_index = ContextTitle('%s')
 
 specificationtarget_specs = ContextTitle('Specifications for %s')
 
-specificationtarget_specplan = ContextTitle('Project Plan for %s')
+specificationtarget_specplan = ContextTitle('Project plan for %s')
 
-specificationtarget_workload = ContextTitle('Feature work load in %s')
+specificationtarget_workload = ContextTitle('Feature workload in %s')
 
-sprint_attend = ContextTitle('Register your Attendance at %s')
+sprint_attend = ContextTitle('Register your attendance at %s')
 
-sprint_edit = ContextTitle('Edit Meeting Details: %s')
+sprint_edit = ContextTitle(u'Edit “%s” details')
 
-sprint_index = ContextTitle('%s (Sprint or Meeting)')
+sprint_index = ContextTitle('%s (sprint or meeting)')
 
-sprint_new = 'Register a new Meeting or Sprint in Launchpad'
+sprint_new = 'Register a meeting or sprint in Launchpad'
 
 sprint_register = 'Register someone to attend this meeting'
 
-sprint_table = ContextTitle('Table of Specs for %s')
+sprint_table = ContextTitle('Table of specifications for %s')
 
 sprint_workload = ContextTitle('Workload at %s')
 
-sprints_index = 'Launchpad Meeting or Sprint Registry'
+sprints_index = 'Meetings and sprints registered in Launchpad'
 
-sprintspecification_edit = 'Edit details of spec at sprint.'
+sprintspecification_edit = 'Edit specification-sprint relationship'
 
-sprintspecification_admin = 'Approve spec for sprint agenda.'
+sprintspecification_admin = 'Approve specification for sprint agenda'
 
 tickets_index = 'Launchpad tech support system'
 
@@ -856,9 +802,8 @@ ticket_edit = ContextId('Edit support request #%s details')
 
 def ticket_index(context, view):
     text = (
-        u'%s support request #%d: '
-        u'\N{left double quotation mark}%s\N{right double quotation mark}'
-        % (context.target.displayname, context.id, context.title))
+        u'%s support request #%d: “%s”' %
+        (context.target.displayname, context.id, context.title))
     return text
 
 ticket_history = ContextId('History of support request #%s')
@@ -875,38 +820,38 @@ ticket_subscription = ContextId('Subscription to request #%s')
 
 tickettarget_tickets = ContextTitle('Support requests for %s')
 
-standardshipitrequests_index = 'Standard ShipIt Options'
+standardshipitrequests_index = 'Standard ShipIt options'
 
-standardshipitrequest_new = 'Create a New Standard Option'
+standardshipitrequest_new = 'Create a new standard option'
 
-standardshipitrequest_edit = 'Edit Standard Option'
+standardshipitrequest_edit = 'Edit standard option'
 
 def team_addmember(context, view):
-    return '%s: Add members' % context.team.browsername
+    return 'Add members to %s' % context.team.browsername
 
-team_edit = 'Edit Team Information'
+team_edit = 'Edit team information'
 
-team_editemail = ContextDisplayName('Edit %s Contact Email Address')
+team_editemail = ContextDisplayName('%s contact e-mail address')
 
 def team_editproposed(context, view):
-    return '%s Proposed Members' % context.team.browsername
+    return '%s proposed members' % context.team.browsername
 
-team_index = ContextBrowsername('"%s" team in Launchpad')
+team_index = ContextBrowsername(u'“%s” team in Launchpad')
 
 team_join = ContextBrowsername('Join %s')
 
 team_leave = ContextBrowsername('Leave %s')
 
 def team_members(context, view):
-    return '"%s" members' % context.team.browsername
+    return u'“%s” members' % context.team.browsername
 
 def teammembership_index(context, view):
-    return 'Membership status for %s in %s' % (
+    return u'%s’s membership status in %s' % (
         context.person.browsername, context.team.browsername)
 
-team_newpoll = ContextTitle('Create a new Poll in team %s')
+team_newpoll = ContextTitle('New poll for team %s')
 
-team_polls = ContextTitle('Polls in team %s')
+team_polls = ContextTitle('Polls for team %s')
 
 template_auto_add = 'Launchpad Auto-Add Form'
 
@@ -918,12 +863,8 @@ template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
 
-translationgroup = ContextTitle('Rosetta Translation Group: %s')
-translationgroups = 'Rosetta Translation Groups'
+translationgroup = ContextTitle('%s Rosetta translation group')
 
-# ul_main_template is probably obselete
+translationgroups = 'Rosetta translation groups'
 
-unauthorized = 'Launchpad Permissions Notice'
-
-user_error = 'Launchpad Error'
-
+unauthorized = 'Error: Not authorized'

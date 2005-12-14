@@ -8,19 +8,19 @@
 
     <p>A complete list:</p>
 
-    <div tal:repeat="item context" tal:omit-tag>
-
-        <p><b tal:content="item/title">title</b>
-            [ <a tal:attributes="href string:${item/name}">View</a> ]
-        </p>
-
-        <p style="margin-left: 30px;"
-           tal:content="item/summary">summary
-        </p>
-
+      <dl>
+        <tal:item repeat="item context">
+          <dt>
+            <a
+              tal:attributes="href string:${item/name}"
+              tal:content="item/title"
+            >Name of the item</a>
+          </dt>
+          <dd>
+            <p tal:content="item/summary">summary</p>
+          </dd>
+        </tal:item>
+      </dl>
     </div>
-
-</div>
-
-</body>
+  </body>
 </html>

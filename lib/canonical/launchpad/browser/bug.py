@@ -46,7 +46,7 @@ class BugSetNavigation(Navigation):
 
 class BugContextMenu(ContextMenu):
     usedfor = IBug
-    links = ['editdescription', 'secrecy', 'markduplicate', 'subscription',
+    links = ['editdescription', 'visibility', 'markduplicate', 'subscription',
              'addsubscriber', 'addattachment', 'linktocve', 'unlinkcve',
              'addwatch', 'filebug', 'activitylog', 'targetfix']
 
@@ -59,8 +59,8 @@ class BugContextMenu(ContextMenu):
         text = 'Edit Description'
         return Link('+edit', text, icon='edit')
 
-    def secrecy(self):
-        text = 'Bug Secrecy'
+    def visibility(self):
+        text = 'Bug Visibility'
         return Link('+secrecy', text, icon='edit')
 
     def markduplicate(self):

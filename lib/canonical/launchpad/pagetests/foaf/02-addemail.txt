@@ -1,4 +1,4 @@
-  'foo' adds two new email addresses in launchpad and validates them.
+'foo' adds two new email addresses in launchpad and confirms them.
 
 The First One
 =============
@@ -20,7 +20,7 @@ The First One
   ...
 
 
-  Add the same email again. While it's unvalidated, you can try to add them as
+  Add the same email again. While it's unconfirmed, you can try to add them as
   many times as you want, because you can have lost the token and then you'll
   need another one.
 
@@ -56,7 +56,7 @@ The First One
   ['bar.foo@canonical.com']
 
 
-  Go to the link sent by email, to validate the email address.
+  Go to the link sent by email, to confirm the email address.
 
   >>> print http(r"""
   ... GET %s HTTP/1.1
@@ -79,11 +79,11 @@ The First One
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
-  ...Validate email address...
+  ...Confirm e-mail address...
   ...
 
 
-  Email was validated.
+  The address was confirmed.
 
   >>> print http(r"""
   ... POST %s HTTP/1.1
@@ -112,7 +112,7 @@ The First One
   ...
   
 
-  Now that the email is validated, if you try to add it again, you'll get an
+  Now that the address is confirmed, if you try to add it again, you'll get an
   error message explaining that it's already registered.
 
   >>> print http(r"""
@@ -169,7 +169,7 @@ The Second One
   ['baz.foo@canonical.com']
 
 
-  Go to the link sent by email, to validate the email address.
+  Go to the link sent by email, to confirm the email address.
 
   >>> print http(r"""
   ... GET %s HTTP/1.1
@@ -188,7 +188,7 @@ The Second One
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
-  ...Validate email address...
+  ...Confirm e-mail address...
   ...
 
 

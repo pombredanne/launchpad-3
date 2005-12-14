@@ -39,7 +39,7 @@ The event display page, when not logged in:
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <title>Event "Event 1"</title>
+      <title>Event “Event 1”</title>
   ...
   ...<h1>
   ...Event
@@ -73,7 +73,7 @@ been adjusted to the user's local time zone):
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <title>Event "Event 1"</title>
+      <title>Event “Event 1”</title>
   ...
               <label...>Starting date and time</label>
   ...
@@ -92,7 +92,7 @@ The event edit page:
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <title>Edit Event "Event 1"</title>
+      <title>Edit Event “Event 1”</title>
   ...
           Edit Event <q>Event 1</q>
   ...
@@ -123,7 +123,7 @@ on the calendar view pages include a date in the query string:
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <title>Add Event to Calendar "Sample Person's Calendar"</title>
+      <title>Add event to Sample Person’s calendar</title>
   ...
       <form action=".../people/name12/+calendar/+add"
   ...
@@ -201,7 +201,7 @@ user's preferred time zone:
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <title>Sample Person's Calendar - 1 April 2005</title>
+      <title>Sample Person’s calendar - 1 April 2005</title>
   ...
                         <a href=".../people/name12/+calendar/events/...">
                         09:00
@@ -219,7 +219,7 @@ user's preferred time zone:
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <title>Sample Person's Calendar - 1 April 2005</title>
+      <title>Sample Person’s calendar - 1 April 2005</title>
   ...
                         <a href=".../people/name12/+calendar/events/...">
                         01:00

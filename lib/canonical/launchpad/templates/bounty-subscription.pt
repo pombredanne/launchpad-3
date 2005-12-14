@@ -23,11 +23,6 @@
     personal pages, too.
   </p>
 
-  <p>
-    Choose "Subscribe" to become a subscriber to this bounty, or "Cancel" to
-    return to the bounty page.
-  </p>
-
   <form action="." method="POST">
 
     <div class="actions">
