@@ -150,7 +150,7 @@ def action_FETCH(distro, distrorelease, queue):
         len(filtered_queue), len(queue))
     for queue_item in filtered_queue:
         print "Constructing %s" % queue_item.changesfilename
-        changes_file_alias = queue_item.changesfilealias
+        changes_file_alias = queue_item.changesfile
         changes_file_alias.open()
         changes_file = open(queue_item.changesfilename, "w")
         changes_file.write(changes_file_alias.read())

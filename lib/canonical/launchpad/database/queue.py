@@ -64,9 +64,9 @@ class DistroReleaseQueue(SQLBase):
     pocket = EnumCol(dbName='pocket', unique=False, default=None, notNull=True,
                      schema=PackagePublishingPocket)
 
-    changesfilealias = ForeignKey(dbName='changesfilealias',
-                                  foreignKey="LibraryFileAlias",
-                                  notNull=True)
+    changesfile = ForeignKey(dbName='changesfile',
+                             foreignKey="LibraryFileAlias",
+                             notNull=True)
 
     # Join this table to the DistroReleaseQueueBuild and the
     # DistroReleaseQueueSource objects which are related.

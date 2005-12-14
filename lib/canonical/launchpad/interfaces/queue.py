@@ -63,7 +63,8 @@ class IDistroReleaseQueue(Interface):
             title=_("The pocket"), required=True, readonly=False,
             )
 
-    changesfilealias = Attribute("The changes file associated with this upload")
+    changesfile = Attribute("The librarian alias for the changes file "
+                            "associated with this upload")
     changesfilename = Attribute("The filename of the changes file.")
     
     sources = Attribute("The queue sources associated with this queue item")

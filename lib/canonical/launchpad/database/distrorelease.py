@@ -575,7 +575,7 @@ class DistroRelease(SQLBase):
             'text/plain')
         return DistroReleaseQueue(distrorelease=self.id,
                                   pocket=pocket,
-                                  changesfilealias=changes_file.id)
+                                  changesfile=changes_file.id)
 
     def getQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED):
         """See IDistroRelease."""
