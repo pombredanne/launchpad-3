@@ -345,10 +345,10 @@
         name="+addbranch"
         for="canonical.launchpad.interfaces.IProduct"
         schema="canonical.launchpad.interfaces.IBranch"
-        fields="name owner author product title url home_page lifecycle_status summary"
+        fields="product name owner lifecycle_status url title summary home_page author"
         class="canonical.launchpad.browser.BranchAddView"
         facet="code"
-        keyword_arguments="name owner author product title url home_page lifecycle_status summary"
+        keyword_arguments="product name owner lifecycle_status url title summary home_page author"
         permission="launchpad.AnyPerson"
         template="../templates/product-branch-add.pt">
         <browser:widget

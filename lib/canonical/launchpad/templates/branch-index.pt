@@ -5,6 +5,10 @@
 
 <body>
 
+<metal:main_template fill-slot="titleheader">
+   <tal:display_name replace="view/display_name" />
+</metal:main_template>
+
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
@@ -17,17 +21,28 @@
     notice goes here
   </p>
 
-  <p tal:content="context/summary">
+  <p tal:condition="context/summary"
+     tal:content="context/summary">
     $Branch.summary goes here. This should be quite short, just a single
     paragraph of text really, giving the branch highlights.
+  </p>
+  <p tal:condition="not:context/summary">
+    <tal:comment condition="nothing">
+      <!-- XXX: That duplicates the 'edit' link from the action portlet and
+           should be changed when but #5313 is fixed to comply with DNRY.
+           -- DavidAllouche 2005-12-02 -->
+    </tal:comment>
+    <img src="/++resource++edit.gif" />
+    <a tal:attributes="href view/edit_link_url">Edit branch details</a>.
+    This branch has no summary. 
   </p>
 
   <table>
     <tbody>
       <tr>
         <th>Branch URL:</th>
-        <td><tt><a tal:attributes="href context/url"
-                   tal:content="context/url"
+        <td><tt><a tal:attributes="href view/url"
+                   tal:content="view/url"
           >http://example.com/software/hello.devel</a></tt></td>
       </tr>
       <tr>

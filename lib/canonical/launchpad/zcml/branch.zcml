@@ -81,7 +81,7 @@
     class="canonical.launchpad.browser.BranchEditView"
     facet="code"
     label="Edit Branch Details"
-    fields="author title url home_page summary whiteboard"
+    fields="url title summary home_page author whiteboard"
     permission="launchpad.Edit"
     template="../templates/branch-edit.pt">
     <browser:widget
