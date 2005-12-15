@@ -242,7 +242,8 @@ class Publisher(object):
                     self._config.miscroot,
                     "more-extra.override.%s.main" % (distrorelease))
                 if not os.path.exists(extra_extra_overrides):
-                    unpocketed_release = distrorelease.split('-')[0]
+                    unpocketed_release = "-".join(
+                        distrorelease.split('-')[:-1])
                     extra_extra_overrides = os.path.join(
                         self._config.miscroot,
                         "more-extra.override.%s.main" % (unpocketed_release))
@@ -252,7 +253,7 @@ class Publisher(object):
                     for line in eef:
                         line = line.strip()
                         if line:
-                            (package, header, value) = line.split()
+                            (package, header, value) = line.split("\t", 2)
                             pkg_extras = extras.setdefault(package, {})
                             header_values = pkg_extras.setdefault(header, [])
                             header_values.append(value)
@@ -490,7 +491,7 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                     "DISTRORELEASE": dr + pocketsuffix[pocket],
                     "DISTRORELEASEBYFILE": dr + pocketsuffix[pocket],
                     "DISTRORELEASEONDISK": dr + pocketsuffix[pocket],
-                    "ARCHITECTURES": " ".join(archs) + " source",
+                    "ARCHITECTURES": " ".join(archs + [" source"]),
                     "SECTIONS": " ".join(comps),
                     "EXTENSIONS": ".deb",
                     "CACHEINSERT": "",
@@ -634,10 +635,12 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                 if architecture != "source":
                     # Strip "binary-" off the front of the architecture before
                     # noting it in all_architectures
-                    all_architectures.add(architecture[7:])
+                    clean_architecture = architecture[7:]
+                    all_architectures.add(clean_architecture)
                     file_stub = "Packages"
                 else:
                     file_stub = "Sources"
+                    clean_architecture = architecture
                     all_architectures.add(architecture)
                 file_stub = os.path.join(component, architecture, file_stub)
                 all_files.add(file_stub)
@@ -660,7 +663,7 @@ Origin: %s
 Label: %s
 Architecture: %s
 """ % (full_name, distrorelease.version, component, distribution.name,
-       distribution.name, architecture)
+       distribution.name, clean_architecture)
                 f.write(contents)
                 f.close()
     

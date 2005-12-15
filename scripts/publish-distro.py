@@ -291,6 +291,13 @@ except:
     txn.abort()
     sys.exit(1)
 
+try:
+    debug("Sanitising links in the pool.")
+    dp.sanitiseLinks(['main', 'restricted', 'universe', 'multiverse'])
+except:
+    logging.getLogger().exception("Bad muju while sanitising links.")
+    sys.exit(1)
+
 debug("All done, committing before bed.")
 
 txn.commit()
