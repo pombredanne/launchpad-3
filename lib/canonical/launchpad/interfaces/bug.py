@@ -5,7 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'BugCreationConstraintsError',
+    'CreatedBugWithNoBugTasksError',
     'IBug',
     'IBugSet',
     'IBugDelta',
@@ -25,12 +25,8 @@ from canonical.launchpad.fields import Title, Summary, BugField
 
 _ = MessageIDFactory('launchpad')
 
-class BugCreationConstraintsError(Exception):
-    """Raised when a bug is created with not all constraints satisfied.
-
-    Currently the only constraint is that it should have at least one
-    bug task.
-    """
+class CreatedBugWithNoBugTasksError(Exception):
+    """Raised when a bug is created with no bug tasks."""
 
 
 class IBug(IMessageTarget):

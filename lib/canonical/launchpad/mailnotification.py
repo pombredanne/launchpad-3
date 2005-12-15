@@ -129,13 +129,26 @@ def get_bugmail_error_address():
     return config.malone.bugmail_error_from_address
 
 
-def send_process_error_notification(to_addrs, subject, error_msg):
+def send_process_error_notification(to_addrs, subject, error_msg, 
+                                    failing_command=None):
     """Sends an error message.
 
     Tells the user that an error was encountered while processing
     his request.
+
+        :to_addrs: The addresses to send the notification to.
+        :subject: The subject ot the notification.
+        :error_msg: The error message that explains the error.
+        :failing_command: The command that caused the error to happen.
     """
+    if failing_command is not None:
+        failed_command_information = 'Failing command:\n    %s' % str(
+            failing_command)
+    else:
+        failed_command_information = ''
+
     body = get_email_template('email-processing-error.txt') % {
+            'failed_command_information': failed_command_information,
             'error_msg': error_msg}
     mailwrapper = MailWrapper(width=72)
     body = mailwrapper.format(body)

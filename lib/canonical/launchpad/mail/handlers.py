@@ -12,12 +12,12 @@ from canonical.launchpad.helpers import Snapshot, is_maintainer
 from canonical.launchpad.interfaces import (
     ILaunchBag, IMessageSet, IBugEmailCommand, IBugTaskEmailCommand,
     IBugEditEmailCommand, IBugTaskEditEmailCommand, IBug, IBugTask,
-    IMailHandler, IBugMessageSet, BugCreationConstraintsError,
+    IMailHandler, IBugMessageSet, CreatedBugWithNoBugTasksError,
     EmailProcessingError, IUpstreamBugTask, IDistroBugTask,
     IDistroReleaseBugTask)
-from canonical.launchpad.mail.commands import emailcommands
+from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mailnotification import (
-    send_process_error_notification, get_email_template)
+    send_process_error_notification)
 
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectCreatedEvent)
@@ -37,14 +37,6 @@ def get_main_body(signed_msg):
                 return part.get_payload(decode=True)
     else:
         return msg.get_payload(decode=True)
-
-
-def get_edited_fields(modified_event, another_event):
-    """Combines two events' edited_fields."""
-    edited_fields = modified_event.edited_fields
-    if ISQLObjectModifiedEvent.providedBy(another_event):
-        edited_fields += another_event.edited_fields
-    return edited_fields
 
 
 def get_bugtask_type(bugtask):
@@ -111,8 +103,10 @@ def guess_bugtask(bug, person):
 
 class IncomingEmailError(Exception):
     """Indicates that something went wrong processing the mail."""
-    def __init__(self, message):
+
+    def __init__(self, message, failing_command=None):
         self.message = message
+        self.failing_command = failing_command
 
 
 class MaloneHandler:
@@ -143,43 +137,39 @@ class MaloneHandler:
                 if words and words[0] in command_names:
                     command = emailcommands.get(
                         name=words[0], string_args=words[1:])
-                    if commands and commands[-1].isSubCommand(command): 
-                        commands[-1].addSubCommandToBeExecuted(command)
-                    else:
-                        commands.append(command)
+                    commands.append(command)
         return commands
 
 
     def process(self, signed_msg, to_addr, filealias=None):
         commands = self.getCommands(signed_msg)
-
         user, host = to_addr.split('@')
-
         add_comment_to_bug = False
-        if user.lower() == 'new':
-            # A submit request.   
-            commands.insert(0, emailcommands.get('bug', ['new']))
-        elif user.isdigit():
-            # A comment to a bug. We set add_comment_to_bug to True so
-            # that the comment gets added to the bug later. We don't add
-            # the comment now, since we want to let the 'bug' command
-            # handle the possible errors that can occur while getting
-            # the bug.
-            add_comment_to_bug = True
-            commands.insert(0, emailcommands.get('bug', [user]))
-        elif user.lower() != 'edit':
-            # Indicate that we didn't handle the mail.
-            return False
 
-        bug = None
-        bug_event = None
-        bugtask = None
-        bugtask_event = None
-        bugtask_snapshot = None
         try:
-            # XXX: Parts of this loop could be generalized. I'll do that
-            #      in the next patch, though.
-            #      -- Bjorn Tillenius, 2005-11-30
+            if user.lower() == 'new':
+                # A submit request.
+                commands.insert(0, emailcommands.get('bug', ['new']))
+                if signed_msg.signature is None:
+                    raise IncomingEmailError(
+                        get_error_message('not-gpg-signed.txt'))
+            elif user.isdigit():
+                # A comment to a bug. We set add_comment_to_bug to True so
+                # that the comment gets added to the bug later. We don't add
+                # the comment now, since we want to let the 'bug' command
+                # handle the possible errors that can occur while getting
+                # the bug.
+                add_comment_to_bug = True
+                commands.insert(0, emailcommands.get('bug', [user]))
+            elif user.lower() != 'edit':
+                # Indicate that we didn't handle the mail.
+                return False
+
+            bug = None
+            bug_event = None
+            bugtask = None
+            bugtask_event = None
+
             while len(commands) > 0:
                 command = commands.pop(0)
                 try:
@@ -200,66 +190,35 @@ class MaloneHandler:
                             bugmessage = bug.linkMessage(message)
                             notify(SQLObjectCreatedEvent(bugmessage))
                             add_comment_to_bug = False
-                        bug_snapshot = Snapshot(bug, providing=IBug)
                     elif IBugTaskEmailCommand.providedBy(command):
                         if bugtask_event is not None:
                             notify(bugtask_event)
                             bugtask_event = None
-                            bugtask_snapshot = None
                         bugtask, bugtask_event = command.execute(bug)
-                        if (bugtask_snapshot is None and
-                            ISQLObjectModifiedEvent.providedBy(bugtask_event)):
-                            bugtask_snapshot = (
-                                bugtask_event.object_before_modification)
-                        elif bugtask_snapshot is None:
-                            bugtask_snapshot = Snapshot(
-                                bugtask, providing=IBugTask)
                     elif IBugEditEmailCommand.providedBy(command):
-                        ob, ob_event = command.execute(bug, bug_event)
-                        # The bug can be edited by several commands. Let's wait
-                        # firing off the event until all commands related to
-                        # the bug have been executed.
-                        if ob_event is not None:
-                            if ob != bug:
-                                notify(ob_event)
-                            elif ISQLObjectModifiedEvent.providedBy(ob_event):
-                                edited_fields = get_edited_fields(
-                                    ob_event, bug_event)
-                                bug_event = SQLObjectModifiedEvent(
-                                    bug, bug_snapshot, edited_fields)
+                        bug, bug_event = command.execute(bug, bug_event)
                     elif IBugTaskEditEmailCommand.providedBy(command):
                         if bugtask is None:
                             bugtask = guess_bugtask(
                                 bug, getUtility(ILaunchBag).user)
                             if bugtask is None:
-                                raise IncomingEmailError(get_email_template(
-                                    'no-default-affects.txt') % {
-                                        'bug_id': bug.id,
-                                        'nr_of_bugtasks': len(bug.bugtasks)})
-                            bugtask_snapshot = Snapshot(
-                                bugtask, providing=get_bugtask_type(bugtask))
-                        ob, ob_event = command.execute(bugtask, bugtask_event)
-                        # The bug task can be edited by several
-                        # commands. Let's wait firing off the event
-                        # until all commands related to the bug task
-                        # have been executed.
-                        if ob_event is not None:
-                            if ob != bugtask:
-                                notify(ob_event)
-                            elif ISQLObjectModifiedEvent.providedBy(ob_event):
-                                edited_fields = get_edited_fields(
-                                    ob_event, bugtask_event)
-                                bugtask_event = SQLObjectModifiedEvent(
-                                    bugtask, bugtask_snapshot, edited_fields)
+                                raise IncomingEmailError(get_error_message(
+                                    'no-default-affects.txt',
+                                    bug_id=bug.id,
+                                    nr_of_bugtasks=len(bug.bugtasks)))
+                        bugtask, bugtask_event = command.execute(
+                            bugtask, bugtask_event)
 
                 except EmailProcessingError, error:
-                    raise IncomingEmailError(str(error))
+                    raise IncomingEmailError(
+                        str(error), failing_command=command)
 
             if bug_event is not None:
                 try:
                     notify(bug_event)
-                except BugCreationConstraintsError, error:
-                    raise IncomingEmailError(str(error))
+                except CreatedBugWithNoBugTasksError:
+                    raise IncomingEmailError(
+                        get_error_message('no-affects-target-on-submit.txt'))
             if bugtask_event is not None:
                 notify(bugtask_event)
 
@@ -268,6 +227,6 @@ class MaloneHandler:
             send_process_error_notification(
                 getUtility(ILaunchBag).user.preferredemail.email,
                 'Submit Request Failure',
-                error.message)
+                error.message, error.failing_command)
 
         return True
