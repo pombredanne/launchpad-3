@@ -119,11 +119,14 @@ def quote_identifier(identifier):
     return '"%s"' % identifier
 
 
-def execute(con, sql, results=False):
+def execute(con, sql, results=False, args=None):
     sql = sql.strip()
     log.debug('* %s' % sql)
     cur = con.cursor()
-    cur.execute(sql)
+    if args is None:
+        cur.execute(sql)
+    else:
+        cur.execute(sql, args)
     if results:
         return list(cur.fetchall())
     else:
@@ -406,6 +409,39 @@ def setup(con, configuration=DEFAULT_CONFIG):
     con.commit()
 
 
+def needs_refresh(con, table, columns):
+    '''Return true if the index needs to be rebuilt.
+
+    We know this by looking in our cache to see what the previous
+    definitions were, and the --force command line argument
+    '''
+    current_columns = repr(sorted(columns)) # Convert to a string
+
+    existing = execute(
+        con, "SELECT columns FROM FtiCache WHERE tablename=%(table)s",
+        results=True, args=vars()
+        )
+    if len(existing) == 0:
+        execute(con, """
+            INSERT INTO FtiCache (tablename, columns) VALUES (
+                %(table)s, %(current_columns)s
+                )
+            """, args=vars())
+        return True
+
+    if not options.force:
+        previous_columns = existing[0][0]
+        if repr(columns) == previous_columns:
+            return False
+
+    execute(con, """
+        UPDATE FtiCache SET columns = %(current_columns)s
+        WHERE tablename = %(table)s
+        """, args=vars())
+
+    return True
+
+
 def get_pgversion(con):
     rows = execute(con, r"show server_version", results=True)
     return rows[0][0]
@@ -429,8 +465,12 @@ def main():
     con = connect(lp.dbuser)
     setup(con)
     if not options.setup:
-        for row in ALL_FTI:
-            fti(con, *row)
+        for table, columns in ALL_FTI:
+            if needs_refresh(con, table, columns):
+                log.info("Rebuilding full text index on %s", table)
+                fti(con, table, columns)
+            else:
+                log.info("No need to rebuild full text index on %s", table)
 
 
 if __name__ == '__main__':
@@ -438,7 +478,12 @@ if __name__ == '__main__':
     parser.add_option(
             "-s", "--setup-only", dest="setup",
             action="store_true", default=False,
-            help="Only install tsearch2 - don't build the indexes",
+            help="Only install tsearch2 - don't build the indexes.",
+            )
+    parser.add_option(
+            "-f", "--force", dest="force",
+            action="store_true", default=False,
+            help="Force a rebuild of all full text indexes.",
             )
     db_options(parser)
     logger_options(parser)
