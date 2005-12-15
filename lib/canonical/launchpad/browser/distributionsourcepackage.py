@@ -59,6 +59,9 @@ class DistributionSourcePackageNavigation(GetitemNavigation,
 
     usedfor = IDistributionSourcePackage
 
+    def breadcrumb(self):
+        return self.context.sourcepackagename.name
+
 
 class DistributionSourcePackageSupportMenu(ApplicationMenu):
 
