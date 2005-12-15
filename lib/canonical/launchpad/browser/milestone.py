@@ -77,4 +77,3 @@ class MilestoneEditView(SQLObjectEditView):
 
     def changed(self):
         self.request.response.redirect('../..')
-
