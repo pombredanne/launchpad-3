@@ -135,9 +135,11 @@ def send_process_error_notification(to_addrs, subject, error_msg):
     Tells the user that an error was encountered while processing
     his request.
     """
-    msg = get_email_template('email-processing-error.txt') % {
+    body = get_email_template('email-processing-error.txt') % {
             'error_msg': error_msg}
-    simple_sendmail(get_bugmail_error_address(), to_addrs, subject, msg)
+    mailwrapper = MailWrapper(width=72)
+    body = mailwrapper.format(body)
+    simple_sendmail(get_bugmail_error_address(), to_addrs, subject, body)
 
 
 def notify_errors_list(message, file_alias_url):

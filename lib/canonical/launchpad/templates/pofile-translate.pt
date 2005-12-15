@@ -154,11 +154,6 @@
           <input type="hidden" name="show"
                  tal:condition="view/show"
                  tal:attributes="value view/show" />
-          <p tal:repeat="alert view/alerts"
-             class="error alert"
-             tal:content="alert">
-             Error Message
-          </p>
           <table class="listing" style="margin-top: 0.5em;">
             <thead>
               <tr class="results">

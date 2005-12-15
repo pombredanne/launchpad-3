@@ -44,7 +44,7 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
 
     variant = Attribute("The language variant for this PO file.")
 
-    filename = Attribute("The name of the file that was imported")
+    path = Attribute("The path to the file that was imported")
 
     exportfile = Attribute("The Librarian alias of the last cached export.")
 
@@ -70,8 +70,11 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
         "is used for this pofile. This is inherited from the product, "
         "project and/or distro in which the pofile is found.")
 
-    fuzzy_count = Attribute("The number of 'fuzzy' messages in this "
-        "po file.")
+    fuzzy_count = Attribute("The number of 'fuzzy' messages in this po file.")
+
+    from_sourcepackagename = Attribute("The source package this pofile"
+        " comes from (set it only if it's different from the"
+        " IPOTemplate.sourcepackagenameprevious).")
 
     def __len__():
         """Returns the number of current IPOMessageSets in this PO file."""
@@ -238,5 +241,13 @@ class IPOFileSet(Interface):
 
     def getDummy(potemplate, language):
         """Return a dummy pofile for the given po template and language."""
+
+    def getPOFileByPathAndOrigin(self, path, productseries=None,
+        distrorelease=None, sourcepackagename=None):
+        """Return an IPOFile that is stored at 'path' in source code and
+           came from the given arguments.
+
+        Return None if there is not such IPOFile.
+        """
 
 

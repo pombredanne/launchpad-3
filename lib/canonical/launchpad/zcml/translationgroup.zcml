@@ -5,7 +5,6 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-
     <!-- TranslationGroup -->
     <content class="canonical.launchpad.database.TranslationGroup">
         <allow interface="canonical.launchpad.interfaces.ITranslationGroup" />
@@ -88,11 +87,6 @@
       provides="canonical.launchpad.interfaces.ITranslationGroupSet" >
       <allow interface="canonical.launchpad.interfaces.ITranslationGroupSet" />
     </securedutility>
-
-    <browser:navigation
-        module="canonical.launchpad.browser"
-        classes="RosettaApplicationNavigation"
-        />
 
     <browser:url
         for="canonical.launchpad.interfaces.ITranslationGroupSet"

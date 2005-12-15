@@ -31,7 +31,7 @@ from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.interfaces import (
     IPOFileSet, IPOFile, IRawFileData, IPOTemplateExporter,
     ZeroLengthPOExportError, ILibraryFileAliasSet, ILaunchpadCelebrities,
-    NotFoundError)
+    NotFoundError, RawFileBusy)
 
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
@@ -147,9 +147,9 @@ class POFile(SQLBase, RosettaStats):
     variant = StringCol(dbName='variant',
                         notNull=False,
                         default=None)
-    filename = StringCol(dbName='filename',
-                         notNull=False,
-                         default=None)
+    path = StringCol(dbName='path',
+                     notNull=False,
+                     default=None)
     exportfile = ForeignKey(foreignKey='LibraryFileAlias',
                             dbName='exportfile',
                             notNull=False,
@@ -162,6 +162,9 @@ class POFile(SQLBase, RosettaStats):
 
     latestsubmission = ForeignKey(foreignKey='POSubmission',
         dbName='latestsubmission', notNull=False, default=None)
+
+    from_sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
+        dbName='from_sourcepackagename', notNull=False, default=None)
 
     @property
     def title(self):
@@ -579,17 +582,37 @@ class POFile(SQLBase, RosettaStats):
             return True
 
     # ICanAttachRawFileData implementation
-    def attachRawFileData(self, contents, published, importer=None):
+    def attachRawFileData(self, contents, published, importer=None,
+        date_imported=UTC_NOW):
         """See ICanAttachRawFileData."""
+        rawfile = IRawFileData(self)
+
+        if rawfile.rawimportstatus == RosettaImportStatus.PENDING:
+            raise RawFileBusy
+
         if self.variant:
             filename = '%s@%s.po' % (
                 self.language.code, self.variant.encode('utf8'))
         else:
             filename = '%s.po' % self.language.code
 
-        helpers.attachRawFileData(self, filename, contents, importer)
+        helpers.attachRawFileData(
+            self, filename, contents, importer, date_imported)
 
-        self.rawfilepublished = published
+        rawfile.rawfilepublished = published
+
+    def attachRawFileDataAsFileAlias(self, alias, published, importer=None,
+        date_imported=UTC_NOW):
+        """See ICanAttachRawFileData."""
+        rawfile = IRawFileData(self)
+
+        if rawfile.rawimportstatus == RosettaImportStatus.PENDING:
+            raise RawFileBusy
+
+        helpers.attachRawFileDataByFileAlias(
+            self, alias, importer, date_imported)
+
+        rawfile.rawfilepublished = published
 
     # IRawFileData implementation
 
@@ -903,3 +926,42 @@ class POFileSet:
     def getDummy(self, potemplate, language):
         return DummyPOFile(potemplate, language)
 
+    def getPOFileByPathAndOrigin(self, path, productseries=None,
+        distrorelease=None, sourcepackagename=None):
+        """See IPOFileSet."""
+        if productseries is not None:
+            return POFile.selectOne('''
+                POFile.path = %s AND
+                POFile.potemplate = POTemplate.id AND
+                POTemplate.productseries = %s''' % sqlvalues(
+                    path, productseries.id),
+                clauseTables=['POTemplate'])
+        elif sourcepackagename is not None:
+            # The POTemplate belongs to a distribution and it could come from
+            # another package that the one it's linked to, so we first check
+            # to find it at IPOTemplate.from_sourcepackagename
+            pofile = POFile.selectOne('''
+                POFile.path = %s AND
+                POFile.potemplate = POTemplate.id AND
+                POTemplate.distrorelease = %s AND
+                POTemplate.from_sourcepackagename = %s''' % sqlvalues(
+                    path, distrorelease.id, sourcepackagename.id),
+                clauseTables=['POTemplate'])
+
+            if pofile is not None:
+                return pofile
+
+            # There is no pofile in that 'path' and
+            # 'from_sourcepackagename' so we do a search using the usual
+            # sourcepackagename.
+            return POFile.selectOne('''
+                POFile.path = %s AND
+                POFile.potemplate = POTemplate.id AND
+                POTemplate.distrorelease = %s AND
+                POTemplate.sourcepackagename = %s''' % sqlvalues(
+                    path, distrorelease.id, sourcepackagename.id),
+                clauseTables=['POTemplate'])
+        else:
+            raise AssertionError(
+                'Either productseries or sourcepackagename arguments must be'
+                ' not None.')

@@ -257,6 +257,7 @@ class IBinaryPackagePublishingView(Interface):
             title=_('Package publishing pocket'), required=True, readonly=True,
             )
 
+
 class ISecureSourcePackagePublishingHistory(Interface):
     """A source package publishing history record."""
 

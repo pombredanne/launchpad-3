@@ -16,7 +16,8 @@ from canonical.launchpad.interfaces import (
     IBugTracker, IBugAttachment, IPoll, IPollSubset, IPollOption,
     IProductRelease, IShippingRequest, IShippingRequestSet, IRequestedCDs,
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
-    IShippingRun, ISpecification, ISprintSpecification)
+    IShippingRun, ISpecification, ISprintSpecification,
+    ITranslationImportQueueEntry, ITranslationImportQueue)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -582,3 +583,22 @@ class EditProductRelease(EditByOwnersOrAdmins):
     permission = 'launchpad.Edit'
     usedfor = IProductRelease
 
+class EditTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = ITranslationImportQueueEntry
+
+    def checkAuthenticated(self, user):
+        """Allow who added the entry, experts and admis.
+        """
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+
+        return (OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
+                user.inTeam(self.obj.importer))
+
+class AdminTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = ITranslationImportQueueEntry
+
+class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = ITranslationImportQueue

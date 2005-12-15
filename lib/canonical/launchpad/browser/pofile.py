@@ -9,7 +9,6 @@ __all__ = [
     'POFileAppMenus',
     'POFileView',
     'BaseExportView',
-    'ExportCompatibilityView',
     'POFileAppMenus',
     'POExportView']
 
@@ -24,12 +23,13 @@ from zope.exceptions import NotFoundError
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad.interfaces import (
     IPOFile, IPOExportRequestSet, ILaunchBag, ILanguageSet,
-    RawFileAttachFailed)
+    RawFileAttachFailed, ITranslationImportQueue)
 from canonical.launchpad.components.poparser import POHeader
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.pomsgset import POMsgSetView
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ApplicationMenu, Link, canonical_url)
+    StandardLaunchpadFacets, ApplicationMenu, Link, canonical_url,
+    LaunchpadView)
 
 
 class POFileFacets(StandardLaunchpadFacets):
@@ -120,11 +120,12 @@ class BaseExportView:
             yield BrowserFormat(format.title, format.name)
 
 class POFileView(LaunchpadView):
-    """The View class for a POFile or a DummyPOFile. Note that the
-    DummyPOFile is presented if there is no POFile in the database, but the
-    user wants to render one. Check the traverse_potemplate function for
-    more information about when the user is looking at a POFile, or a
-    DummyPOFile.
+    """The View class for a POFile or a DummyPOFile.
+
+    Note that the DummyPOFile is presented if there is no POFile in the
+    database, but the user wants to render one. Check the traverse_potemplate
+    function for more information about when the user is looking at a POFile,
+    or a DummyPOFile.
     """
 
     DEFAULT_COUNT = 10
@@ -158,18 +159,16 @@ class POFileView(LaunchpadView):
 
 class POFileViewOld(LaunchpadView):
 
-    def initialize(self, context, request):
+    def initialize(self):
         self.form = self.request.form
         self.language_name = self.context.language.englishname
-        self.status_message = None
-        self.header = POHeader(msgstr=context.header)
-        self.URL = '%s/+translate' % self.context.language.code
+        self.header = POHeader(msgstr=self.context.header)
         self.header.updateDict()
+        self.URL = '%s/+translate' % self.context.language.code
         self._table_index_value = 0
         self.pluralFormCounts = None
-        self.alerts = []
-        potemplate = context.potemplate
-        self.is_editor = context.canEditTranslations(self.user)
+        potemplate = self.context.potemplate
+        self.is_editor = self.context.canEditTranslations(self.user)
         self.second_lang_code = self.form.get('alt', None)
         if self.second_lang_code is None:
             second_lang = self.context.language.alt_suggestion_language
@@ -178,7 +177,7 @@ class POFileViewOld(LaunchpadView):
         self.second_lang_pofile = None
         if self.second_lang_code is not None:
             self.second_lang_pofile = \
-                potemplate.queryPOFileByLang(self.second_lang_code)
+                potemplate.getPOFileByLang(self.second_lang_code)
         self.submitted = False
         self.errorcount = 0
 
@@ -227,6 +226,8 @@ class POFileViewOld(LaunchpadView):
         if self.offset + self.count > self.shown_count:
             self.offset = max(self.shown_count - self.count, 0)
 
+        self.submitForm()
+
 
     def lang_selector(self):
         second_lang_code = self.second_lang_code
@@ -272,7 +273,6 @@ class POFileViewOld(LaunchpadView):
     def submitForm(self):
         """Called from the page template to do any processing needed if a form
         was submitted with the request."""
-
         if self.request.method == 'POST':
             if 'UPLOAD' in self.request.form:
                 self.upload()
@@ -284,25 +284,37 @@ class POFileViewOld(LaunchpadView):
 
         if not isinstance(file, FileUpload):
             if file == '':
-                self.status_message = 'Please, select a file to upload.'
+                self.request.response.addErrorNotification(
+                    "Ignored your upload because you didn't select a file to"
+                    " upload.")
             else:
                 # XXX: Carlos Perello Marin 2004/12/30
-                # Epiphany seems to have an aleatory bug with upload forms (or
-                # perhaps it's launchpad because I never had problems with
-                # bugzilla). The fact is that some uploads don't work and we
-                # get a unicode object instead of a file-like object in
-                # "file". We show an error if we see that behaviour. For more
-                # info, look at bug #116.
-                self.status_message = (
-                    'There was an unknown error in uploading your file.')
+                # Epiphany seems to have an unpredictable bug with upload
+                # forms (or perhaps it's launchpad because I never had
+                # problems with bugzilla). The fact is that some uploads don't
+                # work and we get a unicode object instead of a file-like
+                # object in "file". We show an error if we see that behaviour.
+                # For more info, look at bug #116.
+                self.request.response.addErrorNotification(
+                    "The upload failed because there was a problem receiving"
+                    " the data.")
             return
 
         filename = file.filename
+        content = file.read()
+
+        if len(content) == 0:
+            self.request.response.addWarningNotification(
+                "Ignored your upload because the uploaded file is empty.")
+            return
+
+        translation_import_queue = getUtility(ITranslationImportQueue)
 
         if not filename.endswith('.po'):
-            self.status_message = (
-                'The file you uploaded was not recognised as a file that '
-                'can be imported.')
+            self.request.response.addWarningNotification(
+                "Ignored your upload because the file you uploaded was not"
+                " recognised as a file that can be imported as it does not"
+                " ends with the '.po' suffix.")
             return
 
         # We only set the 'published' flag if the upload is marked as an
@@ -312,16 +324,21 @@ class POFileViewOld(LaunchpadView):
         else:
             published = False
 
-        pofile = file.read()
-        try:
-            self.context.attachRawFileData(pofile, published, self.user)
-            self.status_message = (
-                'Thank you for your upload. The translation content will'
-                ' appear in Rosetta in a few minutes.')
-        except RawFileAttachFailed, error:
-            # We had a problem while uploading it.
-            self.status_message = (
-                'There was a problem uploading the file: %s.' % error)
+        if self.context.path is None:
+            # The POFile is a dummy one, we use the filename as the path.
+            path = filename
+        else:
+            path = self.context.path
+        # Add it to the queue.
+        translation_import_queue.addOrUpdateEntry(
+            path, content, published, self.user,
+            sourcepackagename=self.context.potemplate.sourcepackagename,
+            distrorelease=self.context.potemplate.distrorelease,
+            productseries=self.context.potemplate.productseries)
+
+        self.request.response.addInfoNotification(
+            "Your upload worked. The translation content will appear in"
+            " Rosetta in a few minutes.")
 
     def completeness(self):
         return '%.0f%%' % self.context.translatedPercentage()
@@ -497,7 +514,7 @@ class POFileViewOld(LaunchpadView):
         # add the alternative language parameter
         if self.second_lang_code:
             parameters['alt'] = self.second_lang_code
-        
+
         # now build the query
         if parameters:
             keys = parameters.keys()
@@ -624,11 +641,6 @@ class POFileViewOld(LaunchpadView):
 
         return messageSets
 
-class ExportCompatibilityView:
-    """View class for old export URLs which redirects to new export URLs."""
-
-    def __call__(self):
-        return self.request.response.redirect('+export')
 
 class POExportView(BaseExportView):
     def __init__(self, context, request):

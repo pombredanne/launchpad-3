@@ -21,6 +21,11 @@
         name="+index"
         />
 
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="RosettaApplicationNavigation"
+        />
+
     <browser:pages
         for="canonical.launchpad.interfaces.IRosettaApplication"
         facet="translations"

@@ -65,9 +65,7 @@ Now let's upload one that is published.
   ... -----------------------------107090301610607307082078743785--
   ... """)
   HTTP/1.1 200 Ok
-  ...
-          <div class="portalMessage">Thank you for your upload. The translation content will appear in Rosetta in a few minutes.</div>
-  <BLANKLINE>
+  ...Your upload worked. The translation content will appear in Rosetta in a few minutes...
   ...
 
 And one that is not published.
@@ -123,8 +121,6 @@ And one that is not published.
   ... -----------------------------14904033691485035791236536155--
   ... """)
   HTTP/1.1 200 Ok
+  ...Your upload worked. The translation content will appear in Rosetta in a few minutes...
   ...Upload a new version of Afrikaans (af) translation of evolution-2.2 in ubuntu hoary package "evolution"...
-  <BLANKLINE>
-          <div class="portalMessage">Thank you for your upload. The translation content will appear in Rosetta in a few minutes.</div>
-  <BLANKLINE>
   ...

@@ -325,6 +325,8 @@ COMMENT ON COLUMN POTemplate.sourcepackageversion IS 'The sourcepackage version 
 COMMENT ON COLUMN POTemplate.header IS 'The header of a .pot file when we import it. Most important info from it is POT-Creation-Date and custom headers.';
 COMMENT ON COLUMN POTemplate.potemplatename IS 'A reference to a POTemplateName row that tells us the name/domain for this POTemplate.';
 COMMENT ON COLUMN POTemplate.productseries IS 'A reference to a ProductSeries from where this POTemplate comes.';
+COMMENT ON COLUMN POTemplate.path IS 'The path to the .pot source file inside the tarball tree, including the filename.';
+COMMENT ON COLUMN POTemplate.from_sourcepackagename IS 'The sourcepackagename from where the last .pot file came (only if it\'s different from POTemplate.sourcepackagename)';
 
 -- POTemplateName
 COMMENT ON TABLE POTemplateName IS 'POTemplate Name. This table stores the domains/names of a set of POTemplate rows.';
@@ -341,6 +343,8 @@ COMMENT ON COLUMN POFile.daterawimport IS 'The date when the raw file was attach
 COMMENT ON COLUMN POFile.rawimportstatus IS 'The status of the import. See the RosettaImportStatus schema.';
 COMMENT ON COLUMN POFile.exportfile IS 'The Library file alias of an export of this PO file.';
 COMMENT ON COLUMN POFile.exporttime IS 'The time at which the file referenced by exportfile was generated.';
+COMMENT ON COLUMN POFile.path IS 'The path (included the filename) inside the tree from where the content was imported.';
+COMMENT ON COLUMN POFile.from_sourcepackagename IS 'The sourcepackagename from where the last .po file came (only if it\'s different from POFile.potemplate.sourcepackagename)';
 
 -- POSelection
 COMMENT ON TABLE POSelection IS 'This table captures the full set
@@ -1183,7 +1187,6 @@ COMMENT ON COLUMN ShippingRun.datecreated IS 'The date this shipping run was cre
 COMMENT ON COLUMN ShippingRun.sentforshipping IS 'The exported file was sent to the shipping company already?';
 COMMENT ON COLUMN ShippingRun.csvfile IS 'A csv file with all requests of this shipping run, to be sent to the shipping company.';
 
-
 -- Language
 COMMENT ON TABLE Language IS 'A human language.';
 COMMENT ON COLUMN Language.code IS 'The ISO 639 code for this language';
@@ -1207,3 +1210,16 @@ COMMENT ON TABLE Continent IS 'A continent in this huge world.';
 COMMENT ON COLUMN Continent.code IS 'A two-letter code for a continent.';
 COMMENT ON COLUMN Continent.name IS 'The name of the continent.';
 
+-- TranslationImportQueueEntry
+COMMENT ON TABLE TranslationImportQueueEntry IS 'Queue with translatable resources pending to be imported into Rosetta.';
+COMMENT ON COLUMN TranslationImportQueueEntry.path IS 'The path (included the filename) where this file was stored when we imported it.';
+COMMENT ON COLUMN TranslationImportQueueEntry.content IS 'The file content that is being imported.';
+COMMENT ON COLUMN TranslationImportQueueEntry.importer IS 'The person that did the import.';
+COMMENT ON COLUMN TranslationImportQueueEntry.dateimported IS 'The timestamp when the import was done.';
+COMMENT ON COLUMN TranslationImportQueueEntry.distrorelease IS 'The distribution release related to this import.';
+COMMENT ON COLUMN TranslationImportQueueEntry.sourcepackagename IS 'The source package name related to this import.';
+COMMENT ON COLUMN TranslationImportQueueEntry.productseries IS 'The product series related to this import.';
+COMMENT ON COLUMN TranslationImportQueueEntry.is_blocked IS 'If this flag is set, the row should be blocked and not imported.';
+COMMENT ON COLUMN TranslationImportQueueEntry.is_published IS 'Notes whether is a published upload.';
+COMMENT ON COLUMN TranslationImportQueueEntry.pofile IS 'Link to the POFile where this import will end.';
+COMMENT ON COLUMN TranslationImportQueueEntry.potemplate IS 'Link to the POTemplate where this import will end.';

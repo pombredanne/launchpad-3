@@ -22,6 +22,8 @@ from canonical.launchpad.interfaces import (
     IDistroReleaseQueue, IDistroReleaseQueueBuild, IDistroReleaseQueueSource,
     IDistroReleaseQueueCustom, NotFoundError)
 
+from canonical.librarian.interfaces import DownloadFailed
+
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
@@ -180,7 +182,7 @@ class DistroReleaseQueueSource(SQLBase):
             self.sourcepackagerelease.version,
             self.distroreleasequeue.distrorelease.distribution.name,
             self.distroreleasequeue.distrorelease.name))
-        
+
         return SecureSourcePackagePublishingHistory(
             distrorelease=self.distroreleasequeue.distrorelease.id,
             sourcepackagerelease=self.sourcepackagerelease.id,
@@ -189,7 +191,7 @@ class DistroReleaseQueueSource(SQLBase):
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             pocket=self.distroreleasequeue.pocket,
-            embargo=False)        
+            embargo=False)
 
 
 class DistroReleaseQueueCustom(SQLBase):
@@ -253,7 +255,18 @@ class DistroReleaseQueueCustom(SQLBase):
                                      dr.name)
         finally:
             os.remove(temp_file_name)
-            
+
     def publish_ROSETTA_TRANSLATIONS(self, logger=None):
         """See IDistroReleaseQueueCustom."""
-        raise NotImplementedError()
+        # XXX: dsilvers: 20051115: We should be able to get a
+        # sourcepackagerelease directly.
+        sourcepackagerelease = (
+            self.distroreleasequeue.builds[0].build.sourcepackagerelease)
+        # Attach the translation tarball. It's always published.
+        try:
+            sourcepackagerelease.attachTranslationFiles(
+                self.libraryfilealias, True)
+        except DownloadFailed:
+            if logger is not None:
+                debug(logger, "Unable to fetch %s to import it into Rosetta" %
+                    self.libraryfilealias.url)

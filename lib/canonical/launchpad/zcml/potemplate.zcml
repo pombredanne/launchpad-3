@@ -11,16 +11,16 @@
     <content class="canonical.launchpad.database.POTemplate">
         <require
             permission="zope.Public"
-            interface="canonical.launchpad.interfaces.IEditPOTemplate"
+            interface="canonical.launchpad.interfaces.IPOTemplate"
             set_attributes="potemplatename description header iscurrent
                             owner productseries distrorelease
                             sourcepackagename sourcepackageversion
-                            binarypackagename languagepack path filename"
+                            binarypackagename languagepack path"
             />
         <require
             permission="zope.Public"
             interface="canonical.launchpad.interfaces.IRawFileData"
-            set_attributes="rawimportstatus"
+            set_attributes="rawimportstatus daterawimport"
             />
     </content>
 
@@ -89,16 +89,7 @@
         template="../templates/potemplate-edit.pt"
         fields="name potemplatename description header iscurrent owner
                 productseries distrorelease sourcepackagename
-                sourcepackageversion binarypackagename languagepack path
-                filename" 
-        />
-
-    <browser:page
-        name="+translate"
-        for="canonical.launchpad.interfaces.IPOTemplate"
-        permission="launchpad.AnyPerson"
-        class="canonical.launchpad.browser.POTemplateTranslateView"
-        attribute="__call__"
+                sourcepackageversion binarypackagename languagepack path"
         />
 
     <browser:page

@@ -38,20 +38,15 @@
         <p i18n:translate="">
           If you would like to help translate <span
           tal:replace="context/displayname" i18n:name="product_name"> this
-          product</span> then you should ask the Rosetta team to set it up by
-          sending an email to <a
-          href="mailto:rosetta-users@lists.ubuntu.com">the Rosetta mailing
-          list</a>. You should give them the URL to the
-          <span tal:replace="context/displayname">Mozilla</span>.pot and .po
-          files.  You will be able to start translating once they are
-          imported.
+          product</span> then, you should follow the instructions at
+          <a href="https://wiki.ubuntu.com/RosettaFAQ">Rosetta's FAQ</a>
         </p>
 
     </tal:notemplatesregistered>
 
     <tal:translatable condition="context/primary_translatable"
                define="target context/primary_translatable">
-      
+
       <p>
         The recommended target for current translation activity is
         <strong><span tal:replace="target/displayname" />.</strong> 

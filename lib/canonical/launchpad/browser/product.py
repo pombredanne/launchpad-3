@@ -373,11 +373,21 @@ class ProductView:
             return None
 
     def templateviews(self):
+        """Return the view class of the IPOTemplate associated with the context.
+        """
         target = self.context.primary_translatable
         if target is None:
             return []
-        return [POTemplateView(template, self.request)
-                for template in target.currentpotemplates]
+        templateview_list = [
+            POTemplateView(template, self.request)
+            for template in target.currentpotemplates
+            ]
+
+        # Initialize the views.
+        for templateview in templateview_list:
+            templateview.initialize()
+
+        return templateview_list
 
     def requestCountry(self):
         return ICountry(self.request, None)

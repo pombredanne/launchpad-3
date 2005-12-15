@@ -5,7 +5,7 @@
     xmlns:zope="http://namespaces.zope.org/zope"
     xmlns:lp="http://launchpad.canonical.com"
     i18n_domain="launchpad">
-    
+
     <!-- This is class ProductSeries -->
     <content class="canonical.launchpad.database.ProductSeries">
         <allow interface="canonical.launchpad.interfaces.IProductSeries" />
@@ -226,11 +226,10 @@
         class="canonical.launchpad.browser.POTemplateAddView"
         facet="translations"
         label="Add a New Translation Template"
-        fields="potemplatename description iscurrent owner path filename
-                content"
+        fields="potemplatename description iscurrent owner path content"
         arguments=""
         keyword_arguments="potemplatename description iscurrent owner
-                           path filename content"
+                           path content"
         content_factory="canonical.launchpad.database.POTemplate"
         permission="launchpad.Append"
         template="../templates/potemplate-add.pt" >
@@ -240,6 +239,18 @@
           displayWidth="50"
           height="5" />
     </browser:addform>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IProductSeries"
+        class="canonical.launchpad.browser.ProductSeriesView"
+        facet="translations"
+        permission="launchpad.AnyPerson">
+        <browser:page
+            name="+translations-upload"
+            facet="translations"
+            template="../templates/productseries-translations-upload.pt"
+            lp:url="/products/evolution/+series/main/+translations-upload" />
+    </browser:pages>
 
     <!-- ProductSeriesSourceSet. Note this is only used by -->
     <content class="canonical.launchpad.database.ProductSeriesSourceSet">

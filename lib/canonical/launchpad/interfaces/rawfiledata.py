@@ -4,8 +4,20 @@ from zope.interface import Interface, Attribute
 
 __metaclass__ = type
 
-__all__ = ('RawFileAttachFailed', 'RawFileFetchFailed',
-    'ICanAttachRawFileData', 'IRawFileData')
+__all__ = [
+    'RawFileBusy',
+    'RawFileAttachFailed',
+    'RawFileFetchFailed',
+    'ICanAttachRawFileData',
+    'IRawFileData'
+    ]
+
+from canonical.database.constants import UTC_NOW
+
+class RawFileBusy(Exception):
+    """Exception raised when we try to attach a file over another that is not
+    yet imported.
+    """
 
 class RawFileAttachFailed(Exception):
     pass
@@ -16,20 +28,35 @@ class RawFileFetchFailed(Exception):
 class ICanAttachRawFileData(Interface):
     """Accept .po or .pot attachments."""
 
-    def attachRawFileData(contents, published, importer=None):
+    def attachRawFileDataAsFileAlias(alias, published, importer=None,
+        date_imported=UTC_NOW):
         """Attach a PO template or PO file to be imported later.
 
-        The content is parsed first with the PO parser. If it has any problem
-        a POSyntaxError or POInvalidInputError exeption will be raised.
+        :alias: is a Librarian reference.
+        :published: is a flag that indicates whether or not this attachment is
+            an upload by a translator of their own translations, or the
+            published PO file.
 
+        If there is any problem storing the attached file, a RawFileAttachFailed        exception will be raised.
+
+        If there is a pending import, the RawFileBusy exception is raised.
+        """
+
+    def attachRawFileData(contents, published, importer=None,
+        date_imported=UTC_NOW):
+        """Attach a PO template or PO file to be imported later.
+
+        'contents' is the text content of the file to attach.
         The 'published' flag indicates whether or not this attachment is an
         upload by a translator of their own translations, or the published
-        PO file. setting published=False on a POTemplate will cause a
-        POInvalidInputError.
+        PO file.
 
         If there is any problem storing the attached file, a
         RawFileAttachFailed exception will be raised.
+
+        If there is a pending import, the RawFileBusy exception is raised.
         """
+
 
 class IRawFileData(Interface):
     """Represent a raw file data from a .po or .pot file."""

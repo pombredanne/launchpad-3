@@ -633,6 +633,8 @@ productseries_source = 'Add Source Import'
 
 productseries_sourceadmin = 'Add Source Import'
 
+productseries_translations_upload = 'Request New Translations Upload'
+
 project = ContextTitle('Upstream Project: %s')
 
 project_branches = ContextTitle('Bazaar Summary for %s')
@@ -920,6 +922,10 @@ template_new = 'EXAMPLE NEW TITLE'
 
 translationgroup = ContextTitle('Rosetta Translation Group: %s')
 translationgroups = 'Rosetta Translation Groups'
+
+translationimportqueueentry_index = 'Translation Import Queue Entry'
+translationimportqueue_index = 'Translation Import Queue'
+translationimportqueue_blocked = 'Translation Import Queue - Blocked'
 
 # ul_main_template is probably obselete
 

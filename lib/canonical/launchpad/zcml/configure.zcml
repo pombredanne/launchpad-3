@@ -73,7 +73,6 @@
     <include file="poll.zcml" />
     <include file="pomsgid.zcml" />
     <include file="pomsgset.zcml" />
-    <include file="potemplatename.zcml" />
     <include file="potemplate.zcml" />
     <include file="potemplatename.zcml" />
     <include file="potmsgset.zcml" />
@@ -115,6 +114,7 @@
     <include file="teamparticipation.zcml" />
     <include file="team-subscriptions.zcml" />
     <include file="translationgroup.zcml" />
+    <include file="translationimportqueue.zcml" />
     <include file="translator.zcml" />
     <include file="wikiname.zcml" />
     <include file="component.zcml" />

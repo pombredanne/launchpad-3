@@ -667,9 +667,8 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
         # NB: We use '/' as the seperator because '-' is valid in
         # a product.name or productseries.name
         token = '%s/%s' % (obj.product.name, obj.name)
-        return SimpleTerm(obj.id,
-                          token,
-                          obj.product.name + ' ' + obj.name)
+        return SimpleTerm(
+            obj, token, '%s %s' % (obj.product.name, obj.name))
 
     def getTermByToken(self, token):
         try:
@@ -712,7 +711,7 @@ class FilteredDistroReleaseVocabulary(SQLObjectVocabularyBase):
 
     def _toTerm(self, obj):
         return SimpleTerm(
-            obj, obj.id, obj.distribution.name + " " + obj.name)
+            obj, obj.id, '%s %s' % (obj.distribution.name, obj.name))
 
     def __iter__(self):
         kw = {}
@@ -733,7 +732,7 @@ class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
 
     def _toTerm(self, obj):
         return SimpleTerm(
-            obj, obj.id, obj.product.name + " " + obj.name)
+            obj, obj.id, '%s %s' % (obj.product.name, obj.name))
 
     def __iter__(self):
         launchbag = getUtility(ILaunchBag)
@@ -961,17 +960,8 @@ class POTemplateNameVocabulary(NamedSQLObjectVocabulary):
     _table = POTemplateName
     _orderBy = 'name'
 
-    def search(self, query):
-        """Return terms where query is a substring of the name"""
-        if query:
-            query = query.lower()
-            objs = self._table.select(
-                CONTAINSSTRING(POTemplateName.q.name, query),
-                orderBy=self._orderBy
-                )
-
-            for o in objs:
-                yield self._toTerm(o)
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.translationdomain)
 
 
 class ProcessorVocabulary(NamedSQLObjectVocabulary):
