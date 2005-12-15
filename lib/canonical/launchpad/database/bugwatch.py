@@ -105,7 +105,7 @@ class BugWatchSet(BugSetBase):
 
     def __init__(self, bug=None):
         BugSetBase.__init__(self, bug)
-        self.title = 'A Set of Bug Watches'
+        self.title = 'A set of bug watches'
 
     def get(self, watch_id):
         """See canonical.launchpad.interfaces.IBugWatchSet."""

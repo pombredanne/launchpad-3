@@ -93,7 +93,7 @@ class LoginTokenSet:
     implements(ILoginTokenSet)
 
     def __init__(self):
-        self.title = 'Launchpad Email Verification System'
+        self.title = 'Launchpad e-mail address confirmation'
 
     def get(self, id, default=None):
         """See ILoginTokenSet."""

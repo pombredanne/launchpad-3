@@ -159,10 +159,6 @@ th.icon.left, td.icon.left {
 th.icon.right, td.icon.right {
   padding-left: 0;
 }
-td p:first-child, td ol:first-child, td blockquote:first-child {
-  margin-top: 0;
-}
-
 table.listing {
   font-size: 85%;
   margin: 1em 0;
@@ -515,11 +511,6 @@ select {
     color: Black;
     background-color: White;
     vertical-align: top;
-}
-blockquote {
-    font-family: Times, "Times New Roman", serif;
-    font-style: italic;
-    font-size: 120%;
 }
 ins {
     color: green;

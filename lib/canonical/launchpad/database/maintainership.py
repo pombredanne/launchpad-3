@@ -37,7 +37,7 @@ class MaintainershipSet:
     implements(IMaintainershipSet)
 
     def __init__(self, distribution=None, distrorelease=None):
-        self.title = "Launchpad Maintainers"
+        self.title = "Launchpad maintainers"
         if distribution is not None and distrorelease is not None:
             raise TypeError(
                 'May instantiate MaintainershipSet with distribution or'

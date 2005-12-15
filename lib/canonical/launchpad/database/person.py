@@ -855,7 +855,7 @@ class PersonSet:
     _defaultOrder = Person.sortingColumns
 
     def __init__(self):
-        self.title = 'Launchpad People'
+        self.title = 'People registered with Launchpad'
 
     def __getitem__(self, personid):
         """See IPersonSet."""

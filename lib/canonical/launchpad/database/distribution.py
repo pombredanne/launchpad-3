@@ -525,7 +525,7 @@ class DistributionSet:
     implements(IDistributionSet)
 
     def __init__(self):
-        self.title = "Launchpad Distributions"
+        self.title = "Distributions registered in Launchpad"
 
     def __iter__(self):
         return iter(Distribution.select())

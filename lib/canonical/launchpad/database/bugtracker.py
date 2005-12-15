@@ -63,7 +63,7 @@ class BugTrackerSet:
     table = BugTracker
 
     def __init__(self):
-        self.title = 'Launchpad-registered Bug Trackers'
+        self.title = 'Bug trackers registered in Malone'
 
     def __getitem__(self, name):
         item = self.table.selectOne(self.table.q.name == name)

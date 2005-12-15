@@ -408,7 +408,7 @@ malone_about = 'About Malone'
 
 malone_distros_index = 'Report a bug about a distribution'
 
-malone_index = 'Malone: Collaborative open-source bug management'
+malone_index = 'Malone: the Launchpad bug tracker'
 
 # malone_people_index is a redirect
 
@@ -598,7 +598,7 @@ project_interest = 'Rosetta: Project not translatable'
 
 project_rosetta_index = ContextTitle('Rosetta: %s')
 
-projects_index = 'Projects in Launchpad'
+projects_index = 'Projects registered in Launchpad'
 
 projects_request = 'Rosetta: Request a project'
 

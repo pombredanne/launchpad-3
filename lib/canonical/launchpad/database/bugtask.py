@@ -313,7 +313,7 @@ class BugTaskSet:
         "datecreated": "BugTask.datecreated"}
 
     def __init__(self):
-        self.title = 'A Set of Bug Tasks'
+        self.title = 'A set of bug tasks'
 
     def __getitem__(self, task_id):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
