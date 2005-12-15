@@ -42,22 +42,31 @@ class AcceptanceTests(unittest.TestCase):
         self.local_branch.commit('Added foo')
 
         # Point $HOME at a test ssh config and key.
-        self.userHome = self.mktemp()
+        self.userHome = os.path.abspath(self.mktemp())
+        print 'userHome:', self.userHome
         os.makedirs(os.path.join(self.userHome, '.ssh'))
+        os.makedirs(os.path.join(self.userHome, 'bin'))
         shutil.copyfile(
             sibpath(__file__, 'id_dsa'), 
             os.path.join(self.userHome, '.ssh', 'id_dsa'))
         shutil.copyfile(
             sibpath(__file__, 'id_dsa.pub'), 
             os.path.join(self.userHome, '.ssh', 'id_dsa.pub'))
-        os.chmod(os.path.join(self.userHome, '.ssh', 'id_dsa.pub'), 0600)
+        shutil.copyfile(
+            sibpath(__file__, 'ssh'), 
+            os.path.join(self.userHome, 'bin', 'ssh'))
+        os.chmod(os.path.join(self.userHome, '.ssh', 'id_dsa'), 0600)
+        os.chmod(os.path.join(self.userHome, 'bin', 'ssh'), 0755)
         self.realHome = os.environ['HOME']
+        self.realPath = os.environ['PATH']
         os.environ['HOME'] = self.userHome
+        os.environ['PATH'] = self.userHome + '/bin:' + self.realPath
 
     def tearDown(self):
         import getpass
         getpass.getpass = self.getpass
         os.environ['HOME'] = self.realHome
+        os.environ['PATH'] = self.realPath
 
     def test_1_bzr_sftp(self):
         """
@@ -74,9 +83,13 @@ class AcceptanceTests(unittest.TestCase):
         server = start_test_sftp_server()
 
         # Push the local branch to the server
+        rv = os.system('cd %s; PYTHONPATH= bzr push %s' 
+                       % (self.local_branch.base, 
+                          server.base + '~testuser/+junk/test-branch',))
+        self.assertEqual(0, rv)
         remote_branch = bzrlib.branch.Branch.initialize(
             server.base + '~testuser/+junk/test-branch')
-        remote_branch.pull(self.local_branch)
+        #remote_branch.pull(self.local_branch)
         
         # Check that the pushed branch looks right
         self.assertEqual(

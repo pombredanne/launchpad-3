@@ -41,6 +41,8 @@ class FakeAuthserver:
         })
     def getBranchesForUser(self, personID):
         return defer.succeed([])
+    def createBranch(self, personID, productID, branchName):
+        return defer.succeed(1)
 authserver = FakeAuthserver()
 
 portal = portal.Portal(sftponly.Realm(homedirs, authserver))

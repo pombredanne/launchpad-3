@@ -161,3 +161,7 @@ class SFTPServerBranch(osfs.OSDirectory):
         if not os.path.exists(self.realPath):
             os.makedirs(self.realPath)
 
+    @classmethod
+    def childDirFactory(cls):
+        return osfs.OSDirectory
+

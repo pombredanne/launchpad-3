@@ -26,13 +26,19 @@ class SubsystemOnlySession(session.SSHSession, object):
         # Get out the big hammer :)
         # (I'm too lazy to override all the different request_ methods
         # individually, or write an ISession adapter to give the same effect.)
-        if name.startswith('request_') and name != 'request_subsystem':
+        if name.startswith('request_') and name not in ('request_subsystem',
+                                                        'request_exec'):
             raise AttributeError, name
         return object.__getattribute__(self, name)
 
     def closeReceived(self):
         # Without this, the client hangs when its finished transferring.
         self.loseConnection()
+
+    def request_exec(self, data):
+        from twisted.conch.ssh.common import NS, getNS
+        assert getNS(data)[0] == 'sftp'  # XXX: should be raise ConchError(..)
+        return self.request_subsystem(NS('sftp'))
 
 
 class SFTPOnlyAvatar(avatar.ConchUser):
