@@ -39,7 +39,7 @@ class BountiesAppMenu(ApplicationMenu):
     links = ['new']
 
     def new(self):
-        text = "Register New Bounty"
+        text = "Register a Bounty"
         return Link('+new', text, icon="add")
 
 
@@ -55,7 +55,7 @@ class BountyContextMenu(ContextMenu):
         user = getUtility(ILaunchBag).user
         if (user is not None and
             get_subscription_for_person(user, self.context) is None):
-            text = 'Unsubscribe from Bounty'
+            text = 'Unsubscribe From Bounty'
             return Link('+unsubscribe', text, icon='edit')
         else:
             text = 'Subscribe to Bounty'

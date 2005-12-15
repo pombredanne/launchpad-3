@@ -96,11 +96,11 @@ class BugContextMenu(ContextMenu):
 
     def unlinkcve(self):
         enabled = bool(self.context.bug.cves)
-        text = 'Remove CVE link'
+        text = 'Remove CVE Link'
         return Link('+unlinkcve', text, icon='edit', enabled=enabled)
 
     def addwatch(self):
-        text = 'Link To Other Bugtracker'
+        text = 'Link to Other Bug Tracker'
         return Link('+addwatch', text, icon='add')
 
     def filebug(self):
@@ -323,5 +323,3 @@ class DeprecatedAssignedBugsView:
         self.request.response.redirect(
             canonical_url(getUtility(ILaunchBag).user) +
             "/+assignedbugs")
-
-

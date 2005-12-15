@@ -134,7 +134,7 @@ class DistroReleaseSpecificationsMenu(ApplicationMenu):
     links = ['roadmap', 'table', 'new']
 
     def new(self):
-        text = 'New Specification'
+        text = 'Register a Specification'
         return Link('+addspec', text, icon='add')
 
     def table(self):

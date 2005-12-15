@@ -113,7 +113,7 @@ class ProjectBountiesMenu(ApplicationMenu):
     links = ['new', 'link']
 
     def new(self):
-        text = 'Register a New Bounty'
+        text = 'Register a Bounty'
         return Link('+addbounty', text, icon='add')
 
     def link(self):

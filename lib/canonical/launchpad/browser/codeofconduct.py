@@ -77,7 +77,7 @@ class SignedCodeOfConductSetContextMenu(ContextMenu):
     links = ['register']
 
     def register(self):
-        text = "Register someone's signature"
+        text = "Register Someone's Signature"
         return Link('+new', text, icon='add')
 
 

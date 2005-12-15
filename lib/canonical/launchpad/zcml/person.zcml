@@ -539,11 +539,11 @@
   <browser:pages
       for="canonical.launchpad.interfaces.IPersonSet"
       permission="zope.Public"
-      class="canonical.launchpad.browser.UbuntiteListView">
+      class="canonical.launchpad.browser.UbunteroListView">
       <browser:page
-          name="+ubuntitelist"
+          name="+ubunterolist"
           template="../templates/people-list.pt"
-          lp:url="/people/+ubuntitelist" />
+          lp:url="/people/+ubunterolist" />
   </browser:pages>
 
   <browser:pages

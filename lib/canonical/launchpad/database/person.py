@@ -824,7 +824,7 @@ class Person(SQLBase):
             clauseTables=['SourcePackageName'])
 
     @property
-    def is_ubuntite(self):
+    def is_ubuntero(self):
         """See IPerson."""
         sigset = getUtility(ISignedCodeOfConductSet)
         lastdate = sigset.getLastAcceptedDate()
@@ -1065,7 +1065,7 @@ class PersonSet:
             return default
         return emailaddress.person
 
-    def getUbuntites(self, orderBy=None):
+    def getUbunteros(self, orderBy=None):
         """See IPersonSet."""
         if orderBy is None:
             orderBy = self._defaultOrder

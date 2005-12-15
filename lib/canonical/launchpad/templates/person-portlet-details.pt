@@ -28,8 +28,8 @@
       <i tal:condition="not: context/timezone">None given</i><br />
 
       <b>Ubuntero:</b>
-      <tal:block condition="context/is_ubuntite">Yes</tal:block>
-      <tal:block condition="not: context/is_ubuntite">Not yet</tal:block>
+      <tal:block condition="context/is_ubuntero">Yes</tal:block>
+      <tal:block condition="not: context/is_ubuntero">Not yet</tal:block>
       <br />
 
       <b>Karma:</b>

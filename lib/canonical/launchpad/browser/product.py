@@ -209,7 +209,7 @@ class ProductBugsMenu(ApplicationMenu):
     links = ['filebug']
 
     def filebug(self):
-        text = 'Report a bug'
+        text = 'Report a Bug'
         return Link('+filebug', text, icon='add')
 
 
@@ -231,19 +231,19 @@ class ProductSpecificationsMenu(ApplicationMenu):
     links = ['roadmap', 'table', 'workload', 'new']
 
     def roadmap(self):
-        text = 'Show Roadmap'
+        text = 'Roadmap'
         return Link('+specplan', text, icon='info')
 
     def table(self):
-        text = 'Show Assignments'
+        text = 'Assignments'
         return Link('+specstable', text, icon='info')
 
     def workload(self):
-        text = 'Show Workload'
+        text = 'Workload'
         return Link('+workload', text, icon='info')
 
     def new(self):
-        text = 'New Specification'
+        text = 'Register a Specification'
         return Link('+addspec', text, icon='add')
 
 
@@ -254,7 +254,7 @@ class ProductBountiesMenu(ApplicationMenu):
     links = ['new', 'link']
 
     def new(self):
-        text = 'Register a New Bounty'
+        text = 'Register a Bounty'
         return Link('+addbounty', text, icon='add')
 
     def link(self):
@@ -302,7 +302,7 @@ class ProductSetContextMenu(ContextMenu):
     links = ['register', 'listall']
 
     def register(self):
-        text = 'Register a New Product'
+        text = 'Register a Product'
         return Link('+new', text, icon='add')
 
     def listall(self):

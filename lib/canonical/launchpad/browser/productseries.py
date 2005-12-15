@@ -75,7 +75,7 @@ class ProductSeriesContextMenu(ContextMenu):
         return Link('', text, icon='info')
 
     def specs(self):
-        text = 'Show Specifications'
+        text = 'Specifications'
         return Link('+specs', text, icon='info')
 
     def edit(self):
@@ -95,7 +95,7 @@ class ProductSeriesContextMenu(ContextMenu):
         return Link('+addpackage', text, icon='edit')
 
     def addrelease(self):
-        text = 'Register New Release'
+        text = 'Register a Release'
         return Link('+addrelease', text, icon='edit')
 
     def download(self):

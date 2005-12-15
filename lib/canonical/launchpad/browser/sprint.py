@@ -50,7 +50,7 @@ class SprintContextMenu(ContextMenu):
         return Link('+register', text, icon='add')
 
     def workload(self):
-        text = 'Show Workload'
+        text = 'Workload'
         return Link('+workload', text, icon='info')
 
     def table(self):
@@ -62,19 +62,19 @@ class SprintContextMenu(ContextMenu):
         return Link('+edit', text, icon='edit')
 
     def confirmed(self):
-        text = 'Show Confirmed'
+        text = 'Confirmed Topics'
         return Link('.', text, icon='info')
 
     def all(self):
-        text = 'Show All'
+        text = 'All Topics'
         return Link('./?show=all', text, icon='info')
 
     def deferred(self):
-        text = 'Show Deferred'
+        text = 'Deferred Topics'
         return Link('./?show=deferred', text, icon='info')
 
     def submitted(self):
-        text = 'Show New'
+        text = 'New Topics'
         return Link('./?show=submitted', text, icon='info')
 
 

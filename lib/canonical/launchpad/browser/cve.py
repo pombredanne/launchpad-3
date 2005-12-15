@@ -49,7 +49,7 @@ class CveSetContextMenu(ContextMenu):
     links = ['allcve']
 
     def allcve(self):
-        text = 'All Registered CVE'
+        text = 'All Registered CVEs'
         return Link('+all', text)
 
 

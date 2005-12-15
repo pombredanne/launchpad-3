@@ -189,7 +189,7 @@ class IPerson(IHasSpecifications):
     # Properties of the Person object.
     karma_category_caches = Attribute('The caches of karma scores, by '
         'karma category.')
-    is_ubuntite = Attribute("Ubuntite Flag")
+    is_ubuntero = Attribute("Ubuntero Flag")
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
     signedcocs = Attribute("List of Signed Code Of Conduct")
@@ -676,8 +676,8 @@ class IPersonSet(Interface):
         address.
         """
 
-    def getUbuntites(orderBy=None):
-        """Return a set of person with valid Ubuntite flag.
+    def getUbunteros(orderBy=None):
+        """Return a set of person with valid Ubuntero flag.
         
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
