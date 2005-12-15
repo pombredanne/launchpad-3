@@ -225,3 +225,19 @@ class INotificationResponse(Interface):
         are preserved.
         """
  
+class IErrorReport(Interface):
+    id = TextLine(description=u"""the name of this error report""")
+    type = TextLine(description=u"""the type of the exception that occurred""")
+    value = TextLine(description=u"""the value of the exception that occurred""")
+    time = Datetime(description=u"""the time at which the exception occurred""")
+    tb_text = Text(description=u"""a text version of the traceback""")
+    username = TextLine(description=u"""the user associated with the request""")
+    url = TextLine(description=u"""the URL for the failed request""")
+    req_vars = Attribute('the request variables')
+
+
+class IErrorReportRequest(Interface):
+
+    oopsid = TextLine(
+        description=u"""an identifier for the exception, or None if no 
+        exception has occurred""")

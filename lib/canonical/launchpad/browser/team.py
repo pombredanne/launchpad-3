@@ -18,7 +18,6 @@ from canonical.config import config
 from canonical.lp.dbschema import LoginTokenType
 from canonical.database.sqlbase import flush_database_updates
 
-from canonical.launchpad import _
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.mail.sendmail import simple_sendmail
@@ -33,6 +32,13 @@ class TeamEditView(SQLObjectEditView):
         SQLObjectEditView.__init__(self, context, request)
         self.team = context
 
+    def changed(self):
+        """Redirect to the team  page.
+
+        We need this because people can now change team names, and this will
+        make their canonical_url to change too.
+        """
+        self.request.response.redirect(canonical_url(self.context))
 
 class TeamEmailView:
     """A View to edit a team's contact email address."""
@@ -121,7 +127,7 @@ class TeamEmailView:
         appurl = self.request.getApplicationURL()
         sendEmailValidationRequest(self.team, email, appurl)
         self.feedback = (
-            "An e-mail message was sent to '%s'. Follow the "
+            "An email message was sent to '%s'. Follow the "
             "instructions in that message to confirm the new "
             "contact address for this team." % email)
 
@@ -150,7 +156,7 @@ class TeamAddView(AddView):
             subscriptionpolicy, defaultmembershipperiod, defaultrenewalperiod)
         notify(ObjectCreatedEvent(team))
 
-        email = data.get('contactemail', None)
+        email = data.get('contactemail')
         if email is not None:
             appurl = self.request.getApplicationURL()
             sendEmailValidationRequest(team, email, appurl)

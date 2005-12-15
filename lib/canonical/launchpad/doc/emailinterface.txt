@@ -50,9 +50,9 @@ to sign each email, we'll create a class which fakes a signed email:
     >>> import email
     >>> import email.Utils
     >>> class SignedMessage(email.Message.Message):
+    ...     @property
     ...     def signedMessage(self):
     ...         return self
-    ...     signedMessage = property(signedMessage)
 
 And since we'll pass the email directly to the correct handler,
 we'll have to authenticate the user manually:
@@ -232,15 +232,14 @@ Now let's take a closer look at all the commands that are available for
 us to play with. First we define a function to easily submit commands
 to edit bug 4:
 
-    >>> def submit_commands(*commands):
+    >>> def submit_commands(bug, *commands):
     ...     edit_mail = ("From: test@canonical.com\n"
     ...                  "To: edit@malone-domain\n"
     ...                  "Date: Fri Jun 17 10:10:23 BST 2005\n"
     ...                  "Subject: Not important\n"
     ...                  "\n"
-    ...                  " bug 4\n"
-    ...                  " ")
-    ...     edit_mail += '\n '.join(commands)
+    ...                  " bug %d\n" % bug.id)
+    ...     edit_mail += ' ' + '\n '.join(commands)
     ...     process_email(edit_mail)
     ...     transaction.commit()
 
@@ -256,13 +255,13 @@ summary "$summary"
 Changes the summary of the bug. The title has to be enclosed in
 quotes. Example:
 
-    >>> submit_commands('summary "New summary"')
+    >>> submit_commands(bug_four, 'summary "New summary"')
     >>> print bug_four.title
     New summary
 
 Whitespace will be preserved in the title:
 
-    >>> submit_commands('summary "New             summary"')
+    >>> submit_commands(bug_four, 'summary "New             summary"')
     >>> print bug_four.title #doctest: -NORMALIZE_WHITESPACE
     New             summary
 
@@ -270,11 +269,11 @@ private yes|no
 ^^^^^^^^^^^^^^
 Changes the secrecy of the bug. Example:
 
-    >>> submit_commands('private yes')
+    >>> submit_commands(bug_four, 'private yes')
     >>> bug_four.private
     True
 
-    >>> submit_commands('private no')
+    >>> submit_commands(bug_four, 'private no')
     >>> bug_four.private
     False
 
@@ -291,15 +290,15 @@ be subscribed. Examples:
     [u'name12']
 
 
-    >>> submit_commands('subscribe')
+    >>> submit_commands(bug_four, 'subscribe')
     >>> 'Sample Person' in [subscription.person.displayname
     ...                     for subscription in bug_four.subscriptions]
     True
-    >>> submit_commands('subscribe foo.bar@canonical.com')
+    >>> submit_commands(bug_four, 'subscribe foo.bar@canonical.com')
     >>> 'Foo Bar' in [subscription.person.displayname
     ...               for subscription in bug_four.subscriptions]
     True
-    >>> submit_commands('subscribe sabdfl')
+    >>> submit_commands(bug_four, 'subscribe sabdfl')
     >>> 'Mark Shuttleworth' in [subscription.person.displayname
     ...                         for subscription in bug_four.subscriptions]
     True
@@ -310,15 +309,15 @@ Unsubscribes yourself or someone else from the bug.
 If you don't specify a name or email, the sender of the email will be
 unsubscribed. Examples:
 
-    >>> submit_commands('unsubscribe sabdfl')
+    >>> submit_commands(bug_four, 'unsubscribe sabdfl')
     >>> 'Mark Shuttleworth' in [subscription.person.displayname
     ...                         for subscription in bug_four.subscriptions]
     False
-    >>> submit_commands('unsubscribe foo.bar@canonical.com')
+    >>> submit_commands(bug_four, 'unsubscribe foo.bar@canonical.com')
     >>> 'Foo Bar' in [subscription.person.displayname
     ...               for subscription in bug_four.subscriptions]
     False
-    >>> submit_commands('unsubscribe')
+    >>> submit_commands(bug_four, 'unsubscribe')
     >>> 'Sample Person' in [subscription.person.displayname
     ...                     for subscription in bug_four.subscriptions]
     False
@@ -341,7 +340,7 @@ created:
     1
     >>> 'debian' in [bugtask.target.name for bugtask in bug_four.bugtasks]
     False
-    >>> submit_commands('affects /distros/debian')
+    >>> submit_commands(bug_four, 'affects /distros/debian')
     >>> len(bug_four.bugtasks)
     2
     >>> 'debian' in [bugtask.target.name for bugtask in bug_four.bugtasks]
@@ -350,14 +349,15 @@ created:
 Submitting the same thing again doesn't do anything, since the task
 already exists:
 
-    >>> submit_commands('affects /distros/debian')
+    >>> submit_commands(bug_four, 'affects /distros/debian')
     >>> len(bug_four.bugtasks)
     2
 
 We can change the assignee, status, and severity using the sub
 commands. It's possible to have these sub commands on separate lines:
 
-    >>> submit_commands('affects /distros/debian severity critical',
+    >>> submit_commands(
+    ...     bug_four, 'affects /distros/debian severity critical',
     ...     'status confirmed', 'assignee test@canonical.com', 'priority high')
 
     >>> len(bug_four.bugtasks)
@@ -374,7 +374,7 @@ commands. It's possible to have these sub commands on separate lines:
 
 To set which source package the bug affects, we use:
 
-    >>> submit_commands('affects /distros/debian/mozilla-firefox')
+    >>> submit_commands(bug_four, 'affects /distros/debian/mozilla-firefox')
     >>> len(bug_four.bugtasks)
     3
     >>> debian_task = bug_four.bugtasks[-1]
@@ -384,6 +384,7 @@ To set which source package the bug affects, we use:
 Let's take on the upstream task as well:
 
     >>> submit_commands(
+    ...     bug_four,
     ...     'affects /products/firefox severity critical',
     ...     'status confirmed', 'assignee test@canonical.com',
     ...     'priority high')
@@ -400,6 +401,172 @@ Let's take on the upstream task as well:
     >>> print upstream_task.priority.name
     HIGH
 
+    >>> stub.test_emails = []
+
+Default 'affects' target
+------------------------
+
+Most of the time it's not necessary to give the 'affects' command. If
+you omit it, the email interface  tries to guess which bug task you
+wanted to edit.
+
+If there's only one task, that task will be edited. So if we simply send
+a 'status' command to bug seven, the single upstream task will be
+edited:
+
+    >>> login('foo.bar@canonical.com')
+    >>> bug_seven = getUtility(IBugSet).get(7)
+    >>> len(bug_seven.bugtasks)
+    1
+    >>> submit_commands(bug_seven, 'status confirmed')
+    >>> evolution_task = bug_seven.bugtasks[0]
+    >>> print evolution_task.status.name
+    CONFIRMED
+
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> print msg['Subject']
+    [Bug 7]...
+    >>> print msg.get_payload(decode=True)
+    Public bug report changed:
+    ...
+        Status: Unconfirmed => Confirmed
+
+If the bug has more than one bug task, we try to guess which bug task
+the user wanted to edit. We apply the following heuristics for choosing
+which bug task to edit:
+
+The user is a bug contact of the upstream product
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    >>> login('test@canonical.com')
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> submit_commands(
+    ...     bug_one, 'status confirmed', 'assignee test@canonical.com')
+    >>> for bugtask in bug_one.bugtasks:
+    ...     print '%s: %s, assigned to %s' % (
+    ...         bugtask.targetname, bugtask.status.title,
+    ...         getattr(bugtask.assignee, 'displayname', 'no one'))
+    firefox (upstream): Confirmed, assigned to Sample Person
+    mozilla-firefox (ubuntu): Unconfirmed, assigned to no one
+    mozilla-firefox (debian): Confirmed, assigned to no one
+
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> print msg['Subject']
+    [Bug 1]...
+    >>> print msg.get_payload(decode=True)
+    Public bug report changed:
+    ...
+        Status: Unconfirmed => Confirmed
+
+The user is a package bug contact
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    XXX: The closest thing we have to a bug contact is a maintainer.
+         This is going away, though, so let's create a new Maintainership
+         record in the test instead of adding sample data. When this
+         test fails, it means that the Maintainership table has been
+         removed, and this test should be updated to deal with real bug
+         contacts instead. guess_bugtask in mail/handlers.py will have
+         to be updated as well, since it depends on IBugtask.maintainer.
+         -- Bjorn Tillenius, 2005-12-12
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, ISourcePackageNameSet, IPersonSet)
+    >>> from canonical.launchpad.database import Maintainership
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> mozilla_name = getUtility(ISourcePackageNameSet)['mozilla-firefox']
+    >>> helge = getUtility(IPersonSet).getByName('kreutzm')
+    >>> mozilla_maintainership = Maintainership(
+    ...     distribution=ubuntu, sourcepackagename=mozilla_name,
+    ...     maintainer=helge)
+
+
+    >>> login('kreutzm@itp.uni-hannover.de')
+    >>> submit_commands(
+    ...     bug_one, 'status confirmed', 'assignee no-priv@canonical.com')
+    >>> for bugtask in bug_one.bugtasks:
+    ...     print '%s: %s, assigned to %s' % (
+    ...         bugtask.targetname, bugtask.status.title,
+    ...         getattr(bugtask.assignee, 'displayname', 'no one'))
+    firefox (upstream): Confirmed, assigned to Sample Person
+    mozilla-firefox (ubuntu): Confirmed, assigned to No Privileges Person
+    mozilla-firefox (debian): Confirmed, assigned to no one
+
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> print msg['Subject']
+    [Bug 1]...
+    >>> print msg.get_payload(decode=True)
+    Public bug report changed:
+    ...
+        Assignee: (unassigned) => No Privileges Person
+    ...
+
+The user is a bug contact of a distribution
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+XXX: TBD after InitialBugContacts is implemented.
+     -- Bjorn Tillenius, 2005-11-30
+
+The user is a distribution member
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+    >>> login('foo.bar@canonical.com')
+    >>> submit_commands(
+    ...     bug_one, 'status unconfirmed', 'assignee test@canonical.com')
+    >>> for bugtask in bug_one.bugtasks:
+    ...     print '%s: %s, assigned to %s' % (
+    ...         bugtask.targetname, bugtask.status.title,
+    ...         getattr(bugtask.assignee, 'displayname', 'no one'))
+    firefox (upstream): Confirmed, assigned to Sample Person
+    mozilla-firefox (ubuntu): Unconfirmed, assigned to Sample Person
+    mozilla-firefox (debian): Confirmed, assigned to no one
+
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> print msg['Subject']
+    [Bug 1]...
+    >>> print msg.get_payload(decode=True)
+    Public bug report changed:
+    ...
+        Assignee: No Privileges Person => Sample Person
+    ...
+
+
+No matching bug task
+^^^^^^^^^^^^^^^^^^^^
+
+If none of the bug tasks can be chosen, an error message is sent to the
+user, telling him that he has to use the 'affects' command.
+
+    >>> login('stuart.bishop@canonical.com')
+    >>> submit_commands(
+    ...     bug_one, 'status new', 'assignee foo.bar@canonical.com')
+    >>> for bugtask in bug_one.bugtasks:
+    ...     print '%s: %s, assigned to %s' % (
+    ...         bugtask.targetname, bugtask.status.title,
+    ...         getattr(bugtask.assignee, 'displayname', 'no one'))
+    firefox (upstream): Confirmed, assigned to Sample Person
+    mozilla-firefox (ubuntu): Unconfirmed, assigned to Sample Person
+    mozilla-firefox (debian): Confirmed, assigned to no one
+
+    >>> transaction.commit()
+    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    >>> error_mail = email.message_from_string(raw_message)
+    >>> print to_addrs
+    ['stuart.bishop@canonical.com']
+
+    >>> print error_mail.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    An error...
+    ...
+    You tried to edit bug 1 via email, but it couldn't be determined in
+    which context you wanted the changes to occur. The bug is reported in 3
+    different contexts, and you have to specify which one by using the
+    affects command.
+    ...
+
 Error Handling
 --------------
 
@@ -407,6 +574,7 @@ If an error is encountered, an email is sent to the sender informing
 him about the error. Let's start by trying to submit a bug without
 including an 'affects' command:
 
+    >>> login('test@canonical.com')
     >>> submit_mail_no_bugtask = """From: test@canonical.com
     ... To: new@malone
     ... Date: Fri Jun 17 10:20:23 BST 2005
@@ -432,7 +600,6 @@ No bug was created, instead an error mail was sent to the submitter:
     Error message:
     ...
     The bug has to affect at least one product or distribution.
-    ...
 
 Now we try to submit a bug on a distribution that doesn't exist:
 
@@ -457,7 +624,6 @@ Again no bug was filed, and an error mail was sent:
     Error message:
     ...
     'foo' couldn't be found in command 'affects /distros/foo'
-    ...
 
 
 Let's send an empty unsigned mail to new@malone:

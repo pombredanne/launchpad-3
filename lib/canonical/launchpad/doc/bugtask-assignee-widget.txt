@@ -22,7 +22,7 @@ Let's borrow a bugtask to use in this example:
 
   >>> from zope.component import getUtility
   >>> from canonical.launchpad.interfaces import IBugTaskSet
-  >>> bugtask = getUtility(IBugTaskSet).get(1)
+  >>> bugtask = getUtility(IBugTaskSet).get(2)
 
   >>> ORIGINAL_ASSIGNEE = bugtask.assignee
 
@@ -65,7 +65,7 @@ But it is assigned to another user:
   True
 
   >>> widget.getAssigneeDisplayValue()
-  u'Scott James Remnant'
+  u'mark@hbd.com'
 
 The widget has input:
 
@@ -86,12 +86,12 @@ The input value is the current user:
 
 Let's apply the changes:
 
-  >>> bugtask.assignee.id == 5
-  True
+  >>> bugtask.assignee.displayname
+  u'Mark Shuttleworth'
   >>> widget.applyChanges(bugtask)
   True
-  >>> bugtask.assignee.id == 16
-  True
+  >>> bugtask.assignee.displayname
+  u'Foo Bar'
 
 Finally, let's rebind the widget's context to the updated context, as
 its current context will be out of sync with the new value:
