@@ -57,13 +57,11 @@ class IPOTMsgSet(Interface):
         XXX very UI-specific, perhaps this should be elsewhere?
         """
 
-    def poMsgSet(language, variant=None):
-        """Retrieve the POMsgSet corresposponding to this POTMsgSet.
+    def getPOMsgSet(language, variant=None):
+        """Return the IPOMsgSet corresposponding to this IPOTMsgSet or None.
 
-        The concrete POMsgSet is choosed by the language and variant
-        arguments, being language a Language object and variant a string.
-        If there is not POMsgSet for that language + variant convination, the
-        NotFoundError exception is raised.
+        :language: The language associated with the IPOMsgSet that we want.
+        :variant: The language variant.
         """
 
     def makeMessageIDSighting(text, pluralForm, update=False):

@@ -119,8 +119,7 @@ class BaseExportView:
         for format in formats:
             yield BrowserFormat(format.title, format.name)
 
-
-class POFileView:
+class POFileView(LaunchpadView):
     """The View class for a POFile or a DummyPOFile. Note that the
     DummyPOFile is presented if there is no POFile in the database, but the
     user wants to render one. Check the traverse_potemplate function for
@@ -132,10 +131,34 @@ class POFileView:
     MAX_COUNT = 100
     DEFAULT_SHOW = 'all'
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.user = getUtility(ILaunchBag).user
+    def initialize(self):
+        pass
+
+    def process_form(self):
+        """Check whether the form was submitted and calls the right callback.
+        """
+        if self.request.method != 'POST' or self.user is None:
+            # The form was not submitted or the user is not logged in.
+            return
+
+        dispatch_table = {
+            'pofile_updload': _upload
+            }
+        dispatch_to = [(key, method)
+                        for key,method in dispatch_table.items()
+                        if key in self.form
+                      ]
+        if len(dispatch_to) != 1:
+            raise AssertionError(
+                "There should be only one command in the form",
+                dispatch_to)
+        key, method = dispatch_to[0]
+        method()
+
+
+class POFileViewOld(LaunchpadView):
+
+    def initialize(self, context, request):
         self.form = self.request.form
         self.language_name = self.context.language.englishname
         self.status_message = None
@@ -253,8 +276,6 @@ class POFileView:
         if self.request.method == 'POST':
             if 'UPLOAD' in self.request.form:
                 self.upload()
-            elif "EDIT" in self.request.form:
-                self.edit()
 
     def upload(self):
         """Handle a form submission to change the contents of the pofile."""
@@ -302,19 +323,6 @@ class POFileView:
             self.status_message = (
                 'There was a problem uploading the file: %s.' % error)
 
-    def edit(self):
-        # XXX: See bug 2358; the plural-forms here should be validated
-        # before assignment. For instance, expression and pluralforms
-        # can /not/ contain semi-colons!
-        #   -- kiko, 2005-09-16
-        self.header['Plural-Forms'] = 'nplurals=%s; plural=%s;' % (
-            self.request.form['pluralforms'],
-            self.request.form['expression'])
-        self.context.header = self.header.msgstr.encode('utf-8')
-        self.context.pluralforms = int(self.request.form['pluralforms'])
-
-        self.status_message = "Updated on %s" % datetime.utcnow()
-
     def completeness(self):
         return '%.0f%%' % self.context.translatedPercentage()
 
@@ -349,6 +357,7 @@ class POFileView:
         pofile = self.context
         potemplate = pofile.potemplate
         code = pofile.language.code
+        variant = pofile.variant
 
         # Prepare plural form information.
         if potemplate.hasPluralMessage:
@@ -369,15 +378,23 @@ class POFileView:
         if self.errorcount > 0:
             # there was an error, so we will re-show the existing
             # messagesets, with error messages for correction.
-            self.messageSets = [
-                POMsgSetView(message_set['pot_set'], code,
-                             self.pluralFormCounts,
-                             message_set['translations'],
-                             message_set['fuzzy'],
-                             message_set['error'],
-                             self.second_lang_pofile)
-                for message_set in submitted.values()
-                if message_set['error'] is not None]
+            self.messageSets = []
+            for message_set in submitted.values():
+                if message_set['error'] is not None:
+                    pomsgset = message_set['pot_set'].getPOMsgSet(
+                        code, variant)
+                    pomsgsetview = POMsgSetView(pomsgset, self.request)
+                    pomsgsetview.initialize()
+                    # Set the submitted values
+                    pomsgsetview.set_web_submission_values(
+                        message_set['translations'],
+                        message_set['fuzzy'],
+                        message_set['error'])
+                    # Set the selected alternative language to get suggestions
+                    # from.
+                    pomsgsetview.set_second_lang_pofile(
+                        self.second_lang_pofile)
+                    self.messageSets.append(pomsgsetview)
         else:
             # get the next set of message sets
             # if there were submitted message, and no error, we want to
@@ -409,10 +426,19 @@ class POFileView:
             else:
                 raise AssertionError('show = "%s"' % self.show)
 
-            self.messageSets = [
-                POMsgSetView(potmsgset, code, self.pluralFormCounts,
-                    second_lang_pofile=self.second_lang_pofile)
-                for potmsgset in filtered_potmsgsets]
+#            self.messageSets = [
+#                POMsgSetView(potmsgset, code, self.pluralFormCounts,
+#                    second_lang_pofile=self.second_lang_pofile)
+#                for potmsgset in filtered_potmsgsets]
+            self.messageSets = []
+            for potmsgset in filtered_potmsgsets:
+                pomsgset = potmsgset.getPOMsgSet(code, variant)
+                pomsgsetview = POMsgSetView(pomsgset, self.request)
+                pomsgsetview.initialize()
+                # Set the selected alternative language to get suggestions
+                # from.
+                pomsgsetview.set_second_lang_pofile(self.second_lang_pofile)
+                self.messageSets.append(pomsgsetview)
 
     def makeTabIndex(self):
         """Return the tab index value to navigate the form."""
@@ -522,7 +548,7 @@ class POFileView:
         submitted message sets, where each message set will have information
         on any validation errors it has.
         """
-        if not "SUBMIT" in self.request.form:
+        if not "submit_translations" in self.request.form:
             return {}
 
         messageSets = helpers.parse_translation_form(self.request.form)

@@ -11,13 +11,11 @@
           set_attributes="fuzzy" />
     </content>
 
-    <browser:pages
+    <browser:page
       for="canonical.launchpad.interfaces.IPOMsgSet"
       class="canonical.launchpad.browser.POMsgSetView"
-      permission="zope.Public">
-      <browser:page
-        name="+pomsgset-translate"
-        template="../templates/pomsgset-translate.pt" />
-    </browser:pages>
+      name="+pomsgset-translate"
+      permission="zope.Public"
+      template="../templates/pomsgset-translate.pt" />
 
 </configure>

@@ -212,15 +212,15 @@
               </tr>
             </thead>
             <tbody>
-              <tal:messageset repeat="messageSet view/messageSets">
+              <tal:pomsgsetview repeat="pomsgset view/messageSets">
                 <tal:pomsgset
-                  replace="structure messageSet/@@+pomsgset-view" />
-              </tal:messageset>
+-                  replace="structure pomsgset/@@+pomsgset-translate" />
+              </tal:pomsgsetview>
             </tbody>
             <tfoot>
               <tr>
                 <th colspan="4">
-                  <input type="submit" name="SUBMIT" value="Save &amp; Continue" style="text-align: right;"
+                  <input type="submit" name="submit_translations" value="Save &amp; Continue" style="text-align: right;"
                       tal:attributes="tabindex: view/makeTabIndex" />
                 </th>
               </tr>

@@ -138,11 +138,9 @@ def import_po(pofile_or_potemplate, file, published=True):
                     # The PO file wants to change the msgidPlural from the PO
                     # template, that's broken and not usual, so we raise an
                     # exception to log the issue and fix it manually.
-                    try:
-                        pomsgset = potmsgset.poMsgSet(pofile.language.code,
-                                                      pofile.variant)
-                    except NotFoundError:
-                        # There is no such pomsgset.
+                    pomsgset = potmsgset.getPOMsgSet(
+                        pofile.language.code, pofile.variant)
+                    if pomsgset is None:
                         pomsgset = pofile.createMessageSetFromMessageSet(potmsgset)
                     # Add the pomsgset to the list of pomsgsets with errors.
                     error = {
@@ -201,10 +199,9 @@ def import_po(pofile_or_potemplate, file, published=True):
             potemplate.invalidateCache()
         else:
             # The import is a .po file
-            try:
-                pomsgset = potmsgset.poMsgSet(pofile.language.code,
-                                              pofile.variant)
-            except NotFoundError:
+            pomsgset = potmsgset.getPOMsgSet(
+                pofile.language.code, pofile.variant)
+            if pomsgset is None:
                 # There is no such pomsgset.
                 pomsgset = pofile.createMessageSetFromMessageSet(potmsgset)
 
