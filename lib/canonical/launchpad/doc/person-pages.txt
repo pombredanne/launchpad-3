@@ -22,28 +22,29 @@ First we define a helper function to make it easier to construct a view.
 Assigned bugs
 -------------
 
-All bug tasks assigned to this person. 
+All bug tasks assigned to this person.
 
-By default, only bugtasks with any of the statuses listed in 
+By default, only bugtasks with any of the statuses listed in
 canonical.launchpad.interfaces.UNRESOLVED_BUGTASK_STATUSES are included...
 
     >>> assigned_bugtaks_view = create_view(name16, '+assignedbugs')
     >>> assigned_bugtasks = list(assigned_bugtaks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name)
     ...         for bugtask in assigned_bugtasks])
-    [(7, 'NEW')]
+    [(7, 'UNCONFIRMED')]
 
 ...but the advanced search allows us to change this behaviour. Let's search
-for bug tasks with status NEW and FIXED.
+for bug tasks with status UNCONFIRMED and FIXED.
 
-    >>> form = {'orderby': u'-priority', 'field.status': [u'New', u'Fixed'],
-    ...         'field.status-empty-marker': u'1', 'search': u'Search'}
+    >>> form = {
+    ...     'orderby': u'-priority', 'field.status': [u'Unconfirmed', u'Released'],
+    ...     'field.status-empty-marker': u'1', 'search': u'Search'}
     >>> request = TestRequest(form=form)
     >>> assigned_bugtaks_view = create_view(name16, '+assignedbugs', request)
     >>> assigned_bugtasks = list(assigned_bugtaks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name)
     ...         for bugtask in assigned_bugtasks])
-    [(7, 'NEW'), (8, 'FIXED')]
+    [(7, 'UNCONFIRMED'), (8, 'RELEASED')]
 
 
 Reported bugs
@@ -55,10 +56,10 @@ By default we'll get assigned and unassigned bug tasks.
 
     >>> reported_bugtaks_view = create_view(name16, '+reportedbugs')
     >>> reported_bugtasks = list(reported_bugtaks_view.search().batch)
-    >>> sorted([(bugtask.bug.id, bugtask.status.name, 
+    >>> sorted([(bugtask.bug.id, bugtask.status.name,
     ...          getattr(bugtask.assignee, 'name', None))
     ...         for bugtask in reported_bugtasks])
-    [(1, 'NEW', None), (3, 'NEW', None), (7, 'NEW', u'name16')]
+    [(1, 'UNCONFIRMED', None), (3, 'UNCONFIRMED', None), (7, 'UNCONFIRMED', u'name16')]
 
 But the advanced search allows us to query only the bug tasks that aren't
 assigned.
@@ -67,10 +68,10 @@ assigned.
     >>> request = TestRequest(form=form)
     >>> reported_bugtaks_view = create_view(name16, '+reportedbugs', request)
     >>> reported_bugtasks = list(reported_bugtaks_view.search().batch)
-    >>> sorted([(bugtask.bug.id, bugtask.status.name, 
+    >>> sorted([(bugtask.bug.id, bugtask.status.name,
     ...          getattr(bugtask.assignee, 'name', None))
     ...         for bugtask in reported_bugtasks])
-    [(1, 'NEW', None), (3, 'NEW', None)]
+    [(1, 'UNCONFIRMED', None), (3, 'UNCONFIRMED', None)]
 
 
 Subscribed bugs
@@ -85,16 +86,17 @@ By default we'll get bug tasks with any severity.
     >>> subscribed_bugtasks = list(subscribed_bugtaks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name, bugtask.severity.name)
     ...         for bugtask in subscribed_bugtasks])
-    [(1, 'ACCEPTED', 'MINOR'), (1, 'NEW', 'MINOR'), (1, 'NEW', 'NORMAL')]
+    [(1, 'CONFIRMED', 'MINOR'), (1, 'UNCONFIRMED', 'MINOR'),
+     (1, 'UNCONFIRMED', 'NORMAL')]
 
 But the advanced search allows us to query only the bug tasks with severity
 Normal, Major and Critical.
 
-    >>> form = {'orderby': u'-priority', 
+    >>> form = {'orderby': u'-priority',
     ...         u'field.severity': [u'Normal', u'Major', u'Critical']}
     >>> request = TestRequest(form=form)
     >>> subscribed_bugtaks_view = create_view(name12, '+subscribedbugs', request)
     >>> subscribed_bugtasks = list(subscribed_bugtaks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name, bugtask.severity.name)
     ...         for bugtask in subscribed_bugtasks])
-    [(1, 'NEW', 'NORMAL')]
+    [(1, 'UNCONFIRMED', 'NORMAL')]

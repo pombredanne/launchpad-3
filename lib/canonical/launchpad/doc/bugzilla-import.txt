@@ -23,7 +23,7 @@ it to return:
   ...          1,                 # assigned_to
   ...          '',                # bug_file_loc
   ...          'normal',          # bug_severity
-  ...          'NEW',             # status
+  ...          'UNCONFIRMED',             # status
   ...          datetime(2005, 4, 1, tzinfo=UTC), # creation
   ...          'Test bug 1',      # short_desc,
   ...          'Linux',           # op_sys
@@ -41,12 +41,12 @@ it to return:
   ...          ''),               # alias
   ...         # A WONTFIX bug on a non-existant distro package
   ...         (2, 1, 'http://www.ubuntu.com', 'enhancement', 'RESOLVED',
-  ...          datetime(2005, 4, 2, tzinfo=UTC), 'Test bug 2', 
+  ...          datetime(2005, 4, 2, tzinfo=UTC), 'Test bug 2',
   ...          'Linux', 'P1', 'Ubuntu', 'i386', 2, '---', 'unknown',
   ...          'WONTFIX', '---', 0, '', '', ''),
   ...         # An accepted bug:
   ...         (3, 2, 'http://www.ubuntu.com', 'blocker', 'ASSIGNED',
-  ...          datetime(2005, 4, 3, tzinfo=UTC), 'Test bug 3', 
+  ...          datetime(2005, 4, 3, tzinfo=UTC), 'Test bug 3',
   ...          'Linux', 'P1', 'Ubuntu', 'i386', 1, '---', 'netapplet',
   ...          '', '---', 0, '', '', ''),
   ...         # A fixed bug
@@ -189,14 +189,14 @@ Now we import bug #1 and check the results:
   Subscribers:
       Sample Person
   Task: mozilla-firefox (ubuntu)
-      Status: NEW
+      Status: UNCONFIRMED
       Distro: ubuntu
       Source package: mozilla-firefox
       Binary package: mozilla-firefox
       Assignee: Sample Person
       Priority: MEDIUM
       Severity: NORMAL
-      Explanation: status (Bugzilla status=NEW, product=Ubuntu, component=mozilla-firefox)
+      Explanation: status (Bugzilla status=UNCONFIRMED, product=Ubuntu, component=mozilla-firefox)
       Milestone: ubuntu-5.10
   Messages:
       Author: Sample Person
@@ -286,7 +286,7 @@ Now import an ASSIGNED bug.  Things to note about this import:
   Subscribers:
       Sample Person
   Task: netapplet (ubuntu)
-      Status: ACCEPTED
+      Status: CONFIRMED
       Distro: ubuntu
       Source package: netapplet
       Assignee: Foo Bar
@@ -328,7 +328,7 @@ Next we import a fixed bug:
   Subscribers:
       Sample Person
   Task: mozilla-firefox (ubuntu)
-      Status: FIXED
+      Status: RELEASED
       Distro: ubuntu
       Source package: mozilla-firefox
       Binary package: mozilla-firefox
@@ -359,12 +359,12 @@ and attach a watch to the upstream bug tracker:
   Subscribers:
       Sample Person
   Task: evolution (upstream)
-      Status: NEW
+      Status: UNCONFIRMED
       Product: evolution
       Severity: NORMAL
       Watch: http://bugzilla.gnome.org//show_bug.cgi?id=273041
   Task: evolution (ubuntu)
-      Status: NEW
+      Status: UNCONFIRMED
       Distro: ubuntu
       Source package: evolution
       Assignee: Sample Person
@@ -372,7 +372,7 @@ and attach a watch to the upstream bug tracker:
       Severity: CRITICAL
       Explanation: Bugzilla status=UPSTREAM, product=Ubuntu, component=evolution
   Task: evolution (debian)
-      Status: NEW
+      Status: UNCONFIRMED
       Distro: debian
       Source package: evolution
       Severity: NORMAL
@@ -434,13 +434,13 @@ Status Mapping
   ...     bugtask.statusexplanation = ''
   ...     bug.mapStatus(bugtask)
   ...     print '%-13s  %s' % (status, bugtask.status.name)
-  UNCONFIRMED    NEW
-  NEW            NEW
-  ASSIGNED       ACCEPTED
-  REOPENED       NEW
-  NEEDINFO       NEEDINFO
-  UPSTREAM       NEW
-  PENDINGUPLOAD  PENDINGUPLOAD
+  UNCONFIRMED    UNCONFIRMED
+  NEW            UNCONFIRMED
+  ASSIGNED       CONFIRMED
+  REOPENED       UNCONFIRMED
+  NEEDINFO       NEEDSINFO
+  UPSTREAM       UNCONFIRMED
+  PENDINGUPLOAD  FIXED
   RESOLVED       REJECTED
   VERIFIED       REJECTED
   CLOSED         REJECTED
@@ -462,7 +462,7 @@ If the bug has been resolved, the resolution will affect the status:
   ...     bug.mapStatus(bugtask)
   ...     print '%-10s  %-8s  %s' % (resolution, bugtask.status.name,
   ...                                bugtask.priority.name)
-  FIXED       FIXED     MEDIUM
+  FIXED       RELEASED     MEDIUM
   INVALID     REJECTED  MEDIUM
   WONTFIX     REJECTED  WONTFIX
   NOTABUG     REJECTED  MEDIUM
