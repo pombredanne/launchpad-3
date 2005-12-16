@@ -1,5 +1,5 @@
 Incoming Mail
-===============
+=============
 
 When an email is sent to Launchpad we need to handle it somehow. This
 is done by handleEmails:
@@ -65,7 +65,7 @@ Now we send a few test mails to foo.com, bar.com, and baz.com:
 
 The test mails are now in Launchpad's mail box, so now we can call
 handleMail, so that every mail gets handled by the correct handler.
-Since the User gets authenticated using GPG signatures we have to
+Since the User gets authenticated using OpenPGP signatures we have to
 import the keys first. We also need to start the Librarian, since every
 mail will get filed in there:
 

@@ -3,8 +3,8 @@ authenticated. This is done by authenticateEmail:
 
     >>> from canonical.launchpad.mail.incoming import authenticateEmail
 
-The only way of authenticating the user is by looking at the GPG
-signature. First we have to import the GPG keys we will use in the
+The only way of authenticating the user is by looking at the OpenPGP
+signature. First we have to import the OpenPGP keys we will use in the
 emails:
 
     >>> from canonical.launchpad.ftests import import_public_test_keys
@@ -12,7 +12,7 @@ emails:
     >>> import_public_test_keys()
     >>> transaction.commit()
 
-Now Sample Person and Foo Bar have one GPG key each. Next, let's get
+Now Sample Person and Foo Bar have one OpenPGP key each. Next, let's get
 a test email that's signed and try to authenticate the user who sent it:
 
     >>> from canonical.launchpad.helpers import read_test_message
@@ -82,7 +82,7 @@ to deal with it if we receive a dash escaped message.
     'test@canonical.com'
 
 
-Since a GPG key can be associated with several addresses, the user to
+Since an OpenPGP key can be associated with several addresses, the user to
 authenticate is extracted from the From header. If the key used to sign
 the email doesn't belong to that user, he won't be authenticated, as
 shown below where the email was signed with Sample Person's key, but

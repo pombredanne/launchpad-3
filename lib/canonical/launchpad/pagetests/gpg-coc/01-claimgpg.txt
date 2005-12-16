@@ -19,7 +19,7 @@ Clean page
       <title>Sample Person’s OpenPGP keys</title>
   ...
 
-Claim GPG Key
+Claim OpenPGP key
 
   >>> print http(r"""
   ... POST /people/name12/+editgpgkeys HTTP/1.1
@@ -58,8 +58,8 @@ Import the secret keys need for this test
   >>> from canonical.launchpad.ftests import import_secret_test_key
   >>> import_secret_test_key()
 
-'cipher_body' is a message encrypted to the just imported 1024D/DFD20543
-gpg key, we need to access the current IGpghandler instance to
+'cipher_body' is a message encrypted to the just-imported 1024D/DFD20543
+OpenPGP key, we need to access the current IGpghandler instance to
 access this key and decrypt the message.
 
   >>> body = gpghandler.decryptContent(cipher_body, 'test')

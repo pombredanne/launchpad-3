@@ -193,9 +193,9 @@ class IPerson(IHasSpecifications):
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
     signedcocs = Attribute("List of Signed Code Of Conduct")
-    gpgkeys = Attribute("List of valid GPGkeys ordered by ID")
-    pendinggpgkeys = Attribute("Set of GPG fingerprints pending validation")
-    inactivegpgkeys = Attribute("List of inactive GPG keys in LP Context, "
+    gpgkeys = Attribute("List of valid OpenPGP keys ordered by ID")
+    pendinggpgkeys = Attribute("Set of fingerprints pending confirmation")
+    inactivegpgkeys = Attribute("List of inactive OpenPGP keys in LP Context, "
                                 "ordered by ID")
     ubuntuwiki = Attribute("The Ubuntu WikiName of this Person.")
     otherwikis = Attribute(

@@ -1043,7 +1043,7 @@ class PersonView:
         gpgkeyset = getUtility(IGPGKeySet)
 
         if gpgkeyset.getByFingerprint(fingerprint):
-            return 'GPG key <code>%s</code> already imported' % fingerprint
+            return 'OpenPGP key <code>%s</code> already imported' % fingerprint
 
         # import the key to the local keyring
         gpghandler = getUtility(IGPGHandler)
@@ -1053,7 +1053,7 @@ class PersonView:
             # use the content of 'key' for debug proposes; place it in a
             # blockquote because it often comes out empty.
             return (
-                """Launchpad could not import your GPG key.
+                """Launchpad could not import your OpenPGP key.
                 <ul>
                   <li>Did you enter your complete fingerprint correctly,
                   as produced by <kbd>gpg --fingerprint</kdb>?</li>

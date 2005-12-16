@@ -27,7 +27,7 @@ class IBuild(Interface):
     buildduration = Attribute("Build Duration Interval")
     buildlog = Attribute("The Build LOG Referency")
     builder = Attribute("The Builder")
-    gpgsigningkey = Attribute("GPG Signing Key")
+    gpgsigningkey = Attribute("OpenPGP Signing Key")
     changes = Attribute("The Build Changes")
     component = Attribute("The BinaryPackage Component")
     section = Attribute("The BinaryPackage Section")

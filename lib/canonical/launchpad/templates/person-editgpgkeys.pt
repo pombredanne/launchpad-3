@@ -18,7 +18,7 @@
     <h1>OpenPGP keys and Launchpad</h1> 
 
     <p>
-      Launchpad let you register OpenGPG keys, created by software such as GPG.
+      Launchpad lets you register OpenGPG keys, created by software such as GPG.
       OpenPGP keys are required to sign the
       <a href="/codeofconduct">Ubuntu Code of Conduct</a>,
       and to build and upload packages using HCT.

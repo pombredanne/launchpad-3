@@ -336,8 +336,8 @@ class ValidateEmailView(BaseLoginTokenView):
         person_url = canonical_url(requester)
         if not result:
             self.errormessage = (
-                'Launchpad could not import GPG key, the reason was: %s .'
-                'Check if you published it correctly in the global key ring '
+                'Launchpad could not import this OpenPGP key, because %s. '
+                'Check that you published it correctly in the global key ring '
                 '(using <kbd>gpg --send-keys KEY</kbd>) and that you '
                 'entered the fingerprint correctly (as produced by <kbd>'
                 'gpg --fingerprint YOU</kdb>). Try later or '

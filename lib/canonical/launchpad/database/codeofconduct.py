@@ -229,30 +229,31 @@ class SignedCodeOfConductSet:
             return str(e)
 
         if not sig.fingerprint:
-            return ('Failed to verify the signature, check if the GPG key '
-                    'you used to sign is correctly published in the global '
-                    'key ring.')
+            return ('The signature could not be verified. '
+                    'Check that the OpenPGP key you used to sign with '
+                    'is published correctly in the global key ring.')
 
         gpgkeyset = getUtility(IGPGKeySet)
 
         gpg = gpgkeyset.getByFingerprint(sig.fingerprint)
 
         if not gpg:
-            return ('The key you used, which has the fingerprint <kbd>%s'
-                    '</kbd>, is not registered in Launchpad. Please '
+            return ('The key you used, which has the fingerprint <code>%s'
+                    '</code>, is not registered in Launchpad. Please '
                     '<a href="%s/+editgpgkeys">follow the '
                     'instructions</a> and try again.'
                     % (sig.fingerprint, canonical_url(user)))
 
         if gpg.owner.id != user.id:
-            return ('GPG key onwer (%s) and current Launchpad user (%s) '
-                    'does not match.' % (gpg.owner.displayname,
-                                         user.displayname))
+            return ('You (%s) do not seem to be the owner of this OpenPGP key '
+                    '(<code>%s</code>).' % (user.displayname,
+                    gpg.owner.displayname)
         
         if not gpg.active:
-            return ('The GPG key used to sign (%s) has been deactivated. '
-                    'Please <a href="%s/+editgpgkeys">reactivate</a> it '
-                    'again before proceeding.'
+            return ('The OpenPGP key used (<code>%s</code>) has been '
+                    'deactivated. '
+                    'Please <a href="%s/+editgpgkeys">reactivate</a> it and '
+                    'try again.'
                     % (gpg.displayname, canonical_url(user)))
 
         # recover the current CoC release
@@ -263,7 +264,7 @@ class SignedCodeOfConductSet:
         if sig.plain_data.split() != current.split():
             return ('The signed text does not match the Code of Conduct. '
                     'Make sure that you signed the correct text (white '
-                    'space differences are acceptable.')
+                    'space differences are acceptable).')
 
         # Store the signature 
         signed = SignedCodeOfConduct(owner=user.id, signingkey=gpg.id,

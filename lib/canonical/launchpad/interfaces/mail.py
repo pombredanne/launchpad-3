@@ -17,7 +17,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import ASCII
 
 class ISignedMessage(Interface):
-    """A message that's possibly signed with a GPG key.
+    """A message that's possibly signed with an OpenPGP key.
 
     If the message wasn't signed, all attributes will be None.
     """
@@ -32,8 +32,8 @@ class ISignedMessage(Interface):
                           description=_("The text that was signed."))
 
     signature = ASCII(title=_("Signature"),
-                      description=_("The GPG signature used to sign "
-                                    "the email"))
+                      description=_("The OpenPGP signature used to sign "
+                                    "the message."))
 
 
 class IMailHandler(Interface):

@@ -35,6 +35,6 @@ Using the Gina output:
       It should become better with PSQL VIEWS and Batched Pages.
 
 TODO:
-    - Process GPG keys properly
+    - Process OpenPGP keys properly
     - Loop over components, releases, distros
 

@@ -47,7 +47,7 @@ class ILoginToken(Interface):
                 required=True,
         )
     fingerprint = Text(
-        title=_('GPG Key fingerprint used to retrive key information when necessary.'),
+        title=_('OpenPGP key fingerprint used to retrive key information when necessary.'),
                 required=False,
         )
 
@@ -69,8 +69,8 @@ class ILoginToken(Interface):
         """Send an email message with a magic URL to validate self.email."""
 
     def sendGPGValidationRequest(appurl, key):
-        """Send an email message with a magic URL to validate gpg key.
-        if fingerprint is set send encrypted email.
+        """Send an email message with a magic URL to confirm the OpenPGP key.
+        If fingerprint is set, send the message encrypted.
         """
 
 
@@ -100,7 +100,7 @@ class ILoginTokenSet(Interface):
         """
 
     def getPendingGPGKeys(self, requesterid=None):
-        """Return Tokens for GPG Keys pending validation, optionally for
+        """Return tokens for OpenPGP keys pending validation, optionally for
         a single user.
         """
 
@@ -117,9 +117,9 @@ class ILoginTokenSet(Interface):
         tokentype: the type of the request, according to
         dbschema.LoginTokenType
         
-        fingerprint: the gpg key fingerprint to be used to retrive needed
-        key information from the keyServer if necessary, can be None if
-        not required to proccess the 'request' in question.  
+        fingerprint: The OpenPGP key fingerprint used to retrieve key
+        information from the key server if necessary. This can be None if
+        not required to process the 'request' in question.  
         """
 
     def __getitem__(id):

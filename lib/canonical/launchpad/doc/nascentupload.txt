@@ -5,7 +5,7 @@
   >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
   >>> LibrarianTestSetup().setUp()  
 
-We also need to set up the GPG key used to sign things so that we can
+We also need to set up the OpenPGP key used to sign things so that we can
 identify the upload signer later on.
 
   >>> from canonical.launchpad.interfaces import IGPGKeySet

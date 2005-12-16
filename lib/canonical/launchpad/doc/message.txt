@@ -166,7 +166,7 @@ u'<?xml version="1.0" encoding="utf16"?>\n<unicode>\u2122</unicode>'
 
 We can also retrieve a byte-identical copy of the original message
 from the Librarian. This is required for allowing people to verify
-the integrity of GPG signed messages.
+the integrity of OpenPGP-signed messages.
 
 >>> msg.raw.read() == raw_msg
 True

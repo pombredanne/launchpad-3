@@ -68,7 +68,7 @@ class LoginToken(SQLBase):
         template = open(
             'lib/canonical/launchpad/emailtemplates/validate-gpg.txt').read()
             
-        fromaddress = "Launchpad GPG Validator <noreply@ubuntu.com>"
+        fromaddress = "Launchpad OpenPGP Key Confirmation <noreply@ubuntu.com>"
 
         replacements = {'longstring': self.token,
                         'requester': self.requester.browsername,
@@ -85,7 +85,7 @@ class LoginToken(SQLBase):
             message = gpghandler.encryptContent(message.encode('utf-8'),
                                                 key.fingerprint)
 
-        subject = "Launchpad: Validate your GPG Key"
+        subject = "Launchpad: Confirm your OpenPGP Key"
         simple_sendmail(fromaddress, self.email, subject, message)
 
 

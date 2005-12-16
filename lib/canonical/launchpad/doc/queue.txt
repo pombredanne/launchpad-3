@@ -5,7 +5,7 @@ uploads go after they have been checked by process-upload.py and
 before they get published by publish-distro.py.
 
 First up, we need to actually process an upload to get it into the
-queue. To do this we set up a librarian, prepare a gpg key and then
+queue. To do this we set up a librarian, prepare an OpenPGP key, and then
 run the upload handler.
 
   >>> from canonical.librarian.ftests.harness import LibrarianTestSetup

@@ -19,7 +19,7 @@ Sign only keys are registered on the standard +editgpgkeys page.
       <title>Sample Person’s OpenPGP keys</title>
   ...
 
-Claim a sign-only GPG key:
+Claim a sign-only OpenPGP key:
 
   >>> print http(r"""
   ... POST /people/name12/+editgpgkeys HTTP/1.1
@@ -88,7 +88,7 @@ sign-only key validation page instead of the regular sign-up page.
   ...
 
 
-We get redirected to the sign-only GPG key validation page, which
+We get redirected to the sign-only OpenPGP key validation page, which
 includes a phrase that must be signed by the user.  Some things to
 note about the phrase:
  * Includes the Launchpad user name, key fingerprint and request time.
@@ -205,7 +205,7 @@ sign, signed with the correct key:
   ... """
 
 
-Validate the GPG key by proving that we can sign the given phrase with
+Confirm the OpenPGP key by proving that we can sign the given phrase with
 the key:
 
   >>> print http(r"""

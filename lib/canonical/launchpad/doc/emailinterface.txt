@@ -11,8 +11,8 @@ described later on.
 Submit a new bug
 ----------------
 
-In order to submit a new bug you send a GPG signed email to
-new@malone-domain. Note that you have to have registered your key in
+To report a bug, you send an OpenPGP-signed e-mail message to
+new@malone-domain. You must have registered your key in
 Launchpad as well. The subject of the email will be used as the summary
 of the bug, and the body will be used as the description. In the body of
 the email you have tell on what you file a bug, either a product or a
@@ -150,7 +150,7 @@ After a bug has been submitted a notification is sent out. The reply-to
 address is set to the bug address, $bugid@malone-domain. We can send
 emails to this address in order to add new comments to the bug. Note
 that we can interleave commands in the comment as well. If the comment
-includes commands, the email has to be GPG signed.
+includes commands, the email has to be OpenPGP-signed.
 
     >>> comment_mail = """From: test@canonical.com
     ... To: 1@malone-domain
