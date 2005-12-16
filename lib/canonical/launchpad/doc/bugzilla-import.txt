@@ -23,7 +23,7 @@ it to return:
   ...          1,                 # assigned_to
   ...          '',                # bug_file_loc
   ...          'normal',          # bug_severity
-  ...          'UNCONFIRMED',             # status
+  ...          'NEW',             # status
   ...          datetime(2005, 4, 1, tzinfo=UTC), # creation
   ...          'Test bug 1',      # short_desc,
   ...          'Linux',           # op_sys
@@ -196,7 +196,7 @@ Now we import bug #1 and check the results:
       Assignee: Sample Person
       Priority: MEDIUM
       Severity: NORMAL
-      Explanation: status (Bugzilla status=UNCONFIRMED, product=Ubuntu, component=mozilla-firefox)
+      Explanation: status (Bugzilla status=NEW, product=Ubuntu, component=mozilla-firefox)
       Milestone: ubuntu-5.10
   Messages:
       Author: Sample Person

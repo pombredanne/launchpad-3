@@ -37,7 +37,8 @@ canonical.launchpad.interfaces.UNRESOLVED_BUGTASK_STATUSES are included...
 for bug tasks with status UNCONFIRMED and FIXED.
 
     >>> form = {
-    ...     'orderby': u'-priority', 'field.status': [u'Unconfirmed', u'Released'],
+    ...     'orderby': u'-priority',
+    ...     'field.status': [u'Unconfirmed', u'Released'],
     ...     'field.status-empty-marker': u'1', 'search': u'Search'}
     >>> request = TestRequest(form=form)
     >>> assigned_bugtaks_view = create_view(name16, '+assignedbugs', request)

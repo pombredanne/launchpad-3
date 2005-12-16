@@ -274,27 +274,30 @@ class BugTask(SQLBase, BugTaskMixin):
         status = self.status
 
         if assignee:
+            # The statuses REJECTED, FIXED, and CONFIRMED will display
+            # with the assignee information as well. Showing assignees
+            # with other status would just be confusing
+            # (e.g. "Unconfirmed, assigned to Foo Bar")
             assignee_html = (
                 '<img src="/++resource++user.gif" /> '
                 '<a href="/malone/assigned?name=%s">%s</a>' % (
                     urllib.quote_plus(assignee.name),
                     cgi.escape(assignee.browsername)))
 
-            if status in (BugTaskStatus.CONFIRMED, BugTaskStatus.REJECTED,
-                          BugTaskStatus.FIXED):
+            if status in (BugTaskStatus.REJECTED, BugTaskStatus.FIXED):
                 return '%s by %s' % (status.title.lower(), assignee_html)
-            elif status == BugTaskStatus.RELEASED:
-                return 'fix released by %s' % assignee_html
+            elif  status == BugTaskStatus.CONFIRMED:
+                return '%s, assigned to %s' % (status.title.lower(), assignee_html)
 
-            return 'assigned to %s' % assignee_html
-        else:
-            # Some statuses look silly written as "$status (unassigned)"
-            if status == BugTaskStatus.REJECTED:
-                return status.title.lower()
-            if status == BugTaskStatus.RELEASED:
-                return 'fix released'
+        # The status is something other than REJECTED, FIXED or
+        # CONFIRMED (whether assigned to someone or not), so we'll
+        # show only the status.
+        if status in (BugTaskStatus.REJECTED, BugTaskStatus.UNCONFIRMED):
+            return status.title.lower()
+        if status == BugTaskStatus.RELEASED:
+            return 'fix released'
 
-            return status.title.lower() + ' (unassigned)'
+        return status.title.lower() + ' (unassigned)'
 
 
 class BugTaskSet:

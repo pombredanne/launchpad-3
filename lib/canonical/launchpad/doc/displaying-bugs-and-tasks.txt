@@ -72,11 +72,11 @@ Let's see some examples of how this works:
   >>> high_priority_task.assignee = foobar
   >>> high_priority_task.status = BugTaskStatus.UNCONFIRMED
   >>> high_priority_task.statusdisplayhtml
-  u'assigned to <img src="/++resource++user.gif" /> <a href=".../malone/assigned?name=name16">Foo Bar</a>'
+  'unconfirmed'
 
   >>> high_priority_task.status = BugTaskStatus.CONFIRMED
   >>> high_priority_task.statusdisplayhtml
-  u'confirmed by <img src="/++resource++user.gif" /> <a href=".../malone/assigned?name=name16">Foo Bar</a>'
+  u'confirmed, assigned to <img src="/++resource++user.gif" /> <a href=".../malone/assigned?name=name16">Foo Bar</a>'
 
   >>> high_priority_task.status = BugTaskStatus.REJECTED
   >>> high_priority_task.statusdisplayhtml
@@ -92,7 +92,7 @@ Let's see some examples of how this works:
 
   >>> high_priority_task.assignee = foobar
   >>> high_priority_task.statusdisplayhtml
-  u'fix released by <img src="/++resource++user.gif" /> <a href=".../malone/assigned?name=name16">Foo Bar</a>'
+  'fix released'
 
 Lastly, some cleanup:
 
