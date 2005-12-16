@@ -260,7 +260,7 @@ def generate_bug_edit_email(bug_delta):
         body += u"\n"
 
     if bug_delta.private is not None:
-        body += u"Secrecy changed to:\n"
+        body += u"Visibility changed to:\n"
         if bug_delta.private['new']:
             body += u"    Private\n"
         else:

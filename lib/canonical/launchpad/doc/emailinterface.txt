@@ -267,7 +267,7 @@ Whitespace will be preserved in the title:
 
 private yes|no
 ^^^^^^^^^^^^^^
-Changes the secrecy of the bug. Example:
+Changes the visibility of the bug. Example:
 
     >>> submit_commands(bug_four, 'private yes')
     >>> bug_four.private

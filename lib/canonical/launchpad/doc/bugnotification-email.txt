@@ -165,7 +165,7 @@ to a user that is explicitly subscribed to this bug):
     Private bug report changed:
     http://.../bugs/2
     <BLANKLINE>
-    Secrecy changed to:
+    Visibility changed to:
         Private
 
 Now we set the bug public and check if the e-mail sent changed as well.
@@ -183,7 +183,7 @@ Now we set the bug public and check if the e-mail sent changed as well.
     Public bug report changed:
     http://.../bugs/2
     <BLANKLINE>
-    Secrecy changed to:
+    Visibility changed to:
         Public
 
 Adding a new bug task
