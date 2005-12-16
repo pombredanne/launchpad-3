@@ -34,18 +34,18 @@ canonical.launchpad.interfaces.UNRESOLVED_BUGTASK_STATUSES are included...
     [(7, 'UNCONFIRMED')]
 
 ...but the advanced search allows us to change this behaviour. Let's search
-for bug tasks with status UNCONFIRMED and FIXED.
+for bug tasks with status UNCONFIRMED and FIXCOMMITTED.
 
     >>> form = {
     ...     'orderby': u'-priority',
-    ...     'field.status': [u'Unconfirmed', u'Released'],
+    ...     'field.status': [u'Unconfirmed', u'Fix Released'],
     ...     'field.status-empty-marker': u'1', 'search': u'Search'}
     >>> request = TestRequest(form=form)
     >>> assigned_bugtaks_view = create_view(name16, '+assignedbugs', request)
     >>> assigned_bugtasks = list(assigned_bugtaks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name)
     ...         for bugtask in assigned_bugtasks])
-    [(7, 'UNCONFIRMED'), (8, 'RELEASED')]
+    [(7, 'UNCONFIRMED'), (8, 'FIXRELEASED')]
 
 
 Reported bugs
