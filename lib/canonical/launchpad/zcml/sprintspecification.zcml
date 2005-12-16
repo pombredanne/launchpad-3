@@ -27,7 +27,7 @@
     name="+edit"
     schema="canonical.launchpad.interfaces.ISprintSpecification"
     class="canonical.launchpad.browser.SprintSpecificationEditView"
-    label="Approve spec for meeting agenda?"
+    label="Approve spec for meeting agenda"
     fields="status whiteboard"
     permission="launchpad.Edit"
     template="../templates/sprintspecification-edit.pt">

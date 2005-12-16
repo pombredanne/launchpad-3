@@ -30,7 +30,7 @@
         for="canonical.launchpad.interfaces.ITranslator"
         facet="translations"
         schema="canonical.launchpad.interfaces.ITranslator"
-        label="Change Translator"
+        label="Change translator"
         fields="translator"
         permission="launchpad.Edit"
         class="canonical.launchpad.browser.TranslatorEditView"

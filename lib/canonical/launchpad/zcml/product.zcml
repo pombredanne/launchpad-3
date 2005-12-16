@@ -212,7 +212,7 @@
         facet="overview"
         schema="canonical.launchpad.interfaces.IProduct"
         class="canonical.launchpad.browser.ProductEditView"
-        label="Administer Upstream Product Details"
+        label="Administer upstream product details"
         fields="name project owner active autoupdate reviewed "
         permission="launchpad.Admin"
         template="../templates/launchpad-editform.pt"
@@ -227,7 +227,7 @@
         class="canonical.launchpad.browser.ProductEditView"
         fields="translationgroup translationpermission"
         permission="launchpad.Edit"
-        label="Select a New Translation Group"
+        label="Select a new translation group"
         template="../templates/launchpad-editform.pt"
         lp:url="/products/$Product.name/+changetranslators" />
 
@@ -238,7 +238,7 @@
         class="canonical.launchpad.browser.ProductEditView"
         fields="official_rosetta official_malone"
         permission="launchpad.Edit"
-        label="Describe Launchpad Usage"
+        label="Describe Launchpad usage"
         template="../templates/product-edit.pt"
         />
 
@@ -276,7 +276,7 @@
         schema="canonical.launchpad.interfaces.IMilestone"
         class="canonical.launchpad.browser.milestone.MilestoneAddView"
         facet="overview"
-        label="Add a Milestone"
+        label="Add a milestone"
         fields="name dateexpected"
         keyword_arguments="name dateexpected"
         permission="launchpad.Edit"
@@ -290,7 +290,7 @@
       schema="canonical.launchpad.interfaces.IProductBounty"
       class="canonical.launchpad.browser.bounty.BountyLinkView"
       facet="bounties"
-      label="Link an Existing Bounty"
+      label="Link an existing bounty"
       fields="product bounty"
       keyword_arguments="product bounty"
       permission="launchpad.AnyPerson"
@@ -305,7 +305,7 @@
       name="+addbounty"
       for="canonical.launchpad.interfaces.IProduct"
       schema="canonical.launchpad.interfaces.IBounty"
-      label="Register a New Bounty"
+      label="Register a bounty"
       fields="name title summary usdvalue difficulty description"
       class="canonical.launchpad.browser.BountyAddView"
       facet="bounties"
@@ -431,7 +431,7 @@
         name="+new"
         for="canonical.launchpad.interfaces.IProductSet"
         schema="canonical.launchpad.interfaces.IProduct"
-        label="Register an Upstream Open Source Product"
+        label="Register an upstream open source product"
         fields="project name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl screenshotsurl
                 downloadurl programminglang"

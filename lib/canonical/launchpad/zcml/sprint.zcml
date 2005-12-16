@@ -52,7 +52,7 @@
     name="+edit"
     schema="canonical.launchpad.interfaces.ISprint"
     class="canonical.launchpad.browser.SprintEditView"
-    label="Edit Sprint Details"
+    label="Edit sprint details"
     fields="name title summary home_page time_zone time_starts time_ends
             address"
     permission="launchpad.Edit"
@@ -139,7 +139,7 @@
     for="canonical.launchpad.interfaces.ISprintSet"
     schema="canonical.launchpad.interfaces.ISprint"
     class="canonical.launchpad.browser.SprintAddView"
-    label="Register a Meeting"
+    label="Register a meeting"
     permission="launchpad.AnyPerson"
     fields="owner name title summary home_page time_zone time_starts
             time_ends"

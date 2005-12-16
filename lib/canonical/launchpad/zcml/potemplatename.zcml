@@ -33,7 +33,7 @@
         name="+edit"
         schema="canonical.launchpad.interfaces.IPOTemplateName"
         class="canonical.launchpad.browser.POTemplateNameEditView"
-        label="Change PO Template Name Information"
+        label="Change PO template name information"
         permission="launchpad.Edit"
         template="../templates/potemplatename-edit.pt"
         fields="name title description translationdomain" >
@@ -74,7 +74,7 @@
         for="canonical.launchpad.interfaces.IPOTemplateNameSet"
         schema="canonical.launchpad.interfaces.IPOTemplateName"
         class="canonical.launchpad.browser.POTemplateNameAddView"
-        label="Add a new PO Template Name"
+        label="Add a new PO template name"
         fields="name title description translationdomain"
         arguments=""
         keyword_arguments="name title description translationdomain"

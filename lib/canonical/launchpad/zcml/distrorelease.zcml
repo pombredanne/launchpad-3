@@ -168,7 +168,7 @@
     name="+addport"
     for="canonical.launchpad.interfaces.IDistroRelease"
     schema="canonical.launchpad.interfaces.IDistroArchRelease"
-    label="Create New Port"
+    label="Create a new port"
     fields="architecturetag processorfamily official owner"
     arguments="architecturetag processorfamily official owner"
     class="canonical.launchpad.browser.DistroArchReleaseAddView"

@@ -76,7 +76,7 @@
         class="canonical.launchpad.browser.editview.SQLObjectEditView"
         schema="canonical.launchpad.interfaces.IKarmaAction"
         fields="name category points title summary"
-        label="Edit KarmaAction Information"
+        label="Edit karma action information"
         permission="launchpad.Admin"
         template="../templates/karmaaction-edit.pt"
         lp:url="karmaaction/$action/+index">

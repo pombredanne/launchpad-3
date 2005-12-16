@@ -85,7 +85,7 @@
         schema="canonical.launchpad.interfaces.IPoll"
         fields="name title proposition secrecy allowspoilt
                 dateopens datecloses"
-        label="Edit Poll Details"
+        label="Edit poll details"
         permission="launchpad.Edit"
         template="../templates/poll-edit.pt"
         lp:url="/people/$team.id/+poll/$poll/+edit">
@@ -97,7 +97,7 @@
         class="canonical.launchpad.browser.PollOptionAddView"
         schema="canonical.launchpad.interfaces.IPollOption"
         fields="name title"
-        label="Create a New Option for a Poll"
+        label="Create new poll option"
         permission="launchpad.Edit"
         template="../templates/poll-newoption.pt"
         lp:url="/people/$team.id/+poll/$poll/+newoption">
@@ -131,7 +131,7 @@
         class="canonical.launchpad.browser.poll.PollOptionEditView"
         schema="canonical.launchpad.interfaces.IPollOption"
         fields="name title"
-        label="Edit Poll Details"
+        label="Edit poll details"
         permission="launchpad.Edit"
         template="../templates/polloption-edit.pt"
         lp:url="/people/$team.id/+poll/$poll/$option/+edit">

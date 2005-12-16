@@ -166,7 +166,7 @@
         for="canonical.launchpad.interfaces.IBugTask"
         schema="canonical.launchpad.interfaces.IBug"
         class="canonical.launchpad.browser.bug.BugEditView"
-        label="Edit Bug Description"
+        label="Edit bug description"
         permission="launchpad.Edit"
         template="../templates/bug-edit.pt"
         fields="title description summary name"
@@ -182,7 +182,7 @@
         for="canonical.launchpad.interfaces.IBugTask"
         schema="canonical.launchpad.interfaces.IBug"
         class="canonical.launchpad.browser.bug.BugEditView"
-        label="Set Bug Secrecy"
+        label="Set bug visibility"
         permission="launchpad.Edit"
         template="../templates/bug-secrecy.pt"
         fields="private"
@@ -194,7 +194,7 @@
         for="canonical.launchpad.interfaces.IBugTask"
         schema="canonical.launchpad.interfaces.IBug"
         class="canonical.launchpad.browser.bug.BugEditView"
-        label="Mark Bug Report as a Duplicate"
+        label="Mark bug report as a duplicate"
         permission="launchpad.AnyPerson"
         template="../templates/bug-mark-as-duplicate.pt"
         fields="duplicateof"
@@ -241,7 +241,7 @@
         schema="canonical.launchpad.interfaces.IBugAttachmentAddForm"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugAttachmentAddView"
-        label="Add an Attachment"
+        label="Add an attachment"
         fields="filecontent patch title comment"
         keyword_arguments="patch filecontent title comment"
         permission="launchpad.AnyPerson"
@@ -253,7 +253,7 @@
         schema="canonical.launchpad.interfaces.IBugExternalRef"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugExtRefAddView"
-        label="Add Web Link"
+        label="Add Web link"
         fields="url title"
         arguments=""
         keyword_arguments="url title"
@@ -271,7 +271,7 @@
         schema="canonical.launchpad.interfaces.IBugWatch"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugWatchAddView"
-        label="Add Watch"
+        label="Add watch"
         fields="bugtracker remotebug"
         arguments=""
         keyword_arguments="bugtracker remotebug"
@@ -288,7 +288,7 @@
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.bug.BugAlsoReportInView"
-        label="Request Fix in a Product"
+        label="Request fix in a product"
         fields="product owner"
         content_factory="canonical.launchpad.database.BugTaskFactory"
         arguments=""
@@ -306,7 +306,7 @@
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
         fields="maintainer_displayname milestone status priority
                 severity assignee bugwatch statusexplanation product"
-        label="Edit Fix Request"
+        label="Edit fix request"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
@@ -325,7 +325,7 @@
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
         fields="maintainer_displayname milestone status priority severity
                 assignee bugwatch statusexplanation"
-        label="Product Fix Request"
+        label="Product fix request"
         permission="launchpad.View"
         template="../templates/bugtask-view.pt"
         lp:url="malone/tasks/$BugTask.id/+index">
@@ -340,7 +340,7 @@
         schema="canonical.launchpad.interfaces.IDistroBugTask"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.bug.BugAlsoReportInView"
-        label="Request Fix in a Distribution"
+        label="Request fix in a distribution"
         fields="distribution sourcepackagename owner"
         content_factory="canonical.launchpad.database.BugTaskFactory"
         keyword_arguments="distribution sourcepackagename owner"
@@ -360,7 +360,7 @@
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename binarypackagename milestone
                 status priority severity assignee bugwatch statusexplanation"
-        label="Edit Fix Request"
+        label="Edit fix request"
         permission="launchpad.AnyPerson"
         template="../templates/bugtask-edit.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
@@ -379,7 +379,7 @@
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename binarypackagename milestone
                 status priority severity assignee bugwatch statusexplanation"
-        label="Source Package Fix Request"
+        label="Source package fix request"
         permission="zope.Public"
         template="../templates/bugtask-view.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
@@ -404,7 +404,7 @@
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename binarypackagename milestone
                 status priority severity assignee bugwatch statusexplanation"
-        label="Edit Fix Request"
+        label="Edit fix request"
         permission="launchpad.AnyPerson"
         template="../templates/bugtask-edit.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
@@ -423,7 +423,7 @@
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename binarypackagename status priority severity
                 assignee bugwatch statusexplanation"
-        label="Source Package Fix Request"
+        label="Source package fix request"
         permission="zope.Public"
         template="../templates/bugtask-view.pt"
         lp:url="malone/tasks/$BugTask.id/+edit">
@@ -471,7 +471,7 @@
       for="canonical.launchpad.interfaces.IBugTask"
       schema="canonical.launchpad.interfaces.IBugSubscription"
       class="canonical.launchpad.browser.BugSubscriptionAddView"
-      label="Subscribe Someone Else to the Bug Report"
+      label="Subscribe someone else to the bug report"
       fields="person"
       keyword_arguments="person"
       permission="launchpad.AnyPerson"
@@ -483,7 +483,7 @@
       for="canonical.launchpad.interfaces.IBugTask"
       schema="canonical.launchpad.interfaces.IMessage"
       class="canonical.launchpad.browser.BugMessageAddView"
-      label="Add a Comment"
+      label="Add a comment"
       fields="subject content owner"
       keyword_arguments="subject content owner"
       permission="launchpad.AnyPerson"

@@ -59,7 +59,7 @@
       for="canonical.launchpad.interfaces.IBugTracker"
       schema="canonical.launchpad.interfaces.IBugTracker"
       class="canonical.launchpad.browser.BugTrackerView"
-      label="Edit Bug Tracker Details"
+      label="Edit bug tracker details"
       fields="title summary baseurl contactdetails"
       permission="launchpad.AnyPerson"
       template="../templates/bugtracker-edit.pt"
@@ -118,7 +118,7 @@
     <browser:addform
         name="+newbugtracker"
         permission="launchpad.AnyPerson"
-        label="Register an External Bug Tracker"
+        label="Register an external bug tracker"
         class="canonical.launchpad.browser.bugtracker.BugTrackerAddView"
         for="canonical.launchpad.interfaces.IBugTrackerSet"
         schema="canonical.launchpad.interfaces.IBugTracker"

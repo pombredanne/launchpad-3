@@ -74,7 +74,7 @@
         name="+edit"
         schema="canonical.launchpad.interfaces.IPOTemplate"
         class="canonical.launchpad.browser.POTemplateEditView"
-        label="Change PO template Information"
+        label="Change PO template information"
         permission="launchpad.Edit"
         template="../templates/potemplate-edit.pt"
         fields="potemplatename description" 
@@ -84,7 +84,7 @@
         name="+admin"
         schema="canonical.launchpad.interfaces.IPOTemplate"
         class="canonical.launchpad.browser.POTemplateEditView"
-        label="Administer PO Template"
+        label="Administer PO template"
         permission="launchpad.Admin"
         template="../templates/potemplate-edit.pt"
         fields="name potemplatename description header iscurrent owner

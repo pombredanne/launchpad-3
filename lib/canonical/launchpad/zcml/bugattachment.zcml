@@ -32,7 +32,7 @@
         for="canonical.launchpad.interfaces.IBugAttachment"
         class="canonical.launchpad.browser.BugRelatedObjectEditView"
         facet="bugs"
-        label="Change Bug Attachment Information"
+        label="Change bug attachment information"
         name="+edit"
         permission="launchpad.AnyPerson"
         fields="title patch contenttype"
