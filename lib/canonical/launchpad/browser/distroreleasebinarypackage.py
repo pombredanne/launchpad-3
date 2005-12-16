@@ -37,6 +37,8 @@ class DistroReleaseBinaryPackageNavigation(GetitemNavigation):
 
     usedfor = IDistroReleaseBinaryPackage
 
+    def breadcrumb(self):
+        return self.context.binarypackagename.name
 
 class DistroReleaseBinaryPackageView:
 

@@ -7,7 +7,9 @@ __all__ = ['ISignedMessage',
            'EmailProcessingError',
            'IEmailCommand',
            'IBugEmailCommand',
-           'IBugEditEmailCommand']
+           'IBugTaskEmailCommand',
+           'IBugEditEmailCommand',
+           'IBugTaskEditEmailCommand']
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
@@ -93,15 +95,31 @@ class IBugEmailCommand(IEmailCommand):
         """
 
 
-class IBugEditEmailCommand(IEmailCommand):
-    """An email command specific to editing bug.
+class IBugTaskEmailCommand(IEmailCommand):
+    """An email command specific to getting or creating a bug task."""
 
-    It edits either the bug directly or a sub object of the bug, like a
-    bug task.
-    """
+    def execute(bug):
+        """Either create or get an exiting bug task.
+
+        The bug task and an event is returned as a two-tuple.
+        """
+
+
+class IBugEditEmailCommand(IEmailCommand):
+    """An email command specific to editing a bug."""
 
     def execute(bug):
         """Execute the command in the context of the bug.
 
-        The modified object and an event is returned.
+        The modified bug and an event is returned.
+        """
+
+
+class IBugTaskEditEmailCommand(IEmailCommand):
+    """An email command specific to editing a bug task."""
+
+    def execute(bugtask):
+        """Execute the command in the context of the bug task.
+
+        The modified bug task and an event is returned.
         """
