@@ -56,6 +56,8 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
         # avatar.branches[lpid] is a list of the form:
         #    [(product id, product name, [(branch id, branch name), ...]), ...]
         for productID, productName, branches in avatar.branches[lpid]:
+            if productID == '': productID = None
+            if productName == '': productName = '+junk'
             if productID is None:
                 assert productName == '+junk'
             self.putChild(productName, 

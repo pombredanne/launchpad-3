@@ -13,6 +13,7 @@ from twisted.python.util import sibpath
 from twisted.internet import defer
 
 from canonical.launchpad.daemons import tachandler
+from canonical.authserver.client.twistedclient import TwistedAuthServer
 
 from supermirrorsftp import sftponly
 
@@ -26,24 +27,25 @@ hostPrivateKey = keys.getPrivateKeyObject(
 
 # Configure the authentication
 homedirs = '/tmp/sftp-test/homedirs'
-class FakeAuthserver:
-    def getSSHKeys(self, username):
-        assert username == 'testuser'
-        keytext = open(sibpath(__file__, 'id_dsa.pub'),'r').read().split()[1]
-        return defer.succeed([(2, keytext)])
-    def getUser(self, username):
-        assert username == 'testuser'
-        return defer.succeed({
-            'id': 1, 
-            'name': 'testuser', 
-            'teams': [{'id': 1, 'name': 'testuser', 'initialBranches': []},
-                      {'id': 2, 'name': 'testteam', 'initialBranches': []}],
-        })
-    def getBranchesForUser(self, personID):
-        return defer.succeed([])
-    def createBranch(self, personID, productID, branchName):
-        return defer.succeed(1)
-authserver = FakeAuthserver()
+#class FakeAuthserver:
+#    def getSSHKeys(self, username):
+#        assert username == 'testuser'
+#        keytext = open(sibpath(__file__, 'id_dsa.pub'),'r').read().split()[1]
+#        return defer.succeed([(2, keytext)])
+#    def getUser(self, username):
+#        assert username == 'testuser'
+#        return defer.succeed({
+#            'id': 1, 
+#            'name': 'testuser', 
+#            'teams': [{'id': 1, 'name': 'testuser', 'initialBranches': []},
+#                      {'id': 2, 'name': 'testteam', 'initialBranches': []}],
+#        })
+#    def getBranchesForUser(self, personID):
+#        return defer.succeed([])
+#    def createBranch(self, personID, productID, branchName):
+#        return defer.succeed(1)
+#authserver = FakeAuthserver()
+authserver = TwistedAuthServer('http://localhost:8999/v2/')
 
 portal = portal.Portal(sftponly.Realm(homedirs, authserver))
 portal.registerChecker(sftponly.PublicKeyFromLaunchpadChecker(authserver))

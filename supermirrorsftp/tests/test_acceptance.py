@@ -87,7 +87,7 @@ class AcceptanceTests(unittest.TestCase):
                        % (self.local_branch.base, 
                           server.base + '~testuser/+junk/test-branch',))
         self.assertEqual(0, rv)
-        remote_branch = bzrlib.branch.Branch.initialize(
+        remote_branch = bzrlib.branch.Branch.open(
             server.base + '~testuser/+junk/test-branch')
         #remote_branch.pull(self.local_branch)
         
