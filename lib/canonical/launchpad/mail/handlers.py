@@ -7,6 +7,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.event import notify
 from zope.exceptions import NotFoundError
+from zope.security.management import queryInteraction
 
 from canonical.launchpad.helpers import Snapshot, is_maintainer
 from canonical.launchpad.interfaces import (
@@ -14,7 +15,7 @@ from canonical.launchpad.interfaces import (
     IBugEditEmailCommand, IBugTaskEditEmailCommand, IBug, IBugTask,
     IMailHandler, IBugMessageSet, CreatedBugWithNoBugTasksError,
     EmailProcessingError, IUpstreamBugTask, IDistroBugTask,
-    IDistroReleaseBugTask)
+    IDistroReleaseBugTask, IWeaklyAuthenticatedPrincipal)
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
@@ -101,6 +102,17 @@ def guess_bugtask(bug, person):
     return None
 
 
+def get_current_principal():
+    """Get the principal from the current interaction."""
+    interaction = queryInteraction()
+    principals = [
+        participation.principal
+        for participation in interaction.participations]
+    assert len(principals) == 1, (
+        "There should be only one principal in the current interaction.")
+    return principals[0]
+
+
 class IncomingEmailError(Exception):
     """Indicates that something went wrong processing the mail."""
 
@@ -143,10 +155,21 @@ class MaloneHandler:
 
     def process(self, signed_msg, to_addr, filealias=None):
         commands = self.getCommands(signed_msg)
+
         user, host = to_addr.split('@')
         add_comment_to_bug = False
 
         try:
+            if len(commands) > 0:
+                current_principal = get_current_principal()
+                if IWeaklyAuthenticatedPrincipal.providedBy(current_principal):
+                    # XXX: better error messages
+                    if signed_msg.signature is None:
+                        error_message = 'bla' # get_error_message('')
+                    else:
+                        error_message = 'foo' # get_error_message('')
+                    raise IncomingEmailError(error_message)
+
             if user.lower() == 'new':
                 # A submit request.
                 commands.insert(0, emailcommands.get('bug', ['new']))

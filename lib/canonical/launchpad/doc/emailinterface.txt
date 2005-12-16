@@ -225,6 +225,94 @@ And the summaries were changed:
     >>> print bug_five.title
     Nicer summary
 
+GPG Signing and adding comments
+-------------------------------
+
+In order to include commands in the comment, the email has to be GPG
+signed. The key used to sign the email has to be associated with the
+authenticaded person in Launchpad. It happens quite often, though, that
+people who haven't registered their key in Launchpad sign their emails
+even though the only want to add a comment. These comments should of
+course not be rejected because their key wasn't registered in
+Launchpad.
+
+To make a difference between if an email was signed with a key
+registered in Launchpad or not, we can look at which interfaces the
+currently authenticated principal provides. If the email used for
+authentication was unsigned or signed with a key, which isn't
+associated with the authenticated Person in Launchpad, the principal
+will provide IWeaklyAuthenticatedPrincipal. Let's mark the current
+principal with that.
+
+    >>> from canonical.launchpad.interfaces import IWeaklyAuthenticatedPrincipal
+    >>> from zope.interface import directlyProvides, directlyProvidedBy
+    >>> from zope.security.management import queryInteraction
+    >>> participations = queryInteraction().participations
+    >>> len(participations)
+    1
+    >>> current_principal = participations[0].principal
+    >>> directlyProvides(
+    ...     current_principal, directlyProvidedBy(current_principal),
+    ...     IWeaklyAuthenticatedPrincipal)
+
+
+Now we send a comment containing commands.
+
+    >>> comment_mail = """From: test@canonical.com
+    ... To: 1@malone-domain
+    ... Date: Fri Dec 17 10:20:23 BST 2005
+    ... Message-Id: <yada-yada-test2>
+    ... Subject: Change the summary
+    ...
+    ... Adding a comment via the email system. Let's change the summary
+    ... as well:
+    ...     summary "New summary"
+    ...
+    ... /Sample Person
+    ... """
+    >>> process_email(comment_mail)
+    >>> transaction.commit()
+
+The Malone handler saw that this email was signed, but since
+IWeaklyAuthenticatedPrincipal was provided by the current princial, no
+changes was made to the bug, and the comment wasn't added.
+
+    >>> added_message = getUtility(IMessageSet).get('<yada-yada-test2>')[0]
+    Traceback (most recent call last):
+    ...
+    NotFoundError:...
+
+    >>> bug_one = bugset.get(1)
+    >>> print bug_one.title
+    Better summary
+
+If we don't include any commands in the comment, it will be added
+to the bug:
+
+    >>> comment_mail = """From: test@canonical.com
+    ... To: 1@malone-domain
+    ... Date: Fri Dec 17 10:20:23 BST 2005
+    ... Message-Id: <yada-yada-test3>
+    ... Subject: Change the summary
+    ...
+    ... Adding a comment via the email system.
+    ...
+    ... /Sample Person
+    ... """
+    >>> process_email(comment_mail)
+    >>> transaction.commit()
+
+    >>> added_message = getUtility(IMessageSet).get('<yada-yada-test3>')[0]
+    >>> bug_one = bugset.get(1)
+    >>> added_message in bug_one.messages
+    True
+
+Unmark the principal:
+
+    >>> provided_interfaces = directlyProvidedBy(current_principal)
+    >>> directlyProvides(
+    ...     current_principal,
+    ...     provided_interfaces - IWeaklyAuthenticatedPrincipal)
 
 Commands
 --------
