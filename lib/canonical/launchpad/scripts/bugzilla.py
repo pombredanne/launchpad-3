@@ -255,11 +255,11 @@ class Bug:
         elif self.bug_status == 'NEEDINFO':
             bugtask.status = BugTaskStatus.NEEDSINFO
         elif self.bug_status == 'PENDINGUPLOAD':
-            bugtask.status = BugTaskStatus.FIXED
+            bugtask.status = BugTaskStatus.FIXCOMMITTED
         elif self.bug_status in ['RESOLVED', 'VERIFIED', 'CLOSED']:
             # depends on the resolution:
             if self.resolution == 'FIXED':
-                bugtask.status = BugTaskStatus.RELEASED
+                bugtask.status = BugTaskStatus.FIXRELEASED
             elif self.resolution == 'WONTFIX':
                 bugtask.status = BugTaskStatus.REJECTED
                 bugtask.priority = BugTaskPriority.WONTFIX

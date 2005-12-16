@@ -328,7 +328,7 @@ Next we import a fixed bug:
   Subscribers:
       Sample Person
   Task: mozilla-firefox (ubuntu)
-      Status: RELEASED
+      Status: FIXRELEASED
       Distro: ubuntu
       Source package: mozilla-firefox
       Binary package: mozilla-firefox
@@ -440,7 +440,7 @@ Status Mapping
   REOPENED       UNCONFIRMED
   NEEDINFO       NEEDSINFO
   UPSTREAM       UNCONFIRMED
-  PENDINGUPLOAD  FIXED
+  PENDINGUPLOAD  FIXCOMMITTED
   RESOLVED       REJECTED
   VERIFIED       REJECTED
   CLOSED         REJECTED
@@ -462,7 +462,7 @@ If the bug has been resolved, the resolution will affect the status:
   ...     bug.mapStatus(bugtask)
   ...     print '%-10s  %-8s  %s' % (resolution, bugtask.status.name,
   ...                                bugtask.priority.name)
-  FIXED       RELEASED     MEDIUM
+  FIXED       FIXRELEASED     MEDIUM
   INVALID     REJECTED  MEDIUM
   WONTFIX     REJECTED  WONTFIX
   NOTABUG     REJECTED  MEDIUM

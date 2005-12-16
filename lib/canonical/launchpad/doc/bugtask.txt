@@ -47,7 +47,7 @@ Next, we need to grab some values to provide for priority, severity and status.
     ...     BugTaskPriority)
     >>> STATUS_UNCONFIRMED = BugTaskStatus.UNCONFIRMED
     >>> STATUS_CONFIRMED = BugTaskStatus.CONFIRMED
-    >>> STATUS_RELEASED = BugTaskStatus.RELEASED
+    >>> STATUS_FIXRELEASED = BugTaskStatus.FIXRELEASED
     >>> SEVERITY_NORMAL = BugTaskSeverity.NORMAL
     >>> PRIORITY_MEDIUM = BugTaskPriority.MEDIUM
 
@@ -410,12 +410,12 @@ cannot edit upstream tasks.
 Now let's login as a maintainer and try again.
 
     >>> login('test@canonical.com')
-    >>> upstream_task.status = STATUS_RELEASED
+    >>> upstream_task.status = STATUS_FIXRELEASED
 
 Again, this time as someone other than the maintainer:
 
     >>> login('jeff.waugh@ubuntulinux.com')
-    >>> upstream_task.status = STATUS_RELEASED
+    >>> upstream_task.status = STATUS_FIXRELEASED
 
 Distro and Distro Release Bug Tasks
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -424,7 +424,7 @@ Any logged-in user can edit tasks filed on distros as long as the bug
 is not marked private. So, as an anonymous user, we can edit anything:
 
     >>> login(ANONYMOUS)
-    >>> distro_task.status = STATUS_RELEASED
+    >>> distro_task.status = STATUS_FIXRELEASED
     Traceback (most recent call last):
       ...
     Unauthorized: ('status', 'launchpad.Edit')
@@ -440,7 +440,7 @@ But once authenticated:
 
 We can edit the task:
 
-    >>> distro_task.status = STATUS_RELEASED
+    >>> distro_task.status = STATUS_FIXRELEASED
     >>> distro_release_task.assignee = sample_person
 
 Null Bug Tasks
@@ -580,7 +580,7 @@ properties of the bugtask.
       ...
     Unauthorized: ('status', 'launchpad.View')
 
-    >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.FIXED
+    >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.FIXCOMMITTED
     Traceback (most recent call last):
       ...
     Unauthorized: ('status', 'launchpad.Edit')
@@ -699,7 +699,7 @@ As will attribute access:
 
 And attribute setting:
 
-    >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.RELEASED
+    >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.FIXRELEASED
     >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.UNCONFIRMED
 
 It's all good.

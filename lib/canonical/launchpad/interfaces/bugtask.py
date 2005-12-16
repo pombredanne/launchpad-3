@@ -45,8 +45,8 @@ UNRESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.INPROGRESS)
 
 RESOLVED_BUGTASK_STATUSES = (
-    dbschema.BugTaskStatus.FIXED,
-    dbschema.BugTaskStatus.RELEASED,
+    dbschema.BugTaskStatus.FIXCOMMITTED,
+    dbschema.BugTaskStatus.FIXRELEASED,
     dbschema.BugTaskStatus.REJECTED)
 
 
@@ -462,8 +462,9 @@ class IBugTaskSet(Interface):
         """Return all bug tasks assigned to a package/product maintained by
         :person:.
 
-        By default, closed (FIXED, REJECTED) tasks are not returned. If you
-        want closed tasks too, just pass showclosed=True.
+        By default, closed (FIXCOMMITTED, REJECTED) tasks are not
+        returned. If you want closed tasks too, just pass
+        showclosed=True.
 
         If minseverity is not None, return only the bug tasks with severity 
         greater than minseverity. The same is valid for minpriority/priority.

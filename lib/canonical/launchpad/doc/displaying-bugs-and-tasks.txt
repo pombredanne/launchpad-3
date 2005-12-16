@@ -86,7 +86,7 @@ Let's see some examples of how this works:
   >>> high_priority_task.statusdisplayhtml
   'rejected'
 
-  >>> high_priority_task.status = BugTaskStatus.RELEASED
+  >>> high_priority_task.status = BugTaskStatus.FIXRELEASED
   >>> high_priority_task.statusdisplayhtml
   'fix released'
 
@@ -128,7 +128,7 @@ Fixed, and see how the statuselsewhere value is affected:
 
   >>> related_task = wontfix_priority_task.related_tasks[0]
   >>> ORIGINAL_STATUS = related_task.status
-  >>> related_task.status = BugTaskStatus.RELEASED
+  >>> related_task.status = BugTaskStatus.FIXRELEASED
 
   >>> wontfix_priority_task.statuselsewhere
   'fixed in 1 of 3 places'

@@ -136,7 +136,7 @@ class DBSchemaValidator(validators.Validator):
         """Convert from DBSchema Item to int.
 
         >>> validator = DBSchemaValidator(schema=BugTaskStatus)
-        >>> validator.fromPython(BugTaskStatus.FIXED, None)
+        >>> validator.fromPython(BugTaskStatus.FIXCOMMITTED, None)
         25
         >>> validator.fromPython(ImportTestStatus.NEW, None)
         Traceback (most recent call last):
@@ -171,7 +171,7 @@ class DBSchemaValidator(validators.Validator):
         """Convert from int to DBSchema Item.
 
         >>> validator = DBSchemaValidator(schema=BugTaskStatus)
-        >>> validator.toPython(25, None) is BugTaskStatus.FIXED
+        >>> validator.toPython(25, None) is BugTaskStatus.FIXCOMMITTED
         True
 
         """
@@ -2282,17 +2282,19 @@ class BugTaskStatus(DBSchema):
         The person assigned to fix this bug is currently working on fixing it.
         """)
 
-    FIXED = Item(25, """
-        Fixed
+    FIXCOMMITTED = Item(25, """
+        Fix Committed
 
-        This bug has been fixed, but the fix has not yet made it into a released
-        version of the affected software.
+        This bug has been fixed in version control, but the fix has
+        not yet made it into a released version of the affected
+        software.
         """)
 
-    RELEASED = Item(30, """
-        Released
+    FIXRELEASED = Item(30, """
+        Fix Released
 
-        The fix for this bug has been released.
+        The fix for this bug is available in a released version of the
+        affected software.
         """)
 
 

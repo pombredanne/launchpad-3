@@ -112,7 +112,7 @@ All bugtasks ever reported on the target, including closed ones.
     >>> all_bugtasks = list(all_bugtasks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name)
     ...         for bugtask in all_bugtasks])
-    [(1, 'CONFIRMED'), (2, 'CONFIRMED'), (3, 'UNCONFIRMED'), (8, 'RELEASED')]
+    [(1, 'CONFIRMED'), (2, 'CONFIRMED'), (3, 'UNCONFIRMED'), (8, 'FIXRELEASED')]
     >>> all_bugtasks_view.taskCount
     4
 

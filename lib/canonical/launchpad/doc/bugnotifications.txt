@@ -354,7 +354,7 @@ task Accepted, assigns himself to it, and adds a status note.
     ...              "milestone", "statusexplanation"]:
     ...     setattr(bugtask_before_modification, name,
     ...             getattr(firefox_crashes_in_debian, name))
-    >>> firefox_crashes_in_debian.status = BugTaskStatus.RELEASED
+    >>> firefox_crashes_in_debian.status = BugTaskStatus.FIXRELEASED
     >>> firefox_crashes_in_debian.assignee = bug_submitter.id
     >>> debian_task_modified = SQLObjectModifiedEvent(
     ...     firefox_crashes_in_debian, bugtask_before_modification,

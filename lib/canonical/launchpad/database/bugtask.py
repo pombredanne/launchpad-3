@@ -38,7 +38,7 @@ from canonical.launchpad.interfaces import (
 
 debbugsstatusmap = {'open': BugTaskStatus.UNCONFIRMED,
                     'forwarded': BugTaskStatus.CONFIRMED,
-                    'done': BugTaskStatus.RELEASED}
+                    'done': BugTaskStatus.FIXRELEASED}
 
 debbugsseveritymap = {'wishlist': BugTaskSeverity.WISHLIST,
                       'minor': BugTaskSeverity.MINOR,
@@ -274,9 +274,9 @@ class BugTask(SQLBase, BugTaskMixin):
         status = self.status
 
         if assignee:
-            # The statuses REJECTED, FIXED, and CONFIRMED will display
-            # with the assignee information as well. Showing assignees
-            # with other status would just be confusing
+            # The statuses REJECTED, FIXCOMMITTED, and CONFIRMED will
+            # display with the assignee information as well. Showing
+            # assignees with other status would just be confusing
             # (e.g. "Unconfirmed, assigned to Foo Bar")
             assignee_html = (
                 '<img src="/++resource++user.gif" /> '
@@ -284,18 +284,17 @@ class BugTask(SQLBase, BugTaskMixin):
                     urllib.quote_plus(assignee.name),
                     cgi.escape(assignee.browsername)))
 
-            if status in (BugTaskStatus.REJECTED, BugTaskStatus.FIXED):
+            if status in (BugTaskStatus.REJECTED, BugTaskStatus.FIXCOMMITTED):
                 return '%s by %s' % (status.title.lower(), assignee_html)
             elif  status == BugTaskStatus.CONFIRMED:
                 return '%s, assigned to %s' % (status.title.lower(), assignee_html)
 
-        # The status is something other than REJECTED, FIXED or
+        # The status is something other than REJECTED, FIXCOMMITTED or
         # CONFIRMED (whether assigned to someone or not), so we'll
         # show only the status.
-        if status in (BugTaskStatus.REJECTED, BugTaskStatus.UNCONFIRMED):
+        if status in (BugTaskStatus.REJECTED, BugTaskStatus.UNCONFIRMED,
+                      BugTaskStatus.FIXRELEASED):
             return status.title.lower()
-        if status == BugTaskStatus.RELEASED:
-            return 'fix released'
 
         return status.title.lower() + ' (unassigned)'
 
@@ -507,7 +506,8 @@ class BugTaskSet:
             showclosed = ""
         else:
             showclosed = (
-                ' AND BugTask.status < %s' % sqlvalues(BugTaskStatus.FIXED))
+                ' AND BugTask.status < %s' %
+                sqlvalues(BugTaskStatus.FIXCOMMITTED))
 
         priority_severity_filter = ""
         if minpriority is not None:
