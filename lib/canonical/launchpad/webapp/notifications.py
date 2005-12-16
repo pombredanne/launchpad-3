@@ -5,7 +5,7 @@ Provides an API for displaying arbitrary  notifications to users after
 an action has been performed, independant of what page the user
 ends up on after the action is done.
 
-Note that the current implementation is deliberatly broken - the only way
+Note that the current implementation is deliberately broken - the only way
 to do this correctly is by passing a token in the URL to identify the
 browser window the request came from.
 """
