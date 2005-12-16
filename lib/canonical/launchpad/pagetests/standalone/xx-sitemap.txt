@@ -1,3 +1,5 @@
+= Launchpad Site Map =
+
 The site map is displayed at the top of the left portlets column, and
 displays the "Pillars of Launchpad".
 
@@ -17,6 +19,8 @@ displays the "Pillars of Launchpad".
   </ul>
   ...
 
+
+== Products Pillar ==
 
 If we are under the "Products" pillar then that pillar is highlighted,
 and the subpillars are displayed.  Note that none of the subpillars
@@ -69,9 +73,10 @@ actual pages get linked:
   ...
 
 
-There is no release series page or milestones page, but those
-subpillars will be highlighted if a release series or milestone is
-being viewed:
+Since there is no page that displays the list of product series for a
+product (other than the main page for a product), the "Release Series"
+subpillar is not linked to anything.  However, if we view a product
+series, "Release Series" is highlighted:
 
   >>> print http(r"""
   ... GET /products/firefox/+series/1.0 HTTP/1.1
@@ -94,6 +99,9 @@ being viewed:
   </ul>
   ...
 
+
+The same holds for product milestones:
+
   >>> print http(r"""
   ... GET /products/firefox/+milestone/1.0 HTTP/1.1
   ... """)
@@ -115,6 +123,8 @@ being viewed:
   </ul>
   ...
 
+
+== Distributions Pillar ==
 
 Similarly, if we are under the distributions pillar, then the
 associated pillar link is highlighted:
@@ -170,8 +180,11 @@ when a particular distribution is viewed:
 
 The various subpillars are highlighted, depending on the context:
 
+
+View a distribution release:
+
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary HTTP/1.1
+  ... GET /distros/ubuntu/warty HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -192,8 +205,11 @@ The various subpillars are highlighted, depending on the context:
   </ul>
   ...
 
+
+View a distribution release architecture:
+
   >>> print http(r"""
-  ... GET /distros/ubuntu/hoary/i386 HTTP/1.1
+  ... GET /distros/ubuntu/warty/i386 HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
@@ -213,6 +229,9 @@ The various subpillars are highlighted, depending on the context:
     <li>Binary Packages</li>
   </ul>
   ...
+
+
+View a source package:
 
   >>> print http(r"""
   ... GET /distros/ubuntu/+source/mozilla-firefox HTTP/1.1
@@ -236,6 +255,9 @@ The various subpillars are highlighted, depending on the context:
   </ul>
   ...
 
+
+View a source package in a particular distribution release:
+
   >>> print http(r"""
   ... GET /distros/ubuntu/warty/+source/mozilla-firefox HTTP/1.1
   ... """)
@@ -258,6 +280,9 @@ The various subpillars are highlighted, depending on the context:
   </ul>
   ...
 
+
+View a binary package for a particular distribution release architecture:
+
   >>> print http(r"""
   ... GET /distros/ubuntu/warty/i386/mozilla-firefox HTTP/1.1
   ... """)
@@ -279,6 +304,9 @@ The various subpillars are highlighted, depending on the context:
     <li class="current">Binary Packages</li>
   </ul>
   ...
+
+
+View a binary package for a distribution release:
 
   >>> print http(r"""
   ... GET /distros/ubuntu/warty/+package/mozilla-firefox HTTP/1.1
@@ -303,9 +331,9 @@ The various subpillars are highlighted, depending on the context:
   ...
 
 
-The other main Launchpad pillars are highlighted when browsing the
-corresponding sections of the website.  There are no subpillars for
-them at this time:
+== People and Teams Pillar ==
+
+Viewing the people page:
 
   >>> print http(r"""
   ... GET /people HTTP/1.1
@@ -323,6 +351,11 @@ them at this time:
   </ul>
   ...
 
+
+== Product Groups Pillar ==
+
+View the product groups page:
+
   >>> print http(r"""
   ... GET /projects HTTP/1.1
   ... """)
@@ -338,6 +371,11 @@ them at this time:
     <li><a href=".../sprints">Meetings</a></li>
   </ul>
   ...
+
+
+== Meetings Pillar ==
+
+View the meetings page:
 
   >>> print http(r"""
   ... GET /sprints HTTP/1.1

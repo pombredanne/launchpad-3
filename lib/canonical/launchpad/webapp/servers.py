@@ -123,13 +123,12 @@ class LaunchpadBrowserRequest(BrowserRequest, NotificationRequest,
         return LaunchpadBrowserResponse(outstream)
 
     def getNearest(self, *some_interfaces):
-        """See ILaunchpadBrowserAPplicationRequest.getNearest()"""
+        """See ILaunchpadBrowserApplicationRequest.getNearest()"""
         for context in reversed(self.traversed_objects):
             for iface in some_interfaces:
                 if iface.providedBy(context):
-                    return (context, iface)
-        else:
-            return None, None
+                    return context, iface
+        return None, None
 
 
 class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):

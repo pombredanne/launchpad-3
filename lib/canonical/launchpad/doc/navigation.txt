@@ -726,7 +726,7 @@ multiple interfaces are passed to getNearest():
     (<Thing 'TTT'>, <InterfaceClass __builtin__.IThing>)
 
 If more than one object of a particular interface type has been
-traversed, the last one is returned:
+traversed, the most recently traversed one is returned:
 
     >>> request = Request()
     >>> navigation = ThingSetNavigation(thingset, request)
@@ -742,8 +742,8 @@ traversed, the last one is returned:
     >>> request.getNearest(IThing)
     (<Thing 'something'>, <InterfaceClass __builtin__.IThing>)
 
-If a particular interface has not been traversed, the tuple (None,
-None) is returned:
+If a particular interface has not been traversed, the tuple
+(None, None) is returned:
 
     >>> request = Request()
     >>> navigation = ThingSetNavigation(thingset, request)
@@ -753,3 +753,7 @@ None) is returned:
     NotFound: ...ThingSet..., name: 'xyz'
     >>> request.getNearest(IThing)
     (None, None)
+
+Note that a tuple is returned in the error case so that the result can
+unpacked unconditionally, rather than needing to check for an error
+return before unpacking.
