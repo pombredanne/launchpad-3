@@ -223,15 +223,15 @@ builder_cancel = ContextTitle(u'Cancel job for “%s”')
 
 builder_mode = ContextTitle('Change mode for “%s”')
 
-calendar_index = ContextTitle('Calendar for %s')
+calendar_index = ContextTitle('%s')
 
-calendar_event_addform = ContextTitle(u'Add event to %s’s calendar')
+calendar_event_addform = ContextTitle(u'Add event to %s')
 
 calendar_event_display = ContextTitle(u'Event “%s”')
 
 calendar_event_editform = ContextTitle(u'Edit event “%s”')
 
-calendar_subscribe = ContextTitle(u'Subscribe to %s’s calendar')
+calendar_subscribe = ContextTitle(u'Subscribe to “%s”')
 
 calendar_subscriptions = 'Calendar subscriptions'
 
@@ -260,7 +260,7 @@ cve_removebug = ContextDisplayName('Remove link between %s and a bug report')
 
 debug_root_changelog = 'Launchpad changelog'
 
-debug_root_index = 'Launchpad debugging home page'
+debug_root_index = 'Launchpad Debug Home Page'
 
 default_editform = 'Default "Edit" Page'
 
@@ -314,7 +314,7 @@ distrorelease_packaging = ContextDisplayName('Mapping packages to upstream '
 
 distrorelease_search = ContextDisplayName('Search packages in %s')
 
-distrorelease_translations = ContextTitle('Translations of %s')
+distrorelease_translations = ContextTitle('Translations of %s in Rosetta')
 
 distrorelease_builds = ContextTitle('Builds for %s')
 
@@ -563,7 +563,7 @@ product_index = ContextTitle('%s in Launchpad')
 
 product_packages = ContextDisplayName('%s packages in Launchpad')
 
-product_translations = ContextTitle('Translations of %s in Launchpad')
+product_translations = ContextTitle(u'Translations of %s in Rosetta')
 
 def productrelease(context, view):
     return '%s %s in Launchpad' % (
@@ -575,8 +575,7 @@ def productrelease_edit(context, view):
 
 productrelease_add = ContextTitle('Register a new %s release in Launchpad')
 
-productseries_translations = ContextTitle(
-    'Translation remplates for %s')
+productseries_translations = ContextTitle('Translation templates for %s')
 
 productseries_ubuntupkg = 'Ubuntu source package'
 
@@ -586,7 +585,7 @@ productseries_source = 'Import product series'
 
 productseries_sourceadmin = 'Add source import'
 
-project = ContextTitle('%s project in Launchpad')
+project = ContextTitle('%s in Launchpad')
 
 project_branches = ContextTitle('Bazaar branches for %s')
 
@@ -674,7 +673,7 @@ sourcepackage = ContextTitle('%s')
 
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
 
-sourcepackage_buildlog = ContextTitle('%s build logs')
+sourcepackage_buildlog = ContextTitle('Build log for %s')
 
 sourcepackage_builds = ContextTitle('Builds for %s')
 
@@ -863,7 +862,7 @@ template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
 
-translationgroup = ContextTitle('%s Rosetta translation group')
+translationgroup = ContextTitle(u'“%s” Rosetta translation group')
 
 translationgroups = 'Rosetta translation groups'
 

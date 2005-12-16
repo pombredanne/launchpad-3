@@ -18,7 +18,7 @@
     <h1>Translation of <span tal:replace="context/potemplate/potemplatename/name">PO Template</span>
         into <span tal:replace="context/language/displayname">Language</span></h1>
 
-    <h2>Contributors for this translation</h2>
+    <h2>Contributors to this translation</h2>
 
     <p tal:condition="context/contributors">
       The following people have made some contribution to this specific

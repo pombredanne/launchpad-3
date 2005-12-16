@@ -10,8 +10,8 @@ Make sure important links are there, title ad heading set correctly etc.
     Content-Type: text/html;charset=utf-8
     <BLANKLINE>
     ...
-        <title>The Launchpad Home Page</title>
+        <title>Launchpad</title>
     ...
-        <h1>Welcome to The Launchpad</h1>
+        <h1>Welcome to Launchpad</h1>
     ...
 

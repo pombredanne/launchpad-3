@@ -38,7 +38,7 @@ the authored branches page.
   ... GET /people/name12/+branches HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...<a href="http://localhost:9000/people/name12/+authoredbranches">Show Authored Branches</a>...
+  ...<a href="http://localhost:9000/people/name12/+authoredbranches">Branches Authored</a>...
 
 And we can load the authored branches page.
 
@@ -59,7 +59,7 @@ the authored branches page.
   ... GET /people/name12/+branches HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...<a href="http://localhost:9000/people/name12/+registeredbranches">Show Registered Branches</a>...
+  ...<a href="http://localhost:9000/people/name12/+registeredbranches">Branches Registered</a>...
 
 And we can load the authored branches page.
 
@@ -75,7 +75,7 @@ And we can load the authored branches page.
   ... GET /people/name12/+branches HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...<a href="http://localhost:9000/people/name12/+subscribedbranches">Show Subscribed Branches</a>...
+  ...<a href="http://localhost:9000/people/name12/+subscribedbranches">Branches Subscribed</a>...
 
 And we can load the authored branches page.
 

@@ -181,7 +181,7 @@
         facet="overview"
         schema="canonical.launchpad.interfaces.IProduct"
         class="canonical.launchpad.browser.ProductEditView"
-        label="Edit Upstream Product Details"
+        label="Edit upstream product details"
         fields="project name displayname title summary description homepageurl
                 sourceforgeproject freshmeatproject wikiurl screenshotsurl
                 downloadurl programminglang"

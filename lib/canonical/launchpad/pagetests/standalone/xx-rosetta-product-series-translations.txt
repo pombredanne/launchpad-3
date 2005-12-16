@@ -6,7 +6,7 @@ series is working.
   ... """)
   HTTP/1.1 200 Ok
   ...
-      <title>Rosetta Translation Templates for Evolution Series: MAIN</title>
+      <title>Translation templates for Evolution Series: MAIN</title>
   ...
       <tr onclick="window.location='http://.../products/evolution/+series/main/+pots/evolution-2.2/af/+translate'">
   <BLANKLINE>

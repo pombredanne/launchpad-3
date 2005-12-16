@@ -6,7 +6,7 @@ trackers.
   ... GET /malone/bugtrackers/ HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...Launchpad-registered Bug Trackers...
+  ...Bug trackers registered in Malone...
 
 Now we are going to add a bug tracker. First, can we see the form?
 
@@ -73,7 +73,7 @@ So let's view this new bug tracker.
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...Malone Bugtracker: Test Trac Tracker...
+  ...Bug tracker “Test Trac Tracker”...
 
 And lets see if we can edit it.
 

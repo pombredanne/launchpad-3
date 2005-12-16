@@ -15,7 +15,7 @@
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...Add a Poll Option...
+  ...Add a poll option...
 
 
   And now, actually add the option.

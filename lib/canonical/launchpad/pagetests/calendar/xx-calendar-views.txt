@@ -10,7 +10,7 @@ interesting at the moment).
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-  <title>Sample Person’s calendar</title>
+  <title>Sample Person's Calendar</title>
   ...
   <a href=".../people/name12/+calendar/...">Day</a>
   ...
@@ -33,7 +33,7 @@ Get a year view for the calendar. Items of note:
   ... """)
   HTTP/1.1 200 Ok
   ...
-  ...Sample Person’s calendar - 2005...
+  ...Sample Person's Calendar - 2005...
 
 
   >>> print http(r"""
@@ -175,7 +175,7 @@ hours:
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-  <title>Sample Person’s calendar - 3 January 2005</title>
+  <title>Sample Person's Calendar - 3 January 2005</title>
   ...
   <a href=".../people/name12/+calendar/events/1">
   16:00

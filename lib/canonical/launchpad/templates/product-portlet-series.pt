@@ -1,6 +1,8 @@
 <div class="portlet">
-
-  <h4><tal:name="context/displayname">Firefox</tal:name> release series:</h4>
+  <h4>
+    <tal:name content="context/displayname">Firefox</tal:name>
+    release series:
+  </h4>
 
   <div class="portletBody portletContent">
 

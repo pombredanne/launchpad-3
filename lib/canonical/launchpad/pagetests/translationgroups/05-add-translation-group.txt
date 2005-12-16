@@ -71,8 +71,8 @@ and clean. Let's view it.
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <title>Rosetta Translation Group: The PolyGlot Translation Group</title>
+      <title>“The PolyGlot Translation Group” Rosetta translation group</title>
   ...
-    <h1>Translation Group Overview</h1>
+    <h1>Translation group overview</h1>
   ...
 

@@ -7,7 +7,7 @@ Now, let's subscribe to the Bounty. First, we want to display the
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
-  ...Subscribe to Bounty...
+  ...Subscribe to bounty...
 
 Now, let's POST our subscription. The POST should be directed to the
 bounty page itself, and we should see a message.

@@ -4,7 +4,7 @@
     <div class="portletBody">
         <div class="portletContent">
 
-            <h5 tal:condition="context/distributions">Distributions:</h4>
+            <h5 tal:condition="context/distributions">Distributions:</h5>
             <ul>
                 <li tal:repeat="distribution context/distributions">
                   <a href="#"
@@ -14,7 +14,7 @@
                 </li>
             </ul>
 
-            <h5 tal:condition="context/products">Products:</h4>
+            <h5 tal:condition="context/products">Products:</h5>
             <ul>
                 <li tal:repeat="product context/products">
                   <a href="#"

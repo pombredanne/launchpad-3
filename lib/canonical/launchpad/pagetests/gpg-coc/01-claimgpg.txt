@@ -16,7 +16,7 @@ Clean page
   Content-Type: text/html;charset=utf-8
   ...
     <head>
-      <title>Sample Person GPG Keys</title>
+      <title>Sample Person’s OpenPGP keys</title>
   ...
 
 Claim GPG Key
@@ -128,7 +128,7 @@ Certify the key is imported
   Content-Type: text/html;charset=utf-8
   ...
     <head>
-      <title>Sample Person GPG Keys</title>
+      <title>Sample Person’s OpenPGP keys</title>
   ...
   ...1024D/DFD20543...
 

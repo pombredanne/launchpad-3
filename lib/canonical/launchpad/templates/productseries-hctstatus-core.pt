@@ -39,7 +39,7 @@
       </tr>
         <tal:block condition="python:context.rcstype.name=='CVS'">
           <tr>
-            <td>CVS Root:</td>
+            <td>CVS root:</td>
             <td tal:content="context/cvsroot">cvs root</td>
           </tr>
           <tr>

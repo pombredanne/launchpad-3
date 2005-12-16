@@ -9,7 +9,7 @@ page, it should have no TranslationGroup and open permissions.
   ... """)
   HTTP/1.1 200 Ok
   ...
-        <b>Translation Group:</b><br />
+        <b>Translation group:</b><br />
         <img src="/++resource++languages.gif">
   <BLANKLINE>
   <BLANKLINE>

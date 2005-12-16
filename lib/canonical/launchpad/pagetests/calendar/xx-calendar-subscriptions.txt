@@ -11,7 +11,7 @@ while logged in as "Sample Person:
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <title>Subscribe to "Ubuntu Project Calendar"</title>
+      <title>Subscribe to “Ubuntu Project Calendar”</title>
   ...
         <form action=".../projects/ubuntu/+calendar/+subscribe"
               method="post">
@@ -46,7 +46,7 @@ the merged view).
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <title>Subscribe to "Ubuntu Project Calendar"</title>
+      <title>Subscribe to “Ubuntu Project Calendar”</title>
   ...
         <form action=".../projects/ubuntu/+calendar/+subscribe"
               method="post">

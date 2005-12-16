@@ -6,7 +6,7 @@ Check that the PO Template Name edit form loads.
   ... """)
   HTTP/1.1 200 Ok
   ...
-      <title>Main translation domain for the Evolution 2.2 edit in Rosetta</title>
+      <title>Edit “Main translation domain for the Evolution 2.2” in Rosetta</title>
   ...
 
 Check that we can submit the PO Template Name edit form.

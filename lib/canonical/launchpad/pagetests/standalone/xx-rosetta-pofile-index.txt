@@ -5,7 +5,7 @@ Test to check the POFile index page list all contributors as it should.
   ... """)
   HTTP/1.1 200 Ok
   ...
-      <h2>Contributors for this translation:</h2>
+      <h2>Contributors to this translation</h2>
   ...
           <a href="/people/carlos">Carlos Perelló Marín</a>
   ...
@@ -14,7 +14,7 @@ Test to check the POFile index page list all contributors as it should.
               <b>Messages:</b>
               22
               <br />
-              <b>Todo:</b>
+              <b>To do:</b>
               14
   ...
 

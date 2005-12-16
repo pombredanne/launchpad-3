@@ -6,7 +6,7 @@ Resetting to autotest does in fact reset to autotest.
   ... Authorization: Basic cm9iZXJ0Y0Byb2JlcnRjb2xsaW5zLm5ldDpsdW5jaHBhZA==
   ... """)
   HTTP/1.1 200 Ok
-  ...Failed Import Control...
+  ...Failed import control...
 
   >>> print http(r"""
   ... POST /products/a52dec/+series/failedbranch/+sourceadmin HTTP/1.1

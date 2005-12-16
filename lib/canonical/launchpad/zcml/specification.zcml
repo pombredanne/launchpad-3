@@ -172,7 +172,7 @@
     name="+setdistrorelease"
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
-    label="Target to a Distribution Release"
+    label="Target to a distribution release"
     fields="distrorelease delivery whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-distrorelease.pt">
