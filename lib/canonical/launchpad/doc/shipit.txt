@@ -235,10 +235,10 @@ to each country.
     >>> for line in csv_file.readlines():
     ...     line
     'Country,Shipped x86 CDs,Shipped AMD64 CDs,Shipped PPC CDs,Normal-prio shipments,High-prio shipments,Average request size,Percentage of requested CDs that were approved,Percentage of total shipped CDs,Continent\r\n'
-    'Bermuda,10,9,3,1,0,22,104%,30%,North America\r\n'
-    'British Indian Ocean Territory,9,6,9,0,1,24,100%,33%,Asia\r\n'
-    'Burkina Faso,5,3,2,1,0,10,100%,14%,Africa\r\n'
-    'Heard Island and McDonald Islands,10,3,2,1,0,15,100%,21%,Antarctica\r\n'
+    'Bermuda,10,9,3,1,0,22,104.76%,30.99%,North America\r\n'
+    'Burkina Faso,5,3,2,1,0,10,100.00%,14.08%,Africa\r\n'
+    'Heard Island and McDonald Islands,10,3,2,1,0,15,100.00%,21.13%,Antarctica\r\n'
+    '\xc3\x85land Islands,9,6,9,0,1,24,100.00%,33.80%,Europe\r\n'
 
 
 There's another report which gives us the number of shipments of all shipment

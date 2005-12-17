@@ -1,0 +1,15 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    i18n_domain="launchpad">
+
+<subscriber
+   for="canonical.launchpad.interfaces.ITicket
+        canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
+   factory="canonical.launchpad.mailnotification.notify_ticket_added" />
+
+<subscriber
+   for="canonical.launchpad.interfaces.ITicket
+        canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
+   factory="canonical.launchpad.mailnotification.notify_ticket_modified" />
+
+</configure>

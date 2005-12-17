@@ -137,7 +137,7 @@ class ImporterHandler:
 
         self.sppublisher = SourcePackagePublisher(self.distrorelease, pocket)
         # This is initialized in ensure_archinfo
-        self.bppublisher = None
+        self.bppublishers = {}
 
     def commit(self):
         """Commit to the database."""
@@ -174,7 +174,7 @@ class ImporterHandler:
         info = {'distroarchrelease': dar, 'processor': processor}
         self.archinfo[archtag] = info
 
-        self.bppublisher = BinaryPackagePublisher(dar, self.pocket)
+        self.bppublishers[archtag] = BinaryPackagePublisher(dar, self.pocket)
         self.imported_bins[archtag] = []
 
     #
@@ -269,7 +269,7 @@ class ImporterHandler:
             # If the sourcepackagerelease is not imported, not way to import
             # this binarypackage. Warn and giveup.
             raise NoSourcePackageError("No source package %s (%s) found "
-                "for %s (%s)" % (binarypackagedata.name,
+                "for %s (%s)" % (binarypackagedata.package,
                                  binarypackagedata.version,
                                  binarypackagedata.source,
                                  binarypackagedata.source_version))
@@ -339,18 +339,13 @@ class ImporterHandler:
 
     def publish_sourcepackage(self, sourcepackagerelease, sourcepackagedata):
         """Append to the sourcepackagerelease imported list."""
-        log.info('Publishing source %s (%s) into %s' %
-                 (sourcepackagedata.package, sourcepackagedata.version,
-                  self.distrorelease.name))
         self.sppublisher.publish(sourcepackagerelease, sourcepackagedata)
         self.imported_sources.append((sourcepackagerelease, sourcepackagedata))
 
     def publish_binarypackage(self, binarypackagerelease, binarypackagedata,
                               archtag):
-        log.info('Publishing binary %s (%s) into %s for %s' %
-                 (binarypackagedata.package, binarypackagedata.version,
-                  self.distrorelease.name, archtag))
-        self.bppublisher.publish(binarypackagerelease, binarypackagedata)
+        self.bppublishers[archtag].publish(binarypackagerelease,
+                                           binarypackagedata)
         self.imported_bins[archtag].append((binarypackagerelease,
                                             binarypackagedata))
 
@@ -616,13 +611,10 @@ class SourcePackagePublisher:
         """Create the publishing entry on db if does not exist."""
         # Check if the sprelease is already published and if so, just
         # report it.
-        log.debug('Publishing SourcePackage %s-%s' % (
-            sourcepackagerelease.sourcepackagename.name, 
-            sourcepackagerelease.version))
         source_publishinghistory = self._checkPublishing(
             sourcepackagerelease, self.distrorelease)
         if source_publishinghistory:
-            log.debug('SourcePackageRelease already published as %s' %
+            log.info('SourcePackageRelease already published as %s' %
                       source_publishinghistory.status.title)
             return
 
@@ -641,7 +633,7 @@ class SourcePackagePublisher:
             datepublished=nowUTC,
             pocket=self.pocket
             )
-        log.debug('Source package %s (%s) published' % (
+        log.info('Source package %s (%s) published' % (
             entry.sourcepackagerelease.sourcepackagename.name,
             entry.sourcepackagerelease.version))
 
@@ -718,6 +710,8 @@ class BinaryPackageHandler:
             return licence
 
         # XXX: untested
+        # Couldn't find the licence in the cache; let's trigger a
+        # read_dsc to see if we can find it.
         try:
             tempdir = tempfile.mkdtemp()
             cwd = os.getcwd()
@@ -729,15 +723,14 @@ class BinaryPackageHandler:
                 os.chdir(cwd)
             shutil.rmtree(tempdir)
         except PoolFileNotFound:
-            licence = None
-        else:
-            licence = self.readLicenceCached(bin_name, src_name, version)
-
-        if licence is None:
             log.warn("While groping for a copyright file for %s, could "
                      "not even find the source package for %s (%s) in "
                      "the archive. Dropped copyright." %
                      (bin_name, src_name, version))
+            licence = None
+        else:
+            licence = self.readLicenceCached(bin_name, src_name, version)
+
         return licence
 
     def readLicenceCached(self, bin_name, src_name, version):
@@ -863,15 +856,12 @@ class BinaryPackagePublisher:
 
     def publish(self, binarypackage, bpdata):
         """Create the publishing entry on db if does not exist."""
-        log.debug('Publishing BinaryPackage %s-%s' % (
-            binarypackage.binarypackagename.name, binarypackage.version))
-
         # Check if the binarypackage is already published and if yes,
         # just report it.
         binpkg_publishinghistory = self._checkPublishing(
             binarypackage, self.distroarchrelease)
         if binpkg_publishinghistory:
-            log.debug('Binarypackage already published as %s' % (
+            log.info('Binarypackage already published as %s' % (
                 binpkg_publishinghistory.status.title))
             return
 
@@ -900,8 +890,9 @@ class BinaryPackagePublisher:
             dateremoved = None,
             )
 
-        log.debug('BinaryPackage %s-%s published.' % (
-            binarypackage.binarypackagename.name, binarypackage.version))
+        log.info('BinaryPackage %s-%s published into %s.' % (
+            binarypackage.binarypackagename.name, binarypackage.version,
+            self.distroarchrelease.architecturetag))
 
 
     def _checkPublishing(self, binarypackage, distroarchrelease):
@@ -915,7 +906,7 @@ class BinaryPackagePublisher:
             name = binarypackage.binarypackagename.name
             raise MultiplePublishingEntryError("Binary package %s (%s) has "
                 "more than one publishing record for %s" %
-                (name, binarypackage.version, 
+                (name, binarypackage.version,
                  distroarchrelease.distrorelease.name))
 
 

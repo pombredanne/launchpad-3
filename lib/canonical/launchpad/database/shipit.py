@@ -17,7 +17,8 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol, AND)
 
-from canonical.database.sqlbase import SQLBase, sqlvalues, cursor
+from canonical.database.sqlbase import (
+    SQLBase, sqlvalues, quote, quote_like, cursor)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.helpers import intOrZero
@@ -302,10 +303,10 @@ class ShippingRequestSet:
                         WHERE Person.fti @@ ftq(%s)
                     UNION
                     SELECT EmailAddress.person FROM EmailAddress
-                        WHERE lower(EmailAddress.email) LIKE %s
+                        WHERE lower(EmailAddress.email) LIKE %s || '%%'
                     )
-                """ % sqlvalues(recipient_text, recipient_text,
-                                recipient_text + '%'))
+                """ % (quote(recipient_text), quote(recipient_text),
+                       quote_like(recipient_text)))
 
         if omit_cancelled:
             queries.append("ShippingRequest.cancelled = FALSE")
@@ -437,14 +438,18 @@ class ShippingRequestSet:
             percentage_of_approved = float(shipped_cds) / float(requested_cds)
             percentage_of_total = float(shipped_cds) / float(all_shipped_cds)
 
-            row = [country.name, shipped_cds_per_arch[ShipItArchitecture.X86],
+            # Need to encode strings that may have non-ASCII chars into
+            # unicode because we're using StringIO.
+            country_name = country.name.encode('utf-8')
+            continent_name = country.continent.name.encode('utf-8')
+            row = [country_name, shipped_cds_per_arch[ShipItArchitecture.X86],
                    shipped_cds_per_arch[ShipItArchitecture.AMD64],
                    shipped_cds_per_arch[ShipItArchitecture.PPC],
                    normal_prio_count, high_prio_count,
                    average_request_size,
-                   "%d%%" % (percentage_of_approved * 100),
-                   "%d%%" % (percentage_of_total * 100),
-                   country.continent.name]
+                   "%.2f%%" % (percentage_of_approved * 100),
+                   "%.2f%%" % (percentage_of_total * 100),
+                   continent_name]
             csv_writer.writerow(row)
         csv_file.seek(0)
         return csv_file
