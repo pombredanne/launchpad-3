@@ -36,13 +36,13 @@ default: all
 # it is currently needed to get the fti columns populated correctly.
 test: create 
 	@ echo "* Installing tsearch2 into ts2 schema"
-	@ ${PYTHON} fti.py --setup-only -d ${TEST_DBNAME}
+	@ ${PYTHON} fti.py -q --setup-only -d ${TEST_DBNAME}
 	@ echo "* Loading base database schema"
 	@ psql -d ${TEST_DBNAME} -f ${BASELINE} | grep : | cat
 	@ echo "* Patching the database schema"
 	@ ${PYTHON} upgrade.py -d ${TEST_DBNAME}
 	@ echo "* Setting up full text indexes"
-	@ ${PYTHON} fti.py -d ${TEST_DBNAME}
+	@ ${PYTHON} fti.py -q -d ${TEST_DBNAME}
 	@ echo "* Adding comments"
 	@ psql -d ${TEST_DBNAME} -f comments.sql | grep : | cat
 	@ echo "* Security setup"
@@ -53,8 +53,8 @@ test: create
 	@ echo "* Loading sample data"
 	@ psql -v ON_ERROR_STOP=1 -d ${TEST_DBNAME} -f $(SAMPLEDATA) > /dev/null
 	@ echo "* Setting up full text indexes"
-	@ ${PYTHON} fti.py -d ${EMPTY_DBNAME}
-	@ ${PYTHON} fti.py -d ${TEST_DBNAME}
+	@ ${PYTHON} fti.py -q -d ${EMPTY_DBNAME}
+	@ ${PYTHON} fti.py -q -d ${TEST_DBNAME}
 	@ echo "* Resetting sequences"
 	@ ${PYTHON} reset_sequences.py -d ${TEST_DBNAME}
 	@ echo "* Vacuuming"
