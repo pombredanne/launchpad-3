@@ -1505,7 +1505,13 @@ class PersonEditEmailsView:
 
         emailset = getUtility(IEmailAddressSet)
         emailaddress = emailset.getByEmail(email)
-        assert emailaddress.person.id == self.context.id
+        assert emailaddress.person.id == self.context.id, \
+                "differing ids in emailaddress.person.id(%r,%s,%d) == " \
+                "self.context.id(%r,%s,%d)" % \
+                (emailaddress.person, id(emailaddress.person),
+                 emailaddress.person.id, self.context, id(self.context),
+                 self.context.id)
+
         assert emailaddress.status == EmailAddressStatus.VALIDATED
         self.context.preferredemail = emailaddress
         self.message = "Your contact address has been changed to: %s" % email
