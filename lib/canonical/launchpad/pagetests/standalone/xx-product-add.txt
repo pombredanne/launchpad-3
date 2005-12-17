@@ -5,7 +5,7 @@ Test that the page to add a new product loads.
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...Register an Upstream Open Source Product...
+  ...Register an upstream open source product...
 
 Test that the page to add a new product works.
 
@@ -78,7 +78,7 @@ Test that the page to add a new product works.
   Content-Type: text/html;charset=utf-8
   Location: testing
   <BLANKLINE>
-  ...Register an Upstream Open Source Product...
+  ...Register an upstream open source product...
 
 
 Test if we can see the page of the added product and tests if we can see the

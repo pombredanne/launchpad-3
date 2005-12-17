@@ -246,8 +246,8 @@ class SignedCodeOfConductSet:
 
         if gpg.owner.id != user.id:
             return ('You (%s) do not seem to be the owner of this OpenPGP key '
-                    '(<code>%s</code>).' % (user.displayname,
-                    gpg.owner.displayname)
+                    '(<code>%s</code>).'
+                    % (user.displayname, gpg.owner.displayname))
         
         if not gpg.active:
             return ('The OpenPGP key used (<code>%s</code>) has been '

@@ -52,7 +52,7 @@ error message back.
   ... """)
   HTTP/1.1 200 Ok
   ...
-          <h1>Edit the plural forms for this pofile</h1>
+          <h1>Edit the plural forms for this PO file</h1>
   <BLANKLINE>
           <div class="portalMessage">Please, select a file to upload.</div>
   <BLANKLINE>

@@ -15,7 +15,7 @@ Now we are going to add a bug tracker. First, can we see the form?
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...Register an External Bug Tracker...
+  ...Register an external bug tracker...
 
 Now, let's POST to the form. We expect to be redirected to the page for the
 new tracker.

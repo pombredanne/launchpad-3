@@ -9,7 +9,7 @@ Test that the project edit page loads.
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-            <h1>Edit Project Details</h1>
+            <h1>Edit project details</h1>
   ...
 
 Test that the project edit page works when we POST changes.
@@ -66,5 +66,5 @@ Test that the project edit page works when we POST changes.
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-            <h1>Edit Project Details</h1>
+            <h1>Edit project details</h1>
   ...

@@ -5,7 +5,7 @@ Go to the page to add a new project.
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...Register a Project With Launchpad...
+  ...Register a project with Launchpad...
 
 Testing if the validator is working for the URL field.
 Add a new project without the http://
@@ -101,7 +101,7 @@ Now we add a new project.
   Content-Type: text/html;charset=utf-8
   Location: http://localhost:9000/projects/apache
   <BLANKLINE>
-  ...Register a Project With Launchpad</h1>...
+  ...Register a project with Launchpad</h1>...
 
 Now see the new project.
 

@@ -8,7 +8,7 @@ First, can we see the form?
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...Register an External Bug Tracker...
+  ...Register an external bug tracker...
 
 OK. If we POST to that form, we would expect to be redirected to view the
 new tracker.

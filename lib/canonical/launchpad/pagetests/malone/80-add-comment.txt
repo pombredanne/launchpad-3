@@ -22,7 +22,7 @@ email.
   ... field.subject=test+comment+subject&field.content=test+comment&UPDATE_SUBMIT=Post+Comment""")
   HTTP/1.1 303 See Other
   ...
-          <h1>Add a Comment</h1>
+          <h1>Add a comment</h1>
   ...
 
 

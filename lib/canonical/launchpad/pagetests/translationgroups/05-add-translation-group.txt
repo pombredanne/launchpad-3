@@ -22,7 +22,7 @@ OK, best we try again, with a login!
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-          <h1>Create A New Translation Group</h1>
+          <h1>Create a new translation group</h1>
   ...
 
 Cool, we get the page to create a translation group. Let's go ahead and POST
