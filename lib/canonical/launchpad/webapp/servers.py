@@ -110,6 +110,7 @@ class LaunchpadBrowserRequest(BrowserRequest, NotificationRequest,
 
     def __init__(self, body_instream, outstream, environ, response=None):
         self.breadcrumbs = []
+        self.traversed_objects = []
         super(LaunchpadBrowserRequest, self).__init__(
             body_instream, outstream, environ, response)
 
@@ -120,6 +121,14 @@ class LaunchpadBrowserRequest(BrowserRequest, NotificationRequest,
     def _createResponse(self, outstream):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadBrowserResponse(outstream)
+
+    def getNearest(self, *some_interfaces):
+        """See ILaunchpadBrowserApplicationRequest.getNearest()"""
+        for context in reversed(self.traversed_objects):
+            for iface in some_interfaces:
+                if iface.providedBy(context):
+                    return context, iface
+        return None, None
 
 
 class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
