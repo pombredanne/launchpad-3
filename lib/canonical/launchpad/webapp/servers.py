@@ -17,7 +17,7 @@ from zope.publisher.browser import BrowserRequest
 #from zope.publisher.http import HTTPRequest
 import zope.publisher.publish
 from canonical.launchpad.interfaces import ILaunchpadBrowserApplicationRequest
-from canonical.launchpad.webapp.notification import (
+from canonical.launchpad.webapp.notifications import (
         NotificationRequest, NotificationResponse, NotificationList
         )
 from canonical.launchpad.webapp.interfaces import (
