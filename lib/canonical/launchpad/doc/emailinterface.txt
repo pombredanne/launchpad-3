@@ -230,7 +230,7 @@ GPG Signing and adding comments
 
 In order to include commands in the comment, the email has to be GPG
 signed. The key used to sign the email has to be associated with the
-authenticaded person in Launchpad. It happens quite often, though, that
+authenticated person in Launchpad. It happens quite often, though, that
 people who haven't registered their key in Launchpad sign their emails
 even though the only want to add a comment. These comments should of
 course not be rejected because their key wasn't registered in
