@@ -30,7 +30,11 @@ def import_public_key(email_addr):
     personset = getUtility(IPersonSet)
 
     pubkey = test_pubkey_from_email(email_addr)
-    key = gpghandler.importKey(pubkey)               
+    key = gpghandler.importKey(pubkey)
+
+    # Some of the keys shouldn't be inserted into the db.
+    if email_addr.endswith('do-not-insert-into-db'):
+        return
 
     person = personset.getByEmail(email_addr)
 
