@@ -11,9 +11,11 @@ import re
 
 import transaction
 from zope.component import getUtility, queryUtility
+from zope.interface import directlyProvides, directlyProvidedBy
 
-from canonical.launchpad.interfaces import (IPerson, IGPGHandler, 
-    IMailHandler, IMailBox, ILibraryFileAliasSet)
+from canonical.launchpad.interfaces import (
+    IGPGHandler, ILibraryFileAliasSet, IMailHandler, IMailBox, IPerson,
+    IWeaklyAuthenticatedPrincipal)
 from canonical.launchpad.helpers import (setupInteraction,
     get_filename_from_message_id)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
@@ -64,10 +66,11 @@ def authenticateEmail(mail):
         setupInteraction(authutil.unauthenticatedPrincipal())
         return
     elif signature is None:
-        #XXX: When DifferentPrincipalsSameUser is implemented, a weakly
-        #     authenticated principal should be used. At the moment we have to
-        #     do all permission checks in the code instead of using security
-        #     adapter. -- Bjorn Tillenius, 2005-06-06
+        # Mark the principal so that application code can check that the
+        # user was weakly authenticated.
+        directlyProvides(
+            principal, directlyProvidedBy(principal),
+            IWeaklyAuthenticatedPrincipal)
         setupInteraction(principal, email_addr)
         return principal
 
@@ -79,17 +82,19 @@ def authenticateEmail(mail):
         # verifySignature failed to verify the signature.
         raise InvalidSignature("Signature couldn't be verified.")
 
-    # Log in the user if the key used to sign belongs to him.
     for gpgkey in person.gpgkeys:
         if gpgkey.fingerprint == sig.fingerprint:
-            setupInteraction(principal, email_addr)
-            return principal
-    # The key doesn't belong to the user.
-    raise InvalidSignature(
-        "The key used to sign the email doesn't belong to the user.")
+            break
+    else:
+        # The key doesn't belong to the user. Mark the principal so that the
+        # application code knows that the key used to sign the email isn't
+        # associated with the authenticated user.
+        directlyProvides(
+            principal, directlyProvidedBy(principal),
+            IWeaklyAuthenticatedPrincipal)
 
-    # The GPG signature couldn't be verified  
-    setupInteraction(authutil.unauthenticatedPrincipal())
+    setupInteraction(principal, email_addr)
+    return principal
 
 
 def handleMail(trans=transaction):

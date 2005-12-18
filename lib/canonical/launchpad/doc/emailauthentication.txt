@@ -82,21 +82,7 @@ to deal with it if we receive a dash escaped message.
     'test@canonical.com'
 
 
-Since a GPG key can be associated with several addresses, the user to
-authenticate is extracted from the From header. If the key used to sign
-the email doesn't belong to that user, he won't be authenticated, as
-shown below where the email was signed with Sample Person's key, but
-the From header states it's from Foo Bar:
-
-    >>> msg = read_test_message('signed_incorrect_from.txt')
-    >>> name, addr = email.Utils.parseaddr(msg['From'])
-    >>> from_user = getUtility(IPersonSet).getByEmail(addr)
-    >>> principal = authenticateEmail(msg)
-    Traceback (most recent call last):
-      ...
-    InvalidSignature:...
-
-Also if the signature is invalid, that is it won't verify properly,
+If the signature is invalid, that is it won't verify properly,
 InvalidSignature will be raised:
 
     >>> msg = read_test_message('signed_detached_invalid_signature.txt')
@@ -140,3 +126,55 @@ authenticateEmail() doesn't have any problems verifying the signature:
     ...     print authenticated_person.preferredemail.email
     test@canonical.com
     test@canonical.com
+
+IWeaklyAuthenticatedPrinipal
+----------------------------
+
+It's a huge difference to signing an email with a key that is associated
+with the authenticated Person, and signing it with a key that isn't
+associated with the Person. The latter is just as insecure as trusting
+the From address. In order to let application code know about how the
+currently logged in user got authenticated, the principal gets marked
+with IWeaklyAuthenticatedPrincipal if only the From address was used,
+this includes if the email was signed with a key that isn't associated
+with the user in the From address.
+
+An unsigned email:
+
+    >>> from canonical.launchpad.interfaces import IWeaklyAuthenticatedPrincipal
+    >>> msg = read_test_message('unsigned_multipart.txt')
+    >>> principal = authenticateEmail(msg)
+    >>> IWeaklyAuthenticatedPrincipal.providedBy(principal)
+    True
+
+    >>> print launchbag.user.displayname
+    Foo Bar
+    >>> launchbag.login
+    'foo.bar@canonical.com'
+
+An email which is signed with a key that isn't associated with the
+authenticated user:
+
+    >>> msg = read_test_message('signed_key_not_registered.txt')
+    >>> principal = authenticateEmail(msg)
+    >>> IWeaklyAuthenticatedPrincipal.providedBy(principal)
+    True
+
+    >>> print launchbag.user.displayname
+    Sample Person
+    >>> launchbag.login
+    'testing@canonical.com'
+
+Of course, when the email is signed with a key which is associated with
+the user, IWeaklyAuthenticatedPrincipal won't be provided by the
+principal.
+
+    >>> msg = read_test_message('signed_inline.txt')
+    >>> principal = authenticateEmail(msg)
+    >>> IWeaklyAuthenticatedPrincipal.providedBy(principal)
+    False
+
+    >>> print launchbag.user.displayname
+    Sample Person
+    >>> launchbag.login
+    'test@canonical.com'
