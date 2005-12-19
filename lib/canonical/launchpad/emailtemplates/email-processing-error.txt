@@ -1,5 +1,12 @@
-An error was encountered while processing your request.
+An error occurred while processing a mail you sent to Malone's email
+interface.
+
+%(failed_command_information)s
 
 Error message:
 
 %(error_msg)s
+
+-- 
+For more information about using Malone's email interface, please see
+https://wiki.launchpad.canonical.com/MaloneEmailInterfaceUserDoc.

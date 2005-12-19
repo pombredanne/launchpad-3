@@ -1,7 +1,9 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['emailcommands']
+__all__ = ['emailcommands', 'get_error_message']
+
+import os.path
 
 from zope.component import getUtility
 from zope.event import notify
@@ -16,14 +18,28 @@ from canonical.launchpad.interfaces import (
         ISourcePackage, IBugEmailCommand, IBugTaskEmailCommand,
         IBugEditEmailCommand, IBugTaskEditEmailCommand, IBugSet, ILaunchBag,
         IBugTaskSet, BugTaskSearchParams, IBugTarget, IMessageSet,
-        IDistributionSourcePackage, EmailProcessingError)
+        IDistributionSourcePackage, EmailProcessingError, NotFoundError)
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
-from canonical.launchpad.event.interfaces import ISQLObjectCreatedEvent
-from canonical.launchpad.mailnotification import get_email_template
+from canonical.launchpad.event.interfaces import (
+    ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
 
 from canonical.lp.dbschema import (
     BugTaskStatus, BugTaskSeverity, BugTaskPriority)
+
+
+def get_error_message(filename, **interpolation_items):
+    """Returns the error message that's in the given filename.
+
+    If the error message requires some parameters, those are given in
+    interpolation_items.
+
+    The files are searched for in lib/canonical/launchpad/mail/errortemplates.
+    """
+    base = os.path.dirname(__file__)
+    fullpath = os.path.join(base, 'errortemplates', filename)
+    error_template = open(fullpath).read()
+    return error_template % interpolation_items
 
 
 def normalize_arguments(string_args):
@@ -65,13 +81,11 @@ class EmailCommand:
 
     Both name the values in the args list are strings.
     """
-    _subCommandNames = []
     _numberOfArguments = None
 
     def __init__(self, name, string_args):
         self.name = name
         self.string_args = normalize_arguments(string_args)
-        self._subCommandsToBeExecuted = []
 
     def _ensureNumberOfArguments(self):
         """Check that the number of arguments is correct.
@@ -79,10 +93,14 @@ class EmailCommand:
         Raise an EmailProcessingError 
         """
         if self._numberOfArguments is not None:
-            if self._numberOfArguments != len(self.string_args):
+            num_arguments_got = len(self.string_args)
+            if self._numberOfArguments != num_arguments_got:
                 raise EmailProcessingError(
-                    "'%s' expects exactly %s argument(s)." % (
-                        self.name, self._numberOfArguments))
+                    get_error_message(
+                        'num-arguments-mismatch.txt',
+                        command_name=self.name,
+                        num_arguments_expected=self._numberOfArguments,
+                        num_arguments_got=num_arguments_got))
 
     def convertArguments(self):
         """Converts the string argument to Python objects.
@@ -92,13 +110,10 @@ class EmailCommand:
         """
         raise NotImplementedError
 
-    def isSubCommand(self, command):
-        """See IEmailCommand."""
-        return command.name in self._subCommandNames
 
-    def addSubCommandToBeExecuted(self, sub_command):
+    def __str__(self):
         """See IEmailCommand."""
-        self.string_args += [sub_command.name] + sub_command.string_args
+        return ' '.join([self.name] + self.string_args)
 
 
 class BugEmailCommand(EmailCommand):
@@ -120,7 +135,7 @@ class BugEmailCommand(EmailCommand):
                 parsed_message=parsed_msg)
             if message.contents.strip() == '':
                  raise EmailProcessingError(
-                    get_email_template('no-affects-target-on-submit.txt'))
+                    get_error_message('no-affects-target-on-submit.txt'))
 
             bug = getUtility(IBugSet).createBug(
                 msg=message,
@@ -128,8 +143,17 @@ class BugEmailCommand(EmailCommand):
                 owner=getUtility(ILaunchBag).user)
             return bug, SQLObjectCreatedEvent(bug)
         else:
-            bugid = int(bugid)
-            bug = getUtility(IBugSet).get(bugid)
+            try:
+                bugid = int(bugid)
+            except ValueError:
+                raise EmailProcessingError(
+                    get_error_message('bug-argument-mismatch.txt'))
+
+            try:
+                bug = getUtility(IBugSet).get(bugid)
+            except NotFoundError:
+                raise EmailProcessingError(
+                    get_error_message('no-such-bug.txt', bug_id=bugid))
             return bug, None
 
 
@@ -143,8 +167,14 @@ class EditEmailCommand(EmailCommand):
         """See IEmailCommand."""
         self._ensureNumberOfArguments()
         args = self.convertArguments()
-        context_snapshot = Snapshot(
-            context, providing=providedBy(context))
+
+        edited_fields = set()
+        if ISQLObjectModifiedEvent.providedBy(current_event):
+            context_snapshot = current_event.object_before_modification
+            edited_fields.update(current_event.edited_fields)
+        else:
+            context_snapshot = Snapshot(context, providing=providedBy(context))
+
         if not ISQLObjectCreatedEvent.providedBy(current_event):
             notify(SQLObjectToBeModifiedEvent(context, args))
         edited = False
@@ -153,12 +183,11 @@ class EditEmailCommand(EmailCommand):
                 setattr(context, attr_name, attr_value)
                 edited = True
         if edited and not ISQLObjectCreatedEvent.providedBy(current_event):
-            event = SQLObjectModifiedEvent(
-                context, context_snapshot, args.keys())
-        else:
-            event = None
+            edited_fields.update(args.keys())
+            current_event = SQLObjectModifiedEvent(
+                context, context_snapshot, list(edited_fields))
 
-        return context, event
+        return context, current_event
 
 
 class PrivateEmailCommand(EditEmailCommand):
@@ -176,7 +205,8 @@ class PrivateEmailCommand(EditEmailCommand):
         elif private_arg == 'no':
             return {'private': False}
         else:
-            raise EmailProcessingError("'private' expects either 'yes' or 'no'")
+            raise EmailProcessingError(
+                get_error_message('private-parameter-mismatch.txt'))
 
 
 class SubscribeEmailCommand(EmailCommand):
@@ -186,7 +216,7 @@ class SubscribeEmailCommand(EmailCommand):
 
     def execute(self, bug, current_event):
         """See IEmailCommand."""
-        string_args = self.string_args
+        string_args = list(self.string_args)
         # preserve compatibility with the original command that let you
         # specify a subscription type
         if len(string_args) == 2:
@@ -200,20 +230,18 @@ class SubscribeEmailCommand(EmailCommand):
                     person_name_or_email)
             except LookupError:
                 raise EmailProcessingError(
-                    "Couldn't find a person with the specified name or email:"
-                    " %s" % person_name_or_email)
+                    get_error_message(
+                        'no-such-person.txt',
+                        name_or_email=person_name_or_email))
             person = person_term.value
         elif len(string_args) == 0:
             # Subscribe the sender of the email.
             person = getUtility(ILaunchBag).user
         else:
             raise EmailProcessingError(
-                "'subscribe' commands expects at most two arguments."
-                " Got %s: %s" % (len(string_args), ' '.join(string_args)))
+                get_error_message('subscribe-too-many-arguments.txt'))
 
         if bug.isSubscribed(person):
-            # the person is already subscribe so there is no event
-            event = None
             # but we still need to find the subscription
             for bugsubscription in bug.subscriptions:
                 if bugsubscription.person == person:
@@ -221,9 +249,9 @@ class SubscribeEmailCommand(EmailCommand):
 
         else:
             bugsubscription = bug.subscribe(person)
-            event = SQLObjectCreatedEvent(bugsubscription)
+            notify(SQLObjectCreatedEvent(bugsubscription))
 
-        return bugsubscription, event
+        return bug, current_event
 
 
 class UnsubscribeEmailCommand(EmailCommand):
@@ -233,7 +261,7 @@ class UnsubscribeEmailCommand(EmailCommand):
 
     def execute(self, bug, current_event):
         """See IEmailCommand."""
-        string_args = self.string_args
+        string_args = list(self.string_args)
         if len(string_args) == 1:
             person_name_or_email = string_args.pop()
             valid_person_vocabulary = ValidPersonOrTeamVocabulary()
@@ -242,21 +270,21 @@ class UnsubscribeEmailCommand(EmailCommand):
                     person_name_or_email)
             except LookupError:
                 raise EmailProcessingError(
-                    "Couldn't find a person with the specified name or email:"
-                    " %s" % person_name_or_email)
+                    get_error_message(
+                        'no-such-person.txt',
+                        name_or_email=person_name_or_email))
             person = person_term.value
         elif len(string_args) == 0:
             # Subscribe the sender of the email.
             person = getUtility(ILaunchBag).user
         else:
             raise EmailProcessingError(
-                "'subscribe' commands expects at most one arguments."
-                " Got %s: %s" % (len(string_args), ' '.join(string_args)))
+                get_error_message('unsubscribe-too-many-arguments.txt'))
 
         if bug.isSubscribed(person):
             bug.unsubscribe(person)
 
-        return None, None
+        return bug, current_event
 
 
 class SummaryEmailCommand(EditEmailCommand):
@@ -265,12 +293,22 @@ class SummaryEmailCommand(EditEmailCommand):
     implements(IBugEditEmailCommand)
     _numberOfArguments = 1
 
+    def execute(self, bug, current_event):
+        """See IEmailCommand."""
+        # Do a manual control of the number of arguments, in order to
+        # provide a better error message than the default one.
+        if len(self.string_args) > 1:
+            raise EmailProcessingError(
+                get_error_message('summary-too-many-arguments.txt'))
+
+        return EditEmailCommand.execute(self, bug, current_event)
+
     def convertArguments(self):
         """See EmailCommand."""
         return {'title': self.string_args[0]}
 
 
-class AffectsEmailCommand(EditEmailCommand):
+class AffectsEmailCommand(EmailCommand):
     """Either creates a new task, or edits an existing task."""
 
     implements(IBugTaskEmailCommand)
@@ -278,17 +316,19 @@ class AffectsEmailCommand(EditEmailCommand):
 
     def execute(self, bug):
         """See IEmailCommand."""
+        string_args = list(self.string_args)
         try:
-            path = self.string_args.pop(0)
+            path = string_args.pop(0)
         except IndexError:
             raise EmailProcessingError(
-                "'affects' command requires at least one argument.")
+                get_error_message('affects-no-arguments.txt'))
         try:
             path_target = get_object(path, path_only=True)
         except PathStepNotFoundError, error:
             raise EmailProcessingError(
-                "'%s' couldn't be found in command 'affects %s'" % (
-                    error.step, path))
+                get_error_message(
+                    'affects-path-not-found.txt',
+                    pathstep_not_found=error.step, path=path))
         if ISourcePackage.providedBy(path_target):
             bug_target = path_target.distribution
         else:
@@ -310,7 +350,27 @@ class AffectsEmailCommand(EditEmailCommand):
             event = SQLObjectModifiedEvent(
                 bugtask, bugtask_before_edit, ['sourcepackagename'])
 
-        return EditEmailCommand.execute(self, bugtask, event)
+        # Process the sub commands.
+        while len(string_args) > 0:
+            # Get the sub command name.
+            subcmd_name = string_args.pop(0)
+            # Get the sub command's argument
+            try:
+                subcmd_args = [string_args.pop(0)]
+            except IndexError:
+                # Let the sub command handle the error.
+                subcmd_args = []
+
+            if subcmd_name not in self._subCommandNames:
+                raise EmailProcessingError(
+                    get_error_message(
+                        'affects-unexpected-argument.txt',
+                        argument=subcmd_name))
+
+            command = emailcommands.get(subcmd_name, subcmd_args)
+            bugtask, event = command.execute(bugtask, event)
+
+        return bugtask, event
 
     def _create_bug_task(self, bug, bug_target):
         """Creates a new bug task with bug_target as the target."""
@@ -331,26 +391,6 @@ class AffectsEmailCommand(EditEmailCommand):
         else:
             assert False, "Not a valid bug target: %r" % bug_target
 
-    def convertArguments(self):
-        """See EmailCommand."""
-        args = {}
-        while len(self.string_args) > 0:
-            # Get the sub command name.
-            subcmd_name = self.string_args.pop(0)
-            # Get the sub command's argument
-            try:
-                subcmd_arg = self.string_args.pop(0)
-            except IndexError:
-                raise EmailProcessingError(
-                    "'affects' sub command '%s' requires at least"
-                    " one argument." % subcmd_name)
-            try:
-                command = emailcommands.get(subcmd_name, [subcmd_arg])
-            except NoSuchCommand:
-                raise EmailProcessingError(
-                    "'affects' got an unexpected argument: %s" % subcmd_name)
-            args.update(command.convertArguments())
-        return args
 
     #XXX: This method should be moved to helpers.py or BugTaskSet.
     #     -- Bjorn Tillenius, 2005-06-10
@@ -366,9 +406,7 @@ class AffectsEmailCommand(EditEmailCommand):
         bug_tasks = list(
             target.searchTasks(BugTaskSearchParams(user, bug=bug)))
 
-        if len(bug_tasks) > 1:
-            # XXX: This shouldn't happen
-            raise ValueError('Found more than one bug task.')
+        assert len(bug_tasks) <= 1, 'Found more than one bug task.'
         if len(bug_tasks) == 0:
             return None
         else:
@@ -386,14 +424,15 @@ class AssigneeEmailCommand(EditEmailCommand):
 
     def convertArguments(self):
         """See EmailCommand."""
-        person_name = self.string_args.pop()
+        person_name_or_email = self.string_args[0]
         valid_person_vocabulary = ValidPersonOrTeamVocabulary()
         try:
-            person_term = valid_person_vocabulary.getTermByToken(person_name)
+            person_term = valid_person_vocabulary.getTermByToken(
+                person_name_or_email)
         except LookupError:
             raise EmailProcessingError(
-                    "Couldn't find a person named '%s' in 'assignee %s'" % (
-                        person_name, person_name))
+                get_error_message(
+                    'no-such-person.txt', name_or_email=person_name_or_email))
 
         return {self.name: person_term.value}
 
@@ -417,13 +456,18 @@ class DBSchemaEditEmailCommand(EditEmailCommand):
     def convertArguments(self):
         """See EmailCommand."""
         item_name = self.string_args[0]
+        dbschema = self.dbschema
         try:
-            return {self.name: self.dbschema.items[item_name.upper()]}
+            return {self.name: dbschema.items[item_name.upper()]}
         except KeyError:
-            possible_values = ', '.join(
-                [item.name.lower() for item in self.dbschema.items])
+            possible_items = [item.name.lower() for item in dbschema.items]
+            possible_values = ', '.join(possible_items)
             raise EmailProcessingError(
-                    "'%s' expects any of: %s" % (self.name, possible_values))
+                    get_error_message(
+                        'dbschema-command-wrong-argument.txt',
+                         command_name=self.name,
+                         arguments=possible_values,
+                         example_argument=possible_items[0]))
 
 
 class StatusEmailCommand(DBSchemaEditEmailCommand):

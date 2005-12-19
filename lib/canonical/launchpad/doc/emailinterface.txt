@@ -49,10 +49,11 @@ to sign each email, we'll create a class which fakes a signed email:
 
     >>> import email
     >>> import email.Utils
-    >>> class SignedMessage(email.Message.Message):
+    >>> class MockSignedMessage(email.Message.Message):
     ...     @property
     ...     def signedMessage(self):
     ...         return self
+    ...     signature = object()
 
 And since we'll pass the email directly to the correct handler,
 we'll have to authenticate the user manually:
@@ -67,7 +68,7 @@ bug got submitted correctly:
     >>> from canonical.launchpad.mail.handlers import MaloneHandler
     >>> handler = MaloneHandler()
     >>> def process_email(raw_mail):
-    ...     msg = email.message_from_string(raw_mail, _class=SignedMessage)
+    ...     msg = email.message_from_string(raw_mail, _class=MockSignedMessage)
     ...     if not msg.has_key('Message-Id'):
     ...         msg['Message-Id'] = email.Utils.make_msgid()
     ...     handler.process(msg, msg['To'])
@@ -243,12 +244,62 @@ to edit bug 4:
     ...     process_email(edit_mail)
     ...     transaction.commit()
 
+We define a function which makes it easier to look at the error
+messages as well:
+
+    >>> def print_latest_email():
+    ...     transaction.commit()
+    ...     from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    ...     error_mail = email.message_from_string(raw_message)
+    ...     print "Subject: %s" % error_mail['Subject']
+    ...     print "To: %s" % ', '.join(to_addrs)
+    ...     print
+    ...     print error_mail.get_payload(decode=True)
+
 
 bug $bugid
 ^^^^^^^^^^
 Switches what bug you want to edit. Example:
 
     bug 42
+
+If we specify a bug number that doesn't exist, an error message is
+returned:
+
+    >>> submit_commands(bug_four, 'bug 42')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        bug 42
+    ...
+    There is no such bug in Launchpad: 42
+    ...
+
+And if we specify neither 'new' or an integer:
+
+    >>> submit_commands(bug_four, 'bug foo')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        bug foo
+    ...
+    The 'bug' command expects either 'new' or a bug id.
+    <BLANKLINE>
+    For example, to create a new bug:
+    <BLANKLINE>
+        bug new
+    <BLANKLINE>
+    To edit or comment on an existing bug:
+    <BLANKLINE>
+        bug 1
+    ...
+
 
 summary "$summary"
 ^^^^^^^^^^^^^^^^^^
@@ -265,6 +316,23 @@ Whitespace will be preserved in the title:
     >>> print bug_four.title #doctest: -NORMALIZE_WHITESPACE
     New             summary
 
+If we omit the quotes, there will be an error:
+
+    >>> submit_commands(bug_four, 'summary New summary')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        summary New summary
+    ...
+    Please enclose the new summary within quotes. For example:
+    <BLANKLINE>
+        summary "This is a new summary"
+    ...
+
+
 private yes|no
 ^^^^^^^^^^^^^^
 Changes the secrecy of the bug. Example:
@@ -277,8 +345,26 @@ Changes the secrecy of the bug. Example:
     >>> bug_four.private
     False
 
-subscribe [$name|$email] [cc|watch|ignore]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Specifying something else than 'yes' or 'no' produces an error:
+
+    >>> submit_commands(bug_four, 'private whatever')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        private whatever
+    ...
+    The 'private' command expects either 'yes' or 'no'.
+    <BLANKLINE>
+    For example:
+    <BLANKLINE>
+        private yes
+    ...
+
+subscribe [$name|$email]
+^^^^^^^^^^^^^^^^^^^^^^^^
 Subscribes yourself or someone else to the bug. All arguments are
 optional. If you don't specify a name, the sender of the email will
 be subscribed. Examples:
@@ -303,8 +389,23 @@ be subscribed. Examples:
     ...                         for subscription in bug_four.subscriptions]
     True
 
+If we specify a non-existant user, an error message will be sent:
+
+    >>> submit_commands(bug_four, 'subscribe non_existant@canonical.com')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        subscribe non_existant@canonical.com
+    ...
+    There's no such person with the specified name or email:
+    non_existant@canonical.com
+    ...
+
 unsubscribe [$name|$email]
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^
 Unsubscribes yourself or someone else from the bug.
 If you don't specify a name or email, the sender of the email will be
 unsubscribed. Examples:
@@ -321,6 +422,21 @@ unsubscribed. Examples:
     >>> 'Sample Person' in [subscription.person.displayname
     ...                     for subscription in bug_four.subscriptions]
     False
+
+If we specify a non-existant user, an error message will be sent:
+
+    >>> submit_commands(bug_four, 'unsubscribe non_existant')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        unsubscribe non_existant
+    ...
+    There's no such person with the specified name or email: non_existant
+    ...
+
 
 affects $path [assignee $name|$email]
               [status $status]
@@ -381,11 +497,15 @@ To set which source package the bug affects, we use:
     >>> print debian_task.sourcepackagename.name
     mozilla-firefox
 
-Let's take on the upstream task as well:
+Let's take on the upstream task as well. This time we'll sneak in a
+'subscribe' command between the 'affects' and the other commands, to
+show that the commands acting on the bug task don't have to be grouped
+together:
 
     >>> submit_commands(
     ...     bug_four,
     ...     'affects /products/firefox severity critical',
+    ...     'subscribe no-priv',
     ...     'status accepted', 'assignee test@canonical.com',
     ...     'priority high')
 
@@ -400,6 +520,81 @@ Let's take on the upstream task as well:
     Sample Person
     >>> print upstream_task.priority.name
     HIGH
+
+Let's take a look at all the error messages that the sub commands can
+produce.
+
+Invalid status:
+
+    >>> submit_commands(bug_four, 'status foo')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        status foo
+    ...
+    The 'status' command expects any of the following arguments:
+    new, needinfo, accepted, pendingupload, fixed, rejected
+    <BLANKLINE>
+    For example:
+    <BLANKLINE>
+        status new
+    ...
+
+Invalid severity:
+
+    >>> submit_commands(bug_four, 'severity foo')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        severity foo
+    ...
+    The 'severity' command expects any of the following arguments:
+    wishlist, minor, normal, major, critical
+    <BLANKLINE>
+    For example:
+    <BLANKLINE>
+        severity wishlist
+    ...
+
+Invalid priority:
+
+    >>> submit_commands(bug_four, 'affects /products/firefox', 'priority foo')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        priority foo
+    ...
+    The 'priority' command expects any of the following arguments:
+    wontfix, low, medium, high
+    <BLANKLINE>
+    For example:
+    <BLANKLINE>
+        priority wontfix
+    ...
+
+Invalid assignee:
+
+    >>> submit_commands(bug_four, 'assignee foo')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        assignee foo
+    ...
+    There's no such person with the specified name or email: foo
+    ...
+
 
     >>> stub.test_emails = []
 
@@ -567,14 +762,31 @@ user, telling him that he has to use the 'affects' command.
     affects command.
     ...
 
-Error Handling
---------------
+More About Error Handling
+-------------------------
 
 If an error is encountered, an email is sent to the sender informing
-him about the error. Let's start by trying to submit a bug without
-including an 'affects' command:
+him about the error. Let's start with trying to submit a bug without
+signing the mail:
 
     >>> login('test@canonical.com')
+
+    >>> from canonical.launchpad.mail import SignedMessage
+    >>> msg = email.message_from_string(submit_mail, _class=SignedMessage)
+    >>> msg['Message-Id'] = email.Utils.make_msgid()
+    >>> handler.process(msg, msg['To'])
+    True
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    In order to submit bugs via email you have to sign the message with a
+    GPG key that is registered in Launchpad.
+    ...
+
+A submit without specifying on what we want to file the bug on:
+
     >>> submit_mail_no_bugtask = """From: test@canonical.com
     ... To: new@malone
     ... Date: Fri Jun 17 10:20:23 BST 2005
@@ -582,26 +794,19 @@ including an 'affects' command:
     ...
     ... There's a nasty bug in Evolution."""
     >>> process_email(submit_mail_no_bugtask)
-
-No bug was created, instead an error mail was sent to the submitter:
-
-    >>> transaction.commit()
-    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
-    >>> error_mail = email.message_from_string(raw_message)
-    >>> print error_mail['Subject']
-    Submit Request Failure
-
-    >>> print to_addrs
-    ['test@canonical.com']
-
-    >>> print error_mail.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    An error...
+    >>> print_latest_email() #doctest: -NORMALIZE_WHITESPACE
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
     ...
-    Error message:
+    You didn't specify on what you want to file a bug on. A new bug has to
+    affect either a product or a distribution. Please use the 'affects'
+    command in order to specify on what you want to file a bug on. For
+    example, in order to file a bug on Launchpad itself, use:
     ...
-    The bug has to affect at least one product or distribution.
 
-Now we try to submit a bug on a distribution that doesn't exist:
+
+Submit a bug on a distribution that doesn't exist:
 
     >>> submit_mail_distro_not_found = """From: test@canonical.com
     ... To: new@malone
@@ -611,22 +816,20 @@ Now we try to submit a bug on a distribution that doesn't exist:
     ... There's a nasty bug in Foo.
     ...  affects /distros/foo"""
     >>> process_email(submit_mail_distro_not_found)
-
-Again no bug was filed, and an error mail was sent:
-
-    >>> transaction.commit()
-    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
-    >>> error_mail = email.message_from_string(raw_message)
-
-    >>> print error_mail.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    An error...
+    >>> print_latest_email() #doctest: -NORMALIZE_WHITESPACE
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
     ...
-    Error message:
+    Failing command:
+        affects /distros/foo
     ...
-    'foo' couldn't be found in command 'affects /distros/foo'
+    The path you specified isn't valid. 'foo' in the path '/distros/foo'
+    couldn't be found.
+    ...
 
 
-Let's send an empty unsigned mail to new@malone:
+An empty unsigned mail to new@malone:
 
     >>> submit_empty = """From: test@canonical.com
     ... To: new@malone
@@ -635,23 +838,15 @@ Let's send an empty unsigned mail to new@malone:
     ...
     ... """
     >>> process_email(submit_empty)
-
-This causes an error message to be sent to the submitter:
-
-    >>> transaction.commit()
-    >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
-    >>> error_mail = email.message_from_string(raw_message)
-
-    >>> print error_mail.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    An error...
+    >>> print_latest_email() #doctest: -NORMALIZE_WHITESPACE
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
     ...
-    Error message:
-    ...
-    An error occurred while processing your mail to create a new bug. You
-    didn't specify on what you want to file a bug on. A new bug has to
+    You didn't specify on what you want to file a bug on. A new bug has to
     affect either a product or a distribution. Please use the 'affects'
     command in order to specify on what you want to file a bug on. For
-    example, in order to file a bug on Malone itself, use:
+    example, in order to file a bug on Launchpad itself, use:
     ...
 
 
