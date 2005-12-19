@@ -9,10 +9,11 @@ from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol, MultipleJoin, RelatedJoin
 
+from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import EnumCol, BugTrackerType
 from canonical.database.sqlbase import (SQLBase, flush_database_updates,
     quote)
-
+from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.interfaces import (
     IBugTracker, IBugTrackerSet, NotFoundError)
 
@@ -41,14 +42,15 @@ class BugTracker(SQLBase):
         orderBy='name')
 
     @property
-    def watchcount(self):
+    def watches(self):
         """See IBugTracker"""
-        return len(self.watches)
+        return BugWatch.selectBy(bugtrackerID=self.id, orderBy="remotebug")
 
     @property
     def latestwatches(self):
         """See IBugTracker"""
-        return self.watches[:10]
+        return BugWatch.selectBy(
+            bugtrackerID=self.id, orderBy="-datecreated")[:10]
 
 
 class BugTrackerSet:
@@ -124,4 +126,13 @@ class BugTrackerSet:
     @property
     def bugtracker_count(self):
         return BugTracker.select().count()
+
+    def getMostActiveBugTrackers(self, limit=None):
+        """See canonical.launchpad.interfaces.IBugTrackerSet."""
+        result = shortlist(self.search(), longest_expected=20)
+        result.sort(key=lambda bugtracker: -bugtracker.watches.count())
+        if limit and limit > 0:
+            return result[:limit]
+        else:
+            return result
 
