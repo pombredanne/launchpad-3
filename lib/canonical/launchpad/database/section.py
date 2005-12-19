@@ -14,7 +14,7 @@ from sqlobject import (
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces import (
-    ISection, ISectionSet)
+    NotFoundError, ISection, ISectionSet)
 
 
 class Section(SQLBase):
@@ -37,7 +37,6 @@ class SectionSet:
         section = Section.selectOneBy(name=name)
         if section:
             return section
-        
         raise NotFoundError(name)
 
     def get(self, section_id):

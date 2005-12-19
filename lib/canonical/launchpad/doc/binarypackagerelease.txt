@@ -1,0 +1,73 @@
+        Binary Package Release
+        ^^^^^^^^^^^^^^^^^^^^^^
+
+BinaryPackageRelease stores unique versions of a binarypackagenames
+across build records.
+
+   >>> from canonical.launchpad.database import BinaryPackageRelease
+   >>> from canonical.launchpad.interfaces import (
+   ...       IBinaryPackageRelease, IBinaryPackageReleaseSet)
+   >>> from zope.interface.verify import verifyObject 
+
+   >>> bin = BinaryPackageRelease.get(12)
+   >>> verifyObject(IBinaryPackageRelease, bin)
+   True
+
+
+Useful properties:
+
+   >>> bin.name, bin.version
+   (u'mozilla-firefox', u'0.9')
+
+   >>> bin.status
+   'Published'
+
+   >>> bin.lastversions()
+   []
+   >>> from canonical.launchpad.interfaces import IDistroReleaseSet
+   >>> warty = getUtility(IDistroReleaseSet).get(1)
+   >>> warty.name
+   u'warty'
+
+
+   # XXX cprov 20051219: horrible broken code, bug # 5948
+
+   >>> try:
+   ...     bin.current(warty)
+   ... except AttributeError, info:
+   ...     'BOOM'
+   'BOOM'
+
+Check IBinaryPackageRelease.override() behaviour:
+
+   >>> bin.component.name, bin.section.name
+   (u'main', u'base')
+
+   >>> from canonical.launchpad.interfaces import (
+   ...     IComponentSet, ISectionSet)
+   >>> from canonical.lp.dbschema import PackagePublishingPriority
+   >>> new_comp = getUtility(IComponentSet)['universe']
+   >>> new_sec = getUtility(ISectionSet)['mail']
+   >>> new_priority = PackagePublishingPriority.IMPORTANT
+
+Override the current binpackagerelease with new
+component/section/priority pair:
+
+   >>> bin.override(component=new_comp, section=new_sec,
+   ...              priority=new_priority)
+
+   >>> bin.component.name, bin.section.name, bin.priority.name
+   (u'universe', u'mail', 'IMPORTANT')
+
+Abort transaction to avoid error propagation of the new attributes:
+
+   >>> import transaction
+   >>> transaction.abort()
+
+BinaryPackageReleaseSet utility:
+
+   >>> binset = getUtility(IBinaryPackageReleaseSet)
+   >>> verifyObject(IBinaryPackageReleaseSet, binset)
+   True
+
+XXX cprov 20051219: missing wider tests bug # 5947

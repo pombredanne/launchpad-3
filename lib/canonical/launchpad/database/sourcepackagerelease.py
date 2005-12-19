@@ -147,7 +147,7 @@ class SourcePackageRelease(SQLBase):
 
     @property
     def meta_binaries(self):
-        """See ISourcePackageRelease."""        
+        """See ISourcePackageRelease."""
         return [binary.build.distroarchrelease.distrorelease.getBinaryPackage(
                                     binary.binarypackagename)
                 for binary in self.binaries]
@@ -214,4 +214,12 @@ class SourcePackageRelease(SQLBase):
         return Build.selectOneBy(sourcepackagereleaseID=self.id,
                                  distroarchreleaseID=distroarchrelease.id)
 
+    def override(self, component=None, section=None, urgency=None):
+        """See ISourcePackageRelease."""
+        if component:
+            self.component = component
+        if section:
+            self.section = section
+        if urgency:
+            self.urgency = urgency
 

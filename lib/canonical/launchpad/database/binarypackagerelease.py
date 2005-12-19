@@ -183,6 +183,15 @@ class BinaryPackageRelease(SQLBase):
             embargo=embargo,
             )
 
+    def override(self, component=None, section=None, priority=None):
+        """See IBinaryPackageRelease."""
+        if component:
+            self.component = component
+        if section:
+            self.section = section
+        if priority:
+            self.priority = priority
+
 
 class BinaryPackageReleaseSet:
     """A Set of BinaryPackageReleases."""

@@ -75,6 +75,12 @@ class IBinaryPackageRelease(Interface):
         originally for the build record (helps on derivative procedures).
         """
 
+    def override(component=None, section=None, priority=None):
+        """Uniform method to override binarypackagerelease attribute.
+
+        All arguments are optional and can be set individually.
+        """
+
 class IBinaryPackageReleaseSet(Interface):
     """A set of binary packages"""
     

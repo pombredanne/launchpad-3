@@ -95,3 +95,8 @@ class ISourcePackageRelease(Interface):
         Return None if not found.
         """
 
+    def override(component=None, section=None, urgency=None):
+        """Uniform method to override sourcepackagerelease attribute.
+
+        All arguments are optional and can be set individually.
+        """

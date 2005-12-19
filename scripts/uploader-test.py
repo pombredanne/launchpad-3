@@ -35,7 +35,7 @@ from canonical.lp import dbschema
 
 class UploaderTester:
     """  """
-    def __init__(self, ztm, log, options, uploader_team, 
+    def __init__(self, ztm, log, options, uploader_team,
                  keyring=None):
         """ """
         self.ztm = ztm
@@ -64,7 +64,7 @@ class UploaderTester:
 
     def _extract_signer_address(self, content):
         """Extract signer address from a .dsc or .changes file
-        
+
         This method will iterate through the content lines and try to
         find either a Changed-By field or a  Maintainer field to
         extract the signer address from. The Changed-By field has
@@ -103,7 +103,7 @@ class UploaderTester:
         key = getUtility(IGPGKeySet).getByFingerprint(sig.fingerprint)
         # we assume all keys have an owner.
         if key:
-            self.log.debug("User %s is already present in LPDB", 
+            self.log.debug("User %s is already present in LPDB",
                            key.owner.name)
             return
         # key not found, need to add
@@ -117,7 +117,7 @@ class UploaderTester:
             # is there something ready in IPersonSet ?
             user = getUtility(IPersonSet).ensurePerson(email, displayname)
             if user is None:
-                raise ValueError('Could not create user %s, %s' 
+                raise ValueError('Could not create user %s, %s'
                                   % (displayname, email))
 
             # ensure the user has preferred email address
@@ -128,28 +128,28 @@ class UploaderTester:
                 self.ztm.commit()
                 self.log.info('Setting PREFERRED email to: %s'
                               % user.preferredemail.email)
-                                
+
             # add user to the uploader_test team
             self.uploader_team.addMember(user)
-            
+
             # create a PymeKey to wrap the handy attributes
             # it's necessary because we are based in a local keyring
             # we may use a keyserver in the future and replace it
-            # by a importKey() 
+            # by a importKey()
             key = PymeKey(sig.fingerprint)
             # XXX cprov 20051130: missing PymeKey attribute
             # key.active is missing from original PymeKey implementation
             lpkey = getUtility(IGPGKeySet).new(
-                ownerID=user.id, keyid=key.keyid, 
-                fingerprint=key.fingerprint, 
-                algorithm=dbschema.GPGKeyAlgorithm.items[key.algorithm], 
+                ownerID=user.id, keyid=key.keyid,
+                fingerprint=key.fingerprint,
+                algorithm=dbschema.GPGKeyAlgorithm.items[key.algorithm],
                 keysize=key.keysize, can_encrypt=key.can_encrypt)
             self.log.info("%s, %s, 0x%s", user.displayname, email, lpkey.keyid)
         except (ValueError, SQLObjectIntegrityError), info:
             self.ztm.abort()
             self.log.critical(str(info))
         else:
-            self.ztm.commit()        
+            self.ztm.commit()
 
     def ensure_component(self, name):
         """ """
@@ -161,8 +161,8 @@ class UploaderTester:
             self.ztm.abort()
             self.log.critical(str(info))
         else:
-            self.ztm.commit()        
-        
+            self.ztm.commit()
+
     def ensure_section(self, name):
         """ """
         self.ztm.begin()
@@ -173,8 +173,8 @@ class UploaderTester:
             self.ztm.abort()
             self.log.critical(str(info))
         else:
-            self.ztm.commit()        
-                
+            self.ztm.commit()
+
 
 class FTPURLError(Exception): pass
 
@@ -264,7 +264,7 @@ def read_files_from_changes(filename):
     else:
         component = 'main'
         section = proto_sec
-        
+
     return files, component, section
 
 
@@ -291,7 +291,7 @@ def main():
     rsync_url, ftp_url = args
 
     log = logger(options, "uploader-test")
-    
+
     if not rsync_url.endswith('/'):
         rsync_url += '/'
     rsync_url += '**/'
@@ -316,7 +316,7 @@ def main():
             log.critical("No 'ubuntu-team' found, insert the "
                          "required DB data")
             sys.exit(1)
-            
+
         tester = UploaderTester(ztm, log, options, uploader_team,
                                 keyring=options.keyring)
 
@@ -352,7 +352,7 @@ def main():
 
                 tester.ensure_component(component)
                 tester.ensure_section(section)
-                
+
                 log.info("Downloading additional files...")
                 rsync_files(rsync_url + '*', temp_dir, includes=files)
 

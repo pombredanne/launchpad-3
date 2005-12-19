@@ -7,6 +7,7 @@ __all__ = [
     'DistroReleaseQueueSource',
     'DistroReleaseQueueCustom',
     'DistroReleaseQueueSet',
+    'filechunks',
     ]
 
 import os
