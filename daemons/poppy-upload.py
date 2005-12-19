@@ -14,9 +14,8 @@ def main():
     parser = optparse.OptionParser()
     logger_options(parser)
 
-    # Do not remove this option, nor its implementation. Tests are using it.
-    parser.add_option("--test", action="store_true", default=False,
-                      help="Run in test mode and do not process the upload")
+    parser.add_option("--cmd", action="store", metavar="CMD",
+                      help="Run CMD after each upload completion")
 
     options, args = parser.parse_args()
 
@@ -30,22 +29,10 @@ def main():
     host = "127.0.0.1"
     ident = "lucille upload server"
     numthreads = 4
-    if not options.test:
-        # Command line to invoke uploader (it shares the same PYTHONPATH)
-        if options.log_file:
-            log_option = "--log-file '%s'" % options.log_file
-        else:
-            log_option = ''
-        cmd = ['python scripts/process-upload.py -C autosync '
-               '--no-mails', log_option, '-d', '@distro@', '@fsroot@']
-        background = True
-    else:
-        cmd = None
-        background = False
    
-    iface = PoppyInterface(log, cmd=cmd, background=background)
+    iface = PoppyInterface(root, log, cmd=options.cmd)
 
-    run_server(root, host, int(port), ident, numthreads,
+    run_server(host, int(port), ident, numthreads,
                iface.new_client_hook, iface.client_done_hook,
                iface.auth_verify_hook)
     return 0
