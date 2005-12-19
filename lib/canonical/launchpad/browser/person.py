@@ -65,9 +65,8 @@ from canonical.launchpad.interfaces import (
     IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
-    IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet,
-    ITeamMembershipSubset, IPollSet, BugTaskSearchParams, NotFoundError,
-    UNRESOLVED_BUGTASK_STATUSES)
+    IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet, 
+    BugTaskSearchParams, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.browser.bugtask import (
     BugTaskSearchListingView, AdvancedBugTaskSearchView)
@@ -131,13 +130,17 @@ class TeamNavigation(Navigation, CalendarTraversalMixin):
     def breadcrumb(self):
         return smartquote('"%s" team') % self.context.displayname
 
-    @stepto('+members')
-    def members(self):
-        return ITeamMembershipSubset(self.context)
-
     @stepthrough('+poll')
     def traverse_poll(self, name):
         return getUtility(IPollSet).getByTeamAndName(self.context, name)
+
+    @stepthrough('+member')
+    def traverse_member(self, name):
+        person = getUtility(IPersonSet).getByName(name)
+        if person is None:
+            return None
+        return getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            person, self.context)
 
 
 class PersonSetNavigation(Navigation):
@@ -813,8 +816,8 @@ class PersonView:
         user = getUtility(ILaunchBag).user
         if user is None:
             return None
-        tms = getUtility(ITeamMembershipSet)
-        return tms.getByPersonAndTeam(user.id, self.context.id)
+        return getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            user, self.context)
 
     def joinAllowed(self):
         """Return True if this is not a restricted team."""
@@ -1505,7 +1508,13 @@ class PersonEditEmailsView:
 
         emailset = getUtility(IEmailAddressSet)
         emailaddress = emailset.getByEmail(email)
-        assert emailaddress.person.id == self.context.id
+        assert emailaddress.person.id == self.context.id, \
+                "differing ids in emailaddress.person.id(%r,%s,%d) == " \
+                "self.context.id(%r,%s,%d)" % \
+                (emailaddress.person, id(emailaddress.person),
+                 emailaddress.person.id, self.context, id(self.context),
+                 self.context.id)
+
         assert emailaddress.status == EmailAddressStatus.VALIDATED
         self.context.preferredemail = emailaddress
         self.message = "Your contact address has been changed to: %s" % email
