@@ -14,7 +14,7 @@ displays the "Pillars of Launchpad".
     <li><a href=".../products">Products</a></li>
     <li><a href=".../distros">Distributions</a></li>
     <li><a href=".../people">People</a></li>
-    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../projects">Projects</a></li>
     <li><a href=".../sprints">Meetings</a></li>
   </ul>
   ...
@@ -37,7 +37,7 @@ are linked, because no specific product is being viewed:
     <li class="current"><a href=".../products">Products</a></li>
     <li><a href=".../distros">Distributions</a></li>
     <li><a href=".../people">People</a></li>
-    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../projects">Projects</a></li>
     <li><a href=".../sprints">Meetings</a></li>
   </ul>
   <ul id="subpillars">
@@ -62,7 +62,7 @@ actual pages get linked:
     <li class="current"><a href=".../products">Products</a></li>
     <li><a href=".../distros">Distributions</a></li>
     <li><a href=".../people">People</a></li>
-    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../projects">Projects</a></li>
     <li><a href=".../sprints">Meetings</a></li>
   </ul>
   <ul id="subpillars">
@@ -89,7 +89,7 @@ series, "Release Series" is highlighted:
     <li class="current"><a href=".../products">Products</a></li>
     <li><a href=".../distros">Distributions</a></li>
     <li><a href=".../people">People</a></li>
-    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../projects">Projects</a></li>
     <li><a href=".../sprints">Meetings</a></li>
   </ul>
   <ul id="subpillars">
@@ -113,7 +113,7 @@ The same holds for product milestones:
     <li class="current"><a href=".../products">Products</a></li>
     <li><a href=".../distros">Distributions</a></li>
     <li><a href=".../people">People</a></li>
-    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../projects">Projects</a></li>
     <li><a href=".../sprints">Meetings</a></li>
   </ul>
   <ul id="subpillars">
@@ -140,7 +140,7 @@ associated pillar link is highlighted:
     <li><a href=".../products">Products</a></li>
     <li class="current"><a href=".../distros">Distributions</a></li>
     <li><a href=".../people">People</a></li>
-    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../projects">Projects</a></li>
     <li><a href=".../sprints">Meetings</a></li>
   </ul>
   <ul id="subpillars">
@@ -166,7 +166,7 @@ when a particular distribution is viewed:
     <li><a href=".../products">Products</a></li>
     <li class="current"><a href=".../distros">Distributions</a></li>
     <li><a href=".../people">People</a></li>
-    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../projects">Projects</a></li>
     <li><a href=".../sprints">Meetings</a></li>
   </ul>
   <ul id="subpillars">
@@ -194,7 +194,7 @@ View a distribution release:
     <li><a href=".../products">Products</a></li>
     <li class="current"><a href=".../distros">Distributions</a></li>
     <li><a href=".../people">People</a></li>
-    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../projects">Projects</a></li>
     <li><a href=".../sprints">Meetings</a></li>
   </ul>
   <ul id="subpillars">
@@ -219,7 +219,7 @@ View a distribution release architecture:
     <li><a href=".../products">Products</a></li>
     <li class="current"><a href=".../distros">Distributions</a></li>
     <li><a href=".../people">People</a></li>
-    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../projects">Projects</a></li>
     <li><a href=".../sprints">Meetings</a></li>
   </ul>
   <ul id="subpillars">
@@ -244,7 +244,7 @@ View a source package:
     <li><a href=".../products">Products</a></li>
     <li class="current"><a href=".../distros">Distributions</a></li>
     <li><a href=".../people">People</a></li>
-    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../projects">Projects</a></li>
     <li><a href=".../sprints">Meetings</a></li>
   </ul>
   <ul id="subpillars">
@@ -269,7 +269,7 @@ View a source package in a particular distribution release:
     <li><a href=".../products">Products</a></li>
     <li class="current"><a href=".../distros">Distributions</a></li>
     <li><a href=".../people">People</a></li>
-    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../projects">Projects</a></li>
     <li><a href=".../sprints">Meetings</a></li>
   </ul>
   <ul id="subpillars">
@@ -294,7 +294,7 @@ View a binary package for a particular distribution release architecture:
     <li><a href=".../products">Products</a></li>
     <li class="current"><a href=".../distros">Distributions</a></li>
     <li><a href=".../people">People</a></li>
-    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../projects">Projects</a></li>
     <li><a href=".../sprints">Meetings</a></li>
   </ul>
   <ul id="subpillars">
@@ -319,7 +319,7 @@ View a binary package for a distribution release:
     <li><a href=".../products">Products</a></li>
     <li class="current"><a href=".../distros">Distributions</a></li>
     <li><a href=".../people">People</a></li>
-    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../projects">Projects</a></li>
     <li><a href=".../sprints">Meetings</a></li>
   </ul>
   <ul id="subpillars">
@@ -346,15 +346,15 @@ Viewing the people page:
     <li><a href=".../products">Products</a></li>
     <li><a href=".../distros">Distributions</a></li>
     <li class="current"><a href=".../people">People</a></li>
-    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../projects">Projects</a></li>
     <li><a href=".../sprints">Meetings</a></li>
   </ul>
   ...
 
 
-== Product Groups Pillar ==
+== Projects Pillar ==
 
-View the product groups page:
+View the Projects page:
 
   >>> print http(r"""
   ... GET /projects HTTP/1.1
@@ -367,7 +367,7 @@ View the product groups page:
     <li><a href=".../products">Products</a></li>
     <li><a href=".../distros">Distributions</a></li>
     <li><a href=".../people">People</a></li>
-    <li class="current"><a href=".../projects">Product Groups</a></li>
+    <li class="current"><a href=".../projects">Projects</a></li>
     <li><a href=".../sprints">Meetings</a></li>
   </ul>
   ...
@@ -388,7 +388,7 @@ View the meetings page:
     <li><a href=".../products">Products</a></li>
     <li><a href=".../distros">Distributions</a></li>
     <li><a href=".../people">People</a></li>
-    <li><a href=".../projects">Product Groups</a></li>
+    <li><a href=".../projects">Projects</a></li>
     <li class="current"><a href=".../sprints">Meetings</a></li>
   </ul>
   ...

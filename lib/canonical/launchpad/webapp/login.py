@@ -251,7 +251,7 @@ def logInPerson(request, principal, email):
     authdata['login'] = email
     notify(CookieAuthLoggedInEvent(request, email))
     request.response.addNoticeNotification(
-        _(u'You have been logged in')
+        _(u'You have been logged in.')
         )
 
 

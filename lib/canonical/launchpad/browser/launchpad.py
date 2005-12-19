@@ -142,7 +142,7 @@ class SiteMap(LaunchpadView):
         ('product', 'Products',       IProductSet),
         ('distro',  'Distributions',  IDistributionSet),
         ('person',  'People',         IPersonSet),
-        ('project', 'Product Groups', IProjectSet),
+        ('project', 'Projects',       IProjectSet),
         ('sprint',  'Meetings',       ISprintSet),
         ]
 
