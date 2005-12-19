@@ -39,7 +39,7 @@
           <td><a class="link-external"
                  tal:attributes="href bugtracker/baseurl"
                  tal:content="bugtracker/baseurl">$Bugtracker.baseurl</a></td>
-          <td class="amount" tal:content="bugtracker/watchcount">bugcount</td>
+          <td class="amount" tal:content="bugtracker/watches/count:len">bugcount</td>
           <td class="type"
             tal:content="bugtracker/bugtrackertype/title">bugtrackertype</td>
       </tr>

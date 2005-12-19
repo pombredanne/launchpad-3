@@ -1,5 +1,18 @@
 /* === Things browsers should do, but don't: === */
 
+.clearfix:after { /* use class="clearfix" whenever floats should be enclosed */
+  content: "."; 
+  display: block; 
+  height: 0; 
+  clear: both; 
+  visibility: hidden;
+}
+.clearfix {display: inline-table;}
+/* Work around float bug in MSIE for Windows, while hiding from MSIE for Mac \*/
+* html .clearfix {height: 1%;}
+.clearfix {display: block;}
+/* End hiding from MSIE for Mac */
+
 abbr[title], acronym[title] {
   border-bottom: 1px dotted Black;
   color: Black;
@@ -63,19 +76,24 @@ thead th, tr.thead th {
 }
 
 /* === Global Launchpad design: === */
+
 body {
   background-color: #fcfcfc;
   color: black;
   font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
   margin: 0;
-  padding: 0.5em 0.75em;
+  padding: 0;
 }
-:visited {
+.body {
+  margin: 0 1em 1em;
+}
+
+:visited, #subpillars :link {
   background: none;
   color: #8888bb;
 }
 :link, .hierarchy :visited, .footer :visited,
-.app :visited, .sidebar :visited, .portlet :visited {
+#pillars :visited, .facets :visited, .portlet :visited {
   background: none;
   color: #000088;
 }
@@ -107,6 +125,8 @@ h2 {
 }
 h2.lpcontext {
   font-size: 1.5em;
+  margin-top: 0;
+  padding-top: 0;
 }
 h3, h4, h5, h6 {
   font-size: 1em;
@@ -125,11 +145,9 @@ table {
   margin-left: auto;
   margin-right: auto;
   border-collapse: collapse;
-}
-table table { /* assumes that the overall page layout is a <table> */
   width: 100%;
 }
-table table th, table table td {
+th, td {
   padding: 0.25em;
 }
 th.icon, td.icon {
@@ -324,8 +342,9 @@ input[type="radio"] {
 
 /* -- Page layout: -- */
 
-.header, .footer {
+.header td, .footer {
   font-family: "Lucida Grande", "Trebuchet MS", sans-serif;
+  padding: 0.25em 1em;
 }
 .header {
   font-size: 0.875em;
@@ -341,17 +360,11 @@ input[type="radio"] {
 .login input[type="submit"] {
   padding: 0;
 }
-.header td, .footer {
-  padding: 0.25em;
-}
 .header, .footer, ul.app>li {
   background-color: #dee7ec;
   color: inherit;
 }
-ul.facets {
-  text-align: right;
-}
-ul.app {
+ul.app { /* Currently not used */
   padding: 0;
   margin: 1em 0 1em;
   border-bottom: 1px solid #8cacbb;
@@ -376,10 +389,95 @@ ul.app>li.current {
   border-bottom: 1px solid #fcfcfc;
 }
 
+/* Column definitions: */
+#portal-columns {
+  margin-top: 1em;
+}
+#portal-column-content {
+  display: inline; /* avoid MSIE Double Float Margin bug */
+  float: left;
+  margin-left: 26%; /* = 25% + 1% whitespace */
+  width: 48%; /* = 50% - 1% left whitespace - 1% right whitespace */
+}
+* > #portal-column-content { /* hide from MSIE/Win 5 where "relative" breaks */
+  position: relative; /* allow z-index to work */
+  z-index: 1000; /* force main column to appear on top */
+}
+#portal-column-two {
+  display: inline;
+  float: left;
+  margin-left: 2%; /* whitespace */
+  width: 24%; /* = 25% - 1% whitespace */
+}
+#portal-column-one {
+  display: inline;
+  float: left;
+  margin-left: -100%; /* flush with the left edge of the page */
+  width: 24%; /* = 25% - 1% whitespace */
+}
 
-
-
-
+.sitemap, ul.facets {
+  background-color: #dee7ec;
+  border: 1px solid #8cacbb;
+  font-size: smaller;
+  margin: 0 0 1em 0;
+}
+.sitemap, #subpillars {
+  background-color: #f4f5f8;
+}
+#pillars, #subpillars {
+  display: inline;
+  margin: 0;
+  padding: 0;
+}
+#pillars {
+  background-color: #dee7ec;
+  float: left;
+  width: 47%;
+}
+#subpillars {
+  float: left;
+  font-size: smaller;
+  margin-left: 6%;
+  width: 42%;
+}
+#pillars li, #subpillars li {
+  list-style: none;
+  margin: 0;
+}
+.sitemap :link, .sitemap :visited, .sitemap .current {
+  display: block;
+  padding: 0.25em 1em;
+  text-decoration: none;
+}
+#pillars li.current, .facets li.current {
+  background-color: #f4f5f8;
+  color: inherit;
+}
+#subpillars li.current {
+  background-color: #dee7ec;
+  border: 1px solid #8cacbb;
+}
+/* The following paddings/margins aren't yet robust when zoomed. */
+ul.facets {
+  padding: 0.25em 0 0.25em 0;
+}
+ul.facets :link, ul.facets :visited {
+  text-decoration: none;
+}
+ul.facets>li {
+  list-style-position: inside;
+  margin: 0.25em 1em;
+  padding-left: 0.5em;
+}
+ul.facets>li.current {
+  padding-left: 0.5em;
+}
+ul.facets>li ul {
+  list-style-position: outside;
+  margin-left: 1.5em;
+  padding-left: 1.5em;
+}
 
 /* ----------------------- UNCHANGED FROM PLONE.CSS ----------------------- */
 
@@ -512,29 +610,6 @@ ins {
 
 /* -------------------------- END OF PLONE.CSS -------------------------- */
 
-
-/* Column definitions */
-
-#portal-columns {
-  width: 100% !important;
-}
-
-#portal-column-one {
-  vertical-align: top;
-  width: 16em;
-}
-
-#portal-column-content {
-  vertical-align: top;
-  padding: 2px 1em 1em 1em;
-}
-
-#portal-column-two {
-  padding-top: 3px;
-  vertical-align: top;
-  width: 16em;
-}
-
 /* Launchpad classes */
 
 .highlighted {
@@ -568,16 +643,6 @@ input[disabled] {
 tr.highlight {
     border: 1px solid #ffc550;
     background-color: #ffe7ab;
-}
-
-/* XXX Just setting a fixed width until the rest of the layout is in place */
-
-#portal-column-content {
-  width: 600px;
-}
-
-#portal-columns {
-  margin: auto;
 }
 
 /* batch navigation links */
@@ -1064,4 +1129,9 @@ Calendar stuff.
   margin: 1em 0em 0em 0em;
   padding: 0.5em 1em 0.5em 3em;
   background-repeat: no-repeat;
+}
+
+.oopsid {
+  font-weight: bold;
+  color: red;
 }

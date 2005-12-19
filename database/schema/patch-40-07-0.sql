@@ -13,6 +13,7 @@ CREATE TABLE Continent (
 );
 
 ALTER TABLE Country ADD COLUMN continent integer REFERENCES Continent(id);
-ALTER TABLE CountrY ALTER COLUMN continent SET NOT NULL;
+-- Can't do this yet as column is not populated. Add next rollout.
+--ALTER TABLE CountrY ALTER COLUMN continent SET NOT NULL;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (40, 07, 0);

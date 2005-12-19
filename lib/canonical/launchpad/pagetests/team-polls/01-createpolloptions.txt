@@ -88,3 +88,20 @@
   ...
 
 
+  It's not possible to add/edit a poll option after a poll is open or closed.
+  That's only possible when the poll is not yet open.
+
+  >>> print http(r"""
+  ... GET /people/name17/+poll/director-2004/+newoption HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...This poll is already closed, you can't add new options...
+
+  >>> print http(r"""
+  ... GET /people/name17/+poll/never-closes/+newoption HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...This poll is already open, you can't add new options...
+

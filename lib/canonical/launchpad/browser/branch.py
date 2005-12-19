@@ -128,16 +128,8 @@ class BranchPullListing(LaunchpadView):
 
         :type branch: `IBranch`
         :rtype: unicode
-
-        XXX: The product name mangling should be hooked into Navigation by
-             Steve Alexander when working on that.
         """
-        if branch.product is None:
-            product_name = '+junk'
-        else:
-            product_name = branch.product.name
-        return u'%s %s %s %s' % (branch.url, branch.owner.name, product_name,
-                                 branch.name)
+        return u'%d %s' % (branch.id, branch.url)
 
     def branches_page(self, branches):
         """Return the full page for the supplied list of branches."""

@@ -1,0 +1,100 @@
+Person Pages
+============
+
+In every person page, the 'Bugs' facet has a series of bug listings related to
+that person. In each of these pages, the advanced form can be shown or hidden,
+by clicking on a submit button right beside the 'Search' button. The view
+class used for both the advanced an simple search is the same.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> name16 = getUtility(IPersonSet).get(16)
+
+First we define a helper function to make it easier to construct a view.
+
+    >>> from zope.component import getView
+    >>> from zope.publisher.browser import TestRequest
+    >>> def create_view(context, name, request=None):
+    ...     request = request or TestRequest()
+    ...     view = getView(context, name, request)
+    ...     view.initialize()
+    ...     return view
+
+Assigned bugs
+-------------
+
+All bug tasks assigned to this person. 
+
+By default, only bugtasks with any of the statuses listed in 
+canonical.launchpad.interfaces.UNRESOLVED_BUGTASK_STATUSES are included...
+
+    >>> assigned_bugtaks_view = create_view(name16, '+assignedbugs')
+    >>> assigned_bugtasks = list(assigned_bugtaks_view.search().batch)
+    >>> sorted([(bugtask.bug.id, bugtask.status.name)
+    ...         for bugtask in assigned_bugtasks])
+    [(7, 'NEW')]
+
+...but the advanced search allows us to change this behaviour. Let's search
+for bug tasks with status NEW and FIXED.
+
+    >>> form = {'orderby': u'-priority', 'field.status': [u'New', u'Fixed'],
+    ...         'field.status-empty-marker': u'1', 'search': u'Search'}
+    >>> request = TestRequest(form=form)
+    >>> assigned_bugtaks_view = create_view(name16, '+assignedbugs', request)
+    >>> assigned_bugtasks = list(assigned_bugtaks_view.search().batch)
+    >>> sorted([(bugtask.bug.id, bugtask.status.name)
+    ...         for bugtask in assigned_bugtasks])
+    [(7, 'NEW'), (8, 'FIXED')]
+
+
+Reported bugs
+-------------
+
+All bug tasks reported by someone.
+
+By default we'll get assigned and unassigned bug tasks.
+
+    >>> reported_bugtaks_view = create_view(name16, '+reportedbugs')
+    >>> reported_bugtasks = list(reported_bugtaks_view.search().batch)
+    >>> sorted([(bugtask.bug.id, bugtask.status.name, 
+    ...          getattr(bugtask.assignee, 'name', None))
+    ...         for bugtask in reported_bugtasks])
+    [(1, 'NEW', None), (3, 'NEW', None), (7, 'NEW', u'name16')]
+
+But the advanced search allows us to query only the bug tasks that aren't
+assigned.
+
+    >>> form = {'orderby': u'-priority', 'field.unassigned': u'on'}
+    >>> request = TestRequest(form=form)
+    >>> reported_bugtaks_view = create_view(name16, '+reportedbugs', request)
+    >>> reported_bugtasks = list(reported_bugtaks_view.search().batch)
+    >>> sorted([(bugtask.bug.id, bugtask.status.name, 
+    ...          getattr(bugtask.assignee, 'name', None))
+    ...         for bugtask in reported_bugtasks])
+    [(1, 'NEW', None), (3, 'NEW', None)]
+
+
+Subscribed bugs
+---------------
+
+All bug tasks someone is subscribed to.
+
+By default we'll get bug tasks with any severity.
+
+    >>> name12 = getUtility(IPersonSet).get(12)
+    >>> subscribed_bugtaks_view = create_view(name12, '+subscribedbugs')
+    >>> subscribed_bugtasks = list(subscribed_bugtaks_view.search().batch)
+    >>> sorted([(bugtask.bug.id, bugtask.status.name, bugtask.severity.name)
+    ...         for bugtask in subscribed_bugtasks])
+    [(1, 'ACCEPTED', 'MINOR'), (1, 'NEW', 'MINOR'), (1, 'NEW', 'NORMAL')]
+
+But the advanced search allows us to query only the bug tasks with severity
+Normal, Major and Critical.
+
+    >>> form = {'orderby': u'-priority', 
+    ...         u'field.severity': [u'Normal', u'Major', u'Critical']}
+    >>> request = TestRequest(form=form)
+    >>> subscribed_bugtaks_view = create_view(name12, '+subscribedbugs', request)
+    >>> subscribed_bugtasks = list(subscribed_bugtaks_view.search().batch)
+    >>> sorted([(bugtask.bug.id, bugtask.status.name, bugtask.severity.name)
+    ...         for bugtask in subscribed_bugtasks])
+    [(1, 'NEW', 'NORMAL')]
