@@ -527,7 +527,7 @@ class NewAccountView(AddView, BaseLoginTokenView):
         notify(ObjectCreatedEvent(email))
 
         person.validateAndEnsurePreferredEmail(email)
-        self._nextURL = self.context.redirectionurl
+        self._nextURL = self.context.redirection_url
         if not self._nextURL:
             self._nextURL = canonical_url(person)
         self.context.destroySelf()

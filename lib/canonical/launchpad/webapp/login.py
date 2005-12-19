@@ -216,7 +216,7 @@ class LoginOrRegister:
         token = logintokenset.new(
             requester=None, requesteremail=None, email=self.email, 
             tokentype=LoginTokenType.NEWACCOUNT,
-            redirectionurl=request.form.get('redirection_url'))
+            redirection_url=request.form.get('redirection_url'))
         token.sendNewUserEmail(request.getApplicationURL())
 
     def login_success(self):

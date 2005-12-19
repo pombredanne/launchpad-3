@@ -27,7 +27,7 @@ class LoginToken(SQLBase):
     implements(ILoginToken)
     _table = 'LoginToken'
 
-    redirectionurl = StringCol(default=None)
+    redirection_url = StringCol(default=None)
     requester = ForeignKey(dbName='requester', foreignKey='Person')
     requesteremail = StringCol(dbName='requesteremail', notNull=False,
                                default=None)
@@ -45,7 +45,7 @@ class LoginToken(SQLBase):
     def sendEmailValidationRequest(self, appurl):
         """See ILoginToken."""
         template = get_email_template('validate-email.txt')
-        fromaddress = "Launchpad Email Validator <noreply@ubuntu.com>"
+        fromaddress = "Launchpad Email Validator <noreply@launchpad.net>"
 
         replacements = {'longstring': self.token,
                         'requester': self.requester.browsername,
@@ -67,7 +67,7 @@ class LoginToken(SQLBase):
                                   LoginTokenType.VALIDATESIGNONLYGPG)
 
         template = get_email_template('validate-gpg.txt')
-        fromaddress = "Launchpad GPG Validator <noreply@ubuntu.com>"
+        fromaddress = "Launchpad GPG Validator <noreply@launchpad.net>"
         replacements = {'longstring': self.token,
                         'requester': self.requester.browsername,
                         'requesteremail': self.requesteremail,
@@ -89,7 +89,7 @@ class LoginToken(SQLBase):
     def sendPasswordResetEmail(self, appurl):
         """See ILoginToken."""
         template = get_email_template('forgottenpassword.txt')
-        fromaddress = "Launchpad Team <noreply@canonical.com>"
+        fromaddress = "Launchpad Team <noreply@launchpad.net>"
         replacements = {'longstring': self.token,
                         'toaddress': self.email, 
                         'appurl': appurl}
@@ -104,7 +104,7 @@ class LoginToken(SQLBase):
         replacements = {'longstring': self.token, 'appurl': appurl}
         message = template % replacements
 
-        fromaddress = "The Launchpad Team <noreply@canonical.com>"
+        fromaddress = "The Launchpad Team <noreply@launchpad.net>"
         subject = "Launchpad Account Creation Instructions"
         simple_sendmail(fromaddress, self.email, subject, message)
 
@@ -155,7 +155,7 @@ class LoginTokenSet:
             token.destroySelf()
 
     def new(self, requester, requesteremail, email, tokentype,
-            fingerprint=None, redirectionurl=None):
+            fingerprint=None, redirection_url=None):
         """See ILoginTokenSet."""
         assert valid_email(email)
         if tokentype not in LoginTokenType.items:
@@ -171,7 +171,7 @@ class LoginTokenSet:
         return LoginToken(requesterID=reqid, requesteremail=requesteremail,
                           email=email, token=token, tokentype=tokentype,
                           created=UTC_NOW, fingerprint=fingerprint,
-                          redirectionurl=redirectionurl)
+                          redirection_url=redirection_url)
 
     def __getitem__(self, tokentext):
         """See ILoginTokenSet."""

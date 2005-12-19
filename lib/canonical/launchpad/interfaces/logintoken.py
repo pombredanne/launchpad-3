@@ -36,7 +36,7 @@ class ILoginToken(Interface):
                 'request.'),
         required=False,
         )
-    redirectionurl = Text(
+    redirection_url = Text(
         title=_('The URL to where we should redirect the user after processing '
                 'his request'),
         required=False,
@@ -121,7 +121,7 @@ class ILoginTokenSet(Interface):
         """
 
     def new(requester, requesteremail, email, tokentype, fingerprint=None,
-            redirectionurl=None):
+            redirection_url=None):
         """Create a new LoginToken object. Parameters must be:
         requester: a Person object or None (in case of a new account)
 
