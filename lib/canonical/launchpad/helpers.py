@@ -19,7 +19,6 @@ import tarfile
 import time
 import warnings
 from StringIO import StringIO
-from select import select
 from math import ceil
 from xml.sax.saxutils import escape as xml_escape
 from difflib import unified_diff
@@ -424,17 +423,19 @@ class RosettaWriteTarFile:
             self.add_file(filename, files[filename])
 
 
-def is_maintainer(owned_object):
-    """Is the logged in user the maintainer of this thing?
+def is_maintainer(owned_object, person=None):
+    """Is the person the maintainer of this thing?
 
+    If no person is provided, the logged in user is used.
     owned_object provides IHasOwner.
     """
     if not IHasOwner.providedBy(owned_object):
         raise TypeError(
             "Object %r doesn't provide IHasOwner" % repr(owned_object))
-    launchbag = getUtility(ILaunchBag)
-    if launchbag.user is not None:
-        return launchbag.user.inTeam(owned_object.owner)
+    if person is None:
+        person = getUtility(ILaunchBag).user
+    if person is not None:
+        return person.inTeam(owned_object.owner)
     else:
         return False
 
@@ -1141,16 +1142,43 @@ def getBinaryPackageFormat(fname):
         return BinaryPackageFormat.RPM
 
 def intOrZero(value):
-    """Return int(value) or 0 if the conversion fails."""
+    """Return int(value) or 0 if the conversion fails.
+    
+    >>> intOrZero('1.23')
+    0
+    >>> intOrZero('1.ab')
+    0
+    >>> intOrZero('2')
+    2
+    >>> intOrZero(None)
+    0
+    >>> intOrZero(1)
+    1
+    >>> intOrZero(-9)
+    -9
+    """
     try:
         return int(value)
-    except ValueError:
+    except (ValueError, TypeError):
         return 0
 
 def positiveIntOrZero(value):
     """Return 0 if int(value) fails or if int(value) is less than 0.
 
     Return int(value) otherwise.
+
+    >>> positiveIntOrZero(None)
+    0
+    >>> positiveIntOrZero(-9)
+    0
+    >>> positiveIntOrZero(1)
+    1
+    >>> positiveIntOrZero('-3')
+    0
+    >>> positiveIntOrZero('5')
+    5
+    >>> positiveIntOrZero(3.1415)
+    3
     """
     value = intOrZero(value)
     if value < 0:

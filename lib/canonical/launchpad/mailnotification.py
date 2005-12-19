@@ -15,7 +15,8 @@ from zope.security.proxy import isinstance as zope_isinstance
 import canonical.launchpad
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IBugDelta, IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
+    IBugDelta, IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask,
+    IDistribution, IProduct)
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.components.bugtask import BugTaskDelta
@@ -134,9 +135,11 @@ def send_process_error_notification(to_addrs, subject, error_msg):
     Tells the user that an error was encountered while processing
     his request.
     """
-    msg = get_email_template('email-processing-error.txt') % {
+    body = get_email_template('email-processing-error.txt') % {
             'error_msg': error_msg}
-    simple_sendmail(get_bugmail_error_address(), to_addrs, subject, msg)
+    mailwrapper = MailWrapper(width=72)
+    body = mailwrapper.format(body)
+    simple_sendmail(get_bugmail_error_address(), to_addrs, subject, body)
 
 
 def notify_errors_list(message, file_alias_url):
@@ -146,26 +149,6 @@ def notify_errors_list(message, file_alias_url):
         get_bugmail_error_address(), [config.launchpad.errors_address],
         'Unhandled Email: %s' % file_alias_url,
         template % {'url': file_alias_url, 'error_msg': message})
-
-
-def add_bugmail_footer_to_body(body):
-    """Add the bugmail footer to a bugmail message body.
-
-    :body: A string of arbitrary length.
-
-    This footer is used to explain why a user is receiving this bugmail. We will
-    always make sure there is one blank line, and only one blank line, before
-    the message footer.
-    """
-    # Make sure the body always ends with exactly one blank line followed by the
-    # footer, to make it easy to read.
-    body = re.sub(r"\s*$", "\n\n", body, re.MULTILINE)
-
-    return body + (
-        "-- \n"
-        "You are receiving this message because you are on the Cc list of this "
-        "bug,\nor are a member of a team that is, or you are assigned to fix "
-        "it.")
 
 
 def generate_bug_add_email(bug):
@@ -221,7 +204,7 @@ def generate_bug_add_email(bug):
     mailwrapper = MailWrapper(width=72)
     body += u"Description:\n%s" % mailwrapper.format(description)
 
-    body = add_bugmail_footer_to_body(body)
+    body = body.rstrip()
 
     return (subject, body)
 
@@ -428,8 +411,7 @@ def generate_bug_edit_email(bug_delta):
                     u"Assignee", assignee.name, assignee.preferredemail.email)
             body += u"%15s: %s" % (u"Status", added_bugtask.status.title)
 
-    # Append a footer that explains why the recipient is receiving this email.
-    body = add_bugmail_footer_to_body(body)
+    body = body.rstrip()
 
     return (subject, body)
 
@@ -459,7 +441,7 @@ def generate_bug_comment_email(bug_comment):
                'comment' : comment_wrapper.format(
                     bug_comment.message.contents)})
 
-    body = add_bugmail_footer_to_body(body)
+    body = body.rstrip()
 
     return (subject, body)
 
@@ -984,3 +966,95 @@ def notify_join_request(event):
         fromaddress = "Launchpad <noreply@ubuntu.com>"
         subject = "Launchpad: New member awaiting approval."
         simple_sendmail(fromaddress, to_addrs, subject, msg)
+
+
+def send_ticket_notification(ticket_event, subject, body):
+    """Sends a ticket notification to the ticket's subscribers."""
+    from_addr = get_bugmail_from_address(ticket_event.user)
+    ticket = ticket_event.object
+
+    sent_addrs = set()
+    subscribers = [subscription.person
+                   for subscription in ticket.subscriptions]
+    for notified_person in subscribers:
+        for address in contactEmailAddresses(notified_person):
+            if address not in sent_addrs:
+                simple_sendmail(from_addr, address, subject, body)
+                sent_addrs.add(address)
+
+
+def notify_ticket_added(ticket, event):
+    """Notify the subscribers of the newly added ticket."""
+    subject = '[Support #%s]: %s' % (ticket.id, ticket.title)
+    body = get_email_template('ticket_added.txt') % {
+        'target_name': ticket.target.displayname,
+        'ticket_id': ticket.id,
+        'ticket_url': canonical_url(ticket),
+        'comment': ticket.description}
+
+    send_ticket_notification(event, subject, body)
+
+
+def get_ticket_changes_text(ticket, old_ticket):
+    """Return a textual representation of the changes."""
+    indent = 4*' '
+    info_fields = []
+    if ticket.status != old_ticket.status:
+        info_fields.append(indent + 'Status: %s => %s' % (
+            old_ticket.status.title, ticket.status.title))
+
+    old_bugs = set(old_ticket.bugs)
+    bugs = set(ticket.bugs)
+    for linked_bug in bugs.difference(old_bugs):
+        info_fields.append(
+            indent + 'Linked to bug: #%s\n' % linked_bug.id +
+            indent + canonical_url(linked_bug))
+    for unlinked_bug in old_bugs.difference(bugs):
+        info_fields.append(
+            indent + 'Removed link to bug: #%s\n' % unlinked_bug.id +
+            indent + canonical_url(unlinked_bug))
+
+    if ticket.title != old_ticket.title:
+        info_fields.append('Summary changed to:\n%s' % ticket.title)
+    if ticket.description != old_ticket.description:
+        info_fields.append('Description changed to:\n%s' % ticket.description)
+
+    ticket_changes = '\n\n'.join(info_fields)
+    return ticket_changes
+
+
+def notify_ticket_modified(ticket, event):
+    """Notify the subscribers that a ticket has been modifed."""
+    old_ticket = event.object_before_modification
+
+    body = get_ticket_changes_text(ticket, old_ticket)
+
+    new_comments = set(ticket.messages).difference(old_ticket.messages)
+    nr_of_new_comments = len(new_comments)
+    if len(new_comments) == 0:
+        comment_subject = ticket.title
+    elif len(new_comments) == 1:
+        comment = new_comments.pop()
+        comment_subject = comment.subject
+        if body:
+            # There should be a blank line between the changes and the
+            # comment.
+            body += '\n\n'
+        body += 'Comment:\n%s' % comment.contents
+    else:
+        raise AssertionError(
+            "There shouldn't be more than one comment for a notification.")
+
+    if not body:
+        # No interesting changes were made.
+        return
+
+    subject = '[Support #%s]: %s' % (ticket.id, comment_subject)
+
+
+    body = get_email_template('ticket_modified.txt') % {
+        'ticket_id': ticket.id,
+        'target_name': ticket.target.displayname,
+        'ticket_url': canonical_url(ticket),
+        'body': body}
+    send_ticket_notification(event, subject, body)

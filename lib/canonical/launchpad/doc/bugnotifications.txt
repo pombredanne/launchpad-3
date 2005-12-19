@@ -421,11 +421,11 @@ pretending we've just added a watch to a bug.
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    4
+    3
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
+    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
@@ -440,7 +440,6 @@ pretending we've just added a watch to a bug.
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
     ['product=firefox; status=New; priority=Wontfix;\n\tassignee=mark@hbd.com; ',
-     'product=ubuntu; status=New; priority=Medium; assignee=keybuk; ',
      'distribution=ubuntu; sourcepackage=mozilla-firefox;\n\tcomponent=main;
       status=New; priority=Medium; assignee=None; ',
      'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
@@ -472,11 +471,11 @@ the changes made:
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    4
+    3
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
+    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
@@ -491,7 +490,6 @@ the changes made:
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
     ['product=firefox; status=New; priority=Wontfix;\n\tassignee=mark@hbd.com; ',
-     'product=ubuntu; status=New; priority=Medium; assignee=keybuk; ',
      'distribution=ubuntu; sourcepackage=mozilla-firefox;\n\tcomponent=main;
       status=New; priority=Medium; assignee=None; ',
      'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
@@ -524,11 +522,11 @@ this document:
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    4
+    3
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
+    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
@@ -543,7 +541,6 @@ this document:
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
     ['product=firefox; status=New; priority=Wontfix;\n\tassignee=mark@hbd.com; ',
-     'product=ubuntu; status=New; priority=Medium; assignee=keybuk; ',
      'distribution=ubuntu; sourcepackage=mozilla-firefox;\n\tcomponent=main;
       status=New; priority=Medium; assignee=None; ',
      'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
@@ -575,11 +572,11 @@ publishing an object created event.
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    4
+    3
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
+    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
@@ -594,7 +591,6 @@ publishing an object created event.
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
     ['product=firefox; status=New; priority=Wontfix;\n\tassignee=mark@hbd.com; ',
-     'product=ubuntu; status=New; priority=Medium; assignee=keybuk; ',
      'distribution=ubuntu; sourcepackage=mozilla-firefox;\n\tcomponent=main;
       status=New; priority=Medium; assignee=None; ',
      'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
@@ -625,11 +621,11 @@ When a link is edited, the notification will look as follows:
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    4
+    3
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
+    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
     >>> from_addr, to_addr, raw_message = test_emails.pop()
     >>> print from_addr
     bounces@canonical.com
@@ -644,7 +640,6 @@ When a link is edited, the notification will look as follows:
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
     ['product=firefox; status=New; priority=Wontfix;\n\tassignee=mark@hbd.com; ',
-     'product=ubuntu; status=New; priority=Medium; assignee=keybuk; ',
      'distribution=ubuntu; sourcepackage=mozilla-firefox;\n\tcomponent=main;
       status=New; priority=Medium; assignee=None; ',
      'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
@@ -679,13 +674,13 @@ duplicate.
     >>> test_emails = list(stub.test_emails)
     >>> test_emails.sort(by_to_addrs)
     >>> len(test_emails)
-    8
+    7
     >>> all_to_addrs = [
     ...     to_addrs for from_addr, to_addrs, raw_message in test_emails]
     >>> print all_to_addrs
     [['dilys@muse.19inch.net'], ['dilys@muse.19inch.net'],
      ['mark@hbd.com'], ['mark@hbd.com'],
-     ['support@ubuntu.com'], ['support@ubuntu.com'],
+     ['support@ubuntu.com'],
      ['test@canonical.com'], ['test@canonical.com']]
 
     >>> sample_person_mails = [email.message_from_string(raw_message)
@@ -710,8 +705,7 @@ duplicate.
     http://.../malone/bugs/2
     ...
     *** This bug has been marked a duplicate of bug 1 ***
-    ...
-   
+
     >>> stub.test_emails = []
 
 
@@ -752,7 +746,6 @@ Now we change the target of a bug that's already marked as a dupe and check if t
     *** This bug is no longer a duplicate of bug 5 ***
     <BLANKLINE>
     *** This bug has been marked a duplicate of bug 3 ***
-    ...
 
     >>> stub.test_emails = []
 
@@ -790,12 +783,9 @@ Now we unduplicate the above bug and check if the correct notification message i
     http://.../malone/bugs/6
     ...
     *** This bug is no longer a duplicate of bug 3 ***
-    ...
 
     >>> stub.test_emails = []
 
-
-    
 Implications of Bug Privacy
 ---------------------------
 

@@ -65,11 +65,11 @@ from canonical.launchpad.interfaces import (
     IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
-    IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet,
-    ITeamMembershipSubset, IPollSet, BugTaskSearchParams, NotFoundError,
-    UNRESOLVED_BUGTASK_STATUSES)
+    IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet, 
+    BugTaskSearchParams, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 
-from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
+from canonical.launchpad.browser.bugtask import (
+    BugTaskSearchListingView, AdvancedBugTaskSearchView)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.helpers import (
@@ -130,13 +130,17 @@ class TeamNavigation(Navigation, CalendarTraversalMixin):
     def breadcrumb(self):
         return smartquote('"%s" team') % self.context.displayname
 
-    @stepto('+members')
-    def members(self):
-        return ITeamMembershipSubset(self.context)
-
     @stepthrough('+poll')
     def traverse_poll(self, name):
         return getUtility(IPollSet).getByTeamAndName(self.context, name)
+
+    @stepthrough('+member')
+    def traverse_member(self, name):
+        person = getUtility(IPersonSet).getByName(name)
+        if person is None:
+            return None
+        return getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            person, self.context)
 
 
 class PersonSetNavigation(Navigation):
@@ -595,12 +599,41 @@ def userIsActiveTeamMember(team):
     return user in team.activemembers
 
 
-class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
-    """All bugs reported by someone."""
+class BasePersonBugTaskSearchListingView(AdvancedBugTaskSearchView):
+    """A Base view class to be used by all bug listings on a person page.
+    
+    All bug listings on a person page are in some way related to that person.
+    This means that this person (our context) has to be in the
+    BugTaskSearchParams that will be given to the searchTasks() method. To do
+    this, subclasses must define an context_parameter class variable whose 
+    value should be either 'owner', 'subscriber' or 'assignee'.
+
+    Please note this is a base class that is not meant to be used as a view
+    class. Instead, you should derive from it and use the derived class.
+    """
+
+    has_advanced_form = True
+    context_parameter = None
 
     def getExtraSearchParams(self):
-        return {'status': any(*UNRESOLVED_BUGTASK_STATUSES),
-                'owner': self.context}
+        assert self.context_parameter is not None
+        params = AdvancedBugTaskSearchView.getExtraSearchParams(self)
+        params[self.context_parameter] = self.context
+        return params
+
+    def show_advanced_form(self):
+        """Return True if this view's advanced form should be shown."""
+        request = self.request
+        if ((request.get('advanced') or request.form.get('advanced')) and
+            not request.form.get('simple')):
+            return True
+        return False
+
+
+class ReportedBugTaskSearchListingView(BasePersonBugTaskSearchListingView):
+    """All bugs reported by someone."""
+
+    context_parameter = 'owner'
 
 
 class BugTasksOnMaintainedSoftwareSearchListingView(BugTaskSearchListingView):
@@ -626,24 +659,21 @@ class BugTasksOnMaintainedSoftwareSearchListingView(BugTaskSearchListingView):
         return False
 
 
-class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
-    """All open bugs assigned to someone."""
+class PersonAssignedBugTaskSearchListingView(
+        BasePersonBugTaskSearchListingView):
+    """All bugs assigned to someone."""
 
-    def getExtraSearchParams(self):
-        return {'status': any(*UNRESOLVED_BUGTASK_STATUSES),
-                'assignee': self.context}
+    context_parameter = 'assignee'
 
     def doNotShowAssignee(self):
         """Should we not show the assignee in the list of results?"""
         return True
 
 
-class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
+class SubscribedBugTaskSearchListingView(BasePersonBugTaskSearchListingView):
     """All bugs someone is subscribed to."""
 
-    def getExtraSearchParams(self):
-        return {'status': any(*UNRESOLVED_BUGTASK_STATUSES), 
-                'subscriber': self.context}
+    context_parameter = 'subscriber'
 
 
 class PersonView:
@@ -786,8 +816,8 @@ class PersonView:
         user = getUtility(ILaunchBag).user
         if user is None:
             return None
-        tms = getUtility(ITeamMembershipSet)
-        return tms.getByPersonAndTeam(user.id, self.context.id)
+        return getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            user, self.context)
 
     def joinAllowed(self):
         """Return True if this is not a restricted team."""
@@ -1456,7 +1486,7 @@ class PersonEditEmailsView:
         token.sendEmailValidationRequest(self.request.getApplicationURL())
 
         self.message = (
-                "An e-mail message was sent to '%s'. Follow the "
+                "An email message was sent to '%s'. Follow the "
                 "instructions in that message to confirm that the "
                 "address is yours." % newemail)
 
@@ -1478,7 +1508,13 @@ class PersonEditEmailsView:
 
         emailset = getUtility(IEmailAddressSet)
         emailaddress = emailset.getByEmail(email)
-        assert emailaddress.person.id == self.context.id
+        assert emailaddress.person.id == self.context.id, \
+                "differing ids in emailaddress.person.id(%r,%s,%d) == " \
+                "self.context.id(%r,%s,%d)" % \
+                (emailaddress.person, id(emailaddress.person),
+                 emailaddress.person.id, self.context, id(self.context),
+                 self.context.id)
+
         assert emailaddress.status == EmailAddressStatus.VALIDATED
         self.context.preferredemail = emailaddress
         self.message = "Your contact address has been changed to: %s" % email

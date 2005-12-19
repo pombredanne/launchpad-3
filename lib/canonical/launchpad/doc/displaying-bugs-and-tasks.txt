@@ -118,7 +118,7 @@ Let's see some examples:
   'not filed elsewhere'
 
   >>> wontfix_priority_task.statuselsewhere
-  'filed in 3 other places'
+  'filed in 2 other places'
 
   >>> low_priority_task.statuselsewhere
   'filed in 2 other places'
@@ -131,7 +131,7 @@ Fixed, and see how the statuselsewhere value is affected:
   >>> related_task.status = BugTaskStatus.FIXED
 
   >>> wontfix_priority_task.statuselsewhere
-  'fixed in 1 of 4 places'
+  'fixed in 1 of 3 places'
 
   >>> related_task.status = removeSecurityProxy(ORIGINAL_STATUS)
 

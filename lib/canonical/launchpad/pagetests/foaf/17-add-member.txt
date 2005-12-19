@@ -1,7 +1,7 @@
   Go to the 'Add Members' page.
 
   >>> print http(r"""
-  ... GET /people/myemail/+members/+add HTTP/1.1
+  ... GET /people/myemail/+addmember HTTP/1.1
   ... Authorization: Basic Zm9vQGJhei5jb206Zg==
   ... """)
   HTTP/1.1 200 Ok
@@ -15,7 +15,7 @@
   Add 'cprov' as a member of the newly created team, 'myemail'
 
   >>> print http(r"""
-  ... POST /people/myemail/+members/+add HTTP/1.1
+  ... POST /people/myemail/+addmember HTTP/1.1
   ... Authorization: Basic Zm9vQGJhei5jb206Zg==
   ... Content-Length: ...
   ... Content-Type: multipart/form-data; boundary=---------------------------4242461020359353471242944195
@@ -37,7 +37,7 @@
 
 
   >>> print http(r"""
-  ... GET /people/myemail/+members/+add?added=29 HTTP/1.1
+  ... GET /people/myemail/+addmember?added=29 HTTP/1.1
   ... Authorization: Basic Zm9vQGJhei5jb206Zg==
   ... """)
   HTTP/1.1 200 Ok

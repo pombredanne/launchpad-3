@@ -64,6 +64,8 @@ spider -- StuartBishop 20050822
 >>> check("/legal")
 >>> check("/feedback")
 
+>>> check("/rosetta/+about")
+
 >>> check("/shipit/robots.txt")
 
 >>> check("/bounties")

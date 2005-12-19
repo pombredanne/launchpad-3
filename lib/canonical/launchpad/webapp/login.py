@@ -22,7 +22,6 @@ from canonical.launchpad.interfaces import ILoginTokenSet, IPersonSet
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.lp.dbschema import LoginTokenType
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from canonical.launchpad.webapp.notification import NOTIFICATION_PARAMETER
 
 class UnauthorizedView(SystemErrorView):
 
@@ -56,7 +55,7 @@ class UnauthorizedView(SystemErrorView):
                 query_string = '?' + query_string
             target = self.request.getURL() + '/+login' + query_string
             self.request.response.addNoticeNotification(_(
-                    'The requested page is protected. You will need to login.'
+                    'To continue, you must log in to Launchpad.'
                     ))
             self.request.response.redirect(target)
             # Maybe render page with a link to the redirection?
@@ -156,11 +155,7 @@ class LoginOrRegister:
                 return
 
             logInPerson(self.request, principal, email)
-            # Redirect only when we're not at the root /+login.
-            # If we're on the root page, then show the page which will say
-            # "You're logged in".
-            if not self.request.URL[1].endswith('+login'):
-                self.redirectMinusLogin()
+            self.redirectMinusLogin()
         else:
             self.login_error = "The email address and password do not match."
 
@@ -239,10 +234,12 @@ class LoginOrRegister:
         """Returns zero or more hidden inputs that preserve the URL's query."""
         L = []
         for name, value in self.iter_form_items():
-            if name != NOTIFICATION_PARAMETER:
-                L.append('<input type="hidden" name="%s" value="%s" />' %
-                        (name, cgi.escape(value, quote=True)))
+            L.append('<input type="hidden" name="%s" value="%s" />' % (
+                name, cgi.escape(value, quote=True)
+                ))
+                    
         return '\n'.join(L)
+
 
 def logInPerson(request, principal, email):
     """Log the person in. Password validation must be done in callsites."""
