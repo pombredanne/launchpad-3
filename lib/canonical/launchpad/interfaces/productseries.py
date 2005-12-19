@@ -184,7 +184,8 @@ class IProductSeriesSourceAdmin(Interface):
     def enableAutoSync():
         """enable this series RCS for automatic baz syncronisation"""
 
-
+# XXX matsubara 2005-11-30: This class should be renamed to IProductSeriesSet
+# https://launchpad.net/products/launchpad/+bug/5247
 class IProductSeriesSourceSet(Interface):
     """The set of ProductSeries with a view to source imports"""
     def search(ready=None, text=None, forimport=None, importstatus=None,
@@ -198,3 +199,16 @@ class IProductSeriesSourceSet(Interface):
         the statuses are included, otherwise the count reflects the number
         of branches with that importstatus."""
 
+    def getByCVSDetails(cvsroot, cvsmodule, cvsbranch, default=None):
+        """Return the ProductSeries with the given CVS details.
+
+        Return the default value if there is no ProductSeries with the 
+        given details.
+        """
+
+    def getBySVNDetails(svnrepository, default=None):
+        """Return the ProductSeries with the given SVN details.
+
+        Return the default value if there is no ProductSeries with the
+        given details.
+        """

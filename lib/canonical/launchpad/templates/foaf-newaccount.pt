@@ -16,7 +16,7 @@
         <h1 metal:fill-slot="heading">Complete your registration</h1>
 
         <div metal:fill-slot="extra_info" class="formHelp">
-          Fill in the form bellow to finish your registration process on
+          Fill in the form below to finish your registration process on
           Launchpad.
 
         </div>
