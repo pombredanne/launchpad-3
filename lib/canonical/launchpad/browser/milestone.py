@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'MilestoneSetNavigation',
+    'MilestoneNavigation',
     'MilestoneFacets',
     'MilestoneContextMenu',
     'MilestoneAddView',
@@ -19,12 +20,21 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, ContextMenu, Link, GetitemNavigation)
+    StandardLaunchpadFacets, ContextMenu, Link, GetitemNavigation, Navigation)
 
 
 class MilestoneSetNavigation(GetitemNavigation):
 
     usedfor = IMilestoneSet
+
+
+# XXX: 20051214 jamesh
+# This class is required in order to make use of a side effect of
+# Navigation.publishTraverse: adding context objects to
+# request.traversed_objects.
+class MilestoneNavigation(Navigation):
+
+    usedfor = IMilestone
 
 
 class MilestoneFacets(StandardLaunchpadFacets):

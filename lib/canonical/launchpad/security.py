@@ -8,7 +8,7 @@ from zope.interface import implements, Interface
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    IAuthorization, IHasOwner, IPerson, ITeam, ITeamMembershipSubset,
+    IAuthorization, IHasOwner, IPerson, ITeam, ISprintSpecification,
     IDistribution, ITeamMembership, IProductSeriesSource,
     IProductSeriesSourceAdmin, IMilestone, IBug, IBugTask, ITranslator,
     IProduct, IProductSeries, IPOTemplate, IPOFile, IPOTemplateName,
@@ -16,8 +16,8 @@ from canonical.launchpad.interfaces import (
     IBugTracker, IBugAttachment, IPoll, IPollSubset, IPollOption,
     IProductRelease, IShippingRequest, IShippingRequestSet, IRequestedCDs,
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
-    IShippingRun, ISpecification, ISprintSpecification,
-    ITranslationImportQueueEntry, ITranslationImportQueue)
+    IShippingRun, ISpecification, ITranslationImportQueueEntry,
+    ITranslationImportQueue)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -226,12 +226,6 @@ class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
                     return True
 
         return False
-
-
-class EditTeamMembershipSubsetByTeamOwnerOrTeamAdminsOrAdmins(
-        EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins):
-    permission = 'launchpad.Edit'
-    usedfor = ITeamMembershipSubset
 
 
 class EditPersonBySelfOrAdmins(AuthorizationBase):
