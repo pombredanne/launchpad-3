@@ -16,7 +16,7 @@
 
     <browser:navigation
         module="canonical.launchpad.browser"
-        classes="MilestoneSetNavigation"
+        classes="MilestoneSetNavigation MilestoneNavigation"
         />
 
     <browser:defaultView

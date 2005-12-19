@@ -2,29 +2,25 @@
 
 __metaclass__ = type
 
-__all__ = [
-    'TeamEditView',
-    'TeamEmailView',
-    'TeamAddView',
-    ]
+__all__ = ['TeamEditView', 'TeamEmailView', 'TeamAddView', 'TeamMembersView',
+           'TeamMemberAddView', 'ProposedTeamMembersEditView']
 
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 from zope.component import getUtility
-from zope.i18nmessageid import MessageIDFactory
 
 from canonical.config import config
-from canonical.lp.dbschema import LoginTokenType
+from canonical.lp.dbschema import LoginTokenType, TeamMembershipStatus
 from canonical.database.sqlbase import flush_database_updates
 
-from canonical.launchpad import _
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.interfaces import (
-    IPersonSet, ILaunchBag, IEmailAddressSet, ILoginTokenSet)
+    IPersonSet, ILaunchBag, IEmailAddressSet, ILoginTokenSet,
+    ITeamMembershipSet)
 
 
 class TeamEditView(SQLObjectEditView):
@@ -157,7 +153,7 @@ class TeamAddView(AddView):
             subscriptionpolicy, defaultmembershipperiod, defaultrenewalperiod)
         notify(ObjectCreatedEvent(team))
 
-        email = data.get('contactemail', None)
+        email = data.get('contactemail')
         if email is not None:
             appurl = self.request.getApplicationURL()
             sendEmailValidationRequest(team, email, appurl)
@@ -192,4 +188,98 @@ def sendEmailValidationRequest(team, email, appurl):
     message = template % replacements
     simple_sendmail(fromaddress, token.email, subject, message)
 
+
+class TeamMembersView:
+
+    def allMembersCount(self):
+        return getUtility(ITeamMembershipSet).getTeamMembersCount(self.context)
+
+    def activeMemberships(self):
+        return getUtility(ITeamMembershipSet).getActiveMemberships(self.context)
+
+    def proposedMemberships(self):
+        return getUtility(ITeamMembershipSet).getProposedMemberships(
+            self.context)
+
+    def inactiveMemberships(self):
+        return getUtility(ITeamMembershipSet).getInactiveMemberships(
+            self.context)
+
+
+class ProposedTeamMembersEditView:
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.user = getUtility(ILaunchBag).user
+
+    def processProposed(self):
+        if self.request.method != "POST":
+            return
+
+        team = self.context
+        expires = team.defaultexpirationdate
+        for person in team.proposedmembers:
+            action = self.request.form.get('action_%d' % person.id)
+            if action == "approve":
+                status = TeamMembershipStatus.APPROVED
+            elif action == "decline":
+                status = TeamMembershipStatus.DECLINED
+            elif action == "hold":
+                continue
+
+            team.setMembershipStatus(person, status, expires,
+                                     reviewer=self.user)
+
+        # Need to flush all changes we made, so subsequent queries we make
+        # with this transaction will see this changes and thus they'll be
+        # displayed on the page that calls this method.
+        flush_database_updates()
+
+
+class TeamMemberAddView(AddView):
+
+    def __init__(self, context, request):
+        self.context = context
+        self.request = request
+        self.user = getUtility(ILaunchBag).user
+        self.alreadyMember = None
+        self.addedMember = None
+        added = self.request.get('added')
+        notadded = self.request.get('notadded')
+        if added:
+            self.addedMember = getUtility(IPersonSet).get(added)
+        elif notadded:
+            self.alreadyMember = getUtility(IPersonSet).get(notadded)
+        AddView.__init__(self, context, request)
+
+    def nextURL(self):
+        if self.addedMember:
+            return '+addmember?added=%d' % self.addedMember.id
+        elif self.alreadyMember:
+            return '+addmember?notadded=%d' % self.alreadyMember.id
+        else:
+            return '+addmember'
+
+    def createAndAdd(self, data):
+        team = self.context
+        approved = TeamMembershipStatus.APPROVED
+
+        newmember = data['newmember']
+        # If we get to this point with the member being the team itself,
+        # it means the ValidTeamMemberVocabulary is broken.
+        assert newmember != team, newmember
+
+        if newmember in team.activemembers:
+            self.alreadyMember = newmember
+            return
+
+        expires = team.defaultexpirationdate
+        if newmember.hasMembershipEntryFor(team):
+            team.setMembershipStatus(newmember, approved, expires,
+                                     reviewer=self.user)
+        else:
+            team.addMember(newmember, approved, reviewer=self.user)
+
+        self.addedMember = newmember
 

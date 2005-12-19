@@ -14,6 +14,7 @@ __all__ = [
     ]
 
 from zope.component import getUtility
+from zope.event import notify
 
 from canonical.launchpad.interfaces import ILaunchBag, ITicket, ITicketSet
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -21,6 +22,8 @@ from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission,
     GetitemNavigation)
+from canonical.launchpad.event import SQLObjectModifiedEvent
+from canonical.launchpad.helpers import Snapshot
 
 
 class TicketSetNavigation(GetitemNavigation):
@@ -41,27 +44,34 @@ class TicketView:
         # figure out who the user is for this transaction
         self.user = getUtility(ILaunchBag).user
 
+        ticket_unmodified = Snapshot(self.context, providing=ITicket)
+        modified_fields = set()
+
         # establish if a subscription form was posted
         newsub = request.form.get('subscribe', None)
         if newsub is not None and self.user and request.method == 'POST':
             if newsub == 'Subscribe':
                 self.context.subscribe(self.user)
                 self.notices.append("You have subscribed to this request.")
+                modified_fields.add('subscribers')
             elif newsub == 'Unsubscribe':
                 self.context.unsubscribe(self.user)
                 self.notices.append("You have unsubscribed from this request.")
+                modified_fields.add('subscribers')
 
         # establish if the user is trying to reject the ticket
         reject = request.form.get('reject', None)
         if reject is not None and self.user and request.method == 'POST':
             if self.context.reject(self.user):
                 self.notices.append("You have rejected this request.")
+                modified_fields.add('status')
 
         # establish if the user is trying to reopen the ticket
         reopen = request.form.get('reopen', None)
         if reopen is not None and self.user and request.method == 'POST':
             if self.context.reopen(self.user):
                 self.notices.append("You have reopened this request.")
+                modified_fields.add('status')
 
         # see if this is the creator, or not
         if self.user == self.context.owner:
@@ -81,6 +91,12 @@ class TicketView:
                 self.context.linkBug(bug)
                 bug.subscribe(self.context.owner)
                 self.notices.append('Thank you! Bug #%d created.' % bug.id)
+                modified_fields.add('bugs')
+
+        if len(modified_fields) > 0:
+            notify(SQLObjectModifiedEvent(
+                self.context, ticket_unmodified, list(modified_fields)))
+
 
     @property
     def subscription(self):
