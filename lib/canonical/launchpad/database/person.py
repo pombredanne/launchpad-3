@@ -4,8 +4,7 @@ __metaclass__ = type
 __all__ = [
     'Person', 'PersonSet', 'EmailAddress', 'EmailAddressSet', 'GPGKey',
     'GPGKeySet', 'SSHKey', 'SSHKeySet', 'WikiName', 'WikiNameSet', 'JabberID',
-    'JabberIDSet', 'IrcID', 'IrcIDSet', 'TeamMembership', 'TeamMembershipSet',
-    'TeamParticipation']
+    'JabberIDSet', 'IrcID', 'IrcIDSet']
 
 import itertools
 import sets
@@ -23,20 +22,19 @@ from sqlobject import (
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 from canonical.database.sqlbase import (
-    SQLBase, quote, cursor, sqlvalues, flush_database_updates,
+    SQLBase, quote, quote_like, cursor, sqlvalues, flush_database_updates,
     flush_database_caches)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
 
 from canonical.launchpad.interfaces import (
-    IPerson, ITeam, IPersonSet, ITeamMembership, ITeamParticipation,
-    ITeamMembershipSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
+    IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
     IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet, ISSHKey,
-    IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner,
-    UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet,
-    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, NotFoundError, IKarmaSet,
-    IKarmaCacheSet, IBugTaskSet)
+    IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
+    UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet, IKarmaSet,
+    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, NotFoundError, 
+    IKarmaCacheSet)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -47,6 +45,8 @@ from canonical.launchpad.database.karma import (
 from canonical.launchpad.database.shipit import ShippingRequest
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
+from canonical.launchpad.database.teammembership import (
+    TeamMembership, TeamParticipation)
 
 from canonical.launchpad.database.branch import Branch
 
@@ -997,13 +997,12 @@ class PersonSet:
             orderBy = self._defaultOrder
         text = text.lower()
         # Teams may not have email addresses, so we need to either use a LEFT
-        # OUTER JOIN or do a UNION between two queries.
-        # XXX: I'll be using two queries and a union() here until we have
-        # support for JOINS in our sqlobject. -- Guilherme Salgado 2005-07-18
+        # OUTER JOIN or do a UNION between two queries. Using a UNION makes 
+        # it a lot faster than with a LEFT OUTER JOIN.
         email_query = """
             EmailAddress.person = Person.id AND 
-            lower(EmailAddress.email) LIKE %s
-            """ % quote(text + '%%')
+            lower(EmailAddress.email) LIKE %s || '%%'
+            """ % quote_like(text)
         results = Person.select(email_query, clauseTables=['EmailAddress'])
         name_query = "fti @@ ftq(%s) AND merged is NULL" % quote(text)
         return results.union(Person.select(name_query), orderBy=orderBy)
@@ -1013,14 +1012,24 @@ class PersonSet:
         if orderBy is None:
             orderBy = self._defaultOrder
         text = text.lower()
-        query = ('Person.teamowner IS NULL AND Person.merged IS NULL AND '
-                 'EmailAddress.person = Person.id')
+        base_query = ('Person.teamowner IS NULL AND Person.merged IS NULL AND '
+                      'EmailAddress.person = Person.id')
+        clauseTables = ['EmailAddress']
         if text:
-            query += (' AND (lower(EmailAddress.email) LIKE %s OR '
-                      'Person.fti @@ ftq(%s))'
-                      % (quote(text + '%%'), quote(text)))
-        return Person.select(query, clauseTables=['EmailAddress'],
-                             orderBy=orderBy, distinct=True)
+            # We use a UNION here because this makes things *a lot* faster
+            # than if we did a single SELECT with the two following clauses
+            # ORed.
+            email_query = ("%s AND lower(EmailAddress.email) LIKE %s || '%%'"
+                           % (base_query, quote_like(text)))
+            name_query = ('%s AND Person.fti @@ ftq(%s)' 
+                          % (base_query, quote(text)))
+            results = Person.select(email_query, clauseTables=clauseTables)
+            results = results.union(
+                Person.select(name_query, clauseTables=clauseTables))
+        else:
+            results = Person.select(base_query, clauseTables=clauseTables)
+
+        return results.orderBy(orderBy)
 
     def findTeam(self, text, orderBy=None):
         """See IPersonSet."""
@@ -1028,14 +1037,13 @@ class PersonSet:
             orderBy = self._defaultOrder
         text = text.lower()
         # Teams may not have email addresses, so we need to either use a LEFT
-        # OUTER JOIN or do a UNION between two queries.
-        # XXX: I'll be using two queries and a union() here until we have
-        # support for JOINS in our sqlobject. -- Guilherme Salgado 2005-07-18
+        # OUTER JOIN or do a UNION between two queries. Using a UNION makes 
+        # it a lot faster than with a LEFT OUTER JOIN.
         email_query = """
             Person.teamowner IS NOT NULL AND 
             EmailAddress.person = Person.id AND 
-            lower(EmailAddress.email) LIKE %s
-            """ % quote(text + '%%')
+            lower(EmailAddress.email) LIKE %s || '%%'
+            """ % quote_like(text)
         results = Person.select(email_query, clauseTables=['EmailAddress'])
         name_query = """
              Person.teamowner IS NOT NULL AND 
@@ -1693,94 +1701,6 @@ class IrcIDSet:
 
     def new(self, person, network, nickname):
         return IrcID(personID=person.id, network=network, nickname=nickname)
-
-
-class TeamMembership(SQLBase):
-    implements(ITeamMembership)
-
-    _table = 'TeamMembership'
-    _defaultOrder = 'id'
-
-    team = ForeignKey(dbName='team', foreignKey='Person', notNull=True)
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
-    reviewer = ForeignKey(dbName='reviewer', foreignKey='Person', default=None)
-    status = EnumCol(
-        dbName='status', notNull=True, schema=TeamMembershipStatus)
-    datejoined = UtcDateTimeCol(dbName='datejoined', default=UTC_NOW,
-                                notNull=True)
-    dateexpires = UtcDateTimeCol(dbName='dateexpires', default=None)
-    reviewercomment = StringCol(dbName='reviewercomment', default=None)
-
-    @property
-    def statusname(self):
-        return self.status.title
-
-    @property
-    def is_admin(self):
-        return self.status in [TeamMembershipStatus.ADMIN]
-
-    @property
-    def is_owner(self):
-        return self.person.id == self.team.teamowner.id
-
-    def isExpired(self):
-        return self.status == TeamMembershipStatus.EXPIRED
-
-
-class TeamMembershipSet:
-
-    implements(ITeamMembershipSet)
-
-    _defaultOrder = ['Person.displayname', 'Person.name']
-
-    def getByPersonAndTeam(self, personID, teamID, default=None):
-        result = TeamMembership.selectOneBy(personID=personID, teamID=teamID)
-        if result is None:
-            return default
-        return result
-
-    def getTeamMembersCount(self, teamID):
-        return TeamMembership.selectBy(teamID=teamID).count()
-
-    def _getMembershipsByStatuses(self, teamID, statuses, orderBy=None):
-        # XXX: Don't use assert.
-        #      SteveAlexander, 2005-04-23
-        assert isinstance(teamID, int)
-        if orderBy is None:
-            orderBy = self._defaultOrder
-        clauses = []
-        for status in statuses:
-            clauses.append("TeamMembership.status = %s" % sqlvalues(status))
-        clauses = " OR ".join(clauses)
-        query = ("(%s) AND Person.id = TeamMembership.person AND "
-                 "TeamMembership.team = %d" % (clauses, teamID))
-        return TeamMembership.select(query, clauseTables=['Person'],
-                                     orderBy=orderBy)
-
-    def getActiveMemberships(self, teamID, orderBy=None):
-        statuses = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
-        return self._getMembershipsByStatuses(
-            teamID, statuses, orderBy=orderBy)
-
-    def getInactiveMemberships(self, teamID, orderBy=None):
-        statuses = [TeamMembershipStatus.EXPIRED,
-                    TeamMembershipStatus.DEACTIVATED]
-        return self._getMembershipsByStatuses(
-            teamID, statuses, orderBy=orderBy)
-
-    def getProposedMemberships(self, teamID, orderBy=None):
-        statuses = [TeamMembershipStatus.PROPOSED]
-        return self._getMembershipsByStatuses(
-            teamID, statuses, orderBy=orderBy)
-
-
-class TeamParticipation(SQLBase):
-    implements(ITeamParticipation)
-
-    _table = 'TeamParticipation'
-
-    team = ForeignKey(foreignKey='Person', dbName='team', notNull=True)
-    person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
 
 
 def _getAllMembers(team, orderBy='name'):

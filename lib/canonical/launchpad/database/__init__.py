@@ -93,6 +93,7 @@ from canonical.launchpad.database.section import *
 from canonical.launchpad.database.shipit import *
 from canonical.launchpad.database.vpoexport import *
 from canonical.launchpad.database.karma import *
+from canonical.launchpad.database.teammembership import *
 from canonical.launchpad.database.ticket import *
 from canonical.launchpad.database.ticketbug import *
 from canonical.launchpad.database.ticketmessage import *

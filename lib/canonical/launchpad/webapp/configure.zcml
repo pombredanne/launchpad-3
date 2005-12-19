@@ -5,6 +5,7 @@
 
     <include file="servers.zcml" />
     <include file="errorlog.zcml" />
+    <include file="bug-5133.zcml" />
 
     <content class="canonical.launchpad.webapp.LaunchpadBrowserRequest">
       <allow
@@ -376,27 +377,27 @@
         name="+notificationtest1"
         template="../templates/root-index.pt"
         permission="launchpad.Admin"
-        class="canonical.launchpad.webapp.notification.NotificationTestView1"
+        class="canonical.launchpad.webapp.notifications.NotificationTestView1"
         />
     <browser:page
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="+notificationtest2"
         template="../templates/root-index.pt"
         permission="launchpad.Admin"
-        class="canonical.launchpad.webapp.notification.NotificationTestView2"
+        class="canonical.launchpad.webapp.notifications.NotificationTestView2"
         />
     <browser:page
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="+notificationtest3"
         template="../templates/root-index.pt"
         permission="launchpad.Admin"
-        class="canonical.launchpad.webapp.notification.NotificationTestView3"
+        class="canonical.launchpad.webapp.notifications.NotificationTestView3"
         />
     <browser:page
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
         name="+notificationtest4"
         template="../templates/root-index.pt"
         permission="launchpad.Admin"
-        class="canonical.launchpad.webapp.notification.NotificationTestView4"
+        class="canonical.launchpad.webapp.notifications.NotificationTestView4"
         />
 </configure>

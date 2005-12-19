@@ -45,7 +45,7 @@ When the bug is marked as a duplicate, each subscriber will receive,
 individually, a bugmail notification of this event.
 
     >>> len(stub.test_emails)
-    8
+    7
 
 Let's sort the emails by subject and talk a bit more about each
 notification:
@@ -61,14 +61,15 @@ notification:
   1. To the subscribers of the duplicate bug.
 
     There are four subscribers to the duplicate bug in the test data
-    used in this example. These emails are the last four emails in the
-    list of sent_emails:
+    used in this example.
 
     >>> all_to_addrs = [
-    ...     to_addrs for x, to_addrs, y in sent_emails[:4]]
+    ...     to_addrs for from_addr, to_addrs, raw_mail in sent_emails
+    ...     if '[Bug 2] Blackhole Trash folder' in raw_mail]
     >>> all_to_addrs.sort()
     >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
+    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'],
+     ['test@canonical.com']]
 
     Let's grab the last email in the list to illustrate what the email
     itself looks like:
@@ -90,15 +91,15 @@ notification:
 
   2. To the subscribers of the dup-target bug.
 
-    There are four subscribers to the duplicate bug target in the test
-    data used in this example. These emails are the first four emails
-    in the list of sent_emails:
+    There are five subscribers to the duplicate bug target in the test
+    data used in this example.
 
     >>> all_to_addrs = [
-    ...     to_addrs for x, to_addrs, y in sent_emails[4:]]
+    ...     to_addrs for from_addr, to_addrs, raw_mail in sent_emails
+    ...     if '[Bug 1] Firefox does not support SVG' in raw_mail]
     >>> all_to_addrs.sort()
     >>> print all_to_addrs
-    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['support@ubuntu.com'], ['test@canonical.com']]
+    [['dilys@muse.19inch.net'], ['mark@hbd.com'], ['test@canonical.com']]
 
     Let's grab the first email in the list to illustrate:
 
