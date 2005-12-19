@@ -274,7 +274,7 @@ Now we send a comment containing commands.
     >>> transaction.commit()
 
 The Malone handler saw that this email was signed, but since
-IWeaklyAuthenticatedPrincipal was provided by the current princial, no
+IWeaklyAuthenticatedPrincipal was provided by the current principal, no
 changes was made to the bug, and the comment wasn't added.
 
     >>> added_message = getUtility(IMessageSet).get('<yada-yada-test2>')[0]
@@ -285,6 +285,60 @@ changes was made to the bug, and the comment wasn't added.
     >>> bug_one = bugset.get(1)
     >>> print bug_one.title
     Better summary
+
+And error message was sent to the Sample Person, telling him what's
+wrong.
+
+    >>> def print_latest_email():
+    ...     transaction.commit()
+    ...     from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    ...     error_mail = email.message_from_string(raw_message)
+    ...     print "Subject: %s" % error_mail['Subject']
+    ...     print "To: %s" % ', '.join(to_addrs)
+    ...     print
+    ...     print error_mail.get_payload(decode=True)
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    The email you sent included commands to edit the bug, but your
+    GPG key isn't imported into Launchpad. Please go to
+    http://localhost:8086/people/name12/+editgpgkeys to import your
+    key.
+    ...
+
+The same will happen if we send the same email without signing it:
+
+    >>> class MockUnsignedMessage(email.Message.Message):
+    ...     signedMessage = None
+    ...     signature = None
+    >>> msg = email.message_from_string(
+    ...     comment_mail, _class=MockUnsignedMessage)
+    >>> handler.process(msg, msg['To'])
+    True
+    >>> transaction.commit()
+
+    >>> added_message = getUtility(IMessageSet).get('<yada-yada-test2>')[0]
+    Traceback (most recent call last):
+    ...
+    NotFoundError:...
+
+    >>> bug_one = bugset.get(1)
+    >>> print bug_one.title
+    Better summary
+
+A different error message is sent, though:
+
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    The email you sent included commands to edit the bug, but you
+    didn't sign the email with your GPG key.
+    ...
+
 
 If we don't include any commands in the comment, it will be added
 to the bug:
@@ -332,17 +386,6 @@ to edit bug 4:
     ...     process_email(edit_mail)
     ...     transaction.commit()
 
-We define a function which makes it easier to look at the error
-messages as well:
-
-    >>> def print_latest_email():
-    ...     transaction.commit()
-    ...     from_addr, to_addrs, raw_message = stub.test_emails[-1]
-    ...     error_mail = email.message_from_string(raw_message)
-    ...     print "Subject: %s" % error_mail['Subject']
-    ...     print "To: %s" % ', '.join(to_addrs)
-    ...     print
-    ...     print error_mail.get_payload(decode=True)
 
 
 bug $bugid

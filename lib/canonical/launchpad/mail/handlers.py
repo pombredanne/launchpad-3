@@ -19,6 +19,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
+from canonical.launchpad.webapp import canonical_url
 
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectCreatedEvent)
@@ -31,7 +32,7 @@ def get_main_body(signed_msg):
     msg = signed_msg.signedMessage
     if msg is None:
         # The email wasn't signed.
-        return None
+        msg = signed_msg
     if msg.is_multipart():
         for part in msg.get_payload():
             if part.get_content_type() == 'text/plain':
@@ -134,12 +135,8 @@ class MaloneHandler:
         commands = []
         content = get_main_body(signed_msg)
         if content is None:
-            # The email wasn't signed, don't process any commands.
-            #XXX: We should provide an error message if the user tries to
-            #     give commands in an unsigned email.
-            #     -- Bjorn Tillenius, 2005-06-06
             return []
-        # First extract all commands from the email.   
+        # First extract all commands from the email.
         command_names = emailcommands.names()
         for line in content.splitlines():  
             # All commands have to be indented.
@@ -162,12 +159,18 @@ class MaloneHandler:
         try:
             if len(commands) > 0:
                 current_principal = get_current_principal()
+                # The security machinery doesn't know about
+                # IWeaklyAuthenticatedPrincipal yet, so do a manual
+                # check. Later we can rely on the security machinery to
+                # cause Unauthorized errors.
                 if IWeaklyAuthenticatedPrincipal.providedBy(current_principal):
-                    # XXX: better error messages
                     if signed_msg.signature is None:
-                        error_message = 'bla' # get_error_message('')
+                        error_message = get_error_message('not-signed.txt')
                     else:
-                        error_message = 'foo' # get_error_message('')
+                        import_url = canonical_url(
+                            getUtility(ILaunchBag).user) + '/+editgpgkeys'
+                        error_message = get_error_message(
+                            'key-not-registered.txt', import_url=import_url)
                     raise IncomingEmailError(error_message)
 
             if user.lower() == 'new':
