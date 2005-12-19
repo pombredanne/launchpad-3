@@ -133,13 +133,6 @@ There are three kinds of tasks that can be added to an existing
 bug. Let's take a look at each type, demonstrating the implications
 they each have on notification recipients.
 
-Before we do that, note that BugTaskFactory uses the ILaunchBag
-utility to figure out the "current bug" on which to file the task, so
-let's hang a bug onto the ILaunchBag utility.
-
-    >>> from canonical.launchpad.interfaces import IOpenLaunchBag
-    >>> getUtility(IOpenLaunchBag).add(firefox_crashes)
-
   3.1 Distro Task
 
     A task that says this bug must be fixed in a certain distro. Because no
@@ -147,14 +140,13 @@ let's hang a bug onto the ILaunchBag utility.
     belongs in the current development release. For backporting a fix to a
     specific distro release, see 2.2.
 
-    >>> from canonical.launchpad.database.bugtask import BugTaskFactory
-
+    >>> from canonical.launchpad.interfaces import IBugTaskSet
     >>> debian = getUtility(IDistributionSet).get(3)
     >>> firefox_source = getUtility(ISourcePackageNameSet).get(1)
-    >>> firefox_crashes_in_debian = BugTaskFactory(
-    ...     None, distribution = debian.id,
-    ...     sourcepackagename = firefox_source.id,
-    ...     owner = bug_submitter.id)
+    >>> firefox_crashes_in_debian = getUtility(IBugTaskSet).createTask(
+    ...     bug=firefox_crashes, distribution=debian,
+    ...     sourcepackagename=firefox_source,
+    ...     owner=bug_submitter)
     >>> notify(SQLObjectCreatedEvent(firefox_crashes_in_debian))
 
     >>> transaction.commit()
@@ -199,9 +191,9 @@ let's hang a bug onto the ILaunchBag utility.
     listed in the more generic, distro-wide bug task listings.
 
     >>> sid = getUtility(IDistroReleaseSet).get(8)
-    >>> firefox_crashes_in_sid = BugTaskFactory(
-    ...     None, distrorelease = sid.id,
-    ...     sourcepackagename = firefox_source.id, owner = bug_submitter.id)
+    >>> firefox_crashes_in_sid = getUtility(IBugTaskSet).createTask(
+    ...     bug=firefox_crashes, distrorelease=sid,
+    ...     sourcepackagename=firefox_source, owner=bug_submitter)
     >>> notify(SQLObjectCreatedEvent(firefox_crashes_in_sid))
 
     >>> transaction.commit()
@@ -252,8 +244,8 @@ let's hang a bug onto the ILaunchBag utility.
     distros via patches.
 
     >>> evolution = getUtility(IProductSet).get(5)
-    >>> evolution_crashes_too = BugTaskFactory(
-    ...     None, product = evolution.id, owner = bug_submitter.id)
+    >>> evolution_crashes_too = getUtility(IBugTaskSet).createTask(
+    ...     bug=firefox_crashes, product=evolution, owner=bug_submitter)
     >>> notify(SQLObjectCreatedEvent(evolution_crashes_too))
 
     >>> transaction.commit()
@@ -298,11 +290,10 @@ let's hang a bug onto the ILaunchBag utility.
     >>> from canonical.launchpad.interfaces import IBugMessageSet
 
     >>> bugmessageset = getUtility(IBugMessageSet)
-    >>> current_bug = getUtility(IOpenLaunchBag).bug
-    >>> current_user = getUtility(IOpenLaunchBag).user
+    >>> current_user = getUtility(ILaunchBag).user
     >>> comment_on_firefox_crashes_in_debian = bugmessageset.createMessage(
     ...     subject="some title", content="just a test comment",
-    ...     bug=current_bug, owner=current_user)
+    ...     bug=firefox_crashes, owner=current_user)
     >>> notify(SQLObjectCreatedEvent(comment_on_firefox_crashes_in_debian))
 
     >>> transaction.commit()
@@ -844,8 +835,8 @@ don't want to do until after Nukesourcepackage is implemented, because
 the SourcePackage table is going to be blown away anyway.
 
     >>> applets = getUtility(IProductSet).get(9)
-    >>> applets_crashes_too = BugTaskFactory(
-    ...     None, product = applets.id, owner = bug_submitter.id)
+    >>> applets_crashes_too = getUtility(IBugTaskSet).createTask(
+    ...     bug=firefox_crashes, product=applets, owner=bug_submitter)
 
 Normally, you might expect to see the maintainer of applets (Foo Bar,
 email foo.bar@canonical.com) now be included in the list of recipients

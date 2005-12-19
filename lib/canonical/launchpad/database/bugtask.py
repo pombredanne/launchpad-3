@@ -4,7 +4,6 @@ __metaclass__ = type
 __all__ = [
     'BugTask',
     'BugTaskSet',
-    'BugTaskFactory',
     'bugtask_sort_key']
 
 import urllib
@@ -32,7 +31,7 @@ from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, NotFoundError,
+    IDistroBugTask, IDistroReleaseBugTask, NotFoundError,
     ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage)
 
 
@@ -564,9 +563,3 @@ class BugTaskSet:
 
         return maintainedProductBugTasks.union(
             maintainedPackageBugTasks, orderBy=orderBy)
-
-
-def BugTaskFactory(context, **kw):
-    # XXX kiko: WTF, context is ignored?! LaunchBag? ARGH!
-    return BugTask(bugID=getUtility(ILaunchBag).bug.id, **kw)
-

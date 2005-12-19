@@ -289,14 +289,12 @@
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.bug.BugAlsoReportInView"
         label="Request Fix in a Product"
-        fields="product owner"
-        content_factory="canonical.launchpad.database.BugTaskFactory"
+        fields="product"
         arguments=""
-        keyword_arguments="product owner"
+        keyword_arguments="product"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
         lp:url="malone/bugs/$Bug.id/+upstreamtask">
-        <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
     </browser:addform>
 
     <browser:editform
@@ -341,16 +339,11 @@
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.bug.BugAlsoReportInView"
         label="Request Fix in a Distribution"
-        fields="distribution sourcepackagename owner"
-        content_factory="canonical.launchpad.database.BugTaskFactory"
-        keyword_arguments="distribution sourcepackagename owner"
+        fields="distribution sourcepackagename"
+        keyword_arguments="distribution sourcepackagename"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
         lp:url="malone/bugs/$Bug.id/+distrotask">
-        <browser:widget
-          field="owner"
-          class="canonical.widgets.HiddenUserWidget"
-          />
     </browser:addform>
 
     <browser:editform
