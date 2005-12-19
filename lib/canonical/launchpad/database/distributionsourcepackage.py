@@ -17,14 +17,15 @@ from canonical.launchpad.interfaces import IDistributionSourcePackage
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
-from canonical.launchpad.database.distributionsourcepackagecache import \
-    DistributionSourcePackageCache
-from canonical.launchpad.database.distributionsourcepackagerelease import \
-    DistributionSourcePackageRelease
-from canonical.launchpad.database.publishing import \
-    SourcePackagePublishingHistory
-from canonical.launchpad.database.sourcepackagerelease import \
-    SourcePackageRelease
+from canonical.launchpad.database.distributionsourcepackagecache import (
+    DistributionSourcePackageCache)
+from canonical.launchpad.database.distributionsourcepackagerelease import (
+    DistributionSourcePackageRelease)
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishingHistory)
+from canonical.launchpad.database.sourcepackagerelease import (
+    SourcePackageRelease)
+from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.ticket import Ticket
 from sourcerer.deb.version import Version
 from canonical.launchpad.helpers import shortlist
@@ -137,10 +138,9 @@ class DistributionSourcePackage:
         # unused/untested code path. See
         # See https://launchpad.net/products/launchpad/+bug/3531.
         result = []
-        for release in self.releases:
-            candidate = DistroReleaseSourcePackage(release,
-                self.sourcepackagename)
-            if candidate.was_uploaded:
+        for release in self.distribution.releases:
+            candidate = SourcePackage(self.sourcepackagename, release)
+            if candidate.currentrelease:
                 result.append(candidate)
         return result
 

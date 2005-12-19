@@ -25,8 +25,7 @@ class IDistributionSourcePackage(ITicketTarget, IBugTarget):
     # XXX sabdfl 16/10/2005
     distro = Attribute("The distribution.")
 
-    by_distroreleases = Attribute("Return a list of "
-        "DistroReleaseSourcePackage "
+    by_distroreleases = Attribute("Return a list of SourcePackage "
         "objects, each representing this same source package in the "
         "releases of this distribution.")
 

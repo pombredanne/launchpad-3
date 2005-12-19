@@ -5,7 +5,7 @@ There are a bunch of meta classes used for combine information from
 our Database Model for packages in a intuitive manner, they are:
 
  >>> from canonical.launchpad.database import (
- ...     Distribution, DistroRelease, 
+ ...     Distribution, DistroRelease,
  ...     SourcePackageRelease, SourcePackageName,
  ...     DistributionSourcePackage,
  ...     DistributionSourcePackageRelease,
@@ -28,19 +28,60 @@ We can combine information of a Distribution and a SourcePackagenName:
  >>> dsp = DistributionSourcePackage(distribution, src_name)
  >>> IDistributionSourcePackage.providedBy(dsp)
  True
- 
+
+Useful properties:
+
  >>> dsp.displayname
  u'pmount in ubuntu'
 
+List of current 'pmount in Ubuntu' as ISourcePackage:
+
+ >>> [(sp.name, sp.distrorelease.name) for sp in dsp.by_distroreleases]
+ [(u'pmount', u'hoary')]
+
+Publishing history of 'pmount in ubuntu':
+
+ >>> dsp.publishing_history.count()
+ 2
+
+Releases of 'pmount in ubuntu':
+
+ >>> [release.version for release in dsp.releases]
+ [u'0.1-2', u'0.1-1']
+
+Binary packages of 'pmount in ubuntu':
+
+ >>> dsp.binary_package_names
+ u'pmount'
+
+Current release of 'pmount in ubuntu':
+
+ >>> dsp.currentrelease.version
+ u'0.1-2'
+
+Useful methods:
+
+ >>> dsp.bugtasks().count()
+ 0
+
+Retrieve a version of 'pmount in ubuntu' as a
+IDistributionSourcePackageRelease or None if not found:
+
+ >>> dsp.getVersion('1.0') is None
+ True
+
+ >>> dsp.getVersion('0.1-1').title
+ u'pmount 0.1-1 (source) in ubuntu'
+
 
 Combining Distribution and SourcePackageRelease:
-                                                                
+
  >>> sourcepackagerelease = SourcePackageRelease.selectOneBy(
  ...     sourcepackagenameID=src_name.id, version='0.1-1')
  >>> sourcepackagerelease.name
  u'pmount'
 
- >>> dspr = DistributionSourcePackageRelease(distribution, 
+ >>> dspr = DistributionSourcePackageRelease(distribution,
  ...                                         sourcepackagerelease)
  >>> IDistributionSourcePackageRelease.providedBy(dspr)
  True
@@ -53,8 +94,8 @@ Combining DistroRelease and SourcePackageRelease:
 
  >>> distrorelease = DistroRelease.selectOneBy(name='hoary')
 
- >>> drspr = DistroReleaseSourcePackageRelease(distrorelease, 
- ...                                           sourcepackagerelease) 
+ >>> drspr = DistroReleaseSourcePackageRelease(distrorelease,
+ ...                                           sourcepackagerelease)
  >>> IDistroReleaseSourcePackageRelease.providedBy(drspr)
  True
 
