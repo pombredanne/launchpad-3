@@ -133,10 +133,6 @@ class DistributionSourcePackage:
     @property
     def by_distroreleases(self):
         """See IDistributionSourcePackage."""
-        # XXX, Brad Bollenbach, 2005-10-24: DistroReleaseSourcePackage is not
-        # even imported into this module. This suggests that this method is an
-        # unused/untested code path. See
-        # See https://launchpad.net/products/launchpad/+bug/3531.
         result = []
         for release in self.distribution.releases:
             candidate = SourcePackage(self.sourcepackagename, release)

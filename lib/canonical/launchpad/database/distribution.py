@@ -434,18 +434,13 @@ class Distribution(SQLBase):
 
     def getPackageNames(self, pkgname):
         """See IDistribution"""
-        # XXX, Brad Bollenbach, 2005-10-24: This code is using undefined names,
-        # SourcePackagePublishing and PublishedPackage. That almost surely means
-        # this is an unused code path. See
-        # https://launchpad.net/products/launchpad/+bug/3530.
-
         # We should only ever get a pkgname as a string.
         assert isinstance(pkgname, str), "Only ever call this with a string"
 
         # Clean it up and make sure it's a valid package name.
         pkgname = pkgname.strip().lower()
         if not valid_name(pkgname):
-            raise ValueError('Invalid package name: %s' % pkgname)
+            raise NotFoundError('Invalid package name: %s' % pkgname)
 
         # First, we try assuming it's a binary package. let's try and find
         # a binarypackagename for it.
@@ -454,8 +449,6 @@ class Distribution(SQLBase):
             # Is it a sourcepackagename?
             sourcepackagename = SourcePackageName.selectOneBy(name=pkgname)
             if sourcepackagename is not None:
-
-                # XXX: completely untested code
 
                 # It's definitely only a sourcepackagename. Let's make sure it
                 # is published in the current distro release.
@@ -471,12 +464,11 @@ class Distribution(SQLBase):
                 if publishing == 0:
                     # Yes, it's a sourcepackage, but we don't know about it in
                     # this distro.
-                    raise ValueError('Unpublished source package: %s' % pkgname)
+                    raise NotFoundError('Unpublished source package: %s'
+                                        % pkgname)
                 return (sourcepackagename, None)
             # It's neither a sourcepackage, nor a binary package name.
-            raise ValueError('Unknown package: %s' % pkgname)
-
-        # XXX: completely untested code
+            raise NotFoundError('Unknown package: %s' % pkgname)
 
         # Ok, so we have a binarypackage with that name. let's see if it's
         # published, and what its sourcepackagename is.
@@ -493,7 +485,7 @@ class Distribution(SQLBase):
             if publishings.count() == 0:
                 # There are no publishing records anywhere for this beast,
                 # sadly.
-                raise ValueError('Unpublished binary package: %s' % pkgname)
+                raise NotFoundError('Unpublished binary package: %s' % pkgname)
 
         # PublishedPackageView uses the actual text names.
         for p in publishings:
