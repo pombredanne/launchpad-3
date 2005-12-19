@@ -79,11 +79,13 @@
     </tal:block>
     <b>Permissions:</b>
     <span tal:replace="context/translationpermission/title" /><br />
-    <b>Plural Forms:</b>
-    <span tal:replace="context/pluralforms">2</span><br />
-    <tal:block condition="view/header/getPluralFormExpression">
+    <tal:block condition="context/language/pluralforms">
+      <b>Plural Forms:</b>
+      <span tal:replace="context/language/pluralforms">2</span><br />
+    </tal:block>
+    <tal:block condition="context/language/pluralexpression">
       <b>Plural Expression:</b><br />
-      <span tal:replace="view/header/getPluralFormExpression">n=323</span><br />
+      <span tal:replace="context/language/pluralexpression">n=323</span><br />
     </tal:block>
     <tal:block condition="context/potemplate/description">
       <b>Template Description:</b><br />

@@ -1,7 +1,7 @@
 <metal:suggestions define-macro="translation-suggestions">
   <tal:comment replace="nothing">
   This macro expects the following variables defined:
-      :pomsgsetview: An IPOMsgSet View.
+      :pomsgset_view: An IPOMsgSet View.
       :submissions: A list of IPOSubmission objects.
   </tal:comment>
   <tal:block condition="submissions">
@@ -11,7 +11,7 @@
       </th>
       <td class="icon left right" />
       <td>
-        <tal:block condition="not:pomsgsetview/is_multi_line">
+        <tal:block condition="not:pomsgset_view/is_multi_line">
           <tal:submission repeat="submission submissions">
             <div
               tal:define="submissionlang submission/pomsgset/pofile/language"
@@ -30,7 +30,7 @@
           </tal:submission>
         </tal:block>
         <tal:block
-          condition="pomsgsetview/is_multi_line"
+          condition="pomsgset_view/is_multi_line"
           define="submission python:submissions[0]">
           <pre
             tal:define="submissionlang submission/pomsgset/pofile/language"
@@ -55,45 +55,43 @@
     </tr>
   </tal:block>
 </metal:suggestions>
-<!--
 <metal:pomsgset define-macro="pomsgset-view">
   <tal:comment replace="nothing">
   This macro expects the following variable defined:
-      :pomsgsetview: An IPOMsgSet View.
-  </tal:comment>-->
-<tal:foo define="pomsgsetview view">
+      :pomsgset_view: An IPOMsgSet View.
+  </tal:comment>
   <tr>
     <td style="text-align: right;">
-      <span tal:replace="pomsgsetview/sequence">1</span>.
+      <span tal:replace="pomsgset_view/sequence">1</span>.
       <input
         type="hidden"
         tal:attributes="
-        name string:set_${pomsgsetview/id}_msgid"
+        name string:set_${pomsgset_view/id}_msgid"
         />
     </td>
     <th style="border-style: dotted; border-width: 1px 0 0;">
-      <label class="language-code" tal:condition="not:pomsgsetview/is_plural">
+      <label class="language-code" tal:condition="not:pomsgset_view/is_plural">
         English:
       </label>
-      <label class="language-code" tal:condition="pomsgsetview/is_plural">
+      <label class="language-code" tal:condition="pomsgset_view/is_plural">
         English singular:
       </label>
     </th>
     <td class="icon left right" />
-    <td tal:content="structure pomsgsetview/msgid">
+    <td tal:content="structure pomsgset_view/msgid">
       The original text.
     </td>
   </tr>
-  <tr class="secondary" tal:condition="pomsgsetview/is_plural">
+  <tr class="secondary" tal:condition="pomsgset_view/is_plural">
     <th colspan="2">
       <label>English plural:</label>
     </th>
     <td class="icon left right" />
-    <td tal:content="structure pomsgsetview/msgid_plural">
+    <td tal:content="structure pomsgset_view/msgid_plural">
       plural source
     </td>
   </tr>
-  <tr class="discreet secondary" tal:condition="pomsgsetview/msgid_has_tab">
+  <tr class="discreet secondary" tal:condition="pomsgset_view/msgid_has_tab">
     <td colspan="3" />
     <td>
       <img
@@ -105,7 +103,7 @@
       <code>[tab]</code> in your translation too.
     </td>
   </tr>
-  <tr class="discreet secondary" tal:condition="pomsgsetview/source_comment">
+  <tr class="discreet secondary" tal:condition="pomsgset_view/source_comment">
     <td colspan="3" />
     <td>
       <img
@@ -114,19 +112,19 @@
         title="This note was provided by the software developer."
         />
       <span
-        tal:content="pomsgsetview/source_comment"
+        tal:content="pomsgset_view/source_comment"
         tal:omit-tag="">
         This refers to the content type.
       </span>
     </td>
   </tr>
   <tal:block
-    tal:define="language_code view/pofile/language/code"
-    repeat="index pomsgsetview/translation_range">
+    tal:define="language_code pomsgset_view/pofile/language/code"
+    repeat="index pomsgset_view/translation_range">
     <tr class="secondary">
       <th colspan="2">
         <label class="language-code">
-          <span tal:replace="view/pofile/language/englishname">
+          <span tal:replace="pomsgset_view/pofile/language/englishname">
             Welsh
           </span>:
         </label>
@@ -135,30 +133,31 @@
         <!-- will eventually contain copy buttons -->
       </td>
       <td>
-        <div tal:condition="pomsgsetview/error" class="error">
+        <div tal:condition="pomsgset_view/error" class="error">
           <strong>Error in Translation:</strong>
-          <span tal:replace="pomsgsetview/error" />
+          <span tal:replace="pomsgset_view/error" />
         </div>
         <tal:comment tal:replace="nothing">
           XXX: Carlos Perello Marin 2005-05-05
           This 'python:' expression should be fixed by SteveA.
         </tal:comment>
         <input
+          style="width: 100%;"
           type="text"
-          tal:condition="not:pomsgsetview/is_multi_line"
+          tal:condition="not:pomsgset_view/is_multi_line"
           tal:attributes="
-            name string:set_${pomsgsetview/id}_translation_${language_code}_${index};
-            value python:pomsgsetview.get_translation(index);
-            tabindex view/makeTabIndex;
-            lang view/pofile/language/dashedcode;
-            dir view/pofile/language/abbreviated_text_dir;
+            name string:set_${pomsgset_view/id}_translation_${language_code}_${index};
+            value python:pomsgset_view.get_translation(index);
+            tabindex view/tab_index;
+            lang pomsgset_view/pofile/language/dashedcode;
+            dir pomsgset_view/pofile/language/abbreviated_text_dir;
             " />
-        <tal:block condition="pomsgsetview/is_multi_line">
+        <tal:block condition="pomsgset_view/is_multi_line">
           <tal:comment tal:replace="nothing">
             XXX: Carlos Perello Marin 2005-05-05
             This 'python:' expression should be fixed by SteveA.
           </tal:comment>
-          <tal:with-content condition="python:pomsgsetview.get_translation(index)">
+          <tal:with-content condition="python:pomsgset_view.get_translation(index)">
             <tal:comment tal:replace="nothing">
               The lack of indentation for tal:content is deliberate or we would
               add extra whitespaces to the textarea, which causes us to
@@ -166,16 +165,17 @@
               https://bugzilla.mozilla.org/show_bug.cgi?id=299009
             </tal:comment>
             <textarea
+              style="width: 100%;"
               tal:attributes="
-                name string:set_${pomsgsetview/id}_translation_${language_code}_${index};
-                rows pomsgsetview/max_lines_count;
-                tabindex view/makeTabIndex;
-                lang view/pofile/language/dashedcode;
-                dir view/pofile/language/abbreviated_text_dir;
+                name string:set_${pomsgset_view/id}_translation_${language_code}_${index};
+                rows pomsgset_view/max_lines_count;
+                tabindex view/tab_index;
+                lang pomsgset_view/pofile/language/dashedcode;
+                dir pomsgset_view/pofile/language/abbreviated_text_dir;
                 ">
-<tal:content replace="structure python:pomsgsetview.get_translation(index)" /></textarea>
+<tal:content replace="structure python:pomsgset_view.get_translation(index)" /></textarea>
           </tal:with-content>
-          <tal:without-content condition="python:not pomsgsetview.get_translation(index)">
+          <tal:without-content condition="python:not pomsgset_view.get_translation(index)">
             <tal:comment tal:replace="nothing">
               XXX: Carlos Perello Marin 2005-05-05
               This 'python:' expression should be fixed by SteveA.
@@ -186,12 +186,13 @@
               erroneous translations.
             </tal:comment>
             <textarea
+              style="width: 100%;"
               tal:attributes="
-                name string:set_${pomsgsetview/id}_translation_${language_code}_${index};
-                rows pomsgsetview/max_lines_count;
-                tabindex view/makeTabIndex;
-                lang view/pofile/language/dashedcode;
-                dir view/pofile/language/abbreviated_text_dir;
+                name string:set_${pomsgset_view/id}_translation_${language_code}_${index};
+                rows pomsgset_view/max_lines_count;
+                tabindex view/tab_index;
+                lang pomsgset_view/pofile/language/dashedcode;
+                dir pomsgset_view/pofile/language/abbreviated_text_dir;
                 "></textarea>
           </tal:without-content>
         </tal:block>
@@ -206,14 +207,14 @@
               type="checkbox"
               value="fuzzy"
               tal:attributes="
-                checked pomsgsetview/is_fuzzy;
-                name string:set_${pomsgsetview/id}_fuzzy_${language_code};
-                tabindex: view/makeTabIndex
+                checked pomsgset_view/is_fuzzy;
+                name string:set_${pomsgset_view/id}_fuzzy_${language_code};
+                tabindex: view/tab_index
                 " />
-            <tal:block condition="not:pomsgsetview/is_plural">
+            <tal:block condition="not:pomsgset_view/is_plural">
               Someone should review this translation
             </tal:block>
-            <tal:block condition="pomsgsetview/is_plural">
+            <tal:block condition="pomsgset_view/is_plural">
               Someone should review these translations
             </tal:block>
           </label>
@@ -221,57 +222,57 @@
       </td>
     </tr>
     <tal:block
-      define="submissions python:pomsgsetview.get_suggested_submissions(index)">
+      define="submissions python:pomsgset_view.get_suggested_submissions(index)">
       <metal:submissions
         use-macro="submissions/@@+pomsgset-translate/translation-suggestions">
         <metal:fill metal:fill-slot="suggestion-title"><tal:block
-          condition="not:pomsgsetview/is_multi_line"
+          condition="not:pomsgset_view/is_multi_line"
           >Suggestions</tal:block><tal:block
-          condition="pomsgsetview/is_multi_line"
+          condition="pomsgset_view/is_multi_line"
           >Suggestion</tal:block></metal:fill>
       </metal:submissions>
     </tal:block>
     <tal:block
-      define="submissions python:pomsgsetview.get_current_submissions(index)">
+      define="submissions python:pomsgset_view.get_current_submissions(index)">
       <metal:submissions
         use-macro="submissions/@@+pomsgset-translate/translation-suggestions">
         <metal:fill metal:fill-slot="suggestion-title"><tal:block
-          condition="not:pomsgsetview/is_multi_line"
+          condition="not:pomsgset_view/is_multi_line"
           >Used elsewhere</tal:block><tal:block
-          condition="pomsgsetview/is_multi_line"
+          condition="pomsgset_view/is_multi_line"
           >Used elsewhere</tal:block></metal:fill>
       </metal:submissions>
     </tal:block>
     <tal:block
-      define="submissions python:pomsgsetview.get_wiki_submissions(index)">
+      define="submissions python:pomsgset_view.get_wiki_submissions(index)">
       <metal:submissions
         use-macro="submissions/@@+pomsgset-translate/translation-suggestions">
         <metal:fill metal:fill-slot="suggestion-title"><tal:block
-          condition="not:pomsgsetview/is_multi_line"
+          condition="not:pomsgset_view/is_multi_line"
           >Suggested elsewhere</tal:block><tal:block
-          condition="pomsgsetview/is_multi_line"
+          condition="pomsgset_view/is_multi_line"
           >Suggested elsewhere</tal:block></metal:fill>
       </metal:submissions>
     </tal:block>
     <tal:block
       define="submissions
-      python:pomsgsetview.get_alternate_language_submissions(index)">
+      python:pomsgset_view.get_alternate_language_submissions(index)">
       <metal:submissions
         use-macro="submissions/@@+pomsgset-translate/translation-suggestions">
         <metal:fill metal:fill-slot="suggestion-title"><tal:block
-          condition="not:pomsgsetview/is_multi_line"
-          ><span tal:replace="view/second_lang_pofile/language/englishname"
+          condition="not:pomsgset_view/is_multi_line"
+          ><span tal:replace="pomsgset_view/second_lang_pofile/language/englishname"
           /> (Alternate Language)</tal:block><tal:block
-          condition="pomsgsetview/is_multi_line"
-          ><span tal:replace="view/second_lang_pofile/language/englishname"
+          condition="pomsgset_view/is_multi_line"
+          ><span tal:replace="pomsgset_view/second_lang_pofile/language/englishname"
           /> (Alternate Language)</tal:block></metal:fill>
       </metal:submissions>
     </tal:block>
   </tal:block>
-  <tr tal:condition="pomsgsetview/comment" class="secondary">
+  <tr tal:condition="pomsgset_view/comment" class="secondary">
     <th colspan="2"><label>Translator note:</label></th>
     <td />
-    <td tal:content="pomsgsetview/comment">
+    <td tal:content="pomsgset_view/comment">
       Translator comment.
     </td>
   </tr>
@@ -280,9 +281,8 @@
       Located in:
     </th>
     <td class="icon left right" />
-    <td style="overflow: auto;" tal:content="pomsgsetview/file_references">
+    <td style="overflow: auto;" tal:content="pomsgset_view/file_references">
       ./plone_forms/discussion_reply_form.pt
     </td>
   </tr>
-</tal:foo>
-<!--</metal:pomsgset>-->
+</metal:pomsgset>

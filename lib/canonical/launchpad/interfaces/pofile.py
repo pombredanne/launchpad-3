@@ -107,21 +107,15 @@ class IPOFile(IRosettaStats, ICanAttachRawFileData):
     def __iter__():
         """Return an iterator over Current IPOMessageSets in this PO file."""
 
-    def getPOMsgSet(key, onlyCurrent=False):
-        """Extract one or several POMessageSets from this template.
+    def getPOMsgSet(key, only_current=False):
+        """Return the IPOMsgSet in this IPOFile identified by :key: or None.
 
-        If the key is a string or a unicode object, returns the
-        IPOMsgSet in this template that has a primary message ID
-        with the given text.
-
-        If the key is a slice, returns the message IDs by sequence within the
-        given slice.
-
-        If onlyCurrent is True, then get only current message sets.
+        :key: is a unicode string.
+        :only_current: Whether we should look only on current entries.
         """
 
-    def __getitem__(msgid):
-        """Same as getPOMsgSet(), with onlyCurrent=True.
+    def __getitem__(msgid_text):
+        """Same as getPOMsgSet(), with only_current=True.
         """
 
     def getPOMsgSetNotInTemplate():

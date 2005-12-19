@@ -16,7 +16,7 @@
       <tal:block define="pf pfview/context">
         <td>
           <a tal:attributes="href string:${pf/fmt:url}/+translate"
-             tal:content="pfview/language_name/fmt:shorten/25">
+             tal:content="pfview/context/language/englishname/fmt:shorten/25">
              Language Name
           </a>
         </td>

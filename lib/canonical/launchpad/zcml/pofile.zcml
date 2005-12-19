@@ -69,14 +69,6 @@
     </browser:pages>
 
     <browser:page
-        name="+edit"
-        permission="launchpad.Edit"
-        class="canonical.launchpad.browser.POFileView"
-        for="canonical.launchpad.interfaces.IPOFile"
-        template="../templates/pofile-edit.pt"
-        />
-
-    <browser:page
         name="+upload"
         permission="launchpad.Edit"
         class="canonical.launchpad.browser.POFileView"

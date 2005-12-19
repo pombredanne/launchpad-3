@@ -1,22 +1,21 @@
-<tal:block replace="view/processTranslations" /><html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
   <body>
 
-<metal:leftportlets fill-slot="portlets_one">
+    <metal:leftportlets fill-slot="portlets_one">
       <div tal:replace="structure context/@@+portlet-about" />
       <div tal:replace="structure context/@@+portlet-details" />
       <div tal:replace="structure context/@@+portlet-quickhelp" />
       <div tal:replace="structure context/@@+portlet-stats" />
-</metal:leftportlets>
+    </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
+    <metal:rightportlets fill-slot="portlets_two">
       <div tal:replace="structure context/@@+portlet-translators" />
       <div tal:replace="structure context/@@+portlet-contributors" />
-</metal:rightportlets>
-
+    </metal:rightportlets>
 
     <div metal:fill-slot="main">
 
@@ -37,49 +36,11 @@
         Template: <tal:template replace="context/title" />
       </div>
 
-      <p class="portalMessage" tal:condition="not: view/is_editor">
-        You are not an official translator for this file. You can still make
-        suggestions, and your translations will be stored and reviewed for
-        acceptance later by the designated translators.
-      </p>
+      <tal:havepluralforms condition="not: view/lacks_plural_form_information">
 
-    <div
-      tal:condition="view/lacksPluralFormInformation"
-      class="portalMessage"
-    >
-        <p>
-          Rosetta can&#8217;t handle the plural items in this file, because it doesn&#8217;t yet know how plural forms work for
-          <span tal:replace="context/language/englishname">language</span>.
-        </p>
-        <p>
-          To fix this, please e-mail the <a
-          href="mailto:rosetta-users@lists.ubuntu.com">Rosetta users
-          mailing list</a> with this information, preferably in the
-          format described in the
-          <a href="https://wiki.ubuntu.com/RosettaFAQ">Rosetta FAQ</a>.
-        </p>
-        <p>
-          This only needs to be done once per language.
-          Thanks for helping Rosetta.
-        </p>
-
-    </div>
-
-
-    <tal:havepluralforms condition="not: view/lacksPluralFormInformation">
-
-      <!-- If we have errors, say so -->
-      <p class="portalMessage" tal:condition="view/errorcount">
-        There are <span tal:replace="view/errorcount">4</span> errors in the
-        translations you provided. Please correct them before continuing.
-      </p>
-
-    <!-- Display settings. -->
-
-      <p><form method="post"
-              style="text-align: right;"
-              action="./+translate"
-        >
+        <!-- Display settings. -->
+        <form method="POST" style="text-align: right;" action="+translate">
+          <!-- the hidden elements -->
           <input type="hidden" name="offset" value=""
                  tal:attributes="value view/offset" />
           <input type="hidden" name="count" value=""
@@ -123,9 +84,9 @@
               >
               untranslated
             </option>
-            <option value="fuzzy"
+            <option value="need_review"
               tal:attributes="selected
-              request/htmlform:show/selected/fuzzy"
+              request/htmlform:show/selected/need_review"
               >
               need review
             </option>
@@ -136,12 +97,12 @@
               translated
             </option>
           </select>
-          <input type="submit" value="Change" />
-        </form></p>
+          <input
+            type="submit" name='pofile_translation_filter' value="Change" />
+        </form>
 
         <!-- The translation form. -->
-        <form method="post"
-              action="./+translate">
+        <form method="post" action="+translate">
           <!-- the hidden elements -->
           <input type="hidden" name="count"
                  tal:attributes="value view/count" />
@@ -149,7 +110,7 @@
                  tal:condition="view/second_lang_code"
                  tal:attributes="value view/second_lang_code" />
           <input type="hidden" name="offset"
-                 tal:condition="not: view/atEnd"
+                 tal:condition="not: view/is_at_end"
                  tal:attributes="value view/offset" />
           <input type="hidden" name="show"
                  tal:condition="view/show"
@@ -161,18 +122,18 @@
 
                   <!-- Show which messages are displayed. -->
                   <div style="width: 50%; float: left;">
-                    <tal:block tal:condition="view/onlyOneForm">
+                    <tal:block tal:condition="view/fits_in_one_form">
                       All
                       <strong tal:content="view/shown_count">23</strong>
                       items
                     </tal:block>
-                    <tal:block tal:condition="not:view/onlyOneForm">
-                    Items
-                    <strong tal:content="view/getFirstMessageShown">5</strong>
-                    &rarr;
-                    <strong tal:content="view/getLastMessageShown">10</strong>
-                    of
-                    <strong tal:content="view/shown_count">23</strong>
+                    <tal:block tal:condition="not:view/fits_in_one_form">
+                      Items
+                      <strong tal:content="view/first_message_shown">5</strong>
+                      &rarr;
+                      <strong tal:content="view/last_message_shown">10</strong>
+                      of
+                      <strong tal:content="view/shown_count">23</strong>
                     </tal:block>
                   </div>
 
@@ -184,52 +145,56 @@
                       the beginning page.
                     </tal:comment>
 
-                    <span class="previous" tal:condition="not:view/atBeginning">
-                      <a tal:attributes="href view/beginningURL">First</a>
-                      &ndash;
-                      <a tal:attributes="href view/previousURL">Previous
+                    <span class="previous" tal:condition="not:view/is_at_beginning">
+                      <a tal:attributes="href view/beginning_URL">First</a>
+                        &ndash;
+                      <a tal:attributes="href view/previous_URL">Previous
                         <span tal:replace="view/count">5</span></a>
-                      <span tal:condition="not:view/atEnd">&ndash;</span>
+                      <span tal:condition="not:view/is_at_end">&ndash;</span>
                     </span>
 
                     <tal:comment tal:replace="nothing">
-                      Link to next page and end, if tis is not the end page.
+                      Link to next page and end, if this is not the end page.
                     </tal:comment>
 
-                    <span class="next" tal:condition="not:view/atEnd">
-                      <a tal:attributes="href view/nextURL">Next
+                    <!-- Offset of next page, if not at end. -->
+                    <span class="next" tal:condition="not:view/is_at_end">
+                      <a tal:attributes="href view/next_URL">Next
                         <span tal:replace="view/count">5</span></a>
                       &ndash;
-                      <a tal:attributes="href view/endURL">Last</a>
+                      <a tal:attributes="href view/end_URL">Last</a>
                     </span>
                   </div>
                 </td>
               </tr>
             </thead>
             <tbody>
-              <tal:pomsgsetview repeat="pomsgset view/messageSets">
-                <tal:pomsgset
--                  replace="structure pomsgset/@@+pomsgset-translate" />
+              <tal:pomsgsetview condition="view/pomsgset_views"
+                                repeat="pomsgset_view view/pomsgset_views">
+                <metal:pomsgsetview
+                  use-macro="pomsgset_view/@@+pomsgset-translate/pomsgset-view"
+                  />
               </tal:pomsgsetview>
             </tbody>
             <tfoot>
               <tr>
-                <th colspan="4">
-                  <input type="submit" name="submit_translations" value="Save &amp; Continue" style="text-align: right;"
-                      tal:attributes="tabindex: view/makeTabIndex" />
+                <th colspan="4" tal:condition="view/pomsgset_views">
+                  <input type="submit"
+                         name="submit_translations"
+                         value="Save &amp; Continue"
+                         style="text-align: right;"
+                         tal:attributes="tabindex: view/tab_index" />
                 </th>
               </tr>
             </tfoot>
           </table>
 
-        <!-- Offset of next page, if not at end. -->
         </form>
         <p class="discreet">
           Translation status:
           <span class="language-code"
-            tal:content="context/language/englishname"
-            tal:omit-tag=""
-          >Spanish</span>
+                tal:content="context/language/englishname"
+                tal:omit-tag="">Spanish</span>
           <span tal:replace="view/completeness" tal:omit-tag="">0 %</span>
         </p>
       </tal:havepluralforms>

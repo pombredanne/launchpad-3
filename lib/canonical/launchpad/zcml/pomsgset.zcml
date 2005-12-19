@@ -12,10 +12,14 @@
     </content>
 
     <browser:page
-      for="canonical.launchpad.interfaces.IPOMsgSet"
-      class="canonical.launchpad.browser.POMsgSetView"
+      for="*"
       name="+pomsgset-translate"
       permission="zope.Public"
       template="../templates/pomsgset-translate.pt" />
+
+    <!-- Dummy POMsgSet -->
+    <content class="canonical.launchpad.database.DummyPOMsgSet">
+      <allow interface="canonical.launchpad.interfaces.IPOMsgSet" />
+    </content>
 
 </configure>

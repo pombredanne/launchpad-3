@@ -1,7 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['POMsgSet']
+__all__ = ['POMsgSet', 'DummyPOMsgSet']
 
 import gettextpo
 
@@ -22,6 +22,28 @@ from canonical.launchpad.database.poselection import POSelection
 from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
 
+
+class DummyPOMsgSet:
+    implements(IPOMsgSet)
+
+    def __init__(self, pofile, potmsgset):
+        self.pofile = pofile
+        self.potmsgset = potmsgset
+        self.isfuzzy = False
+        self.commenttext = None
+
+    @property
+    def active_texts(self):
+        return [None] * self.pofile.pluralforms
+
+    def getSuggestedSubmissions(self, pluralform):
+        return []
+
+    def getCurrentSubmissions(self, pluralform):
+        return []
+
+    def getWikiSubmissions(self, pluralform):
+        return []
 
 class POMsgSet(SQLBase):
     implements(IPOMsgSet)

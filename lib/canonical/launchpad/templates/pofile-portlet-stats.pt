@@ -10,13 +10,16 @@
             <span tal:replace="context/potemplate/count:len">N</span>
             <br/>
             <b>Todo:</b>
-            <span tal:replace="view/untranslated">N</span>
+            <span tal:replace="context/untranslatedCount">N</span>
             <br />
             <tal:block condition="context/lasttranslator">
                 <b>Latest contributor:</b>
                 <br />
                 <img src="/++resource++user.gif" />
-                <span tal:replace="context/lasttranslator/browsername" />
+                <a tal:content="context/lasttranslator/browsername"
+                   tal:attributes="href context/lasttranslator/fmt:url">
+                    Foo Bar
+                </a><br />
                 <br />
             </tal:block>
             <span tal:replace="structure context/@@+barchart">--</span>

@@ -3,6 +3,8 @@
 __metaclass__ = type
 __all__ = ['POMsgSetView']
 
+import re
+import gettextpo
 from zope.exceptions import NotFoundError
 from zope.component import getUtility
 
@@ -187,9 +189,14 @@ class POMsgSetView(LaunchpadView):
         self.second_lang_pofile = second_lang_pofile
 
         if self.second_lang_pofile:
+            msgid_text = potmsgset.primemsgid_.msgid
+            if isinstance(msgid_text, str):
+                import pdb
+                pdb.set_trace()
+                pass
             try:
                 self.second_lang_msgset = (
-                    second_lang_pofile[potmsgset.primemsgid_.msgid]
+                    second_lang_pofile[msgid_text]
                     )
             except NotFoundError:
                 # The second language doesn't have this message ID.
@@ -276,7 +283,7 @@ class POMsgSetView(LaunchpadView):
             return
 
         dispatch_table = {
-            'submit_translations': _submit_translations
+            'submit_translations': self._submit_translations
             }
         dispatch_to = [(key, method)
                         for key,method in dispatch_table.items()
@@ -319,8 +326,10 @@ class POMsgSetView(LaunchpadView):
                 if match:
                     pluralform = int(match.group(3))
                     # Store the translation for the given plural form.
+                    translation_normalized = (
+                        helpers.normalize_newlines(self.form[key]))
                     self.web_translations[pluralform] = (
-                        contract_rosetta_tabs(normalize_newlines(self.form[key])))
+                        helpers.contract_rosetta_tabs(translation_normalized))
 
         # Extract 'needs review' statuses.
         for key in self.form:
@@ -344,8 +353,9 @@ class POMsgSetView(LaunchpadView):
         # self.web_needs_review.
         self._extract_translations_from_form()
 
-        self.web_translations = msgset['translations']
-        self.web_needs_review = msgset['needs_review']
+        if self.web_translations is None:
+            # There are not translations interesting for us.
+            return
 
         has_translations = False
         for web_translation_key in self.web_translations.keys():

@@ -35,7 +35,7 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
-from canonical.launchpad.database.pomsgset import POMsgSet
+from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
 
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import import_po, OldPOImported
@@ -249,44 +249,46 @@ class POFile(SQLBase, RosettaStats):
         """See IPOFile."""
         return iter(self.currentMessageSets())
 
-    def getPOMsgSet(self, key, onlyCurrent=False):
+    def getPOMsgSet(self, key, only_current=False):
         """See IPOFile."""
         query = 'potemplate = %d' % self.potemplate.id
-        if onlyCurrent:
+        if only_current:
             query += ' AND sequence > 0'
 
-        if isinstance(key, slice):
-            # XXX: Carlos Perello Marin 19/10/04: Not sure how to handle this.
-            raise NotImplementedError
-            #return POTMsgSet.select(query, orderBy='sequence')[key]
-
         if not isinstance(key, unicode):
-            raise TypeError(
-                "Can't index with type %s. (Must be slice or unicode.)"
-                % type(key))
+            raise AssertionError(
+                "Can't index with type %s. (Must be unicode.)" % type(key))
 
         # Find a message ID with the given text.
         try:
             pomsgid = POMsgID.byMsgid(key)
         except SQLObjectNotFound:
-            raise NotFoundError(key)
+            return None
 
         # Find a message set with the given message ID.
 
-        result = POTMsgSet.selectOne(query +
+        potmsgset = POTMsgSet.selectOne(query +
             (' AND primemsgid = %d' % pomsgid.id))
 
-        if result is None:
-            raise NotFoundError(key)
+        if potmsgset is None:
+            # There is no IPOTMsgSet for this id.
+            return None
 
-        poresult = POMsgSet.selectOneBy(potmsgsetID=result.id, pofileID=self.id)
-        if poresult is None:
-            raise NotFoundError(key)
-        return poresult
+        pomsgset = POMsgSet.selectOneBy(
+            potmsgsetID=potmsgset.id, pofileID=self.id)
+        if pomsgset is None:
+            # We don't have such IPOMsgSet created so we create it.
+            pomsgset = self.createMessageSetFromMessageSet(self, potmsgset)
+
+        return pomsgset
 
     def __getitem__(self, msgid_text):
         """See IPOFile."""
-        return self.getPOMsgSet(msgid_text)
+        pomsgset = self.getPOMsgSet(msgid_text, only_current=True)
+        if pomsgset is None:
+            raise NotFoundError(msgid_text)
+        else:
+            return pomsgset
 
     def getPOMsgSetsNotInTemplate(self):
         """See IPOFile."""
@@ -835,17 +837,22 @@ class DummyPOFile(RosettaStats):
     """
     implements(IPOFile)
 
-    def __init__(self, potemplate, language, owner=None,
-        header='Content-Type: text/plain; charset=us-ascii'):
+    def __init__(self, potemplate, language, owner=None):
         self.potemplate = potemplate
         self.language = language
         self.owner = owner
-        self.header = header
         self.latestsubmission = None
         self.pluralforms = language.pluralforms
         self.translationpermission = self.potemplate.translationpermission
         self.lasttranslator = None
         self.contributors = []
+
+    def __getitem__(self, msgid_text):
+        pomsgset = self.getPOMsgSet(msgid_text, only_current=True)
+        if pomsgset is None:
+            raise NotFoundError(msgid_text)
+        else:
+            return pomsgset
 
     def messageCount(self):
         return len(self.potemplate)
@@ -873,6 +880,33 @@ class DummyPOFile(RosettaStats):
             self.translationpermission,
             translators,
             person)
+
+    def getPOMsgSet(self, key, only_current=False):
+        """See IPOFile."""
+        query = 'potemplate = %d' % self.potemplate.id
+        if only_current:
+            query += ' AND sequence > 0'
+
+        if not isinstance(key, unicode):
+            raise AssertionError(
+                "Can't index with type %s. (Must be unicode.)" % type(key))
+
+        # Find a message ID with the given text.
+        try:
+            pomsgid = POMsgID.byMsgid(key)
+        except SQLObjectNotFound:
+            return None
+
+        # Find a message set with the given message ID.
+
+        potmsgset = POTMsgSet.selectOne(query +
+            (' AND primemsgid = %d' % pomsgid.id))
+
+        if potmsgset is None:
+            # There is no IPOTMsgSet for this id.
+            return None
+
+        return DummyPOMsgSet(self, potmsgset)
 
     def currentCount(self):
         return 0
