@@ -335,7 +335,7 @@ def _update_binary_overrides(bpr, parsed_overrides):
         bpr.section = overrides[1]
     if overrides[2] is not None:
         bpr.priority = overrides[2]
-    
+
 def action_OVERRIDE(distro, distrorelease, queue):
     """Alter queued overrides."""
     filtered_queue = filter_queue(queue, True)
@@ -380,7 +380,7 @@ def main():
                       dest="announcelist", metavar="ANNOUNCELIST",
                       default=None,
                       help="Overrides the announcement list for accepts.")
-    
+
     global options
     global args
     (options, args) = parser.parse_args()
@@ -426,7 +426,7 @@ def main():
 
     if globals()["action_"+action](distro, distrorelease, actualised_queue):
         ztm.commit()
-    
+
 if __name__ == '__main__':
     sys.exit(main())
 
