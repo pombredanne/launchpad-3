@@ -12,6 +12,7 @@ __all__ = [
     'IDistroReleaseQueueBuild',
     'IDistroReleaseQueueSource',
     'IDistroReleaseQueueCustom',
+    'IDistroReleaseQueueSet',
     ]
 
 from zope.schema import Int
@@ -240,4 +241,22 @@ class IDistroReleaseQueueCustom(Interface):
 
         If a logger is provided, information pertaining to the publishing
         process will be logged to it.
+        """
+
+class IDistroReleaseQueueSet(Interface):
+    """Set methods for IDistroReleaseQueue"""
+
+    def __iter__():
+        """IDistroReleaseQueue iterator"""
+
+    def __getitem__(queue_id):
+        """Retrieve an IDistroReleaseQueue by a given id"""
+
+    def get(queue_id):
+        """Retrieve an IDistroReleaseQueue by a given id"""
+
+    def count(self, status=None):
+        """Number of IDistroReleaseQueue present in a given status.
+
+        If stautus is ommitted return the number of all entries.
         """

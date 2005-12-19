@@ -21,4 +21,13 @@
         <allow interface="canonical.launchpad.interfaces.IDistroReleaseQueueCustom" />
     </content>
 
+    <!-- DistroReleaseQueueSet -->
+    <securedutility
+        class="canonical.launchpad.database.DistroReleaseQueueSet"
+        provides="canonical.launchpad.interfaces.IDistroReleaseQueueSet">
+        <allow
+          interface="canonical.launchpad.interfaces.IDistroReleaseQueueSet" />
+    </securedutility>
+
+
 </configure>

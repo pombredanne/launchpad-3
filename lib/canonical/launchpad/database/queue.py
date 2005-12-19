@@ -1,8 +1,13 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['DistroReleaseQueue', 'DistroReleaseQueueBuild',
-           'DistroReleaseQueueSource', 'DistroReleaseQueueCustom']
+__all__ = [
+    'DistroReleaseQueue',
+    'DistroReleaseQueueBuild',
+    'DistroReleaseQueueSource',
+    'DistroReleaseQueueCustom',
+    'DistroReleaseQueueSet',
+    ]
 
 import os
 import tempfile
@@ -12,9 +17,10 @@ from warnings import warn
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, MultipleJoin, StringCol
+from sqlobject import (
+    ForeignKey, MultipleJoin, StringCol, SQLObjectNotFound)
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 
 from canonical.lp.dbschema import (
@@ -24,7 +30,8 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     IDistroReleaseQueue, IDistroReleaseQueueBuild, IDistroReleaseQueueSource,
     IDistroReleaseQueueCustom, NotFoundError, QueueStateWriteProtectedError,
-    QueueInconsistentStateError, QueueSourceAcceptError)
+    QueueInconsistentStateError, QueueSourceAcceptError,
+    IDistroReleaseQueueSet)
 
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
@@ -88,11 +95,11 @@ class DistroReleaseQueue(SQLBase):
         if self._SO_creating:
             self._SO_set_status(value)
             return
-        # been facist 
+        # been facist
         raise QueueStateWriteProtectedError(
             'Directly write on queue status is forbidden use the '
-            'provided methods to set it.')        
-    
+            'provided methods to set it.')
+
     def set_new(self):
         """See IDistroReleaseQueue."""
         self._SO_set_status(DistroReleaseQueueStatus.NEW)
@@ -106,7 +113,7 @@ class DistroReleaseQueue(SQLBase):
         for source in self.sources:
             # if something goes wrong we will raise an exception
             # (QueueSourceAcceptError) before setting any value.
-            # Mask the error with state-machine default exception 
+            # Mask the error with state-machine default exception
             try:
                 source.checkComponentAndSection()
             except QueueSourceAcceptError, info:
@@ -193,7 +200,7 @@ class DistroReleaseQueue(SQLBase):
             return build.sourcepackagerelease.version
         # strange, no source or build
         raise NotFoundError()
-        
+
     def realiseUpload(self, logger=None):
         """See IDistroReleaseQueue."""
         assert self.status == DistroReleaseQueueStatus.ACCEPTED
@@ -322,7 +329,7 @@ class DistroReleaseQueueSource(SQLBase):
             self.sourcepackagerelease.version,
             self.distroreleasequeue.distrorelease.distribution.name,
             self.distroreleasequeue.distrorelease.name))
-        
+
         return SecureSourcePackagePublishingHistory(
             distrorelease=self.distroreleasequeue.distrorelease.id,
             sourcepackagerelease=self.sourcepackagerelease.id,
@@ -331,7 +338,7 @@ class DistroReleaseQueueSource(SQLBase):
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
             pocket=self.distroreleasequeue.pocket,
-            embargo=False)        
+            embargo=False)
 
 
 class DistroReleaseQueueCustom(SQLBase):
@@ -395,7 +402,38 @@ class DistroReleaseQueueCustom(SQLBase):
                                      dr.name)
         finally:
             os.remove(temp_file_name)
-            
+
     def publish_ROSETTA_TRANSLATIONS(self, logger=None):
         """See IDistroReleaseQueueCustom."""
         raise NotImplementedError()
+
+
+class DistroReleaseQueueSet:
+    """See IDistroReleaseQueueSet"""
+    implements(IDistroReleaseQueueSet)
+
+    def __iter__(self):
+        """See IDistroReleaseQueueSet."""
+        return iter(DistroReleaseQueue.select())
+
+    def __getitem__(self, queue_id):
+        """See IDistroReleaseQueueSet."""
+        try:
+            return DistroReleaseQueue.get(queue_id)
+        except SQLObjectNotFound:
+            raise NotFoundError(queue_id)
+
+    def get(self, queue_id):
+        """See IDistroReleaseQueueSet."""
+        try:
+            return DistroReleaseQueue.get(queue_id)
+        except SQLObjectNotFound:
+            raise NotFoundError(queue_id)
+
+    def count(self, status=None):
+        """See IDistroReleaseQueueSet."""
+        clause = None
+        if status:
+            clause = "status=%s" % sqlvalues(status)
+
+        return DistroReleaseQueue.select(clause).count()

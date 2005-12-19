@@ -27,7 +27,7 @@ Uploading Packages
 We need the librarian for this test.
 
   >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()  
+  >>> LibrarianTestSetup().setUp()
 
 
 First, let's create a temporary directory where we'll put
@@ -171,7 +171,7 @@ data in the given number seconds, we report a failure.
   ...     raise RuntimeError("FTP server is not responding correctly, bad boy\n"
   ...                        "The following lines were still expected: %s\n"
   ...                        % "\n".join(line for line in expected))
-  
+
 
 At that point we must have a bunch of directories in the upload
 base directory named upload-XXXXXX, each one as a result of
@@ -383,10 +383,45 @@ promote them to ACCEPTED, the failures are kept as NEW
   >>> from canonical.launchpad.interfaces import (
   ...     IDistributionSet, QueueInconsistentStateError)
   >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
-	
+
   >>> distro = getUtility(IDistributionSet).getByName('ubuntu')
-  >>> release = distro['breezy-autotest'] 
-  >>> queue_items = release.getQueueItems(DistroReleaseQueueStatus.NEW)
+  >>> release = distro['breezy-autotest']
+
+Let's test the of IDistroRelease.getQueueSourceItems:
+
+Only querying by status:
+
+  >>> new_items = release.getSourceQueueItems(DistroReleaseQueueStatus.NEW)
+  >>> new_items.count()
+  2
+
+Querying by status and a name term:
+
+  >>> items = release.getSourceQueueItems(DistroReleaseQueueStatus.NEW,
+  ...                               name='dr')
+  >>> items.count()
+  1
+
+  >>> items[0].sources[0].sourcepackagerelease.name
+  u'drdsl'
+  >>> items[0].sources[0].sourcepackagerelease.version
+  u'1.2.0-0ubuntu1'
+
+Querying by status, name and version terms:
+
+  >>> items = release.getSourceQueueItems(DistroReleaseQueueStatus.NEW,
+  ...                               name='dr', version='1.2')
+  >>> items.count()
+  1
+
+  >>> items = release.getSourceQueueItems(DistroReleaseQueueStatus.NEW,
+  ...                               name='dr', version='1.5')
+  >>> items.count()
+  0
+
+Using getQueueItem to inspect current NEW queue
+
+  >>> queue_items = release.getSourceQueueItems(DistroReleaseQueueStatus.NEW)
   >>> for queue_item in queue_items:
   ...      try:
   ...          queue_item.set_accepted()
@@ -394,8 +429,9 @@ promote them to ACCEPTED, the failures are kept as NEW
   ...          print queue_item.sourcepackagename.name, e
   ...      else:
   ...          print queue_item.sourcepackagename.name, 'ACCEPTED'
-  etherwake ACCEPTED
   drdsl Component "non-free" is not allowed in breezy-autotest
+  etherwake ACCEPTED
+
 
 We must flush these changes so that it gets out of the cache and
 into the database. Without this process-accepted.py wouldn't see
@@ -434,7 +470,7 @@ everything up.
 
   >>> import shutil
   >>> shutil.rmtree(temp_dir)
-  
+
   >>> ZecaTestSetup().tearDown()
   >>> LibrarianTestSetup().tearDown()
 

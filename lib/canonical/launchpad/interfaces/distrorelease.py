@@ -238,6 +238,17 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         in the queue.
         """
 
+    def getSourceQueueItems(status=DistroReleaseQueueStatus.ACCEPTED,
+                            name=None, version=None):
+        """Get the source queue items for this distrorelease
+
+        Returns source queue items in a given state, matching a give name and
+        version terms. If 'status' is not supplied, default to the ACCEPTED
+        items in the queue. if 'name' and 'version' are supplied return only
+        items which the sourcepackage matches (SQL LIKE). 'name' doesn't
+        require 'version'
+        """
+
     def initialiseFromParent():
         """Copy in all of the parent distrorelease's configuration. This
         includes all configuration for distrorelease and distroarchrelease

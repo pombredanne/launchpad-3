@@ -579,9 +579,44 @@ class DistroRelease(SQLBase):
 
     def getQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED):
         """See IDistroRelease."""
-
         return DistroReleaseQueue.selectBy(distroreleaseID=self.id,
-                                           status=status)
+                                           status=status, orderBy=['id'])
+
+    def getSourceQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED,
+                            name=None, version=None):
+        """See IDistroRelease."""
+        where_clause = (
+            "distrorelease=%s AND status=%s AND distroreleasequeue.id="
+            "distroreleasequeuesource.distroreleasequeue"
+            % sqlvalues(self.id, status))
+
+        clauseTables = [
+            'DistroReleaseQueueSource',
+            ]
+        orderBy=['id']
+
+        if name:
+            where_clause +="""
+            AND distroreleasequeuesource.sourcepackagerelease =
+            sourcepackagerelease.id AND
+            sourcepackagerelease.sourcepackagename=
+            sourcepackagename.id AND sourcepackagename.name LIKE '%%%s%%'
+            """ % name
+
+            if version:
+                where_clause += """
+                AND sourcepackagerelease.version LIKE '%%%s%%'
+                """ % version
+
+            clauseTables = [
+                'DistroReleaseQueueSource',
+                'SourcePackageRelease',
+                'SourcePackageName',
+                ]
+            orderBy = ['-sourcepackagerelease.dateuploaded']
+
+        return DistroReleaseQueue.select(
+            where_clause, clauseTables=clauseTables, orderBy=orderBy)
 
     def createBug(self, owner, title, comment, private=False):
         """See canonical.launchpad.interfaces.IBugTarget."""

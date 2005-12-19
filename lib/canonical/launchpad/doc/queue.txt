@@ -89,6 +89,7 @@ Make the modification real in the DB (XXX cprov 20051209: see bug #3889)
   DEBUG: Publishing build to ubuntu/hoary/i386
   DEBUG: ... ed/0.2-20 (Arch Specific)
 
+
 Confirm we can now find ed published in hoary.
 
   >>> from canonical.launchpad.database import SourcePackagePublishing
@@ -97,6 +98,44 @@ Confirm we can now find ed published in hoary.
   ...     if release.sourcepackagerelease.sourcepackagename.name == "ed":
   ...         print release.sourcepackagerelease.version
   0.2-20
+
+
+Check IDistroReleaseQueueSet behaviour:
+
+ >>> from canonical.launchpad.interfaces import IDistroReleaseQueueSet
+ >>> from zope.interface.verify import verifyObject
+
+ Grab an utility:
+
+ >>> qset = getUtility(IDistroReleaseQueueSet)
+
+Check if it implements its interface completely:
+
+ >>> verifyObject(IDistroReleaseQueueSet, qset)
+ True
+
+Iterator:
+
+ >>> for item in qset:
+ ...     item.id
+ 1L
+
+getter by id:
+
+ >>> qset[1].id
+ 1L
+
+get by id method:
+ >>> qset.get(1).id
+ 1L
+
+Counter, optionally by status (informally named "queue"):
+ >>> qset.count()
+ 1
+ >>> qset.count(DistroReleaseQueueStatus.ACCEPTED)
+ 1
+ >>> qset.count(DistroReleaseQueueStatus.REJECTED)
+ 0
 
 Finally, abort the whole damned mess
 
