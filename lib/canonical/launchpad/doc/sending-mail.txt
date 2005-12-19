@@ -57,6 +57,33 @@ the person's name is encoded properly.
     >>> msg.get_payload(decode=True)
     'Content'
 
+simple_sendmail_from_person uses the Person's preferred email address:
+
+    >>> login('test@canonical.com')
+    >>> from canonical.launchpad.interfaces import IEmailAddressSet
+    >>> sample_person = getUtility(IPersonSet).getByEmail(
+    ...     'test@canonical.com')
+    >>> testing  = getUtility(IEmailAddressSet).getByEmail(
+    ...     'testing@canonical.com')
+    >>> sample_person.preferredemail = testing
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+    >>> sample_person.preferredemail.email
+    u'testing@canonical.com'
+    >>> msgid = simple_sendmail_from_person(
+    ...     person=sample_person,
+    ...     to_addrs='test@canonical.com',
+    ...     subject=u'Subject',
+    ...     body=u'Content')
+
+    >>> transaction.commit()
+    >>> from_addr, to_addr, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg['From']
+    'Sample Person <testing@canonical.com>'
+
+
 To make a header appear more than once in the sent message (e.g.
 X-Launchpad-Bug), you can pass a headers dict whose keys are the header names
 and whose values are the header body values. If a value is a list or a tuple,
