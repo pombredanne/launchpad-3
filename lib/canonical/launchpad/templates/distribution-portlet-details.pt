@@ -15,6 +15,20 @@
     <a tal:attributes="href string:${context/fmt:url}/+members"
        tal:content="context/members/browsername">members name</a><br /> 
 
+    <b>Translation group:</b><br />
+    <img src="/++resource++languages.gif">
+    <tal:block condition="context/translationgroup">
+    <a tal:attributes="href context/translationgroup/fmt:url"
+       tal:content="context/translationgroup/title"
+    >Group</a><br />
+    </tal:block>
+    <tal:block condition="not: context/translationgroup">
+    <i>Not assigned</i><br />
+    </tal:block>
+    <b>Translation policy:</b><br />
+    <span tal:replace="context/translationpermission/title">Open</span>
+    <br />
+
     <b>Uploads:</b><br />
     <tal:per_component repeat="dcu context/uploaders">
       <span tal:replace="dcu/component/name">main</span>:

@@ -77,7 +77,7 @@
     <br />
     </tal:block>
     </tal:block>
-    <b>Contributions policy:</b>
+    <b>Translation policy:</b>
     <span tal:replace="context/translationpermission/title" /><br />
     <b>Plural forms:</b>
     <span tal:replace="context/pluralforms">2</span><br />
