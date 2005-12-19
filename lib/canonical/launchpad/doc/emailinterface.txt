@@ -225,7 +225,7 @@ And the summaries were changed:
     >>> print bug_five.title
     Nicer summary
 
-GPG Signing and adding comments
+GPG signing and adding comments
 -------------------------------
 
 In order to include commands in the comment, the email has to be GPG
@@ -233,7 +233,7 @@ signed. The key used to sign the email has to be associated with the
 authenticated person in Launchpad. It happens quite often, though, that
 people who haven't registered their key in Launchpad sign their emails
 even though the only want to add a comment. These comments should of
-course not be rejected because their key wasn't registered in
+course not be rejected just because their key wasn't registered in
 Launchpad.
 
 To make a difference between if an email was signed with a key
