@@ -360,25 +360,23 @@
 
   <!-- Team Views -->
 
-  <browser:pages
+  <browser:page
       for="canonical.launchpad.interfaces.ITeam"
       permission="zope.Public"
-      class="canonical.launchpad.browser.PersonView">
-      <browser:page
-        name="+teamhierarchy"
-        template="../templates/person-teamhierarchy.pt"
-        lp:url="/people/$person.id/+teamhierarchy" />
-  </browser:pages>
+      class="canonical.launchpad.browser.PersonView"
+      name="+teamhierarchy"
+      template="../templates/person-teamhierarchy.pt"
+      lp:url="/people/$person.id/+teamhierarchy">
+  </browser:page>
 
-  <browser:pages
+  <browser:page
       for="canonical.launchpad.interfaces.ITeam"
       permission="launchpad.Edit"
-      class="canonical.launchpad.browser.TeamEmailView">
-        <browser:page
-            name="+editemail"
-            template="../templates/team-editemail.pt"
-            lp:url="/people/$team.id/+editemail" />
-  </browser:pages>
+      class="canonical.launchpad.browser.TeamEmailView"
+      name="+editemail"
+      template="../templates/team-editemail.pt"
+      lp:url="/people/$team.id/+editemail"> 
+  </browser:page>
 
   <browser:editform
       name="+edit"
@@ -392,45 +390,41 @@
       lp:url="/people/$person.id/+edit">
   </browser:editform>
 
-  <browser:pages
+  <browser:page
       for="canonical.launchpad.interfaces.ITeam"
       permission="launchpad.Admin"
-      class="canonical.launchpad.browser.TeamReassignmentView">
-        <browser:page
-            name="+reassign"
-            template="../templates/object-reassignment.pt"
-            lp:url="/people/$team.id/+reassign" />
-  </browser:pages>
+      class="canonical.launchpad.browser.TeamReassignmentView"
+      name="+reassign"
+      template="../templates/object-reassignment.pt"
+      lp:url="/people/$team.id/+reassign">
+  </browser:page>
 
-  <browser:pages
+  <browser:page
       for="canonical.launchpad.interfaces.ITeam"
       permission="launchpad.AnyPerson"
-      class="canonical.launchpad.browser.TeamJoinView">
-      <browser:page
-          name="+join"
-          template="../templates/team-join.pt"
-          lp:url="/people/$person.id/+join" />
-  </browser:pages>
+      class="canonical.launchpad.browser.TeamJoinView"
+      name="+join"
+      template="../templates/team-join.pt"
+      lp:url="/people/$person.id/+join">
+  </browser:page>
 
-  <browser:pages
+  <browser:page
       for="canonical.launchpad.interfaces.ITeam"
       permission="launchpad.AnyPerson"
-      class="canonical.launchpad.browser.TeamLeaveView">
-      <browser:page
-          name="+leave"
-          template="../templates/team-leave.pt"
-          lp:url="/people/$team.id/+leave" />
-  </browser:pages>
+      class="canonical.launchpad.browser.TeamLeaveView"
+      name="+leave"
+      template="../templates/team-leave.pt"
+      lp:url="/people/$team.id/+leave">
+  </browser:page>
 
-  <browser:pages
+  <browser:page
       for="canonical.launchpad.interfaces.ITeam"
       permission="zope.Public"
-      class="canonical.launchpad.browser.PersonView">
-      <browser:page
-          name="+polls"
-          template="../templates/team-polls.pt"
-          lp:url="/people/$team.id/+polls" />
-  </browser:pages>
+      class="canonical.launchpad.browser.PersonView"
+      name="+polls"
+      template="../templates/team-polls.pt"
+      lp:url="/people/$team.id/+polls">
+  </browser:page>
 
   <browser:addform
       name="+newpoll"
@@ -444,6 +438,35 @@
       template="../templates/team-newpoll.pt"
       lp:url="/people/$team.id/+newpoll">
   </browser:addform>
+
+  <browser:page
+      name="+members"
+      for="canonical.launchpad.interfaces.ITeam"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.TeamMembersView"
+      template="../templates/team-members.pt"
+      lp:url="people/$team/+members">
+  </browser:page>
+
+  <browser:addform
+      name="+addmember"
+      for="canonical.launchpad.interfaces.ITeam"
+      schema="canonical.launchpad.interfaces.ITeamMember"
+      fields="newmember"
+      class="canonical.launchpad.browser.TeamMemberAddView"
+      permission="launchpad.Edit"
+      template="../templates/team-addmember.pt"
+      lp:url="people/$team/+addmember">
+  </browser:addform>
+
+  <browser:page
+      name="+editproposedmembers"
+      for="canonical.launchpad.interfaces.ITeam"
+      permission="launchpad.Edit"
+      class="canonical.launchpad.browser.ProposedTeamMembersEditView"
+      template="../templates/team-editproposed.pt"
+      lp:url="people/$team/+editproposedmembers">
+  </browser:page>
 
   <browser:addform
       name="+addbranch"

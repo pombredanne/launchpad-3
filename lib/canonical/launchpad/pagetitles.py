@@ -825,24 +825,21 @@ standardshipitrequest_new = 'Create a new standard option'
 
 standardshipitrequest_edit = 'Edit standard option'
 
-def team_addmember(context, view):
-    return 'Add members to %s' % context.team.browsername
+team_addmember = ContextBrowsername('Add members to %s')
 
 team_edit = 'Edit team information'
 
 team_editemail = ContextDisplayName('%s contact e-mail address')
 
-def team_editproposed(context, view):
-    return '%s proposed members' % context.team.browsername
-
 team_index = ContextBrowsername(u'“%s” team in Launchpad')
+
+team_editproposed = ContextBrowsername('Proposed members of %s')
 
 team_join = ContextBrowsername('Join %s')
 
 team_leave = ContextBrowsername('Leave %s')
 
-def team_members(context, view):
-    return u'“%s” members' % context.team.browsername
+team_members = ContextBrowsername(u'“%s” members')
 
 def teammembership_index(context, view):
     return u'%s’s membership status in %s' % (
