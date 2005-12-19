@@ -1,0 +1,21 @@
+The branch administrative form allows ownership to be transferred to a
+team.
+
+Ensure that team owned branches are listed on a product's branch
+overview page:
+
+  >>> print http(r"""
+  ... GET /products/gnome-terminal/+branches HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...<a href="http://localhost:9000/people/launchpad/+branch/gnome-terminal/launchpad">Launchpad support for Gnome Terminal</a>...
+  ...
+
+Ensure that a branch owned by a team can be viewed:
+
+  >>> print http(r"""
+  ... GET /people/launchpad/+branch/gnome-terminal/launchpad HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
