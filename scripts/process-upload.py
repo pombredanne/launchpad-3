@@ -9,6 +9,8 @@ import _pythonpath
 
 import os
 import sys
+import fcntl
+import shutil
 
 from optparse import OptionParser
 from email import message_from_string
@@ -39,8 +41,11 @@ def main():
                       help="Whether to treat this as a dry-run or not.")
 
     parser.add_option("-M", "--no-mails", action="store_true",
-                      dest="nomails", metavar="NO_MAILS", default=False,
+                      dest="nomails", default=False,
                       help="Whether to suppress the sending of mails or not.")
+
+    parser.add_option("-l", "--loop", action="store_true", default=False,
+                      help="Wait for more uploads rather than exiting.")
     
     global options
     (options, args) = parser.parse_args()
@@ -53,11 +58,11 @@ def main():
                   "Namely the fsroot for the upload.")
         return 1
 
-    fsroot = args[0]
+    fsroot = os.path.abspath(args[0])
+    if not os.path.isdir(fsroot):
+        raise ValueError("%s is not a directory" % fsroot)
 
-    log.debug("Acquiring lock")
     lock = GlobalLock('/var/lock/launchpad-process-upload.lock')
-    lock.acquire(blocking=True)
 
     log.debug("Initialising connection.")
     global ztm
@@ -66,28 +71,114 @@ def main():
     execute_zcml_for_scripts()
 
     try:
-        if not os.path.isdir(fsroot):
-            raise ValueError("%s is not a directory" % fsroot)
-        log.info("Finding policy.")
-        policy = findPolicyByOptions(options)
 
-        uploads = []
+        # This is going to process the list of directories in the
+        # given root. For each directory, it tries to acquire an
+        # exclusive lock. If successfully acquired, uploads in that
+        # directory are processed. If the lock is already taken,
+        # it means someone else is already handling it and we don't
+        # have to bother.
 
-        for root, dirs, files in os.walk(fsroot):
-            assert(len(dirs) == 0)
-            for filename in files:
-                if filename.endswith(".changes"):
-                    uploads.append(
-                        NascentUpload(policy, fsroot, filename, log))
+        # XXX [1] Daniel, can we run process_upload() in parallel or is
+        # it really not safe?  I'm keeping the lock around it, since I
+        # belive you know about a race condition that would be the reason
+        # why you were originally locking the whole main function (haven't
+        # investigated the code).  If the lock is really meaningful,
+        # there's no reason why we should run two process-upload.py
+        # instances in parallel, and consequently the fine grained
+        # locking below is not useful, and neither is poppy-upload
+        # spawning multiple process-upload.py in parallel, IMO.
+        #
+        # See [2] for the current locking place.
+        #
+        # -- Gustavo Niemeyer, 2005-12-19
 
-        for upload in uploads:
-            process_upload(upload)
+        fsroot_lock = GlobalLock(os.path.join(fsroot, ".lock"))
+
+        while True:
+
+            # Protecting listdir by a lock ensures that we only get
+            # completely finished directories listed. See
+            # PoppyInterface for the other locking place.
+            fsroot_lock.acquire()
+            entries = os.listdir(fsroot)
+            fsroot_lock.release()
+
+            for entry in entries:
+                
+                entry_path = os.path.join(fsroot, entry)
+                if not os.path.isdir(entry_path):
+                    continue
+
+                try:
+                    log.debug("Trying to lock upload directory: %s" %
+                              entry_path)
+                    entry_fd = os.open(entry_path, os.O_RDONLY)
+                    fcntl.flock(entry_fd, fcntl.LOCK_EX|fcntl.LOCK_NB)
+
+                except IOError, e:
+                    log.debug("Upload directory is already locked")
+                    if e.errno != 11:
+                        raise
+
+                else:
+                    log.debug("Got the upload directory lock")
+
+                    uploads = []
+
+                    # We override the distro option with information
+                    # provided in the FTP session, if available.
+                    distro_filename = entry_path + ".distro"
+                    options_distro = options.distro
+                    if os.path.isfile(distro_filename):
+                        distro_file = open(distro_filename)
+                        options.distro = distro_file.read()
+                        distro_file.close()
+                        log.debug("Overriding distribution: %s" %
+                                  options.distro)
+
+                    log.debug("Finding policy")
+                    policy = findPolicyByOptions(options)
+
+                    for filename in os.listdir(entry_path):
+                        if filename.endswith(".changes"):
+                            uploads.append(NascentUpload(
+                                policy, entry_path, filename, log))
+
+                    for upload in uploads:
+                        # XXX [2] Do we really need this lock? See [1].
+                        log.debug("Acquiring process_upload lock")
+                        lock.acquire(blocking=True)
+                        try:
+                            process_upload(upload)
+                        finally:
+                            log.debug("Releasing process_upload lock")
+                            lock.release()
+
+                    log.debug("Removing upload directory: %s" % entry_path)
+                    shutil.rmtree(entry_path)
+
+                    if os.path.isfile(distro_filename):
+                        log.debug("Removing distro file: %s" % distro_filename)
+                        os.unlink(distro_filename)
+
+                    options.distro = options_distro
+
+                    # Unlock it and release the removed directory by
+                    # closing the file descriptor.
+                    os.close(entry_fd)
+
+            if not options.loop:
+                break
+
+            # Sleep 5 seconds before scanning the whole root
+            # directory again (that's NOT for each upload).
+            time.sleep(5)
+
 
     finally:
         log.debug("Rolling back any remaining transactions.")
         ztm.abort()
-        log.debug("Releasing lock")
-        lock.release()
 
     return 0
 
@@ -144,6 +235,3 @@ def process_upload(upload):
 
 if __name__ == '__main__':
     sys.exit(main())
-
-
-

@@ -38,7 +38,7 @@ uploaded files in.
 
 
 Now, let's create a subprocess running the poppy FTP server. The
---test option ensures that it won't call the upload processing tool.
+XXX --test option ensures that it won't call the upload processing tool.
 We'll do that ourselves in our test, so that we can control what's
 going on.
 
@@ -46,10 +46,11 @@ going on.
   >>> import subprocess
   >>> import sys
   >>> import os
-  >>> script = os.path.join(config.root, "daemons", "poppy-upload.py")
-  >>> process = subprocess.Popen([sys.executable, script, "--test",
+  >>> script = os.path.join(config.root, "daemons/poppy-upload.py")
+  >>> process = subprocess.Popen([sys.executable, script,
+  ...                             "--cmd", "echo @distro@; ls @fsroot@",
   ...                             temp_dir, "3421"],
-  ...                            stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+  ...                            stdout=subprocess.PIPE)
 
 
 Connect to the server and login. We'll keep trying to connect until
@@ -280,23 +281,14 @@ NascentUpload in the autosync policy in the future.
   >>> import transaction
   >>> transaction.commit()
 
-
 That's all for the FTP server. Now we must process the uploaded packages.
 This is done by running process-upload.py on each upload directory.
 
-  >>> script = os.path.join(config.root, "scripts", "process-upload.py")
-  >>> def process_upload(num):
-  ...     upload_dir = get_upload_dir(num)
-  ...     process = subprocess.Popen([sys.executable, script, "--no-mails",
-  ...                                "-q","-C", "autosync", "-d", "ubuntu",
-  ...                                upload_dir],
-  ...                                stdin=subprocess.PIPE,
-  ...                                stdout=subprocess.PIPE)
-  ...     return process.wait()
-
-  >>> for upload_num in range(1, len(uploads)+1):
-  ...     assert process_upload(upload_num) == 0
-
+  >>> script = os.path.join(config.root, "scripts/process-upload.py")
+  >>> process = subprocess.Popen([sys.executable, script, "--no-mails", "-q",
+  ...                             "-C", "autosync", temp_dir])
+  >>> process.wait()
+  0
 
 Let's check if packages where uploaded correctly.
 
