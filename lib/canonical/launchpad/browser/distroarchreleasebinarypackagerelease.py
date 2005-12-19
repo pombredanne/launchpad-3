@@ -34,6 +34,9 @@ class DistroArchReleaseBinaryPackageReleaseOverviewMenu(ApplicationMenu):
 class DistroArchReleaseBinaryPackageReleaseNavigation(Navigation):
     usedfor = IDistroArchReleaseBinaryPackageRelease
 
+    def breadcrumb(self):
+        return self.context.version
+
 
 class DistroArchReleaseBinaryPackageReleaseView:
 
