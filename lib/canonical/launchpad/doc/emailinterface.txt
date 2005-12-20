@@ -286,7 +286,7 @@ changes was made to the bug, and the comment wasn't added.
     >>> print bug_one.title
     Better summary
 
-And error message was sent to the Sample Person, telling him what's
+And an error message was sent to the Sample Person, telling him what's
 wrong.
 
     >>> def print_latest_email():

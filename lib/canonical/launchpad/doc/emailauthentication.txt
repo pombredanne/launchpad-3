@@ -165,7 +165,7 @@ authenticated user:
     >>> launchbag.login
     'testing@canonical.com'
 
-Of course, when the email is signed with a key which is associated with
+Of course, if the email is signed with a key which is associated with
 the user, IWeaklyAuthenticatedPrincipal won't be provided by the
 principal.
 
