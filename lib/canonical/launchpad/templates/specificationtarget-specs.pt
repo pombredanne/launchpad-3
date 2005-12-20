@@ -29,10 +29,8 @@
       tal:content="view/view_title">Specs for Approval</h1>
 
   <p tal:condition="not: view/count">
-    <img src="/++resource++alert" />
-    <i>There are no specifications in this category for
-    <span tal:replace="context/displayname">Ubuntu 5.04</span> at the
-    moment.</i>
+    No specifications are registered in this category for
+    <span tal:replace="context/displayname">Ubuntu 5.04</span>.
   </p>
 
   <p tal:condition="view/count">
