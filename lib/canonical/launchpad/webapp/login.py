@@ -316,7 +316,7 @@ def sendPasswordResetEmail(token, appurl):
     message = template % replacements
 
     subject = "Launchpad: Forgotten Password"
-    simple_sendmail(fromaddress, token.email, subject, message)
+    simple_sendmail(fromaddress, str(token.email), subject, message)
 
 
 
@@ -328,5 +328,5 @@ def sendNewUserEmail(token, appurl):
 
     fromaddress = "The Launchpad Team <noreply@canonical.com>"
     subject = "Launchpad Account Creation Instructions"
-    simple_sendmail(fromaddress, token.email, subject, message)
+    simple_sendmail(fromaddress, str(token.email), subject, message)
 

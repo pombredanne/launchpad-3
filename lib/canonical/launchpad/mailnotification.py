@@ -17,7 +17,8 @@ from canonical.config import config
 from canonical.launchpad.interfaces import (
     IBugDelta, IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask,
     IDistribution, IProduct)
-from canonical.launchpad.mail import simple_sendmail
+from canonical.launchpad.mail import (
+    simple_sendmail, simple_sendmail_from_person)
 from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.components.bugtask import BugTaskDelta
 from canonical.launchpad.helpers import contactEmailAddresses
@@ -100,16 +101,6 @@ def get_email_template(filename):
     base = os.path.dirname(canonical.launchpad.__file__)
     fullpath = os.path.join(base, 'emailtemplates', filename)
     return open(fullpath).read()
-
-
-def get_bugmail_from_address(user):
-    """Return an appropriate bugmail From address.
-
-    :user: an IPerson whose name will appear in the From address, e.g.:
-
-        From: Foo Bar <foo.bar@canonical.com>
-    """
-    return u"%s <%s>" % (user.displayname, user.preferredemail.email)
 
 
 def get_bugmail_replyto_address(bug):
@@ -535,8 +526,6 @@ def send_bug_notification(bug, user, subject, body, to_addrs=None,
     if "Sender" not in headers:
         headers["Sender"] = config.bounce_address
 
-    from_addr = get_bugmail_from_address(user)
-
     # Add a header for each task on this bug, to help users organize their
     # incoming mail in a way that's convenient for them.
     x_launchpad_bug_values = []
@@ -546,8 +535,8 @@ def send_bug_notification(bug, user, subject, body, to_addrs=None,
     headers["X-Launchpad-Bug"] = x_launchpad_bug_values
 
     for to_addr in to_addrs:
-        simple_sendmail(
-            from_addr=from_addr, to_addrs=to_addr, subject=subject, body=body,
+        simple_sendmail_from_person(
+            person=user, to_addrs=to_addr, subject=subject, body=body,
             headers=headers)
 
 def send_bug_edit_notification(bug_delta):
@@ -983,7 +972,6 @@ def notify_join_request(event):
 
 def send_ticket_notification(ticket_event, subject, body):
     """Sends a ticket notification to the ticket's subscribers."""
-    from_addr = get_bugmail_from_address(ticket_event.user)
     ticket = ticket_event.object
 
     sent_addrs = set()
@@ -992,7 +980,8 @@ def send_ticket_notification(ticket_event, subject, body):
     for notified_person in subscribers:
         for address in contactEmailAddresses(notified_person):
             if address not in sent_addrs:
-                simple_sendmail(from_addr, address, subject, body)
+                simple_sendmail_from_person(
+                    ticket_event.user, address, subject, body)
                 sent_addrs.add(address)
 
 
