@@ -169,7 +169,7 @@
   ... password=test""" % path)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/people/no-priv?lpnotification...
+  Location: http://localhost:9000/people/no-priv
   ...
   ...info-notification">The email address...
   ...
@@ -216,7 +216,7 @@
   ... password=test""" % path)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/people/no-priv?lpnotification...
+  Location: http://localhost:9000/people/no-priv
   ...
   ...info-notification">The merge you requested was concluded with success...
 
@@ -227,5 +227,15 @@
   >>> from canonical.launchpad.database import PersonSet
   >>> team = PersonSet().getByName('myemail')
   >>> team.teamowner.name
+  u'no-priv'
+
+  Also make sure that foo@baz.com is now an email address of person no-priv.
+  (testing here to diagnose failures occuring in 32-setpreferredemail.txt)
+
+  >>> import canonical.database.sqlbase
+  >>> canonical.database.sqlbase.flush_database_caches()
+  >>> from canonical.launchpad.database import EmailAddressSet
+  >>> email = EmailAddressSet().getByEmail('foo@baz.com')
+  >>> email.person.name
   u'no-priv'
 

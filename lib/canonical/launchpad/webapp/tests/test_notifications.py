@@ -17,7 +17,7 @@ from zope.publisher.browser import TestRequest
 from canonical.launchpad.webapp.interfaces import (
         INotificationRequest, INotificationResponse
         )
-from canonical.launchpad.webapp.notification import NotificationResponse
+from canonical.launchpad.webapp.notifications import NotificationResponse
 
 class MockSession(dict):
     implements(ISession)
@@ -89,7 +89,7 @@ def tearDown(test):
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(DocTestSuite(
-        'canonical.launchpad.webapp.notification',
+        'canonical.launchpad.webapp.notifications',
         setUp=setUp, tearDown=tearDown,
         ))
     return suite
