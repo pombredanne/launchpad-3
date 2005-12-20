@@ -583,7 +583,7 @@ class DistroRelease(SQLBase):
                                            status=status, orderBy=['id'])
 
     def getSourceQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED,
-                            name=None, version=None):
+                            name=None, version=None, exact_match=False):
         """See IDistroRelease."""
         where_clause = (
             "distrorelease=%s AND status=%s AND distroreleasequeue.id="
@@ -600,13 +600,26 @@ class DistroRelease(SQLBase):
             AND distroreleasequeuesource.sourcepackagerelease =
             sourcepackagerelease.id AND
             sourcepackagerelease.sourcepackagename=
-            sourcepackagename.id AND sourcepackagename.name LIKE '%%%s%%'
-            """ % name
+            sourcepackagename.id
+            """
+            if exact_match:
+                where_clause += """
+                AND sourcepackagename.name = '%s'
+                """ % name
+            else:
+                where_clause += """
+                AND sourcepackagename.name LIKE '%%%s%%'
+                """ % name
 
             if version:
-                where_clause += """
-                AND sourcepackagerelease.version LIKE '%%%s%%'
-                """ % version
+                if exact_match:
+                    where_clause += """
+                    AND sourcepackagerelease.version = '%s'
+                    """ % version
+                else:
+                    where_clause += """
+                    AND sourcepackagerelease.version LIKE '%%%s%%'
+                    """ % version
 
             clauseTables = [
                 'DistroReleaseQueueSource',

@@ -239,14 +239,14 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         """
 
     def getSourceQueueItems(status=DistroReleaseQueueStatus.ACCEPTED,
-                            name=None, version=None):
+                            name=None, version=None, exact_match=False):
         """Get the source queue items for this distrorelease
 
         Returns source queue items in a given state, matching a give name and
         version terms. If 'status' is not supplied, default to the ACCEPTED
         items in the queue. if 'name' and 'version' are supplied return only
         items which the sourcepackage matches (SQL LIKE). 'name' doesn't
-        require 'version'
+        require 'version'. Use 'exact_match' argument for precise results.
         """
 
     def initialiseFromParent():

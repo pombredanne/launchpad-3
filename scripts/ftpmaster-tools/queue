@@ -73,16 +73,11 @@ class QueueAction:
     Implements a bunch of common/useful method designed to provide easy
     DistroReleaseQueue handling.
     """
-    distro = None
-    distrorelease = None
-    queue = None
-    queue_size = 0
-    items = None
-    items_size = 0
-
-    def __init__(self, distro, distrorelease, queue, args):
+    def __init__(self, distro, distrorelease, queue, args,
+                 exact_match=False):
         """Initialises passed variables. """
         self.args = args
+        self.exact_match = exact_match
         self.distro = distro
         self.distrorelease = distrorelease
         self.queue = queue
@@ -94,7 +89,20 @@ class QueueAction:
         try:
             term = self.args[0]
         except IndexError:
-            self.printUsage("Missed filter argument, use '*' for all records.")
+            self.printUsage("""
+            Missed filter argument, use '*' for all records.
+            Filter string consists of a queue ID or a pair <name>[/<version>]:
+
+               28
+               apt
+               apt/1
+
+            Use '-e' command line argument for exact matches:
+
+               -e apt
+               -e apt/1.0-1
+
+            """)
 
         if term == '*':
             term = ''
@@ -113,7 +121,8 @@ class QueueAction:
                 term, version = term.strip().split('/')
 
             self.items = self.distrorelease.getSourceQueueItems(
-                status=self.queue, name=term, version=version)
+                status=self.queue, name=term, version=version,
+                exact_match=self.exact_match)
             self.items_size = self.items.count()
 
     def run(self):
@@ -436,6 +445,11 @@ def main():
                       dest="dryrun", metavar="DRY_RUN", default=False,
                       help="Whether to treat this as a dry-run or not.")
 
+    parser.add_option("-e", "--exact-match", action="store_true",
+                      dest="exact_match", metavar="EXACTMATCH",
+                      default=False,
+                      help="Whether treat filter as a exact match or not.")
+
     parser.add_option("-A", "--announcelist",
                       dest="announcelist", metavar="ANNOUNCELIST",
                       default=None,
@@ -447,6 +461,8 @@ def main():
 
     print ("Initialising connection to queue %s/%s %s"
            % (options.distro, options.distrorelease, options.queue))
+
+    exact_match = options.exact_match
 
     if options.queue not in name_queue_map:
         print "Unable to map queue name %s" % options.queue
@@ -471,7 +487,8 @@ def main():
         print 'Wrong Action: %s' % action
     else:
         try:
-            queue_action(distro,distrorelease, queue, arguments).run()
+            queue_action(distro,distrorelease, queue, arguments,
+                         exact_match=exact_match).run()
         except QueueActionError, info:
             print info
         else:
