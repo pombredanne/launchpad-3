@@ -620,26 +620,25 @@ And note that he can access and set the bugtask attributes:
 Privacy and Team Awareness
 --------------------------
 
-Foo Bar is a member of the Ubuntu Team. At the moment he can't see the
-private bug, since he's not a subscriber:
+No Privileges Person can't see the private bug, because he's not a subscriber:
 
-    >>> login("foo.bar@canonical.com")
+    >>> login("no-priv@canonical.com")
+    >>> no_priv = personset.getByName("no-priv")
     >>> firefox = productset['firefox']
     >>> params = BugTaskSearchParams(
-    ...     status=any(STATUS_NEW, STATUS_ACCEPTED), user=foobar)
+    ...     status=any(STATUS_NEW, STATUS_ACCEPTED), user=no_priv)
     >>> firefox_bugtasks = firefox.searchTasks(params)
     >>> [bugtask.bug.id for bugtask in firefox_bugtasks]
     [4, 5, 6]
 
 
-But if we subscribe the Ubuntu Team, of which Foo Bar is a member, he
-will see the private bug.
+But if we add No Privileges Person to the Ubuntu Team, and because the Ubuntu
+Team *is* subscribed to the bug, No Privileges Person will see the private bug.
 
     >>> login("mark@hbd.com")
-    >>> bug_upstream_firefox_no_svg_support.bug.subscribe(foobar)
-    <BugSubscription...>
+    >>> ubuntu_team.addMember(no_priv)
 
-    >>> login("foo.bar@canonical.com")
+    >>> login("no-priv@canonical.com")
     >>> params = BugTaskSearchParams(
     ...     status=any(STATUS_NEW, STATUS_ACCEPTED), user=foobar)
     >>> firefox_bugtasks = firefox.searchTasks(params)
