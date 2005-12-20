@@ -433,7 +433,7 @@ ul.app>li.current {
 #pillars {
   background-color: #dee7ec;
   float: left;
-  width: 100%; /* 47% once subpillars are implemented */
+  width: 47%;
 }
 #subpillars {
   float: left;
