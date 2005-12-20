@@ -145,10 +145,12 @@ class BugEmailCommand(EmailCommand):
         else:
             try:
                 bugid = int(bugid)
-                bug = getUtility(IBugSet).get(bugid)
             except ValueError:
                 raise EmailProcessingError(
                     get_error_message('bug-argument-mismatch.txt'))
+
+            try:
+                bug = getUtility(IBugSet).get(bugid)
             except NotFoundError:
                 raise EmailProcessingError(
                     get_error_message('no-such-bug.txt', bug_id=bugid))

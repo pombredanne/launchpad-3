@@ -152,7 +152,6 @@ class MaloneHandler:
 
     def process(self, signed_msg, to_addr, filealias=None):
         commands = self.getCommands(signed_msg)
-
         user, host = to_addr.split('@')
         add_comment_to_bug = False
 

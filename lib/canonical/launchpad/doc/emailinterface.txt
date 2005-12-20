@@ -386,6 +386,18 @@ to edit bug 4:
     ...     process_email(edit_mail)
     ...     transaction.commit()
 
+We define a function which makes it easier to look at the error
+messages as well:
+
+    >>> def print_latest_email():
+    ...     transaction.commit()
+    ...     from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    ...     error_mail = email.message_from_string(raw_message)
+    ...     print "Subject: %s" % error_mail['Subject']
+    ...     print "To: %s" % ', '.join(to_addrs)
+    ...     print
+    ...     print error_mail.get_payload(decode=True)
+
 
 
 bug $bugid
