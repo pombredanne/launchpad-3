@@ -5,8 +5,11 @@
 
 <body>
 
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+  </metal:leftportlets>
+
   <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-editdetails" />
   </metal:rightportlets>
 
   <div metal:fill-slot="main">
@@ -32,7 +35,7 @@
           <td>
             <input tal:attributes="name string:network_${ircnick/id};
                                    value ircnick/network"
-                   type="text" size="40" style="margin-bottom: 0.5em;"/>
+                   type="text" style="margin-bottom: 0.5em;"/>
           </td>
           <td>
             <input type="text"
@@ -62,7 +65,7 @@
 
     <tr>
       <td>
-        <input name="newnetwork" type="text" size="40"
+        <input name="newnetwork" type="text"
                tal:attributes="value view/newnetwork|nothing" />
       </td>
       <td>
