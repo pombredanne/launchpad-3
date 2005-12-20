@@ -59,6 +59,7 @@ from canonical.launchpad.database.person import *
 from canonical.launchpad.database.schema import *
 from canonical.launchpad.database.language import *
 from canonical.launchpad.database.translationgroup import *
+from canonical.launchpad.database.translationimportqueue import *
 from canonical.launchpad.database.translator import *
 from canonical.launchpad.database.processor import *
 from canonical.launchpad.database.manifest import *
