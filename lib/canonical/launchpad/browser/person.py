@@ -87,18 +87,12 @@ from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 
-class PersonNavigation(Navigation, CalendarTraversalMixin):
-
-    usedfor = IPerson
-
-    redirection("+bugs", "+assignedbugs")
-
-    def breadcrumb(self):
-        return self.context.displayname
+class BranchTraversalMixin:
 
     @stepto('+branch')
     def traverse_branch(self):
-        """Branch of this person for the specified product and branch names.
+        """Branch of this person or team for the specified product and
+        branch names.
 
         For example:
 
@@ -121,7 +115,19 @@ class PersonNavigation(Navigation, CalendarTraversalMixin):
         raise NotFoundError
 
 
-class TeamNavigation(Navigation, CalendarTraversalMixin):
+class PersonNavigation(Navigation, CalendarTraversalMixin,
+                       BranchTraversalMixin):
+
+    usedfor = IPerson
+
+    redirection("+bugs", "+assignedbugs")
+
+    def breadcrumb(self):
+        return self.context.displayname
+
+
+class TeamNavigation(Navigation, CalendarTraversalMixin,
+                     BranchTraversalMixin):
 
     usedfor = ITeam
 
