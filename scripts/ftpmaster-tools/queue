@@ -433,9 +433,11 @@ def main():
     parser.add_option("-Q", "--queue",
                       dest="queue", metavar="QUEUE", default="new",
                       help="Which queue to consider")
+
     parser.add_option("-D", "--distro",
                       dest="distro", metavar="DISTRO", default="ubuntu",
                       help="Which distro to look in")
+
     parser.add_option("-R", "--distrorelease",
                       dest="distrorelease", metavar="DISTRORELEASE",
                       default="breezy-autotest",
@@ -455,6 +457,9 @@ def main():
                       default=None,
                       help="Overrides the announcement list for accepts.")
 
+    parser.add_option("-f", "--file", metavar="FILE", default=None,
+                      help="file containing a sequence of command lines.")
+
     options, args = parser.parse_args()
 
     log = logger(options, "queue")
@@ -469,13 +474,37 @@ def main():
         return
 
     queue = name_queue_map[options.queue]
+    distro_name = options.distro
+    distrorelease_name = options.distrorelease
 
     ztm = initZopeless(dbuser=config.uploadqueue.dbuser)
     execute_zcml_for_scripts()
 
+    if options.file:
+        args_list = [args.strip().split() for args in
+                     open(options.file).readlines()]
+    else:
+        args_list = [args]
+
+    for single_args in args_list:
+        if runCommand(queue, distro_name, distrorelease_name, exact_match,
+                      single_args):
+            return 1
+        if not options.dryrun:
+            ztm.commit()
+
+    return 0
+
+def runCommand(queue, distro_name, distrorelease_name, exact_match, args):
+    """Run a sigle command interation.
+
+    Return True is something gets wrong during the operation,
+    False otherwise.
+    """
+    print 'Running: "%s"' % " ".join(args)
     try:
-        distro = getUtility(IDistributionSet).getByName(options.distro)
-        distrorelease = distro[options.distrorelease]
+        distro = getUtility(IDistributionSet).getByName(distro_name)
+        distrorelease = distro[distrorelease_name]
         action = args[0]
         arguments = args[1:]
         queue_action = queue_actions[action]
@@ -492,12 +521,9 @@ def main():
         except QueueActionError, info:
             print info
         else:
-            if options.dryrun:
-                print "Not Commiting, DRYRUN mode"
-                return 1
-            ztm.commit()
-            return 0
-    return 1
+            return False
+
+    return True
 
 if __name__ == '__main__':
     sys.exit(main())
