@@ -35,8 +35,8 @@ class Ticket(SQLBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     title = StringCol(notNull=True)
     description = StringCol(notNull=True)
-    status = EnumCol(schema=TicketStatus, notNull=True,
-        default=TicketStatus.NEW)
+    status = EnumCol(
+        schema=TicketStatus, notNull=True, default=TicketStatus.OPEN)
     priority = EnumCol(schema=TicketPriority, notNull=True,
         default=TicketPriority.NORMAL)
     assignee = ForeignKey(dbName='assignee', notNull=False,
@@ -98,7 +98,7 @@ class Ticket(SQLBase):
     @property
     def is_resolved(self):
         """See ITicket."""
-        return self.status in [TicketStatus.CLOSED, TicketStatus.REJECTED]
+        return self.status in [TicketStatus.ANSWERED, TicketStatus.REJECTED]
 
     def mark_resolved(self, person):
         """See ITicket."""
@@ -134,8 +134,7 @@ class Ticket(SQLBase):
     def can_be_rejected(self):
         """See ITicket."""
         return self.status not in [
-            TicketStatus.CLOSED, TicketStatus.ANSWERED,
-            TicketStatus.REJECTED]
+            TicketStatus.ANSWERED, TicketStatus.REJECTED]
 
     def reject(self, rejector):
         """See ITicket."""
@@ -151,8 +150,8 @@ class Ticket(SQLBase):
 
     @property
     def can_be_reopened(self):
-        return self.status in [TicketStatus.CLOSED, TicketStatus.ANSWERED,
-            TicketStatus.REJECTED]
+        return self.status in [
+            TicketStatus.ANSWERED, TicketStatus.REJECTED]
 
     def reopen(self, reopener):
         """See ITicket."""
@@ -166,6 +165,22 @@ class Ticket(SQLBase):
         self.dateanswered = None
         self.sync()
         return reop
+
+    def acceptAnswer(self, acceptor, current_time=None):
+        """See ITicket."""
+        if current_time is None:
+            current_time = UTC_NOW
+        self.status = TicketStatus.ANSWERED
+        self.dateanswered = current_time
+        for commenter in [message.owner for message in self.messages]:
+            if commenter != self.owner:
+                self.answerer = commenter
+                break
+        else:
+            # Only the submitter commented on the ticket, set him as the
+            # answerer.
+            self.answerer = self.owner
+        self.sync()
 
     # subscriptions
     def subscribe(self, person):

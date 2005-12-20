@@ -37,7 +37,8 @@ class ITicket(IHasOwner, IMessageTarget):
         u"you\N{right single quotation mark}re trying to achieve, what steps "
         "you take, what happens, and what you think should happen instead."))
     status = Choice(
-        title=_('Status'), vocabulary='TicketStatus', default=TicketStatus.NEW)
+        title=_('Status'), vocabulary='TicketStatus',
+        default=TicketStatus.OPEN)
     priority = Choice(
         title=_('Priority'), vocabulary='TicketPriority',
         default=TicketPriority.NORMAL)
@@ -133,6 +134,11 @@ class ITicket(IHasOwner, IMessageTarget):
     def reopen(reopener):
         """Open a ticket that has formerly been closed, or rejected."""
 
+    def acceptAnswer(acceptor):
+        """Mark the ticket as Answered.
+
+        dateanswered will be set to the current time.
+        """
 
     # subscription-related methods
     def subscribe(person):

@@ -128,10 +128,10 @@ class SourcePackageRelease(SQLBase):
     def open_tickets_count(self):
         """See ISourcePackageRelease."""
         results = Ticket.select("""
-            status IN (%s, %s) AND
+            status = %s AND
             distribution = %s AND
             sourcepackagename = %s
-            """ % sqlvalues(TicketStatus.NEW, TicketStatus.OPEN,
+            """ % sqlvalues(TicketStatus.OPEN,
                             self.uploaddistrorelease.distribution.id,
                             self.sourcepackagename.id))
         return results.count()

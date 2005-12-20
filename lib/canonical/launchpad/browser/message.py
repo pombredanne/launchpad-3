@@ -40,10 +40,7 @@ class MessageAddView(SQLObjectAddView):
         if ITicket.providedBy(self.context):
             resolved = kw.get('resolved', None)
             if resolved is not None:
-                self.context.mark_resolved(owner)
-            if owner.id != self.context.owner.id and \
-               self.context.status == TicketStatus.NEW:
-                self.context.accept()
+                self.context.acceptAnswer(owner)
             notify(SQLObjectModifiedEvent(
                 self.context, unmodified_context,
                 edited_fields=['messages', 'status']))
