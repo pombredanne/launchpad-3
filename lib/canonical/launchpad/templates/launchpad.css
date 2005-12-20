@@ -1126,7 +1126,7 @@ Calendar stuff.
   background-image: url(/++resource++info_icon.gif);
   font-size: 85%;
   font-weight: bold;
-  margin: 1em 0em 0em 0em;
+  margin: 1em 0em;
   padding: 0.5em 1em 0.5em 3em;
   background-repeat: no-repeat;
 }
