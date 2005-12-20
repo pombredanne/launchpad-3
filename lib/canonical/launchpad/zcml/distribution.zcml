@@ -186,7 +186,7 @@
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="55" />
+           displayWidth="50" />
         <browser:widget
            field="comment"
            class="zope.app.form.browser.TextAreaWidget"

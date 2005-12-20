@@ -405,6 +405,10 @@ class Navigation:
         if self.newlayer is not None:
             setFirstLayer(request, self.newlayer)
 
+        # store the current context object in the request's
+        # traversed_objects list:
+        request.traversed_objects.append(self.context)
+
         # Next, if there is a breadcrumb for the context, add it to the
         # request's list of breadcrumbs.
         breadcrumb_text = self.breadcrumb()
