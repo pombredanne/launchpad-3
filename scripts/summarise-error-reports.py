@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import sys
 import os
+import re
 import rfc822
 import time
 import datetime
@@ -72,6 +73,10 @@ class ErrorSummary:
         url = msg.getheader('url')
         etype = msg.getheader('exception-type')
         evalue = msg.getheader('exception-value')
+
+        # replace pointer values in exception values with a constant
+        # string.
+        evalue = re.sub("0x[abcdef0-9]+", "INSTANCE-ID", evalue)
 
         if etype in ('RequestExpired', 'RequestQueryTimedOut'):
             self.add_oops(self.expired, etype, evalue, url, oopsid)
