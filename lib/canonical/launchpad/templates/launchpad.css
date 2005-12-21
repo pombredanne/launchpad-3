@@ -437,7 +437,7 @@ ul.app>li.current {
 #pillars {
   background-color: #dee7ec;
   float: left;
-  width: 100%; /* 47% once subpillars are implemented */
+  width: 47%;
 }
 #subpillars {
   float: left;
@@ -1130,7 +1130,7 @@ Calendar stuff.
   background-image: url(/++resource++info_icon.gif);
   font-size: 85%;
   font-weight: bold;
-  margin: 1em 0em 0em 0em;
+  margin: 1em 0em;
   padding: 0.5em 1em 0.5em 3em;
   background-repeat: no-repeat;
 }

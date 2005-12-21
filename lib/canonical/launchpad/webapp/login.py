@@ -22,7 +22,6 @@ from canonical.launchpad.interfaces import ILoginTokenSet, IPersonSet
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.lp.dbschema import LoginTokenType
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from canonical.launchpad.webapp.notification import NOTIFICATION_PARAMETER
 
 class UnauthorizedView(SystemErrorView):
 
@@ -235,10 +234,12 @@ class LoginOrRegister:
         """Returns zero or more hidden inputs that preserve the URL's query."""
         L = []
         for name, value in self.iter_form_items():
-            if name != NOTIFICATION_PARAMETER:
-                L.append('<input type="hidden" name="%s" value="%s" />' %
-                        (name, cgi.escape(value, quote=True)))
+            L.append('<input type="hidden" name="%s" value="%s" />' % (
+                name, cgi.escape(value, quote=True)
+                ))
+                    
         return '\n'.join(L)
+
 
 def logInPerson(request, principal, email):
     """Log the person in. Password validation must be done in callsites."""
@@ -315,7 +316,7 @@ def sendPasswordResetEmail(token, appurl):
     message = template % replacements
 
     subject = "Launchpad: Forgotten Password"
-    simple_sendmail(fromaddress, token.email, subject, message)
+    simple_sendmail(fromaddress, str(token.email), subject, message)
 
 
 
@@ -327,5 +328,5 @@ def sendNewUserEmail(token, appurl):
 
     fromaddress = "The Launchpad Team <noreply@canonical.com>"
     subject = "Launchpad Account Creation Instructions"
-    simple_sendmail(fromaddress, token.email, subject, message)
+    simple_sendmail(fromaddress, str(token.email), subject, message)
 

@@ -46,7 +46,7 @@ Check that the logout page redirects appropriately.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/?loggingout=1&lpnotification=...
+  Location: http://localhost:9000/?loggingout=1
   ...
 
 Check that the logout page redirects appropriately from a more interesting url.
@@ -56,7 +56,7 @@ Check that the logout page redirects appropriately from a more interesting url.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/products/firefox/?loggingout=1&...
+  Location: http://localhost:9000/products/firefox/?loggingout=1
   ...
 
 Check that basic auth works.
@@ -70,11 +70,10 @@ Check that basic auth works.
   ...<input type="submit" value="Log Out" />...
   ...
 
-The login page preserves all the query parameters it is given, except for
-lpnotification.
+The login page preserves all the query parameters it is given
 
   >>> result = http(r"""
-  ... GET /malone/+login?foo=mandrill&foo=bonobo&bar=tsimpson&lpnotification=XXX HTTP/1.1
+  ... GET /malone/+login?foo=mandrill&foo=bonobo&bar=tsimpson HTTP/1.1
   ... """).getBody()
   >>> '<input type="hidden" name="foo" value="mandrill" />' in result
   True
@@ -82,6 +81,4 @@ lpnotification.
   True
   >>> '<input type="hidden" name="bar" value="tsimpson" />' in result
   True
-  >>> '<input type="hidden" name="lpnotification"' in result
-  False
 
