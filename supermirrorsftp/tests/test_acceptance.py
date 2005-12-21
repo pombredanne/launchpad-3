@@ -43,7 +43,6 @@ class AcceptanceTests(unittest.TestCase):
 
         # Point $HOME at a test ssh config and key.
         self.userHome = os.path.abspath(self.mktemp())
-        print 'userHome:', self.userHome
         os.makedirs(os.path.join(self.userHome, '.ssh'))
         os.makedirs(os.path.join(self.userHome, 'bin'))
         shutil.copyfile(
