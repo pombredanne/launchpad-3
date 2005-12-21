@@ -369,11 +369,7 @@ foaf_dashboard = 'Your Launchpad Dashboard'
 
 foaf_index = 'Foaf Home Page'
 
-foaf_mergepeople = 'Merge User Accounts'
-
 foaf_mergerequest_sent = 'Merge User Accounts'
-
-foaf_newaccount = 'Create a New Launchpad Account'
 
 foaf_newteam = 'FOAF: Create a new Team'
 
@@ -381,17 +377,7 @@ foaf_requestmerge_multiple = 'Merge User Accounts'
 
 foaf_requestmerge = 'Merge User Accounts'
 
-foaf_resetpassword = 'Forgotten your Password?'
-
 foaf_todo = 'To-Do List'
-
-foaf_validateemail = 'Validate email address'
-
-foaf_validateteamemail = 'Validate email address'
-
-foaf_validategpg = 'Validate GPG Key'
-
-foaf_validatesignonlygpg = 'Validate Sign-Only GPG Key'
 
 karmaaction_index = 'Karma Actions'
 
@@ -439,6 +425,20 @@ launchpad_requestexpired = 'Request Took Too Long'
 # launchpad_widget_macros doesn't need a title.
 
 logintoken_index = 'Launchpad: redirect to the logintoken page'
+
+logintoken_mergepeople = 'Merge User Accounts'
+
+logintoken_newaccount = 'Create a New Launchpad Account'
+
+logintoken_resetpassword = 'Forgotten your Password?'
+
+logintoken_validateemail = 'Validate email address'
+
+logintoken_validategpg = 'Validate GPG Key'
+
+logintoken_validatesignonlygpg = 'Validate Sign-Only GPG Key'
+
+logintoken_validateteamemail = 'Validate email address'
 
 # main_template has the code to insert one of these titles.
 
