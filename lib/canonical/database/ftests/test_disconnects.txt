@@ -10,7 +10,7 @@ Setup the database
 Make a TCP proxy to postgres. Note that the twisted version needs to match
 the Python version.
 
-    >>> import os, sys
+    >>> import os, sys, os.path
     >>> import canonical.lp
     >>> from canonical.database.ftests import (
     ...     getDBHost, wait_until_proxy_is_ready, wait_until_proxy_is_stopped)
@@ -26,6 +26,8 @@ the Python version.
 Wait for the proxy to start.
 
     >>> wait_until_proxy_is_ready()
+    >>> os.path.exists('twistd.pid')
+    True
     
 Connect to postgres via the proxy
 
