@@ -102,7 +102,7 @@ Let's have a look at an example for a distribution bug:
     ...     owner=foobar, distribution=ubuntu)
 
     >>> sorted(new_bug.notificationRecipientAddresses())
-    [u'foo.bar@canonical.com', u'test@canonical.com']
+    ['foo.bar@canonical.com', 'test@canonical.com']
 
 The distro contact will *not* be subscribed to private bugs:
 
@@ -111,7 +111,7 @@ The distro contact will *not* be subscribed to private bugs:
     ...     owner=foobar, distribution=ubuntu, private=True)
 
     >>> sorted(new_bug.notificationRecipientAddresses())
-    [u'foo.bar@canonical.com']
+    ['foo.bar@canonical.com']
 
 Another example, this time for an upstream:
 
@@ -125,7 +125,7 @@ Another example, this time for an upstream:
     ...     owner=foobar, product=firefox)
 
     >>> sorted(new_bug.notificationRecipientAddresses())
-    [u'foo.bar@canonical.com', u'mark@hbd.com']
+    ['foo.bar@canonical.com', 'mark@hbd.com']
 
 When an upstream does *not* have a specific bug contact set, the
 product.owner is used instead. So, if Firefox's bugcontact is unset,
@@ -138,7 +138,7 @@ Sample Person, the Firefox "owner" will get subscribed instead:
     ...     owner=foobar, product=firefox)
 
     >>> sorted(new_bug.notificationRecipientAddresses())
-    [u'foo.bar@canonical.com', u'test@canonical.com']
+    ['foo.bar@canonical.com', 'test@canonical.com']
 
 The upstream bug contact will *not* be automatically subscribed to
 private bugs:
@@ -148,7 +148,7 @@ private bugs:
     ...     owner=foobar, product=firefox, private=True)
 
     >>> sorted(new_bug.notificationRecipientAddresses())
-    [u'foo.bar@canonical.com']
+    ['foo.bar@canonical.com']
 
 Now let's create a bug on a specific package, which has no package bug
 contacts:
@@ -164,7 +164,7 @@ contacts:
     ...     sourcepackagename=ubuntu_mozilla_firefox.sourcepackagename)
 
     >>> sorted(new_bug.notificationRecipientAddresses())
-    [u'foo.bar@canonical.com', u'test@canonical.com']
+    ['foo.bar@canonical.com', 'test@canonical.com']
 
 Adding a package bug contact for ubuntu_mozilla_firefox will mean that
 that package bug contact gets subscribed to all bugmail on bugs filed
@@ -180,7 +180,7 @@ The team will still *not* be a recipient of bugmail from the previous
 bug we created:
 
     >>> sorted(new_bug.notificationRecipientAddresses())
-    [u'foo.bar@canonical.com', u'test@canonical.com']
+    ['foo.bar@canonical.com', 'test@canonical.com']
 
 But the team will be subscribed to bugmail for future bugs:
 
@@ -191,7 +191,7 @@ But the team will be subscribed to bugmail for future bugs:
     ...     sourcepackagename=ubuntu_mozilla_firefox.sourcepackagename)
 
     >>> sorted(new_bug.notificationRecipientAddresses())
-    [u'foo.bar@canonical.com', u'support@ubuntu.com', u'test@canonical.com']
+    ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
 
 The distribution and package contacts do not get subscribed to private
 bug reports automatically:
@@ -204,4 +204,4 @@ bug reports automatically:
     ...     private=True)
 
     >>> sorted(new_bug.notificationRecipientAddresses())
-    [u'foo.bar@canonical.com']
+    ['foo.bar@canonical.com']
