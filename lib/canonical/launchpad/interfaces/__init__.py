@@ -129,6 +129,7 @@ from canonical.launchpad.interfaces.ticketmessage import *
 from canonical.launchpad.interfaces.ticketreopening import *
 from canonical.launchpad.interfaces.ticketsubscription import *
 from canonical.launchpad.interfaces.translationgroup import *
+from canonical.launchpad.interfaces.translationimportqueue import *
 from canonical.launchpad.interfaces.translator import *
 from canonical.launchpad.interfaces.vpoexport import *
 from canonical.launchpad.interfaces.wikiname import *

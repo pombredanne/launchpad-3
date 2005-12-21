@@ -28,7 +28,7 @@ from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
-    GetitemNavigation, stepthrough, stepto, canonical_url)
+    GetitemNavigation, stepthrough, stepto, canonical_url, redirection)
 
 
 class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -62,6 +62,8 @@ class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
         except ValueError:
             raise NotFoundError
         return self.context.getTicket(ticket_num)
+
+    redirection('+ticket', '+tickets')
 
 
 class DistributionSetNavigation(GetitemNavigation):

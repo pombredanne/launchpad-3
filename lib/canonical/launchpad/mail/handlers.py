@@ -231,7 +231,7 @@ class MaloneHandler:
         except IncomingEmailError, error:
             transaction.abort()
             send_process_error_notification(
-                getUtility(ILaunchBag).user.preferredemail.email,
+                str(getUtility(ILaunchBag).user.preferredemail.email),
                 'Submit Request Failure',
                 error.message, error.failing_command)
 
