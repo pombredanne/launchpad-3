@@ -509,7 +509,8 @@
     </sectiontype>
 
     <sectiontype name="supermirror">
-        <key name="dbuser" datatype="string" default="launchpad" />
+        <key name="dbuser" datatype="string" default="supermirror" 
+            required="yes" />
     </sectiontype>
 
     <sectiontype name="canonical">
