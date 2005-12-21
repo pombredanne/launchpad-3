@@ -75,7 +75,7 @@ class ShipItUnauthorizedView(SystemErrorView):
 class ShipItLoginView(LoginOrRegister):
     """Process the login form and redirect the user to the request page."""
 
-    def get_application_url(self):
+    def getApplicationURL(self):
         return 'https://launchpad.net'
 
     def process_form(self):

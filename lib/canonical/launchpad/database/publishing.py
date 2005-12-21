@@ -116,6 +116,7 @@ class SourcePackageFilePublishing(SQLBase):
                      default=None, notNull=True,
                      schema=PackagePublishingPocket)
 
+
 class BinaryPackageFilePublishing(SQLBase):
     """A binary package file which needs publishing"""
 
@@ -179,7 +180,6 @@ class SourcePackagePublishingView(SQLBase):
     pocket = EnumCol(dbName='pocket', unique=False, default=None,
                      notNull=True, immutable=True,
                      schema=PackagePublishingPocket)
-
 
 
 class BinaryPackagePublishingView(SQLBase):
@@ -293,7 +293,8 @@ class SecureBinaryPackagePublishingHistory(SQLBase):
     def selectByWithEmbargoedEntries(cls, *args, **kwargs):
         return super(SecureBinaryPackagePublishingHistory,
                      cls).selectBy(*args, **kwargs)
-    
+
+
 class SourcePackagePublishingHistory(SQLBase):
     """A source package release publishing record. (excluding embargoed stuff)"""
 
