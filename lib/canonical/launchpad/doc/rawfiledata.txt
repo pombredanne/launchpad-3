@@ -51,6 +51,13 @@ Check that the getRawFileData can retrieve the flie.
 
 Attach another file to the PO template.
 
+But first, we need to disable the previous attachment or this one will be
+rejected.
+
+    >>> from canonical.lp.dbschema import RosettaImportStatus
+    >>> from canonical.launchpad.interfaces import IRawFileData
+    >>> IRawFileData(potemplate).rawimportstatus = RosettaImportStatus.IGNORE
+
     >>> potemplate.attachRawFileData(
     ...     '# This is another test PO template.', True)
 

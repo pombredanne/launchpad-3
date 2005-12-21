@@ -180,8 +180,8 @@ class SignedCodeOfConduct(SQLBase):
         replacements = {'user': self.owner.browsername,
                         'content': content}
         message = template % replacements
-        simple_sendmail(fromaddress, self.owner.preferredemail.email, subject,
-                        message)
+        simple_sendmail(
+            fromaddress, str(self.owner.preferredemail.email), subject, message)
 
 
 class SignedCodeOfConductSet:

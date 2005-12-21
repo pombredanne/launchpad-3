@@ -76,14 +76,6 @@
 
   <browser:page
       for="canonical.launchpad.interfaces.ILaunchpadApplication"
-      template="../templates/launchpad-login.pt"
-      class="canonical.launchpad.webapp.login.LoginOrRegister"
-      permission="zope.Public"
-      name="+register"
-      />
-
-  <browser:page
-      for="canonical.launchpad.interfaces.ILaunchpadApplication"
       template="../templates/launchpad-forgottenpassword.pt"
       class="canonical.launchpad.webapp.login.ForgottenPasswordPage"
       permission="zope.Public"

@@ -26,7 +26,7 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
-    GetitemNavigation, stepthrough, stepto)
+    GetitemNavigation, stepthrough, stepto, redirection)
 
 
 class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -60,6 +60,8 @@ class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
         except ValueError:
             raise NotFoundError
         return self.context.getTicket(ticket_num)
+
+    redirection('+ticket', '+tickets')
 
 
 class DistributionSetNavigation(GetitemNavigation):
