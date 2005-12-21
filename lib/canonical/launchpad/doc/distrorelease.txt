@@ -94,7 +94,7 @@ about Debian:
 There should be NO resolved CVE tasks:
 
     >>> tasks = woody.resolved_cve_bugtasks
-    >>> print len(tasks)
+    >>> print tasks.count()
     0
 
 DistroReleases have components and sections

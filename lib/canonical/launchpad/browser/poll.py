@@ -254,7 +254,7 @@ class PollVoteView(BasePollView):
         """Process the condorcet-voting form to change a user's vote or 
         register a new one."""
         form = self.request.form
-        activeoptions = self.context.getActiveOptions()
+        activeoptions = list(self.context.getActiveOptions())
         newvotes = {}
         for option in activeoptions:
             try:

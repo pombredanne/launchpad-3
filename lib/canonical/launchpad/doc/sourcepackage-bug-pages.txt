@@ -75,7 +75,7 @@ specific release.
 
   >>> general_unresolved_bugs = sourcepackage_bugs_view.general_unresolved_bugs
 
-  >>> len(general_unresolved_bugs)
+  >>> general_unresolved_bugs.count()
   3
 
   >>> taskids = [task.id for task in general_unresolved_bugs]

@@ -25,10 +25,9 @@ def send_ticket_email_reminders():
     mailwrapper = MailWrapper()
 
     answered_tickets = ticketset.getAnsweredTickets()
-    nr_of_tickets = len(answered_tickets)
+    nr_of_tickets = answered_tickets.count()
     if nr_of_tickets > 0:
-        log.info("Found %i answered tickets in the database." % len(
-            answered_tickets))
+        log.info("Found %i answered tickets in the database." % nr_of_tickets)
     else:
         log.info("There are no answered tickets in the database")
 
