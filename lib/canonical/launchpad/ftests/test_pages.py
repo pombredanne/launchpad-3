@@ -5,8 +5,7 @@ Set up the test data in the database first.
 """
 __metaclass__ = type
 
-import os
-import sys
+import os, sys
 import unittest
 import sets
 from harness import LaunchpadFunctionalTestSetup
@@ -84,19 +83,16 @@ def tearDown(test):
     else:
         LaunchpadFunctionalTestSetup().tearDown()
 
-def test_suite(story=None):
+def test_suite():
     suite = unittest.TestSuite()
     pagetestsdir = os.path.abspath(
             os.path.normpath(os.path.join(here, '..', 'pagetests'))
             )
 
-    if story:
-        stories = [os.path.join(pagetestsdir, story)]
-    else:
-        stories = [
-            os.path.join(pagetestsdir, d) for d in os.listdir(pagetestsdir)
-            if not d.startswith('.')
-            ]
+    stories = [
+        os.path.join(pagetestsdir, d) for d in os.listdir(pagetestsdir)
+        if not d.startswith('.')
+        ]
     stories = [d for d in stories if os.path.isdir(d)]
     stories.sort()
 
@@ -132,8 +128,5 @@ def test_suite(story=None):
         suite.addTest(unittest.makeSuite(EndStory))
     return suite
 
-def main(story=None, verbosity=None):
-    r = unittest.TextTestRunner(verbosity=verbosity).run(test_suite(story))
-
 if __name__ == '__main__':
-    main()
+    r = unittest.TextTestRunner().run(test_suite())
