@@ -38,12 +38,6 @@ def main():
     parser = OptionParser(description=__doc__)
     logger_options(parser)
 
-#    parser.add_option(
-#            '', "--skip-duplicates", action="store_true", default=False,
-#            dest="skip_duplicates",
-#            help="Skip duplicate LibraryFileContent merging"
-#            )
-
     (options, args) = parser.parse_args()
 
     if len(args) != 1:
@@ -52,7 +46,6 @@ def main():
     filename = args[0]
 
     log = logger(options)
-#    librariangc.log = log
 
     lockfile = LockFile(_default_lock_file, logger=log)
     try:
@@ -63,11 +56,8 @@ def main():
 
     try:
         ztm = initZopeless(
-                #dbuser=config.supermirror.rewritemap.dbuser, implicitBegin=False
                 dbuser=config.supermirror.dbuser, implicitBegin=False
                 )
-        #if not options.skip_duplicates:
-        #    librariangc.merge_duplicates(ztm)
         outfile = open(filename, 'wb')
         supermirror_rewritemap.main(ztm, outfile)
         outfile.close()
