@@ -11,22 +11,27 @@ Make a TCP proxy to postgres. Note that the twisted version needs to match
 the Python version.
 
     >>> import os, sys, os.path
+    >>> from subprocess import Popen, PIPE, STDOUT
     >>> import canonical.lp
     >>> from canonical.database.ftests import (
     ...     getDBHost, wait_until_proxy_is_ready, wait_until_proxy_is_stopped)
     >>> dbhost = getDBHost()
     >>> ver = sys.version[:3]
     >>> cmd = ('mktap%s portforward --port 5555 --dest_port 5432 '
-    ...        '--host %s' % (ver, dbhost))
-    >>> os.system(cmd)
+    ...        '--host %s' % (ver, dbhost)).split()
+    >>> proc = Popen(cmd, stdout=PIPE, stderr=STDOUT, stdin=PIPE)
+    >>> proc.wait()
     0
-    >>> os.system('twistd%s -of portforward.tap' % ver)
-    0
+    >>> tap_cmd = [
+    ...     'twistd%s' % ver, '-onf', 'portforward.tap',
+    ...     '--pidfile=portforward.pid', '--logfile=twistd.log',
+    ...     ]
+    >>> tap = Popen(tap_cmd, stdout=PIPE, stderr=STDOUT, stdin=PIPE)
 
 Wait for the proxy to start.
 
     >>> wait_until_proxy_is_ready()
-    >>> os.path.exists('twistd.pid')
+    >>> tap.poll() is None
     True
     
 Connect to postgres via the proxy
@@ -45,7 +50,9 @@ Check that the connection is working normally
 
 Break the connection by stopping the proxy 
 
-    >>> os.system('kill `cat twistd.pid`')
+    >>> from signal import SIGTERM
+    >>> os.kill(tap.pid, SIGTERM)
+    >>> tap.wait()
     0
 
 Wait for the proxy to stop.
@@ -54,8 +61,9 @@ Wait for the proxy to stop.
 
 And restart it.
 
-    >>> os.system('twistd%s -of portforward.tap' % ver)
-    0
+    >>> tap = Popen(tap_cmd, stdout=PIPE, stderr=STDOUT, stdin=PIPE)
+    >>> tap.poll() is None
+    True
     >>> wait_until_proxy_is_ready()
 
 Now using our connection should fail
@@ -82,10 +90,13 @@ Close our connection
 
 Clean up the proxy.
 
-    >>> os.system('kill `cat twistd.pid`')
-    0
+    >>> os.kill(tap.pid, SIGTERM)
+    >>> tap.wait()
+    -15
     >>> os.remove('twistd.log')
     >>> os.remove('portforward.tap')
+    >>> if os.path.exists('portforward.pid'):
+    ...     os.remove('portforward.pid')
 
 Tear down the database
 
