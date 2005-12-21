@@ -38,8 +38,8 @@ class AcceptanceTests(unittest.TestCase):
 
         # Create a local branch with one revision
         self.local_branch = ScratchBranch(files=['foo'])
-        self.local_branch.add('foo')
-        self.local_branch.commit('Added foo')
+        self.local_branch.working_tree().add('foo')
+        self.local_branch.working_tree().commit('Added foo')
 
         # Point $HOME at a test ssh config and key.
         self.userHome = os.path.abspath(self.mktemp())
