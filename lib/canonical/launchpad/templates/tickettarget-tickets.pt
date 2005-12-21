@@ -27,7 +27,7 @@
   </tal:x>
 
   <p tal:condition="not:context/tickets">
-    There are no support requests currently registered for
+    No support requests have been made for
     <span tal:replace="context/displayname">Ubuntu 5.04</span>.
   </p>
 

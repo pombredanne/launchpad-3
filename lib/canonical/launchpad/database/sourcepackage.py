@@ -413,7 +413,8 @@ class SourcePackage:
 
     def newTicket(self, owner, title, description):
         """See ITicketTarget."""
-        return Ticket(title=title, description=description, owner=owner,
+        return Ticket(
+            title=title, description=description, owner=owner,
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
 

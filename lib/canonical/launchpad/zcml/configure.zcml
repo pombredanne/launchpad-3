@@ -73,7 +73,6 @@
     <include file="poll.zcml" />
     <include file="pomsgid.zcml" />
     <include file="pomsgset.zcml" />
-    <include file="potemplatename.zcml" />
     <include file="potemplate.zcml" />
     <include file="potemplatename.zcml" />
     <include file="potmsgset.zcml" />
@@ -105,6 +104,7 @@
     <include file="sprintattendance.zcml" />
     <include file="sprintspecification.zcml" />
     <include file="ticket.zcml" />
+    <include file="ticket-events.zcml" />
     <include file="ticketreopening.zcml" />
     <include file="ticketsubscription.zcml" />
     <include file="tickettarget.zcml" />
@@ -114,6 +114,7 @@
     <include file="teamparticipation.zcml" />
     <include file="team-subscriptions.zcml" />
     <include file="translationgroup.zcml" />
+    <include file="translationimportqueue.zcml" />
     <include file="translator.zcml" />
     <include file="wikiname.zcml" />
     <include file="component.zcml" />

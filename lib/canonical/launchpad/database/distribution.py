@@ -32,7 +32,9 @@ from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.ticket import Ticket
 from canonical.launchpad.database.publishing import (
-    SourcePackageFilePublishing, BinaryPackageFilePublishing)
+    SourcePackageFilePublishing, BinaryPackageFilePublishing,
+    SourcePackagePublishing)
+from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.build import Build
 
@@ -243,7 +245,8 @@ class Distribution(SQLBase):
 
     def newTicket(self, owner, title, description):
         """See ITicketTarget."""
-        return Ticket(title=title, description=description, owner=owner,
+        return Ticket(
+            title=title, description=description, owner=owner,
             distribution=self)
 
     def getTicket(self, ticket_num):

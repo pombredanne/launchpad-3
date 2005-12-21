@@ -890,8 +890,9 @@ class BinaryPackagePublisher:
             dateremoved = None,
             )
 
-        log.info('BinaryPackage %s-%s published.' % (
-            binarypackage.binarypackagename.name, binarypackage.version))
+        log.info('BinaryPackage %s-%s published into %s.' % (
+            binarypackage.binarypackagename.name, binarypackage.version,
+            self.distroarchrelease.architecturetag))
 
 
     def _checkPublishing(self, binarypackage, distroarchrelease):

@@ -39,7 +39,7 @@
 
   </form>
 
-  <h2>Most Active Projects</h2>
+  <h2>Featured Products</h2>
 
   <table>
     <tbody>
@@ -61,8 +61,7 @@
           <img alt="" src="/++resource++product_icon.gif" />
         </td>
         <td>
-          <b><a href="/products/gnomebaker">GnomeBaker</a>
-          - CD burning application</b>
+          <b><a href="/products/gnomebaker">GnomeBaker</a></b>
           <p class="lesser">
       GnomeBaker is a popular CD burning GUI application for the Gnome desktop
       environment. It uses the Launchpad primarily for translation services
@@ -75,12 +74,13 @@
           <img alt="" src="/++resource++product_icon.gif" />
         </td>
         <td>
-          <b><a href="/products/bazaar">Bazaar</a>
-          - distributed revision control</b>
+          <b><a href="/products/bzr">Bazaar-NG</a></b>
           <p class="lesser">
-      Bazaar is a distributed revision control system that is based on Arch. It
-      uses the Launchpad for bug tracking.
-          </p>      
+      Bazaar-NG (or bzr) is a "next-generation" distributed revision
+      control system that is free, written in Python, and with an
+      interface similar to CVS and Subversion. It uses the Launchpad for
+      bug tracking.
+          </p>
         </td>
       </tr>
     </tbody>

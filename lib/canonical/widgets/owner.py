@@ -3,10 +3,12 @@
 
 __metaclass__ = type
 
+from zope.component import getUtility
 from zope.interface import implements, Interface
 from zope.app.form.interfaces import IInputWidget
 from zope.app.form.browser.interfaces import IBrowserWidget
-from canonical.launchpad.interfaces import IPerson
+
+from canonical.launchpad.interfaces import ILaunchBag
 
 class RequestWidget(object):
     '''A widget that sets itself to a value calculated from request
@@ -68,6 +70,6 @@ class IUserWidget(Interface):
 class HiddenUserWidget(RequestWidget):
     implements(IUserWidget)
     def getInputValue(self):
-        return IPerson(self.request.principal)
+        return getUtility(ILaunchBag).user
 
 

@@ -21,7 +21,7 @@
       account named <em><strong tal:content="context/requester/name" /></em>. 
       To complete the merge, simply enter the Launchpad password of the
       <strong tal:content="context/requester/name" /> account on the
-      form bellow and submit it.</p>
+      form below and submit it.</p>
 
       <form autocomplete="off" name="merge" method="POST">
         <div class="field">

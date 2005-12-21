@@ -35,6 +35,8 @@ class DistributionSourcePackageReleaseOverviewMenu(ApplicationMenu):
 class DistributionSourcePackageReleaseNavigation(Navigation):
     usedfor = IDistributionSourcePackageRelease
 
+    def breadcrumb(self):
+        return self.context.version
 
 class DistributionSourcePackageReleaseView:
 

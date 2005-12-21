@@ -118,10 +118,10 @@ fmt:text-to-html knows how to linkify URLs:
 
     >>> text = (
     ...     'http://localhost:8086/bar/baz/foo.html\n'
-    ...     'http://localhost:8086/bar/baz/foo.bar.html\n'
-    ...     'http://localhost:8086/bar/baz/foo.bar.html.\n'
+    ...     'ftp://localhost:8086/bar/baz/foo.bar.html\n'
+    ...     'sftp://localhost:8086/bar/baz/foo.bar.html.\n'
     ...     'http://localhost:8086/bar/baz/foo.bar.html;\n'
-    ...     'http://localhost:8086/bar/baz/foo.bar.html:\n'
+    ...     'news://localhost:8086/bar/baz/foo.bar.html:\n'
     ...     'http://localhost:8086/bar/baz/foo.bar.html?\n'
     ...     'http://localhost:8086/bar/baz/foo.bar.html,\n'
     ...     '<http://localhost:8086/bar/baz/foo.bar.html>\n'
@@ -142,10 +142,10 @@ fmt:text-to-html knows how to linkify URLs:
     ...     'http://localhost/bar/baz/foo.bar.html?a=b&b=a:\n')
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
     <p><a rel="nofollow" href="http://localhost:8086/bar/baz/foo.html">http://localhost:8086/bar/baz/foo.html</a><br />
-    <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a><br />
-    <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>.<br />
+    <a rel="nofollow" href="ftp://localhost:8086/bar/baz/foo.bar.html">ftp://localhost:8086/bar/baz/foo.bar.html</a><br />
+    <a rel="nofollow" href="sftp://localhost:8086/bar/baz/foo.bar.html">sftp://localhost:8086/bar/baz/foo.bar.html</a>.<br />
     <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>;<br />
-    <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>:<br />
+    <a rel="nofollow" href="news://localhost:8086/bar/baz/foo.bar.html">news://localhost:8086/bar/baz/foo.bar.html</a>:<br />
     <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>?<br />
     <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>,<br />
     &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;<br />

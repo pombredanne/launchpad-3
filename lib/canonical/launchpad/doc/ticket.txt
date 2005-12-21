@@ -2,27 +2,226 @@
 Ticket Tracking System
 ======================
 
-Launchpad includes a tech support ticket tracker.
+ITicketTarget
+-------------
 
-We should be able to get a ticket for a distribution, or a source package,
-or a product, by ticket number. If there is no such ticket, we should get a
-None
+Launchpad includes a tech support ticket tracker. Currently tickets can
+be created on products, distributions and source packages. To indicate
+that tickets can be created on something, ITicketTarget is used.
 
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ... IDistributionSet, IProductSet, ISourcePackageNameSet)
-    >>> from canonical.launchpad.database import SourcePackage
-    >>> distroset = getUtility(IDistributionSet)
-    >>> spnset = getUtility(ISourcePackageNameSet)
-    >>> productset = getUtility(IProductSet)
-    >>> p = productset.get(1)
-    >>> print p.getTicket(34243)
-    None
-    >>> d = distroset.get(1)
-    >>> print d.getTicket(3242343)
-    None
-    >>> s = spnset.get(1)
-    >>> sp = d.getSourcePackage(s)
-    >>> print sp.getTicket(3234353453)
-    None
+    >>> from canonical.launchpad.interfaces import ITicketTarget
 
+Let's check that the current ticket targets provide the necessary
+interface, methods and attributes.
+
+Product
+^^^^^^^
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> firefox = getUtility(IProductSet)['firefox']
+    >>> verifyObject(ITicketTarget, firefox)
+    True
+
+Create a ticket:
+
+    >>> login('test@canonical.com')
+    >>> sample_person = getUtility(ILaunchBag).user
+    >>> firefox_ticket = firefox.newTicket(
+    ...     sample_person, "Firefox ticket", "Unable to use Firefox")
+    >>> firefox_ticket.target == firefox
+    True
+
+The submitter, Sample Person, got subscribed to the ticket:
+
+    >>> sample_person in [
+    ...     subscription.person
+    ...     for subscription in firefox_ticket.subscriptions]
+    True
+
+See all the tickets:
+
+    >>> [(ticket.id, ticket.title) for ticket in firefox.tickets()]
+    [(8L, u'Firefox ticket'),
+     (6, u"Newly installed plug-in doesn't seem to be used"),
+     (4, u'Firefox loses focus and gets stuck'),
+     (2, u'Problem showing the SVG demo on W3C site'),
+     (1, u'Firefox cannot render Bank Site')]
+
+Get an existing ticket:
+
+    >>> ticket_four = firefox.getTicket(4)
+    >>> ticket_four.title
+    u'Firefox loses focus and gets stuck'
+
+Get a non-existing ticket, or a ticket for another target:
+
+    >>> firefox.getTicket(12345) is None
+    True
+
+    >>> firefox.getTicket(3) is None
+    True
+
+
+Distribution
+^^^^^^^^^^^^
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> verifyObject(ITicketTarget, ubuntu)
+    True
+
+Create a ticket:
+
+    >>> ubuntu_ticket = ubuntu.newTicket(
+    ...     sample_person, "Ubuntu ticket", "Unable to use Ubuntu")
+    >>> ubuntu_ticket.target == ubuntu
+    True
+
+The submitter, Sample Person, got subscribed to the ticket:
+
+    >>> sample_person in [
+    ...     subscription.person
+    ...     for subscription in ubuntu_ticket.subscriptions]
+    True
+
+See all the tickets:
+
+    >>> [(ticket.id, ticket.title) for ticket in ubuntu.tickets()]
+    [(9L, u'Ubuntu ticket'),
+     (7, u'Slow system'),
+     (5, u'Installation failed'),
+     (3, u'Firefox is slow and consumes too much RAM')]
+
+Get an existing ticket:
+
+    >>> ticket_three = ubuntu.getTicket(3)
+    >>> ticket_three.title
+    u'Firefox is slow and consumes too much RAM'
+
+Get a non-existing ticket, or a ticket for another target:
+
+    >>> ubuntu.getTicket(12345) is None
+    True
+
+    >>> ubuntu.getTicket(4) is None
+    True
+
+Source Package
+^^^^^^^^^^^^^^
+
+A source package is a special ITicketTarget. It supports all the method
+and attributes, but the tickets associated with a source package wont'
+have the source package as their target. Instead the source package's
+distribution will be the target.
+
+    >>> firefox_package = ubuntu.currentrelease.getSourcePackage(
+    ...     'mozilla-firefox')
+    >>> verifyObject(ITicketTarget, firefox_package)
+    True
+
+Create a ticket:
+
+    >>> firefox_package_ticket = firefox_package.newTicket(
+    ...     sample_person, "Ubuntu Firefox ticket",
+    ...     "Unable to use Firefox in Ubuntu.")
+    >>> firefox_package_ticket.target == ubuntu
+    True
+
+The submitter, Sample Person, got subscribed to the ticket:
+
+    >>> sample_person in [
+    ...     subscription.person
+    ...     for subscription in firefox_package_ticket.subscriptions]
+    True
+
+See all the tickets:
+
+    >>> [(ticket.id, ticket.title) for ticket in firefox_package.tickets()]
+    [(10L, u'Ubuntu Firefox ticket'),
+     (3, u'Firefox is slow and consumes too much RAM')]
+
+Get an existing ticket:
+
+    >>> ticket_three = firefox_package.getTicket(3)
+    >>> ticket_three.title
+    u'Firefox is slow and consumes too much RAM'
+
+Get a non-existing ticket, or a ticket for another target:
+
+    >>> firefox_package.getTicket(12345) is None
+    True
+
+    >>> firefox_package.getTicket(5) is None
+    True
+
+
+ITicket
+-------
+
+Now we take a look at a ticket and see what we can do with it.
+Sample Person was the one who filed the ticket, so he can close the
+ticket if he thinks it's not relevant anymore:
+
+    >>> firefox_ticket.mark_resolved(sample_person)
+    >>> firefox_ticket.status.title
+    'Closed'
+
+He can also reopen it:
+
+    >>> firefox_ticket.reopen(sample_person)
+    <TicketReopening at ...>
+    >>> firefox_ticket.status.title
+    'Open'
+
+Now let's log in as another, non admin, to show that anyone can edit a
+ticket. First of all the title and description don't say much about the
+problem, so let's ask Sample Person to clarify.
+
+    >>> login('no-priv@canonical.com')
+    >>> no_priv = getUtility(ILaunchBag).user
+    >>> comment = firefox_ticket.newMessage(
+    ...     no_priv, firefox_ticket.followup_subject,
+    ...     'Could you please describe what the problem is?')
+
+We also assign the ticket to ourselves to show that we're working on
+the issue.
+
+    >>> firefox_ticket.assignee = no_priv
+
+Sample Person replies:
+
+    >>> login('test@canonical.com')
+    >>> sample_person = getUtility(ILaunchBag).user
+    >>> comment = firefox_ticket.newMessage(
+    ...     sample_person, firefox_ticket.followup_subject,
+    ...     'When I start Firefox, all I get is a blank page. I want to '
+    ...     'have a search page at start-up?')
+
+Now it's clear what the problem is, so let's edit the title and
+description to describe the problem:
+
+    >>> login('no-priv@canonical.com')
+    >>> firefox_ticket.title = 'No home page is set.'
+    >>> firefox_ticket.description = (
+    ...     'When Firefox is started, an empty page is shown. I want a '
+    ...     'search page to be shown.')
+
+Let's help Sample Person with his problem by providing an answer:
+
+    >>> comment = firefox_ticket.newMessage(
+    ...     no_priv, firefox_ticket.followup_subject,
+    ...     "Go to 'http://www.google.com', enter the preferences "
+    ...     "dialog, and choose 'Use Current Page'.")
+    >>> firefox_ticket.mark_resolved(no_priv)
+    >>> firefox_ticket.status.title
+    'Answered'
+
+Sample Person is happy with the answer, so he closes the ticket:
+
+    >>> login('test@canonical.com')
+    >>> comment = firefox_ticket.newMessage(
+    ...     sample_person, firefox_ticket.followup_subject, 'Thanks!')
+    >>> firefox_ticket.mark_resolved(sample_person)
+    >>> firefox_ticket.status.title
+    'Closed'

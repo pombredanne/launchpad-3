@@ -47,12 +47,6 @@
       <a tal:attributes="href context/teamowner/fmt:url"
          tal:content="context/teamowner/browsername">sabdfl</a><br />
 
-      <tal:block condition="context/teamdescription">
-        <b>Description:</b>
-        <span tal:replace="context/teamdescription">DESCRIPTION</span>
-        <br />
-      </tal:block>
-               
       <b>Membership policy:</b>
       <span tal:replace="context/subscriptionpolicy/title">Open team</span>.
       <span tal:replace="context/subscriptionpolicy/description">More
