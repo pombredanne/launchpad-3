@@ -123,12 +123,14 @@ from canonical.launchpad.interfaces.sprint import *
 from canonical.launchpad.interfaces.sprintattendance import *
 from canonical.launchpad.interfaces.sprintspecification import *
 from canonical.launchpad.interfaces.ssh import *
+from canonical.launchpad.interfaces.teammembership import *
 from canonical.launchpad.interfaces.ticket import *
 from canonical.launchpad.interfaces.ticketbug import *
 from canonical.launchpad.interfaces.ticketmessage import *
 from canonical.launchpad.interfaces.ticketreopening import *
 from canonical.launchpad.interfaces.ticketsubscription import *
 from canonical.launchpad.interfaces.translationgroup import *
+from canonical.launchpad.interfaces.translationimportqueue import *
 from canonical.launchpad.interfaces.translator import *
 from canonical.launchpad.interfaces.vpoexport import *
 from canonical.launchpad.interfaces.wikiname import *

@@ -7,7 +7,7 @@
   <div class="portletBody portletContent">
 
     <ul tal:condition="country/languages">
-            
+
       <li class="languages"
           tal:repeat="lang country/languages">
         <span tal:replace="lang/englishname" />
@@ -18,7 +18,7 @@
     <tal:block condition="not: country/languages">
       No languages are currently registered as being spoken in <span
       tal:replace="country/name">country</span>. Please
-      <a href="mailto:rosetta-users@lists.ubuntu.com">contact the Rosetta
+      <a href="mailto:rosetta@launchpad.net">contact the Rosetta
       admins</a> to correct this.
     </tal:block>
 

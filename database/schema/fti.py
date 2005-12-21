@@ -15,19 +15,8 @@ from canonical.launchpad.scripts import logger, logger_options, db_options
 
 # Defines parser and locale to use.
 DEFAULT_CONFIG = 'default'
-TSEARCH2_SQL = '/usr/share/postgresql'
-if os.path.isdir('/usr/share/postgresql/7.4'):
-    TSEARCH2_SQL = TSEARCH2_SQL + '/7.4'
-elif os.path.isdir('/usr/share/postgresql/8.0'):
-    TSEARCH2_SQL = TSEARCH2_SQL + '/8.0'
-TSEARCH2_SQL = TSEARCH2_SQL + '/contrib/tsearch2.sql'
-if not os.path.exists(TSEARCH2_SQL):
-    # Can't log because logger not yet setup
-    raise RuntimeError('Unable to find tsearch2.sql')
-# This will no longer be required with PostgreSQL 8.0+
-PATCH_SQL = os.path.join(
-        os.path.dirname(__file__), 'regprocedure_update.sql'
-        )
+
+PGSQL_BASE = '/usr/share/postgresql'
 
 A, B, C, D = 'ABCD' # tsearch2 ranking constants
 
@@ -130,11 +119,14 @@ def quote_identifier(identifier):
     return '"%s"' % identifier
 
 
-def execute(con, sql, results=False):
+def execute(con, sql, results=False, args=None):
     sql = sql.strip()
     log.debug('* %s' % sql)
     cur = con.cursor()
-    cur.execute(sql)
+    if args is None:
+        cur.execute(sql)
+    else:
+        cur.execute(sql, args)
     if results:
         return list(cur.fetchall())
     else:
@@ -205,6 +197,8 @@ def setup(con, configuration=DEFAULT_CONFIG):
         execute(con, 'SET search_path = ts2, public;')
         con.commit()
 
+    tsearch2_sql_path = get_tsearch2_sql_path(con)
+
     try:
         execute(con, 'SELECT * from pg_ts_cfg')
         log.debug('tsearch2 already installed')
@@ -221,8 +215,14 @@ def setup(con, configuration=DEFAULT_CONFIG):
         c = p.tochild
         print >> c, "SET client_min_messages=ERROR;"
         print >> c, "CREATE SCHEMA ts2;"
-        print >> c, open(TSEARCH2_SQL).read().replace('public;','ts2, public;')
-        print >> c, open(PATCH_SQL).read()
+        print >> c, open(tsearch2_sql_path).read().replace(
+                'public;','ts2, public;'
+                )
+        if get_pgversion(con).startswith('7.4.'):
+            patch_sql_path = os.path.join(
+                    os.path.dirname(__file__), 'regprocedure_update.sql'
+                    )
+            print >> c, open(patch_sql_path).read()
         p.tochild.close()
         rv = p.wait()
         if rv != 0:
@@ -409,12 +409,68 @@ def setup(con, configuration=DEFAULT_CONFIG):
     con.commit()
 
 
+def needs_refresh(con, table, columns):
+    '''Return true if the index needs to be rebuilt.
+
+    We know this by looking in our cache to see what the previous
+    definitions were, and the --force command line argument
+    '''
+    current_columns = repr(sorted(columns)) # Convert to a string
+
+    existing = execute(
+        con, "SELECT columns FROM FtiCache WHERE tablename=%(table)s",
+        results=True, args=vars()
+        )
+    if len(existing) == 0:
+        execute(con, """
+            INSERT INTO FtiCache (tablename, columns) VALUES (
+                %(table)s, %(current_columns)s
+                )
+            """, args=vars())
+        return True
+
+    if not options.force:
+        previous_columns = existing[0][0]
+        if repr(columns) == previous_columns:
+            return False
+
+    execute(con, """
+        UPDATE FtiCache SET columns = %(current_columns)s
+        WHERE tablename = %(table)s
+        """, args=vars())
+
+    return True
+
+
+def get_pgversion(con):
+    rows = execute(con, r"show server_version", results=True)
+    return rows[0][0]
+
+
+def get_tsearch2_sql_path(con):
+    pgversion = get_pgversion(con)
+    if pgversion.startswith('8.0.'):
+        path = os.path.join(PGSQL_BASE, '8.0', 'contrib', 'tsearch2.sql')
+    elif pgversion.startswith('7.4.'):
+        path = os.path.join(PGSQL_BASE, '7.4', 'contrib', 'tsearch2.sql')
+    else:
+        raise RuntimeError('Unknown version %s' % pgversion)
+
+    assert os.path.exists(path), '%s does not exist'
+
+    return path
+
+
 def main():
     con = connect(lp.dbuser)
     setup(con)
     if not options.setup:
-        for row in ALL_FTI:
-            fti(con, *row)
+        for table, columns in ALL_FTI:
+            if needs_refresh(con, table, columns):
+                log.info("Rebuilding full text index on %s", table)
+                fti(con, table, columns)
+            else:
+                log.info("No need to rebuild full text index on %s", table)
 
 
 if __name__ == '__main__':
@@ -422,7 +478,12 @@ if __name__ == '__main__':
     parser.add_option(
             "-s", "--setup-only", dest="setup",
             action="store_true", default=False,
-            help="Only install tsearch2 - don't build the indexes",
+            help="Only install tsearch2 - don't build the indexes.",
+            )
+    parser.add_option(
+            "-f", "--force", dest="force",
+            action="store_true", default=False,
+            help="Force a rebuild of all full text indexes.",
             )
     db_options(parser)
     logger_options(parser)

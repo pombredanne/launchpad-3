@@ -47,7 +47,7 @@ Check changelog & buildlog pages:
   HTTP/1.1 200 Ok
   Content-Length: ...
   ...i386 build of pmount 0.1-1 in ubuntu warty (2005-10-01)...
-  
+
 
 Check protected reset functionality.
 
@@ -58,9 +58,9 @@ First, Non authorized:
   ... """)
   HTTP/1.1 303 See Other
   Content-Length: ...
-  Location: http://localhost:9000/+builds/+build/9/+reset/+login?lpnotification=... 
+  Location: http://localhost:9000/+builds/+build/9/+reset/+login...
   ...
- 
+
 Admins have access to the page:
 
   >>> print http(r"""

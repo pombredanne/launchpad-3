@@ -554,6 +554,20 @@ class ILaunchpadBrowserApplicationRequest(
         'List of IBreadcrumb objects.  This is appended to during traversal'
         ' so that a page can render appropriate breadcrumbs.')
 
+    traversed_objects = Attribute(
+        'List of traversed objects.  This is appended to during traversal.')
+
+    def getNearest(*some_interfaces):
+        """Searches for the last traversed object to implement one of
+        the given interfaces.
+
+        Returns an (object, matching_interface) tuple.  If the object
+        implements more than one of the interfaces, the first one is
+        returned.
+
+        If no matching object is found, the tuple (None, None) is returned.
+        """
+
 
 class IBreadcrumb(Interface):
     """A breadcrumb link.  IBreadcrumbs get put into request.breadcrumbs."""

@@ -32,6 +32,8 @@ class DistroArchReleaseBinaryPackageNavigation(GetitemNavigation):
 
     usedfor = IDistroArchReleaseBinaryPackage
 
+    def breadcrumb(self):
+        return self.context.binarypackagename.name
 
 
 class DistroArchReleaseBinaryPackageView:

@@ -19,12 +19,7 @@ with all of these context objects.-->
 
 <div metal:fill-slot="main">
 
-  <h1>Related Bounties</h1>
-
-  <p class="documentDescription">These are the bounties that are related to
-  <span tal:replace="context/displayname">Context</span>. Click on a column
-  header to sort by that header.
-  </p>
+  <h1>Bounties related to <tal:thing replace="context/displayname" /></h1>
 
   <tal:block condition="context/bounties">
 
@@ -61,16 +56,15 @@ with all of these context objects.-->
 
   <tal:block condition="not: context/bounties">
 
-    <p class="portalMessage">
-      No bounties currently registered for
+    <p>
+      No bounties are currently registered for
       <span tal:replace="context/displayname">Mozilla</span>.
     </p>
 
     <p>
-      If you know of any bounties that are available for
-      <span tal:replace="context/displayname">Mozilla</span> then you can
-      <a href="+addbounty">register them in the Launchpad</a> to make it
-      easier for people to find them.
+      Know of a bounty that should be listed here?
+      <a href="+addbounty">Register it in Launchpad</a>,
+      so it&rsquo;s easier for people to find.
     </p>
 
   </tal:block>
