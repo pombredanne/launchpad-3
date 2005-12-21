@@ -286,6 +286,8 @@ default_editform = 'Default "Edit" Page'
 
 distribution_allpackages = ContextTitle('All packages in %s')
 
+distribution_bugcontact = ContextTitle('Edit Bug Contact for %s')
+
 distribution_cvereport = ContextTitle('CVE Reports for %s')
 
 distribution_members = ContextTitle('%s distribution members')
@@ -305,6 +307,8 @@ distribution_builds = ContextTitle('%s Builds')
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
 distributionsourcepackage_index = ContextTitle('%s')
+
+distributionsourcepackage_manage_bugcontacts = ContextTitle('Bug Contacts for %s')
 
 distributionsourcepackagerelease_index = ContextTitle('%s')
 
@@ -595,6 +599,8 @@ potemplatename_index = ContextTitle('%s in Rosetta')
 potemplatenames_index = 'Template names in Launchpad'
 
 product_add = 'Register a product with Launchpad'
+
+product_bugcontact = ContextTitle('Edit Bug Contact for %s')
 
 product_bugs = ContextDisplayName('%s upstream bug reports')
 

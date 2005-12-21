@@ -293,5 +293,26 @@ class IBugSet(IAddFormCustomization):
         binarypackagename=None, product=None, comment=None,
         description=None, msg=None, summary=None, datecreated=None,
         title=None, private=False, owner=None):
-        """Create a new bug, using the given details."""
+        """Create a bug and return it.
+
+        Things to note when using this factory:
+
+          * if no description is passed, the comment will be used as the
+            description
+
+          * if summary is not passed then the summary will be the
+            first sentence of the description
+
+          * the reporter will be subscribed to the bug
+
+          * distribution, product and package contacts (whichever ones are
+            applicable based on the bug report target) will bug subscribed to
+            all *public bugs only*
+
+          * for public upstreams bugs where there is no upstream bug contact,
+            the product owner will be subscribed instead
+
+          * if either product or distribution is specified, an appropiate
+            bug task will be created
+        """
 

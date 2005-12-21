@@ -542,28 +542,14 @@ class BugTaskSet:
         # Don't show duplicate bug reports.
         filters += ' AND Bug.duplicateof IS NULL'
 
-        maintainedPackageBugTasksQuery = ('''
-            BugTask.sourcepackagename = Maintainership.sourcepackagename AND
-            BugTask.distribution = Maintainership.distribution AND
-            Maintainership.maintainer = TeamParticipation.team AND
-            TeamParticipation.person = %s''' % person.id)
-
-        maintainedPackageBugTasks = BugTask.select(
-            maintainedPackageBugTasksQuery + filters,
-            clauseTables=['Maintainership', 'TeamParticipation', 'BugTask',
-                          'Bug'])
-
         maintainedProductBugTasksQuery = ('''
             BugTask.product = Product.id AND
             Product.owner = TeamParticipation.team AND
             TeamParticipation.person = %s''' % person.id)
 
-        maintainedProductBugTasks = BugTask.select(
+        return BugTask.select(
             maintainedProductBugTasksQuery + filters,
             clauseTables=['Product', 'TeamParticipation', 'BugTask', 'Bug'])
-
-        return maintainedProductBugTasks.union(
-            maintainedPackageBugTasks, orderBy=orderBy)
 
 
 def BugTaskFactory(context, **kw):
