@@ -1207,3 +1207,42 @@ COMMENT ON TABLE Continent IS 'A continent in this huge world.';
 COMMENT ON COLUMN Continent.code IS 'A two-letter code for a continent.';
 COMMENT ON COLUMN Continent.name IS 'The name of the continent.';
 
+-- DistributionMirror
+COMMENT ON TABLE DistributionMirror IS 'A mirror of a given distribution.';
+COMMENT ON COLUMN DistributionMirror.distribution IS 'The distribution to which the mirror refers to.';
+COMMENT ON COLUMN DistributionMirror.name IS 'The unique name of the mirror.';
+COMMENT ON COLUMN DistributionMirror.http_base_url IS 'The HTTP URL used to access the mirror.';
+COMMENT ON COLUMN DistributionMirror.ftp_base_url IS 'The FTP URL used to access the mirror.';
+COMMENT ON COLUMN DistributionMirror.rsync_base_url IS 'The Rsync URL used to access the mirror.';
+COMMENT ON COLUMN DistributionMirror.displayname IS 'The displayname of the mirror.';
+COMMENT ON COLUMN DistributionMirror.description IS 'A description of the mirror.';
+COMMENT ON COLUMN DistributionMirror.owner IS 'The owner of the mirror.';
+COMMENT ON COLUMN DistributionMirror.speed IS 'The speed of the mirror\'s Internet link.';
+COMMENT ON COLUMN DistributionMirror.country IS 'The country where the mirror is located.';
+COMMENT ON COLUMN DistributionMirror.content IS 'The content that is mirrored.';
+COMMENT ON COLUMN DistributionMirror.file_list IS 'A file containing the list of files the mirror contains. Used only in case the mirror\'s pulse_type is PULL';
+COMMENT ON COLUMN DistributionMirror.official_candidate IS 'Is the mirror a candidate for becoming an official mirror?';
+COMMENT ON COLUMN DistributionMirror.official_approved IS 'Is the mirror approved as one of the official ones?';
+COMMENT ON COLUMN DistributionMirror.enabled IS 'Is this mirror enabled?';
+COMMENT ON COLUMN DistributionMirror.pulse_type IS 'The method we should use to check if the mirror is up to date.';
+COMMENT ON COLUMN DistributionMirror.pulse_source IS 'A URL that we will use to check if the mirror is up to date, when the pulse_type is PULL.';
+
+-- MirrorDistroArchRelease
+COMMENT ON TABLE MirrorDistroArchRelease IS 'The mirror of the packages of a given Distro Arch Release.';
+COMMENT ON COLUMN MirrorDistroArchRelease.distribution_mirror IS 'The distribution mirror.';
+COMMENT ON COLUMN MirrorDistroArchRelease.distro_arch_release IS 'The distro arch release.';
+COMMENT ON COLUMN MirrorDistroArchRelease.status IS 'The status of the mirror, that is, how up-to-date it is.';
+COMMENT ON COLUMN MirrorDistroArchRelease.pocket IS 'The PackagePublishingPocket.';
+
+-- MirrorDistroReleaseSource
+COMMENT ON TABLE MirrorDistroReleaseSource IS 'The mirror of a given Distro Release';
+COMMENT ON COLUMN MirrorDistroReleaseSource.distribution_mirror IS 'The distribution mirror.';
+COMMENT ON COLUMN MirrorDistroReleaseSource.distro_release IS 'The Distribution Release.';
+COMMENT ON COLUMN MirrorDistroReleaseSource.status IS 'The status of the mirror, that is, how up-to-date it is.';
+
+-- MirrorProbeRecord
+COMMENT ON TABLE MirrorProbeRecord IS 'Records stored when a mirror is probed.';
+COMMENT ON COLUMN MirrorProbeRecord.distribution_mirror IS 'The DistributionMirror.';
+COMMENT ON COLUMN MirrorProbeRecord.log_file IS 'The log file of the probe.';
+COMMENT ON COLUMN MirrorProbeRecord.date_created IS 'The date and time the probe was performed.';
+

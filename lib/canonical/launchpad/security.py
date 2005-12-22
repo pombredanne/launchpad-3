@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces import (
     IBugTracker, IBugAttachment, IPoll, IPollSubset, IPollOption,
     IProductRelease, IShippingRequest, IShippingRequestSet, IRequestedCDs,
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
-    IShippingRun, ISpecification, ISprintSpecification)
+    IShippingRun, ISpecification, ISprintSpecification, IDistributionMirror)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -53,6 +53,23 @@ class EditByOwnersOrAdmins(AuthorizationBase):
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(self.obj.owner) or user.inTeam(admins)
+
+
+class AdminDistributionMirrorByMirrorAdmins(AuthorizationBase):
+    permission = 'launchpad.Admin'
+    usedfor = IDistributionMirror
+
+    def checkAuthenticated(self, user):
+        return user.inTeam(getUtility(ILaunchpadCelebrities).mirror_admin)
+
+
+class EditDistributionMirrorByOwnerOrMirrorAdmins(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IDistributionMirror
+
+    def checkAuthenticated(self, user):
+        mirror_admins = getUtility(ILaunchpadCelebrities).mirror_admin
+        return user.inTeam(self.obj.owner) or user.inTeam(mirror_admins)
 
 
 class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):

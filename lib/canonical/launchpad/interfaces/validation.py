@@ -1,6 +1,9 @@
 
 __all__ = [
     'validate_url',
+    'valid_http_url',
+    'valid_ftp_url',
+    'valid_rsync_url',
     'valid_webref',
     'non_duplicate_bug',
     'valid_bug_number',
@@ -70,6 +73,30 @@ def valid_webref(web_ref):
             Not a valid URL. Please enter the full URL, including the
             scheme (for instance, http:// for a web URL), and ensure the
             URL uses either http, https or ftp.""")))
+
+def valid_ftp_url(url):
+    if validate_url(url, ['ftp']):
+        return True
+    else:
+        raise LaunchpadValidationError(_(dedent("""
+            Not a valid FTP URL. Please enter the full URL, including the
+            ftp:// part.""")))
+
+def valid_rsync_url(url):
+    if validate_url(url, ['rsync']):
+        return True
+    else:
+        raise LaunchpadValidationError(_(dedent("""
+            Not a valid Rsync URL. Please enter the full URL, including the
+            rsync:// part.""")))
+
+def valid_http_url(url):
+    if validate_url(url, ['http']):
+        return True
+    else:
+        raise LaunchpadValidationError(_(dedent("""
+            Not a valid HTTP URL. Please enter the full URL, including the
+            http:// part.""")))
 
 def non_duplicate_bug(value):
     """Prevent dups of dups.

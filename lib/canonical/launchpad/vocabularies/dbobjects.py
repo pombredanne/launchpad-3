@@ -21,6 +21,7 @@ __all__ = [
     'CountryNameVocabulary',
     'DistributionVocabulary',
     'DistroReleaseVocabulary',
+    'FilteredDistroArchReleaseVocabulary',
     'FilteredDistroReleaseVocabulary',
     'FilteredProductSeriesVocabulary',
     'KarmaCategoryVocabulary',
@@ -62,7 +63,7 @@ from canonical.launchpad.database import (
     BinaryPackageName, Language, Milestone, Product, Project, ProductRelease,
     ProductSeries, TranslationGroup, BugTracker, POTemplateName, Schema,
     Bounty, Country, Specification, Bug, Processor, ProcessorFamily,
-    KarmaCategory)
+    KarmaCategory, DistroArchRelease)
 from canonical.launchpad.interfaces import (
     ILaunchBag, ITeam, ITeamMembershipSubset, IPersonSet, IEmailAddressSet)
 
@@ -724,6 +725,31 @@ class FilteredDistroReleaseVocabulary(SQLObjectVocabularyBase):
             for distrorelease in self._table.selectBy(
                 distributionID=distribution.id, **kw):
                 yield self._toTerm(distrorelease)
+
+
+class FilteredDistroArchReleaseVocabulary(SQLObjectVocabularyBase):
+    """All arch releases of a particular distribution."""
+
+    _table = DistroArchRelease
+    _orderBy = ['DistroRelease.version', 'architecturetag', 'id']
+    _clauseTables = ['DistroRelease']
+
+    def _toTerm(self, obj):
+        name = "%s %s (%s)" % (obj.distrorelease.distribution.name,
+                               obj.distrorelease.name, obj.architecturetag)
+        return SimpleTerm(obj, obj.id, name)
+
+    def __iter__(self):
+        distribution = getUtility(ILaunchBag).distribution
+        if distribution:
+            query = """
+                DistroRelease.id = distrorelease AND
+                DistroRelease.distribution = %s
+                """ % sqlvalues(distribution.id)
+            results = self._table.select(
+                query, orderBy=self._orderBy, clauseTables=self._clauseTables)
+            for distroarchrelease in results:
+                yield self._toTerm(distroarchrelease)
 
 
 class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):

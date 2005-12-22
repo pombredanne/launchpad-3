@@ -44,6 +44,38 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IDistribution"
+        facet="overview"
+        permission="zope.Public">
+        <browser:page
+            name="+officialmirrors"
+            template="../templates/distribution-officialmirrors.pt" />
+        <browser:page
+            name="+allmirrors"
+            template="../templates/distribution-allmirrors.pt" />
+    </browser:pages>
+
+    <browser:generalform
+        name="+newmirror"
+        for="canonical.launchpad.interfaces.IDistribution"
+        class="canonical.launchpad.browser.DistributionMirrorAddView"
+        schema="canonical.launchpad.interfaces.IDistributionMirror"
+        fields="owner name displayname description speed country
+                content http_base_url ftp_base_url rsync_base_url
+                pulse_type pulse_source enabled official_candidate"
+        keyword_arguments="
+            owner name displayname description speed country content 
+            http_base_url ftp_base_url rsync_base_url pulse_type pulse_source
+            enabled official_candidate"
+        label="Register a new mirror"
+        permission="launchpad.AnyPerson"
+        template="../templates/distribution-newmirror.pt">
+        <browser:widget 
+            field="owner"
+            class="canonical.widgets.HiddenUserWidget" />
+    </browser:generalform>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IDistribution"
         class="canonical.launchpad.browser.DistributionView"
         permission="zope.Public" >
         <browser:page
