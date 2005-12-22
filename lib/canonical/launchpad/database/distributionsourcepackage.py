@@ -29,7 +29,7 @@ from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.ticket import Ticket
-from sourcerer.deb.version import Version
+from sourcerer.deb.version import Version, BadUpstreamError
 from canonical.launchpad.helpers import shortlist
 
 _arg_not_provided = object()
@@ -104,10 +104,18 @@ class DistributionSourcePackage:
             clauseTables=['SourcePackagePublishing', 'DistroRelease'])
 
         # sort by version
-        releases = sorted(shortlist(sprs),
-            key=lambda item: Version(item.version))
+        try:
+            releases = sorted(shortlist(sprs),
+                              key=lambda item: Version(item.version))
+        # XXX cprov : Sourcerer Version model doesn't cope with
+        # version containing letters, so if it happens we rely
+        # on DB order (datecreated) -> bug # 6040
+        except BadUpstreamError:
+            releases = shortlist(sprs)
+
         if len(releases) == 0:
             return None
+
         return DistributionSourcePackageRelease(
             distribution=self.distribution,
             sourcepackagerelease=releases[-1])
