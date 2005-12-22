@@ -29,6 +29,14 @@ class TestRewriteMapScript(TestCase):
         self.failUnless('~name12/gnome-terminal/main\t00/00/00/0f' in lines,
                 'expected line not found in %r' % (lines,))
 
+    def test_file_generation_junk_product(self):
+        """Like test_file_generation, but demonstrating a +junk product."""
+        file = StringIO()
+        supermirror_rewritemap.main(file)
+        lines = file.getvalue().splitlines()
+        self.failUnless('~spiv/+junk/feature\t00/00/00/16' in lines,
+                'expected line not found in %r' % (lines,))
+
 
 def test_suite():
     suite = TestSuite()
