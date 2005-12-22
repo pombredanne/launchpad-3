@@ -22,18 +22,21 @@ default: inplace
 schema:
 	(cd database/schema; make)
 
-check_merge: build importdcheck
-	# Work around the current idiom of 'make check' getting too long
-	# because of hct and related tests. note that this is a short
-	# term solution, the long term solution will need to be 
-	# finer grained testing anyway.
-	# Run all tests. test_on_merge.py takes care of setting up the
-	# database.
-	env PYTHONPATH=$(PYTHONPATH) \
-	    ${PYTHON} -t ./test_on_merge.py -vv \
-		--dir hct --dir sourcerer
-	    $(MAKE) -C sourcecode check PYTHON=${PYTHON} \
-		PYTHON_VERSION=${PYTHON_VERSION}
+check_merge: build check importdcheck
+
+
+###	# Work around the current idiom of 'make check' getting too long
+###	# because of hct and related tests. note that this is a short
+###	# term solution, the long term solution will need to be 
+###	# finer grained testing anyway.
+###	# Run all tests. test_on_merge.py takes care of setting up the
+###	# database.
+###	env PYTHONPATH=$(PYTHONPATH) \
+###	    ${PYTHON} -t ./test_on_merge.py -vv \
+###             --times=/tmp/test.times \
+###		--dir hct --dir sourcerer
+###	    $(MAKE) -C sourcecode check PYTHON=${PYTHON} \
+###		PYTHON_VERSION=${PYTHON_VERSION}
 
 importdcheck:
 	cd database/schema; make test PYTHON=${PYTHON}
@@ -41,9 +44,11 @@ importdcheck:
 
 check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
-	# database.
+	# database..
+	# Store time information - we store this in /tmp instead of the cwd
+	# so we can see the results after PQM runs.
 	env PYTHONPATH=$(PYTHONPATH) \
-	${PYTHON} -t ./test_on_merge.py
+	${PYTHON} -t ./test_on_merge.py --times=/tmp/test.times
 
 lint:
 	@sh ./utilities/lint.sh

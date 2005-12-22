@@ -32,7 +32,9 @@ from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import Specification
 from canonical.launchpad.database.ticket import Ticket
 from canonical.launchpad.database.publishing import (
-    SourcePackageFilePublishing, BinaryPackageFilePublishing)
+    SourcePackageFilePublishing, BinaryPackageFilePublishing,
+    SourcePackagePublishing)
+from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from canonical.launchpad.database.build import Build
 
@@ -62,6 +64,8 @@ class Distribution(SQLBase):
     description = StringCol(notNull=True)
     domainname = StringCol(notNull=True)
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
+    bugcontact = ForeignKey(
+        dbName='bugcontact', foreignKey='Person', notNull=False, default=None)
     members = ForeignKey(dbName='members', foreignKey='Person', notNull=True)
     translationgroup = ForeignKey(dbName='translationgroup',
         foreignKey='TranslationGroup', notNull=False, default=None)

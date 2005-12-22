@@ -31,7 +31,7 @@
         name="+validateemail"
         permission="zope.Public"
         class="canonical.launchpad.browser.ValidateEmailView"
-        template="../templates/foaf-validateemail.pt"
+        template="../templates/logintoken-validateemail.pt"
         lp:url="token/$token/+validateemail" />
 
     <browser:page
@@ -39,7 +39,7 @@
         name="+validateteamemail"
         permission="zope.Public"
         class="canonical.launchpad.browser.ValidateEmailView"
-        template="../templates/foaf-validateteamemail.pt"
+        template="../templates/logintoken-validateteamemail.pt"
         lp:url="token/$token/+validateteamemail" />
 
     <browser:page
@@ -47,7 +47,7 @@
         name="+validategpg"
         permission="zope.Public"
         class="canonical.launchpad.browser.ValidateEmailView"
-        template="../templates/foaf-validategpg.pt"
+        template="../templates/logintoken-validategpg.pt"
         lp:url="token/$token/+validategpg" />
 
     <browser:page
@@ -55,7 +55,7 @@
         name="+validatesignonlygpg"
         permission="zope.Public"
         class="canonical.launchpad.browser.ValidateEmailView"
-        template="../templates/foaf-validatesignonlygpg.pt"
+        template="../templates/logintoken-validatesignonlygpg.pt"
         lp:url="token/$token/+validatesignonlygpg" />
 
     <browser:page
@@ -63,7 +63,7 @@
         name="+resetpassword"
         permission="zope.Public"
         class="canonical.launchpad.browser.ResetPasswordView"
-        template="../templates/foaf-resetpassword.pt"
+        template="../templates/logintoken-resetpassword.pt"
         lp:url="token/$token/+resetpassword" />
 
     <browser:page
@@ -71,7 +71,7 @@
         name="+accountmerge"
         permission="zope.Public"
         class="canonical.launchpad.browser.MergePeopleView"
-        template="../templates/foaf-mergepeople.pt"
+        template="../templates/logintoken-mergepeople.pt"
         lp:url="token/$token/+accountmerge" />
 
     <browser:addform
@@ -82,7 +82,7 @@
         content_factory="canonical.launchpad.database.Person"
         class="canonical.launchpad.browser.NewAccountView"
         permission="zope.Public"
-        template="../templates/foaf-newaccount.pt"
+        template="../templates/logintoken-newaccount.pt"
         lp:url="token/$token/+newaccount">
         <browser:widget
             field="password"

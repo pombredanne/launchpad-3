@@ -20,7 +20,7 @@ build:
 			$(MAKE) -C $$subdir \
 			PYTHON=${PYTHON} PYTHON_VERSION=${PYTHON_VERSION} \
 			       || exit $$?;\
-		fi\
+		fi;\
 	done
 
 .PHONY: check all build

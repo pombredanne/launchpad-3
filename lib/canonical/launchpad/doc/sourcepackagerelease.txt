@@ -57,3 +57,52 @@ Verify the 'meta_binary' attribute:
    >>> IDistroReleaseBinaryPackage.providedBy(spr_test.meta_binaries[0])
    True
 
+It's time to check the translation upload function.
+
+   >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+   >>> LibrarianTestSetup().setUp()
+   >>> import canonical.launchpad
+   >>> import os.path
+   >>> import transaction
+   >>> from canonical.launchpad.interfaces import ITranslationImportQueue
+   >>> from canonical.librarian.interfaces import ILibrarianClient
+   >>> translation_import_queue = getUtility(ITranslationImportQueue)
+   >>> client = getUtility(ILibrarianClient)
+
+We need a test tarball uploaded into librarian to run this test.
+
+   >>> test_file_name = os.path.join(
+   ...     os.path.dirname(canonical.launchpad.__file__),
+   ...     'doc/sourcepackagerelease-translations.tar.gz')
+   >>> file = open(test_file_name)
+   >>> size = len(file.read())
+   >>> file.seek(0)
+   >>> alias = client.addFile(
+   ...     name='test.tar.gz',
+   ...     size=size,
+   ...     file=file,
+   ...     contentType='application/x-gtar')
+
+We need the commit to see the upload.
+
+   >>> transaction.commit()
+
+Before the upload, the queue should be empty.
+
+   >>> len(translation_import_queue)
+   0
+
+Now we do the upload.
+
+   >>> spr_test.attachTranslationFiles(alias, True)
+
+The commit is needed to see the new entries
+
+   >>> transaction.commit()
+
+And the queue should have a new entry.
+
+   >>> len(translation_import_queue)
+   1
+
+   >>> LibrarianTestSetup().tearDown()
