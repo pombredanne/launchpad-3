@@ -15,7 +15,7 @@ emails:
 Now Sample Person and Foo Bar have one GPG key each. Next, let's get
 a test email that's signed and try to authenticate the user who sent it:
 
-    >>> from canonical.launchpad.helpers import read_test_message
+    >>> from canonical.launchpad.mail.ftests import read_test_message
     >>> msg = read_test_message('signed_detached.txt')
     >>> principal = authenticateEmail(msg)
 

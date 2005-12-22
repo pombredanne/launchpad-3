@@ -1,4 +1,3 @@
-
 Let's see if we can load the distro's add page:
 
   >>> print http(r"""

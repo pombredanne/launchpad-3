@@ -155,7 +155,7 @@ newsample-soyuz:
 
 newsampledata:
 	pg_dump --schema=public --disable-triggers -a -D -O -d ${DBNAME} \
-	| grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|SELECT pg_catalog\.setval\|^--\)" \
+	| grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\)" \
 	| $(PYTHON) sort_sql.py \
 	> $(NEWSAMPLEDATA)
 

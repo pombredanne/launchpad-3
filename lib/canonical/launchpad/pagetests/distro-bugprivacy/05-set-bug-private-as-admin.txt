@@ -1,17 +1,16 @@
-Foo Bar is about to edit bug #2. Foo Bar is a member of the Ubuntu
-Team, which is one of the maintainers on this bug.
+Foo Bar, an LP admin is about to edit bug #2.
 
   >>> print http(r"""
   ... GET /distros/debian/+source/mozilla-firefox/+bug/2/+secrecy HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
+  ...Subscribers...
   ...Steve Alexander...
   ...
 
-Foo Bar sets the bug private, and all implicit subscriptions are thus
-made explicit including, of course, the Ubuntu Team of which Foo Bar
-is a member.
+Foo Bar is not Cc'd on this bug, but is able to set the bug private anyway,
+because he is an admin.
 
   >>> print http(r"""
   ... POST /distros/debian/+source/mozilla-firefox/+bug/2/+secrecy HTTP/1.1
@@ -35,16 +34,5 @@ is a member.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: ...
-
-And now the maintainers should be subscribed.
-
-  >>> print http(r"""
-  ... GET /distros/debian/+source/mozilla-firefox/+bug/2 HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Steve Alexander...
-  ...Sample Person...
-  ...Ubuntu Team...
-  ...Mark Shuttleworth...
+  Location: .../distros/debian/+source/mozilla-firefox/+bug/2
+  ...
