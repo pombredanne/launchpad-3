@@ -12,23 +12,26 @@ from sqlobject import SQLObjectNotFound
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import IDistributionSourcePackage
+from canonical.launchpad.interfaces import (
+    IDistributionSourcePackage, DuplicateBugContactError, DeleteBugContactError)
 
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
-from canonical.launchpad.database.distributionsourcepackagecache import \
-    DistributionSourcePackageCache
-from canonical.launchpad.database.distributionsourcepackagerelease import \
-    DistributionSourcePackageRelease
-from canonical.launchpad.database.publishing import \
-    SourcePackagePublishingHistory
-from canonical.launchpad.database.sourcepackagerelease import \
-    SourcePackageRelease
+from canonical.launchpad.database.distributionsourcepackagecache import (
+    DistributionSourcePackageCache)
+from canonical.launchpad.database.distributionsourcepackagerelease import (
+    DistributionSourcePackageRelease)
+from canonical.launchpad.database.packagebugcontact import PackageBugContact
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishingHistory)
+from canonical.launchpad.database.sourcepackagerelease import (
+    SourcePackageRelease)
 from canonical.launchpad.database.ticket import Ticket
 from sourcerer.deb.version import Version
 from canonical.launchpad.helpers import shortlist
 
+_arg_not_provided = object()
 
 class DistributionSourcePackage:
     """This is a "Magic Distribution Source Package". It is not an
@@ -117,6 +120,50 @@ class DistributionSourcePackage:
                             self.sourcepackagename.id),
             orderBy='-datecreated',
             limit=quantity)
+
+    @property
+    def bugcontacts(self):
+        """See IDistributionSourcePackage."""
+        # Use "list" here because it's possible that this list will be longer
+        # than a "shortlist", though probably uncommon.
+        return list(PackageBugContact.selectBy(
+            distributionID=self.distribution.id,
+            sourcepackagenameID=self.sourcepackagename.id))
+
+    def addBugContact(self, person):
+        """See IDistributionSourcePackage."""
+        contact_already_exists = self.isBugContact(person)
+
+        if contact_already_exists:
+            raise DuplicateBugContactError(
+                "%s is already one of the bug contacts for %s." %
+                (person.name, self.displayname))
+        else:
+            PackageBugContact(
+                distribution=self.distribution,
+                sourcepackagename=self.sourcepackagename,
+                bugcontact=person)
+
+    def removeBugContact(self, person):
+        """See IDistributionSourcePackage."""
+        contact_to_remove = self.isBugContact(person)
+
+        if not contact_to_remove:
+            raise DeleteBugContactError("%s is not a bug contact for this package.")
+        else:
+            contact_to_remove.destroySelf()
+
+    def isBugContact(self, person):
+        """See IDistributionSourcePackage."""
+        package_bug_contact = PackageBugContact.selectOneBy(
+            distributionID=self.distribution.id,
+            sourcepackagenameID=self.sourcepackagename.id,
+            bugcontactID=person.id)
+
+        if package_bug_contact:
+            return package_bug_contact
+        else:
+            return False
 
     @property
     def binary_package_names(self):

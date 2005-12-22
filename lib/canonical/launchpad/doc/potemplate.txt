@@ -1,0 +1,26 @@
+POTemplateSet
+-------------
+
+Test that the security setup for IPOTemplateSet is working
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IPOTemplateSet
+    >>> potemplate_set = getUtility(IPOTemplateSet)
+
+The list of pending imports should be empty.
+
+    >>> potemplate_list = potemplate_set.getTemplatesPendingImport()
+    >>> len(list(potemplate_list))
+    0
+
+POTemplate
+----------
+
+Check that we can get IPOFile based on its path.
+
+    >>> from canonical.launchpad.database import POTemplate
+    >>> potemplate = POTemplate.get(1)
+    >>> pofile = potemplate.getPOFileByPath('es.po')
+    >>> print pofile.title
+    Spanish (es) translation of evolution-2.2 in Evolution MAIN
+

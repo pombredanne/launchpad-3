@@ -378,19 +378,8 @@ The maintainer of an upstream task is simply the Product.owner:
     >>> bugtask.maintainer.displayname
     u'Sample Person'
 
-The maintainer of a distribution task is the source package maintainer:
-
-    >>> bugtask = bugtaskset.get(4)
-    >>> bugtask.maintainer.id
-    1
-
-or None, if the task is not yet assigned to a specific source
-package. So, borrowing the distro task we filed earlier:
-
-    >>> print distro_task.maintainer
-    None
-    >>> print distro_task.maintainer_displayname
-    None
+"Maintainership" of distribution source packages has been deprecated. See
+https://wiki.launchpad.canonical.com/InitialBugContacts.
 
 Editing Bug Tasks
 -----------------
@@ -545,9 +534,16 @@ Let's log in as the user Foo Bar (to be allowed to edit bugs):
     >>> login('foo.bar@canonical.com')
     >>> foobar = getUtility(ILaunchBag).user
 
-and mark one of the Firefox bugs private:
+and mark one of the Firefox bugs private. While we do this, we're also
+going to subscribe the Ubuntu team to the bug report to help demonstrate
+later on the interaction between privacy and teams (see the section
+entitled _Privacy and Team Awareness_):
 
     >>> bug_upstream_firefox_no_svg_support = bugtaskset.get(2)
+
+    >>> ubuntu_team = personset.get(17)
+    >>> subscription = bug_upstream_firefox_no_svg_support.bug.subscribe(ubuntu_team)
+
     >>> notify(SQLObjectToBeModifiedEvent(
     ...     bug_upstream_firefox_no_svg_support.bug, {'private' : True}))
 
@@ -624,26 +620,25 @@ And note that he can access and set the bugtask attributes:
 Privacy and Team Awareness
 --------------------------
 
-Foo Bar is a member of the Ubuntu Team. At the moment he can't see the
-private bug, since he's not a subscriber:
+No Privileges Person can't see the private bug, because he's not a subscriber:
 
-    >>> login("foo.bar@canonical.com")
+    >>> login("no-priv@canonical.com")
+    >>> no_priv = personset.getByName("no-priv")
     >>> firefox = productset['firefox']
     >>> params = BugTaskSearchParams(
-    ...     status=any(STATUS_UNCONFIRMED, STATUS_CONFIRMED), user=foobar)
+    ...     status=any(STATUS_UNCONFIRMED, STATUS_CONFIRMED), user=no_priv)
     >>> firefox_bugtasks = firefox.searchTasks(params)
     >>> [bugtask.bug.id for bugtask in firefox_bugtasks]
     [4, 5, 6]
 
 
-But if we subscribe the Ubuntu Team, of which Foo Bar is a member, he
-will see the private bug.
+But if we add No Privileges Person to the Ubuntu Team, and because the Ubuntu
+Team *is* subscribed to the bug, No Privileges Person will see the private bug.
 
     >>> login("mark@hbd.com")
-    >>> bug_upstream_firefox_no_svg_support.bug.subscribe(foobar)
-    <BugSubscription...>
+    >>> ubuntu_team.addMember(no_priv)
 
-    >>> login("foo.bar@canonical.com")
+    >>> login("no-priv@canonical.com")
     >>> params = BugTaskSearchParams(
     ...     status=any(STATUS_UNCONFIRMED, STATUS_CONFIRMED), user=foobar)
     >>> firefox_bugtasks = firefox.searchTasks(params)
@@ -657,7 +652,7 @@ if we query logged in as a user who can't see that bug).
 
     >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
     ...     sample_person, user=foobar)
-    >>> [bugtask.bug.id for bugtask in foobar_maintained_tasks]
+    >>> sorted([bugtask.bug.id for bugtask in foobar_maintained_tasks])
     [1, 4, 5, 7]
 
 Privacy and Launchpad Admins
@@ -685,7 +680,7 @@ we'll also see bug 1 again in the results, even though it's private.
 
     >>> foobar_maintained_tasks = bugtaskset.maintainedBugTasks(
     ...     sample_person, user=ddaa)
-    >>> [bugtask.bug.id for bugtask in foobar_maintained_tasks]
+    >>> sorted([bugtask.bug.id for bugtask in foobar_maintained_tasks])
     [1, 4, 5, 7]
 
 Trying to retrieve the bug directly will work fine:
