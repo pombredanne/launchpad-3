@@ -26,7 +26,8 @@ class TestErrorReport(unittest.TestCase):
         entry = ErrorReport('id', 'exc-type', 'exc-value', 'timestamp',
                             'traceback-text', 'username', 'url',
                             [('name1', 'value1'), ('name2', 'value2'),
-                             ('name1', 'value3'), ('password', 'secret1'),
+                             ('name1', 'value3'),
+                             ('field.password', 'secret1'),
                              ('PassWd2', 'secret2')])
         self.assertEqual(entry.id, 'id')
         self.assertEqual(entry.type, 'exc-type')
@@ -39,7 +40,7 @@ class TestErrorReport(unittest.TestCase):
         self.assertEqual(entry.req_vars[0], ('name1', 'value1'))
         self.assertEqual(entry.req_vars[1], ('name2', 'value2'))
         self.assertEqual(entry.req_vars[2], ('name1', 'value3'))
-        self.assertEqual(entry.req_vars[3], ('password', '<hidden>'))
+        self.assertEqual(entry.req_vars[3], ('field.password', '<hidden>'))
         self.assertEqual(entry.req_vars[4], ('PassWd2', '<hidden>'))
 
     def test_write(self):

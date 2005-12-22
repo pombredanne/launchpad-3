@@ -59,8 +59,7 @@ class ErrorReport:
         self.req_vars = []
         # hide passwords that might be present in the request variables
         for (name, value) in req_vars:
-            if (name.lower().startswith('password') or
-                name.lower().startswith('passwd')):
+            if ('password' in name.lower() or 'passwd' in name.lower()):
                 self.req_vars.append((name, '<hidden>'))
             else:
                 self.req_vars.append((name, value))
