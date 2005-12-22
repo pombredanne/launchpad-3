@@ -64,7 +64,6 @@ class ErrorSummary:
         # add the date to oopsid to make it unique
         datestr = msg.getheader('date')
         if datestr is not None:
-            oopsid = datestr[:10] + '/' + oopsid
             date = _parsedate(datestr)
             if self.start is None or self.start > date:
                 self.start = date
