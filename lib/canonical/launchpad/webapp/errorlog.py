@@ -114,9 +114,8 @@ class ErrorReportingService:
     def __init__(self):
         self.copy_to_zlog = config.launchpad.errorreports.copy_to_zlog
         self.lastid_lock = threading.Lock()
-        self.lastid = self._findLastOopsId()
 
-    def _findLastOopsId(self):
+    def _findLastOopsId(self, directory):
         """Find the last error number used by this Launchpad instance
 
         The purpose of this function is to not repeat sequence numbers
@@ -127,7 +126,7 @@ class ErrorReportingService:
         """
         prefix = config.launchpad.errorreports.oops_prefix
         lastid = 0
-        for filename in os.listdir(self.errordir()):
+        for filename in os.listdir(directory):
             oopsid = filename.rsplit('.', 1)[1]
             if not oopsid.startswith(prefix):
                 continue
@@ -151,7 +150,6 @@ class ErrorReportingService:
         if date != self.lasterrordate:
             self.lastid_lock.acquire()
             try:
-                self.lastid = 0
                 self.lasterrordate = date
                 # make sure the directory exists
                 try:
@@ -159,6 +157,7 @@ class ErrorReportingService:
                 except OSError, e:
                     if e.errno != errno.EEXIST:
                         raise
+                self.lastid = self._findLastOopsId(errordir)
             finally:
                 self.lastid_lock.release()
         return errordir

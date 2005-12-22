@@ -160,7 +160,7 @@ class TestErrorReportingService(unittest.TestCase):
         open(os.path.join(errordir, '12346.A42'), 'w').close()
         open(os.path.join(errordir, '12346.B100'), 'w').close()
 
-        self.assertEqual(service._findLastOopsId(), 10)
+        self.assertEqual(service._findLastOopsId(errordir), 10)
 
     def test_raising(self):
         """Test ErrorReportingService.raising() with no request"""
