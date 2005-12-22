@@ -7,7 +7,9 @@ __all__ = ['ISignedMessage',
            'EmailProcessingError',
            'IEmailCommand',
            'IBugEmailCommand',
-           'IBugEditEmailCommand']
+           'IBugTaskEmailCommand',
+           'IBugEditEmailCommand',
+           'IBugTaskEditEmailCommand']
 
 from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
@@ -68,16 +70,12 @@ class IEmailCommand(Interface):
 
     in order to make the bug private.
     """
-    subCommands = Attribute("A list of subcommand names.")
 
     def execute(context):
         """Execute the command in a context."""
 
-    def isSubCommand(command):
-        """Return whether the command is a sub command or not."""
-
-    def addSubCommandToBeExecuted(subcommand):
-        """Adds a sub command to be executed when this command is."""
+    def __str__():
+        """Return a textual representation of the command and its arguments."""
 
 
 class IBugEmailCommand(IEmailCommand):
@@ -93,15 +91,31 @@ class IBugEmailCommand(IEmailCommand):
         """
 
 
-class IBugEditEmailCommand(IEmailCommand):
-    """An email command specific to editing bug.
-
-    It edits either the bug directly or a sub object of the bug, like a
-    bug task.
-    """
+class IBugTaskEmailCommand(IEmailCommand):
+    """An email command specific to getting or creating a bug task."""
 
     def execute(bug):
+        """Either create or get an exiting bug task.
+
+        The bug task and an event is returned as a two-tuple.
+        """
+
+
+class IBugEditEmailCommand(IEmailCommand):
+    """An email command specific to editing a bug."""
+
+    def execute(bug, current_event):
         """Execute the command in the context of the bug.
 
-        The modified object and an event is returned.
+        The modified bug and an event is returned.
+        """
+
+
+class IBugTaskEditEmailCommand(IEmailCommand):
+    """An email command specific to editing a bug task."""
+
+    def execute(bugtask, current_event):
+        """Execute the command in the context of the bug task.
+
+        The modified bug task and an event is returned.
         """

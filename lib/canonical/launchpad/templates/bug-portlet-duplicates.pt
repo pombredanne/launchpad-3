@@ -6,14 +6,11 @@
     <div class="portletContent">
 
       <ul tal:define="current_task view/currentBugTask">
-        <li tal:repeat="dup context/duplicates">
-          <a tal:attributes="href string:${current_task/target/fmt:url}/+bug/${dup/id};
-                             title dup/title">
-             Bug #<span tal:replace="dup/id">3445</span>
+        <li tal:repeat="dupe view/duplicates">
+          <a tal:attributes="href string:${current_task/target/fmt:url}/+bug/${dupe/id};
+            title dupe/title">
+             Bug #<span tal:replace="dupe/id">3445</span>
           </a>
-          <tal:block condition="dup/name">
-            (<span tal:replace="dup/name" tal:omit-tag="">foobar</span>)
-          </tal:block>
         </li>
       </ul>
     </div>

@@ -8,7 +8,7 @@ statistics links.
 Viewing critical bugs as Sample Person:
 
   >>> print http(r"""
-  ... GET /distros/debian/+bugs?field.status%3Alist=New&amp;field.status%3Alist=Accepted&amp;field.severity%3Alist=Critical&amp;search=Search HTTP/1.1
+  ... GET /distros/debian/+bugs?field.status%3Alist=Unconfirmed&amp;field.status%3Alist=Confirmed&amp;field.severity%3Alist=Critical&amp;search=Search HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... """)
@@ -18,7 +18,7 @@ Viewing critical bugs as Sample Person:
 Viewing bugs "assigned to me", as Sample Person:
 
   >>> print http(r"""
-  ... GET /distros/debian/+bugs?field.status%3Alist=New&amp;field.status%3Alist=Accepted&amp;field.assignee=name12&amp;search=Search HTTP/1.1
+  ... GET /distros/debian/+bugs?field.status%3Alist=Unconfirmed&amp;field.status%3Alist=Confirmed&amp;field.assignee=name12&amp;search=Search HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... """)
@@ -28,7 +28,7 @@ Viewing bugs "assigned to me", as Sample Person:
 Viewing untriaged bugs as Sample Person:
 
   >>> print http(r"""
-  ... GET /distros/debian/+bugs?field.status%3Alist=New&amp;search=Search HTTP/1.1
+  ... GET /distros/debian/+bugs?field.status%3Alist=Unconfirmed&amp;search=Search HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... """)
@@ -38,7 +38,7 @@ Viewing untriaged bugs as Sample Person:
 Viewing unassigned bugs as Sample Person:
 
   >>> print http(r"""
-  ... GET /distros/debian/+bugs?field.status%3Alist=New&amp;field.status%3Alist=Accepted&amp;field.status-empty-marker=1&amp;field.severity-empty-marker=1&amp;field.assignee=&amp;field.unassigned.used=&amp;field.unassigned=on&amp;search=Search HTTP/1.1
+  ... GET /distros/debian/+bugs?field.status%3Alist=Unconfirmed&amp;field.status%3Alist=Confirmed&amp;field.status-empty-marker=1&amp;field.severity-empty-marker=1&amp;field.assignee=&amp;field.unassigned.used=&amp;field.unassigned=on&amp;search=Search HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Accept-Language: en-ca,en-us;q=0.8,en;q=0.5,fr-ca;q=0.3
   ... """)

@@ -72,6 +72,12 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
     owner = Int(
         title=_("Owner"),
         description=_("The distro's owner."), required=True)
+    bugcontact = Choice(
+        title=_("Bug Contact"),
+        description=_(
+            "The person or team who will receive all bugmail for this "
+            "distribution"),
+        required=False, vocabulary='ValidPersonOrTeam')
     members = Choice(
         title=_("Members"),
         description=_("The distro's members team."), required=True,

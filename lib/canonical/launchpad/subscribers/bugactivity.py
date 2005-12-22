@@ -130,8 +130,7 @@ def record_bug_task_edited(bug_task_edited, sqlobject_modified_event):
                 person=sqlobject_modified_event.user,
                 whatchanged="%s: %s" % (task_title, changed_field),
                 oldvalue=oldvalue,
-                newvalue=newvalue,
-                message='XXX: not yet implemented')
+                newvalue=newvalue)
 
 def record_product_task_added(product_task, object_created_event):
     getUtility(IBugActivitySet).new(
@@ -153,8 +152,7 @@ def record_product_task_edited(product_task_edited, sqlobject_modified_event):
                 person=sqlobject_modified_event.user,
                 whatchanged="%s: %s" % (product.name, changed_field),
                 oldvalue=oldvalue,
-                newvalue=newvalue,
-                message='XXX: not yet implemented')
+                newvalue=newvalue)
 
 def record_package_infestation_added(package_infestation, object_created_event):
     package_release_name = "%s %s" % (
@@ -183,8 +181,7 @@ def record_package_infestation_edited(package_infestation_edited,
                 person=event.user,
                 whatchanged="%s: %s" % (package_release_name, changed_field),
                 oldvalue=oldvalue,
-                newvalue=newvalue,
-                message='XXX: not yet implemented')
+                newvalue=newvalue)
 
 def record_product_infestation_added(product_infestation, object_created_event):
     product_release_name = "%s %s" % (
@@ -213,8 +210,7 @@ def record_product_infestation_edited(product_infestation_edited,
                 person=event.user,
                 whatchanged="%s: %s" % (product_release_name, changed_field),
                 oldvalue=oldvalue,
-                newvalue=newvalue,
-                message='XXX: not yet implemented')
+                newvalue=newvalue)
 
 def record_bugsubscription_added(bugsubscription_added, object_created_event):
     getUtility(IBugActivitySet).new(

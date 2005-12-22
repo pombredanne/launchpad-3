@@ -62,10 +62,10 @@
     <include file="launchpadstatistic.zcml" />
     <include file="librarian.zcml" />
     <include file="logintoken.zcml" />
-    <include file="maintainership.zcml" />
     <include file="message.zcml" />
     <include file="milestone.zcml" />
     <include file="package.zcml" />
+    <include file="packagebugcontact.zcml" />
     <include file="packaging.zcml" />
     <include file="person.zcml" />
     <include file="poexport.zcml" />
@@ -74,7 +74,6 @@
     <include file="poll.zcml" />
     <include file="pomsgid.zcml" />
     <include file="pomsgset.zcml" />
-    <include file="potemplatename.zcml" />
     <include file="potemplate.zcml" />
     <include file="potemplatename.zcml" />
     <include file="potmsgset.zcml" />
@@ -116,6 +115,7 @@
     <include file="teamparticipation.zcml" />
     <include file="team-subscriptions.zcml" />
     <include file="translationgroup.zcml" />
+    <include file="translationimportqueue.zcml" />
     <include file="translator.zcml" />
     <include file="wikiname.zcml" />
     <include file="component.zcml" />

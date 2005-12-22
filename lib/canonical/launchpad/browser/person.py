@@ -65,9 +65,8 @@ from canonical.launchpad.interfaces import (
     IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
-    IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet,
-    ITeamMembershipSubset, IPollSet, BugTaskSearchParams, NotFoundError,
-    UNRESOLVED_BUGTASK_STATUSES)
+    IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet, 
+    BugTaskSearchParams, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.browser.bugtask import (
     BugTaskSearchListingView, AdvancedBugTaskSearchView)
@@ -88,18 +87,12 @@ from zope.i18nmessageid import MessageIDFactory
 _ = MessageIDFactory('launchpad')
 
 
-class PersonNavigation(Navigation, CalendarTraversalMixin):
-
-    usedfor = IPerson
-
-    redirection("+bugs", "+assignedbugs")
-
-    def breadcrumb(self):
-        return self.context.displayname
+class BranchTraversalMixin:
 
     @stepto('+branch')
     def traverse_branch(self):
-        """Branch of this person for the specified product and branch names.
+        """Branch of this person or team for the specified product and
+        branch names.
 
         For example:
 
@@ -122,7 +115,19 @@ class PersonNavigation(Navigation, CalendarTraversalMixin):
         raise NotFoundError
 
 
-class TeamNavigation(Navigation, CalendarTraversalMixin):
+class PersonNavigation(Navigation, CalendarTraversalMixin,
+                       BranchTraversalMixin):
+
+    usedfor = IPerson
+
+    redirection("+bugs", "+assignedbugs")
+
+    def breadcrumb(self):
+        return self.context.displayname
+
+
+class TeamNavigation(Navigation, CalendarTraversalMixin,
+                     BranchTraversalMixin):
 
     usedfor = ITeam
 
@@ -131,13 +136,17 @@ class TeamNavigation(Navigation, CalendarTraversalMixin):
     def breadcrumb(self):
         return smartquote('"%s" team') % self.context.displayname
 
-    @stepto('+members')
-    def members(self):
-        return ITeamMembershipSubset(self.context)
-
     @stepthrough('+poll')
     def traverse_poll(self, name):
         return getUtility(IPollSet).getByTeamAndName(self.context, name)
+
+    @stepthrough('+member')
+    def traverse_member(self, name):
+        person = getUtility(IPersonSet).getByName(name)
+        if person is None:
+            return None
+        return getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            person, self.context)
 
 
 class PersonSetNavigation(Navigation):
@@ -353,7 +362,7 @@ class CommonMenuLinks:
 
     def common_edit(self):
         target = '+edit'
-        text = 'Edit Details'
+        text = 'Edit Personal Details'
         return Link(target, text, icon='edit')
 
     def common_edithomepage(self):
@@ -373,16 +382,42 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     usedfor = IPerson
     facet = 'overview'
     links = ['karma', 'common_edit', 'common_edithomepage',
-             'common_edithackergotchi', 'editsshkeys', 'editgpgkeys',
-             'codesofconduct', 'administer', 'common_packages']
+             'editemailaddresses', 'editwikinames', 'editircnicknames',
+             'editjabberids', 'editpassword', 'edithackergotchi',
+             'editsshkeys', 'editgpgkeys', 'codesofconduct', 'administer',
+             'common_packages']
+
+    def editemailaddresses(self):
+        target = '+editemails'
+        text = 'Edit Email Addresses'
+        return Link(target, text, icon='edit')
+
+    def editwikinames(self):
+        target = '+editwikinames'
+        text = 'Edit Wiki Names'
+        return Link(target, text, icon='edit')
+
+    def editircnicknames(self):
+        target = '+editircnicknames'
+        text = 'Edit IRC Nicknames'
+        return Link(target, text, icon='edit')
+
+    def editjabberids(self):
+        target = '+editjabberids'
+        text = 'Edit Jabber IDs'
+        return Link(target, text, icon='edit')
+
+    def editpassword(self):
+        target = '+changepassword'
+        text = 'Change Password'
+        return Link(target, text, icon='edit')
 
     def karma(self):
         target = '+karma'
         text = 'Karma'
         summary = (
             u'%s\N{right single quotation mark}s activities '
-            u'in Launchpad' % self.context.browsername
-        )
+            u'in Launchpad' % self.context.browsername)
         return Link(target, text, summary, icon='info')
 
     def editsshkeys(self):
@@ -390,8 +425,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Edit SSH Keys'
         summary = (
             'Used if %s stores code on the Supermirror' %
-            self.context.browsername
-        )
+            self.context.browsername)
         return Link(target, text, summary, icon='edit')
 
     def editgpgkeys(self):
@@ -400,7 +434,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         summary = 'Used for the Supermirror, and when maintaining packages'
         return Link(target, text, summary, icon='edit')
 
-    def common_edithackergotchi(self):
+    def edithackergotchi(self):
         target = '+edithackergotchi'
         text = 'Edit Hackergotchi'
         return Link(target, text, icon='edit')
@@ -423,7 +457,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['common_edit', 'common_edithomepage', 'common_editemblem',
+    links = ['common_edit', 'common_edithomepage', 'editemblem',
              'members', 'editemail', 'polls', 'joinleave', 'reassign',
              'common_packages']
 
@@ -435,7 +469,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         # alt="(Change owner)"
         return Link(target, text, summary, icon='edit')
 
-    def common_editemblem(self):
+    def editemblem(self):
         target = '+editemblem'
         text = 'Edit Emblem'
         return Link(target, text, icon='edit')
@@ -813,8 +847,8 @@ class PersonView:
         user = getUtility(ILaunchBag).user
         if user is None:
             return None
-        tms = getUtility(ITeamMembershipSet)
-        return tms.getByPersonAndTeam(user.id, self.context.id)
+        return getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            user, self.context)
 
     def joinAllowed(self):
         """Return True if this is not a restricted team."""
@@ -1264,6 +1298,10 @@ class PersonEditView(SQLObjectEditView):
 
 class PersonEmblemView(GeneralFormView):
 
+    # XXX: This is a workaround, while https://launchpad.net/malone/bugs/5792
+    # isn't fixed. -- Guilherme Salgado, 2005-12-14
+    __launchpad_facetname__ = 'overview'
+
     def process(self, emblem=None):
         # XXX use Bjorn's nice file upload widget when he writes it
         if emblem is not None:
@@ -1278,6 +1316,10 @@ class PersonEmblemView(GeneralFormView):
 
 
 class PersonHackergotchiView(GeneralFormView):
+
+    # XXX: This is a workaround, while https://launchpad.net/malone/bugs/5792
+    # isn't fixed. -- Guilherme Salgado, 2005-12-14
+    __launchpad_facetname__ = 'overview'
 
     def process(self, hackergotchi=None):
         # XXX use Bjorn's nice file upload widget when he writes it
@@ -1505,7 +1547,13 @@ class PersonEditEmailsView:
 
         emailset = getUtility(IEmailAddressSet)
         emailaddress = emailset.getByEmail(email)
-        assert emailaddress.person.id == self.context.id
+        assert emailaddress.person.id == self.context.id, \
+                "differing ids in emailaddress.person.id(%r,%s,%d) == " \
+                "self.context.id(%r,%s,%d)" % \
+                (emailaddress.person, id(emailaddress.person),
+                 emailaddress.person.id, self.context, id(self.context),
+                 self.context.id)
+
         assert emailaddress.status == EmailAddressStatus.VALIDATED
         self.context.preferredemail = emailaddress
         self.message = "Your contact address has been changed to: %s" % email
@@ -1644,7 +1692,7 @@ def sendMergeRequestEmail(token, dupename, appurl):
     message = template % replacements
 
     subject = "Launchpad: Merge of Accounts Requested"
-    simple_sendmail(fromaddress, token.email, subject, message)
+    simple_sendmail(fromaddress, str(token.email), subject, message)
 
 
 class ObjectReassignmentView:
