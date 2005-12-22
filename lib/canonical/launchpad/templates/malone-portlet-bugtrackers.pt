@@ -7,7 +7,7 @@
       <li tal:repeat="tracker context/top_bugtrackers">
         <a tal:content="tracker/name"
            tal:attributes="href tracker/fmt:url">malone.org</a>
-        (<span tal:replace="tracker/watchcount">56</span>)
+        (<span tal:replace="tracker/watches/count:len">56</span>)
       </li>
     </ul>
 

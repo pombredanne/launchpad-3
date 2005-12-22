@@ -108,6 +108,24 @@ class Build(SQLBase):
         bpklist = shortlist(BinaryPackageRelease.selectBy(buildID=self.id))
         return sorted(bpklist, key=lambda a: a.binarypackagename.name)
 
+    @property
+    def can_be_reset(self):
+        """See IBuild."""
+        return self.buildstate in [BuildStatus.FAILEDTOBUILD,
+                                   BuildStatus.MANUALDEPWAIT,
+                                   BuildStatus.CHROOTWAIT]
+
+    def reset(self):
+        """See IBuild."""
+        self.buildstate = BuildStatus.NEEDSBUILD
+        self.datebuilt = None
+        self.buildduration = None
+        self.builder = None
+        self.gpgsigningkey = None
+        self.changes = None
+        self.buildlog = None
+        
+
     def __getitem__(self, name):
         return self.getBinaryPackageRelease(name)
 

@@ -44,7 +44,15 @@ class IBuild(Interface):
         "details for this sourcepackagerelease in this distribution.")
     binarypackages = Attribute("A list of binary packages that resulted "
         "from this build.")
+    can_be_reset = Attribute(
+        "Whether or not this build record can be reset.")
 
+    def reset():
+        """Restore the build record to its initial state.
+
+        Build record loose its history and is moved to NEEDSBUILD.
+        """
+        
     def __getitem__(name):
         """Mapped to getBinaryPackageRelease."""
 

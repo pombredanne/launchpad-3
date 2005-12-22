@@ -10,12 +10,13 @@ __all__ = [
     'NullBugTask',
     'mark_task']
 
+from warnings import warn
+
 from zope.component import getUtility
 from zope.interface import implements, directlyProvides, directlyProvidedBy
 
 from canonical.launchpad.interfaces import (
-    IBugTaskDelta, IMaintainershipSet, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, 
+    IBugTaskDelta, IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask,
     INullBugTask)
 from canonical.lp.dbschema import BugTaskStatus
 
@@ -52,13 +53,12 @@ class BugTaskMixin:
     @property
     def maintainer(self):
         """See canonical.launchpad.interfaces.IBugTask."""
+        warn("IBugTask.maintainer was deprecated as part of "
+             "InitialBugContacts. Talk to bradb about removing this "
+             "completely from the UI and data model.", DeprecationWarning)
+
         if self.product:
             return self.product.owner
-        if self.distribution and self.sourcepackagename:
-            maintainer = getUtility(IMaintainershipSet).get(
-                distribution=self.distribution,
-                sourcepackagename=self.sourcepackagename)
-            return maintainer
 
         return None
 
