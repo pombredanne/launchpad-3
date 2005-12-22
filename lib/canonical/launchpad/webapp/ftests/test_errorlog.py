@@ -217,7 +217,8 @@ class TestErrorReportingService(unittest.TestCase):
 
             def items(self):
                 return [('name2', 'value2'), ('name1', 'value1'),
-                        ('name1', 'value3'), (u'\N{BLACK SQUARE}', u'value4')]
+                        ('name1', 'value3 \xa7'),
+                        (u'\N{BLACK SQUARE}', u'value4')]
 
         request = FakeRequest()
 
@@ -235,14 +236,14 @@ class TestErrorReportingService(unittest.TestCase):
         self.assertEqual(lines[1], 'Exception-Type: Exception\n')
         self.assertEqual(lines[2], 'Exception-Value: xyz\n')
         self.assertEqual(lines[3], 'Date: 2004-04-01T00:30:00+00:00\n')
-        self.assertEqual(lines[4], 'User: Login, 42, title, description |?|\n')
+        self.assertEqual(lines[4], 'User: Login, 42, title, description |\\u25a0|\n')
         self.assertEqual(lines[5], 'URL: http://localhost:9000/foo\n')
         self.assertEqual(lines[6], '\n')
 
         # request vars
-        self.assertEqual(lines[7], '?=value4\n')    # non-ASCII request var
+        self.assertEqual(lines[7], '\\u25a0=value4\n')    # non-ASCII request var
         self.assertEqual(lines[8], 'name1=value1\n')
-        self.assertEqual(lines[9], 'name1=value3\n')
+        self.assertEqual(lines[9], 'name1=value3 \\xa7\n')
         self.assertEqual(lines[10], 'name2=value2\n')
         self.assertEqual(lines[11], '\n')
 

@@ -73,7 +73,7 @@ class ErrorReport:
         fp.write('Date: %s\n' % self.time.isoformat())
         fp.write('User: %s\n' % self.username)
         fp.write('URL: %s\n\n' % self.url)
-        safe_chars = ';/?:@&+$, ()*!'
+        safe_chars = ';/\\?:@&+$, ()*!'
         for key, value in self.req_vars:
             fp.write('%s=%s\n' % (urllib.quote(key, safe_chars),
                                   urllib.quote(value, safe_chars)))
@@ -197,7 +197,8 @@ class ErrorReportingService:
 
     def safestr(self, obj):
         if isinstance(obj, unicode):
-            return obj.encode('ASCII', 'replace')
+            return obj.replace('\\', '\\\\').encode('ASCII',
+                                                    'backslashreplace')
         # A call to str(obj) could raise anything at all.
         # We'll ignore these errors, and print something
         # useful instead, but also log the error.
@@ -210,8 +211,10 @@ class ErrorReportingService:
             value = '<unprintable %s object>' % (
                 str(type(obj).__name__)
                 )
-        # replace non-ASCII characters
-        value = re.sub(r'[\x80-\xff]', '?', value)
+        # encode non-ASCII characters
+        value = value.replace('\\', '\\\\')
+        value = re.sub(r'[\x80-\xff]',
+                       lambda match: '\\x%02x' % ord(match.group(0)), value)
         return value
 
     def raising(self, info, request=None, now=None):
@@ -249,11 +252,12 @@ class ErrorReportingService:
                         login = request.principal.getLogin()
                     else:
                         login = 'unauthenticated'
-                    username = ', '.join(map(unicode, (login,
-                                          request.principal.id,
-                                          request.principal.title,
-                                          request.principal.description
-                                         ))).encode('ascii','replace')
+                    username = self.safestr(
+                        ', '.join(map(unicode, (login,
+                                                request.principal.id,
+                                                request.principal.title,
+                                                request.principal.description
+                                                ))))
                 # When there's an unauthorized access, request.principal is
                 # not set, so we get an AttributeError
                 # XXX is this right? Surely request.principal should be set!
