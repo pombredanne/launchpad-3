@@ -25,6 +25,7 @@ import _pythonpath
 
 import sys
 from optparse import OptionParser
+import logging
 
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
@@ -37,7 +38,7 @@ _default_lock_file = '/var/lock/supermirror-rewritemap.lock'
 
 def main():
     parser = OptionParser(description=__doc__)
-    logger_options(parser)
+    logger_options(parser, default=logging.WARNING)
 
     (options, args) = parser.parse_args()
 
