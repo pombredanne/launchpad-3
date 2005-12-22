@@ -1,0 +1,98 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:lp="http://launchpad.canonical.com"
+    i18n_domain="launchpad">
+
+    <!-- TranslationImportQueue -->
+    <content class="canonical.launchpad.database.TranslationImportQueueEntry">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationImportQueueEntry"
+            />
+        <require
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.ITranslationImportQueueEntry"
+            />
+    </content>
+
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="TranslationImportQueueEntryNavigation TranslationImportQueueNavigation"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ITranslationImportQueueEntry"
+        name="+index" />
+
+    <browser:menus
+        module="canonical.launchpad.browser"
+        classes="TranslationImportQueueContextMenu"
+        />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.ITranslationImportQueueEntry"
+        urldata="canonical.launchpad.browser.TranslationImportQueueEntryURL"
+        />
+
+    <browser:generalform
+        name="+index"
+        for="canonical.launchpad.interfaces.ITranslationImportQueueEntry"
+        schema="canonical.launchpad.interfaces.IEditTranslationImportQueueEntry"
+        class="canonical.launchpad.browser.TranslationImportQueueEntryView"
+        template="../templates/translationimportqueueentry-index.pt"
+        permission="launchpad.Admin"
+        fields="sourcepackagename potemplatename path
+                language variant"
+        arguments="potemplatename"
+        keyword_arguments="sourcepackagename path language variant"
+        lp:url="/rosetta/imports/$TranslationImportQueueEntry.id/+index" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.ITranslationImportQueueEntry"
+        facet="overview"
+        permission="zope.Public">
+        <!-- TranslationImportQueueEntry Portlets -->
+        <browser:page
+            name="+portlet-details"
+            template="../templates/translationimportqueueentry-portlet-details.pt"
+            lp:url="/rosetta/imports/1/+portlet-details"
+            />
+    </browser:pages>
+
+    <!-- TranslationImportQueue -->
+    <securedutility
+        class="canonical.launchpad.database.TranslationImportQueue"
+        provides="canonical.launchpad.interfaces.ITranslationImportQueue">
+        <allow
+            interface="canonical.launchpad.interfaces.ITranslationImportQueue"
+            />
+    </securedutility>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.ITranslationImportQueue"
+        path_expression="string:imports"
+        parent_utility="canonical.launchpad.interfaces.IRosettaApplication"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ITranslationImportQueue"
+        name="+index"
+        />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.ITranslationImportQueue"
+        class="canonical.launchpad.browser.TranslationImportQueueView"
+        facet="translations"
+        permission="zope.Public">
+        <browser:page
+            name="+index"
+            template="../templates/translationimportqueue-index.pt" />
+            lp:url="/rosetta/imports/+index" />
+        <browser:page
+            name="+blocked"
+            template="../templates/translationimportqueue-blocked.pt" />
+            lp:url="/rosetta/imports/+blocked" />
+    </browser:pages>
+
+</configure>
