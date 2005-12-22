@@ -15,12 +15,8 @@ import urllib
 
 from zope.interface import implements
 
-from zope.app.errorservice.interfaces import (
-    IErrorReportingService, ILocalErrorReportingService)
+from zope.app.errorservice.interfaces import IErrorReportingService
 from zope.exceptions.exceptionformatter import format_exception
-
-from zope.security.checker import ProxyFactory, NamesChecker
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.webapp.interfaces import (
@@ -102,8 +98,9 @@ class ErrorReport:
         return cls(id, exc_type, exc_value, date, tb_text,
                    username, url, req_vars)
 
+
 class ErrorReportingService:
-    implements(IErrorReportingService, ILocalErrorReportingService)
+    implements(IErrorReportingService)
 
     _ignored_exceptions = set(['Unauthorized'])
     copy_to_zlog = False
@@ -306,48 +303,8 @@ class ErrorReportingService:
                 logging.getLogger('SiteError').exception(
                     '%s (%s)' % (url, oopsid))
 
-    def getProperties(self):
-        """See ILocalErrorReportingService.getProperties()"""
-        return {}
-
-    def setProperties(self, keep_entries, copy_to_zlog=0,
-                      ignored_exceptions=()):
-        """See ILocalErrorReportingService.setProperties()"""
-        raise NotImplementedError
-
-    def getLogEntries(self):
-        """See ILocalErrorReportingService.getLogEntries()"""
-        errordir = self.errordir()
-        files = os.listdir(errordir)
-        # since the file names start with a zero padded "second in day",
-        # lexical sorting leaves them in order of occurrence.
-        files.sort()
-        entries = []
-        for filename in files[-50:]:
-            filename = os.path.join(errordir, filename)
-            entries.append(ErrorReport.read(open(filename, 'rb')))
-        return entries
-
-    def getLogEntryById(self, id):
-        """See ILocalErrorReportingService.getLogEntryById"""
-        if not id.startswith('OOPS-'):
-            return None
-        suffix = '.%s' % id[5:]
-        errordir = self.errordir()
-        files = os.listdir(errordir)
-        for filename in files:
-            if filename.endswith(suffix):
-                filename = os.path.join(errordir, filename)
-                return ErrorReport.read(open(filename, 'rb'))
-        return None
-
 
 globalErrorService = ErrorReportingService()
-
-globalErrorUtility = ProxyFactory(
-    removeSecurityProxy(globalErrorService),
-    NamesChecker(ILocalErrorReportingService.names())
-    )
 
 
 class ErrorReportRequest:
