@@ -223,7 +223,7 @@ class TestErrorReportingService(unittest.TestCase):
         request = FakeRequest()
 
         try:
-            raise Exception('xyz')
+            raise Exception('xyz\nabc')
         except:
             service.raising(sys.exc_info(), request, now=now)
 
@@ -234,7 +234,7 @@ class TestErrorReportingService(unittest.TestCase):
         # the header
         self.assertEqual(lines[0], 'Oops-Id: OOPS-1T1\n')
         self.assertEqual(lines[1], 'Exception-Type: Exception\n')
-        self.assertEqual(lines[2], 'Exception-Value: xyz\n')
+        self.assertEqual(lines[2], 'Exception-Value: xyz abc\n')
         self.assertEqual(lines[3], 'Date: 2004-04-01T00:30:00+00:00\n')
         self.assertEqual(lines[4], 'User: Login, 42, title, description |\\u25a0|\n')
         self.assertEqual(lines[5], 'URL: http://localhost:9000/foo\n')

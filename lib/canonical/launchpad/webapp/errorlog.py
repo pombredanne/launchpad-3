@@ -37,6 +37,12 @@ _rate_restrict_period = datetime.timedelta(seconds=60)
 # minute.
 _rate_restrict_burst = 5
 
+def _normalise_whitespace(s):
+    """Normalise the whitespace in a string to spaces"""
+    if s is None:
+        return None
+    return ' '.join(s.split())
+
 
 class ErrorReport:
     implements(IErrorReport)
@@ -63,12 +69,12 @@ class ErrorReport:
         return '<ErrorReport %s>' % self.id
 
     def write(self, fp):
-        fp.write('Oops-Id: %s\n' % self.id)
-        fp.write('Exception-Type: %s\n' % self.type)
-        fp.write('Exception-Value: %s\n' % self.value)
+        fp.write('Oops-Id: %s\n' % _normalise_whitespace(self.id))
+        fp.write('Exception-Type: %s\n' % _normalise_whitespace(self.type))
+        fp.write('Exception-Value: %s\n' % _normalise_whitespace(self.value))
         fp.write('Date: %s\n' % self.time.isoformat())
-        fp.write('User: %s\n' % self.username)
-        fp.write('URL: %s\n\n' % self.url)
+        fp.write('User: %s\n' % _normalise_whitespace(self.username))
+        fp.write('URL: %s\n\n' % _normalise_whitespace(self.url))
         safe_chars = ';/\\?:@&+$, ()*!'
         for key, value in self.req_vars:
             fp.write('%s=%s\n' % (urllib.quote(key, safe_chars),
