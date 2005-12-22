@@ -26,7 +26,8 @@ import _pythonpath
 import sys
 from optparse import OptionParser
 
-from canonical.launchpad.scripts import logger_options, logger
+from canonical.launchpad.scripts import (
+    execute_zcml_for_scripts, logger_options, logger)
 from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.scripts import supermirror_rewritemap
 from canonical.lp import initZopeless
@@ -55,11 +56,14 @@ def main():
         sys.exit(1)
 
     try:
+        execute_zcml_for_scripts()
         ztm = initZopeless(
                 dbuser=config.supermirror.dbuser, implicitBegin=False
                 )
         outfile = open(filename, 'wb')
-        supermirror_rewritemap.main(ztm, outfile)
+        ztm.begin()
+        supermirror_rewritemap.main(outfile)
+        ztm.abort()
         outfile.close()
     finally:
         lockfile.release()

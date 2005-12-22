@@ -4,11 +4,12 @@
 
 __metaclass__ = type
 
-from canonical.launchpad.database import Branch
+from zope.component import getUtility
 
-def main(ztm, outfile):
-    ztm.begin()
-    branches = Branch.select()
+from canonical.launchpad.interfaces import IBranchSet
+
+def main(outfile):
+    branches = getUtility(IBranchSet)
     for branch in branches:
         person_name = branch.owner.name
         product = branch.product
@@ -23,5 +24,4 @@ def main(ztm, outfile):
 
         outfile.write('~%s/%s/%s\t%s\n' % 
             (person_name, product_name, branch_name, branch_location))
-    ztm.abort()
 
