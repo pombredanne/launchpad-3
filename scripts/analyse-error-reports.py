@@ -30,7 +30,7 @@ class ErrorData:
         self.evalue = evalue
         self.urls = {}
 
-    def add_url(self, url, oopsid):
+    def addUrl(self, url, oopsid):
         self.urls.setdefault(url, set()).add(oopsid)
 
     def count(self):
@@ -46,12 +46,12 @@ class ErrorSummary:
         self.start = None
         self.end = None
 
-    def add_oops(self, errordict, etype, evalue, url, oopsid):
+    def addOops(self, errordict, etype, evalue, url, oopsid):
         data = errordict.setdefault((etype, evalue),
                                     ErrorData(etype, evalue))
-        data.add_url(url, oopsid)
+        data.addUrl(url, oopsid)
 
-    def process_oops(self, fname):
+    def processOops(self, fname):
         msg = rfc822.Message(open(fname, 'r'))
 
         # if there is no OOPS ID, then it is not an OOPS
@@ -79,19 +79,19 @@ class ErrorSummary:
         evalue = re.sub("0x[abcdef0-9]+", "INSTANCE-ID", evalue)
 
         if etype in ('RequestExpired', 'RequestQueryTimedOut'):
-            self.add_oops(self.expired, etype, evalue, url, oopsid)
+            self.addOops(self.expired, etype, evalue, url, oopsid)
         elif etype == 'NotFound':
-            self.add_oops(self.notfound, etype, evalue, url, oopsid)
+            self.addOops(self.notfound, etype, evalue, url, oopsid)
         else:
-            self.add_oops(self.exceptions, etype, evalue, url, oopsid)
+            self.addOops(self.exceptions, etype, evalue, url, oopsid)
 
-    def process_dir(self, directory):
+    def processDir(self, directory):
         for filename in os.listdir(directory):
             path = os.path.join(directory, filename)
             if os.path.isfile(path):
-                self.process_oops(path)
+                self.processOops(path)
 
-    def print_table(self, source, title):
+    def printTable(self, source, title):
         print '=== Top %d %s ===' % (COUNT, title)
         print
 
@@ -107,16 +107,16 @@ class ErrorSummary:
             # print the first three URLs
             for (count, url) in urls[:3]:
                 print '    %4d %s' % (count, url)
-                print '        %s' % ', '.join(sorted(data.urls[url])[:3])
+                print '        %s' % ', '.join(sorted(data.urls[url])[:5])
             if len(urls) > 3:
                 print '    [%s other URLs]' % (len(urls) - 3)
             print
         print
             
-    def print_report(self):
-        self.print_table(self.expired, 'Time Out Pages')
-        self.print_table(self.notfound, '404 Pages')
-        self.print_table(self.exceptions, 'Exceptions')
+    def printReport(self):
+        self.printTable(self.expired, 'Time Out Pages')
+        self.printTable(self.notfound, '404 Pages')
+        self.printTable(self.exceptions, 'Exceptions')
 
         period = self.end - self.start
         days = period.days + period.seconds / 86400.0
@@ -128,12 +128,13 @@ class ErrorSummary:
         print " * Total exceptions: %d" % self.exc_count
         print " * Average exceptions per day: %.2f" % (self.exc_count / days)
         print
-        
+
+
 if __name__ == '__main__':
     summary = ErrorSummary()
     if not sys.argv[1:]:
         sys.stderr.write('usage: %s directory ...\n' % sys.argv[0])
         sys.exit(1)
     for directory in sys.argv[1:]:
-        summary.process_dir(directory)
-    summary.print_report()
+        summary.processDir(directory)
+    summary.printReport()
