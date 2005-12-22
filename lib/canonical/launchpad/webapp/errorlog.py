@@ -189,7 +189,7 @@ class ErrorReportingService:
             self.lastid_lock.release()
         second_in_day = now.hour * 3600 + now.minute * 60 + now.second
         oops_prefix = config.launchpad.errorreports.oops_prefix
-        oops = 'OOPS-%s%d' % (oops_prefix, newid)
+        oops = 'OOPS-%d%s%d' % (now.day, oops_prefix, newid)
         filename = os.path.join(errordir, '%05d.%s%s' % (second_in_day,
                                                          oops_prefix,
                                                          newid))

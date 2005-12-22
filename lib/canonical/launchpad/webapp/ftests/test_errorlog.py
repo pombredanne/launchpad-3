@@ -119,7 +119,7 @@ class TestErrorReportingService(unittest.TestCase):
         # first oops of the day
         now = datetime.datetime(2004, 04, 01, 00, 30, 00, tzinfo=UTC)
         oopsid, filename = service.newOopsId(now)
-        self.assertEqual(oopsid, 'OOPS-T1')
+        self.assertEqual(oopsid, 'OOPS-1T1')
         self.assertEqual(filename, '/var/tmp/lperr.test/2004-04-01/01800.T1')
         self.assertEqual(service.lastid, 1)
         self.assertEqual(service.lasterrordate, '2004-04-01')
@@ -127,7 +127,7 @@ class TestErrorReportingService(unittest.TestCase):
         # second oops of the day
         now = datetime.datetime(2004, 04, 01, 12, 00, 00, tzinfo=UTC)
         oopsid, filename = service.newOopsId(now)
-        self.assertEqual(oopsid, 'OOPS-T2')
+        self.assertEqual(oopsid, 'OOPS-1T2')
         self.assertEqual(filename, '/var/tmp/lperr.test/2004-04-01/43200.T2')
         self.assertEqual(service.lastid, 2)
         self.assertEqual(service.lasterrordate, '2004-04-01')
@@ -135,7 +135,7 @@ class TestErrorReportingService(unittest.TestCase):
         # first oops of following day
         now = datetime.datetime(2004, 04, 02, 00, 30, 00, tzinfo=UTC)
         oopsid, filename = service.newOopsId(now)
-        self.assertEqual(oopsid, 'OOPS-T1')
+        self.assertEqual(oopsid, 'OOPS-2T1')
         self.assertEqual(filename, '/var/tmp/lperr.test/2004-04-02/01800.T1')
         self.assertEqual(service.lastid, 1)
         self.assertEqual(service.lasterrordate, '2004-04-02')
@@ -178,7 +178,7 @@ class TestErrorReportingService(unittest.TestCase):
         lines = open(errorfile, 'r').readlines()
 
         # the header
-        self.assertEqual(lines[0], 'Oops-Id: OOPS-T1\n')
+        self.assertEqual(lines[0], 'Oops-Id: OOPS-1T1\n')
         self.assertEqual(lines[1], 'Exception-Type: Exception\n')
         self.assertEqual(lines[2], 'Exception-Value: xyz\n')
         self.assertEqual(lines[3], 'Date: 2004-04-01T00:30:00+00:00\n')
@@ -231,7 +231,7 @@ class TestErrorReportingService(unittest.TestCase):
         lines = open(errorfile, 'r').readlines()
 
         # the header
-        self.assertEqual(lines[0], 'Oops-Id: OOPS-T1\n')
+        self.assertEqual(lines[0], 'Oops-Id: OOPS-1T1\n')
         self.assertEqual(lines[1], 'Exception-Type: Exception\n')
         self.assertEqual(lines[2], 'Exception-Value: xyz\n')
         self.assertEqual(lines[3], 'Date: 2004-04-01T00:30:00+00:00\n')
@@ -253,7 +253,7 @@ class TestErrorReportingService(unittest.TestCase):
         self.assertEqual(lines[15], 'Exception: xyz\n')
 
         # verify that the oopsid was set on the request
-        self.assertEqual(request.oopsid, 'OOPS-T1')
+        self.assertEqual(request.oopsid, 'OOPS-1T1')
 
     def test_raising_with_unprintable_exception(self):
         """Test ErrorReportingService.raising() with an unprintable exception"""
@@ -275,7 +275,7 @@ class TestErrorReportingService(unittest.TestCase):
         lines = open(errorfile, 'r').readlines()
 
         # the header
-        self.assertEqual(lines[0], 'Oops-Id: OOPS-T1\n')
+        self.assertEqual(lines[0], 'Oops-Id: OOPS-1T1\n')
         self.assertEqual(lines[1], 'Exception-Type: UnprintableException\n')
         self.assertEqual(lines[2], 'Exception-Value: <unprintable instance object>\n')
         self.assertEqual(lines[3], 'Date: 2004-04-01T00:30:00+00:00\n')
