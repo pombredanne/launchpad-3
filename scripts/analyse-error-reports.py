@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # Copyright 2005 Canonical Ltd.  All rights reserved.
 
-# Parse Launchpad error reports and return a list of most frequent errors
+# Analyse Launchpad error reports and return a list of most frequent errors
 
 __metaclass__ = type
 
@@ -21,6 +21,7 @@ def _parsedate(s):
     """
     dt = time.strptime(s[:19], '%Y-%m-%dT%H:%M:%S')
     return datetime.datetime(*dt[:6])
+
 
 class ErrorData:
     """Data about a particular exception"""
