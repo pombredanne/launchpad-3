@@ -15,8 +15,12 @@ import urllib
 
 from zope.interface import implements
 
-from zope.app.errorservice.interfaces import IErrorReportingService
+from zope.app.errorservice.interfaces import (
+    IErrorReportingService, ILocalErrorReportingService)
 from zope.exceptions.exceptionformatter import format_exception
+
+from zope.security.checker import ProxyFactory, NamesChecker
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.webapp.interfaces import (
@@ -37,12 +41,6 @@ _rate_restrict_period = datetime.timedelta(seconds=60)
 # minute.
 _rate_restrict_burst = 5
 
-def _normalise_whitespace(s):
-    """Normalise the whitespace in a string to spaces"""
-    if s is None:
-        return None
-    return ' '.join(s.split())
-
 
 class ErrorReport:
     implements(IErrorReport)
@@ -59,7 +57,8 @@ class ErrorReport:
         self.req_vars = []
         # hide passwords that might be present in the request variables
         for (name, value) in req_vars:
-            if ('password' in name.lower() or 'passwd' in name.lower()):
+            if (name.lower().startswith('password') or
+                name.lower().startswith('passwd')):
                 self.req_vars.append((name, '<hidden>'))
             else:
                 self.req_vars.append((name, value))
@@ -68,13 +67,13 @@ class ErrorReport:
         return '<ErrorReport %s>' % self.id
 
     def write(self, fp):
-        fp.write('Oops-Id: %s\n' % _normalise_whitespace(self.id))
-        fp.write('Exception-Type: %s\n' % _normalise_whitespace(self.type))
-        fp.write('Exception-Value: %s\n' % _normalise_whitespace(self.value))
+        fp.write('Oops-Id: %s\n' % self.id)
+        fp.write('Exception-Type: %s\n' % self.type)
+        fp.write('Exception-Value: %s\n' % self.value)
         fp.write('Date: %s\n' % self.time.isoformat())
-        fp.write('User: %s\n' % _normalise_whitespace(self.username))
-        fp.write('URL: %s\n\n' % _normalise_whitespace(self.url))
-        safe_chars = ';/\\?:@&+$, ()*!'
+        fp.write('User: %s\n' % self.username)
+        fp.write('URL: %s\n\n' % self.url)
+        safe_chars = ';/?:@&+$, ()*!'
         for key, value in self.req_vars:
             fp.write('%s=%s\n' % (urllib.quote(key, safe_chars),
                                   urllib.quote(value, safe_chars)))
@@ -103,9 +102,8 @@ class ErrorReport:
         return cls(id, exc_type, exc_value, date, tb_text,
                    username, url, req_vars)
 
-
 class ErrorReportingService:
-    implements(IErrorReportingService)
+    implements(IErrorReportingService, ILocalErrorReportingService)
 
     _ignored_exceptions = set(['Unauthorized'])
     copy_to_zlog = False
@@ -116,8 +114,9 @@ class ErrorReportingService:
     def __init__(self):
         self.copy_to_zlog = config.launchpad.errorreports.copy_to_zlog
         self.lastid_lock = threading.Lock()
+        self.lastid = self._findLastOopsId()
 
-    def _findLastOopsId(self, directory):
+    def _findLastOopsId(self):
         """Find the last error number used by this Launchpad instance
 
         The purpose of this function is to not repeat sequence numbers
@@ -128,7 +127,7 @@ class ErrorReportingService:
         """
         prefix = config.launchpad.errorreports.oops_prefix
         lastid = 0
-        for filename in os.listdir(directory):
+        for filename in os.listdir(self.errordir()):
             oopsid = filename.rsplit('.', 1)[1]
             if not oopsid.startswith(prefix):
                 continue
@@ -152,6 +151,7 @@ class ErrorReportingService:
         if date != self.lasterrordate:
             self.lastid_lock.acquire()
             try:
+                self.lastid = 0
                 self.lasterrordate = date
                 # make sure the directory exists
                 try:
@@ -159,7 +159,6 @@ class ErrorReportingService:
                 except OSError, e:
                     if e.errno != errno.EEXIST:
                         raise
-                self.lastid = self._findLastOopsId(errordir)
             finally:
                 self.lastid_lock.release()
         return errordir
@@ -191,7 +190,7 @@ class ErrorReportingService:
             self.lastid_lock.release()
         second_in_day = now.hour * 3600 + now.minute * 60 + now.second
         oops_prefix = config.launchpad.errorreports.oops_prefix
-        oops = 'OOPS-%d%s%d' % (now.day, oops_prefix, newid)
+        oops = 'OOPS-%s%d' % (oops_prefix, newid)
         filename = os.path.join(errordir, '%05d.%s%s' % (second_in_day,
                                                          oops_prefix,
                                                          newid))
@@ -199,8 +198,7 @@ class ErrorReportingService:
 
     def safestr(self, obj):
         if isinstance(obj, unicode):
-            return obj.replace('\\', '\\\\').encode('ASCII',
-                                                    'backslashreplace')
+            return obj.encode('ASCII', 'replace')
         # A call to str(obj) could raise anything at all.
         # We'll ignore these errors, and print something
         # useful instead, but also log the error.
@@ -213,10 +211,8 @@ class ErrorReportingService:
             value = '<unprintable %s object>' % (
                 str(type(obj).__name__)
                 )
-        # encode non-ASCII characters
-        value = value.replace('\\', '\\\\')
-        value = re.sub(r'[\x80-\xff]',
-                       lambda match: '\\x%02x' % ord(match.group(0)), value)
+        # replace non-ASCII characters
+        value = re.sub(r'[\x80-\xff]', '?', value)
         return value
 
     def raising(self, info, request=None, now=None):
@@ -254,12 +250,11 @@ class ErrorReportingService:
                         login = request.principal.getLogin()
                     else:
                         login = 'unauthenticated'
-                    username = self.safestr(
-                        ', '.join(map(unicode, (login,
-                                                request.principal.id,
-                                                request.principal.title,
-                                                request.principal.description
-                                                ))))
+                    username = ', '.join(map(unicode, (login,
+                                          request.principal.id,
+                                          request.principal.title,
+                                          request.principal.description
+                                         ))).encode('ascii','replace')
                 # When there's an unauthorized access, request.principal is
                 # not set, so we get an AttributeError
                 # XXX is this right? Surely request.principal should be set!
@@ -308,8 +303,48 @@ class ErrorReportingService:
                 logging.getLogger('SiteError').exception(
                     '%s (%s)' % (url, oopsid))
 
+    def getProperties(self):
+        """See ILocalErrorReportingService.getProperties()"""
+        return {}
+
+    def setProperties(self, keep_entries, copy_to_zlog=0,
+                      ignored_exceptions=()):
+        """See ILocalErrorReportingService.setProperties()"""
+        raise NotImplementedError
+
+    def getLogEntries(self):
+        """See ILocalErrorReportingService.getLogEntries()"""
+        errordir = self.errordir()
+        files = os.listdir(errordir)
+        # since the file names start with a zero padded "second in day",
+        # lexical sorting leaves them in order of occurrence.
+        files.sort()
+        entries = []
+        for filename in files[-50:]:
+            filename = os.path.join(errordir, filename)
+            entries.append(ErrorReport.read(open(filename, 'rb')))
+        return entries
+
+    def getLogEntryById(self, id):
+        """See ILocalErrorReportingService.getLogEntryById"""
+        if not id.startswith('OOPS-'):
+            return None
+        suffix = '.%s' % id[5:]
+        errordir = self.errordir()
+        files = os.listdir(errordir)
+        for filename in files:
+            if filename.endswith(suffix):
+                filename = os.path.join(errordir, filename)
+                return ErrorReport.read(open(filename, 'rb'))
+        return None
+
 
 globalErrorService = ErrorReportingService()
+
+globalErrorUtility = ProxyFactory(
+    removeSecurityProxy(globalErrorService),
+    NamesChecker(ILocalErrorReportingService.names())
+    )
 
 
 class ErrorReportRequest:

@@ -4,6 +4,7 @@ __metaclass__ = type
 __all__ = ['Distribution', 'DistributionSet', 'DistroPackageFinder']
 
 from zope.interface import implements
+from zope.component import getUtility
 
 from sqlobject import (
     RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey, MultipleJoin)
@@ -36,7 +37,6 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishing)
 from canonical.launchpad.database.publishedpackage import PublishedPackage
 from canonical.launchpad.database.librarian import LibraryFileAlias
-from canonical.launchpad.database.build import Build
 
 from canonical.lp.dbschema import (
     EnumCol, BugTaskStatus, DistributionReleaseStatus,
@@ -44,8 +44,7 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IDistroPackageFinder, NotFoundError,
-    IHasBuildRecords, ISourcePackageName, UNRESOLVED_BUGTASK_STATUSES,
-    RESOLVED_BUGTASK_STATUSES)
+    IHasBuildRecords, ISourcePackageName, IBuildSet)
 
 from sourcerer.deb.version import Version
 
@@ -106,34 +105,34 @@ class Distribution(SQLBase):
     @property
     def open_cve_bugtasks(self):
         """See IDistribution."""
-        open_bugtask_status_sql_values = "(%s)" % (
-            ', '.join(sqlvalues(*UNRESOLVED_BUGTASK_STATUSES)))
-
         result = BugTask.select("""
             CVE.id = BugCve.cve AND
             BugCve.bug = Bug.id AND
             BugTask.bug = Bug.id AND
-            BugTask.distribution=%d AND
-            BugTask.status IN %s
-            """ % (self.id, open_bugtask_status_sql_values),
+            BugTask.distribution=%s AND
+            BugTask.status IN (%s, %s)
+            """ % sqlvalues(
+                self.id,
+                BugTaskStatus.NEW,
+                BugTaskStatus.ACCEPTED),
             clauseTables=['Bug', 'Cve', 'BugCve'],
             orderBy=['-severity', 'datecreated'])
-
         return result
 
     @property
     def resolved_cve_bugtasks(self):
         """See IDistribution."""
-        resolved_bugtask_status_sql_values = "(%s)" % (
-            ', '.join(sqlvalues(*RESOLVED_BUGTASK_STATUSES)))
-
         result = BugTask.select("""
             CVE.id = BugCve.cve AND
             BugCve.bug = Bug.id AND
             BugTask.bug = Bug.id AND
-            BugTask.distribution=%d AND
-            BugTask.status IN %s
-            """ % (self.id, resolved_bugtask_status_sql_values),
+            BugTask.distribution=%s AND
+            BugTask.status IN (%s, %s, %s)
+            """ % sqlvalues(
+                self.id,
+                BugTaskStatus.REJECTED,
+                BugTaskStatus.FIXED,
+                BugTaskStatus.PENDINGUPLOAD),
             clauseTables=['Bug', 'Cve', 'BugCve'],
             orderBy=['-severity', 'datecreated'])
         return result
@@ -311,32 +310,16 @@ class Distribution(SQLBase):
         raise NotFoundError(filename)
 
 
-    def getBuildRecords(self, status=None, limit=10):
+    def getBuildRecords(self, status=None):
         """See IHasBuildRecords"""
         # Find out the distroarchreleases in question.
-        ids_list = []
+        arch_ids = []
+        # concatenate architectures list since they are distinct.
         for release in self.releases:
-            ids = ','.join(
-                '%d' % arch.id for arch in release.architectures)
-            # Do not mess pgsql sintaxe with empty chunks.
-            if ids:
-                ids_list.append(ids)
+            arch_ids += [arch.id for arch in release.architectures]
 
-        arch_ids = ','.join(ids_list)
-
-        # If not distroarchrelease was found return None.
-        if not arch_ids:
-            return None
-
-        # Specific status or simply touched by a builder.
-        if status:
-            status_clause = "buildstate=%s" % sqlvalues(status)
-        else:
-            status_clause = "builder is not NULL"
-
-        return Build.select(
-            "distroarchrelease IN (%s) AND %s" % (arch_ids, status_clause), 
-            limit=limit, orderBy="-datebuilt")
+        # use facility provided by IBuildSet to retrieve the records
+        return getUtility(IBuildSet).getBuildsByArchIds(arch_ids, status)
 
     def removeOldCacheItems(self):
         """See IDistribution."""
@@ -453,18 +436,13 @@ class Distribution(SQLBase):
 
     def getPackageNames(self, pkgname):
         """See IDistribution"""
-        # XXX, Brad Bollenbach, 2005-10-24: This code is using undefined names,
-        # SourcePackagePublishing and PublishedPackage. That almost surely means
-        # this is an unused code path. See
-        # https://launchpad.net/products/launchpad/+bug/3530.
-
         # We should only ever get a pkgname as a string.
         assert isinstance(pkgname, str), "Only ever call this with a string"
 
         # Clean it up and make sure it's a valid package name.
         pkgname = pkgname.strip().lower()
         if not valid_name(pkgname):
-            raise ValueError('Invalid package name: %s' % pkgname)
+            raise NotFoundError('Invalid package name: %s' % pkgname)
 
         # First, we try assuming it's a binary package. let's try and find
         # a binarypackagename for it.
@@ -473,8 +451,6 @@ class Distribution(SQLBase):
             # Is it a sourcepackagename?
             sourcepackagename = SourcePackageName.selectOneBy(name=pkgname)
             if sourcepackagename is not None:
-
-                # XXX: completely untested code
 
                 # It's definitely only a sourcepackagename. Let's make sure it
                 # is published in the current distro release.
@@ -490,12 +466,11 @@ class Distribution(SQLBase):
                 if publishing == 0:
                     # Yes, it's a sourcepackage, but we don't know about it in
                     # this distro.
-                    raise ValueError('Unpublished source package: %s' % pkgname)
+                    raise NotFoundError('Unpublished source package: %s'
+                                        % pkgname)
                 return (sourcepackagename, None)
             # It's neither a sourcepackage, nor a binary package name.
-            raise ValueError('Unknown package: %s' % pkgname)
-
-        # XXX: completely untested code
+            raise NotFoundError('Unknown package: %s' % pkgname)
 
         # Ok, so we have a binarypackage with that name. let's see if it's
         # published, and what its sourcepackagename is.
@@ -512,7 +487,7 @@ class Distribution(SQLBase):
             if publishings.count() == 0:
                 # There are no publishing records anywhere for this beast,
                 # sadly.
-                raise ValueError('Unpublished binary package: %s' % pkgname)
+                raise NotFoundError('Unpublished binary package: %s' % pkgname)
 
         # PublishedPackageView uses the actual text names.
         for p in publishings:

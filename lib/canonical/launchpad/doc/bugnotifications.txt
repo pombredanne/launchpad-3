@@ -74,7 +74,7 @@ examples throughout the rest of this document.
     >>> msg["Sender"]
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
-    ['product=firefox; status=Unconfirmed; priority=None;\n\tassignee=None; ']
+    ['product=firefox; status=New; priority=None; assignee=None;']
 
 Note that all bug notification emails include an absolute URL to the
 bug:
@@ -180,9 +180,9 @@ let's hang a bug onto the ILaunchBag utility.
     >>> msg["Sender"]
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
-    ['product=firefox; status=Unconfirmed; priority=None;\n\tassignee=None; ',
+    ['product=firefox; status=New; priority=None; assignee=None;',
      'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
-      status=Unconfirmed; priority=None; assignee=None;']
+      status=New; priority=None; assignee=None; ']
 
     >>> print msg.get_payload(decode=True)
     Public bug report changed:
@@ -227,9 +227,11 @@ let's hang a bug onto the ILaunchBag utility.
     >>> msg["Sender"]
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
-    ['product=firefox;...',
-     'distribution=debian; sourcepackage=mozilla-firefox;...',
-     'distribution=debian; distrorelease=sid;\n\tsourcepackage=mozilla-firefox;...']
+    ['product=firefox; status=New; priority=None; assignee=None;',
+     'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
+      status=New; priority=None; assignee=None; ',
+     'distribution=debian; distrorelease=sid;\n\tsourcepackage=mozilla-firefox;
+      component=None; status=New;\n\tpriority=None; assignee=None; ']
 
     >>> print msg.get_payload(decode=True)
     Public bug report changed:
@@ -277,10 +279,12 @@ let's hang a bug onto the ILaunchBag utility.
     >>> msg["Sender"]
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
-    ['product=evolution;...',
-     'product=firefox;...',
-     'distribution=debian; sourcepackage=mozilla-firefox;...',
-     'distribution=debian; distrorelease=sid;\n\tsourcepackage=mozilla-firefox;...']
+    ['product=evolution; status=New; priority=None; assignee=None;',
+     'product=firefox; status=New; priority=None; assignee=None;',
+     'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
+      status=New; priority=None; assignee=None; ',
+     'distribution=debian; distrorelease=sid;\n\tsourcepackage=mozilla-firefox;
+      component=None; status=New;\n\tpriority=None; assignee=None; ']
 
     >>> print msg.get_payload(decode=True)
     Public bug report changed:
@@ -324,10 +328,12 @@ let's hang a bug onto the ILaunchBag utility.
     >>> msg["Sender"]
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
-    ['product=evolution;...',
-     'product=firefox;...',
-     'distribution=debian; sourcepackage=mozilla-firefox;...',
-     'distribution=debian; distrorelease=sid;\n\tsourcepackage=mozilla-firefox;...']
+    ['product=evolution; status=New; priority=None; assignee=None;',
+     'product=firefox; status=New; priority=None; assignee=None;',
+     'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
+      status=New; priority=None; assignee=None; ',
+     'distribution=debian; distrorelease=sid;\n\tsourcepackage=mozilla-firefox;
+      component=None; status=New;\n\tpriority=None; assignee=None; ']
 
     >>> print msg.get_payload(decode = True)
     Public bug report changed:
@@ -354,7 +360,7 @@ task Accepted, assigns himself to it, and adds a status note.
     ...              "milestone", "statusexplanation"]:
     ...     setattr(bugtask_before_modification, name,
     ...             getattr(firefox_crashes_in_debian, name))
-    >>> firefox_crashes_in_debian.status = BugTaskStatus.FIXRELEASED
+    >>> firefox_crashes_in_debian.status = BugTaskStatus.FIXED
     >>> firefox_crashes_in_debian.assignee = bug_submitter.id
     >>> debian_task_modified = SQLObjectModifiedEvent(
     ...     firefox_crashes_in_debian, bugtask_before_modification,
@@ -384,10 +390,12 @@ task Accepted, assigns himself to it, and adds a status note.
     >>> msg["Sender"]
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
-    ['product=evolution;...',
-     'product=firefox;...',
-     'distribution=debian; sourcepackage=mozilla-firefox;...',
-     'distribution=debian; distrorelease=sid;\n\tsourcepackage=mozilla-firefox;...']
+    ['product=evolution; status=New; priority=None; assignee=None;',
+     'product=firefox; status=New; priority=None; assignee=None;',
+     'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
+      status=Fixed; priority=None;\n\tassignee=test@canonical.com; ',
+     'distribution=debian; distrorelease=sid;\n\tsourcepackage=mozilla-firefox;
+      component=None; status=New;\n\tpriority=None; assignee=None; ']
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
@@ -431,9 +439,11 @@ pretending we've just added a watch to a bug.
     >>> msg["Sender"]
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
-    ['product=firefox;...',
-     'distribution=ubuntu; sourcepackage=mozilla-firefox;...',
-     'distribution=debian; sourcepackage=mozilla-firefox;...']
+    ['product=firefox; status=New; priority=Wontfix;\n\tassignee=mark@hbd.com; ',
+     'distribution=ubuntu; sourcepackage=mozilla-firefox;\n\tcomponent=main;
+      status=New; priority=Medium; assignee=None; ',
+     'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
+      status=Accepted; priority=High; assignee=None; ']
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
@@ -479,9 +489,11 @@ the changes made:
     >>> msg["Sender"]
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
-    ['product=firefox;...',
-     'distribution=ubuntu; sourcepackage=mozilla-firefox;...',
-     'distribution=debian; sourcepackage=mozilla-firefox;...']
+    ['product=firefox; status=New; priority=Wontfix;\n\tassignee=mark@hbd.com; ',
+     'distribution=ubuntu; sourcepackage=mozilla-firefox;\n\tcomponent=main;
+      status=New; priority=Medium; assignee=None; ',
+     'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
+      status=Accepted; priority=High; assignee=None; ']
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
@@ -528,9 +540,11 @@ this document:
     >>> msg["Sender"]
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
-    ['product=firefox;...',
-     'distribution=ubuntu; sourcepackage=mozilla-firefox;...',
-     'distribution=debian; sourcepackage=mozilla-firefox;...']
+    ['product=firefox; status=New; priority=Wontfix;\n\tassignee=mark@hbd.com; ',
+     'distribution=ubuntu; sourcepackage=mozilla-firefox;\n\tcomponent=main;
+      status=New; priority=Medium; assignee=None; ',
+     'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
+      status=Accepted; priority=High; assignee=None; ']
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
@@ -576,9 +590,11 @@ publishing an object created event.
     >>> msg["Sender"]
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
-    ['product=firefox;...',
-     'distribution=ubuntu; sourcepackage=mozilla-firefox;...',
-     'distribution=debian; sourcepackage=mozilla-firefox;...']
+    ['product=firefox; status=New; priority=Wontfix;\n\tassignee=mark@hbd.com; ',
+     'distribution=ubuntu; sourcepackage=mozilla-firefox;\n\tcomponent=main;
+      status=New; priority=Medium; assignee=None; ',
+     'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
+      status=Accepted; priority=High; assignee=None; ']
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
@@ -623,9 +639,11 @@ When a link is edited, the notification will look as follows:
     >>> msg["Sender"]
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
-    ['product=firefox;...',
-     'distribution=ubuntu; sourcepackage=mozilla-firefox;...',
-     'distribution=debian; sourcepackage=mozilla-firefox;...']
+    ['product=firefox; status=New; priority=Wontfix;\n\tassignee=mark@hbd.com; ',
+     'distribution=ubuntu; sourcepackage=mozilla-firefox;\n\tcomponent=main;
+      status=New; priority=Medium; assignee=None; ',
+     'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
+      status=Accepted; priority=High; assignee=None; ']
 
     >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
     Public bug report changed:
@@ -857,11 +875,13 @@ private, and Foo Bar is not an explicit subscriber to the bug, he will
     >>> msg["Sender"]
     'bounces@canonical.com'
     >>> msg.get_all("X-Launchpad-Bug")
-    ['product=applets;...',
-     'product=evolution;...',
-     'product=firefox;...',
-     'distribution=debian; sourcepackage=mozilla-firefox;...',
-     'distribution=debian; distrorelease=sid;\n\tsourcepackage=mozilla-firefox;...']
+    ['product=applets; status=New; priority=None; assignee=None;',
+     'product=evolution; status=New; priority=None; assignee=None;',
+     'product=firefox; status=New; priority=None; assignee=None;',
+     'distribution=debian; sourcepackage=mozilla-firefox;\n\tcomponent=None;
+      status=Fixed; priority=None;\n\tassignee=test@canonical.com; ',
+     'distribution=debian; distrorelease=sid;\n\tsourcepackage=mozilla-firefox;
+      component=None; status=New;\n\tpriority=None; assignee=None; ']
 
     >>> stub.test_emails = []
 

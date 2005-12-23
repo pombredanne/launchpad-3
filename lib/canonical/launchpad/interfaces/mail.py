@@ -35,9 +35,6 @@ class ISignedMessage(Interface):
                       description=_("The GPG signature used to sign "
                                     "the email"))
 
-    parsed_string = Attribute(
-        "The string that was parsed to create the SignedMessage.")
-
 
 class IMailHandler(Interface):
     """Handles incoming mail sent to a specific email domain.

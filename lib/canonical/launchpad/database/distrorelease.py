@@ -27,8 +27,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
     IPublishedPackageSet, IHasBuildRecords, NotFoundError,
-    IBinaryPackageName, UNRESOLVED_BUGTASK_STATUSES,
-    RESOLVED_BUGTASK_STATUSES)
+    IBinaryPackageName, IBuildSet)
 
 from canonical.database.constants import DEFAULT, UTC_NOW
 
@@ -51,7 +50,6 @@ from canonical.launchpad.database.distroreleaselanguage import (
 from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.sourcepackagename import SourcePackageName
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.bugtask import BugTaskSet, BugTask
 from canonical.launchpad.database.binarypackagerelease import (
         BinaryPackageRelease)
@@ -242,16 +240,16 @@ class DistroRelease(SQLBase):
     @property
     def open_cve_bugtasks(self):
         """See IDistroRelease."""
-        open_bugtask_status_sql_values = "(%s)" % (
-            ', '.join(sqlvalues(*UNRESOLVED_BUGTASK_STATUSES)))
-
         result = BugTask.select("""
             CVE.id = BugCve.cve AND
             BugCve.bug = Bug.id AND
             BugTask.bug = Bug.id AND
-            BugTask.distrorelease=%d AND
-            BugTask.status IN %s
-            """ % (self.id, open_bugtask_status_sql_values),
+            BugTask.distrorelease=%s AND
+            BugTask.status IN (%s, %s)
+            """ % sqlvalues(
+                self.id,
+                BugTaskStatus.NEW,
+                BugTaskStatus.ACCEPTED),
             clauseTables=['Bug', 'Cve', 'BugCve'],
             orderBy=['-severity', 'datecreated'])
         return result
@@ -259,16 +257,17 @@ class DistroRelease(SQLBase):
     @property
     def resolved_cve_bugtasks(self):
         """See IDistroRelease."""
-        resolved_bugtask_status_sql_values = "(%s)" % (
-            ', '.join(sqlvalues(*RESOLVED_BUGTASK_STATUSES)))
-
         result = BugTask.select("""
             CVE.id = BugCve.cve AND
             BugCve.bug = Bug.id AND
             BugTask.bug = Bug.id AND
-            BugTask.distrorelease=%d AND
-            BugTask.status IN %s
-            """ % (self.id, resolved_bugtask_status_sql_values),
+            BugTask.distrorelease=%s AND
+            BugTask.status IN (%s, %s, %s)
+            """ % sqlvalues(
+                self.id,
+                BugTaskStatus.REJECTED,
+                BugTaskStatus.FIXED,
+                BugTaskStatus.PENDINGUPLOAD),
             clauseTables=['Bug', 'Cve', 'BugCve'],
             orderBy=['-severity', 'datecreated'])
         return result
@@ -385,25 +384,12 @@ class DistroRelease(SQLBase):
         return [BinaryPackageRelease.get(pubrecord.binarypackagerelease)
                 for pubrecord in result]
 
-    def getBuildRecords(self, status=None, limit=10):
+    def getBuildRecords(self, status=None):
         """See IHasBuildRecords"""
         # find out the distroarchrelease in question
-        arch_ids = ','.join(
-            '%d' % arch.id for arch in self.architectures)
-
-        # if no distroarchrelease was found return None
-        if not arch_ids:
-            return None
-
-        # specific status or simply worked
-        if status:
-            status_clause = "buildstate=%s" % sqlvalues(status)
-        else:
-            status_clause = "builder is not NULL"
-
-        return Build.select(
-            "distroarchrelease IN (%s) AND %s" % (arch_ids, status_clause),
-            limit=limit, orderBy="-datebuilt")
+        arch_ids = [arch.id for arch in self.architectures]
+        # use facility provided by IBuildSet to retrieve the records
+        return getUtility(IBuildSet).getBuildsByArchIds(arch_ids, status)
 
     def createUploadedSourcePackageRelease(self, sourcepackagename,
             version, maintainer, dateuploaded, builddepends,

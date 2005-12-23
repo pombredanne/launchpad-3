@@ -479,7 +479,7 @@ commands. It's possible to have these sub commands on separate lines:
 
     >>> submit_commands(
     ...     bug_four, 'affects /distros/debian severity critical',
-    ...     'status confirmed', 'assignee test@canonical.com', 'priority high')
+    ...     'status accepted', 'assignee test@canonical.com', 'priority high')
 
     >>> len(bug_four.bugtasks)
     2
@@ -487,7 +487,7 @@ commands. It's possible to have these sub commands on separate lines:
     >>> print debian_task.severity.name
     CRITICAL
     >>> print debian_task.status.name
-    CONFIRMED
+    ACCEPTED
     >>> print debian_task.assignee.displayname
     Sample Person
     >>> print debian_task.priority.name
@@ -511,7 +511,7 @@ together:
     ...     bug_four,
     ...     'affects /products/firefox severity critical',
     ...     'subscribe no-priv',
-    ...     'status confirmed', 'assignee test@canonical.com',
+    ...     'status accepted', 'assignee test@canonical.com',
     ...     'priority high')
 
     >>> len(bug_four.bugtasks)
@@ -520,7 +520,7 @@ together:
     >>> print upstream_task.severity.name
     CRITICAL
     >>> print upstream_task.status.name
-    CONFIRMED
+    ACCEPTED
     >>> print upstream_task.assignee.displayname
     Sample Person
     >>> print upstream_task.priority.name
@@ -541,11 +541,11 @@ Invalid status:
         status foo
     ...
     The 'status' command expects any of the following arguments:
-    unconfirmed, needsinfo, rejected, confirmed, inprogress, fixcommitted, fixreleased
+    new, needinfo, accepted, pendingupload, fixed, rejected
     <BLANKLINE>
     For example:
     <BLANKLINE>
-        status unconfirmed
+        status new
     ...
 
 Invalid severity:
@@ -618,10 +618,10 @@ edited:
     >>> bug_seven = getUtility(IBugSet).get(7)
     >>> len(bug_seven.bugtasks)
     1
-    >>> submit_commands(bug_seven, 'status confirmed')
+    >>> submit_commands(bug_seven, 'status accepted')
     >>> evolution_task = bug_seven.bugtasks[0]
     >>> print evolution_task.status.name
-    CONFIRMED
+    ACCEPTED
 
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
@@ -630,7 +630,7 @@ edited:
     >>> print msg.get_payload(decode=True)
     Public bug report changed:
     ...
-        Status: Unconfirmed => Confirmed
+        Status: New => Accepted
 
 If the bug has more than one bug task, we try to guess which bug task
 the user wanted to edit. We apply the following heuristics for choosing
@@ -642,14 +642,14 @@ The user is a bug contact of the upstream product
     >>> login('test@canonical.com')
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> submit_commands(
-    ...     bug_one, 'status confirmed', 'assignee test@canonical.com')
+    ...     bug_one, 'status accepted', 'assignee test@canonical.com')
     >>> for bugtask in bug_one.bugtasks:
     ...     print '%s: %s, assigned to %s' % (
     ...         bugtask.targetname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
-    firefox (upstream): Confirmed, assigned to Sample Person
-    mozilla-firefox (ubuntu): Unconfirmed, assigned to no one
-    mozilla-firefox (debian): Confirmed, assigned to no one
+    firefox (upstream): Accepted, assigned to Sample Person
+    mozilla-firefox (ubuntu): New, assigned to no one
+    mozilla-firefox (debian): Accepted, assigned to no one
 
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
@@ -658,7 +658,7 @@ The user is a bug contact of the upstream product
     >>> print msg.get_payload(decode=True)
     Public bug report changed:
     ...
-        Status: Unconfirmed => Confirmed
+        Status: New => Accepted
 
 The user is a package bug contact
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -677,14 +677,14 @@ The user is a package bug contact
 
     >>> login('kreutzm@itp.uni-hannover.de')
     >>> submit_commands(
-    ...     bug_one, 'status confirmed', 'assignee no-priv@canonical.com')
+    ...     bug_one, 'status accepted', 'assignee no-priv@canonical.com')
     >>> for bugtask in bug_one.bugtasks:
     ...     print '%s: %s, assigned to %s' % (
     ...         bugtask.targetname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
-    firefox (upstream): Confirmed, assigned to Sample Person
-    mozilla-firefox (ubuntu): Confirmed, assigned to No Privileges Person
-    mozilla-firefox (debian): Confirmed, assigned to no one
+    firefox (upstream): Accepted, assigned to Sample Person
+    mozilla-firefox (ubuntu): Accepted, assigned to No Privileges Person
+    mozilla-firefox (debian): Accepted, assigned to no one
 
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
@@ -707,14 +707,14 @@ The user is a distribution member
 
     >>> login('foo.bar@canonical.com')
     >>> submit_commands(
-    ...     bug_one, 'status unconfirmed', 'assignee test@canonical.com')
+    ...     bug_one, 'status new', 'assignee test@canonical.com')
     >>> for bugtask in bug_one.bugtasks:
     ...     print '%s: %s, assigned to %s' % (
     ...         bugtask.targetname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
-    firefox (upstream): Confirmed, assigned to Sample Person
-    mozilla-firefox (ubuntu): Unconfirmed, assigned to Sample Person
-    mozilla-firefox (debian): Confirmed, assigned to no one
+    firefox (upstream): Accepted, assigned to Sample Person
+    mozilla-firefox (ubuntu): New, assigned to Sample Person
+    mozilla-firefox (debian): Accepted, assigned to no one
 
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
     >>> msg = email.message_from_string(raw_message)
@@ -740,9 +740,9 @@ user, telling him that he has to use the 'affects' command.
     ...     print '%s: %s, assigned to %s' % (
     ...         bugtask.targetname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
-    firefox (upstream): Confirmed, assigned to Sample Person
-    mozilla-firefox (ubuntu): Unconfirmed, assigned to Sample Person
-    mozilla-firefox (debian): Confirmed, assigned to no one
+    firefox (upstream): Accepted, assigned to Sample Person
+    mozilla-firefox (ubuntu): New, assigned to Sample Person
+    mozilla-firefox (debian): Accepted, assigned to no one
 
     >>> transaction.commit()
     >>> from_addr, to_addrs, raw_message = stub.test_emails[-1]
@@ -768,8 +768,8 @@ signing the mail:
 
     >>> login('test@canonical.com')
 
-    >>> from canonical.launchpad.mail import signed_message_from_string
-    >>> msg = signed_message_from_string(submit_mail)
+    >>> from canonical.launchpad.mail import SignedMessage
+    >>> msg = email.message_from_string(submit_mail, _class=SignedMessage)
     >>> msg['Message-Id'] = email.Utils.make_msgid()
     >>> handler.process(msg, msg['To'])
     True

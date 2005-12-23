@@ -251,22 +251,22 @@ class Bug:
         to the bug task's status explanation.
         """
         if self.bug_status == 'ASSIGNED':
-            bugtask.status = BugTaskStatus.CONFIRMED
+            bugtask.status = BugTaskStatus.ACCEPTED
         elif self.bug_status == 'NEEDINFO':
-            bugtask.status = BugTaskStatus.NEEDSINFO
+            bugtask.status = BugTaskStatus.NEEDINFO
         elif self.bug_status == 'PENDINGUPLOAD':
-            bugtask.status = BugTaskStatus.FIXCOMMITTED
+            bugtask.status = BugTaskStatus.PENDINGUPLOAD
         elif self.bug_status in ['RESOLVED', 'VERIFIED', 'CLOSED']:
             # depends on the resolution:
             if self.resolution == 'FIXED':
-                bugtask.status = BugTaskStatus.FIXRELEASED
+                bugtask.status = BugTaskStatus.FIXED
             elif self.resolution == 'WONTFIX':
                 bugtask.status = BugTaskStatus.REJECTED
                 bugtask.priority = BugTaskPriority.WONTFIX
             else:
                 bugtask.status = BugTaskStatus.REJECTED
         else:
-            bugtask.status = BugTaskStatus.UNCONFIRMED
+            bugtask.status = BugTaskStatus.NEW
 
         # add the status to the notes section, to account for any lost
         # information
@@ -350,13 +350,10 @@ class Bugzilla:
         # we currently only support mapping Ubuntu bugs ...
         if bug.product != 'Ubuntu':
             raise AssertionError('product must be Ubuntu')
-        
-        # XXX: 20051208 jamesh
-        # ValueError is caught here because of https://launchpad.net/bugs/4810
         try:
             srcpkg, binpkg = self.ubuntu.getPackageNames(
                 bug.component.encode('ASCII'))
-        except ValueError:
+        except NotFoundError:
             logger.warning('could not find package name for "%s"',
                            bug.component.encode('ASCII'), exc_info=True)
             srcpkg = binpkg = None
