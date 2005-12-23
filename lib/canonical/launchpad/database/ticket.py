@@ -47,9 +47,7 @@ class Ticket(SQLBase):
     datedue = UtcDateTimeCol(notNull=False, default=None)
     datelastquery = UtcDateTimeCol(notNull=True, default=DEFAULT)
     datelastresponse = UtcDateTimeCol(notNull=False, default=None)
-    dateaccepted = UtcDateTimeCol(notNull=False, default=None)
     dateanswered = UtcDateTimeCol(notNull=False, default=None)
-    dateclosed = UtcDateTimeCol(notNull=False, default=None)
     product = ForeignKey(dbName='product', foreignKey='Product',
         notNull=False, default=None)
     distribution = ForeignKey(dbName='distribution',
@@ -99,36 +97,6 @@ class Ticket(SQLBase):
     def is_resolved(self):
         """See ITicket."""
         return self.status in [TicketStatus.ANSWERED, TicketStatus.REJECTED]
-
-    def mark_resolved(self, person):
-        """See ITicket."""
-        # the person believes this is resolved
-        if person.id == self.owner.id:
-            # it is the requester, so we should consider this ticket
-            # closed if it is not already that way.
-            if self.status != TicketStatus.CLOSED:
-                self.dateclosed = UTC_NOW
-                self.status = TicketStatus.CLOSED
-        else:
-            # this is another contributor. if the ticket status is not
-            # already answered or closed, then we should make it
-            # answered
-            if self.status not in [
-                TicketStatus.ANSWERED, TicketStatus.CLOSED]:
-                self.dateanswered = UTC_NOW
-                self.answerer = person
-                self.status = TicketStatus.ANSWERED
-        self.sync()
-
-    def accept(self):
-        """See ITicket."""
-        if self.status != TicketStatus.NEW:
-            return False
-        self.dateaccepted = UTC_NOW
-        self.datelastresponse = UTC_NOW
-        self.status = TicketStatus.OPEN
-        self.sync()
-        return True
 
     @property
     def can_be_rejected(self):

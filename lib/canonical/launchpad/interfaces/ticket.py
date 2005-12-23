@@ -54,8 +54,6 @@ class ITicket(IHasOwner, IMessageTarget):
         vocabulary='ValidPersonOrTeam')
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)
-    dateaccepted = Datetime(
-        title=_('Date Accepted'), required=False, default=None)
     datedue = Datetime(
         title=_('Date Due'), required=False, default=None,
         description=_("The date by which we should have resolved this support "
@@ -72,9 +70,6 @@ class ITicket(IHasOwner, IMessageTarget):
         description=_(
             "The date on which the submitter confirmed that the ticket is "
             "Answered."))
-    dateclosed = Datetime(title=_("Date Closed"), required=False,
-        description=_("The date on which the customer confirmed that "
-        "the answers provided were sufficient to resolve the issue."))
     product = Choice(title=_('Upstream Product'), required=False,
         vocabulary='Product', description=_('Select the upstream product '
         'with which you need support.'))
@@ -102,23 +97,6 @@ class ITicket(IHasOwner, IMessageTarget):
     reopenings = Attribute("Records of times when this was reopened.")
 
     # workflow
-    def mark_resolved(person):
-        """Indicate that the person thinks this ticket is resolved.
-
-        Depending on whether this is the requester (owner) or someone else,
-        it will affect the status in different ways. When the owner says it
-        is resolved, we mark it as 'closed'. When someone else says it is
-        resolved, we mark it as 'answered.'
-        """
-
-    def accept():
-        """Mark this ticket as accepted.
-
-        This can only be done to NEW tickets. It will usually be done when
-        the first message for the ticket is received from someone other than
-        the requester (owner).  Doing so will also set the dateaccepted.
-        """
-
     def reject(rejector):
         """Mark this ticket as rejected.
 
