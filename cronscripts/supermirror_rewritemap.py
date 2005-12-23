@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005 Canonical Ltd.  All rights reserved.
 
 """Generate a file mapping ~user/product/branch to on-disk paths, suitable for
 use with Apache's RewriteMap directive.
@@ -13,7 +13,7 @@ Apache config notes:
       RewriteEngine On
       # Assume branch dirs are kept in a directory 'branches' under the
       # DocumentRoot
-      RewriteRule ^(~[^/]+/[^/]+/[^/]+)/ branches/${branch-list:$1}/
+      RewriteRule ^/(~[^/]+/[^/]+/[^/]+)/(.*)$ branches/${branch-list:$1}/$2 [L]
 
   - UserDir directive must not be in effect if you want to be able to rewrite
     top-level ~user paths.
@@ -61,11 +61,11 @@ def main():
         ztm = initZopeless(
                 dbuser=config.supermirror.dbuser, implicitBegin=False
                 )
-        outfile = open(filename, 'wb')
         ztm.begin()
-        supermirror_rewritemap.main(outfile)
-        ztm.abort()
+        outfile = open(filename, 'wb')
+        supermirror_rewritemap.write_map(outfile)
         outfile.close()
+        ztm.abort()
     finally:
         lockfile.release()
 

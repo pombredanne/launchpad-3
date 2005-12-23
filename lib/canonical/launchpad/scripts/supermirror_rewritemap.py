@@ -8,7 +8,8 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import IBranchSet
 
-def main(outfile):
+
+def write_map(outfile):
     branches = getUtility(IBranchSet)
     for branch in branches:
         person_name = branch.owner.name
