@@ -68,15 +68,19 @@ def generate_order(dumpname):
 
 
 def listing_cmp(a, b):
+    if POSTGRESQL7:
+        idx = 2
+    else:
+        idx = 3
     if a.startswith(';'):
         atype = ';'
     else:
-        atype = a.split()[2]
+        atype = a.split()[idx]
 
     if b.startswith(';'):
         btype = ';'
     else:
-        btype = b.split()[2]
+        btype = b.split()[idx]
 
     scores = {
         ';': 0,
@@ -155,8 +159,18 @@ if __name__ == "__main__":
             "-v", "--verbose", dest="verbose",
             action="store_true", default=False
             )
+    parser.add_option(
+            "-7", dest="postgres7",
+            action="store_true", default=False,
+            help="Restore into a PostgreSQL 7.4 database"
+            )
 
     (options, args) = parser.parse_args()
+
+    if options.postgres7:
+        POSTGRESQL7 = True
+    else:
+        POSTGRESQL7 = False
 
     if len(args) > 1:
         parser.error("Too many arguments")
