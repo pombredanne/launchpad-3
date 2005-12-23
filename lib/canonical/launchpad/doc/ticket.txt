@@ -181,9 +181,22 @@ problem, so let's ask Sample Person to clarify.
 
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(ILaunchBag).user
+
+    >>> import pytz
+    >>> from datetime import datetime, timedelta
+    >>> now_plus_one_hour = (
+    ...     datetime.now(pytz.timezone('UTC')) + timedelta(hours=1))
+
     >>> comment = firefox_ticket.newMessage(
     ...     no_priv, firefox_ticket.followup_subject,
-    ...     'Could you please describe what the problem is?')
+    ...     'Could you please describe what the problem is?',
+    ...     when=now_plus_one_hour)
+
+When some other Person than the submitter comments on a ticket,
+datelastresponse gets set to the comment's creation date.
+
+    >>> firefox_ticket.datelastresponse == now_plus_one_hour
+    True
 
 We also assign the ticket to ourselves to show that we're working on
 the issue.
@@ -192,12 +205,22 @@ the issue.
 
 Sample Person replies:
 
+    >>> now_plus_two_hours = now_plus_one_hour + timedelta(hours=1)
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(ILaunchBag).user
     >>> comment = firefox_ticket.newMessage(
     ...     sample_person, firefox_ticket.followup_subject,
     ...     'When I start Firefox, all I get is a blank page. I want to '
-    ...     'have a search page at start-up?')
+    ...     'have a search page at start-up?',
+    ...     when=now_plus_two_hours)
+
+When the submitter adds a comment, datelastquery gets set to the
+comment's date:
+
+    >>> firefox_ticket.datelastresponse == now_plus_one_hour
+    True
+    >>> firefox_ticket.datelastquery == now_plus_two_hours
+    True
 
 Now it's clear what the problem is, so let's edit the title and
 description to describe the problem:
@@ -217,13 +240,12 @@ Let's help Sample Person with his problem by providing an answer:
 
 Sample Person is happy with the answer, so he closes the ticket:
 
-    >>> import pytz
-    >>> from datetime import datetime
-    >>> current_time = datetime.now(pytz.timezone('UTC'))
     >>> login('test@canonical.com')
+    >>> now_plus_three_hours = now_plus_two_hours + timedelta(hours=1)
     >>> comment = firefox_ticket.newMessage(
-    ...     sample_person, firefox_ticket.followup_subject, 'Thanks!')
-    >>> firefox_ticket.acceptAnswer(sample_person, current_time=current_time)
+    ...     sample_person, firefox_ticket.followup_subject, 'Thanks!',
+    ...     when=now_plus_three_hours)
+    >>> firefox_ticket.acceptAnswer(sample_person, when=now_plus_three_hours)
     >>> firefox_ticket.status.title
     'Answered'
 
@@ -232,5 +254,15 @@ the ticket, he's considered as the one who answered it:
 
     >>> print firefox_ticket.answerer.displayname
     No Privileges Person
-    >>> firefox_ticket.dateanswered == current_time
+    >>> firefox_ticket.dateanswered == now_plus_three_hours
+    True
+
+If we create a new ticket, datecreated gets set to the current time:
+
+    >>> from canonical.launchpad.interfaces import ITicketSet
+
+    >>> new_ticket = getUtility(ITicketSet).new(
+    ...     title='New ticket', description='Ticket description.',
+    ...     owner=sample_person, product=firefox, when=now_plus_three_hours)
+    >>> new_ticket.datecreated == now_plus_three_hours
     True

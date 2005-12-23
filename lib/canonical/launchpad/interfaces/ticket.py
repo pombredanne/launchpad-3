@@ -69,9 +69,9 @@ class ITicket(IHasOwner, IMessageTarget):
         "with the customer. The combination of datelastquery and "
         "datelastresponse tells us in whose court the ball is."))
     dateanswered = Datetime(title=_("Date Answered"), required=False,
-        description=_("The date on which we submitted a message that "
-        "we believe answers the support problem. The customer will need to "
-        "verify that, and close the ticket."))
+        description=_(
+            "The date on which the submitter confirmed that the ticket is "
+            "Answered."))
     dateclosed = Datetime(title=_("Date Closed"), required=False,
         description=_("The date on which the customer confirmed that "
         "the answers provided were sufficient to resolve the issue."))

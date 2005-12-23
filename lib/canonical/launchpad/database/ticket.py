@@ -166,12 +166,13 @@ class Ticket(SQLBase):
         self.sync()
         return reop
 
-    def acceptAnswer(self, acceptor, current_time=None):
+    def acceptAnswer(self, acceptor, when=None):
         """See ITicket."""
-        if current_time is None:
-            current_time = UTC_NOW
         self.status = TicketStatus.ANSWERED
-        self.dateanswered = current_time
+        if when is None:
+            self.dateanswered = UTC_NOW
+        else:
+            self.dateanswered = when
         for commenter in [message.owner for message in self.messages]:
             if commenter != self.owner:
                 self.answerer = commenter
@@ -205,17 +206,21 @@ class Ticket(SQLBase):
         otherColumn='message',
         intermediateTable='TicketMessage', orderBy='datecreated')
 
-    def newMessage(self, owner=None, subject=None, content=None):
+    def newMessage(self, owner=None, subject=None, content=None,
+                   when=None):
         """Create a new Message and link it to this ticket."""
-        msg = Message(owner=owner, rfc822msgid=make_msgid('lptickets'),
-            subject=subject)
+        if when is None:
+            when = UTC_NOW
+        msg = Message(
+            owner=owner, rfc822msgid=make_msgid('lptickets'), subject=subject,
+            datecreated=when)
         chunk = MessageChunk(messageID=msg.id, content=content, sequence=1)
         tktmsg = TicketMessage(ticket=self, message=msg)
         # make sure we update the relevant date of response or query
         if owner == self.owner:
-            self.datelastquery = UTC_NOW
+            self.datelastquery = msg.datecreated
         else:
-            self.datelastresponse = UTC_NOW
+            self.datelastresponse = msg.datecreated
         self.sync()
         return msg
 
@@ -266,10 +271,13 @@ class TicketSet:
         return Ticket.select(orderBy='-datecreated')[:10]
 
     def new(self, title=None, description=None, owner=None,
-        product=None, distribution=None):
+            product=None, distribution=None, when=None):
         """See ITicketSet."""
-        return Ticket(title=title, description=description, owner=owner,
-            product=product, distribution=distribution)
+        if when is None:
+            when = UTC_NOW
+        return Ticket(
+            title=title, description=description, owner=owner,
+            product=product, distribution=distribution, datecreated=when)
 
     def getAnsweredTickets(self):
         """See ITicketSet."""
