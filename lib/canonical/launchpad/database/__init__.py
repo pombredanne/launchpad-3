@@ -34,7 +34,6 @@ from canonical.launchpad.database.poselection import *
 from canonical.launchpad.database.posubmission import *
 from canonical.launchpad.database.librarian import *
 from canonical.launchpad.database.launchpadstatistic import *
-from canonical.launchpad.database.maintainership import *
 from canonical.launchpad.database.infestation import *
 from canonical.launchpad.database.sourcepackage import *
 from canonical.launchpad.database.sourcepackagename import *

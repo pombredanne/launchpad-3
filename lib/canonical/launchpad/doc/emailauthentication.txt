@@ -117,6 +117,7 @@ message.
     >>> msg_lines = msg.as_string().splitlines()
     >>> msg = email.message_from_string(
     ...     '\n'.join(msg_lines), _class=SignedMessage)
+    >>> msg.parsed_string = msg.as_string()
 
     >>> from canonical.launchpad.interfaces import IGPGHandler
     >>> getUtility(IGPGHandler).getVerifiedSignature(
@@ -135,8 +136,31 @@ authenticateEmail() doesn't have any problems verifying the signature:
     >>> for line_ending in '\n', '\r\n':
     ...     msg = email.message_from_string(
     ...         line_ending.join(msg_lines), _class=SignedMessage)
+    ...     msg.parsed_string = msg.as_string()
     ...     principal = authenticateEmail(msg)
     ...     authenticated_person = IPerson(principal)
     ...     print authenticated_person.preferredemail.email
     test@canonical.com
     test@canonical.com
+
+Python's email library unfolds the headers, which means that we have to
+be careful when extracting the signed content when folded headers are
+signed.
+
+    >>> msg = read_test_message('signed_folded_header.txt')
+    >>> print msg.parsed_string #doctest: -NORMALIZE_WHITESPACE
+    Date:...
+    ...
+    Content-Type: multipart/mixed;
+     boundary="--------------------EuxKj2iCbKjpUGkD"
+    ...
+
+    >>> print msg.as_string() #doctest: -NORMALIZE_WHITESPACE
+    Date:...
+    ...
+    Content-Type: multipart/mixed; boundary="--------------------EuxKj2iCbKjpUGkD"
+    ...
+
+    >>> principal = authenticateEmail(msg)
+    >>> print IPerson(principal).displayname
+    Sample Person
