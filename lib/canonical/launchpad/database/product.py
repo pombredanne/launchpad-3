@@ -371,6 +371,17 @@ class ProductSet:
                                 str(productid))
 
         return product
+    
+    def getByName(self, name, default=None, ignore_inactive=False):
+        """See canonical.launchpad.interfaces.product.IProductSet."""
+        if ignore_inactive:
+            product = Product.selectOneBy(name=name, active=True)
+        else:
+            product = Product.selectOneBy(name=name)
+        if product is None:
+            return default
+        return product
+
 
     def createProduct(self, owner, name, displayname, title, summary,
                       description, project=None, homepageurl=None,

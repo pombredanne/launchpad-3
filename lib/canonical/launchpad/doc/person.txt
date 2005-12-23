@@ -81,8 +81,8 @@ Renaming
 All persons have a unique name in launchpad, so to allow them to change their
 names, we must make sure that name is not already in use by someone else.
 
->>> from canonical.launchpad.interfaces.person import (
-...     PersonNameField, StrippingTextLine)
+>>> from canonical.launchpad.fields import StrippingTextLine
+>>> from canonical.launchpad.interfaces.person import PersonNameField
 >>> field = PersonNameField(__name__='name', title=u'Unique name',
 ...                         description=u'', readonly=False, required=True)
 >>> field = field.bind(lifeless)
@@ -99,9 +99,8 @@ But you can't use Mark's name, of course. ;)
 >>> field.validate(u'sabdfl')
 Traceback (most recent call last):
   ...
-LaunchpadValidationError: ...
-This name is already in use by another person/team.
-...
+LaunchpadValidationError: ...sabdfl is already in use by another person/team...
+
 
 In the case of your displayname, the only constraint is that it can't contain
 only spaces. To ensure that, we use a StrippingTextLine in the displayname,
