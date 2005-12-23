@@ -188,8 +188,18 @@ class DistroReleaseView(BuildRecordsView):
         return helpers.browserLanguages(self.request)
 
     def templateviews(self):
-        return [POTemplateView(template, self.request)
-                for template in self.context.currentpotemplates]
+        """Return the view class of the IPOTemplate associated with the context.
+        """
+        templateview_list = [
+            POTemplateView(template, self.request)
+            for template in self.context.currentpotemplates
+            ]
+
+        # Initialize the views.
+        for templateview in templateview_list:
+            templateview.initialize()
+
+        return templateview_list
 
     def distroreleaselanguages(self):
         """Yields a DistroReleaseLanguage object for each language this

@@ -74,7 +74,7 @@ database ID for the milestone, so we find the ID:
   ... -----------------------------3354718323763093901439946724
   ... Content-Disposition: form-data; name="field.status"
   ... 
-  ... New
+  ... Unconfirmed
   ... -----------------------------3354718323763093901439946724
   ... Content-Disposition: form-data; name="field.status-empty-marker"
   ... 
@@ -146,7 +146,7 @@ Verify that the bug now has the milestone set on the view page:
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-  <span class="statusNew">New</span>
+  <span class="statusUnconfirmed">Unconfirmed</span>
   ...
   <span class="severityNormal">Normal</span>
   ...
