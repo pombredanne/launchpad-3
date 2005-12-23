@@ -116,7 +116,7 @@ First we add some more attachments.
 And now we search for patches for firefox bugs.
 
   >>> print http(r"""
-  ... GET /malone/products/firefox?field.searchtext=&advanced=%5Bu%27Advanced%27%2C+u%27%27%5D&field.milestone_assignment=&field.milestone_assignment-empty-marker=1&field.status%3Alist=New&field.status%3Alist=Accepted&field.status-empty-marker=1&field.severity-empty-marker=1&field.attachmenttype%3Alist=Patch&field.attachmenttype-empty-marker=1&field.assignee=&field.unassigned.used=&field.statusexplanation=&field.milestone-empty-marker=1&search=Search HTTP/1.1
+  ... GET /malone/products/firefox?field.searchtext=&advanced=%5Bu%27Advanced%27%2C+u%27%27%5D&field.milestone_assignment=&field.milestone_assignment-empty-marker=1&field.status%3Alist=Unconfirmed&field.status%3Alist=Confirmed&field.status-empty-marker=1&field.severity-empty-marker=1&field.attachmenttype%3Alist=Patch&field.attachmenttype-empty-marker=1&field.assignee=&field.unassigned.used=&field.statusexplanation=&field.milestone-empty-marker=1&search=Search HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -130,7 +130,7 @@ And now we search for patches for firefox bugs.
 Let's search for unspecified attachments for firefox bugs.
 
   >>> print http(r"""
-  ... GET /malone/products/firefox?field.searchtext=&advanced=%5Bu%27Advanced%27%2C+u%27%27%5D&field.milestone_assignment=&field.milestone_assignment-empty-marker=1&field.status%3Alist=New&field.status%3Alist=Accepted&field.status-empty-marker=1&field.severity-empty-marker=1&field.attachmenttype%3Alist=Unspecified&field.attachmenttype-empty-marker=1&field.assignee=&field.unassigned.used=&field.statusexplanation=&field.milestone-empty-marker=1&search=Search HTTP/1.1
+  ... GET /malone/products/firefox?field.searchtext=&advanced=%5Bu%27Advanced%27%2C+u%27%27%5D&field.milestone_assignment=&field.milestone_assignment-empty-marker=1&field.status%3Alist=Unconfirmed&field.status%3Alist=Confirmed&field.status-empty-marker=1&field.severity-empty-marker=1&field.attachmenttype%3Alist=Unspecified&field.attachmenttype-empty-marker=1&field.assignee=&field.unassigned.used=&field.statusexplanation=&field.milestone-empty-marker=1&search=Search HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...
@@ -147,7 +147,7 @@ XXX: This test is disabled in wait for SQLObject being fixed to accept
      both distinct=True and an orderBy argument.
      -- Bjorn Tillenius, 2005-08-01
   XXX print http(r"""
-  ... GET /malone/products/firefox?field.searchtext=&advanced=%5Bu%27Advanced%27%2C+u%27%27%5D&field.milestone_assignment=&field.milestone_assignment-empty-marker=1&field.status%3Alist=New&field.status%3Alist=Accepted&field.status-empty-marker=1&field.severity-empty-marker=1&field.attachmenttype%3Alist=Unspecified&field.attachmenttype%3Alist=Patch&field.attachmenttype-empty-marker=1&field.assignee=&field.unassigned.used=&field.statusexplanation=&field.milestone-empty-marker=1&search=Search HTTP/1.1
+  ... GET /malone/products/firefox?field.searchtext=&advanced=%5Bu%27Advanced%27%2C+u%27%27%5D&field.milestone_assignment=&field.milestone_assignment-empty-marker=1&field.status%3Alist=Unconfirmed&field.status%3Alist=Confirmed&field.status-empty-marker=1&field.severity-empty-marker=1&field.attachmenttype%3Alist=Unspecified&field.attachmenttype%3Alist=Patch&field.attachmenttype-empty-marker=1&field.assignee=&field.unassigned.used=&field.statusexplanation=&field.milestone-empty-marker=1&search=Search HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   ...

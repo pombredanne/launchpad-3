@@ -5,6 +5,7 @@ configs/+config-overrides.zcml
 +*
 sourcecode/buildbot
 sourcecode/bzr
+sourcecode/bzrtools
 sourcecode/cscvs
 sourcecode/gnarly
 sourcecode/hct
@@ -16,6 +17,7 @@ sourcecode/pytz
 sourcecode/sourcerer
 sourcecode/sqlobject
 sourcecode/sqlos
+sourcecode/testresources
 sourcecode/zope
 ./botmaster
 ./tags
