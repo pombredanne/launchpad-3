@@ -5,6 +5,8 @@ __all__ = [
     'SourcePackage',
     ]
 
+from warnings import warn
+
 from zope.interface import implements
 
 from sqlobject import SQLObjectNotFound
@@ -22,7 +24,6 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.database.maintainership import Maintainership
 from canonical.launchpad.database.publishing import SourcePackagePublishing
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
@@ -157,9 +158,14 @@ class SourcePackage:
 
     @property
     def maintainer(self):
-        querystr = "distribution=%s AND sourcepackagename=%s"
-        querystr %= sqlvalues(self.distribution, self.sourcepackagename)
-        return Maintainership.select(querystr)
+        # For backwards compatibility purposes only, since "Maintainership" is
+        # gone. See https://launchpad.net/malone/bugs/5485.
+        warn("SourcePackage.maintainer was deprecated with the "
+             "InitialBugContacts implementation. Please talk to "
+             "bradb about removing this property in the UI and code.",
+             DeprecationWarning)
+
+        return None
 
     @property
     def releases(self):
@@ -223,7 +229,6 @@ class SourcePackage:
     @property
     def product(self):
         # we have moved to focusing on productseries as the linker
-        from warnings import warn
         warn('SourcePackage.product is deprecated, use .productseries',
              DeprecationWarning, stacklevel=2)
         ps = self.productseries

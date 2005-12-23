@@ -147,4 +147,5 @@
       permission="zope.Public"
       />
 </facet>
+
 </configure>
