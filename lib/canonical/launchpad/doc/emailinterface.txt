@@ -768,8 +768,8 @@ signing the mail:
 
     >>> login('test@canonical.com')
 
-    >>> from canonical.launchpad.mail import SignedMessage
-    >>> msg = email.message_from_string(submit_mail, _class=SignedMessage)
+    >>> from canonical.launchpad.mail import signed_message_from_string
+    >>> msg = signed_message_from_string(submit_mail)
     >>> msg['Message-Id'] = email.Utils.make_msgid()
     >>> handler.process(msg, msg['To'])
     True
