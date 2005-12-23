@@ -14,7 +14,7 @@ __metaclass__ = type
 
 __all__ = (
     'LanguageNotFound', 'IPOTemplateSubset', 'IPOTemplateSet', 'IPOTemplate',
-    'IEditPOTemplate', 'IPOTemplateWithContent')
+    'IPOTemplateWithContent')
 
 
 class LanguageNotFound(NotFoundError):
@@ -86,7 +86,15 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
     sourcepackagename = Choice(
         title=_("Source Package Name"),
         description=_(
-            "The source package this template comes from."),
+            "The source package that uses this template."),
+        required=False,
+        vocabulary="SourcePackageName")
+
+    from_sourcepackagename = Choice(
+        title=_("From Source Package Name"),
+        description=_(
+            "The source package this template comes from (set it only if it's"
+            " different from the previous 'Source Package Name'."),
         required=False,
         vocabulary="SourcePackageName")
 
@@ -111,11 +119,7 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
         default=False)
 
     path = TextLine(
-        title=_("Path of the template in the source tree"),
-        required=False)
-
-    filename = TextLine(
-        title=_("Filename of template in the source tree"),
+        title=_("Path of the template in the source tree, including filename."),
         required=False)
 
     priority = Attribute("The template priority.")
@@ -209,24 +213,31 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
         """
 
     def languages():
-        """Return an iterator over languages that this template's messages are
-        translated into.
+        """This Return the set of languages for which we have POFiles for
+        this POTemplate.
+
+        NOTE that variants are simply ignored, if we have three variants for
+        en_GB we will simply return the one with variant=NULL.
         """
 
     def poFilesToImport():
-        """Returns all PO files from this POTemplate that have a rawfile 
-        pending of import into Rosetta."""
+        """Return all PO files from this POTemplate that have a rawfile 
+        pending of import into Rosetta.
+        """
+
+    def getPOFileByPath(path):
+        """Get the PO file of the given path.
+
+        Return None if there is no such IPOFile.
+        """
 
     def getPOFileByLang(language_code, variant=None):
         """Get the PO file of the given language and (potentially)
         variant. If no variant is specified then the translation
         without a variant is given.
 
-        Raises KeyError if there is no such POFile."""
-
-    def queryPOFileByLang(language_code, variant=None):
-        """Return a PO file for this PO template in the given language, if
-        it exists, or None if it does not."""
+        Return None if there is no such POFile.
+        """
 
     def hasMessageID(msgid):
         """Check whether a message set with the given message ID exists within
@@ -242,29 +253,14 @@ class IPOTemplate(IRosettaStats, ICanAttachRawFileData):
     def export():
         """Return as a string the .pot file."""
 
-
-class IEditPOTemplate(IPOTemplate):
-    """Edit interface for an IPOTemplate."""
-
-    sourcepackagename = Attribute("""The name of the sourcepackage from where
-        this PO template is.""")
-
-    distrorelease = Attribute("""The distribution where this PO template
-        belongs""")
-
     def expireAllMessages():
         """Mark all of our message sets as not current (sequence=0)"""
-
-    #def makeMessageSet(messageid_text, pofile=None):
-    #    """Add a message set to this template.  Primary message ID
-    #    is 'messageid_text'.
-    #    If one already exists, a KeyError is raised."""
 
     def getOrCreatePOFile(language_code, variant=None, owner=None):
         """Create and return a new po file in the given language. The
         variant is optional.
 
-        Raises LanguageNotFound if the language does not exist in the
+        Raise LanguageNotFound if the language does not exist in the
         database.
         """
 
@@ -272,7 +268,7 @@ class IEditPOTemplate(IPOTemplate):
         """Get a POFile for the given language and optional variant, and if
         none exists then return a DummyPOFile.
 
-        Raises LanguageNotFound if the language does not exist in the
+        Raise LanguageNotFound if the language does not exist in the
         database. This method is designed to be used by traversal code in
         the case of a GET request (read-only). Instead of creating a PO file
         just because someone is LOOKING at an empty pofile, we would just
@@ -315,13 +311,28 @@ class IPOTemplateSubset(Interface):
     title = Attribute("Title - use for launchpad pages")
 
     def __iter__():
-        """Returns an iterator over all POTemplate for this subset."""
+        """Return an iterator over all POTemplate for this subset."""
+
+    def __len__():
+        """Return the number of IPOTemplate objects in this subset."""
 
     def __getitem__(name):
         """Get a POTemplate by its name."""
 
     def new(potemplatename, title, contents, owner):
         """Create a new template for the context of this Subset."""
+
+    def getPOTemplateByName(name):
+        """Return the IPOTemplate from this subset that has the given name.
+
+        Return None if there is no such IPOTemplate.
+        """
+
+    def getPOTemplateByPath(path):
+        """Return the IPOTemplate from this subset that has the given path.
+
+        Return None if there is no such IPOTemplate.
+        """
 
 
 class IPOTemplateSet(Interface):
@@ -338,11 +349,24 @@ class IPOTemplateSet(Interface):
         """Return a POTemplateSubset object depending on the given arguments.
         """
 
+    def getSubsetFromImporterSourcePackageName(
+        distrorelease, sourcepackagename):
+        """Return a POTemplateSubset based on the origin sourcepackagename.
+        """
+
     def getTemplatesPendingImport():
         """Return a list of PO templates that have data to be imported."""
 
+    def getPOTemplateByPathAndOrigin(self, path, productseries=None,
+        distrorelease=None, sourcepackagename=None):
+        """Return an IPOTemplate that is stored at 'path' in source code and
+           came from the given arguments.
 
-class IPOTemplateWithContent(IEditPOTemplate):
+        Return None if there is no such IPOTemplate.
+        """
+
+
+class IPOTemplateWithContent(IPOTemplate):
     """Interface for an IPOTemplate used to create the new POTemplate form."""
 
     content = Bytes(

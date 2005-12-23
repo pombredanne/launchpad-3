@@ -178,25 +178,11 @@
           id="portal-column-one"
           metal:define-slot="column_one"
     >
-      <div class="sitemap clearfix">
-        <ul id="pillars">
-          <li><a href="/products">Products</a></li>
-          <li><a href="/distros">Distributions</a></li>
-          <li><a href="/people">People</a></li>
-          <li><a href="/projects">Projects</li>
-          <li><a href="/sprints">Meetings</a></li>
-        </ul>
-        <ul id="subpillars" tal:condition="nothing">
-          <li><a href="releases/">Releases</a></li>
-          <li><a href="ports/">Ports</a></li>
-          <li class="current">Packages</li>
-          <li><a href="packages/">Binary packages</a></li>
-        </ul>
-      </div>
+      <div tal:replace="structure context/@@+sitemap" />
 
-                  <metal:portlets define-slot="portlets_one">
+      <metal:portlets define-slot="portlets_one">
 
-                  </metal:portlets>
+      </metal:portlets>
     </div>
   </div>
   <!-- end column wrapper -->

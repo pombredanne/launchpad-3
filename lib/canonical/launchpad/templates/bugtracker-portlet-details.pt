@@ -15,7 +15,7 @@
         <br />
 
         <b>Number of watches:</b>
-        <span tal:replace="context/watchcount" /><br />
+        <span tal:replace="context/watches/count:len" /><br />
 
         <b>Contact Details:</b><br />
         <span tal:replace="context/contactdetails">contact details go here

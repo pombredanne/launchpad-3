@@ -2,117 +2,17 @@
 
 __metaclass__ = type
 
-__all__ = [
-    'TeamMembershipSubsetNavigation',
-    'TeamMembersView',
-    'ProposedTeamMembersEditView',
-    'AddTeamMemberView',
-    'TeamMembershipEditView',
-]
+__all__ = ['TeamMembershipEditView']
 
 import pytz
 import datetime
 
-from zope.app.form.browser.add import AddView
 from zope.component import getUtility
-from zope.i18nmessageid import MessageIDFactory
 
+from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import TeamMembershipStatus
-from canonical.database.sqlbase import flush_database_updates
 
-from canonical.launchpad import _
-from canonical.launchpad.webapp import Navigation
-from canonical.launchpad.interfaces import (
-    IPersonSet, ILaunchBag, ITeamMembershipSet, ITeamMembershipSubset,
-    ILaunchpadCelebrities)
-
-
-class TeamMembershipSubsetNavigation(Navigation):
-
-    usedfor = ITeamMembershipSubset
-
-    def traverse(self, name):
-        return self.context.getByPersonName(name)
-
-
-class ProposedTeamMembersEditView:
-
-    def __init__(self, context, request):
-        self.context = context
-        self.team = context.team
-        self.request = request
-        self.user = getUtility(ILaunchBag).user
-
-    def processProposed(self):
-        if self.request.method != "POST":
-            return
-
-        team = self.team
-        expires = team.defaultexpirationdate
-        for person in team.proposedmembers:
-            action = self.request.form.get('action_%d' % person.id)
-            if action == "approve":
-                status = TeamMembershipStatus.APPROVED
-            elif action == "decline":
-                status = TeamMembershipStatus.DECLINED
-            elif action == "hold":
-                continue
-
-            team.setMembershipStatus(person, status, expires,
-                                     reviewer=self.user)
-
-        # Need to flush all changes we made, so subsequent queries we make
-        # with this transaction will see this changes and thus they'll be
-        # displayed on the page that calls this method.
-        flush_database_updates()
-
-
-class AddTeamMemberView(AddView):
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.user = getUtility(ILaunchBag).user
-        self.alreadyMember = None
-        self.addedMember = None
-        added = self.request.get('added')
-        notadded = self.request.get('notadded')
-        if added:
-            self.addedMember = getUtility(IPersonSet).get(added)
-        elif notadded:
-            self.alreadyMember = getUtility(IPersonSet).get(notadded)
-        AddView.__init__(self, context, request)
-
-    def nextURL(self):
-        if self.addedMember:
-            return '+add?added=%d' % self.addedMember.id
-        elif self.alreadyMember:
-            return '+add?notadded=%d' % self.alreadyMember.id
-        else:
-            return '+add'
-
-    def createAndAdd(self, data):
-        team = self.context.team
-        approved = TeamMembershipStatus.APPROVED
-        admin = TeamMembershipStatus.ADMIN
-
-        newmember = data['newmember']
-        # If we get to this point with the member being the team itself,
-        # it means the ValidTeamMemberVocabulary is broken.
-        assert newmember != team, newmember
-
-        if newmember in team.activemembers:
-            self.alreadyMember = newmember
-            return
-
-        expires = team.defaultexpirationdate
-        if newmember.hasMembershipEntryFor(team):
-            team.setMembershipStatus(newmember, approved, expires,
-                                     reviewer=self.user)
-        else:
-            team.addMember(newmember, approved, reviewer=self.user)
-
-        self.addedMember = newmember
+from canonical.launchpad.interfaces import ILaunchBag, ILaunchpadCelebrities
 
 
 class TeamMembershipEditView:
@@ -220,8 +120,8 @@ class TeamMembershipEditView:
         assert self.context.status in (TeamMembershipStatus.ADMIN,
                                        TeamMembershipStatus.APPROVED)
 
+        team = self.context.team
         if self.request.form.get('editactive') == 'Deactivate':
-            team = self.context.team
             member = self.context.person
             deactivated = TeamMembershipStatus.DEACTIVATED
             comment = self.request.form.get('comment')
@@ -230,7 +130,7 @@ class TeamMembershipEditView:
             expires = self.context.dateexpires
             team.setMembershipStatus(member, deactivated, expires,
                                      reviewer=self.user, comment=comment)
-            self.request.response.redirect('../')
+            self.request.response.redirect('%s/+members' % canonical_url(team))
             return
 
         # XXX: salgado, 2005-03-15: I would like to just write this as 
@@ -253,7 +153,7 @@ class TeamMembershipEditView:
             pass
 
         if self._setMembershipData(status):
-            self.request.response.redirect('../')
+            self.request.response.redirect('%s/+members' % canonical_url(team))
 
     def processProposedMember(self):
         assert self.context.status == TeamMembershipStatus.PROPOSED
@@ -264,14 +164,16 @@ class TeamMembershipEditView:
         else:
             status = TeamMembershipStatus.APPROVED
         if self._setMembershipData(status):
-            self.request.response.redirect('../')
+            self.request.response.redirect(
+                '%s/+members' % canonical_url(self.context))
 
     def processInactiveMember(self):
         assert self.context.status in (TeamMembershipStatus.EXPIRED,
                                        TeamMembershipStatus.DEACTIVATED)
 
         if self._setMembershipData(TeamMembershipStatus.APPROVED):
-            self.request.response.redirect('../')
+            self.request.response.redirect(
+                '%s/+members' % canonical_url(self.context))
 
     def dateChooserForExpiredMembers(self):
         expires = self.context.team.defaultrenewedexpirationdate
@@ -362,35 +264,4 @@ class TeamMembershipEditView:
         html += '</select>'
 
         return html
-
-
-class TeamMembersView:
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.team = self.context.team
-        self.tmsubset = ITeamMembershipSubset(self.team)
-
-    def allMembersCount(self):
-        return getUtility(ITeamMembershipSet).getTeamMembersCount(self.team.id)
-
-    def activeMembersCount(self):
-        return len(self.team.activemembers)
-
-    def proposedMembersCount(self):
-        return len(self.team.proposedmembers)
-
-    def inactiveMembersCount(self):
-        return len(self.team.inactivemembers)
-
-    def activeMemberships(self):
-        return self.tmsubset.getActiveMemberships()
-
-    def proposedMemberships(self):
-        return self.tmsubset.getProposedMemberships()
-
-    def inactiveMemberships(self):
-        return self.tmsubset.getInactiveMemberships()
-
 

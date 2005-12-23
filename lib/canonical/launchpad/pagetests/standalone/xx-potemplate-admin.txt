@@ -33,7 +33,7 @@ And that we are able to POST it.
   >>> print http(r"""
   ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+admin HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Content-Length: 2420
+  ... Content-Length: 2306
   ... Content-Type: multipart/form-data; boundary=---------------------------80986468519315900241075667433
   ... Referer: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+admin
   ... 
@@ -101,11 +101,7 @@ And that we are able to POST it.
   ... -----------------------------80986468519315900241075667433
   ... Content-Disposition: form-data; name="field.path"
   ... 
-  ... po
-  ... -----------------------------80986468519315900241075667433
-  ... Content-Disposition: form-data; name="field.filename"
-  ... 
-  ... evolution-2.2.pot
+  ... po/evolution-2.2.pot
   ... -----------------------------80986468519315900241075667433
   ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
   ... 

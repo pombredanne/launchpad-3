@@ -22,12 +22,12 @@
         <div metal:fill-slot="extra_top"> 
           <p class="portalMessage" tal:condition="view/addedMember">
             <span tal:replace="string: ${view/addedMember/browsername} (${view/addedMember/name})" />
-            was added as a member of <span tal:replace="context/team/browsername" />.
+            was added as a member of <span tal:replace="context/browsername" />.
           </p>
 
           <p class="portalMessage" tal:condition="view/alreadyMember">
             <span tal:replace="string: ${view/alreadyMember/browsername} (${view/alreadyMember/name})" />
-            is already a member of <span tal:replace="context/team/browsername" />.
+            is already a member of <span tal:replace="context/browsername" />.
           </p>
         </div>
 
