@@ -18,15 +18,9 @@ on bugs. Bugs are linked to Messages via the BugMessage table.
 >>> msg.subject
 u'The Title'
 
-We can retrieve the full contents as plain text. (However, note that
+We can retrieve the text chunks as a unicode string. (However, note that
 if generating HTML you should use the MessageChunks detailed below
 to handle attachments correctly)
-
->>> msg.contents
-u'The Content'
-
-If you want only the text parts of the message, you should use
-text_contents.
 
 >>> msg.text_contents
 u'The Content'

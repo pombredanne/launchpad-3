@@ -560,8 +560,8 @@ class Bugzilla:
 
             # look for a message starting with "Created an attachment (id=NN)"
             for msg in lp_bug.messages:
-                if msg.contents.startswith('Created an attachment (id=%d)'
-                                           % attach_id):
+                if msg.text_contents.startswith(
+                        'Created an attachment (id=%d)' % attach_id):
                     break
             else:
                 # could not find the add message, so create one:

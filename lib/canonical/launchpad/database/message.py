@@ -83,12 +83,6 @@ class Message(SQLBase):
         return self.owner
 
     @property
-    def contents(self):
-        """See IMessage."""
-        bits = [unicode(chunk) for chunk in self]
-        return '\n\n'.join(bits)
-
-    @property
     def text_contents(self):
         """See IMessage."""
         bits = [unicode(chunk) for chunk in self if chunk.content]
