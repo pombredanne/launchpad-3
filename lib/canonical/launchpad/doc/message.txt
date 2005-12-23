@@ -25,6 +25,12 @@ to handle attachments correctly)
 >>> msg.contents
 u'The Content'
 
+If you want only the text parts of the message, you should use
+text_contents.
+
+>>> msg.text_contents
+u'The Content'
+
 Messages are threaded, although this is not necessarily displayed in the
 UI. Each message has a parent attribute. If the message was created via
 IBugMessageSet, the parent gets set to the bug's initial message.
@@ -130,6 +136,9 @@ u'Unicode\u2122'
 ...         print '%2d - %r' % (chunk.sequence, chunk.content)
  1 - u'Plain text'
  3 - u'Unicode\u2122 text'
+
+>>> msg.text_contents
+u'Plain text\n\nUnicode\u2122 text'
 
 Note that the second and forth chunks were not of type text/plain,
 so are stored as blobs.

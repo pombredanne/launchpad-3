@@ -299,7 +299,7 @@ class BugSet(BugSetBase):
 
         # Extract the details needed to create the bug and optional msg.
         if not description:
-            description = msg.contents
+            description = msg.text_contents
 
         if not datecreated:
             datecreated = UTC_NOW

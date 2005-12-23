@@ -88,6 +88,12 @@ class Message(SQLBase):
         bits = [unicode(chunk) for chunk in self]
         return '\n\n'.join(bits)
 
+    @property
+    def text_contents(self):
+        """See IMessage."""
+        bits = [unicode(chunk) for chunk in self if chunk.content]
+        return '\n\n'.join(bits)
+
 
 def get_parent_msgids(parsed_message):
     """Returns a list of message ids the mail was a reply to.
