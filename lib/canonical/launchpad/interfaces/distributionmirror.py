@@ -1,11 +1,11 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
 __all__ = ['IDistributionMirror', 'IMirrorDistroArchRelease',
            'IMirrorDistroReleaseSource', 'IMirrorProbeRecord']
 
-from zope.schema import Bool, Choice, Int, Datetime, TextLine
+from zope.schema import Bool, Choice, Datetime, TextLine
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.validators.name import name_validator
@@ -17,12 +17,9 @@ from canonical.launchpad import _
 class IDistributionMirror(Interface):
     """A mirror of a given distribution."""
 
-    id = Int(
-        title=_('The unique ID'), required=True, readonly=True)
-    owner = Int(
-        title=_('Owner'), required=True, readonly=True)
-    distribution = Int(
-        title=_('Distribution'), required=True, readonly=True)
+    owner = Choice(title=_('Owner'), required=False, readonly=True,
+                   vocabulary='ValidOwner')
+    distribution = Attribute(_("The distribution that is mirrored"))
     name = TextLine(
         title=_('Name'), required=True, readonly=False,
         constraint=name_validator)
@@ -45,8 +42,6 @@ class IDistributionMirror(Interface):
                       "mirror's pulse type is Pull."))
     enabled = Bool(
         title=_('Enabled?'), required=False, readonly=False, default=False)
-    file_list = Int(
-        title=_('File List'), required=True, readonly=True)
     speed = Choice(
         title=_('Link Speed'), required=True, readonly=False,
         vocabulary='MirrorSpeed')
@@ -87,10 +82,7 @@ class IDistributionMirror(Interface):
 class IMirrorDistroArchRelease(Interface):
     """The mirror of the packages of a given Distro Arch Release"""
 
-    id = Int(
-        title=_('The unique ID'), required=True, readonly=True)
-    distribution_mirror = Int(
-        title=_('Distribution Mirror'), required=True, readonly=True)
+    distribution_mirror = Attribute(_("The Distribution Mirror"))
     distro_arch_release = Choice(
         title=_('Distribution Arch Release'), required=True, readonly=True,
         vocabulary='FilteredDistroArchRelease')
@@ -105,10 +97,7 @@ class IMirrorDistroArchRelease(Interface):
 class IMirrorDistroReleaseSource(Interface):
     """The mirror of a given Distro Release"""
 
-    id = Int(
-        title=_('The unique ID'), required=True, readonly=True)
-    distribution_mirror = Int(
-        title=_('Distribution Mirror'), required=True, readonly=True)
+    distribution_mirror = Attribute(_("The Distribution Mirror"))
     distro_release = Choice(
         title=_('Distribution Release'), required=True, readonly=True,
         vocabulary='FilteredDistroRelease')
@@ -123,12 +112,7 @@ class IMirrorProbeRecord(Interface):
     We store this in order to have a history of that mirror's probes.
     """
 
-    id = Int(
-        title=_('The unique ID'), required=True, readonly=True)
-    distribution_mirror = Int(
-        title=_('Distribution Mirror'), required=True, readonly=True)
-    log_file = Int(
-        title=_('Log File'), required=True, readonly=True)
+    distribution_mirror = Attribute(_("The Distribution Mirror"))
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
 

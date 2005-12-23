@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005 Canonical Ltd.  All rights reserved.
 
 """Module docstring goes here."""
 
@@ -8,7 +8,7 @@ __all__ = ['DistributionMirror', 'MirrorDistroArchRelease',
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol, BoolCol, AND
+from sqlobject import ForeignKey, StringCol, BoolCol
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol

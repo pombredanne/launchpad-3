@@ -9,12 +9,10 @@ __all__ = [
     'DistributionView',
     'DistributionSetView',
     'DistributionSetAddView',
-    'DistributionMirrorAddView',
     'DistributionBugContactEditView'
     ]
 
 from zope.component import getUtility
-from zope.app.form.interfaces import WidgetsError
 from zope.app.form.browser.add import AddView
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
@@ -22,19 +20,15 @@ from zope.security.interfaces import Unauthorized
 from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 
-from canonical.lp.dbschema import MirrorPulseType
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPerson, IPublishedPackageSet,
     NotFoundError)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
-from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
     GetitemNavigation, stepthrough, stepto, canonical_url, redirection)
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad import _
 
 
 class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -295,45 +289,6 @@ class DistributionSetView:
     def count(self):
         return self.context.count()
 
-
-class DistributionMirrorAddView(GeneralFormView):
-
-    # XXX: This is a workaround while
-    # https://launchpad.net/products/launchpad/+bug/5792 isn't fixed.
-    __launchpad_facetname__ = 'overview'
-
-    def doSchemaValidation(self, data):
-        errors = []
-        if (data['pulse_type'] == MirrorPulseType.PULL and
-            not data['pulse_source']):
-            errors.append(LaunchpadValidationError(_(
-                "You have choosen 'Pull' as the pulse type but have not "
-                "supplied a pulse source.")))
-
-        if not (data['http_base_url'] or data['ftp_base_url'] or
-                data['rsync_base_url']):
-            errors.append(LaunchpadValidationError(_(
-                "All mirrors require at least one URL (HTTP, FTP or "
-                "Rsync) to be specified.")))
-
-        if errors:
-            raise WidgetsError(errors)
-
-    def process(self, owner, name, displayname, description, speed, country,
-                content, http_base_url, ftp_base_url, rsync_base_url,
-                pulse_type, pulse_source, enabled, official_candidate):
-        mirror = self.context.newMirror(
-            owner=owner, name=name, speed=speed, country=country,
-            content=content, pulse_type=pulse_type, displayname=displayname,
-            description=description, http_base_url=http_base_url,
-            ftp_base_url=ftp_base_url, rsync_base_url=rsync_base_url,
-            official_candidate=official_candidate, enabled=enabled,
-            pulse_source=pulse_source)
-
-        self._nextURL = canonical_url(mirror)
-        notify(ObjectCreatedEvent(mirror))
-        return mirror
-        
 
 class DistributionSetAddView(AddView):
 

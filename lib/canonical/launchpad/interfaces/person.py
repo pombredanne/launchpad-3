@@ -533,12 +533,6 @@ class IPersonSet(Interface):
 
     title = Attribute('Title')
 
-    def __getitem__(personid):
-        """Return the person with the given id.
-
-        Raise NotFoundError if there is no such person.
-        """
-    
     def topPeople():
         """Return the top 5 people by Karma score in the Launchpad."""
 
@@ -704,12 +698,6 @@ class IEmailAddressSet(Interface):
 
         Also make sure that the given status is an item of
         dbschema.EmailAddressStatus.
-        """
-
-    def __getitem__(emailid):
-        """Return the email address with the given id.
-
-        Raise KeyError if there is no such email address.
         """
 
     def get(emailid, default=None):

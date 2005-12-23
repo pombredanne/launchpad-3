@@ -10,6 +10,7 @@ __all__ = [
     'valid_emblem',
     'valid_hackergotchi',
     'valid_unregistered_email',
+    'validate_distribution_mirror_schema',
     ]
 
 import urllib
@@ -18,11 +19,13 @@ from StringIO import StringIO
 
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
+from zope.app.form.interfaces import WidgetsError
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import valid_email
+from canonical.lp.dbschema import MirrorPulseType
 
 def validate_url(url, valid_schemes):
     """Returns a boolean stating whether 'url' is a valid URL.
@@ -189,3 +192,29 @@ def valid_unregistered_email(email):
     else:
         raise LaunchpadValidationError(_(dedent("""
             %s isn't a valid email address.""" % email)))
+
+def validate_distribution_mirror_schema(form_values):
+    """Perform schema validation according to IDistributionMirror constraints.
+
+    This validation will take place after the values of individual widgets
+    are validated. It's necessary because we have some constraints where we
+    need to take into account the value of multiple widgets.
+
+    :form_values: A dictionary mapping IDistributionMirror attributes to the
+                  values suplied by the user.
+    """
+    errors = []
+    if (form_values['pulse_type'] == MirrorPulseType.PULL 
+        and not form_values['pulse_source']):
+        errors.append(LaunchpadValidationError(_(
+            "You have choosen 'Pull' as the pulse type but have not "
+            "supplied a pulse source.")))
+
+    if not (form_values['http_base_url'] or form_values['ftp_base_url']
+            or form_values['rsync_base_url']):
+        errors.append(LaunchpadValidationError(_(
+            "All mirrors require at least one URL (HTTP, FTP or "
+            "Rsync) to be specified.")))
+
+    if errors:
+        raise WidgetsError(errors)

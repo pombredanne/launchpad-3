@@ -317,12 +317,9 @@ class Bugzilla:
         person = None
         launchpad_id = self.person_mapping.get(bugzilla_id)
         if launchpad_id is not None:
-            try:
-                person = self.personset[launchpad_id]
-                if person.merged is not None:
-                    person = None
-            except NotFoundError:
-                pass
+            person = self.personset.get(launchpad_id)
+            if person is not None and person.merged is not None:
+                person = None
 
         # look up the person
         if person is None:

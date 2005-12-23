@@ -1,24 +1,22 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
 __all__ = ['DistributionMirrorEditView', 'DistributionMirrorFacets',
            'DistributionMirrorOverviewMenu', 'DistributionMirrorAddSourceView',
-           'DistributionMirrorAddArchView']
+           'DistributionMirrorAddArchView', 'DistributionMirrorAddView']
 
-from zope.app.form.interfaces import WidgetsError
+from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.event import notify
 
-from canonical.launchpad import _
 from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp import (
     canonical_url, StandardLaunchpadFacets, Link, ApplicationMenu, 
     enabled_with_permission)
-from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.interfaces import IDistributionMirror
+from canonical.launchpad.interfaces import (
+    IDistributionMirror, validate_distribution_mirror_schema)
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.lp.dbschema import MirrorPulseType
 
 
 class DistributionMirrorFacets(StandardLaunchpadFacets):
@@ -51,31 +49,38 @@ class DistributionMirrorOverviewMenu(ApplicationMenu):
         return Link('+admin', text, icon='edit')
 
 
+class DistributionMirrorAddView(GeneralFormView):
+
+    # XXX: This is a workaround while
+    # https://launchpad.net/products/launchpad/+bug/5792 isn't fixed.
+    __launchpad_facetname__ = 'overview'
+
+    def doSchemaValidation(self, form_values):
+        validate_distribution_mirror_schema(form_values)
+
+    def process(self, owner, name, displayname, description, speed, country,
+                content, http_base_url, ftp_base_url, rsync_base_url,
+                pulse_type, pulse_source, enabled, official_candidate):
+        mirror = self.context.newMirror(
+            owner=owner, name=name, speed=speed, country=country,
+            content=content, pulse_type=pulse_type, displayname=displayname,
+            description=description, http_base_url=http_base_url,
+            ftp_base_url=ftp_base_url, rsync_base_url=rsync_base_url,
+            official_candidate=official_candidate, enabled=enabled,
+            pulse_source=pulse_source)
+
+        self._nextURL = canonical_url(mirror)
+        notify(ObjectCreatedEvent(mirror))
+        return mirror
+        
+
 class DistributionMirrorEditView(SQLObjectEditView):
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.context))
 
-    def doSchemaValidation(self, data):
-        # XXX: This code can probably be moved somewhere else so it can be
-        # shared with DistributionAddMirrorView.createAndAdd().
-        # -- Guilherme Salgado, 2005-12-21
-        errors = []
-        if (data['pulse_type'] == MirrorPulseType.PULL and
-            not data['pulse_source']):
-            errors.append(LaunchpadValidationError(_(
-                "You have choosen 'Pull' as the pulse type but have not "
-                "supplied a pulse source.")))
-
-        if not (data['http_base_url'] or data['ftp_base_url']
-                or data['rsync_base_url']):
-            errors.append(
-                LaunchpadValidationError(_(
-                    "All mirrors require at least one URL (HTTP, FTP or "
-                    "Rsync) to be specified.")))
-
-        if errors:
-            raise WidgetsError(errors)
+    def doSchemaValidation(self, form_values):
+        validate_distribution_mirror_schema(form_values)
 
 
 class DistributionMirrorAddSourceView(GeneralFormView):
