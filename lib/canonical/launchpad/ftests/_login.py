@@ -3,7 +3,7 @@
 __metaclass__ = type
 
 from zope.component import getUtility
-from zope.security.management import endInteraction
+from zope.security.management import queryInteraction, endInteraction
 from canonical.launchpad.helpers import setupInteraction
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 
@@ -24,13 +24,17 @@ def login(email, participation=None):
     """
     authutil = getUtility(IPlacelessAuthUtility)
 
-    if email == ANONYMOUS:
-        principal = authutil.unauthenticatedPrincipal()
-    else:
+    # Login in anonymously even if we're going to log in as a user. We
+    # need to do this because there is a check that the email address
+    # is valid. This check goes via a security proxy, so we need an
+    # interaction in order to log in with an email address.
+    setupInteraction(
+        authutil.unauthenticatedPrincipal(), participation=participation)
+
+    if email != ANONYMOUS:
         principal = authutil.getPrincipalByLogin(email)
         assert principal is not None, "Invalid login"
-
-    setupInteraction(principal, login=email, participation=participation)
+        setupInteraction(principal, login=email, participation=participation)
 
 def logout():
     """Tear down after login(...), ending the current interaction.
