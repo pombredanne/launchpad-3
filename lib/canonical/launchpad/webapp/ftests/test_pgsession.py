@@ -31,14 +31,6 @@ class TestPgSession(LaunchpadFunctionalTestCase):
 
         self.sdc = PGSessionDataContainer()
         
-        # Grant permissions on the session tables. In the production
-        # environment, the session database and the main launchpad database
-        # are seperate, but for the purposes of the test suite they are
-        # combined to minimize database setup overheads.
-        #cursor = self.sdc.cursor
-        #cursor.execute("GRANT ALL ON SessionData TO session")
-        #cursor.execute("GRANT ALL ON SessionPkgData TO session")
-
     def tearDown(self):
         del self.sdc
         LaunchpadFunctionalTestCase.tearDown(self)

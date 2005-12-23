@@ -30,6 +30,7 @@ class SessionDatabaseAdapter(PsycopgAdapter):
     """A subclass of PsycopgAdapter that stores its connection information
     in the central launchpad configuration
     """
+    
     def __init__(self, dsn=None):
         """Ignore dsn"""
         dbuser = config.launchpad.session.dbuser

@@ -162,7 +162,7 @@ class PGSessionPkgData(DictMixin):
         cursor = self.cursor
         cursor.execute(query, vars())
         for key, pickled_value in cursor.fetchall():
-            key = key.decode('UTF-8')
+            key = key.decode(PG_ENCODING)
             value = pickle.loads(pickled_value)
             self._data_cache[key] = value
 
