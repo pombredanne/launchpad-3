@@ -18,8 +18,7 @@ __all__ = [
     'ISelectResultsSlicable',
     'IBugTaskSet',
     'BugTaskSearchParams',
-    'UNRESOLVED_BUGTASK_STATUSES',
-    'RESOLVED_BUGTASK_STATUSES']
+    'UNRESOLVED_BUGTASK_STATUSES']
 
 from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
@@ -35,20 +34,8 @@ from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 
 _ = MessageIDFactory('launchpad')
 
-# XXX: Brad Bollenbach, 2005-12-02: In theory, NEEDSINFO belongs in
-# UNRESOLVED_BUGTASK_STATUSES, but the semantics of our current reports would
-# break if it were added to the list below. See
-# <https://launchpad.net/malone/bugs/5320>
 UNRESOLVED_BUGTASK_STATUSES = (
-    dbschema.BugTaskStatus.UNCONFIRMED,
-    dbschema.BugTaskStatus.CONFIRMED,
-    dbschema.BugTaskStatus.INPROGRESS)
-
-RESOLVED_BUGTASK_STATUSES = (
-    dbschema.BugTaskStatus.FIXCOMMITTED,
-    dbschema.BugTaskStatus.FIXRELEASED,
-    dbschema.BugTaskStatus.REJECTED)
-
+    dbschema.BugTaskStatus.NEW, dbschema.BugTaskStatus.ACCEPTED)
 
 class IBugTask(IHasDateCreated):
     """A description of a bug needing fixing in a particular product
@@ -68,7 +55,7 @@ class IBugTask(IHasDateCreated):
         title=_('Milestone'), required=False, vocabulary='Milestone')
     status = Choice(
         title=_('Status'), vocabulary='BugTaskStatus',
-        default=dbschema.BugTaskStatus.UNCONFIRMED)
+        default=dbschema.BugTaskStatus.NEW)
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
     priority = Choice(
@@ -179,7 +166,7 @@ class IBugTaskSearch(Interface):
     status = List(
         title=_('Status:'),
         value_type=IBugTask['status'],
-        default=list(UNRESOLVED_BUGTASK_STATUSES),
+        default=[dbschema.BugTaskStatus.NEW, dbschema.BugTaskStatus.ACCEPTED],
         required=False)
     severity = List(
         title=_('Severity:'),
@@ -462,9 +449,8 @@ class IBugTaskSet(Interface):
         """Return all bug tasks assigned to a package/product maintained by
         :person:.
 
-        By default, closed (FIXCOMMITTED, REJECTED) tasks are not
-        returned. If you want closed tasks too, just pass
-        showclosed=True.
+        By default, closed (FIXED, REJECTED) tasks are not returned. If you
+        want closed tasks too, just pass showclosed=True.
 
         If minseverity is not None, return only the bug tasks with severity 
         greater than minseverity. The same is valid for minpriority/priority.

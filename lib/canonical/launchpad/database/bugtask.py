@@ -36,9 +36,9 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage)
 
 
-debbugsstatusmap = {'open': BugTaskStatus.UNCONFIRMED,
-                    'forwarded': BugTaskStatus.CONFIRMED,
-                    'done': BugTaskStatus.FIXRELEASED}
+debbugsstatusmap = {'open': BugTaskStatus.NEW,
+                    'forwarded': BugTaskStatus.ACCEPTED,
+                    'done': BugTaskStatus.FIXED}
 
 debbugsseveritymap = {'wishlist': BugTaskSeverity.WISHLIST,
                       'minor': BugTaskSeverity.MINOR,
@@ -105,7 +105,7 @@ class BugTask(SQLBase, BugTaskMixin):
     status = EnumCol(
         dbName='status', notNull=True,
         schema=BugTaskStatus,
-        default=BugTaskStatus.UNCONFIRMED)
+        default=BugTaskStatus.NEW)
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
     priority = EnumCol(
         dbName='priority', notNull=False, schema=BugTaskPriority, default=None)
@@ -274,29 +274,26 @@ class BugTask(SQLBase, BugTaskMixin):
         status = self.status
 
         if assignee:
-            # The statuses REJECTED, FIXCOMMITTED, and CONFIRMED will
-            # display with the assignee information as well. Showing
-            # assignees with other status would just be confusing
-            # (e.g. "Unconfirmed, assigned to Foo Bar")
-            assignee_html = (
-                '<img src="/++resource++user.gif" /> '
+            assignee_name = urllib.quote_plus(assignee.name)
+            assignee_browsername = cgi.escape(assignee.browsername)
+
+            if status in (BugTaskStatus.ACCEPTED, BugTaskStatus.REJECTED,
+                          BugTaskStatus.FIXED):
+                return (
+                    '%s by <img src="/++resource++user.gif" /> '
+                    '<a href="/malone/assigned?name=%s">%s</a>' % (
+                        status.title.lower(), assignee_name,
+                        assignee_browsername))
+
+            return (
+                'assigned to <img src="/++resource++user.gif" /> '
                 '<a href="/malone/assigned?name=%s">%s</a>' % (
-                    urllib.quote_plus(assignee.name),
-                    cgi.escape(assignee.browsername)))
+                    assignee_name, assignee_browsername))
+        else:
+            if status in (BugTaskStatus.REJECTED, BugTaskStatus.FIXED):
+                return status.title.lower()
 
-            if status in (BugTaskStatus.REJECTED, BugTaskStatus.FIXCOMMITTED):
-                return '%s by %s' % (status.title.lower(), assignee_html)
-            elif  status == BugTaskStatus.CONFIRMED:
-                return '%s, assigned to %s' % (status.title.lower(), assignee_html)
-
-        # The status is something other than REJECTED, FIXCOMMITTED or
-        # CONFIRMED (whether assigned to someone or not), so we'll
-        # show only the status.
-        if status in (BugTaskStatus.REJECTED, BugTaskStatus.UNCONFIRMED,
-                      BugTaskStatus.FIXRELEASED):
-            return status.title.lower()
-
-        return status.title.lower() + ' (unassigned)'
+            return 'not assigned'
 
 
 class BugTaskSet:
@@ -502,8 +499,7 @@ class BugTaskSet:
             showclosed = ""
         else:
             showclosed = (
-                ' AND BugTask.status < %s' %
-                sqlvalues(BugTaskStatus.FIXCOMMITTED))
+                ' AND BugTask.status < %s' % sqlvalues(BugTaskStatus.FIXED))
 
         priority_severity_filter = ""
         if minpriority is not None:

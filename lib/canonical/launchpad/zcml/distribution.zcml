@@ -121,6 +121,7 @@
             />
         <browser:page
             name="+builds"
+            facet="overview"
             template="../templates/distribution-builds.pt"
             lp:url="/distros/$distribution/+builds"
             />

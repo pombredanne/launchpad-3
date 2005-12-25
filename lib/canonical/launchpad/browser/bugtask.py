@@ -756,7 +756,7 @@ class UntriagedBugTasksView(BugTaskSearchListingView):
     """
 
     def getExtraSearchParams(self):
-        return {'status': dbschema.BugTaskStatus.UNCONFIRMED}
+        return {'status': dbschema.BugTaskStatus.NEW}
 
 
 class UnassignedBugTasksView(BugTaskSearchListingView):

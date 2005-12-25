@@ -14,19 +14,17 @@ __all__ = [
     'IObjectReassignment',
     'ITeamReassignment',
     'ITeamCreation',
-    'NameAlreadyTaken',
     'EmailAddressAlreadyTaken'
     ]
 
-from textwrap import dedent
 
 from zope.schema import (
-    Choice, Datetime, Int, Text, TextLine, Password, ValidationError, Bytes)
+    Choice, Datetime, Int, Text, TextLine, Password, Bytes)
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.fields import ContentNameField, StrippingTextLine 
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
@@ -37,37 +35,21 @@ from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, EmailAddressStatus)
 
 
-class StrippingTextLine(TextLine):
-    """A TextLine field that is always stripped."""
-
-    def fromUnicode(self, str):
-        return TextLine.fromUnicode(self, str.strip())
-
-
-class NameAlreadyTaken(ValidationError):
-    __doc__ = _("""This name is already in use""")
-    # XXX mpt 20050826: This should be moved out of person to be more generic.
-    # (It's currently used by projects too.)
-
-
 class EmailAddressAlreadyTaken(Exception):
     """The email address is already registered in Launchpad."""
 
 
-class PersonNameField(TextLine):
+class PersonNameField(ContentNameField):
+    
+    errormessage = _("%s is already in use by another person/team.")
 
-    def _validate(self, value):
-        TextLine._validate(self, value)
-        if (IPerson.providedBy(self.context) and 
-            value == getattr(self.context, self.__name__)):
-            # The name wasn't changed.
-            return
+    @property
+    def _content_iface(self):
+        return IPerson
 
-        person = getUtility(IPersonSet).getByName(value, ignore_merged=False)
-        if person is not None:
-            raise LaunchpadValidationError(_(dedent("""
-                This name is already in use by another person/team.
-                """ )))
+    def _getByName(self, name):
+        return getUtility(IPersonSet).getByName(name, ignore_merged=False)
+
 
 class IPerson(IHasSpecifications):
     """A Person."""

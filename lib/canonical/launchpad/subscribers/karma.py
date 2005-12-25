@@ -68,11 +68,11 @@ def bugtask_modified(bugtask, event):
 
     if task_delta.status:
         new_status = task_delta.status['new']
-        if new_status == BugTaskStatus.FIXCOMMITTED:
+        if new_status == BugTaskStatus.FIXED:
             user.assignKarma('bugfixed')
         elif new_status == BugTaskStatus.REJECTED:
             user.assignKarma('bugrejected')
-        elif new_status == BugTaskStatus.CONFIRMED:
+        elif new_status == BugTaskStatus.ACCEPTED:
             user.assignKarma('bugaccepted')
 
     if task_delta.severity is not None:

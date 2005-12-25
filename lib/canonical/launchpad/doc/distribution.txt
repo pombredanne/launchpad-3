@@ -42,7 +42,7 @@ have a SourcePackageName object for it.
     >>> evo_ubuntu = ubuntu.getSourcePackage(evo)
     >>> print evo_ubuntu.name
     evolution
-  
+
     >>> IDistributionSourcePackage.providedBy(evo_ubuntu)
     True
 
@@ -77,6 +77,43 @@ You can list development distroreleases:
     ...     print devdist.name
     hoary
 
+Retrieving packages by name, returns a tuple of
+Source/BinaryPackageName instancefound within this distribution:
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ISourcePackageName, IBinaryPackageName)
+    >>> source_name, bin_name = ubuntu.getPackageNames('pmount')
+    >>> ISourcePackageName.providedBy(source_name)
+    True
+    >>> IBinaryPackageName.providedBy(bin_name)
+    True
+    >>> source_name.name, bin_name.name
+    (u'pmount', u'pmount')
+
+Prevents wrong usage by and assertion error:
+
+    >>> name_tuple = ubuntu.getPackageNames(ubuntu)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only ever call this with a string
+
+Raises NotFoundError for following conditions:
+
+    >>> name_tuple = ubuntu.getPackageNames('@#$')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 'Invalid package name: @#$'
+
+    >>> name_tuple = ubuntu.getPackageNames('zeca')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 'Unknown package: zeca'
+
+    >>> name_tuple = ubuntu.getPackageNames('1234')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 'Unknown package: 1234'
+
 
 CVE BugTasks on a Distribution
 ------------------------------
@@ -109,7 +146,7 @@ way to decompose that into the distrorelease and the pocket. Distribution
 can do that for us.
 
 If we ask for a totally unknown distrorelease, we raise NotFoundError
-    >>> ubuntu.getDistroReleaseAndPocket('unknown') 
+    >>> ubuntu.getDistroReleaseAndPocket('unknown')
     Traceback (most recent call last):
     ...
     NotFoundError: 'unknown'

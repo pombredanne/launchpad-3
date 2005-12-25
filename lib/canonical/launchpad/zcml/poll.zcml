@@ -81,7 +81,7 @@
     <browser:editform
         name="+edit"
         for="canonical.launchpad.interfaces.IPoll"
-        class="canonical.launchpad.browser.editview.SQLObjectEditView"
+        class="canonical.launchpad.browser.PollEditView"
         schema="canonical.launchpad.interfaces.IPoll"
         fields="name title proposition secrecy allowspoilt
                 dateopens datecloses"
