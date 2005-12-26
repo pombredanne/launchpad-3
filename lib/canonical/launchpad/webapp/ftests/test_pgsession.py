@@ -43,8 +43,10 @@ class TestPgSession(LaunchpadFunctionalTestCase):
 
         client_id = 'Client Id'
 
-        # __getitem__ raises a keyerror for an unknown client id
-        self.assertRaises(KeyError, self.sdc.__getitem__, client_id)
+        # __getitem__ does not raise a keyerror for an unknown client id.
+        # This is not correct, but needed to workaround a design flaw in
+        # the session machinery.
+        self.sdc['Unknown client id']
 
         # __setitem__ creates a new row in the SessionData table. The
         # passed in value is ignored.

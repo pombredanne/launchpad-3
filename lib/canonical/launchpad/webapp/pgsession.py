@@ -50,8 +50,8 @@ class PGSessionDataContainer:
     # using the session data.
     resolution = 10 * MINUTES
 
-    session_data_tablename = 'SessionData'
-    session_pkg_data_tablename = 'SessionPkgData'
+    session_data_table_name = 'SessionData'
+    session_pkg_data_table_name = 'SessionPkgData'
     database_adapter_name = 'session'
 
     @property
@@ -64,17 +64,22 @@ class PGSessionDataContainer:
         cursor = self.cursor
         self._sweep(cursor)
         query = "SELECT COUNT(*) FROM %s WHERE client_id = %%(client_id)s" % (
-                self.session_data_tablename
+                self.session_data_table_name
                 )
         cursor.execute(query.encode(PG_ENCODING), vars())
         if cursor.fetchone()[0] == 0:
-            raise KeyError(client_id)
+            # Note that we don't raise a KeyError here - if the client_id
+            # is not yet a valid session identifier, make it so. If we fail
+            # to do this, the session machinery will do it for us, but will
+            # create a default SessionData instance instead of our customized
+            # PGSessionData.
+            self[client_id] = 'ignored'
         return PGSessionData(self, client_id)
 
     def __setitem__(self, client_id, session_data):
         """See zope.app.session.interfaces.ISessionDataContainer"""
         query = "INSERT INTO %s (client_id) VALUES (%%(client_id)s)" % (
-                self.session_data_tablename
+                self.session_data_table_name
                 )
         client_id = client_id.encode(PG_ENCODING)
         self.cursor.execute(query, vars())
@@ -111,12 +116,12 @@ class PGSessionData:
         self.lastAccessTime = time.time()
 
         # Update the last access time in the db if it is out of date
-        tablename = session_data_container.session_data_tablename
+        table_name = session_data_container.session_data_table_name
         query = """
             UPDATE %s SET last_accessed = CURRENT_TIMESTAMP
             WHERE client_id = %%s
             AND last_accessed < CURRENT_TIMESTAMP - '%d seconds'::interval
-            """ % (tablename, session_data_container.resolution)
+            """ % (table_name, session_data_container.resolution)
         self.cursor.execute(query, [client_id.encode(PG_ENCODING)])
 
     @property
@@ -142,11 +147,11 @@ class PGSessionPkgData(DictMixin):
     def cursor(self):
         return self.session_data.cursor
 
-    def __init__(self, session_data, product_id, caching=True):
+    def __init__(self, session_data, product_id):
         self.session_data = session_data
         self.product_id = product_id
-        self.tablename = \
-                session_data.session_data_container.session_pkg_data_tablename
+        self.table_name = \
+                session_data.session_data_container.session_pkg_data_table_name
         self._populate()
 
     _data_cache = None
@@ -156,7 +161,7 @@ class PGSessionPkgData(DictMixin):
         query = """
             SELECT key, pickle FROM %s
             WHERE client_id = %%(client_id)s AND product_id = %%(product_id)s
-            """ % self.tablename
+            """ % self.table_name
         client_id = self.session_data.client_id.encode(PG_ENCODING)
         product_id = self.product_id.encode(PG_ENCODING)
         cursor = self.cursor
@@ -184,7 +189,7 @@ class PGSessionPkgData(DictMixin):
                 UPDATE %s SET pickle = %%(pickled_value)s
                 WHERE client_id = %%(client_id)s
                     AND product_id = %%(product_id)s AND key = %%(key)s
-                """ % self.tablename
+                """ % self.table_name
             # NB. This might update 0 rows if another thread has deleted
             # the key. If this happens we just don't care.
             cursor.execute(query, vars())
@@ -198,7 +203,7 @@ class PGSessionPkgData(DictMixin):
                 INSERT INTO %s (client_id, product_id, key, pickle) VALUES (
                     %%(client_id)s, %%(product_id)s, %%(key)s,
                     %%(pickled_value)s)
-                """ % self.tablename
+                """ % self.table_name
             cursor.execute(query, vars())
 
         # Store the value in the cache too
@@ -219,7 +224,7 @@ class PGSessionPkgData(DictMixin):
             DELETE FROM %s
             WHERE client_id = %%(client_id)s AND product_id = %%(product_id)s
                 AND key = %%(key)s
-            """ % self.tablename
+            """ % self.table_name
         client_id = self.session_data.client_id.encode(PG_ENCODING)
         product_id = self.product_id.encode(PG_ENCODING)
         key = key.encode(PG_ENCODING)
