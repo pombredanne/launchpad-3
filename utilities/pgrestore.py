@@ -82,6 +82,10 @@ def listing_cmp(a, b):
     else:
         btype = b.split()[idx]
 
+    # Build indexes in same parse as tables, so that tables with constraints
+    # that need to reference other tables (eg. CHECK is_person() columns)
+    # load in a reasonable time. This is more fragile, but should last
+    # until postgresql 8 migration makes this script irrelevant.
     scores = {
         ';': 0,
         'SCHEMA': 1,
@@ -97,7 +101,7 @@ def listing_cmp(a, b):
         'TRIGGER': 90,
         'FK': 95,
         'CONSTRAINT': 95,
-        'INDEX': 100,
+        'INDEX': 30,
         'COMMENT': 200,
         'ACL': 1000,
         }
