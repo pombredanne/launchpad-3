@@ -3,16 +3,14 @@
 __metaclass__ = type
 __all__ = ['Specification', 'SpecificationSet']
 
-import datetime
 
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, IntCol, StringCol, IntervalCol, MultipleJoin, RelatedJoin,
-    BoolCol)
+    ForeignKey, IntCol, StringCol, MultipleJoin, RelatedJoin, BoolCol)
 
 from canonical.launchpad.interfaces import (
-    ISpecification, ISpecificationSet, NameNotAvailable)
+    ISpecification, ISpecificationSet)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import DEFAULT
@@ -347,6 +345,13 @@ class SpecificationSet:
         """See ISpecificationSet."""
         for row in Specification.select():
             yield row
+
+    def getByName(self, name, default=None):
+        """See ISpecificationSet."""
+        specification = Specification.selectOneBy(name=name)
+        if specification is None:
+            return default
+        return specification
 
     @property
     def latest_specs(self):

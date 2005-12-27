@@ -17,19 +17,12 @@
 
 <div metal:fill-slot="main">
 
-<div tal:condition="view/setCurrentUbuntuPackage" />
-
     <h1>Ubuntu Packaging</h1>
 
     <p class="documentDescription">
       This page allows you to link this branch of <span
       tal:replace="context/product/displayname">product</span> with the
       relevant Ubuntu package.
-    </p>
-
-    <p tal:repeat="msg view/errormsgs" class="portalMessage"
-       tal:content="msg">
-       Error Message Here
     </p>
 
     <p class="portalMessage"
@@ -71,8 +64,8 @@
 
           <input type="text" name="ubuntupkg" size="30"
                  value="" tal:attributes="value view/curr_ubuntu_pkgname" />
-          
-          <input type="submit" name="setubuntupkg" value="Update">
+
+          <input type="submit" name="set_ubuntu_pkg" value="Update">
 
         </div>
 

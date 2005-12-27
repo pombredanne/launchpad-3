@@ -183,7 +183,7 @@ class Person(SQLBase):
     subscribed_tickets = RelatedJoin('Ticket', joinColumn='person',
         otherColumn='ticket', intermediateTable='TicketSubscription',
         orderBy='-datecreated')
-    
+
     calendar = ForeignKey(dbName='calendar', foreignKey='Calendar',
                           default=None, forceDBName=True)
 
@@ -1361,7 +1361,28 @@ class PersonSet:
             WHERE person=%(from_id)d
             ''' % vars())
         skip.append(('posubmission', 'person'))
-    
+
+        # Update only the TranslationImportQueueEntry that will not conflict
+        # and trash the rest
+        cur.execute('''
+            UPDATE TranslationImportQueueEntry
+            SET importer=%(to_id)d
+            WHERE importer=%(from_id)d AND id NOT IN (
+                SELECT a.id
+                FROM TranslationImportQueueEntry AS a,
+                     TranslationImportQueueEntry AS b
+                WHERE a.importer = %(from_id)d AND b.importer = %(to_id)d
+                AND a.distrorelease = b.distrorelease
+                AND a.sourcepackagename = b.sourcepackagename
+                AND a.productseries = b.productseries
+                AND a.path = b.path
+                )
+            ''' % vars())
+        cur.execute('''
+            DELETE FROM TranslationImportQueueEntry WHERE importer=%(from_id)d
+            ''' % vars())
+        skip.append(('translationimportqueueentry', 'importer'))
+
         # Sanity check. If we have a reference that participates in a
         # UNIQUE index, it must have already been handled by this point.
         # We can tell this by looking at the skip list.
@@ -1442,7 +1463,7 @@ class PersonSet:
         cur.execute('''
             UPDATE Person SET merged=%(to_id)d WHERE id=%(from_id)d
             ''' % vars())
-        
+
         # Append a -merged suffix to the account's name.
         name = base = "%s-merged" % from_person.name.encode('ascii')
         cur.execute("SELECT id FROM Person WHERE name = %s" % sqlvalues(name))
@@ -1586,7 +1607,7 @@ class GPGKeySet:
             return None
         key.active = True
         return key
-    
+
     def getGPGKeys(self, ownerid=None, active=True):
         """See IGPGKeySet"""
         if active is False:
@@ -1598,7 +1619,7 @@ class GPGKeySet:
 
         if ownerid:
             query += ' AND owner=%s' % sqlvalues(ownerid)
-        
+
         return GPGKey.select(query, orderBy='id')
 
 

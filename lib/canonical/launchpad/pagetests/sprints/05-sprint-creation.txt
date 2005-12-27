@@ -70,6 +70,6 @@ a warning to that effect on the page.
   ... GET /sprints/ltsponsteroids HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...There are no specifications registered for discussion...
+  ...No specifications are registered for discussion...
 
 

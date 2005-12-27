@@ -201,7 +201,9 @@ def setup(con, configuration=DEFAULT_CONFIG):
 
     try:
         execute(con, 'SELECT * from pg_ts_cfg')
-        log.debug('tsearch2 already installed')
+        log.debug('tsearch2 already installed. Updating dictionaries.')
+        update_dicts(con)
+        con.commit()
     except psycopg.ProgrammingError:
         con.rollback()
         log.debug('Installing tsearch2')
@@ -453,12 +455,30 @@ def get_tsearch2_sql_path(con):
         path = os.path.join(PGSQL_BASE, '8.0', 'contrib', 'tsearch2.sql')
     elif pgversion.startswith('7.4.'):
         path = os.path.join(PGSQL_BASE, '7.4', 'contrib', 'tsearch2.sql')
+        if not os.path.exists(path):
+            path = os.path.join(PGSQL_BASE, 'contrib', 'tsearch2.sql')
     else:
         raise RuntimeError('Unknown version %s' % pgversion)
 
     assert os.path.exists(path), '%s does not exist'
-
     return path
+
+
+def update_dicts(con):
+    '''Fix paths to the stop word lists.
+    
+    The PostgreSQL 7.4 installation had absolute paths to the stop words
+    lists. This path changed with breezy. Update the paths to the
+    newer relative paths.
+    '''
+    execute(con, '''
+        UPDATE pg_ts_dict SET dict_initoption='contrib/english.stop'
+        WHERE dict_initoption like '/%/english.stop'
+        ''')
+    execute(con, '''
+        UPDATE pg_ts_dict SET dict_initoption='contrib/russian.stop'
+        WHERE dict_initoption like '/%/russian.stop'
+        ''')
 
 
 def main():

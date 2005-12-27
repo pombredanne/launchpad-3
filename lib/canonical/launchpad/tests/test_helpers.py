@@ -93,51 +93,6 @@ def examine_tarfile(tarfile):
         else:
             print format % (name, '')
 
-def test_RosettaReadTafile():
-    """
-    >>> import tarfile
-    >>> from StringIO import StringIO
-    >>> from canonical.launchpad.helpers import RosettaReadTarFile
-
-    First, some test data.
-
-    >>> stream = StringIO()
-    >>> archive = tarfile.open('', 'w', stream)
-    >>> archive.addfile(tarfile.TarInfo('foo'), StringIO('bar'))
-    >>> string = stream.getvalue()
-    >>> stream.seek(0)
-
-    We can create RosettaReadTarFile objects from a string, a stream, or a
-    tarfile object:
-
-    >>> RosettaReadTarFile(data=string).tarfile.getnames()
-    ['foo']
-    >>> RosettaReadTarFile(stream=stream).tarfile.getnames()
-    ['foo']
-    >>> RosettaReadTarFile(archive=archive).tarfile.getnames()
-    ['foo']
-
-    We can then query the objects for more information.
-
-    >>> test1 = RosettaReadTarFile(archive=make_test_tarball_1())
-    >>> test2 = RosettaReadTarFile(archive=make_test_tarball_2())
-
-    >>> test1.find_po_directories()
-    ['uberfrob-0.1/blah/po/', 'uberfrob-0.1/po/']
-
-    >>> pot, po = test1.examine()
-    >>> pot
-    ('uberfrob-0.1/po/uberfrob.pot',)
-    >>> po
-    ('uberfrob-0.1/po/cy.po', 'uberfrob-0.1/po/es.po')
-
-    >>> pot, po = test2.examine()
-    >>> pot
-    ('test/test.pot',)
-    >>> po
-    ('test/cy.po', 'test/es.po')
-    """
-
 def test_RosettaWriteTarFile():
     """
     Start off by creating a blank archive.

@@ -37,9 +37,9 @@ class Build(SQLBase):
     _table = 'Build'
 
     datecreated = UtcDateTimeCol(dbName='datecreated', default=UTC_NOW)
-    processor = ForeignKey(dbName='processor', foreignKey='Processor', 
+    processor = ForeignKey(dbName='processor', foreignKey='Processor',
         notNull=True)
-    distroarchrelease = ForeignKey(dbName='distroarchrelease', 
+    distroarchrelease = ForeignKey(dbName='distroarchrelease',
         foreignKey='DistroArchRelease', notNull=True)
     buildstate = EnumCol(dbName='buildstate', notNull=True, schema=BuildStatus)
     sourcepackagerelease = ForeignKey(dbName='sourcepackagerelease',
@@ -75,23 +75,23 @@ class Build(SQLBase):
     @property
     def title(self):
         """See IBuild"""
-        return '%s build of %s %s in %s %s (%s)' % (
+        return '%s build of %s %s in %s %s' % (
             self.distroarchrelease.architecturetag,
             self.sourcepackagerelease.name,
             self.sourcepackagerelease.version,
             self.distroarchrelease.distrorelease.distribution.name,
-            self.distroarchrelease.distrorelease.name,
-            self.datecreated.strftime('%Y-%m-%d'))
+            self.distroarchrelease.distrorelease.name)
 
     @property
     def build_icon(self):
         """See IBuild"""
+
         icon_map = {
-            BuildStatus.NEEDSBUILD: "/++resource++build-success",
+            BuildStatus.NEEDSBUILD: "",
             BuildStatus.FULLYBUILT: "/++resource++build-success",
             BuildStatus.FAILEDTOBUILD: "/++resource++build-failure",
-            BuildStatus.MANUALDEPWAIT: "/++resource++build-failure",
-            BuildStatus.CHROOTWAIT: "/++resource++build-failure",
+            BuildStatus.MANUALDEPWAIT: "",
+            BuildStatus.CHROOTWAIT: "",
             }
         return icon_map[self.buildstate]
 
@@ -108,6 +108,24 @@ class Build(SQLBase):
         bpklist = shortlist(BinaryPackageRelease.selectBy(buildID=self.id))
         return sorted(bpklist, key=lambda a: a.binarypackagename.name)
 
+    @property
+    def can_be_reset(self):
+        """See IBuild."""
+        return self.buildstate in [BuildStatus.FAILEDTOBUILD,
+                                   BuildStatus.MANUALDEPWAIT,
+                                   BuildStatus.CHROOTWAIT]
+
+    def reset(self):
+        """See IBuild."""
+        self.buildstate = BuildStatus.NEEDSBUILD
+        self.datebuilt = None
+        self.buildduration = None
+        self.builder = None
+        self.gpgsigningkey = None
+        self.changes = None
+        self.buildlog = None
+        
+
     def __getitem__(self, name):
         return self.getBinaryPackageRelease(name)
 
@@ -118,7 +136,6 @@ class Build(SQLBase):
                 return binpkg
         raise IndexError, 'No binary package "%s" in build' % name
 
-
     def createBinaryPackageRelease(self, binarypackagename, version,
                                    summary, description,
                                    binpackageformat, component,
@@ -128,9 +145,9 @@ class Build(SQLBase):
                                    essential, installedsize,
                                    copyright, licence,
                                    architecturespecific):
-        
+
         """See IBuild."""
-        
+
         return BinaryPackageRelease(buildID=self.id,
                                     binarypackagenameID=binarypackagename,
                                     version=version,
@@ -183,9 +200,35 @@ class BuildSet:
         return Build.select(
             AND(Build.q.buildstate==BuildStatus.NEEDSBUILD,
                 IN(Build.q.distroarchreleaseID, archrelease_ids))
-            )                                  
+            )
 
-    def getBuildsForBuilder(self, builder, limit=10):
-        """See IBuildSet"""
-        return Build.select("builder=%s" % sqlvalues(builder.id), limit=limit,
+    def getBuildsForBuilder(self, builder_id, status=None):
+        """See IBuildSet."""
+        status_clause = ''
+        if status:
+            status_clause = "AND buildstate=%s" % sqlvalues(status)
+
+        return Build.select(
+            "builder=%s %s" % (builder_id, status_clause),
+            orderBy="-datebuilt")
+
+    def getBuildsByArchIds(self, arch_ids, status=None):
+        """See IBuildSet."""
+        # If not distroarchrelease was found return None.
+        if not arch_ids:
+            return None
+
+        # format clause according single/multiple architecture(s) form
+        if len(arch_ids) == 1:
+            condition_clauses = [('distroarchrelease=%s'
+                                  % sqlvalues(arch_ids[0]))]
+        else:
+            condition_clauses = [('distroarchrelease IN %s'
+                                  % sqlvalues(arch_ids))]
+
+        # attempt to given status
+        if status:
+            condition_clauses.append('buildstate=%s' % sqlvalues(status))
+
+        return Build.select(' AND '.join(condition_clauses),
                             orderBy="-datebuilt")

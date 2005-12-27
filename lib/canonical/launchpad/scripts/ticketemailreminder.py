@@ -42,7 +42,7 @@ def send_ticket_email_reminders():
             'ticket_title': ticket.title,
             'answerer': ticket.answerer.displayname,
             'ticket_url': canonical_url(ticket)}
-        submitter_email = submitter.preferredemail.email
+        submitter_email = str(submitter.preferredemail.email)
         simple_sendmail(
             "Launchpad Support System <noreply@launchpad.net>",
             submitter_email,
