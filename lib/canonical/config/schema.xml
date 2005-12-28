@@ -69,7 +69,7 @@
         <key name="browser_notification_level" required="no"
             datatype="canonical.config.loglevel" default="info" />
         <section name="*" type="launchpad_session" attribute="session"
-            required="yes" />
+            required="no" />
         <section name="*" type="launchpad_errorreports" attribute="errorreports"
             required="no" />
     </sectiontype>
