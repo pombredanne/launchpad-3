@@ -424,6 +424,7 @@ def needs_refresh(con, table, columns):
         results=True, args=vars()
         )
     if len(existing) == 0:
+        log.debug("No fticache for %(table)s" % vars())
         execute(con, """
             INSERT INTO FtiCache (tablename, columns) VALUES (
                 %(table)s, %(current_columns)s
@@ -433,9 +434,12 @@ def needs_refresh(con, table, columns):
 
     if not options.force:
         previous_columns = existing[0][0]
-        if repr(columns) == previous_columns:
+        if current_columns == previous_columns:
+            log.debug("FtiCache for %(table)s still valid" % vars())
             return False
-
+        log.debug("Cache out of date - %s != %s" % (
+            current_columns, previous_columns
+            ))
     execute(con, """
         UPDATE FtiCache SET columns = %(current_columns)s
         WHERE tablename = %(table)s
@@ -471,6 +475,9 @@ def update_dicts(con):
     lists. This path changed with breezy. Update the paths to the
     newer relative paths.
     '''
+    if get_pgversion(con).startswith('7.4.'):
+        return
+
     execute(con, '''
         UPDATE pg_ts_dict SET dict_initoption='contrib/english.stop'
         WHERE dict_initoption like '/%/english.stop'
