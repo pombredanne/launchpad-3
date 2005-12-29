@@ -424,6 +424,7 @@ def needs_refresh(con, table, columns):
         results=True, args=vars()
         )
     if len(existing) == 0:
+        log.debug("No fticache for %(table)s" % vars())
         execute(con, """
             INSERT INTO FtiCache (tablename, columns) VALUES (
                 %(table)s, %(current_columns)s
@@ -433,9 +434,12 @@ def needs_refresh(con, table, columns):
 
     if not options.force:
         previous_columns = existing[0][0]
-        if repr(columns) == previous_columns:
+        if current_columns == previous_columns:
+            log.debug("FtiCache for %(table)s still valid" % vars())
             return False
-
+        log.debug("Cache out of date - %s != %s" % (
+            previous_columns,repr(columns)
+            ))
     execute(con, """
         UPDATE FtiCache SET columns = %(current_columns)s
         WHERE tablename = %(table)s
