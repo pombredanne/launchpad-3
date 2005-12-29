@@ -438,7 +438,7 @@ def needs_refresh(con, table, columns):
             log.debug("FtiCache for %(table)s still valid" % vars())
             return False
         log.debug("Cache out of date - %s != %s" % (
-            previous_columns,repr(columns)
+            current_columns, previous_columns
             ))
     execute(con, """
         UPDATE FtiCache SET columns = %(current_columns)s
