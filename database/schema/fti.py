@@ -471,6 +471,9 @@ def update_dicts(con):
     lists. This path changed with breezy. Update the paths to the
     newer relative paths.
     '''
+    if get_pgversion(con).startswith('7.4.'):
+        return
+
     execute(con, '''
         UPDATE pg_ts_dict SET dict_initoption='contrib/english.stop'
         WHERE dict_initoption like '/%/english.stop'
