@@ -182,8 +182,8 @@ def set_login_in_launchbag_when_principal_identified(event):
     else:
         launchbag.setLogin(loggedinevent.login)
 
-def set_developer_in_launchbag_when_logged_in(event):
-    """Subscriber for IPrincipalIdentifiedEvent
+def set_developer_in_launchbag_before_traversal(event):
+    """Subscriber for IBeforeTraverseEvent
 
     Sets the 'user is a launchpad developer flag' early, as we need
     it available if an exception occurs; If we leave it until needed,
