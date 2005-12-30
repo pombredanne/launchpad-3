@@ -245,7 +245,7 @@
         />
 
     <subscriber
-        for="canonical.launchpad.webapp.interfaces.ILoggedInEvent"
+        for="canonical.launchpad.webapp.interfaces.IPrincipalIdentifiedEvent"
         factory="canonical.launchpad.webapp.launchbag.set_developer_in_launchbag_when_logged_in"
         />
 

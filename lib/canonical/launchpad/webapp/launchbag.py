@@ -183,7 +183,12 @@ def set_login_in_launchbag_when_principal_identified(event):
         launchbag.setLogin(loggedinevent.login)
 
 def set_developer_in_launchbag_when_logged_in(event):
-    """Subscriber to ILoggedInEvent"""
+    """Subscriber for IPrincipalIdentifiedEvent
+
+    Sets the 'user is a launchpad developer flag' early, as we need
+    it available if an exception occurs; If we leave it until needed,
+    we may no longer have the functionality we need to look this up.
+    """
     launchbag = getUtility(IOpenLaunchBag)
     user = launchbag.user
     if user is None:
