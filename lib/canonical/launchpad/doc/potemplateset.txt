@@ -1,8 +1,0 @@
-POFileSet
----------
-
->>> from canonical.launchpad.database import POTemplateSet
->>> pts = POTemplateSet()
->>> potemplate_list = pts.getTemplatesPendingImport()
->>> len(list(potemplate_list))
-0

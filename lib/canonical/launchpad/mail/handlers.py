@@ -89,14 +89,20 @@ def guess_bugtask(bug, person):
         return bug.bugtasks[0]
     else:
         for bugtask in bug.bugtasks:
-            if bugtask.product and is_maintainer(bugtask.product, person):
-                return bugtask
-            elif (bugtask.distribution and
-                  person.inTeam(bugtask.distribution.members)):
-                return bugtask
-            elif (bugtask.sourcepackagename and
-                  person.inTeam(bugtask.maintainer)):
-                return bugtask
+            if IUpstreamBugTask.providedBy(bugtask):
+                # Is the person an upstream maintainer?
+                if is_maintainer(bugtask.product, person):
+                    return bugtask
+            elif IDistroBugTask.providedBy(bugtask):
+                # Is the person a member of the distribution?
+                if person.inTeam(bugtask.distribution.members):
+                    return bugtask
+                else:
+                    # Is the person one of the package bug contacts?
+                    distro_sourcepackage = bugtask.distribution.getSourcePackage(
+                        bugtask.sourcepackagename)
+                    if distro_sourcepackage.isBugContact(person):
+                        return bugtask
 
     return None
 
@@ -225,7 +231,7 @@ class MaloneHandler:
         except IncomingEmailError, error:
             transaction.abort()
             send_process_error_notification(
-                getUtility(ILaunchBag).user.preferredemail.email,
+                str(getUtility(ILaunchBag).user.preferredemail.email),
                 'Submit Request Failure',
                 error.message, error.failing_command)
 
