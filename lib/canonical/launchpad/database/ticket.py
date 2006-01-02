@@ -259,3 +259,11 @@ class TicketSet:
     def getAnsweredTickets(self):
         """See ITicketSet."""
         return Ticket.selectBy(status=TicketStatus.ANSWERED)
+
+    def get(self, ticket_id, default=None):
+        """See ITicketSet."""
+        ticket = Ticket.selectOne("""id=%s""" % ticket_id)
+        if ticket is None:
+            return default
+        else:
+            return ticket
