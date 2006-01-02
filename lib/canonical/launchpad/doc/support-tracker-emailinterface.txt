@@ -1,5 +1,5 @@
 Support Tracker Email Interface
-==============================
+===============================
 
 The support tracker has an email interface, although it's quite limited
 at the moment. The only thing you can do is to add comments. This is an

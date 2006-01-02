@@ -14,7 +14,7 @@ from canonical.config import config
 from canonical.launchpad.interfaces import (
     IBugDelta, IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
 from canonical.launchpad.mail import (
-    simple_sendmail, simple_sendmail_from_person)
+    simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.components.bugtask import BugTaskDelta
 from canonical.launchpad.helpers import (
@@ -967,8 +967,13 @@ def send_ticket_notification(ticket_event, subject, body):
     for notified_person in subscribers:
         for address in contactEmailAddresses(notified_person):
             if address not in sent_addrs:
-                simple_sendmail_from_person(
-                    ticket_event.user, address, subject, body)
+                from_address = format_address(
+                    ticket_event.user.displayname,
+                    'ticket%s@%s' % (
+                        ticket_event.object.id,
+                        config.tickettracker.email_domain))
+                simple_sendmail(
+                    from_address, address, subject, body)
                 sent_addrs.add(address)
 
 

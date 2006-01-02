@@ -151,6 +151,7 @@ class MaloneHandler:
 
 
     def process(self, signed_msg, to_addr, filealias=None):
+        """See IMailHandler."""
         commands = self.getCommands(signed_msg)
         user, host = to_addr.split('@')
         add_comment_to_bug = False
@@ -249,6 +250,7 @@ class SupportTrackerHandler:
     _ticket_address = re.compile(r'^ticket(?P<id>\d+)@.*')
 
     def process(self, signed_msg, to_addr, filealias=None):
+        """See IMailHandler."""
         match = self._ticket_address.match(to_addr)
         if match:
             ticket_id = int(match.group('id'))

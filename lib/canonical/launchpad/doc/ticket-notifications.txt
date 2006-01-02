@@ -34,6 +34,8 @@ the submitter, Sample Person, is subscribed to it:
     ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
     ...     ]
     >>> add_notification = notifications[0]
+    >>> add_notification['From']
+    'Sample Person <ticket8@support.launchpad.net>'
     >>> add_notification['To']
     'test@canonical.com'
     >>> add_notification['Subject']
