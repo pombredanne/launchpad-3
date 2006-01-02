@@ -5,6 +5,7 @@ __all__ = ['Ticket', 'TicketSet']
 
 from email.Utils import make_msgid
 
+from zope.event import notify
 from zope.interface import implements
 
 from sqlobject import (
@@ -20,6 +21,7 @@ from canonical.launchpad.database.ticketbug import TicketBug
 from canonical.launchpad.database.ticketmessage import TicketMessage
 from canonical.launchpad.database.ticketreopening import TicketReopening
 from canonical.launchpad.database.ticketsubscription import TicketSubscription
+from canonical.launchpad.event import SQLObjectCreatedEvent
 
 from canonical.lp.dbschema import EnumCol, TicketStatus, TicketPriority
 
@@ -209,7 +211,8 @@ class Ticket(SQLBase):
         for msg in self.messages:
             if msg == message:
                 return None
-        TicketMessage(ticket=self, message=message)
+        ticket_message = TicketMessage(ticket=self, message=message)
+        notify(SQLObjectCreatedEvent(ticket_message))
 
     # linking to bugs
     def linkBug(self, bug):

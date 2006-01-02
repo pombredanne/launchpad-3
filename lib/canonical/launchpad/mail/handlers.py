@@ -2,6 +2,8 @@
 
 __metaclass__ = type
 
+import re
+
 import transaction
 from zope.component import getUtility
 from zope.interface import implements
@@ -14,7 +16,7 @@ from canonical.launchpad.interfaces import (
     IBugEditEmailCommand, IBugTaskEditEmailCommand, IBug, IBugTask,
     IMailHandler, IBugMessageSet, CreatedBugWithNoBugTasksError,
     EmailProcessingError, IUpstreamBugTask, IDistroBugTask,
-    IDistroReleaseBugTask)
+    IDistroReleaseBugTask, ITicket, ITicketSet)
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
@@ -236,3 +238,30 @@ class MaloneHandler:
                 error.message, error.failing_command)
 
         return True
+
+
+class SupportTrackerHandler:
+    """Handles emails sent to the support tracker."""
+
+    implements(IMailHandler)
+
+    _ticket_address = re.compile(r'^ticket(?P<id>\d+)@.*')
+
+    def process(self, signed_msg, to_addr, filealias=None):
+        match = self._ticket_address.match(to_addr)
+        if match:
+            ticket_id = int(match.group('id'))
+            ticket = getUtility(ITicketSet).get(ticket_id)
+            unmodified_ticket = Snapshot(ticket, providing=ITicket)
+            messageset = getUtility(IMessageSet)
+            message = messageset.fromEmail(
+                signed_msg.parsed_string,
+                owner=getUtility(ILaunchBag).user,
+                filealias=filealias,
+                parsed_message=signed_msg)
+            ticket.linkMessage(message)
+            notify(SQLObjectModifiedEvent(
+                ticket, unmodified_ticket, ['messages']))
+            return True
+        else:
+            return False
