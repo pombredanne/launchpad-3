@@ -12,7 +12,7 @@
     you think this is incorrect, please send an email to
     <a href="mailto:rosetta-users@lists.ubuntu.com">the Rosetta
     mailing list</a> or file a bug in our
-    <a href="https://launchpad.ubuntu.com/malone/products/rosetta">bug
+    <a href="/products/rosetta/+bugs">bug
     tracking system</a> so we can look into the problem. Thanks.
     </p>
   </tal:block>

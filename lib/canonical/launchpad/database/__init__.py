@@ -34,7 +34,6 @@ from canonical.launchpad.database.poselection import *
 from canonical.launchpad.database.posubmission import *
 from canonical.launchpad.database.librarian import *
 from canonical.launchpad.database.launchpadstatistic import *
-from canonical.launchpad.database.maintainership import *
 from canonical.launchpad.database.infestation import *
 from canonical.launchpad.database.sourcepackage import *
 from canonical.launchpad.database.sourcepackagename import *
@@ -59,6 +58,7 @@ from canonical.launchpad.database.person import *
 from canonical.launchpad.database.schema import *
 from canonical.launchpad.database.language import *
 from canonical.launchpad.database.translationgroup import *
+from canonical.launchpad.database.translationimportqueue import *
 from canonical.launchpad.database.translator import *
 from canonical.launchpad.database.processor import *
 from canonical.launchpad.database.manifest import *

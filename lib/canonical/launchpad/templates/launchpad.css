@@ -662,11 +662,11 @@ tr.highlight {
 }
 
 /* Bug Status, Severity, Priority markers */
-.statusNew           { color: Orange; }
-.statusAccepted      { color: Red; }
-.statusPendingUpload { color: Black; }
-.statusFixed         { color: Green; }
-.statusRejected      { color: Gray; }
+.statusUnconfirmed { color: Orange; }
+.statusConfirmed   { color: Red; }
+.statusFixed       { color: Black; }
+.statusReleased    { color: Green; }
+.statusRejected    { color: Gray; }
 
 .severityCritical { color: Red; }
 .severityMajor    { color: #ff6600; }
@@ -1126,7 +1126,7 @@ Calendar stuff.
   background-image: url(/++resource++info_icon.gif);
   font-size: 85%;
   font-weight: bold;
-  margin: 1em 0em 0em 0em;
+  margin: 1em 0em;
   padding: 0.5em 1em 0.5em 3em;
   background-repeat: no-repeat;
 }

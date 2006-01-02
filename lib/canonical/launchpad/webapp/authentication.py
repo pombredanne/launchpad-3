@@ -35,7 +35,6 @@ def handle(event):
     Each of these events has a `request` attribute.
     """
     request = event.request
-
     if not ILoggedOutEvent.providedBy(event):
         if not IUnauthenticatedPrincipal.providedBy(request.principal):
             # We've already got an authenticated user. There's nothing to do.

@@ -28,3 +28,12 @@ It had better not show up any longer!
 ... except NotFoundError:
 ...   pass
 
+But it should be shown using the getByName()
+
+>>> projectset.getByName('gnome').name
+u'gnome'
+
+getByName() also accepts an argument to ignore inactive projects. 
+
+>>> print projectset.getByName('gnome', ignore_inactive=True)
+None
