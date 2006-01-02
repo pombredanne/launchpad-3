@@ -29,7 +29,7 @@ Let's check the complex properties of a build object.
   u'warty'
 
   >>> firefox_build.title
-  u'i386 build of mozilla-firefox 0.9 in ubuntu warty (2004-09-27)'
+  u'i386 build of mozilla-firefox 0.9 in ubuntu warty'
 
   >>> firefox_build.build_icon
   '/++resource++build-success'
@@ -38,7 +38,7 @@ Let's check the complex properties of a build object.
   >>> firefox_build.buildlog.url
   'http://localhost:58000/34/evolution-2.2-test.pot'
 
-Test "reset" functionality: 
+Test "reset" functionality:
 
   >>> firefox_build.can_be_reset
   False
@@ -46,7 +46,7 @@ Test "reset" functionality:
   >>> resetable_build = Build.get(9)
 
   >>> resetable_build.title
-  u'i386 build of pmount 0.1-1 in ubuntu warty (2005-10-01)'
+  u'i386 build of pmount 0.1-1 in ubuntu warty'
 
   >>> resetable_build.buildstate.title
   'Failed to build'
@@ -57,7 +57,7 @@ Test "reset" functionality:
   >>> resetable_build.builder.name
   u'bob'
 
-Save previous state:  
+Save previous state:
 
   >>> changes = resetable_build.changes
   >>> datebuilt = resetable_build.datebuilt
@@ -68,7 +68,7 @@ Reset Build record in question:
 
   >>> resetable_build.reset()
 
-Build record has no history and is NEEDSBUILD: 
+Build record has no history and is NEEDSBUILD:
 
   >>> resetable_build.builder is None
   True
@@ -112,7 +112,7 @@ given build record entry.
   >>> installedsize = 0
   >>> copyright = None
   >>> licence = None
-  >>> architecturespecific = False 
+  >>> architecturespecific = False
 
 Invoke createBinaryPackageRelease with all required arguments.
 
@@ -127,7 +127,7 @@ Invoke createBinaryPackageRelease with all required arguments.
   ...                                 copyright, licence,
   ...                                 architecturespecific)
 
-  >>> from canonical.launchpad.interfaces import IBinaryPackageRelease 
+  >>> from canonical.launchpad.interfaces import IBinaryPackageRelease
   >>> assert verifyObject(IBinaryPackageRelease, bin) is True
 
 The BuildSet class gives us some useful ways to consider the
@@ -140,10 +140,10 @@ We can find builds given a source package release and architecture tag.
   >>> bs.getBuildBySRAndArchtag(20,'i386').count()
   2
 
-We can find recent builds for a given distrorelease.
+We can find recent and pending builds for a given distrorelease.
 
   >>> hoary.getBuildRecords().count()
-  1
+  2
 
 Or for a given distroarchrelease.
 
@@ -152,12 +152,12 @@ Or for a given distroarchrelease.
   u'The Hoary Hedgehog Release for i386 (x86)'
 
   >>> hoaryi386.getBuildRecords().count()
-  1
+  2
 
 And we can find builds for a given distribution by type.
 
   >>> ubuntu.getBuildRecords().count()
-  3
+  4
 
   >>> L = list(ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT))
   >>> len(L)

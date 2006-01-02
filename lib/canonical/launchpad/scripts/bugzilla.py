@@ -350,13 +350,10 @@ class Bugzilla:
         # we currently only support mapping Ubuntu bugs ...
         if bug.product != 'Ubuntu':
             raise AssertionError('product must be Ubuntu')
-        
-        # XXX: 20051208 jamesh
-        # ValueError is caught here because of https://launchpad.net/bugs/4810
         try:
             srcpkg, binpkg = self.ubuntu.getPackageNames(
                 bug.component.encode('ASCII'))
-        except ValueError:
+        except NotFoundError:
             logger.warning('could not find package name for "%s"',
                            bug.component.encode('ASCII'), exc_info=True)
             srcpkg = binpkg = None
