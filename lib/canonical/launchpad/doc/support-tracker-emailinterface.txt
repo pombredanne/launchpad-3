@@ -94,3 +94,29 @@ address at all, the handler won't process it:
     >>> msg = signed_message_from_string(raw_msg)
     >>> handler.process(msg, msg['To'])
     False
+
+Lastly, let's add a comment by simulating sending an email and invoking
+the general mail processor.
+
+    >>> from canonical.config import config
+    >>> to_addr = 'ticket1@%s' % config.tickettracker.email_domain
+    >>> raw_msg = """From: test@canonical.com
+    ... X-Original-To: %(to_addr)s
+    ... Subject: A new comment
+    ... Message-Id: <comment1@localhost>
+    ... Date: Mon, 02 Jan 2006 15:42:07 -0000
+    ...
+    ... This is a new comment.
+    ... """ % {'to_addr': to_addr}
+    >>> from canonical.launchpad.mail.stub import test_emails
+    >>> test_emails.append(('test@canonical.com', [to_addr], raw_msg))
+
+    >>> from canonical.launchpad.mail.incoming import handleMail
+    >>> handleMail()
+    Ticket #1 modified.
+    Comment from Sample Person: This is a new comment.
+
+    >>> ticket_one = getUtility(ITicketSet).get(1)
+    >>> '<comment1@localhost>' in [
+    ...     comment.rfc822msgid for comment in ticket_one.messages]
+    True

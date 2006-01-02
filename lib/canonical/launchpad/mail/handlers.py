@@ -277,7 +277,8 @@ class MailHandlers:
 
     def __init__(self):
         self._handlers = {
-            config.launchpad.bugs_domain: MaloneHandler()
+            config.launchpad.bugs_domain: MaloneHandler(),
+            config.tickettracker.email_domain: SupportTrackerHandler()
             }
 
     def get(self, domain):
