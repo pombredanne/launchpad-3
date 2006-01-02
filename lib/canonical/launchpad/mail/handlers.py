@@ -252,6 +252,10 @@ class SupportTrackerHandler:
         if match:
             ticket_id = int(match.group('id'))
             ticket = getUtility(ITicketSet).get(ticket_id)
+            if ticket is None:
+                # No such ticket, don't process the email.
+                return False
+
             unmodified_ticket = Snapshot(ticket, providing=ITicket)
             messageset = getUtility(IMessageSet)
             message = messageset.fromEmail(

@@ -47,8 +47,10 @@ the comment was added to the ticket:
     ...     lines.append(body)
     ...     raw_msg = '\n'.join(lines)
     ...     msg = signed_message_from_string(raw_msg)
-    ...     handler.process(msg, msg['To'])
-    ...     return msgid
+    ...     if handler.process(msg, msg['To']):
+    ...         return msgid
+    ...     else:
+    ...         return None
 
     >>> comment_msgid = send_comment_email(
     ...     1, 'test@canonical.com', 'Hi', 'This is a comment.')
@@ -72,3 +74,23 @@ Let's add a comment from Foo Bar as well.
     >>> comment_msgid in [
     ...     comment.rfc822msgid for comment in ticket_two.messages]
     True
+
+If we try to send an email to a ticket that doesn't exist, the handler
+won't process it:
+
+    >>> comment_msgid = send_comment_email(
+    ...     1234, 'foo.bar@canonical.com', 'Hey', 'This is another comment.')
+    >>> comment_msgid is None
+    True
+
+If we send an email to an address that is not similar to a ticket
+address at all, the handler won't process it:
+
+    >>> raw_msg = """From: test@canonical.com
+    ... To: foo@support.launchpad.net
+    ... Subject: Hello
+    ...
+    ... Hello there."""
+    >>> msg = signed_message_from_string(raw_msg)
+    >>> handler.process(msg, msg['To'])
+    False
