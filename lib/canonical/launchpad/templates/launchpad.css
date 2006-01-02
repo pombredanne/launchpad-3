@@ -662,11 +662,11 @@ tr.highlight {
 }
 
 /* Bug Status, Severity, Priority markers */
-.statusNew           { color: Orange; }
-.statusAccepted      { color: Red; }
-.statusPendingUpload { color: Black; }
-.statusFixed         { color: Green; }
-.statusRejected      { color: Gray; }
+.statusUnconfirmed { color: Orange; }
+.statusConfirmed   { color: Red; }
+.statusFixed       { color: Black; }
+.statusReleased    { color: Green; }
+.statusRejected    { color: Gray; }
 
 .severityCritical { color: Red; }
 .severityMajor    { color: #ff6600; }

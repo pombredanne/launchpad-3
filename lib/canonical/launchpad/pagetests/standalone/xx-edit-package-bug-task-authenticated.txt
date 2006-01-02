@@ -30,7 +30,7 @@ Any authenticated user can edit a source package bug task.
   ... -----------------------------89019536856698512711194452
   ... Content-Disposition: form-data; name="field.status"
   ... 
-  ... New
+  ... Unconfirmed
   ... -----------------------------89019536856698512711194452
   ... Content-Disposition: form-data; name="field.status-empty-marker"
   ... 
@@ -94,7 +94,7 @@ Any authenticated user can edit a source package bug task.
   ... -----------------------------16131040782095479517127443199
   ... Content-Disposition: form-data; name="field.status"
   ... 
-  ... New
+  ... Unconfirmed
   ... -----------------------------16131040782095479517127443199
   ... Content-Disposition: form-data; name="field.status-empty-marker"
   ... 
