@@ -35,14 +35,14 @@ handle, and register them for some domains:
     ...         self.handledMails.append(mail['Message-Id'])
     ...         return True
 
-    >>> from zope.app.tests import ztapi
+    >>> from canonical.launchpad.mail.handlers import mail_handlers
     >>> foo_handler = MockHandler()
     >>> bar_handler = MockHandler()
     >>> error_handler = MockHandler()
-    >>> ztapi.provideUtility(IMailHandler, foo_handler, 'foo.com')
-    >>> ztapi.provideUtility(IMailHandler, bar_handler, 'bar.com')
+    >>> mail_handlers.add('foo.com', foo_handler)
+    >>> mail_handlers.add('bar.com', bar_handler)
     >>> dummy, errors_domain = config.launchpad.errors_address.split('@')
-    >>> ztapi.provideUtility(IMailHandler, error_handler, errors_domain)
+    >>> mail_handlers.add(errors_domain, error_handler)
 
 We temporarily override the error mails' From address, so that they will
 pass through the authentication stage:
@@ -174,7 +174,7 @@ Let's create and register a handler which violates a DB constraint:
     ...         firefox.name = 'invalid name'
     ...         flush_database_updates()
 
-    >>> ztapi.provideUtility(IMailHandler, DBExceptionRaiser(), 'except.com')
+    >>> mail_handlers.add('except.com', DBExceptionRaiser())
 
 Now we send a mail to the handler, which will cause an exception:
 

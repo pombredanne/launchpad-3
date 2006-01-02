@@ -10,6 +10,7 @@ from zope.interface import implements
 from zope.event import notify
 from zope.exceptions import NotFoundError
 
+from canonical.config import config
 from canonical.launchpad.helpers import Snapshot, is_maintainer
 from canonical.launchpad.interfaces import (
     ILaunchBag, IMessageSet, IBugEmailCommand, IBugTaskEmailCommand,
@@ -269,3 +270,49 @@ class SupportTrackerHandler:
             return True
         else:
             return False
+
+
+class MailHandlers:
+    """All the registered mail handlers."""
+
+    def __init__(self):
+        self._handlers = {
+            config.launchpad.bugs_domain: MaloneHandler()
+            }
+
+    def get(self, domain):
+        """Return the handler for the given email domain.
+
+        Return None if no such handler exists.
+
+            >>> handlers = MailHandlers()
+            >>> handlers.get('bugs.launchpad.net') #doctest: +ELLIPSIS
+            <...MaloneHandler...>
+            >>> handlers.get('no.such.domain') is None
+            True
+        """
+        return self._handlers.get(domain)
+
+    def add(self, domain, handler):
+        """Adds a handler for a domain.
+
+            >>> handlers = MailHandlers()
+            >>> handlers.get('some.domain') is None
+            True
+            >>> handler = object()
+            >>> handlers.add('some.domain', handler)
+            >>> handlers.get('some.domain') is handler
+            True
+
+        If there already is a handler for the domain, the old one will
+        get overwritten:
+
+            >>> new_handler = object()
+            >>> handlers.add('some.domain', new_handler)
+            >>> handlers.get('some.domain') is new_handler
+            True
+        """
+        self._handlers[domain] = handler
+
+
+mail_handlers = MailHandlers()
