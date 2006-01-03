@@ -259,3 +259,7 @@ about it.
 
     >>> LibrarianTestSetup().tearDown()
     >>> config.malone.bugmail_error_from_address = old_error_from_address
+    >>> mail_handlers.add('foo.com', None)
+    >>> mail_handlers.add('bar.com', None)
+    >>> mail_handlers.add(errors_domain, None)
+    >>> mail_handlers.add('except.com', None)

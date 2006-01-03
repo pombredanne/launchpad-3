@@ -72,7 +72,7 @@ def format_address(name, address):
         >>> format_address('', 'foo@bar.com')
         'foo@bar.com'
 
-    It handles unicode and characters than need quoting as well.
+    It handles unicode and characters that need quoting as well.
 
         >>> format_address(u'F\xf4\xf4 Bar', 'foo.bar@canonical.com')
         '=?utf-8?b?RsO0w7QgQmFy?= <foo.bar@canonical.com>'
