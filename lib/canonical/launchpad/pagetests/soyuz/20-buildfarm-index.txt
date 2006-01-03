@@ -1,4 +1,7 @@
 
+Check important fields for builders page, overview-menu is hidden for
+public access:
+
   >>> print http(r"""
   ... GET /+builds/+index HTTP/1.1
   ... """)
@@ -11,3 +14,15 @@
   ...NOT OK : None (AUTO)...
   ...http://localhost:8221/...
   ...The default build-slave...
+
+
+Check the overview-menu for authorized access (admins member)
+
+
+  >>> print http(r"""
+  ... GET /+builds/+index HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...Add New Builder...
