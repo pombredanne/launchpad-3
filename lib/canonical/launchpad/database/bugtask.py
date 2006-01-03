@@ -36,9 +36,9 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage)
 
 
-debbugsstatusmap = {'open': BugTaskStatus.NEW,
-                    'forwarded': BugTaskStatus.ACCEPTED,
-                    'done': BugTaskStatus.FIXED}
+debbugsstatusmap = {'open': BugTaskStatus.UNCONFIRMED,
+                    'forwarded': BugTaskStatus.CONFIRMED,
+                    'done': BugTaskStatus.FIXRELEASED}
 
 debbugsseveritymap = {'wishlist': BugTaskSeverity.WISHLIST,
                       'minor': BugTaskSeverity.MINOR,
@@ -105,7 +105,7 @@ class BugTask(SQLBase, BugTaskMixin):
     status = EnumCol(
         dbName='status', notNull=True,
         schema=BugTaskStatus,
-        default=BugTaskStatus.NEW)
+        default=BugTaskStatus.UNCONFIRMED)
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
     priority = EnumCol(
         dbName='priority', notNull=False, schema=BugTaskPriority, default=None)
@@ -274,26 +274,29 @@ class BugTask(SQLBase, BugTaskMixin):
         status = self.status
 
         if assignee:
-            assignee_name = urllib.quote_plus(assignee.name)
-            assignee_browsername = cgi.escape(assignee.browsername)
-
-            if status in (BugTaskStatus.ACCEPTED, BugTaskStatus.REJECTED,
-                          BugTaskStatus.FIXED):
-                return (
-                    '%s by <img src="/++resource++user.gif" /> '
-                    '<a href="/malone/assigned?name=%s">%s</a>' % (
-                        status.title.lower(), assignee_name,
-                        assignee_browsername))
-
-            return (
-                'assigned to <img src="/++resource++user.gif" /> '
+            # The statuses REJECTED, FIXCOMMITTED, and CONFIRMED will
+            # display with the assignee information as well. Showing
+            # assignees with other status would just be confusing
+            # (e.g. "Unconfirmed, assigned to Foo Bar")
+            assignee_html = (
+                '<img src="/++resource++user.gif" /> '
                 '<a href="/malone/assigned?name=%s">%s</a>' % (
-                    assignee_name, assignee_browsername))
-        else:
-            if status in (BugTaskStatus.REJECTED, BugTaskStatus.FIXED):
-                return status.title.lower()
+                    urllib.quote_plus(assignee.name),
+                    cgi.escape(assignee.browsername)))
 
-            return 'not assigned'
+            if status in (BugTaskStatus.REJECTED, BugTaskStatus.FIXCOMMITTED):
+                return '%s by %s' % (status.title.lower(), assignee_html)
+            elif  status == BugTaskStatus.CONFIRMED:
+                return '%s, assigned to %s' % (status.title.lower(), assignee_html)
+
+        # The status is something other than REJECTED, FIXCOMMITTED or
+        # CONFIRMED (whether assigned to someone or not), so we'll
+        # show only the status.
+        if status in (BugTaskStatus.REJECTED, BugTaskStatus.UNCONFIRMED,
+                      BugTaskStatus.FIXRELEASED):
+            return status.title.lower()
+
+        return status.title.lower() + ' (unassigned)'
 
 
 class BugTaskSet:
@@ -503,7 +506,8 @@ class BugTaskSet:
             showclosed = ""
         else:
             showclosed = (
-                ' AND BugTask.status < %s' % sqlvalues(BugTaskStatus.FIXED))
+                ' AND BugTask.status < %s' %
+                sqlvalues(BugTaskStatus.FIXCOMMITTED))
 
         priority_severity_filter = ""
         if minpriority is not None:
@@ -542,28 +546,14 @@ class BugTaskSet:
         # Don't show duplicate bug reports.
         filters += ' AND Bug.duplicateof IS NULL'
 
-        maintainedPackageBugTasksQuery = ('''
-            BugTask.sourcepackagename = Maintainership.sourcepackagename AND
-            BugTask.distribution = Maintainership.distribution AND
-            Maintainership.maintainer = TeamParticipation.team AND
-            TeamParticipation.person = %s''' % person.id)
-
-        maintainedPackageBugTasks = BugTask.select(
-            maintainedPackageBugTasksQuery + filters,
-            clauseTables=['Maintainership', 'TeamParticipation', 'BugTask',
-                          'Bug'])
-
         maintainedProductBugTasksQuery = ('''
             BugTask.product = Product.id AND
             Product.owner = TeamParticipation.team AND
             TeamParticipation.person = %s''' % person.id)
 
-        maintainedProductBugTasks = BugTask.select(
+        return BugTask.select(
             maintainedProductBugTasksQuery + filters,
             clauseTables=['Product', 'TeamParticipation', 'BugTask', 'Bug'])
-
-        return maintainedProductBugTasks.union(
-            maintainedPackageBugTasks, orderBy=orderBy)
 
 
 def BugTaskFactory(context, **kw):
