@@ -77,7 +77,7 @@ class IBuild(Interface):
         """
 
     def createBuildQueueEntry():
-        """Create a BuildQueue entry for this build record.""" 
+        """Create a BuildQueue entry for this build record."""
 
 class IBuildSet(Interface):
     """Interface for BuildSet"""
@@ -93,29 +93,30 @@ class IBuildSet(Interface):
         """
 
     def getPendingBuildsForArchSet(archrelease):
-        """Return all pending build records within a group of ArchReleases 
+        """Return all pending build records within a group of ArchReleases
 
         Pending means that buildstatus is NEEDSBUILDING.
         """
+    def getBuildsForBuilder(builder_id, status=None):
+        """Return build records touched by a builder.
 
-    def getBuildsForBuilder(builder, limit=10):
-        """Return the build records touched by builder
-
-        Returns an SelectResult, ordered by datebuild (descending)
-        Return up to 'limit' results.
+        If status is provided, only builders with that status will
+        be returned.
         """
 
+    def getBuildsByArchIds(arch_ids, status=None):
+        """Retrieve Build Records for a given arch_ids list.
+
+        Optionally, for a given status, if status is ommited return all
+        records.
+        """
 
 class IHasBuildRecords(Interface):
     """An Object that has build records"""
 
-    def getBuildRecords(status=None, limit=10):
+    def getBuildRecords(status=None):
         """Return build records owned by the object.
 
         The optional 'status' argument selects build records in a specific
-        state. If the 'status' argument is omitted, it returns the 'worked'
-        entries. A 'worked' entry is one that has been touched by a builder.
-        That is, where 'builder is not NULL'.
-
-        At most 'limit' results are returned.
+        state.
         """

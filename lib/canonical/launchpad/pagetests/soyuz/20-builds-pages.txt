@@ -1,13 +1,54 @@
 
-Those pages still empty, but, at least, they don't return any error. 
+Those pages are based in the BuildRecordView class and
+template/builds-list.pt. Basically they have a buildstate selector
+action via HTTP GET and present a batched list of build records
+according the selected buildstate, by default All
 
   >>> print http(r"""
   ... GET /distros/ubuntu/+builds HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
   Content-Length: ...
-  ...
+  ...i386 build of mozilla-firefox 0.9 in ubuntu hoary...
+  ...i386 build of pmount 0.1-1 in ubuntu warty...
+  ...i386 build of pmount 0.1-1 in ubuntu hoary...
+  ...i386 build of mozilla-firefox 0.9 in ubuntu warty...
 
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+builds HTTP/1.1
+  ... Content-Length: 19
+  ... Content-Type: application/x-www-form-urlencoded
+  ... build_state=pending""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...i386 build of mozilla-firefox 0.9 in ubuntu hoary...
+
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+builds HTTP/1.1
+  ... Content-Length: 17
+  ... Content-Type: application/x-www-form-urlencoded
+  ... build_state=built""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...i386 build of pmount 0.1-1 in ubuntu hoary...
+  ...i386 build of mozilla-firefox 0.9 in ubuntu warty...
+
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+builds HTTP/1.1
+  ... Content-Length: 18
+  ... Content-Type: application/x-www-form-urlencoded
+  ... build_state=failed""")
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...i386 build of pmount 0.1-1 in ubuntu warty...
+
+
+Since the other pages tends to present a similar result and use, in
+fact, the same mechanisms, we simplly check if they work with no
+tracebacks:
 
   >>> print http(r"""
   ... GET /distros/ubuntu/hoary/+builds HTTP/1.1

@@ -201,7 +201,9 @@ def setup(con, configuration=DEFAULT_CONFIG):
 
     try:
         execute(con, 'SELECT * from pg_ts_cfg')
-        log.debug('tsearch2 already installed')
+        log.debug('tsearch2 already installed. Updating dictionaries.')
+        update_dicts(con)
+        con.commit()
     except psycopg.ProgrammingError:
         con.rollback()
         log.debug('Installing tsearch2')
@@ -422,6 +424,7 @@ def needs_refresh(con, table, columns):
         results=True, args=vars()
         )
     if len(existing) == 0:
+        log.debug("No fticache for %(table)s" % vars())
         execute(con, """
             INSERT INTO FtiCache (tablename, columns) VALUES (
                 %(table)s, %(current_columns)s
@@ -431,9 +434,12 @@ def needs_refresh(con, table, columns):
 
     if not options.force:
         previous_columns = existing[0][0]
-        if repr(columns) == previous_columns:
+        if current_columns == previous_columns:
+            log.debug("FtiCache for %(table)s still valid" % vars())
             return False
-
+        log.debug("Cache out of date - %s != %s" % (
+            current_columns, previous_columns
+            ))
     execute(con, """
         UPDATE FtiCache SET columns = %(current_columns)s
         WHERE tablename = %(table)s
@@ -460,6 +466,26 @@ def get_tsearch2_sql_path(con):
 
     assert os.path.exists(path), '%s does not exist'
     return path
+
+
+def update_dicts(con):
+    '''Fix paths to the stop word lists.
+    
+    The PostgreSQL 7.4 installation had absolute paths to the stop words
+    lists. This path changed with breezy. Update the paths to the
+    newer relative paths.
+    '''
+    if get_pgversion(con).startswith('7.4.'):
+        return
+
+    execute(con, '''
+        UPDATE pg_ts_dict SET dict_initoption='contrib/english.stop'
+        WHERE dict_initoption like '/%/english.stop'
+        ''')
+    execute(con, '''
+        UPDATE pg_ts_dict SET dict_initoption='contrib/russian.stop'
+        WHERE dict_initoption like '/%/russian.stop'
+        ''')
 
 
 def main():
