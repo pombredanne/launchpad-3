@@ -12,6 +12,11 @@
         classes="BugTrackerContextMenu BugTrackerSetContextMenu"
         />
 
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BugTrackerNavigation BugTrackerSetNavigation"
+        />
+
     <!-- BugTracker -->
     <content class="canonical.launchpad.database.BugTracker">
         <allow interface="canonical.launchpad.interfaces.IBugTracker" />
@@ -87,11 +92,6 @@
         for="canonical.launchpad.interfaces.IBugTrackerSet"
         name="+index" />
 
-    <browser:navigation
-        module="canonical.launchpad.browser"
-        classes="BugTrackerSetNavigation"
-        />
-
     <browser:url
         for="canonical.launchpad.interfaces.IBugTrackerSet"
         path_expression="string:bugtrackers"
@@ -128,6 +128,30 @@
         template="../templates/bugtrackers-add.pt"
         lp:url="malone/bugtrackers/+newbugtracker"
     />
+
+    <!-- RemoteBug -->
+    <content class="canonical.launchpad.browser.bugtracker.RemoteBug">
+        <allow interface="canonical.launchpad.browser.bugtracker.IRemoteBug" />
+    </content>
+
+    <browser:url
+        for="canonical.launchpad.browser.bugtracker.IRemoteBug"
+        path_expression="string:${remotebug}"
+        attribute_to_parent="bugtracker"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.browser.bugtracker.IRemoteBug"
+        name="+index" />
+
+    <browser:pages
+        for="canonical.launchpad.browser.bugtracker.IRemoteBug"
+        permission="zope.Public">
+        <browser:page
+            name="+index"
+            template="../templates/remotebug-index.pt"
+            lp:url="malone/bugtrackers/$BugTracker.name/$remotebug" />
+    </browser:pages>
 
   </facet>
 

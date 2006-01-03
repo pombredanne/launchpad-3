@@ -10,16 +10,24 @@ __all__ = [
     'BugTrackerSetContextMenu',
     'BugTrackerAddView',
     'BugTrackerView',
+    'BugTrackerNavigation',
+    'IRemoteBug',
+    'RemoteBug',
     ]
 
+from zope.interface import Interface, Attribute, implements
+from zope.schema import Choice, TextLine
 from zope.component import getUtility
 
 from canonical.lp.dbschema import BugTrackerType
 from canonical.launchpad.interfaces import (
     IProject, IProjectBugTrackerSet, IBugTracker, IBugTrackerSet, ILaunchBag)
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, GetitemNavigation)
+    canonical_url, ContextMenu, Link, Navigation, GetitemNavigation,
+    redirection, LaunchpadView)
 from zope.app.form.browser.editview import EditView
+
+from canonical.launchpad import _
 
 
 class BugTrackerSetNavigation(GetitemNavigation):
@@ -78,8 +86,52 @@ class BugTrackerAddView:
     def nextURL(self):
         return canonical_url(self._newtracker_)
 
+
 class BugTrackerView(EditView):
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.context))
 
+
+class BugTrackerNavigation(Navigation):
+
+    usedfor = IBugTracker
+
+    def breadcrumb(self):
+        return self.context.name
+
+    def traverse(self, remotebug):
+        bugs = self.context.getBugsWatching(remotebug)
+        if len(bugs) == 0:
+            # no bugs watching => not found
+            return None
+        elif len(bugs) == 1:
+            # one bug watching => redirect to that bug
+            return redirection(canonical_url(bugs[0]))
+        else:
+            # else list the watching bugs
+            return RemoteBug(self.context, remotebug, bugs)
+
+
+class IRemoteBug(Interface):
+    """A remote bug for a given bug tracker."""
+
+    bugtracker = Choice(title=_('Bug System'), required=True,
+        vocabulary='BugTracker', description=_("The bug tracker in which "
+        "the remote bug is found."))
+
+    remotebug = TextLine(title=_('Remote Bug'), required=True,
+        readonly=False, description=_("The bug number of this bug in the "
+        "remote bug system."))
+
+    bugs = Attribute(_("A list of the Launchpad bugs watching the remote bug"))
+
+
+class RemoteBug:
+
+    implements(IRemoteBug)
+
+    def __init__(self, bugtracker, remotebug, bugs):
+        self.bugtracker = bugtracker
+        self.remotebug = remotebug
+        self.bugs = bugs
