@@ -353,9 +353,9 @@ class Bugzilla:
         try:
             srcpkg, binpkg = self.ubuntu.getPackageNames(
                 bug.component.encode('ASCII'))
-        except NotFoundError:
-            logger.warning('could not find package name for "%s"',
-                           bug.component.encode('ASCII'), exc_info=True)
+        except NotFoundError, e:
+            logger.warning('could not find package name for "%s": %s',
+                           bug.component.encode('ASCII'), str(e))
             srcpkg = binpkg = None
 
         return {
@@ -397,14 +397,12 @@ class Bugzilla:
         if bug.product != 'Ubuntu':
             raise AssertionError('product must be Ubuntu')
 
-        # XXX: 20051208 jamesh
-        # ValueError is caught here because of https://launchpad.net/bugs/4810
         try:
             srcpkgname, binpkgname = self.ubuntu.getPackageNames(
                 bug.component.encode('ASCII'))
-        except ValueError:
-            logger.warning('could not find package name for "%s"',
-                           bug.component.encode('ASCII'), exc_info=True)
+        except NotFoundError, e:
+            logger.warning('could not find package name for "%s": %s',
+                           bug.component.encode('ASCII'), str(e))
             return None
 
         # find a product series

@@ -239,10 +239,7 @@ to notice:
   >>> print getUtility(IPersonSet).getByEmail('new.user@canonical.com')
   None
   >>> bug = bz.handleBug(2)
-  WARNING:canonical.launchpad.scripts.bugzilla:could not find package name for "unknown"
-  Traceback (most recent call last):
-    ...
-  NotFoundError: 'Unknown package: unknown'
+  WARNING:canonical.launchpad.scripts.bugzilla:could not find package name for "unknown": 'Unknown package: unknown'
 
   >>> bugInfo(bug)
   Title: Test bug 2
@@ -516,10 +513,7 @@ then the bug is filed directly against the distribution.
   Binary package: netapplet
 
   >>> showMapping('Ubuntu', 'unknown-package-name')
-  WARNING:canonical.launchpad.scripts.bugzilla:could not find package name for "unknown-package-name"
-  Traceback (most recent call last):
-    ...
-  NotFoundError: 'Unknown package: unknown-package-name'
+  WARNING:canonical.launchpad.scripts.bugzilla:could not find package name for "unknown-package-name": 'Unknown package: unknown-package-name'
   Distribution: ubuntu
 
   >>> showMapping('not-Ubuntu', 'general')
