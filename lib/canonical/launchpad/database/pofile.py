@@ -274,7 +274,8 @@ class POFile(SQLBase, RosettaStats):
         if potmsgset is None:
             return None
 
-        pomsgset = POMsgSet.selectOneBy(potmsgsetID=result.id, pofileID=self.id)
+        pomsgset = POMsgSet.selectOneBy(
+            potmsgsetID=potmsgset.id, pofileID=self.id)
         if pomsgset is None:
             # There isn't a POMsgSet yet, we return a Dummy one until we get a
             # write operation that creates the real one.

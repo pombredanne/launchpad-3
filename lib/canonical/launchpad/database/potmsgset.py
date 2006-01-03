@@ -61,35 +61,36 @@ class POTMsgSet(SQLBase):
         result.reverse()
         return result
 
+    def getCurrentSubmissionsIDs(self, language, pluralform):
+        """See IPOTMsgSet."""
+        return self._connection.queryAll('''
+            SELECT DISTINCT POSubmission.id
+            FROM POSubmission
+                JOIN POMsgSet ON POSubmission.pomsgset = POMsgSet.id
+                JOIN POFile ON (POMsgSet.pofile = POFile.id AND
+                                POFile.language = %s)
+                JOIN POTMsgSet ON (POMsgSet.potmsgset = POTMsgSet.id AND
+                                   POTMsgSet.primemsgid = %s)
+                LEFT OUTER JOIN POSelection AS ps1 ON (
+                    ps1.activesubmission = POSubmission.id AND
+                    ps1.pluralform = %s)
+                LEFT OUTER JOIN POSelection AS ps2 ON (
+                    ps2.publishedsubmission = POSubmission.id AND
+                    ps2.pluralform = %s)
+            WHERE
+                ps1 IS NOT NULL OR ps2 IS NOT NULL
+            ''' % sqlvalues(
+                language.id, self.primemsgid_ID, pluralform, pluralform))
 
     def getCurrentSubmissions(self, language, pluralform):
         """See IPOTMsgSet"""
-        selections = POSelection.select("""
-            POSelection.pomsgset = POMsgSet.id AND
-            POSelection.pluralform = %d AND
-            POMsgSet.pofile = POFile.id AND
-            POFile.language = %d AND
-            POMsgSet.potmsgset = POTMsgSet.id AND
-            POTMsgSet.primemsgid = %d""" % (pluralform,
-                language.id, self.primemsgid_ID),
-            clauseTables=['POMsgSet',
-                          'POFile',
-                          'POTMsgSet'],
-            distinct=True)
-        submissions = sets.Set()
-        translations = sets.Set()
-        for selection in selections:
-            if selection.activesubmission:
-                if selection.activesubmission.potranslation not in translations:
-                    submissions.add(selection.activesubmission)
-                    translations.add(selection.activesubmission.potranslation)
-            if selection.publishedsubmission:
-                if selection.publishedsubmission.potranslation not in translations:
-                    submissions.add(selection.publishedsubmission)
-                    translations.add(selection.publishedsubmission.potranslation)
-        result = sorted(list(submissions), key=lambda x: x.datecreated)
-        result.reverse()
-        return result
+        posubmission_ids = self.getCurrentSubmissionsIDs(language, pluralform)
+
+        posubmissions = POSubmission.select(
+            'POSubmission.id IN (%s)' % ', '.join(posubmission_ids),
+            orderBy='-datecreated')
+
+        return posubmissions
 
     def flags(self):
         if self.flagscomment is None:
