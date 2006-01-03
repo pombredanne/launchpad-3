@@ -34,6 +34,9 @@ class BugTrackerSetNavigation(GetitemNavigation):
 
     usedfor = IBugTrackerSet
 
+    def breadcrumb(self):
+        return 'Remote Bug Trackers'
+
 
 class BugTrackerContextMenu(ContextMenu):
 
