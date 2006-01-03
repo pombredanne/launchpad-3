@@ -686,9 +686,7 @@ registry_to_do = 'Launchpad To-Do List'
 
 related_bounties = ContextDisplayName('Bounties for %s')
 
-def remotebug_index(context, view):
-    return 'Launchpad Bugs watching #%s in %s' % (context.remotebug,
-                                                  context.bugtracker.title)
+remotebug_index = ContextTitle('%s')
 
 root_index = 'The Launchpad Home Page'
 

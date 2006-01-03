@@ -10,10 +10,6 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Launchpad bugs watching
-  bug #<span tal:replace="context/remotebug">1234</span>
-  in <span tal:replace="context/bugtracker/title">some bugtracker</span></h1>
-
   <p>The following bugs in Launchpad are watching
   bug #<span tal:replace="context/remotebug">1234</span>
   in <span tal:replace="context/bugtracker/title">some bugtracker</span>.

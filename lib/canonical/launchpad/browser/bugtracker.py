@@ -98,7 +98,7 @@ class BugTrackerNavigation(Navigation):
     usedfor = IBugTracker
 
     def breadcrumb(self):
-        return self.context.name
+        return self.context.title
 
     def traverse(self, remotebug):
         bugs = self.context.getBugsWatching(remotebug)
@@ -126,6 +126,8 @@ class IRemoteBug(Interface):
 
     bugs = Attribute(_("A list of the Launchpad bugs watching the remote bug"))
 
+    title = Attribute(_("Remote bug page title"))
+
 
 class RemoteBug:
 
@@ -135,3 +137,8 @@ class RemoteBug:
         self.bugtracker = bugtracker
         self.remotebug = remotebug
         self.bugs = bugs
+
+    @property
+    def title(self):
+        return 'Remote Bug #%s in %s' % (self.remotebug,
+                                         self.bugtracker.title)
