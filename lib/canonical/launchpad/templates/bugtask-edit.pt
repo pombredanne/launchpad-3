@@ -31,7 +31,7 @@
           enctype="multipart/form-data">
           <div metal:define-macro="formbody">
             <p class="portalMessage"
-               tal:define="status view/update|nothing"
+               tal:define="status view/process_form"
                tal:condition="status"
                tal:content="status" />
             <p tal:define="errors view/errors|nothing"
@@ -159,18 +159,18 @@
 
           <div class="field">
             <div>
-              <label tal:attributes="for view/statusexplanation_widget/name"
-                     tal:content="view/statusexplanation_widget/label" />
+              <label for="comment_on_change">Comment on this change (optional)</label>
+
             </div>
             <div>
-              <tal:block replace="structure view/statusexplanation_widget" />
+              <textarea cols="62" id="comment_on_change" name="comment_on_change" rows="15" ></textarea>
             </div>
           </div>
 
           <div class="actions" tal:condition="context/required:launchpad.Edit">
             <input
               type="submit"
-              name="UPDATE_SUBMIT"
+              name="FORM_SUBMIT"
               value="Save Changes"
               i18n:attributes="value submit-button" />
           </div>

@@ -9,6 +9,7 @@ be better as a method on an existing content object or IFooSet object.
 __metaclass__ = type
 
 import email
+from email.Utils import make_msgid
 import subprocess
 import gettextpo
 import os
@@ -46,7 +47,6 @@ from canonical.launchpad.interfaces import (
     TranslationConstants)
 from canonical.launchpad.components.poparser import (
     POSyntaxError, POInvalidInputError, POParser)
-
 from canonical.launchpad.validators.gpg import valid_fingerprint
 
 def text_replaced(text, replacements, _cache={}):
@@ -1022,3 +1022,15 @@ def is_ascii_only(string):
     else:
         return True
 
+
+def create_bug_message(bug, owner=None, subject=None, content=None,
+                       parent=None):
+    from canonical.launchpad.database.message import Message, MessageChunk
+    from canonical.launchpad.database.bugmessage import BugMessage
+
+    msg = Message(
+        parent=parent, owner=owner, subject=subject,
+        rfc822msgid=make_msgid('malone'))
+    MessageChunk(messageID=msg.id, content=content, sequence=1)
+
+    return BugMessage(bug=bug, message=msg)

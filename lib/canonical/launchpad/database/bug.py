@@ -17,7 +17,8 @@ from sqlobject import SQLObjectNotFound
 
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities)
-from canonical.launchpad.helpers import contactEmailAddresses
+from canonical.launchpad.helpers import (
+    contactEmailAddresses, create_bug_message)
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -152,14 +153,14 @@ class Bug(SQLBase):
 
     # messages
     def newMessage(self, owner=None, subject=None, content=None,
-        parent=None):
+                   parent=None):
         """Create a new Message and link it to this ticket."""
-        msg = Message(parent=parent, owner=owner,
-            rfc822msgid=make_msgid('malone'), subject=subject)
-        MessageChunk(messageID=msg.id, content=content, sequence=1)
-        bugmsg = BugMessage(bug=self, message=msg)
+        bugmsg = create_bug_message(
+            bug=self, owner=owner, subject=subject, content=content,
+            parent=parent)
         notify(SQLObjectCreatedEvent(bugmsg, user=owner))
-        return msg
+
+        return bugmsg.message
 
     def linkMessage(self, message):
         """See IBug."""

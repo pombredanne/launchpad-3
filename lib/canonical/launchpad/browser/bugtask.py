@@ -25,9 +25,12 @@ __all__ = [
 
 import urllib
 
+from zope.event import notify
+from zope.interface import providedBy
 from zope.component import getUtility, getView
-from zope.app.form.utility import setUpWidgets, getWidgetsData
-from zope.app.form.interfaces import IInputWidget
+from zope.app.form.utility import (
+    setUpWidgets, setUpEditWidgets, getWidgetsData, applyWidgetsChanges)
+from zope.app.form.interfaces import IInputWidget, WidgetsError
 
 from canonical.lp import dbschema
 from canonical.launchpad.webapp import (
@@ -46,9 +49,12 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
 from canonical.launchpad.components.bugtask import NullBugTask
+from canonical.launchpad.webapp.generalform import GeneralFormView
+from canonical.launchpad.validators import LaunchpadValidationError
 
 def get_sortorder_from_request(request):
     """Get the sortorder from the request."""
@@ -377,13 +383,95 @@ class BugTaskReleaseTargetingView:
         self.request.response.redirect(canonical_url(bugtask))
 
 
-class BugTaskEditView(SQLObjectEditView):
-    """The view class used for the task +edit page"""
+class BugTaskEditView(GeneralFormView):
+    """The view class used for the task +edit page."""
+    def __init__(self, context, request):
+        GeneralFormView.__init__(self, context, request)
 
-    def changed(self):
+        # Initialize a value that we reference in the page template to
+        # determine if an error on the change comment was made. I'm
+        # taking this shortcut to avoid the complexity and brokenness
+        # of the Zope 3 widget framework.
+        self.comment_on_change_error = ""
+
+    def validate(self):
+        """Validate the change comment.
+
+        If a change comment was submitted, verify that a change was
+        made. Add the change comment to the form data to process.
+        """
+        bugtask = self.context
+        data = GeneralFormView.validate(self)
+        comment_on_change = self.request.form.get("comment_on_change")
+        if comment_on_change:
+            # There was a comment on this change, so make sure that a
+            # change was actually made.
+            changed = False
+            for field_name in data:
+                current_value = getattr(bugtask, field_name)
+                if current_value != data[field_name]:
+                    changed = True
+                    break
+
+            if not changed:
+                # This is the error value that we'll refer to in the
+                # ZPT, to avoid the complexity of the Zope 3 widget
+                # framework and validation.
+                self.comment_on_change_error = (
+                    "You submitted a change comment but didn't change "
+                    "anything.")
+
+                # Raise the WidgetsError exception, so that
+                # GeneralFormView will tell the user than something
+                # went wrong.
+                raise WidgetsError(
+                    LaunchpadValidationError(self.comment_on_change_error))
+
+    def process(self):
+        """Update the bug task with the user's changes.
+
+        A BugMessage will be created if the user specified a
+        comment_on_change.
+        """
+        bugtask = self.context
+        new_values = getWidgetsData(self, self.schema, self.fieldNames)
+
+        bugtask_before_modification = helpers.Snapshot(
+            bugtask, providing=providedBy(bugtask))
+        changed = applyWidgetsChanges(
+            self, self.schema, target=bugtask, names=self.fieldNames)
+
+        comment_on_change = self.request.form.get("comment_on_change")
+        if comment_on_change and not changed:
+            # The user supplied a comment on a change, but didn't
+            # change anything.
+            pass
+
+        if comment_on_change:
+            helpers.create_bug_message(
+                bug=bugtask.bug, owner=getUtility(ILaunchBag).user,
+                subject=bugtask.bug.followup_subject(),
+                content=comment_on_change)
+
+        if changed:
+            notify(
+                SQLObjectModifiedEvent(
+                    object=bugtask,
+                    object_before_modification=bugtask_before_modification,
+                    edited_fields=self.fieldNames,
+                    comment_on_change=comment_on_change))
+
+    def _setUpWidgets(self):
+        """Override widget setup to provide an edit form.
+
+        This ensures fields are populated with existing object values.
+        """
+        setUpEditWidgets(self, self.schema, names=self.fieldNames)
+
+    def nextURL(self):
         """Redirect the browser to the bug page when we successfully update
         the bug task."""
-        self.request.response.redirect(canonical_url(self.context))
+        return canonical_url(self.context)
 
 
 class BugListing:

@@ -299,25 +299,19 @@
         <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
     </browser:addform>
 
-    <browser:editform
+    <browser:generalform
         name="+editstatus-page"
         for="canonical.launchpad.interfaces.IUpstreamBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
-        fields="maintainer_displayname milestone status priority
-                severity assignee bugwatch statusexplanation product"
-        label="Edit Fix Request"
+        fields="product maintainer_displayname milestone status priority
+                severity assignee bugwatch"
         permission="launchpad.Edit"
-        template="../templates/bugtask-edit.pt"
-        lp:url="malone/tasks/$BugTask.id/+edit">
-        <browser:widget
-          field="statusexplanation"
-          class="zope.app.form.browser.TextAreaWidget"
-          height="2" />
+        template="../templates/bugtask-edit.pt">
         <browser:widget
           field="assignee"
           class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
-    </browser:editform>
+    </browser:generalform>
 
     <browser:schemadisplay
         name="+viewstatus-page"

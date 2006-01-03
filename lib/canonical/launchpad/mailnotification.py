@@ -235,7 +235,6 @@ def generate_bug_edit_email(bug_delta):
                 u"*** This bug has been marked a duplicate of bug %d ***\n\n" %
                 new_bug_dupe.id)
 
-
     if bug_delta.title is not None:
         body += u"Summary changed to:\n"
         body += u"    %s\n" % bug_delta.title
@@ -403,6 +402,11 @@ def generate_bug_edit_email(bug_delta):
             body += u"%15s: %s" % (u"Status", added_bugtask.status.title)
 
     body = body.rstrip()
+
+    if bug_delta.comment_on_change:
+        comment_wrapper = MailWrapper(width=72)
+        body += "\n\nComment:\n"
+        body += comment_wrapper.format(bug_delta.comment_on_change)
 
     return (subject, body)
 
@@ -759,7 +763,8 @@ def notify_bugtask_edited(modified_bugtask, event):
         bug=event.object.bug,
         bugurl=canonical_url(event.object.bug),
         bugtask_deltas=bugtask_delta,
-        user=event.user)
+        user=event.user,
+        comment_on_change=event.comment_on_change)
 
     send_bug_edit_notification(bug_delta)
 

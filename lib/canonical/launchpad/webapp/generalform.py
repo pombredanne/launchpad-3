@@ -65,6 +65,15 @@ class GeneralFormView(BrowserView):
         """
         return self._nextURL
 
+    def validate(self):
+        """Validate the form.
+
+        If errors are encountered, a WidgetsError exception is raised.
+
+        Returns a dict of fieldname:value pairs if all form data
+        submitted is valid.
+        """
+        return getWidgetsData(self, self.schema, names=self.fieldNames)
 
     # internal methods, should not be overridden
     def __init__(self, context, request):
@@ -101,7 +110,7 @@ class GeneralFormView(BrowserView):
 
         # extract the posted data, and validate with form widgets
         try:
-            data = getWidgetsData(self, self.schema, names=self.fieldNames)
+            data = self.validate()
         except WidgetsError, errors:
             self.errors = errors
             self.process_status = _(
