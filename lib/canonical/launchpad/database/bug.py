@@ -201,13 +201,8 @@ class Bug(SQLBase):
             self.linkCVE(cve)
 
 
-class BugSet(BugSetBase):
+class BugSet:
     implements(IBugSet)
-
-    def __iter__(self):
-        """See canonical.launchpad.interfaces.bug.IBugSet."""
-        for row in Bug.select():
-            yield row
 
     def get(self, bugid):
         """See canonical.launchpad.interfaces.bug.IBugSet."""

@@ -8307,6 +8307,7 @@ INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, dist
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (11, 24, 8, 2, 1, 2, '2005-09-15 11:42:21.070926', '2005-09-15 11:42:21.070926', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (12, 25, 3, 2, 1, 1, '2005-09-15 11:43:00.05741', '2005-09-15 11:43:00.05741', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (14, 24, 3, 7, 1, 3, '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', 25, '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', '2005-09-15 11:44:00.10654', 0, false, NULL);
+INSERT INTO securesourcepackagepublishinghistory (id, sourcepackagerelease, distrorelease, status, component, section, datecreated, datepublished, datesuperseded, supersededby, datemadepending, scheduleddeletiondate, dateremoved, pocket, embargo, embargolifted) VALUES (13, 26, 3, 2, 1, 1, '2005-12-22 18:19:00.05741', '2005-12-22 18:20:00.05741', NULL, NULL, NULL, NULL, NULL, 0, false, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'securesourcepackagepublishinghistory'::pg_catalog.regclass;
@@ -8375,6 +8376,7 @@ INSERT INTO sourcepackagename (id, name) VALUES (16, 'mozilla');
 INSERT INTO sourcepackagename (id, name) VALUES (17, 'uberfrob');
 INSERT INTO sourcepackagename (id, name) VALUES (18, 'thunderbird');
 INSERT INTO sourcepackagename (id, name) VALUES (19, 'alsa-utils');
+INSERT INTO sourcepackagename (id, name) VALUES (20, 'cnews');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sourcepackagename'::pg_catalog.regclass;
@@ -8391,6 +8393,7 @@ INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, d
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (23, 1, '1.0.8-1ubuntu1', '2005-02-03 08:50:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, 18, 1, 19, 1, 1);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (24, 1, '1.0.9a-4', '2005-07-01 22:47:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 2, NULL, 1, 19, 8, 1);
 INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (25, 1, '1.0.9a-4ubuntu1', '2005-08-01 14:10:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 16, 19, 3, 1);
+INSERT INTO sourcepackagerelease (id, creator, version, dateuploaded, urgency, dscsigningkey, component, changelog, builddepends, builddependsindep, architecturehintlist, dsc, section, manifest, maintainer, sourcepackagename, uploaddistrorelease, format) VALUES (26, 1, 'cr.g7-37', '2005-12-22 18:19:00', 1, NULL, 1, NULL, NULL, NULL, NULL, NULL, 1, NULL, 16, 20, 3, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sourcepackagerelease'::pg_catalog.regclass;

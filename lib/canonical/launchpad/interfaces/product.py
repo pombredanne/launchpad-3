@@ -9,41 +9,33 @@ __all__ = [
     'IProductSet',
     ]
 
-from textwrap import dedent
 from zope.schema import Bool, Choice, Int, Text, TextLine
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
 from zope.component import getUtility
 
-from canonical.launchpad.fields import Title, Summary, Description
+from canonical.launchpad import _
+from canonical.launchpad.fields import (
+    ContentNameField, Description, Summary, Title)
 from canonical.launchpad.interfaces import (
     IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.validation import valid_webref
-from canonical.launchpad.validators import LaunchpadValidationError
 
-_ = MessageIDFactory('launchpad')
 
-class ProductNameField(TextLine):
+class ProductNameField(ContentNameField):
 
-    def _validate(self, value):
-        TextLine._validate(self, value)
-        if (IProduct.providedBy(self.context) and 
-            value == getattr(self.context, self.__name__)):
-            # The name wasn't changed.
-            return
+    errormessage = _("%s is already in use by another product.")
 
-        try:
-            product = getUtility(IProductSet)[value]
-        except KeyError:
-            pass
-        else:
-            raise LaunchpadValidationError(_(dedent("""
-                This name is already in use by another product.
-                """))) 
+    @property
+    def _content_iface(self):
+        return IProduct
+
+    def _getByName(self, name):
+        return getUtility(IProductSet).getByName(name)
+
 
 class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
-    """A Hatchery Product.
+    """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
     Products. Each Project may be responsible for several Products.
@@ -297,6 +289,13 @@ class IProductSet(Interface):
 
         If the product can't be found a zope.exceptions.NotFoundError will be
         raised.
+        """
+
+    def getByName(name, default=None, ignore_inactive=False):
+        """Return the product with the given name, ignoring inactive products
+        if ignore_inactive is True.
+
+        Return the default value if there is no such product.
         """
 
     def createProduct(owner, name, displayname, title, summary,
