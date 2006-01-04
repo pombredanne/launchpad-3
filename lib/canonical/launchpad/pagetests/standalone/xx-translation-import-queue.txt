@@ -281,7 +281,32 @@ Is time to associate this import to the right IPOFile.
   Location: http://localhost:9000/rosetta/imports
   ...
 
-Check the removal feature.
+Check the removal feature. For that, we need first to attach a new entry.
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 362
+  ... Content-Type: multipart/form-data; boundary=---------------------------13161753624926250560039312
+  ... Referer: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload
+  ... 
+  ... -----------------------------13161753624926250560039312
+  ... Content-Disposition: form-data; name="file"; filename="evolution.pot"
+  ... Content-Type: text/x-gettext-translation-template
+  ... 
+  ... # foo
+  ... 
+  ... -----------------------------13161753624926250560039312
+  ... Content-Disposition: form-data; name="UPLOAD"
+  ... 
+  ... Upload
+  ... -----------------------------13161753624926250560039312--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Your upload worked. The template's content will appear in Rosetta in a few minutes...
+  ...Upload a new version of Template "evolution-2.2" in ubuntu hoary package "evolution"...
+
+And now, remove it.
 
   >>> print http(r"""
   ... POST /rosetta/imports HTTP/1.1
@@ -290,7 +315,7 @@ Check the removal feature.
   ... Content-Type: application/x-www-form-urlencoded
   ... Referer: http://localhost:9000/rosetta/imports
   ... 
-  ... entry-2=on&remove_import=Remove""")
+  ... entry-3=on&remove_import=Remove""")
   HTTP/1.1 200 Ok
   ...Removed 1 items...
   ...There are no pending files to be imported into Rosetta...
