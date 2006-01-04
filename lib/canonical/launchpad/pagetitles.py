@@ -227,6 +227,8 @@ build_changes = ContextTitle('%s: Changes')
 
 build_index = ContextTitle('%s: Overview')
 
+build_reset = ContextTitle('Reset %s')
+
 builders = 'Launchpad Build Farm Overview'
 
 builder_edit = ContextTitle('Editing %s details')
