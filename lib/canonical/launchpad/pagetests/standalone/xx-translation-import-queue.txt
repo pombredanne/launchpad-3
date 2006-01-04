@@ -192,6 +192,38 @@ be imported because the import was associated directly.
       </table>
   ...
 
+Although the latest imported entry is ready to be imported, we can edit and
+change the values.
+
+  >>> print http(r"""
+  ... POST /rosetta/imports/2/+index HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 591
+  ... Content-Type: multipart/form-data; boundary=---------------------------6511523821897126076551794692
+  ... 
+  ... -----------------------------6511523821897126076551794692
+  ... Content-Disposition: form-data; name="field.sourcepackagename"
+  ... 
+  ... evolution
+  ... -----------------------------6511523821897126076551794692
+  ... Content-Disposition: form-data; name="field.potemplatename"
+  ... 
+  ... evolution-2.2
+  ... -----------------------------6511523821897126076551794692
+  ... Content-Disposition: form-data; name="field.path"
+  ... 
+  ... po/evolution-2.2.pot
+  ... -----------------------------6511523821897126076551794692
+  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... 
+  ... Continue
+  ... -----------------------------6511523821897126076551794692--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/rosetta/imports
+  ...
+
 Get the edit form for the first entry.
 
   >>> print http(r"""

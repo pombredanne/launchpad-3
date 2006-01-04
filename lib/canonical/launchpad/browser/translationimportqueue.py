@@ -95,10 +95,13 @@ class TranslationImportQueueEntryView(GeneralFormView):
             destination_sourcepackagename = self.context.sourcepackagename
 
         potemplate_set = getUtility(IPOTemplateSet)
-        potemplate_subset = potemplate_set.getSubset(
-                productseries=self.context.productseries,
+        if self.context.productseries is None:
+            potemplate_subset = potemplate_set.getSubset(
                 distrorelease=self.context.distrorelease,
                 sourcepackagename=destination_sourcepackagename)
+        else:
+            potemplate_subset = potemplate_set.getSubset(
+                productseries=self.context.productseries)
         try:
             potemplate = potemplate_subset[potemplatename.name]
         except NotFoundError:
