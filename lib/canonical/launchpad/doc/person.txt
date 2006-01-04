@@ -342,4 +342,4 @@ Maintainer.
 ...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
 ...            sprelease.version)
 (u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
-
+(u'cnews', u'Ubuntu Hoary', u'cr.g7-37')

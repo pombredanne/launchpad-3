@@ -260,16 +260,8 @@ class IBugAddForm(IBug):
             default=False)
 
 
-class IBugSet(IAddFormCustomization):
+class IBugSet(Interface):
     """A set of bugs."""
-
-    title = Attribute('Title')
-
-    def __getitem__(bugid):
-        """Get a Bug."""
-
-    def __iter__():
-        """Iterate through Bugs."""
 
     def get(bugid):
         """Get a specific bug by its ID.
