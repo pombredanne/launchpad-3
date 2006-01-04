@@ -77,7 +77,7 @@ class IBugTask(IHasDateCreated):
         title=_('Severity'), vocabulary='BugTaskSeverity',
         default=dbschema.BugTaskSeverity.NORMAL)
     assignee = Choice(
-        title=_('Assigned to:'), required=False, vocabulary='ValidAssignee')
+        title=_('Assigned to'), required=False, vocabulary='ValidAssignee')
     binarypackagename = Choice(
         title=_('Binary PackageName'), required=False,
         vocabulary='BinaryPackageName')

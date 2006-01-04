@@ -22,8 +22,8 @@ class ISQLObjectModifiedEvent(IObjectModifiedEvent):
 
     object_before_modification = Attribute("The object before modification.")
     edited_fields = Attribute(
-        "The list of fields that were edited (though not necessarily all "
-        "modified, of course.)")
+        "The list of fields that were edited. A field name may appear in this "
+        "list if it were shown on an edit form, but not actually changed.")
     user = Attribute("The user who modified the object.")
     comment_on_change = Attribute("An optional comment for this change.")
 

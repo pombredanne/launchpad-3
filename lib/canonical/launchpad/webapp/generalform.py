@@ -39,15 +39,14 @@ class GeneralFormView(BrowserView):
     (E.g. ``view.title_widget for the title widget``)
     """
 
-    errors = ()
-    process_status = None
     label = ''
     _arguments = []
     _keyword_arguments = []
     _nextURL = None
 
-    # Fall-back field names computes from schema
+    # Fall-back field names computed from schema
     fieldNames = property(lambda self: getFieldNamesInOrder(self.schema))
+
     # Fall-back template
     generated_form = ViewPageTemplateFile('../templates/launchpad-generalform.pt')
 
@@ -77,7 +76,11 @@ class GeneralFormView(BrowserView):
 
     # internal methods, should not be overridden
     def __init__(self, context, request):
-        super(GeneralFormView, self).__init__(context, request)
+        BrowserView.__init__(self, context, request)
+
+        self.errors = {}
+        self.process_status = None
+
         self._setUpWidgets()
 
     def _setUpWidgets(self):
@@ -96,9 +99,8 @@ class GeneralFormView(BrowserView):
         then calls self.process(), passing the contents of the form. You
         should override self.process() in your own View class.
         """
-
         if self.process_status is not None:
-            # We've been called before. Just return the status we previously
+            # We've been called before, so just return the status we previously
             # computed.
             return self.process_status
 
@@ -108,7 +110,7 @@ class GeneralFormView(BrowserView):
                 self.process_status = 'Please fill in the form.'
             return self.process_status
 
-        # extract the posted data, and validate with form widgets
+        # Extract and validate the POSTed data.
         try:
             data = self.validate()
         except WidgetsError, errors:
@@ -118,7 +120,7 @@ class GeneralFormView(BrowserView):
             get_transaction().abort()
             return self.process_status
 
-        # pass the resulting validated data to the form's self.process() and
+        # Pass the validated data to the form's self.process().
         args = []
         if self._arguments:
             for name in self._arguments:
@@ -132,7 +134,7 @@ class GeneralFormView(BrowserView):
 
         self.process_status = self.process(*args, **kw)
 
-        # if we have a nextURL() then go there
+        # Go to the nextURL(), if we have one.
         if self.nextURL():
             self.request.response.redirect(self.nextURL())
 

@@ -54,7 +54,6 @@ from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
 from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp.generalform import GeneralFormView
-from canonical.launchpad.validators import LaunchpadValidationError
 
 def get_sortorder_from_request(request):
     """Get the sortorder from the request."""
@@ -384,14 +383,13 @@ class BugTaskReleaseTargetingView:
 
 
 class BugTaskEditView(GeneralFormView):
-    """The view class used for the task +edit page."""
+    """The view class used for the task +editstatus page."""
     def __init__(self, context, request):
         GeneralFormView.__init__(self, context, request)
 
-        # Initialize a value that we reference in the page template to
-        # determine if an error on the change comment was made. I'm
-        # taking this shortcut to avoid the complexity and brokenness
-        # of the Zope 3 widget framework.
+        # A simple hack, avoiding the mind-bending complexity of the Z3
+        # form/widget machinery, to provide a useful error message to the user
+        # if they make a change comment but don't change anything.
         self.comment_on_change_error = ""
 
     def validate(self):
@@ -414,18 +412,13 @@ class BugTaskEditView(GeneralFormView):
                     break
 
             if not changed:
-                # This is the error value that we'll refer to in the
-                # ZPT, to avoid the complexity of the Zope 3 widget
-                # framework and validation.
                 self.comment_on_change_error = (
-                    "You submitted a change comment but didn't change "
-                    "anything.")
+                    "You provided a change comment without changing anything.")
+                # Pass the comment_on_change_error as a list here, because
+                # WidgetsError expects a list of errors.
+                raise WidgetsError([self.comment_on_change_error])
 
-                # Raise the WidgetsError exception, so that
-                # GeneralFormView will tell the user than something
-                # went wrong.
-                raise WidgetsError(
-                    LaunchpadValidationError(self.comment_on_change_error))
+        return data
 
     def process(self):
         """Update the bug task with the user's changes.
@@ -442,10 +435,6 @@ class BugTaskEditView(GeneralFormView):
             self, self.schema, target=bugtask, names=self.fieldNames)
 
         comment_on_change = self.request.form.get("comment_on_change")
-        if comment_on_change and not changed:
-            # The user supplied a comment on a change, but didn't
-            # change anything.
-            pass
 
         if comment_on_change:
             helpers.create_bug_message(
