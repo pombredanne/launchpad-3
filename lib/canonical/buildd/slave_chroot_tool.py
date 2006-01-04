@@ -65,7 +65,7 @@ class SlaveChrootBuilder:
         """Run a chroot if intervention at this stage is requested."""
         if self.config["intervention"][stage] == "1":
             print "Intervening at stage %s" % stage
-            os.system("sudo chroot %s/chroot-autobuild /bin/sh" %
+            os.system("sudo chroot %s/chroot-autobuild /bin/su -" %
                       self.treeroot)
     def debootstrap(self):
         """Run debootstrap with the arguments from the config."""
@@ -82,7 +82,7 @@ class SlaveChrootBuilder:
             chrconf["variant"],
             chrconf["debootstraparchive"])
 
-        execute("sudo debootstrap --arch %s --variant=%s %s %s %s" % (
+        execute("sudo debootstrap --resolve-deps --arch %s --variant=%s %s %s %s" % (
             chrconf["architecture"],
             chrconf["variant"],
             chrconf["distrorelease"],
@@ -189,20 +189,25 @@ class SlaveChrootBuilder:
         self.umount()
         # And tar it up...
 
-        print "Preparing chroot tarball..."
-        execute("sudo tar -C %s -cjf "
-                "chroot-%s-%s-%s.tar.bz2 chroot-autobuild" %(
-            self.treeroot, self.config['chroot']['distribution'],
-            self.config['chroot']['distrorelease'],
-            self.config['chroot']['architecture']))
+        print "Happy to repack? [Y]"
+        yesno = sys.stdin.readline().strip().lower()
+        if yesno in ('y', 'yes', 'happy', 'gay', ''):
+            print "Preparing chroot tarball..."
+            execute("sudo tar -C %s -cjf "
+                    "chroot-%s-%s-%s.tar.bz2 chroot-autobuild" %(
+                self.treeroot, self.config['chroot']['distribution'],
+                self.config['chroot']['distrorelease'],
+                self.config['chroot']['architecture']))
+            execute("sudo chown $USER %s" % chroottar)
 
         print "Cleaning up..."
         execute(self.bin+"/remove-build %s" % self.buildid)
-
-        print "Constructed chroot-%s-%s-%s.tar.bz2" % (
-            self.config['chroot']['distribution'],
-            self.config['chroot']['distrorelease'],
-            self.config['chroot']['architecture'])
+        
+        if yesno in ('y', 'yes', 'happy', 'gay', ''):
+            print "Constructed chroot-%s-%s-%s.tar.bz2" % (
+                self.config['chroot']['distribution'],
+                self.config['chroot']['distrorelease'],
+                self.config['chroot']['architecture'])
 
 def do_generate(conffile):
     """Generate a chroot based on the configuration file supplied"""
@@ -219,7 +224,7 @@ def do_intervene(chroottar):
     print "Mounting..."
     execute(slavebin+"/mount-chroot chroot-tool")
     print "Chrooting in..."
-    execute("sudo chroot $HOME/build-chroot-tool/chroot-autobuild /bin/sh")
+    execute("sudo chroot $HOME/build-chroot-tool/chroot-autobuild /bin/su -")
     # We eat the result code of scanning for processes
     print "Scanning for processes to kill..."
     os.system(slavebin+"/scan-for-processes chroot-tool")
@@ -227,13 +232,14 @@ def do_intervene(chroottar):
     execute(slavebin+"/umount-chroot chroot-tool")
     print "Happy to repack? [Y]"
     yesno = sys.stdin.readline().strip().lower()
-    if yesno in ('y', 'yes', ''):
+    if yesno in ('y', 'yes', 'happy', 'gay', ''):
         print "Re-packing..."
         execute("sudo tar -C $HOME/build-chroot-tool -cjf %s chroot-autobuild" %
                 chroottar)
+        execute("sudo chown $USER %s" % chroottar)
     print "Cleaning up..."
     execute(slavebin+"/remove-build chroot-tool")
-    if yesno in ('y', 'yes', ''):
+    if yesno in ('y', 'yes', 'happy', 'gay', ''):
         print "Done, updated %s" % chroottar
     else:
         print "Done, did not update %s" % chroottar

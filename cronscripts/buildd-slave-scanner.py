@@ -15,6 +15,7 @@ from optparse import OptionParser
 from zope.component import getUtility
 
 from canonical.lp import initZopeless
+from canonical.config import config
 from canonical.launchpad.interfaces import IDistroArchReleaseSet
 
 from canonical.launchpad.scripts.builddmaster import BuilddMaster
@@ -27,13 +28,12 @@ _default_lockfile = '/var/lock/buildd-master.lock'
 
 def doSlaveScan(logger):
     """Proceed the Slave Scanning Process."""    
-    # XXX cprov 20051019
-    # retrive the user infromation from the config file
     
     # setup a transaction manager
-    tm = initZopeless(dbuser='fiera')
+    tm = initZopeless(config.builddmaster.dbuser='fiera')
 
-    buildMaster = BuilddMaster(logger, tm)
+    buildMaster = BuilddMaster(logger, tm,
+                               config.builddmaster.uploader.split())
 
     logger.info("Setting Builders.")
     
