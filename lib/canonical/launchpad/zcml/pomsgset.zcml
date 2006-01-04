@@ -11,4 +11,9 @@
           set_attributes="fuzzy" />
     </content>
 
+    <!-- Dummy PO Msg Set -->
+    <content class="canonical.launchpad.database.DummyPOMsgSet">
+        <allow interface="canonical.launchpad.interfaces.IPOMsgSet" />
+    </content>
+
 </configure>

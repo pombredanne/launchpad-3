@@ -24,6 +24,9 @@ from canonical.launchpad.database.potranslation import POTranslation
 
 
 class DummyPOMsgSet:
+    """Represents a POMsgSet where we do not yet actually HAVE a POMsgSet for
+    that POFile and POTMsgSet.
+    """
     implements(IPOMsgSet)
 
     def __init__(self, pofile, potmsgset):
@@ -57,7 +60,7 @@ class DummyPOMsgSet:
 
         # Now, we call to the same method of the new created IPOMsgSet to get
         # the translations updated.
-        pomsgset.updateTranslationSet(self, person, new_translations, fuzzy,
+        pomsgset.updateTranslationSet(person, new_translations, fuzzy,
             published, ignore_errors, force_edition_rights)
 
 
@@ -524,6 +527,7 @@ class POMsgSet(SQLBase):
         posubmission_ids = self.potmsgset.getCurrentSubmissionsIDs(
             self.pofile.language, pluralform)
         active = self.activeSubmission(pluralform)
+
         if active is not None and active.id in posubmission_ids:
             posubmission_ids.remove(active.id)
 

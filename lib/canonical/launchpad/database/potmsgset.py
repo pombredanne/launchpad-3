@@ -86,11 +86,16 @@ class POTMsgSet(SQLBase):
         """See IPOTMsgSet"""
         posubmission_ids = self.getCurrentSubmissionsIDs(language, pluralform)
 
-        posubmissions = POSubmission.select(
-            'POSubmission.id IN (%s)' % ', '.join(posubmission_ids),
-            orderBy='-datecreated')
+        if len(posubmission_ids) > 0:
+            ids = [str(L[0]) for L in posubmission_ids]
 
-        return posubmissions
+            posubmissions = POSubmission.select(
+                'POSubmission.id IN (%s)' % ', '.join(ids),
+                orderBy='-datecreated')
+
+            return posubmissions
+        else:
+            return []
 
     def flags(self):
         if self.flagscomment is None:
