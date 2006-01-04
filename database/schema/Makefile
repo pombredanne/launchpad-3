@@ -19,6 +19,9 @@ DBNAME=launchpad_dev
 TEST_DBNAME=launchpad_ftest_template
 EMPTY_DBNAME=launchpad_empty
 
+# The session database name.
+SESSION_DBNAME=session_dev
+
 # The latest schema dump from production. Database patches are relative
 # to this baseline. This dump should be updated every production rollout
 # to ensure that the development database remains in sync with reality
@@ -59,6 +62,13 @@ test: create
 	@ ${PYTHON} reset_sequences.py -d ${TEST_DBNAME}
 	@ echo "* Vacuuming"
 	@ psql -d ${TEST_DBNAME} -c 'vacuum full analyze' | grep : | cat
+	@ echo "* Creating session database '${SESSION_DBNAME}' (if necessary)"
+	@if [ "$$((`psql -l | grep ${SESSION_DBNAME} | wc -l`))" = '0' ]; \
+	    then createdb -E UNICODE ${SESSION_DBNAME} | grep : | cat ; \
+	    psql -q -d ${SESSION_DBNAME} -f launchpad_session.sql ; \
+	fi
+	@ echo "* Adding session tables to '${TEST_DBNAME}'"
+	psql -q -d ${TEST_DBNAME} -f launchpad_session.sql
 
 dev: test
 	@ echo "* Creating ${DBNAME}"

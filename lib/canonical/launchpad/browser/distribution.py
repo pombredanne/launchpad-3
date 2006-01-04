@@ -100,7 +100,7 @@ class DistributionOverviewMenu(ApplicationMenu):
     usedfor = IDistribution
     facet = 'overview'
     links = ['search', 'allpkgs', 'milestone_add', 'members', 'edit',
-             'editbugcontact', 'reassign', 'addrelease']
+             'editbugcontact', 'reassign', 'addrelease', 'builds']
 
     def edit(self):
         text = 'Edit Details'
@@ -136,6 +136,9 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'Add Release'
         return Link('+addrelease', text, icon='add')
 
+    def builds(self):
+        text = 'View Builds'
+        return Link('+builds', text, icon='info')
 
 class DistributionBugsMenu(ApplicationMenu):
 
@@ -232,7 +235,7 @@ class DistributionView(BuildRecordsView):
         self.detailed = True
         self.search_requested = False
 
-        # check if the user invoke search, if not dismiss 
+        # check if the user invoke search, if not dismiss
         self.text = self.request.form.get('text', None)
         if not self.text:
             return
