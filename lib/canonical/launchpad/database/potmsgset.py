@@ -36,31 +36,6 @@ class POTMsgSet(SQLBase):
     sourcecomment = StringCol(dbName='sourcecomment', notNull=False)
     flagscomment = StringCol(dbName='flagscomment', notNull=False)
 
-    def getWikiSubmissions(self, language, pluralform):
-        """See IPOTMsgSet"""
-        results = POSubmission.select("""
-            POSubmission.pomsgset = POMsgSet.id AND
-            POSubmission.pluralform = %d AND
-            POMsgSet.pofile = POFile.id AND
-            POFile.language = %d AND
-            POMsgSet.potmsgset = POTMsgSet.id AND
-            POTMsgSet.primemsgid = %d""" % (pluralform,
-                language.id, self.primemsgid_ID),
-            clauseTables=['POMsgSet',
-                          'POFile',
-                          'POTMsgSet'],
-            orderBy=['-datecreated'],
-            distinct=True)
-        submissions = sets.Set()
-        translations = sets.Set()
-        for submission in results:
-            if submission.potranslation not in translations:
-                translations.add(submission.potranslation)
-                submissions.add(submission)
-        result = sorted(list(submissions), key=lambda x: x.datecreated)
-        result.reverse()
-        return result
-
     def getCurrentSubmissionsIDs(self, language, pluralform):
         """See IPOTMsgSet."""
         return self._connection.queryAll('''
