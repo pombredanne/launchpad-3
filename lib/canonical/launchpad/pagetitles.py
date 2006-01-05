@@ -686,6 +686,8 @@ registry_to_do = 'Launchpad To-Do List'
 
 related_bounties = ContextDisplayName('Bounties for %s')
 
+remotebug_index = ContextTitle('%s')
+
 root_index = 'The Launchpad Home Page'
 
 rosetta_about = 'About Rosetta'

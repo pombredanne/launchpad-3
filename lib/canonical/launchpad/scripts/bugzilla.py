@@ -33,6 +33,7 @@ from canonical.launchpad.interfaces import (
     IBugTaskSet, IBugTrackerSet, IBugExternalRefSet,
     IBugAttachmentSet, IMessageSet, ILibraryFileAliasSet, ICveSet,
     IBugWatchSet, ILaunchpadCelebrities, IMilestoneSet, NotFoundError)
+from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
     BugTaskSeverity, BugTaskStatus, BugTaskPriority, BugAttachmentType)
 
@@ -430,8 +431,7 @@ class Bugzilla:
         # XXX: 20051024 jamesh
         # this is where bug number rewriting would be plugged in
         bug_id = int(match.group('id'))
-        url = urlparse.urljoin(self.bugtracker.baseurl,
-                               'show_bug.cgi?id=%d' % bug_id)
+        url = '%s/%d' % (canonical_url(self.bugtracker), bug_id)
         return '%s [%s]' % (match.group(0), url)
 
 
