@@ -35,11 +35,9 @@ class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
     usedfor = IDistribution
 
-    # XXX
-    # This redirects too shallowly (to /distros/) if the URL doesn't have a /
-    # on the end. See https://launchpad.net/products/launchpad/+bug/5461.
-    # -- Dafydd Harries 2005/12/07
-    redirection('+source', '..')
+    @redirection('+source', status=301):
+    def redirect_source(self):
+        return canonical_url(self.context)
 
     def breadcrumb(self):
         return self.context.displayname
