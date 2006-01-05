@@ -133,6 +133,7 @@ class IRemoteBug(Interface):
 
 
 class RemoteBug:
+    """Represents a bug in a remote bug tracker."""
 
     implements(IRemoteBug)
 
