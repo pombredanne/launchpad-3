@@ -14,55 +14,6 @@
         <allow interface="canonical.launchpad.interfaces.ITeamMembershipSet" />
     </securedutility>
 
-    <adapter
-        for="canonical.launchpad.interfaces.ITeam"
-        provides="canonical.launchpad.interfaces.ITeamMembershipSubset"
-        factory="canonical.launchpad.components.teammembership.TeamMembershipSubset"
-        permission="zope.Public" />
-
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.ITeamMembershipSubset"
-        name="+index" />
-
-    <browser:navigation
-        module="canonical.launchpad.browser"
-        classes="TeamMembershipSubsetNavigation"
-        />
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.ITeamMembershipSubset"
-        facet="overview"
-        permission="zope.Public"
-        class="canonical.launchpad.browser.TeamMembersView">
-        <browser:page
-            name="+index"
-            template="../templates/team-members.pt"
-            lp:url="people/$team/+members/+index" />
-    </browser:pages>
-
-    <browser:addform
-        name="+add"
-        for="canonical.launchpad.interfaces.ITeamMembershipSubset"
-        facet="overview"
-        schema="canonical.launchpad.interfaces.ITeamMembershipSubset"
-        fields="newmember"
-        class="canonical.launchpad.browser.AddTeamMemberView"
-        permission="launchpad.Edit"
-        template="../templates/team-addmember.pt"
-        lp:url="people/$team/+members/+add">
-    </browser:addform>
-
-    <browser:pages
-        for="canonical.launchpad.interfaces.ITeamMembershipSubset"
-        facet="overview"
-        permission="launchpad.Edit"
-        class="canonical.launchpad.browser.ProposedTeamMembersEditView">
-        <browser:page
-            name="+editproposed"
-            template="../templates/team-editproposed.pt"
-            lp:url="people/$team/+members/+editproposed" />
-    </browser:pages>
-
     <content class="canonical.launchpad.database.TeamMembership">
         <allow interface="canonical.launchpad.interfaces.ITeamMembership"/>
         <require 
@@ -72,22 +23,21 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.ITeamMembership"
-        path_expression="string:+members/${person/name}"
+        path_expression="string:+member/${person/name}"
         attribute_to_parent="team" />
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.ITeamMembership"
         name="+index" />
 
-    <browser:pages
+    <browser:page
+        name="+index"
         for="canonical.launchpad.interfaces.ITeamMembership"
         facet="overview"
         permission="launchpad.Edit"
-        class="canonical.launchpad.browser.TeamMembershipEditView">
-        <browser:page
-            name="+index"
-            template="../templates/teammembership-index.pt"
-            lp:url="/people/$team/$member/+index" />
-    </browser:pages>
+        class="canonical.launchpad.browser.TeamMembershipEditView"
+        template="../templates/teammembership-index.pt"
+        lp:url="/people/$team/+member/$member/+index">
+    </browser:page>
 
 </configure>

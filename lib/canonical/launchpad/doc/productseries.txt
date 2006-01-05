@@ -1,12 +1,60 @@
 ProductSeries
 =============
 
-A "release series" or "branch" is a sequence of releases that are mostly the same codebase, with just minor changes between them. 
+A Launchpad Product models a single piece of software. However for release
+management purposes, a Product often has to be split in several discrete
+entities which must be considered separately for packaging, translations,
+version control, etc. We call these entities ProductSeries.
 
+>>> from zope.component import getUtility
+>>> from zope.interface.verify import verifyObject
+>>> from canonical.launchpad.interfaces import (
+...     IProductSeries, IProductSet, NotFoundError)
+>>> from canonical.database.sqlbase import flush_database_updates
+
+First, get a product that has some ProductSeries in the sample data.
+
+>>> productset = getUtility(IProductSet)
+>>> firefox = productset['firefox']
+
+A ProductSeries can be retrieved using the associated product and the series name.
+
+>>> milestones = firefox.getSeries('milestones')
+
+Verify that the resulting object correctly implements the IProductSeries
+interface.
+
+>>> verifyObject(IProductSeries, milestones)
+True
+
+And verify that it looks like the series we think it should be.
+
+>>> milestones.product == firefox
+True
+>>> milestones.name
+u'milestones'
+
+It's also possible to ask a product for all its associated series.
+
+>>> onedotzero = firefox.getSeries('1.0')
+>>> series = firefox.serieslist
+>>> series == [onedotzero, milestones]
+True
+
+New ProductSeries are created using Product.newSeries.
+
+>>> displayname = "Firefox Emacs Port"
+>>> summary = "Experimental port of Firefox to the Emacs operating system."
+>>> emacs = firefox.newSeries('emacs', displayname, summary)
+
+Let's check that the new series is properly associated to its product.
+
+>>> flush_database_updates()
+>>> firefox.getSeries('emacs') == emacs
+True
 
 ProductSeriesSourceSet implements two methods to search the database for
-IProductSeries that have RCS details set. It returns an IProductSeries or
-None.
+IProductSeries that have RCS details set. It returns an IProductSeries or None.
 
 >>> from canonical.launchpad.interfaces import IProductSeriesSourceSet
 

@@ -68,7 +68,8 @@ Stop PostgreSQL:
 
 Start PostgreSQL without external connections
 
-    % pg_ctl start -o '--tcpip-socket=false' -l /var/log/postgresql/postgres.log
+    % pg_ctl start -o '--tcpip-socket=false' -o '--ssl=false' \
+        -l /var/log/postgresql/postgres.log
 
 As user postgres, run the upgrade.py, fti.py and security.py scripts.
 fti.py can be skipped if you are sure no changes need to be made to the

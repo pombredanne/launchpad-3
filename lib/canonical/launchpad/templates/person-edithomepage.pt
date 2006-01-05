@@ -8,12 +8,12 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+  </metal:leftportlets>
 
-<metal:rightportlets fill-slot="portlets_two">
-</metal:rightportlets>
+  <metal:rightportlets fill-slot="portlets_two">
+  </metal:rightportlets>
 
   <div metal:fill-slot="main">
 

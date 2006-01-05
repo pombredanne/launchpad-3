@@ -677,7 +677,7 @@ class FormattersAPI:
     # Match urls or bugs.
     _re_linkify = re.compile(r'''
       (?P<url>
-        (?:about|gopher|http|https|ftp|mailto|file|irc|jabber):[/]*
+        (?:about|gopher|http|https|sftp|news|ftp|mailto|file|irc|jabber):[/]*
         (?P<host>[a-zA-Z0-9:@_\-\.]+)
         (?P<urlchars>[a-zA-Z0-9/:;@_%~#=&\.\-\?\+\$,]*)
       ) |

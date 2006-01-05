@@ -26,6 +26,14 @@ To create a new Specification, use ISpecificationSet.new:
     >>> print newspec.name
     mng
 
+It should be possible to retrieve a specification by its name 
+    >>> specset.getByName('mng').name
+    u'mng'
+
+And if we try to retrieve a non-existent specification we should get None 
+    >>> print specset.getByName('nonexistentspec')
+    None
+
 A specification could be attached to a distribution, or a product. We call
 this the specification target.
 

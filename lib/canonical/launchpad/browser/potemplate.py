@@ -7,12 +7,10 @@ __metaclass__ = type
 __all__ = [
     'POTemplateSubsetView', 'POTemplateView', 'POTemplateEditView',
     'POTemplateAdminView', 'POTemplateAddView', 'POTemplateExportView',
-    'POTemplateTranslateView', 'POTemplateSubsetURL', 'POTemplateURL',
-    'POTemplateSetNavigation', 'POTemplateSubsetNavigation',
-    'POTemplateNavigation'
+    'POTemplateSubsetURL', 'POTemplateURL', 'POTemplateSetNavigation',
+    'POTemplateSubsetNavigation', 'POTemplateNavigation'
     ]
 
-from sets import Set
 from datetime import datetime
 
 from zope.component import getUtility
@@ -24,15 +22,15 @@ from zope.app.form.browser.add import AddView
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    IPOTemplate, IPOTemplateSet, IPOTemplateNameSet, IPOExportRequestSet,
+    IPOTemplate, IPOTemplateSet, IPOExportRequestSet,
     IPersonSet, RawFileAttachFailed, ICanonicalUrlData, ILaunchpadCelebrities,
-    ILaunchBag, IPOFileSet, IPOTemplateSubset)
+    ILaunchBag, IPOFileSet, IPOTemplateSubset, ITranslationImportQueue)
 from canonical.launchpad.browser.pofile import (
     POFileView, BaseExportView, POFileAppMenus)
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
-    GetitemNavigation, Navigation)
+    GetitemNavigation, Navigation, LaunchpadView)
 
 
 class POTemplateNavigation(Navigation):
@@ -42,8 +40,13 @@ class POTemplateNavigation(Navigation):
     def traverse(self, name):
         user = getUtility(ILaunchBag).user
         if self.request.method in ['GET', 'HEAD']:
+            # IF it's just a query, get a real IPOFile or use a fake one so we
+            # don't create new IPOFiles just because someone is browsing the
+            # web.
             return self.context.getPOFileOrDummy(name, owner=user)
         elif self.request.method == 'POST':
+            # If it's a post, get a real IPOFile or create a new one so we can
+            # store the posted data.
             return self.context.getOrCreatePOFile(name, owner=user)
         else:
             raise AssertionError('We only know about GET, HEAD, and POST')
@@ -104,15 +107,14 @@ class POTemplateSubsetView:
         return self.request.response.redirect('../+translations')
 
 
-class POTemplateView:
+class POTemplateView(LaunchpadView):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    def initialize(self):
+        """Get the requested languages and submit the form."""
         self.request_languages = helpers.request_languages(self.request)
         self.description = self.context.potemplatename.description
-        self.user = getUtility(ILaunchBag).user
-        self.status_message = None
+
+        self.submitForm()
 
     def num_messages(self):
         N = self.context.messageCount()
@@ -132,21 +134,24 @@ class POTemplateView:
         a DummyPOFile.
         """
         # Languages the template has been translated into.
-        translated_languages = Set(self.context.languages())
+        translated_languages = set(self.context.languages())
 
         # The user's languages.
-        prefered_languages = Set(self.request_languages)
+        prefered_languages = set(self.request_languages)
 
         # Merge the sets, convert them to a list, and sort them.
         languages = list(translated_languages | prefered_languages)
         languages.sort(lambda a, b: cmp(a.englishname, b.englishname))
 
         for language in languages:
-            pofile = self.context.queryPOFileByLang(language.code)
-            if not pofile:
+            pofile = self.context.getPOFileByLang(language.code)
+            if pofile is None:
                 pofileset = getUtility(IPOFileSet)
                 pofile = pofileset.getDummy(self.context, language)
-            yield POFileView(pofile, self.request)
+            pofileview = POFileView(pofile, self.request)
+            # Initialize the view.
+            pofileview.initialize()
+            yield pofileview
 
     def submitForm(self):
         """Called from the page template to do any processing needed if a form
@@ -163,51 +168,64 @@ class POTemplateView:
 
         if not isinstance(file, FileUpload):
             if file == '':
-                self.status_message = 'Please, select a file to upload.'
+                self.request.response.addErrorNotification(
+                    "Ignored your upload because you didn't select a file to"
+                    " upload.")
             else:
                 # XXX: Carlos Perello Marin 2004/12/30
-                # Epiphany seems to have an aleatory bug with upload forms (or
-                # perhaps it's launchpad because I never had problems with
-                # bugzilla). The fact is that some uploads don't work and we
-                # get a unicode object instead of a file-like object in
-                # "file". We show an error if we see that behaviour. For more
-                # info, look at bug #116.
-                self.status_message = (
-                    'There was an unknown error in uploading your file.')
+                # Epiphany seems to have an unpredictable bug with upload
+                # forms (or perhaps it's launchpad because I never had
+                # problems with bugzilla). The fact is that some uploads don't
+                # work and we get a unicode object instead of a file-like
+                # object in "file". We show an error if we see that behaviour.
+                # For more info, look at bug #116.
+                self.request.response.addErrorNotification(
+                    "The upload failed because there was a problem receiving"
+                    " the data.")
             return
 
         filename = file.filename
+        content = file.read()
+
+        if len(content) == 0:
+            self.request.response.addWarningNotification(
+                "Ignored your upload because the uploaded file is empty.")
+            return
+
+        translation_import_queue = getUtility(ITranslationImportQueue)
 
         if filename.endswith('.pot'):
-            potfile = file.read()
+            # Add it to the queue.
+            translation_import_queue.addOrUpdateEntry(
+                self.context.path, content, True, self.user,
+                sourcepackagename=self.context.sourcepackagename,
+                distrorelease=self.context.distrorelease,
+                productseries=self.context.productseries)
 
-            try:
-                # a potemplate is always "published" so published=True
-                self.context.attachRawFileData(potfile, True, self.user)
-                self.status_message = (
-                    'Thank you for your upload. The template content will'
-                    ' appear in Rosetta in a few minutes.')
-            except RawFileAttachFailed, error:
-                # We had a problem while uploading it.
-                self.status_message = (
-                    'There was a problem uploading the file: %s.' % error)
+            self.request.response.addInfoNotification(
+                "Your upload worked. The template's content will appear in"
+                " Rosetta in a few minutes.")
 
         elif helpers.is_tar_filename(filename):
-            tarball = helpers.RosettaReadTarFile(stream=file)
-            pot_paths, po_paths = tarball.examine()
+            # Add the whole tarball to the import queue.
+            num = translation_import_queue.addOrUpdateEntriesFromTarball(
+                content, True, self.user,
+                sourcepackagename=self.context.sourcepackagename,
+                distrorelease=self.context.distrorelease,
+                productseries=self.context.productseries)
 
-            error = tarball.check_for_import(pot_paths, po_paths)
-
-            if error is not None:
-                self.status_message = error
-                return
-
-            self.status_message = tarball.do_import(
-                self.context, self.user, pot_paths, po_paths)
+            if num > 0:
+                self.request.response.addInfoNotification(
+                    'Your upload worked. %d files from the tarball'
+                    ' will be imported into Rosetta in a few minutes.' % num)
+            else:
+                self.request.response.addWarningNotification(
+                    "Nothing has happened. The tarball you uploaded does not"
+                    " contain any file that the system can understand.")
         else:
-            self.status_message = (
-                'The file you uploaded was not recognised as a file that '
-                'can be imported.')
+            self.request.response.addWarningNotification(
+                "Ignored your upload because the file you uploaded was not"
+                " recognised as a file that can be imported.")
 
 
 class POTemplateEditView(POTemplateView, SQLObjectEditView):
@@ -256,17 +274,12 @@ class POTemplateAddView(AddView):
 
     def createAndAdd(self, data):
         # retrieve submitted values from the form
-        potemplatenameid = data.get('potemplatename')
+        potemplatename = data.get('potemplatename')
         description = data.get('description')
         iscurrent = data.get('iscurrent')
         owner = data.get('owner')
         path = data.get('path')
-        filename = data.get('filename')
         content = data.get('content')
-
-        # Get the POTemplateName
-        potemplatenameset = getUtility(IPOTemplateNameSet)
-        potemplatename = potemplatenameset.get(potemplatenameid)
 
         potemplateset = getUtility(IPOTemplateSet)
         potemplatesubset = potemplateset.getSubset(
@@ -280,7 +293,6 @@ class POTemplateAddView(AddView):
         potemplate.description = description
         potemplate.iscurrent = iscurrent
         potemplate.path = path
-        potemplate.filename = filename
 
         self._nextURL = canonical_url(potemplate)
 
@@ -318,11 +330,8 @@ class POTemplateExportView(BaseExportView):
                     code = key
                     variant = None
 
-                try:
-                    pofile = self.context.getPOFileByLang(code, variant)
-                except KeyError:
-                    pass
-                else:
+                pofile = self.context.getPOFileByLang(code, variant)
+                if pofile is not None:
                     pofiles.append(pofile)
         else:
             self.errorMessage = (
@@ -368,45 +377,6 @@ class POTemplateExportView(BaseExportView):
                 browsername = pofile.language.englishname
 
             yield BrowserPOFile(value, browsername)
-
-
-# This class is only a compatibility one so the old URL to translate with
-# Rosetta redirects the user to the new URL and we don't break external links.
-# For instance:
-# https://launchpad.ubuntu.com/rosetta/products/bazaar/messages.pot/+translate?languages=es
-# becomes:
-# https://launchpad.ubuntu.com/rosetta/products/bazaar/messages.pot/es/+translate
-# The other arguments are preserved.
-class POTemplateTranslateView:
-    """View class to forward users from old translation URL to the new one."""
-
-    def __call__(self):
-        parameters = {}
-        old_url = self.request.getURL()
-        if old_url.endswith('/'):
-            new_url = old_url[:-len('/+translate/')]
-        else:
-            new_url = old_url[:-len('/+translate')]
-
-        # Reuse the count, show and offset arguments.
-        for name in ('count', 'show', 'offset'):
-            if name in self.request.form:
-                parameters[name] = self.request.form.get(name)
-
-        # The languages argument is removed as it's part of the url path.
-        if 'languages' in self.request.form:
-            language = self.request.form.get('languages')
-            if ',' in language:
-                raise ValueError('Language unknown: %s', language)
-            new_url = '%s/%s/+translate' % (new_url, language)
-
-            if parameters:
-                keys = parameters.keys()
-                keys.sort()
-                new_url = new_url + '?' + '&'.join(
-                    [key + '=' + str(parameters[key])
-                     for key in keys])
-        self.request.response.redirect(new_url)
 
 
 class POTemplateSubsetURL:

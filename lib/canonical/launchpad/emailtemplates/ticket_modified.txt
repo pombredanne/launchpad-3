@@ -1,0 +1,4 @@
+Support request #%(ticket_id)s on %(target_name)s changed:
+%(ticket_url)s
+
+%(body)s
