@@ -99,3 +99,66 @@ OK, that created a new specification. Let's make sure we can see it.
   HTTP/1.1 200 Ok
   ...
 
+Now we test if the specification name validator is working trying to register
+a spec with the same name.
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+addspec HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Type: multipart/form-data; boundary=---------------------------83093195616674742681104656048
+  ... 
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... networkmagic
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Network Magic - Automatic Network Detection
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.specurl"
+  ... 
+  ... http://wiki.ubuntu.com/NetworkMagic
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... Users are increasingly using multiple networks. Being able to seamlessly move between networks whilst remembering the correct settings for each network would greatly enhance Ubuntu's usability for mobile professionals.
+  ... Many network dependent services should only be run when the system is positive that it has a network. This would greatly enhance the system's flexibility and responsiveness.
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.priority"
+  ... 
+  ... High
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.priority-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.status"
+  ... 
+  ... Approved
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.status-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.assignee"
+  ... 
+  ... daf@canonical.com
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.drafter"
+  ... 
+  ... carlos@canonical.com
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="field.approver"
+  ... 
+  ... tsukimi@quaqua.net
+  ... -----------------------------83093195616674742681104656048
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------83093195616674742681104656048--
+  ... """)
+  HTTP/1.1 200 Ok 
+  ...
+  ...networkmagic is already in use by another specification...
+  ...

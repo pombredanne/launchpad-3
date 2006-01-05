@@ -116,9 +116,6 @@
           name="+portlet-details"
           template="../templates/bug-portlet-details.pt" />
       <browser:page
-        name="+portlet-maintainers"
-        template="../templates/bug-portlet-maintainers.pt" />
-      <browser:page
           name="+portlet-specs"
           template="../templates/bug-portlet-specs.pt" />
       <browser:page

@@ -66,7 +66,8 @@ If a team doesn't have a contact email address, all notifications we send to
 the team will go to the preferred email of each member.
 
 >>> contactEmailAddresses(buttsource)
-set([u'david.allouche@canonical.com', u'robertc@robertcollins.net', u'foo.bar@canonical.com'])
+set(['david.allouche@canonical.com', 'robertc@robertcollins.net',
+     'foo.bar@canonical.com'])
 
 We don't support changing a Person into a Team or a Team into a Person.
 
@@ -81,8 +82,8 @@ Renaming
 All persons have a unique name in launchpad, so to allow them to change their
 names, we must make sure that name is not already in use by someone else.
 
->>> from canonical.launchpad.interfaces.person import (
-...     PersonNameField, StrippingTextLine)
+>>> from canonical.launchpad.fields import StrippingTextLine
+>>> from canonical.launchpad.interfaces.person import PersonNameField
 >>> field = PersonNameField(__name__='name', title=u'Unique name',
 ...                         description=u'', readonly=False, required=True)
 >>> field = field.bind(lifeless)
@@ -99,9 +100,8 @@ But you can't use Mark's name, of course. ;)
 >>> field.validate(u'sabdfl')
 Traceback (most recent call last):
   ...
-LaunchpadValidationError: ...
-This name is already in use by another person/team.
-...
+LaunchpadValidationError: ...sabdfl is already in use by another person/team...
+
 
 In the case of your displayname, the only constraint is that it can't contain
 only spaces. To ensure that, we use a StrippingTextLine in the displayname,
@@ -342,4 +342,4 @@ Maintainer.
 ...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
 ...            sprelease.version)
 (u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
-
+(u'cnews', u'Ubuntu Hoary', u'cr.g7-37')

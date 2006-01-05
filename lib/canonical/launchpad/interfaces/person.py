@@ -10,27 +10,21 @@ __all__ = [
     'IPersonSet',
     'IEmailAddress',
     'IEmailAddressSet',
-    'ITeamMembership',
-    'ITeamMembershipSet',
-    'ITeamMembershipSubset',
-    'ITeamParticipation',
     'IRequestPeopleMerge',
     'IObjectReassignment',
     'ITeamReassignment',
     'ITeamCreation',
-    'NameAlreadyTaken',
     'EmailAddressAlreadyTaken'
     ]
 
-from textwrap import dedent
 
 from zope.schema import (
-    Choice, Datetime, Int, Text, TextLine, Password, ValidationError, Bytes)
+    Choice, Datetime, Int, Text, TextLine, Password, Bytes)
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
-from zope.i18nmessageid import MessageIDFactory
 
-from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad import _
+from canonical.launchpad.fields import ContentNameField, StrippingTextLine 
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
@@ -40,40 +34,22 @@ from canonical.launchpad.interfaces.validation import (
 from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, EmailAddressStatus)
 
-_ = MessageIDFactory('launchpad')
-
-
-class StrippingTextLine(TextLine):
-    """A TextLine field that is always stripped."""
-
-    def fromUnicode(self, str):
-        return TextLine.fromUnicode(self, str.strip())
-
-
-class NameAlreadyTaken(ValidationError):
-    __doc__ = _("""This name is already in use""")
-    # XXX mpt 20050826: This should be moved out of person to be more generic.
-    # (It's currently used by projects too.)
-
 
 class EmailAddressAlreadyTaken(Exception):
     """The email address is already registered in Launchpad."""
 
 
-class PersonNameField(TextLine):
+class PersonNameField(ContentNameField):
+    
+    errormessage = _("%s is already in use by another person/team.")
 
-    def _validate(self, value):
-        TextLine._validate(self, value)
-        if (IPerson.providedBy(self.context) and 
-            value == getattr(self.context, self.__name__)):
-            # The name wasn't changed.
-            return
+    @property
+    def _content_iface(self):
+        return IPerson
 
-        person = getUtility(IPersonSet).getByName(value, ignore_merged=False)
-        if person is not None:
-            raise LaunchpadValidationError(_(dedent("""
-                This name is already in use by another person/team.
-                """ )))
+    def _getByName(self, name):
+        return getUtility(IPersonSet).getByName(name, ignore_merged=False)
+
 
 class IPerson(IHasSpecifications):
     """A Person."""
@@ -732,129 +708,6 @@ class IEmailAddressSet(Interface):
 
         Return the default value if there is no such email address.
         """
-
-
-class ITeamMembership(Interface):
-    """TeamMembership for Users"""
-
-    id = Int(title=_('ID'), required=True, readonly=True)
-    team = Int(title=_("Team"), required=True, readonly=False)
-    person = Int(title=_("Member"), required=True, readonly=False)
-    reviewer = Int(title=_("Reviewer"), required=False, readonly=False)
-
-    datejoined = Text(title=_("Date Joined"), required=True, readonly=True)
-    dateexpires = Text(title=_("Date Expires"), required=False, readonly=False)
-    reviewercomment = Text(title=_("Reviewer Comment"), required=False,
-                           readonly=False)
-    status= Int(title=_("If Membership was approved or not"), required=True,
-                readonly=False)
-
-    # Properties
-    statusname = Attribute("Status Name")
-    is_admin = Attribute("True if the person is an admin of the team.")
-    is_owner = Attribute("True if the person is the team owner.")
-
-    def isExpired():
-        """Return True if this membership's status is EXPIRED."""
-
-
-class ITeamMembershipSet(Interface):
-    """A Set for TeamMembership objects."""
-
-    def getActiveMemberships(teamID, orderBy=None):
-        """Return all active TeamMemberships for the given team.
-
-        Active memberships are the ones with status APPROVED or ADMIN.
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-        If no orderBy is specified the results will be ordered using the
-        default ordering specified in TeamMembership._defaultOrder.
-        """
-
-    def getInactiveMemberships(teamID, orderBy=None):
-        """Return all inactive TeamMemberships for the given team.
-
-        Inactive memberships are the ones with status EXPIRED or DEACTIVATED.
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-        If no orderBy is specified the results will be ordered using the
-        default ordering specified in TeamMembership._defaultOrder.
-        """
-
-    def getProposedMemberships(teamID, orderBy=None):
-        """Return all proposed TeamMemberships for the given team.
-
-        Proposed memberships are the ones with status PROPOSED.
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-        If no orderBy is specified the results will be ordered using the
-        default ordering specified in TeamMembership._defaultOrder.
-        """
-
-    def getByPersonAndTeam(personID, teamID, default=None):
-        """Return the TeamMembership object for the given person and team.
-
-        If there's no TeamMembership for this person in this team, return the
-        default value.
-        """
-
-    def getTeamMembersCount(teamID):
-        """Return the number of members this team have.
-
-        This includes active, inactive and proposed members.
-        """
-
-
-class ITeamMembershipSubset(Interface):
-    """A Set for TeamMembership objects of a given team."""
-
-    newmember = Choice(title=_('New member'), required=True,
-                       vocabulary='ValidTeamMember',
-                       description=_("The user or team which is going to be "
-                                     "added as the new member of this team."))
-
-    team = Attribute(_("The team for which this subset is for."))
-
-    def getByPersonName(name, default=None):
-        """Return the TeamMembership object for the person with the given name.
-
-        If there's no TeamMembership for this person in this team, return the
-        default value.
-        """
-
-    def getInactiveMemberships():
-        """Return all TeamMembership objects for inactive members of this team.
-
-        Inactive members are the ones with membership status of EXPIRED or
-        DEACTIVATED.
-        """
-
-    def getActiveMemberships():
-        """Return all TeamMembership objects for active members of this team.
-
-        Active members are the ones with membership status of APPROVED or ADMIN.
-        """
-
-    def getProposedMemberships():
-        """Return all TeamMembership objects for proposed members of this team.
-
-        Proposed members are the ones with membership status of PROPOSED.
-        """
-
-
-class ITeamParticipation(Interface):
-    """A TeamParticipation.
-
-    A TeamParticipation object represents a person being a member of a team.
-    Please note that because a team is also a person in Launchpad, we can
-    have a TeamParticipation object representing a team that is a member of
-    another team. We can also have an object that represents a person being a
-    member of itself.
-    """
-
-    id = Int(title=_('ID'), required=True, readonly=True)
-    team = Int(title=_("The team"), required=True, readonly=False)
-    person = Int(title=_("The member"), required=True, readonly=False)
 
 
 class IRequestPeopleMerge(Interface):

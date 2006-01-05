@@ -3,7 +3,7 @@
 __all__ = ['IStandardShipItRequest', 'IStandardShipItRequestSet',
            'IRequestedCDs', 'IShippingRequest', 'IShippingRequestSet',
            'ShippingRequestStatus', 'IShipment', 'IShippingRun',
-           'IShipItCountry', 'IShippingRunSet', 'IShipmentSet',
+           'IShipItCountry', 'IShippingRunSet', 'IShipmentSet', 'SHIPIT_URL',
            'ShippingRequestPriority', 'IShipItReport', 'IShipItReportSet']
 
 from zope.schema import Bool, Choice, Int, Datetime, Text, TextLine
@@ -12,6 +12,8 @@ from zope.schema.interfaces import IChoice
 from zope.app.form.browser.itemswidgets import DropdownWidget
 
 from canonical.launchpad import _
+
+SHIPIT_URL = 'https://shipit.ubuntu.com'
 
 
 class IEmptyDefaultChoice(IChoice):
