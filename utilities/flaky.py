@@ -4,14 +4,21 @@
 
 import compiler
 import os
-import pyflakes
 import sys
 import traceback
+
+import pyflakes
 
 class Flakiness:
     COMPILE_FAILED = 0
     FLAKY = 1
     GOOD = 2
+
+class PyflakesResult:
+    def __init__(self, filename, flakiness, messages):
+        self.filename = filename
+        self.flakiness = flakiness
+        self.messages = messages
 
 class CompilationError(Exception):
     def __init__(self, message, tb_info):
@@ -25,49 +32,40 @@ def find_python_files(top_path):
                 yield os.path.join(dirpath, filename)
 
 def check_file(filename):
+    """Return a list of pyflakes messages for a Python file."""
+
     code = open(filename).read()
 
     try:
         tree = compiler.parse(code)
     except (SyntaxError, IndentationError), e:
         tb_info = traceback.format_exception(*sys.exc_info())
-        raise CompilationError(str(e), tb_info)
+        messages = [message[:-1] for message in tb_info]
+        return PyflakesResult(filename, Flakiness.COMPILE_FAILED, messages)
     else:
         checker = pyflakes.Checker(tree, filename)
         messages = sorted(checker.messages, key=lambda message: message.lineno)
-        return messages
 
-def check_files(files, progress_stream=None):
-    for filename in files:
-        try:
-            messages = check_file(filename)
-        except CompilationError, e:
-            yield (
-                filename, Flakiness.COMPILE_FAILED,
-                    [message[:-1] for message in e.tb_info])
+        if messages:
+            return PyflakesResult(filename, Flakiness.FLAKY, messages)
         else:
-            if messages:
-                flakiness = Flakiness.FLAKY
-            else:
-                flakiness = Flakiness.GOOD
-
-            yield (filename, flakiness, messages)
+            return PyflakesResult(filename, Flakiness.GOOD, messages)
 
 def make_report(results):
-    for filename, flakiness, messages in results:
-        if flakiness == Flakiness.GOOD:
+    for result in results:
+        if result.flakiness == Flakiness.GOOD:
             continue
 
-        if flakiness == Flakiness.COMPILE_FAILED:
-            yield '%s: Failed to compile:' % filename
+        if result.flakiness == Flakiness.COMPILE_FAILED:
+            yield '%s: Failed to compile:' % result.filename
 
-            for message in messages:
+            for message in result.messages:
                 yield '    ' + str(message)
-        elif flakiness == Flakiness.FLAKY:
-            yield '%s:' % filename
+        elif result.flakiness == Flakiness.FLAKY:
+            yield '%s:' % result.filename
 
-            for message in messages:
-                yield '    line ' + str(message)[len(filename)+1:]
+            for message in result.messages:
+                yield '    line ' + str(message)[len(result.filename)+1:]
 
         yield ''
 
@@ -82,37 +80,29 @@ def make_statistics(results):
         'messages_unused_import': 0,
         'messages_import_star': 0,
         'messages_redefined_unused': 0,
-    }
+        }
 
     message_classes = {
         pyflakes.messages.UndefinedName: 'messages_undefined_name',
         pyflakes.messages.UnusedImport: 'messages_unused_import',
         pyflakes.messages.ImportStarUsed: 'messages_import_star',
         pyflakes.messages.RedefinedWhileUnused: 'messages_redefined_unused',
-    }
+        }
 
-    for filename, flakiness, messages in results:
+    for result in results:
         statistics['files_total'] += 1
 
-        if flakiness == Flakiness.COMPILE_FAILED:
+        if result.flakiness == Flakiness.COMPILE_FAILED:
             statistics['files_compile_failed'] += 1
-        elif flakiness == Flakiness.FLAKY:
+        elif result.flakiness == Flakiness.FLAKY:
             statistics['files_flaky'] += 1
             statistic = None
 
-            for message in messages:
+            for message in result.messages:
                 statistics['messages_total'] += 1
-
-                for cls in message_classes:
-                    if isinstance(message, cls):
-                        statistic = message_classes[cls]
-
-                if not statistic:
-                    raise RuntimeError("Unrecognised message class %r" %
-                        message.__class__)
-
+                statistic = message_classes[message.__class__]
                 statistics[statistic] += 1
-        elif flakiness == Flakiness.GOOD:
+        elif result.flakiness == Flakiness.GOOD:
             statistics['files_good'] += 1
 
     return statistics
@@ -149,7 +139,8 @@ def main(argv):
     sys.stderr.write('Running pyflakes checks\n')
     results = []
 
-    for result in check_files(files):
+    for filename in files:
+        reulsts.append(check_file(filename))
         results.append(result)
         sys.stderr.write('.')
         sys.stderr.flush()
