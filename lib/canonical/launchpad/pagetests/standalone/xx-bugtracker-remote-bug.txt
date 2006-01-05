@@ -55,12 +55,37 @@ Private Bugs
 ------------
 
 If a bug is marked private, and multiple Launchpad bugs are watching a
-particular remote bug, we do not expose the title of the remote bug:
+particular remote bug, we do not expose the title of the remote bug.
 
-  >>> from canonical.launchpad.database import Bug
-  >>> bug_1 = Bug.get(1)
-  >>> bug_1.private = True
-  >>> bug_1.syncUpdate()
+Mark bug 1 as private:
+
+  >>> print http(r"""
+  ... POST /products/firefox/+bug/1/+secrecy HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------725100396418665196485883924
+  ... Content-Length: ...
+  ... 
+  ... -----------------------------725100396418665196485883924
+  ... Content-Disposition: form-data; name="field.private.used"
+  ... 
+  ... 
+  ... -----------------------------725100396418665196485883924
+  ... Content-Disposition: form-data; name="field.private"
+  ... 
+  ... on
+  ... -----------------------------725100396418665196485883924
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------725100396418665196485883924--
+  ... """)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Location: .../products/firefox/+bug/1
+  ...
+
+
+List Launchpad bugs watching Mozilla bug 42:
 
   >>> print http(r"""
   ... GET /malone/bugtrackers/mozilla.org/42 HTTP/1.1
@@ -109,7 +134,26 @@ telling the user they are unauthorised to view the bug):
   <BLANKLINE>
 
 
-Cleanup:
 
-  >>> bug_1.private = False
-  >>> bug_1.syncUpdate()
+Set the bug back to public:
+
+  >>> print http(r"""
+  ... POST /products/firefox/+bug/1/+secrecy HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------725100396418665196485883924
+  ... Content-Length: ...
+  ... 
+  ... -----------------------------725100396418665196485883924
+  ... Content-Disposition: form-data; name="field.private.used"
+  ... 
+  ... 
+  ... -----------------------------725100396418665196485883924
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Change
+  ... -----------------------------725100396418665196485883924--
+  ... """)
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Location: .../products/firefox/+bug/1
+  ...
