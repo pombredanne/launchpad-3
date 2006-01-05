@@ -35,6 +35,10 @@ class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
     usedfor = IDistribution
 
+    @redirection('+source', status=301)
+    def redirect_source(self):
+        return canonical_url(self.context)
+
     def breadcrumb(self):
         return self.context.displayname
 
