@@ -437,8 +437,8 @@ class BugTaskEditView(GeneralFormView):
         comment_on_change = self.request.form.get("comment_on_change")
 
         if comment_on_change:
-            helpers.create_bug_message(
-                bug=bugtask.bug, owner=getUtility(ILaunchBag).user,
+            bugtask.bug.newMessage(
+                owner=getUtility(ILaunchBag).user,
                 subject=bugtask.bug.followup_subject(),
                 content=comment_on_change)
 

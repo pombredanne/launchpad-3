@@ -1021,16 +1021,3 @@ def is_ascii_only(string):
         return False
     else:
         return True
-
-
-def create_bug_message(bug, owner=None, subject=None, content=None,
-                       parent=None):
-    from canonical.launchpad.database.message import Message, MessageChunk
-    from canonical.launchpad.database.bugmessage import BugMessage
-
-    msg = Message(
-        parent=parent, owner=owner, subject=subject,
-        rfc822msgid=make_msgid('malone'))
-    MessageChunk(messageID=msg.id, content=content, sequence=1)
-
-    return BugMessage(bug=bug, message=msg)
