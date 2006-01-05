@@ -994,9 +994,10 @@ class BuilddMaster:
                 # use the previous mapped result to identify if the depency
                 # ws satisfied or not
                 if relation_map[relation](dep_result):
-                    # grant more 1 (one) point of scoring for each satisfied
-                    # dependency
-                    score += 1
+                    # decrement score of 5 point for each dependency
+                    # it postpones the handling of packages with huge
+                    # list of dependencies.
+                    score -= 5
                     continue
 
             # reduce score in 10 point for each unsatisfied dependency
