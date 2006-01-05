@@ -11,17 +11,16 @@ __all__ = [
     'BugTrackerAddView',
     'BugTrackerView',
     'BugTrackerNavigation',
-    'IRemoteBug',
     'RemoteBug',
     ]
 
-from zope.interface import Interface, Attribute, implements
-from zope.schema import Choice, TextLine
+from zope.interface import implements
 from zope.component import getUtility
 
 from canonical.lp.dbschema import BugTrackerType
 from canonical.launchpad.interfaces import (
-    IProject, IProjectBugTrackerSet, IBugTracker, IBugTrackerSet, ILaunchBag)
+    IProject, IProjectBugTrackerSet, IBugTracker, IBugTrackerSet, IRemoteBug,
+    ILaunchBag)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, Navigation, GetitemNavigation,
     redirection, LaunchpadView)
@@ -114,22 +113,6 @@ class BugTrackerNavigation(Navigation):
         else:
             # else list the watching bugs
             return RemoteBug(self.context, remotebug, bugs)
-
-
-class IRemoteBug(Interface):
-    """A remote bug for a given bug tracker."""
-
-    bugtracker = Choice(title=_('Bug System'), required=True,
-        vocabulary='BugTracker', description=_("The bug tracker in which "
-        "the remote bug is found."))
-
-    remotebug = TextLine(title=_('Remote Bug'), required=True,
-        readonly=False, description=_("The bug number of this bug in the "
-        "remote bug system."))
-
-    bugs = Attribute(_("A list of the Launchpad bugs watching the remote bug"))
-
-    title = Attribute(_("Remote bug page title"))
 
 
 class RemoteBug:

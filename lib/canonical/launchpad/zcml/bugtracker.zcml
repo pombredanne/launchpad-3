@@ -131,21 +131,21 @@
 
     <!-- RemoteBug -->
     <content class="canonical.launchpad.browser.bugtracker.RemoteBug">
-        <allow interface="canonical.launchpad.browser.bugtracker.IRemoteBug" />
+        <allow interface="canonical.launchpad.interfaces.IRemoteBug" />
     </content>
 
     <browser:url
-        for="canonical.launchpad.browser.bugtracker.IRemoteBug"
+        for="canonical.launchpad.interfaces.IRemoteBug"
         path_expression="string:${remotebug}"
         attribute_to_parent="bugtracker"
         />
 
     <browser:defaultView
-        for="canonical.launchpad.browser.bugtracker.IRemoteBug"
+        for="canonical.launchpad.interfaces.IRemoteBug"
         name="+index" />
 
     <browser:pages
-        for="canonical.launchpad.browser.bugtracker.IRemoteBug"
+        for="canonical.launchpad.interfaces.IRemoteBug"
         permission="zope.Public">
         <browser:page
             name="+index"
