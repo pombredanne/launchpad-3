@@ -286,6 +286,16 @@ debug_unauthorized = 'Launchpad - Not Permitted'
 
 default_editform = 'Default "Edit" Page'
 
+distributionmirror_addarchrelease = ContextTitle(
+    'Add new Arch Release for mirror %s')
+
+distributionmirror_addsourcerelease = ContextTitle(
+    'Add new Source Release for mirror %s')
+
+distributionmirror_edit = ContextTitle('Edit mirror %s')
+
+distributionmirror_index = ContextTitle('Mirror %s')
+
 distribution_allpackages = ContextTitle('All packages in %s')
 
 distribution_bugcontact = ContextTitle('Edit Bug Contact for %s')
@@ -295,6 +305,12 @@ distribution_cvereport = ContextTitle('CVE Reports for %s')
 distribution_members = ContextTitle('%s distribution members')
 
 distribution_memberteam = ContextTitle("Change %s's distribution team")
+
+distribution_newmirror = ContextTitle("Register a new mirror for %s")
+
+distribution_officialmirrors = ContextTitle("Official mirrors of %s")
+
+distribution_allmirrors = ContextTitle("All mirrors of %s")
 
 distribution_translations = ContextDisplayName('Translating %s')
 

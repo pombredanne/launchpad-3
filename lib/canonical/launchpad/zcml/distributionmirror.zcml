@@ -1,0 +1,121 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <!-- DistributionMirror -->
+    <content class="canonical.launchpad.database.DistributionMirror">
+        <allow interface="canonical.launchpad.interfaces.IDistributionMirror" />
+        <require
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IDistributionMirror" />
+    </content>
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IDistributionMirror"
+        name="+index" />
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IDistributionMirror"
+        path_expression="string:+mirror/${name}"
+        attribute_to_parent="distribution" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IDistributionMirror"
+        permission="zope.Public">
+        <browser:page
+            name="+portlet-details"
+            template="../templates/distributionmirror-portlet-details.pt" />
+    </browser:pages>
+
+    <browser:page
+        name="+index"
+        for="canonical.launchpad.interfaces.IDistributionMirror"
+        permission="zope.Public"
+        facet="overview"
+        template="../templates/distributionmirror-index.pt">
+    </browser:page>
+
+    <browser:editform
+        name="+edit"
+        for="canonical.launchpad.interfaces.IDistributionMirror"
+        schema="canonical.launchpad.interfaces.IDistributionMirror"
+        facet="overview"
+        permission="launchpad.Edit"
+        label="Edit Distribution Mirror"
+        class="canonical.launchpad.browser.DistributionMirrorEditView"
+        fields="name displayname description http_base_url ftp_base_url
+                rsync_base_url speed country content pulse_type pulse_source
+                enabled official_candidate"
+        template="../templates/distributionmirror-edit.pt">
+    </browser:editform>
+
+    <browser:editform
+        name="+admin"
+        for="canonical.launchpad.interfaces.IDistributionMirror"
+        schema="canonical.launchpad.interfaces.IDistributionMirror"
+        facet="overview"
+        permission="launchpad.Admin"
+        label="Administer Distribution Mirror"
+        class="canonical.launchpad.browser.DistributionMirrorEditView"
+        fields="name displayname description http_base_url ftp_base_url
+                rsync_base_url speed country content pulse_type pulse_source
+                enabled official_approved"
+        template="../templates/distributionmirror-edit.pt">
+    </browser:editform>
+
+    <browser:generalform
+        name="+addarchrelease"
+        for="canonical.launchpad.interfaces.IDistributionMirror"
+        schema="canonical.launchpad.interfaces.IMirrorDistroArchRelease"
+        permission="launchpad.Edit"
+        label="Add Architecture Release"
+        class="canonical.launchpad.browser.DistributionMirrorAddArchView"
+        fields="distro_arch_release pocket"
+        arguments="distro_arch_release pocket"
+        template="../templates/distributionmirror-addarchrelease.pt">
+    </browser:generalform>
+
+    <browser:generalform
+        name="+addsourcerelease"
+        for="canonical.launchpad.interfaces.IDistributionMirror"
+        schema="canonical.launchpad.interfaces.IMirrorDistroReleaseSource"
+        permission="launchpad.Edit"
+        label="Add Source Release"
+        class="canonical.launchpad.browser.DistributionMirrorAddSourceView"
+        fields="distro_release"
+        arguments="distro_release"
+        template="../templates/distributionmirror-addarchrelease.pt">
+    </browser:generalform>
+
+    <!-- MirrorDistroArchRelease -->
+    <content class="canonical.launchpad.database.MirrorDistroArchRelease">
+        <allow interface="canonical.launchpad.interfaces.IMirrorDistroArchRelease" />
+        <require
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IMirrorDistroArchRelease" />
+    </content>
+
+    <!-- MirrorDistroReleaseSource -->
+    <content class="canonical.launchpad.database.MirrorDistroReleaseSource">
+        <allow interface="canonical.launchpad.interfaces.IMirrorDistroReleaseSource" />
+        <require
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IMirrorDistroReleaseSource" />
+    </content>
+
+    <!-- MirrorProbeRecord -->
+    <content class="canonical.launchpad.database.MirrorProbeRecord">
+        <allow interface="canonical.launchpad.interfaces.IMirrorProbeRecord" />
+        <require
+            permission="launchpad.Edit"
+            set_schema="canonical.launchpad.interfaces.IMirrorProbeRecord" />
+    </content>
+
+    <browser:menus
+        module="canonical.launchpad.browser.distributionmirror"
+        classes="DistributionMirrorFacets DistributionMirrorOverviewMenu" />
+
+</configure>

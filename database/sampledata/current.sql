@@ -2938,6 +2938,7 @@ INSERT INTO person (id, displayname, givenname, familyname, "password", teamowne
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (56, 'Jordi Mallach', 'Jordi', 'Mallach', 'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf', NULL, NULL, 'jordi', NULL, '''jordi'':1A,2B,4C ''mallach'':3B,5C', NULL, NULL, 1, NULL, '2005-10-07 14:17:51.593849', NULL, 'UTC', 0, 'Somewhere', 'in this world', 'Something', 'whatever', 'not mandatory', 95, '999432423', '+55 16 3374-2027', NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (57, 'Launchpad Developers', NULL, NULL, NULL, 16, 'Launchpad developers', 'launchpad', NULL, '''develop'':3B ''launchpad'':1A,2B', NULL, NULL, 3, NULL, '2005-10-13 13:03:41.668724', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (58, 'Bugzilla Importer', NULL, NULL, NULL, NULL, NULL, 'bugzilla-importer', NULL, '''import'':3A,5B ''bugzilla'':2A,4B ''bugzilla-import'':1A', NULL, NULL, 1, NULL, '2005-12-06 09:48:58.287679', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO person (id, displayname, givenname, familyname, "password", teamowner, teamdescription, name, "language", fti, defaultmembershipperiod, defaultrenewalperiod, subscriptionpolicy, merged, datecreated, calendar, timezone, karma, addressline1, addressline2, organization, city, province, country, postcode, phone, homepage_content, emblem, hackergotchi) VALUES (59, 'Mirror Administrators', NULL, NULL, NULL, 1, 'Mirror Administrators', 'mirror-admins', NULL, '''admin'':3A ''mirror'':2A,4B ''administr'':5B ''mirror-admin'':1A', NULL, NULL, 1, NULL, '2005-06-06 08:59:51.571899', NULL, 'UTC', 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'person'::pg_catalog.regclass;
@@ -8834,6 +8835,7 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (47, 12, 32, 6, '2005-09-28 20:08:08.248467', '2007-08-29 00:00:00', 16, '');
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (48, 56, 30, 2, '2005-10-07 12:22:54.947939', NULL, 13, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (49, 16, 57, 3, '2005-10-13 13:03:41.668724', NULL, NULL, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (50, 1, 59, 3, '2005-10-13 13:03:41.668724', NULL, NULL, NULL);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'teammembership'::pg_catalog.regclass;
@@ -8924,6 +8926,7 @@ INSERT INTO teamparticipation (id, team, person) VALUES (89, 56, 56);
 INSERT INTO teamparticipation (id, team, person) VALUES (90, 30, 56);
 INSERT INTO teamparticipation (id, team, person) VALUES (91, 57, 16);
 INSERT INTO teamparticipation (id, team, person) VALUES (92, 17, 26);
+INSERT INTO teamparticipation (id, team, person) VALUES (93, 59, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'teamparticipation'::pg_catalog.regclass;
@@ -9133,5 +9136,44 @@ INSERT INTO continent (id, code, name) VALUES (7, 'AN', 'Antarctica');
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'continent'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distributionmirror'::pg_catalog.regclass;
+
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (1, 1, 'random-mirror', 'http://foo.bar.com/pub/ubuntu', NULL, NULL, NULL, NULL, 1, 1, 1, 1, NULL, true, true, true, 2, NULL);
+INSERT INTO distributionmirror (id, distribution, name, http_base_url, ftp_base_url, rsync_base_url, displayname, description, "owner", speed, country, content, file_list, official_candidate, official_approved, enabled, pulse_type, pulse_source) VALUES (2, 1, 'another-random-mirror', 'http://all.mirrors.com/pub/ubuntu', 'ftp://all.mirrors.com/pub/ubuntu', NULL, NULL, NULL, 16, 5, 32, 2, NULL, true, false, true, 1, 'http://all.mirrors.com/');
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distributionmirror'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'mirrordistroarchrelease'::pg_catalog.regclass;
+
+INSERT INTO mirrordistroarchrelease (id, distribution_mirror, distro_arch_release, status, pocket) VALUES (1, 1, 6, 8, 20);
+INSERT INTO mirrordistroarchrelease (id, distribution_mirror, distro_arch_release, status, pocket) VALUES (2, 1, 6, 8, 10);
+INSERT INTO mirrordistroarchrelease (id, distribution_mirror, distro_arch_release, status, pocket) VALUES (3, 2, 6, 8, 20);
+INSERT INTO mirrordistroarchrelease (id, distribution_mirror, distro_arch_release, status, pocket) VALUES (4, 2, 6, 8, 10);
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'mirrordistroarchrelease'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'mirrordistroreleasesource'::pg_catalog.regclass;
+
+INSERT INTO mirrordistroreleasesource (id, distribution_mirror, distro_release, status) VALUES (1, 1, 1, 8);
+INSERT INTO mirrordistroreleasesource (id, distribution_mirror, distro_release, status) VALUES (2, 1, 5, 8);
+INSERT INTO mirrordistroreleasesource (id, distribution_mirror, distro_release, status) VALUES (3, 2, 1, 8);
+INSERT INTO mirrordistroreleasesource (id, distribution_mirror, distro_release, status) VALUES (4, 2, 5, 8);
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'mirrordistroreleasesource'::pg_catalog.regclass;
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'mirrorproberecord'::pg_catalog.regclass;
+
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'mirrorproberecord'::pg_catalog.regclass;
+
 
 
