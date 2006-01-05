@@ -9,7 +9,7 @@ __all__ = [
     'BinaryPackageView',
     ]
 
-from urllib import quote as urlquote
+from apt_pkg import ParseDepends
 
 from zope.exceptions import NotFoundError
 from zope.component import getUtility
@@ -17,21 +17,11 @@ from zope.app.form.utility import setUpWidgets, getWidgetsData
 from zope.app.form.interfaces import IInputWidget
 
 from canonical.launchpad.webapp import canonical_url
-from canonical.lp.z3batching import Batch
-from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
     ILaunchBag, IBugTaskSearch, BugTaskSearchParams, IBugSet,
     UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.searchbuilder import any
-from canonical.launchpad.browser.bugtask import get_sortorder_from_request
-
-# XXX: Daniel Debonzi
-# Importing stuff from Soyuz directory
-# Until have a place for it or better
-# Solution
-from canonical.soyuz.generalapp import builddepsSet
-
-from apt_pkg import ParseDepends
+from canonical.launchpad.browser.packagerelationship import PackageRelationship
 
 ##XXX: (batch_size+global) cprov 20041003
 ## really crap constant definition for BatchPages
@@ -165,30 +155,31 @@ class BinaryPackageView:
         self.request = request
         self.launchbag = getUtility(ILaunchBag)
 
-    def _buildList(self, packages):
-        blist = []
-        if packages:
-            packs = ParseDepends(packages)
-            for pack in packs:
-                blist.append(builddepsSet(*pack[0]))
+    def _relationships(self, string):
+        if not string:
+            return []
 
-        return blist
+        relationships = [L[0] for L in ParseDepends(string)]
+        return [
+            PackageRelationship(name, signal, version)
+            for name, version, signal in relationships
+            ]
 
     def depends(self):
-        return self._buildList(self.context.depends)
+        return self._relationships(self.context.depends)
 
     def recommends(self):
-        return self._buildList(self.context.recommends)
+        return self._relationships(self.context.recommends)
 
     def conflicts(self):
-        return self._buildList(self.context.conflicts)
+        return self._relationships(self.context.conflicts)
 
     def replaces(self):
-        return self._buildList(self.context.replaces)
+        return self._relationships(self.context.replaces)
 
     def suggests(self):
-        return self._buildList(self.context.suggests)
+        return self._relationships(self.context.suggests)
 
     def provides(self):
-        return self._buildList(self.context.provides)
+        return self._relationships(self.context.provides)
 

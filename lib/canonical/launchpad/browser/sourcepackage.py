@@ -22,12 +22,13 @@ from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import PackagePublishingPocket
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    IPOTemplateSet, IPackaging, ILaunchBag, ICountry, ISourcePackage)
+    IPOTemplateSet, IPackaging, ICountry, ISourcePackage)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.browser.potemplate import POTemplateView
-from canonical.soyuz.generalapp import builddepsSet
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
+from canonical.launchpad.browser.packagerelationship import (
+    PackageRelationship)
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
@@ -221,26 +222,28 @@ class SourcePackageView(BuildRecordsView):
         return results
 
     def builddepends(self):
-        if not self.context.currentrelease.builddepends:
+        builddepends = self.context.currentrelease.builddepends
+
+        if not builddepends:
             return []
 
-        builddepends = []
-
-        depends = ParseSrcDepends(self.context.currentrelease.builddepends)
-        for dep in depends:
-            builddepends.append(builddepsSet(*dep[0]))
-        return builddepends
+        relationships = [L[0] for L in ParseSrcDepends(builddepends)]
+        return [
+            PackageRelationship(name, signal, version)
+            for name, version, signal in relationships
+            ]
 
     def builddependsindep(self):
-        if not self.context.currentrelease.builddependsindep:
+        builddependsindep = self.context.currentrelease.builddependsindep
+
+        if not builddependsindep:
             return []
-        builddependsindep = []
 
-        depends = ParseSrcDepends(self.context.currentrelease.builddependsindep)
-
-        for dep in depends:
-            builddependsindep.append(builddepsSet(*dep[0]))
-        return builddependsindep
+        relationships = [L[0] for L in ParseSrcDepends(builddependsindep)]
+        return [
+            PackageRelationship(name, signal, version)
+            for name, version, signal in relationships
+            ]
 
     def has_build_depends(self):
         return self.context.currentrelease.builddependsindep or \
