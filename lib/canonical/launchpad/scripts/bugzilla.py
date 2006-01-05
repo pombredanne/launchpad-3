@@ -343,21 +343,39 @@ class Bugzilla:
 
         return person
 
+    def _getPackageNames(self, bug):
+        """Returns the source and binary package names for the given bug."""
+        # we currently only support mapping Ubuntu bugs ...
+        if bug.product != 'Ubuntu':
+            raise AssertionError('product must be Ubuntu')
+
+        # kernel bugs are currently filed against the "linux"
+        # component, which is not a source or binary package.  The
+        # following mapping was provided by BenC:
+        if bug.component == 'linux':
+            cutoffdate = datetime.datetime(2004, 12, 1,
+                                           tzinfo=pytz.timezone('UTC'))
+            if bug.bug_status == 'NEEDINFO' and bug.creation_ts < cutoffdate:
+                pkgname = 'linux-source-2.6.12'
+            else:
+                pkgname = 'linux-source-2.6.15'
+        else:
+            pkgname = bug.component.encode('ASCII')
+        
+        try:
+            srcpkg, binpkg = self.ubuntu.getPackageNames(pkgname)
+        except NotFoundError, e:
+            logger.warning('could not find package name for "%s": %s',
+                           pkgname, str(e))
+            srcpkg = binpkg = None
+
+        return srcpkg, binpkg
+
     def getLaunchpadBugTarget(self, bug):
         """Returns a dictionary of arguments to createBug() that correspond
         to the given bugzilla bug.
         """
-        # we currently only support mapping Ubuntu bugs ...
-        if bug.product != 'Ubuntu':
-            raise AssertionError('product must be Ubuntu')
-        try:
-            srcpkg, binpkg = self.ubuntu.getPackageNames(
-                bug.component.encode('ASCII'))
-        except NotFoundError, e:
-            logger.warning('could not find package name for "%s": %s',
-                           bug.component.encode('ASCII'), str(e))
-            srcpkg = binpkg = None
-
+        srcpkg, binpkg = self._getPackageNames(bug)
         return {
             'distribution': self.ubuntu,
             'sourcepackagename': srcpkg,
@@ -393,18 +411,7 @@ class Bugzilla:
         This function relies on the package -> product linkage having been
         entered in advance.
         """
-        # we currently only support mapping Ubuntu bugs ...
-        if bug.product != 'Ubuntu':
-            raise AssertionError('product must be Ubuntu')
-
-        try:
-            srcpkgname, binpkgname = self.ubuntu.getPackageNames(
-                bug.component.encode('ASCII'))
-        except NotFoundError, e:
-            logger.warning('could not find package name for "%s": %s',
-                           bug.component.encode('ASCII'), str(e))
-            return None
-
+        srcpkgname, binpkgname = self._getPackageNames(bug)
         # find a product series
         series = None
         for release in self.ubuntu.releases:
