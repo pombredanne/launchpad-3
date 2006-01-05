@@ -20,10 +20,72 @@ class PyflakesResult:
         self.flakiness = flakiness
         self.messages = messages
 
-class CompilationError(Exception):
-    def __init__(self, message, tb_info):
-        self.message = message
-        self.tb_info = tb_info
+    def make_report(self):
+        if self.flakiness == Flakiness.GOOD:
+            return
+
+        if self.flakiness == Flakiness.COMPILE_FAILED:
+            yield '%s: Failed to compile:' % self.filename
+
+            for message in self.messages:
+                yield '    ' + str(message)
+        elif self.flakiness == Flakiness.FLAKY:
+            yield '%s:' % self.filename
+
+            for message in self.messages:
+                yield '    line ' + str(message)[len(self.filename)+1:]
+
+        yield ''
+
+class PyflakesStatistics:
+    message_classes = {
+        pyflakes.messages.UndefinedName: 'messages_undefined_name',
+        pyflakes.messages.UnusedImport: 'messages_unused_import',
+        pyflakes.messages.ImportStarUsed: 'messages_import_star',
+        pyflakes.messages.RedefinedWhileUnused: 'messages_redefined_unused',
+        }
+
+    def __init__(self):
+        self.files_total = 0
+        self.files_compile_failed = 0
+        self.files_flaky = 0
+        self.files_good = 0
+        self.messages_total = 0
+        self.messages_undefined_name = 0
+        self.messages_unused_import = 0
+        self.messages_import_star = 0
+        self.messages_redefined_unused = 0
+
+    def add_result(self, result):
+        self.files_total += 1
+
+        if result.flakiness == Flakiness.GOOD:
+            self.files_good += 1
+        elif result.flakiness == Flakiness.COMPILE_FAILED:
+            self.files_compile_failed += 1
+        elif result.flakiness == Flakiness.FLAKY:
+            self.files_flaky += 1
+            statistic = None
+
+            for message in result.messages:
+                self.messages_total += 1
+                attr = PyflakesStatistics.message_classes[message.__class__]
+                statistic = getattr(self, attr)
+                setattr(self, attr, statistic + 1)
+
+    def make_summary(self):
+        return [
+            'Files checked: %d' % self.files_total,
+            'Files that failed to compile: %d' %
+                self.files_compile_failed,
+            'Good files: %d' % self.files_good,
+            'Flaky files: %d' % self.files_flaky,
+            ' - Undefined name: %d' % self.messages_undefined_name,
+            ' - Unused imports: %d' % self.messages_unused_import,
+            ' - * imported: %d' % self.messages_import_star,
+            ' - Unused name redefined: %d' % self.messages_redefined_unused,
+            ' - Problems total: %d' % self.messages_total,
+            ]
 
 def find_python_files(top_path):
     for dirpath, dirnames, filenames in os.walk(top_path):
@@ -51,78 +113,6 @@ def check_file(filename):
         else:
             return PyflakesResult(filename, Flakiness.GOOD, messages)
 
-def make_report(results):
-    for result in results:
-        if result.flakiness == Flakiness.GOOD:
-            continue
-
-        if result.flakiness == Flakiness.COMPILE_FAILED:
-            yield '%s: Failed to compile:' % result.filename
-
-            for message in result.messages:
-                yield '    ' + str(message)
-        elif result.flakiness == Flakiness.FLAKY:
-            yield '%s:' % result.filename
-
-            for message in result.messages:
-                yield '    line ' + str(message)[len(result.filename)+1:]
-
-        yield ''
-
-def make_statistics(results):
-    statistics = {
-        'files_total' : 0,
-        'files_compile_failed': 0,
-        'files_flaky': 0,
-        'files_good': 0,
-        'messages_total': 0,
-        'messages_undefined_name': 0,
-        'messages_unused_import': 0,
-        'messages_import_star': 0,
-        'messages_redefined_unused': 0,
-        }
-
-    message_classes = {
-        pyflakes.messages.UndefinedName: 'messages_undefined_name',
-        pyflakes.messages.UnusedImport: 'messages_unused_import',
-        pyflakes.messages.ImportStarUsed: 'messages_import_star',
-        pyflakes.messages.RedefinedWhileUnused: 'messages_redefined_unused',
-        }
-
-    for result in results:
-        statistics['files_total'] += 1
-
-        if result.flakiness == Flakiness.COMPILE_FAILED:
-            statistics['files_compile_failed'] += 1
-        elif result.flakiness == Flakiness.FLAKY:
-            statistics['files_flaky'] += 1
-            statistic = None
-
-            for message in result.messages:
-                statistics['messages_total'] += 1
-                statistic = message_classes[message.__class__]
-                statistics[statistic] += 1
-        elif result.flakiness == Flakiness.GOOD:
-            statistics['files_good'] += 1
-
-    return statistics
-
-def make_statistics_summary(statistics):
-    return [
-        'Files checked: %d' % statistics['files_total'],
-        'Files that failed to compile: %d' %
-            statistics['files_compile_failed'],
-        'Good files: %d' % statistics['files_good'],
-        'Flaky files: %d' % statistics['files_flaky'],
-        ' - Undefined name: %d' % statistics['messages_undefined_name'],
-        ' - Unused imports: %d' % statistics['messages_unused_import'],
-        ' - * imported: %d' % statistics['messages_import_star'],
-        ' - Unused name redefined: %d' %
-            statistics['messages_redefined_unused'],
-        ' - Problems total: %d' %
-            statistics['messages_total'],
-        ]
-
 def main(argv):
     if len(argv) < 2:
         print >>sys.stderr, 'Usage: %s path...' % argv[0]
@@ -140,21 +130,25 @@ def main(argv):
     results = []
 
     for filename in files:
-        reulsts.append(check_file(filename))
-        results.append(result)
+        results.append(check_file(filename))
         sys.stderr.write('.')
         sys.stderr.flush()
 
     sys.stderr.write('\nDone\n\n')
-    statistics = make_statistics(results)
 
-    for line in make_report(results):
+    for result in results:
+        for line in result.make_report():
+            print line
+
+    statistics = PyflakesStatistics()
+
+    for result in results:
+        statistics.add_result(result)
+
+    for line in statistics.make_summary():
         print line
 
-    for line in make_statistics_summary(statistics):
-        print line
-
-    if statistics['files_compile_failed'] + statistics['files_flaky'] > 0:
+    if statistics.files_compile_failed + statistics.files_flaky > 0:
         return 1
     else:
         return 0
