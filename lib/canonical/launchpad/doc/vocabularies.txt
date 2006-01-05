@@ -279,26 +279,24 @@ o ValidTeamMember - With the exception of all teams that have this team as a
   member and the team itself, all valid persons and teams are valid
   members.
 
-    >>> from canonical.launchpad.interfaces import ITeamMembershipSubset
     >>> team = getUtility(IPersonSet).getByName('name17')
     >>> team2 = getUtility(IPersonSet).getByName('guadamen')
     >>> person = getUtility(IPersonSet).getByName('name16')
-    >>> tms = ITeamMembershipSubset(team)
 
     ValidTeamMember needs a context.
     >>> vocab = vocabulary_registry.get(None, "ValidTeamMember")
     Traceback (most recent call last):
     ...
-    ValueError: ...
+    AssertionError: ...
 
-    ValidTeamMember's context must implement ITeam or ITeamMembershipSubset.
+    ValidTeamMember's context must implement ITeam.
     >>> vocab = vocabulary_registry.get(person, "ValidTeamMember")
     Traceback (most recent call last):
     ...
-    ValueError: ...
+    AssertionError: ...
  
     'name16' is a valid member for 'name17'
-    >>> vocab = vocabulary_registry.get(tms, "ValidTeamMember")
+    >>> vocab = vocabulary_registry.get(team, "ValidTeamMember")
     >>> person in vocab
     True
     >>> [t.token for t in vocab.search('foo.bar')]
@@ -325,13 +323,13 @@ o ValidTeamOwner - With the exception of the team itself and all teams owned
     >>> vocab = vocabulary_registry.get(None, "ValidTeamOwner")
     Traceback (most recent call last):
     ...
-    ValueError: ...
+    AssertionError: ...
 
     ValidTeamOwner's context must be a team.
     >>> vocab = vocabulary_registry.get(person, "ValidTeamOwner")
     Traceback (most recent call last):
     ...
-    ValueError: ...
+    AssertionError: ...
 
     'name17' is not a valid owner for itself.
     >>> vocab = vocabulary_registry.get(team, "ValidTeamOwner")

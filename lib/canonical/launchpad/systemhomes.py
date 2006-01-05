@@ -55,10 +55,7 @@ class MaloneApplication:
 
     @property
     def top_bugtrackers(self):
-        all_bugtrackers = getUtility(IBugTrackerSet).search()
-        result = list(all_bugtrackers)
-        result.sort(key=lambda a: -a.watchcount)
-        return result[:5]
+        return getUtility(IBugTrackerSet).getMostActiveBugTrackers(limit=5)
 
     @property
     def latest_bugs(self):

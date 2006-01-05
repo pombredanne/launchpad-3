@@ -5,11 +5,14 @@
 
 <body>
 
-  <div metal:fill-slot="main">
-    <h1><span tal:replace="context/title"/> Cancel</h1>
- 
-    <tal:block define="job context/currentjob">
+<metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
 
+  <div metal:fill-slot="main" tal:define="job context/currentjob">
+
+    <h1>Cancel <span tal:replace="context/title"/></h1>
+ 
     <div tal:condition="job">
 
     <div class="portalMessage" tal:define="message view/cancelBuildJob"
@@ -21,7 +24,6 @@
       <thead>
         <tr>
             <th>Title</th>
-            <th>Architecture</th>
             <th>Created</th>
             <th>Started</th>
             <th>Partial Duration</th>
@@ -30,10 +32,11 @@
       <tbody>
         <tr>
             <td tal:content="job/build/title">NAME</td>
-            <td tal:content="job/build/processor/name">ARCH</td>
             <td tal:content="job/build/datecreated/fmt:datetime">CREATED</td>
             <td tal:content="job/buildstart/fmt:datetime">STARTED</td>
-            <td></td>
+            <td>
+              <span tal:replace="job/buildduration/fmt:approximateduration"/>
+            </td>
         </tr>
       </tbody>
      </table>
@@ -52,9 +55,6 @@
     <h3><dfn tal:content="context/title">BUILDER</dfn> is IDLE, no need
         to cancel.</h3>
     </div>
-
-    </tal:block>
-
 
   </div>
 </body>

@@ -17,12 +17,13 @@ from zope.publisher.browser import BrowserRequest
 #from zope.publisher.http import HTTPRequest
 import zope.publisher.publish
 from canonical.launchpad.interfaces import ILaunchpadBrowserApplicationRequest
-from canonical.launchpad.webapp.notification import (
+from canonical.launchpad.webapp.notifications import (
         NotificationRequest, NotificationResponse, NotificationList
         )
 from canonical.launchpad.webapp.interfaces import (
         INotificationRequest, INotificationResponse, BrowserNotificationLevel
         )
+from canonical.launchpad.webapp.errorlog import ErrorReportRequest
 
 
 class StepsToGo:
@@ -102,12 +103,14 @@ class StepsToGo:
         return bool(self._stack)
 
 
-class LaunchpadBrowserRequest(BrowserRequest, NotificationRequest):
+class LaunchpadBrowserRequest(BrowserRequest, NotificationRequest,
+                              ErrorReportRequest):
 
     implements(ILaunchpadBrowserApplicationRequest)
 
     def __init__(self, body_instream, outstream, environ, response=None):
         self.breadcrumbs = []
+        self.traversed_objects = []
         super(LaunchpadBrowserRequest, self).__init__(
             body_instream, outstream, environ, response)
 
@@ -118,6 +121,14 @@ class LaunchpadBrowserRequest(BrowserRequest, NotificationRequest):
     def _createResponse(self, outstream):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
         return LaunchpadBrowserResponse(outstream)
+
+    def getNearest(self, *some_interfaces):
+        """See ILaunchpadBrowserApplicationRequest.getNearest()"""
+        for context in reversed(self.traversed_objects):
+            for iface in some_interfaces:
+                if iface.providedBy(context):
+                    return context, iface
+        return None, None
 
 
 class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):

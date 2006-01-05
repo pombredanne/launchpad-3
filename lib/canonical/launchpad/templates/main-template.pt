@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
     tal:attributes="lang default_language|default;
                     xml:lang default_language|default;">
-<head>
+  <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
     <!-- Launchpad style sheet -->
     <style type="text/css"
@@ -14,96 +14,69 @@
     <link rel="shortcut icon" href="/@@/launchpad_favicon.png" />
 
     <metal:block define-slot="head_epilogue"></metal:block>
-</head>
+  </head>
 
-<body>
-  <table class="header" style="width: 100%;">
-    <tr>
-      <td class="hierarchy">
-        <img
-          alt=""
-          src="/@@/launchpad.png"
-          style="vertical-align: bottom;"
-        />
-        <tal:hierarchy content="structure context/@@+breadcrumbs" />
-      <td
-        class="login"
-        tal:content="structure context/@@login_status"
-      />
-    </tr>
-  </table>
-  <h2 class="lpcontext">
-    <metal:block
-      define-slot="titleheader"
-      tal:content="context/title | default"
-    >Launchpad</metal:block>
-  </h2>    
-  <ul
-    class="facets app"
-    tal:define="facetmenu CONTEXTS/menu:facet"
-  >
-   <tal:condition tal:condition="python: '+login' not in request.getURL()">
-    <tal:facetmenu condition="facetmenu">
-      <tal:facet repeat="link facetmenu">
-        <tal:available condition="link/enabled">
-          <tal:comment condition="nothing">
-          The unfortunate lack of whitespace below is required to
-          avoid layout issues with the tabs.
-          </tal:comment>
-          <li
-            tal:condition="link/selected"
-            tal:attributes="title link/summary"
-            class="current"
-          ><strong tal:condition="link/linked">
-              <a
-                tal:attributes="href link/url"
-                tal:content="structure link/escapedtext"
-              >abc</a></strong><strong
-              tal:condition="not: link/linked"
-              tal:attributes="title link/summary"
-              tal:content="structure link/escapedtext"
-            >def</strong></li>
-          <li
-            tal:condition="not: link/selected"
-            tal:attributes="title link/summary"
-          ><a
-              tal:attributes="href link/url"
-              tal:content="structure link/escapedtext"
-            >ghi</a><span
-              class="disabled"
-              tal:condition="not: link/linked"
-              tal:content="structure link/escapedtext"
-            >jkl</span></li>
-        </tal:available>
-        <li
-          tal:condition="not: link/enabled"
-          tal:attributes="title link/summary"
-          tal:content="structure link/escapedtext"
-          class="unavailable"
-        />
-      </tal:facet>
-    </tal:facetmenu>
-    </tal:condition>
-  </ul>
-
-  <!-- Menus -->
-
-
-  <div class="visualClear" id="body">
-    <tal:replace tal:replace="structure context/@@+maintenancemessage" />
-    <metal:block define-slot="body">
-    </metal:block>
-  </div>
-
-  <table id="portal-columns">
-    <tbody>
+  <body>
+    <table class="header" style="width: 100%;">
       <tr>
-        <td style="height: 1px;"></td>
+        <td class="hierarchy">
+          <a href="/">
+            <img
+              alt=""
+              src="/@@/launchpad.png"
+              style="vertical-align: bottom;"
+            />
+          </a>
+          <tal:hierarchy content="structure context/@@+breadcrumbs" />
+        </td>
         <td
-          id="portal-column-content"
-          rowspan="2"
+          class="login"
+          tal:content="structure context/@@login_status"
+        />
+      </tr>
+    </table>
+
+    <div class="body">
+      <tal:replace tal:replace="structure context/@@+maintenancemessage" />
+      <tal:layout condition="columns1|nothing">
+        <tal:notifications
+          define="notifications request/notifications"
+          condition="notifications"
         >
-              <div id="region-content">
+          <div class="error-notification"
+            tal:repeat="notification notifications/error"
+            tal:content="structure notification/message"
+          >An error notification message</div>
+          <div class="warning-notification"
+            tal:repeat="notification notifications/warning"
+            tal:content="structure notification/message"
+          >A warning notification message</div>
+          <div class="notice-notification"
+            tal:repeat="notification notifications/notice"
+            tal:content="structure notification/message"
+          >A notice notification message</div>
+          <div class="info-notification"
+            tal:repeat="notification notifications/info"
+            tal:content="structure notification/message"
+          >An info notification message</div>
+          <div class="debug-notification"
+            tal:repeat="notification notifications/debug"
+            tal:content="structure notification/message"
+          >A debug notification message, only displayed for developers.</div>
+        </tal:notifications>
+        <metal:block define-slot="main">
+        </metal:block>
+      </tal:layout>
+      <tal:layout condition="not: columns1|nothing">
+        <div id="portal-columns">
+          <div id="portal-column-content">
+            <h2 class="lpcontext">
+              <metal:block
+                define-slot="titleheader"
+                tal:content="context/title | default"
+              >Launchpad</metal:block>
+            </h2>    
+            <div id="region-content">
                   <tal:block
                       define="notifications request/notifications"
                       condition="notifications">
@@ -135,45 +108,90 @@
                       </div>
                   </tal:block>
 
-                  <metal:main define-slot="main" tal:condition="nothing">
-                      <p>Main content area.</p>
-                  </metal:main>
-              </div>
-        </td>
-
-              <!-- start of right (by default at least) column -->
-        <td
-          id="portal-column-two"
-          metal:define-slot="column_two"
-          rowspan="2"
+              <metal:main define-slot="main" tal:condition="nothing">
+                <p>Main content area.</p>
+              </metal:main>
+            </div>
+    </div>
+    <!-- start of right (by default at least) column -->
+    <div
+      id="portal-column-two"
+      metal:define-slot="column_two"
+    >
+      <tal:notlogin condition="python: '+login' not in request.getURL()">
+        <ul
+          tal:define="facetmenu CONTEXTS/menu:facet"
+          tal:condition="facetmenu"
+          class="facets"
         >
-          <tal:menu
-            condition="not:exists:body"
-            replace="structure CONTEXTS/@@+menubox"
-          />
-          <metal:portlets define-slot="portlets_two">
-          </metal:portlets>
-        </td>
-              <!-- end of the right (by default at least) column -->
-      </tr>
-      <tr>
-              <!-- start of the left (by default at least) column -->
-        <td
+          <tal:facet repeat="link facetmenu">
+            <tal:available condition="link/enabled">
+              <tal:comment condition="nothing">
+              The unfortunate lack of whitespace below is required to
+              avoid layout issues with the tabs.
+              </tal:comment>
+              <li
+                tal:condition="link/selected"
+                tal:attributes="title link/summary"
+                class="current"
+              ><strong tal:condition="link/linked">
+                  <a
+                    tal:attributes="href link/url"
+                    tal:content="structure link/escapedtext"
+                  >abc</a></strong><strong
+                  tal:condition="not: link/linked"
+                  tal:attributes="title link/summary"
+                  tal:content="structure link/escapedtext"
+                >def</strong>
+                <tal:menu
+                  condition="not:exists:body"
+                  replace="structure CONTEXTS/@@+menubox"
+                />
+              </li>
+              <li
+                tal:condition="not: link/selected"
+                tal:attributes="title link/summary"
+              ><a
+                  tal:attributes="href link/url"
+                  tal:content="structure link/escapedtext"
+                >ghi</a><span
+                  class="disabled"
+                  tal:condition="not: link/linked"
+                  tal:content="structure link/escapedtext"
+                >jkl</span></li>
+            </tal:available>
+            <li
+              tal:condition="not: link/enabled"
+              tal:attributes="title link/summary"
+              tal:content="structure link/escapedtext"
+              class="unavailable"
+            />
+          </tal:facet>
+        </ul>
+      </tal:notlogin>
+
+      <metal:portlets define-slot="portlets_two">
+      </metal:portlets>
+    </div>
+    <!-- start of the left (by default at least) column -->
+    <div
           id="portal-column-one"
           metal:define-slot="column_one"
-        >
-                  <metal:portlets define-slot="portlets_one">
+    >
+      <div tal:replace="structure context/@@+sitemap" />
 
-                  </metal:portlets>
-        </td>
-              <!-- end of the left (by default at least) column -->
+      <metal:portlets define-slot="portlets_one">
 
-        </tr>
-    </tbody>
-  </table>
+      </metal:portlets>
+    </div>
+  </div>
   <!-- end column wrapper -->
 
   <div class="visualClear">&nbsp;</div>
+
+      </tal:layout>
+
+  </div><!-- class="body" -->
 
   <div class="footer">
       Copyright 2004-2005 Canonical Ltd. &ndash;  <a

@@ -71,6 +71,11 @@ class Ticket(SQLBase):
     reopenings = MultipleJoin('TicketReopening', orderBy='datecreated',
         joinColumn='ticket')
 
+    def _create(self, id, **kwargs):
+        """Subscribe the owner to the ticket when it's created."""
+        SQLBase._create(self, id, **kwargs)
+        self.subscribe(self.owner)
+
     # attributes
     @property
     def target(self):
@@ -225,6 +230,9 @@ class Ticket(SQLBase):
                 # unsubscribe the ticket owner from the bug
                 bug.unsubscribe(self.owner)
                 TicketBug.delete(buglink.id)
+                # XXX: We shouldn't return the object that we just
+                #      deleted from the db.
+                #      -- Bjorn Tillenius, 2005-11-21
                 return buglink
 
 

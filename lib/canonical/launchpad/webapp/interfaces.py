@@ -162,10 +162,6 @@ class INotificationList(Interface):
 
 class INotificationRequest(Interface):
 
-    uuid = TextLine(
-            description=u"Token used to lookup the notifications in the session"
-            )
-
     notifications = Object(
         description=u"""
             Notifications received from previous request as well as any
@@ -176,16 +172,9 @@ class INotificationRequest(Interface):
 
 
 class INotificationResponse(Interface):
-    """This class is responsible for removing notifications that it assumes
-    have been displayed to the user (ie. there was a lpnotifications in
-    the request, but redirect has not been called). It is also responsible
-    for checking all the notifications in the session and removing ones
-    that are more than 30 minutes old.
+    """This class is responsible for propogating any notifications that
+    have been set when redirect() is called.
     """
-
-    uuid = TextLine(
-            description=u"Token used to lookup the notifications in the session"
-            )
 
     def addNotification(msg, level=BrowserNotificationLevel.NOTICE, **kw):
         """Append the given message to the list of notifications
@@ -224,4 +213,20 @@ class INotificationResponse(Interface):
         """As per IHTTPApplicationResponse.redirect, except notifications
         are preserved.
         """
+
  
+class IErrorReport(Interface):
+    id = TextLine(description=u"the name of this error report")
+    type = TextLine(description=u"the type of the exception that occurred")
+    value = TextLine(description=u"the value of the exception that occurred")
+    time = Datetime(description=u"the time at which the exception occurred")
+    tb_text = Text(description=u"a text version of the traceback")
+    username = TextLine(description=u"the user associated with the request")
+    url = TextLine(description=u"the URL for the failed request")
+    req_vars = Attribute('the request variables')
+
+
+class IErrorReportRequest(Interface):
+    oopsid = TextLine(
+        description=u"""an identifier for the exception, or None if no 
+        exception has occurred""")

@@ -111,11 +111,6 @@
             </td>
           </tr>
         </table>
-        <div class="actions">
-          <input type="submit" value="Change" name="editactive" />
-          <input type="submit" value="Deactivate" name="editactive" />
-        </div>
-
         </form>
       </div>
 

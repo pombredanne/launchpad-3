@@ -1,3 +1,4 @@
+<tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
     lang="en"
     metal:use-macro="context/@@main_template/master"
@@ -5,7 +6,7 @@
 
 <body>
 
-  <div metal:fill-slot="body">
+  <div metal:fill-slot="main">
 
     <form method="POST" action="." name="update-view" class="portlet">
         <b>Assigned to:</b>
@@ -107,3 +108,4 @@
 </body>
 
 </html>
+</tal:layout>

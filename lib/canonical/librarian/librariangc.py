@@ -112,10 +112,11 @@ def merge_duplicates(ztm):
                 "Making LibraryFileAliases referencing %s reference %s instead",
                 other_ids, prime_id
                 )
-        cur.execute("""
-            UPDATE LibraryFileAlias SET content=%(prime_id)s
-            WHERE content in (%(other_ids)s)
-            """ % vars())
+        for other_id in dupes[1:]:
+            cur.execute("""
+                UPDATE LibraryFileAlias SET content=%(prime_id)s
+                WHERE content = %(other_id)s
+                """, vars())
 
         log.debug("Committing")
         ztm.commit()

@@ -96,7 +96,7 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     usedfor = ISourcePackage
     facet = 'overview'
-    links = ['hct', 'changelog', 'buildlog']
+    links = ['hct', 'changelog', 'buildlog', 'builds']
 
     def hct(self):
         text = structured(
@@ -111,6 +111,10 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     def upstream(self):
         return Link('+packaging', 'Edit Upstream Link', icon='edit')
+
+    def builds(self):
+        text = 'View Builds'
+        return Link('+builds', text, icon='info')        
 
 
 class SourcePackageBugsMenu(ApplicationMenu):
@@ -257,8 +261,16 @@ class SourcePackageView(BuildRecordsView):
         return helpers.browserLanguages(self.request)
 
     def templateviews(self):
-        return [POTemplateView(template, self.request)
+        """Return the view class of the IPOTemplate associated with the context.
+        """
+        templateview_list = [POTemplateView(template, self.request)
                 for template in self.context.currentpotemplates]
+
+        # Initialize the views.
+        for templateview in templateview_list:
+            templateview.initialize()
+
+        return templateview_list
 
     def potemplatenames(self):
         potemplatenames = []

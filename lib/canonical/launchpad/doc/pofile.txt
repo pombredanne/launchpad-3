@@ -18,7 +18,7 @@ Get evolution template for Ubuntu Hoary
 
 Get Xhosa translation
 
->>> pofile = potemplate.queryPOFileByLang('xh')
+>>> pofile = potemplate.getPOFileByLang('xh')
 
 Get the set of POTMsgSets that are untranslated.
 
@@ -28,7 +28,7 @@ Get the set of POTMsgSets that are untranslated.
 
 Get Spanish translation
 
->>> pofile = potemplate.queryPOFileByLang('es')
+>>> pofile = potemplate.getPOFileByLang('es')
 
 Get the set of POTMsgSets that are untranslated.
 
