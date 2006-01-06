@@ -160,7 +160,16 @@
             </table>
           </div>
 
-          <div class="field">
+          <div class="field" style="margin-left: 4px">
+            <div>
+              <label for="comment_on_change">Comment on most recent change</label>
+              <div style="margin-top: 5px">
+                <i tal:content="python:context.statusexplanation or '(none)'" />
+              </div>
+            </div>
+          </div>
+
+          <div class="field" style="margin-left: 4px">
             <div tal:condition="not:view/comment_on_change_error">
               <label for="comment_on_change">Comment on this change (optional)</label>
 

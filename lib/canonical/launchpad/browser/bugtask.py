@@ -387,9 +387,9 @@ class BugTaskEditView(GeneralFormView):
     def __init__(self, context, request):
         GeneralFormView.__init__(self, context, request)
 
-        # A simple hack, avoiding the mind-bending complexity of the Z3
-        # form/widget machinery, to provide a useful error message to the user
-        # if they make a change comment but don't change anything.
+        # A simple hack to provide a useful error message to the user if they
+        # make a change comment but don't change anything. This hack avoids the
+        # mind-bending complexity of the Z3 form/widget machinery.
         self.comment_on_change_error = ""
 
     def validate(self):
@@ -436,11 +436,19 @@ class BugTaskEditView(GeneralFormView):
 
         comment_on_change = self.request.form.get("comment_on_change")
 
+        # The statusexplanation field is being display as a "Comment on most
+        # recent change" field now, so set it to the current change comment if
+        # there is one, otherwise clear it out.
         if comment_on_change:
+            # Add the change comment as a comment on the bug.
             bugtask.bug.newMessage(
                 owner=getUtility(ILaunchBag).user,
                 subject=bugtask.bug.followup_subject(),
                 content=comment_on_change)
+
+            bugtask.statusexplanation = comment_on_change
+        else:
+            bugtask.statusexplanation = ""
 
         if changed:
             notify(
