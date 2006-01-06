@@ -37,13 +37,20 @@ the .watches attribute.
     >>> mozilla_bugtracker = bugtrackerset['mozilla.org']
     >>> sorted([(watch.bug.id, watch.remotebug) for watch in
     ...     mozilla_bugtracker.watches])
-    [(1, u'123543'), (1, u'2000'), (2, u'42')]
+    [(1, u'123543'), (1, u'2000'), (1, u'42'), (2, u'42')]
 
 To get the latest 10 watches, use IBugTracker.latestwatches:
 
     >>> [(watch.bug.id, watch.remotebug) for watch in
     ...     mozilla_bugtracker.latestwatches]
-    [(1, u'2000'), (1, u'123543'), (2, u'42')]
+    [(1, u'2000'), (1, u'123543'), (1, u'42'), (2, u'42')]
+
+We can retrieve the list of Launchpad bugs watching a particular
+remote bug using getBugsWatching():
+
+    >>> [bug.id for bug in mozilla_bugtracker.getBugsWatching('42')]
+    [1, 2]
+
 
 Creating Bug Watches
 --------------------

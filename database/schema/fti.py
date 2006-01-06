@@ -20,9 +20,8 @@ PGSQL_BASE = '/usr/share/postgresql'
 
 A, B, C, D = 'ABCD' # tsearch2 ranking constants
 
-# This data structure defines all of our bull text indexes.
-# Each tuple in the top level list creates a 'fti' column in the
-# specified table.
+# This data structure defines all of our full text indexes.  Each tuple in the
+# top level list creates a 'fti' column in the specified table.
 ALL_FTI = [
     ('bug', [
             ('name', A),
