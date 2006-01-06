@@ -115,7 +115,9 @@ debug:
 		    app = Application('Data.fs', 'site.zcml')()"
 
 clean:
+	(cd sourcecode/pygettextpo; make clean)
 	find . -type f \( -name '*.o' -o -name '*.so' \
+	    -o -name '*.la' -o -name '*.lo' \
 	    -o -name '*.py[co]' -o -name '*.dll' \) -exec rm -f {} \;
 	rm -rf build
 
