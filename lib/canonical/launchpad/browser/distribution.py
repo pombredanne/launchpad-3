@@ -46,6 +46,10 @@ class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
     def packages(self):
         return getUtility(IPublishedPackageSet)
 
+    @stepthrough('+mirror')
+    def traverse_mirrors(self, name):
+        return self.context.getMirrorByName(name)
+
     @stepthrough('+source')
     def traverse_sources(self, name):
         return self.context.getSourcePackage(name)
@@ -104,7 +108,8 @@ class DistributionOverviewMenu(ApplicationMenu):
     usedfor = IDistribution
     facet = 'overview'
     links = ['search', 'allpkgs', 'milestone_add', 'members', 'edit',
-             'editbugcontact', 'reassign', 'addrelease', 'builds']
+             'editbugcontact', 'reassign', 'addrelease', 'builds',
+             'officialmirrors', 'allmirrors', 'newmirror']
 
     def edit(self):
         text = 'Edit Details'
@@ -118,6 +123,18 @@ class DistributionOverviewMenu(ApplicationMenu):
     def reassign(self):
         text = 'Change Admin'
         return Link('+reassign', text, icon='edit')
+
+    def newmirror(self):
+        text = 'Register a New Mirror'
+        return Link('+newmirror', text, icon='add')
+
+    def officialmirrors(self):
+        text = 'List Official Mirrors'
+        return Link('+officialmirrors', text, icon='info')
+
+    def allmirrors(self):
+        text = 'List All Mirrors'
+        return Link('+allmirrors', text, icon='info')
 
     def allpkgs(self):
         text = 'List All Packages'

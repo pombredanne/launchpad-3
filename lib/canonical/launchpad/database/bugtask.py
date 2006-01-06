@@ -25,7 +25,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from canonical.lp.dbschema import (
     EnumCol, BugTaskPriority, BugTaskStatus, BugTaskSeverity)
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.searchbuilder import any, NULL
@@ -320,11 +320,7 @@ class BugTaskSet:
 
     def __getitem__(self, task_id):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
-        try:
-            task = BugTask.get(task_id)
-        except SQLObjectNotFound:
-            raise NotFoundError(task_id)
-        return task
+        return self.get(task_id)
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
@@ -411,9 +407,12 @@ class BugTaskSet:
             extra_clauses.append(where_cond)
 
         if params.searchtext:
+            searchtext_quoted = sqlvalues(params.searchtext)[0]
+            searchtext_like_quoted = quote_like(params.searchtext)
             extra_clauses.append(
-                "(Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s))" %
-                sqlvalues(params.searchtext, params.searchtext))
+                "((Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s)) OR"
+                " (BugTask.targetnamecache ILIKE '%%' || %s || '%%'))" % (
+                searchtext_quoted, searchtext_quoted, searchtext_like_quoted))
 
         if params.statusexplanation:
             # XXX: This clause relies on the fact that the Bugtask's fti is
