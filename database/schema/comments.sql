@@ -14,6 +14,7 @@ COMMENT ON COLUMN Bug.description IS 'A detailed description of the bug. Initial
 /* BugTask */
 
 COMMENT ON TABLE BugTask IS 'Links a given Bug to a particular (sourcepackagename, distro) or product.';
+COMMENT ON COLUMN BugTask.targetnamecache IS 'A cached value of the target name of this bugtask, to make it easier to sort and search on the target name.';
 COMMENT ON COLUMN BugTask.bug IS 'The bug that is assigned to this (sourcepackagename, distro) or product.';
 COMMENT ON COLUMN BugTask.product IS 'The product in which this bug shows up.';
 COMMENT ON COLUMN BugTask.sourcepackagename IS 'The name of the sourcepackage in which this bug shows up.';
@@ -173,6 +174,7 @@ COMMENT ON COLUMN Product.releaseroot IS 'The URL to the directory which holds u
 COMMENT ON COLUMN Product.calendar IS 'The calendar associated with this product.';
 COMMENT ON COLUMN Product.official_rosetta IS 'Whether or not this product upstream uses Rosetta for its official translation team and coordination. This is a useful indicator in terms of whether translations in Rosetta for this upstream will quickly move upstream.';
 COMMENT ON COLUMN Product.official_malone IS 'Whether or not this product upstream uses Malone for an official bug tracker. This is useful to help indicate whether or not people are likely to pick up on bugs registered in Malone.';
+COMMENT ON COLUMN Product.bugcontact IS 'Person who will be automatically subscribed to bugs targetted to this product';
 
 
 /* ProductLabel */
@@ -323,6 +325,8 @@ COMMENT ON COLUMN POTemplate.sourcepackageversion IS 'The sourcepackage version 
 COMMENT ON COLUMN POTemplate.header IS 'The header of a .pot file when we import it. Most important info from it is POT-Creation-Date and custom headers.';
 COMMENT ON COLUMN POTemplate.potemplatename IS 'A reference to a POTemplateName row that tells us the name/domain for this POTemplate.';
 COMMENT ON COLUMN POTemplate.productseries IS 'A reference to a ProductSeries from where this POTemplate comes.';
+COMMENT ON COLUMN POTemplate.path IS 'The path to the .pot source file inside the tarball tree, including the filename.';
+COMMENT ON COLUMN POTemplate.from_sourcepackagename IS 'The sourcepackagename from where the last .pot file came (only if it\'s different from POTemplate.sourcepackagename)';
 
 -- POTemplateName
 COMMENT ON TABLE POTemplateName IS 'POTemplate Name. This table stores the domains/names of a set of POTemplate rows.';
@@ -339,6 +343,8 @@ COMMENT ON COLUMN POFile.daterawimport IS 'The date when the raw file was attach
 COMMENT ON COLUMN POFile.rawimportstatus IS 'The status of the import. See the RosettaImportStatus schema.';
 COMMENT ON COLUMN POFile.exportfile IS 'The Library file alias of an export of this PO file.';
 COMMENT ON COLUMN POFile.exporttime IS 'The time at which the file referenced by exportfile was generated.';
+COMMENT ON COLUMN POFile.path IS 'The path (included the filename) inside the tree from where the content was imported.';
+COMMENT ON COLUMN POFile.from_sourcepackagename IS 'The sourcepackagename from where the last .po file came (only if it\'s different from POFile.potemplate.sourcepackagename)';
 
 -- POSelection
 COMMENT ON TABLE POSelection IS 'This table captures the full set
@@ -504,6 +510,7 @@ generating archives for this distribution';
 COMMENT ON COLUMN Distribution.members IS 'Person or team with upload and commit priviledges relating to this distribution. Other rights may be assigned to this role in the future.';
 COMMENT ON COLUMN Distribution.translationgroup IS 'The translation group that is responsible for all translation work in this distribution.';
 COMMENT ON COLUMN Distribution.translationpermission IS 'The level of openness of this distribution\'s translation process. The enum lists different approaches to translation, from the very open (anybody can edit any translation in any language) to the completely closed (only designated translators can make any changes at all).';
+COMMENT ON COLUMN Distribution.bugcontact IS 'Person who will be automatically subscribed to every bug targeted to this distribution.';
 
 /* DistroRelease */
 
@@ -520,12 +527,6 @@ COMMENT ON COLUMN DistroRelease.messagecount IS 'This is a cached value and may 
 COMMENT ON COLUMN DistroRelease.nominatedarchindep IS 'This is the DistroArchRelease nominated to build architecture independent packages within this DistroRelase, it is mandatory for buildable distroreleases, i.e., Auto Build System will avoid to create build jobs for a DistroRelease with no nominatedarchindep, but the database model allow us to do it (for non-buildable DistroReleases). See further info in NominatedArchIndep specification.';
 COMMENT ON COLUMN DistroRelease.binarycount IS 'A cache of the number of distinct binary package names published in this distro release.';
 COMMENT ON COLUMN DistroRelease.sourcecount IS 'A cache of the number of distinct source package names published in this distro release.';
-
-/* ArchArchive */
-
-COMMENT ON COLUMN ArchArchive.name IS 'The archive name, usually in the format of an email address';
-
-
 
 -- DistroReleaseQueue
 COMMENT ON TABLE DistroReleaseQueue IS 'An upload queue item. This table stores information pertaining to in-progress package uploads to a given DistroRelease.';
@@ -906,6 +907,7 @@ COMMENT ON COLUMN LibraryFileContent.datecreated IS 'The date on which this libr
 COMMENT ON COLUMN LibraryFileContent.datemirrored IS 'When the file was mirrored from the librarian onto the backup server';
 COMMENT ON COLUMN LibraryFileContent.filesize IS 'The size of the file';
 COMMENT ON COLUMN LibraryFileContent.sha1 IS 'The SHA1 sum of the file\'s contents';
+COMMENT ON COLUMN LibraryFileContent.deleted IS 'This file has been removed from disk by the librarian garbage collector.';
 
 -- LibraryFileAlias
 
@@ -913,6 +915,8 @@ COMMENT ON TABLE LibraryFileAlias IS 'LibraryFileAlias: A librarian file\'s alia
 COMMENT ON COLUMN LibraryFileAlias.content IS 'The libraryfilecontent which is the data in this file.';
 COMMENT ON COLUMN LibraryFileAlias.filename IS 'The name of the file. E.g. "foo_1.0-1_i386.deb"';
 COMMENT ON COLUMN LibraryFileAlias.mimetype IS 'The mime type of the file. E.g. "application/x-debian-package"';
+COMMENT ON COLUMN LibraryFileAlias.expires IS 'The expiry date of this file. If NULL, this item may be removed as soon as it is no longer referenced. If set, the item will not be removed until this date. Once the date is passed, the file may be removed from disk even if this item is still being referenced (in which case content.deleted will be true)';
+COMMENT ON COLUMN LibraryFileAlias.last_accessed IS 'Roughly when this file was last retrieved from the Librarian. Initially set to this item''s creation date.';
 
 -- PackagePublishing
 
@@ -1090,6 +1094,7 @@ COMMENT ON COLUMN GPGKey.fingerprint IS 'The 40 character GPG fingerprint, upper
 COMMENT ON COLUMN GPGKey.active IS 'True if this key is active for use in Launchpad context, false could be deactivated by user or revoked in the global key ring.';
 COMMENT ON COLUMN GPGKey.algorithm IS 'The algorithm used to generate this key. Valid values defined in dbschema.GPGKeyAlgorithms';
 COMMENT ON COLUMN GPGKey.keysize IS 'Size of the key in bits, as reported by GPG. We may refuse to deal with keysizes < 768 bits in the future.';
+COMMENT ON COLUMN GPGKey.can_encrypt IS 'Whether the key has been validated for use in encryption (as opposed to just signing)';
 
 -- Poll
 COMMENT ON TABLE Poll IS 'The polls belonging to teams.';
@@ -1182,7 +1187,6 @@ COMMENT ON COLUMN ShippingRun.datecreated IS 'The date this shipping run was cre
 COMMENT ON COLUMN ShippingRun.sentforshipping IS 'The exported file was sent to the shipping company already?';
 COMMENT ON COLUMN ShippingRun.csvfile IS 'A csv file with all requests of this shipping run, to be sent to the shipping company.';
 
-
 -- Language
 COMMENT ON TABLE Language IS 'A human language.';
 COMMENT ON COLUMN Language.code IS 'The ISO 639 code for this language';
@@ -1192,3 +1196,30 @@ COMMENT ON COLUMN Language.pluralforms IS 'The number of plural forms this langu
 COMMENT ON COLUMN Language.pluralexpression IS 'The plural expression for this language, as used by gettext';
 COMMENT ON COLUMN Language.visible IS 'Whether this language should usually be visible or not';
 COMMENT ON COLUMN Language.direction IS 'The direction that text is written in this language';
+
+-- PackageBugContact
+COMMENT ON TABLE PackageBugContact IS 'Defines the bug contact for a given sourcepackage in a given distribution. The bug contact will be automatically subscribed to every bug filed on this sourcepackage in this distribution.';
+
+-- ShipItReport
+COMMENT ON TABLE ShipItReport IS 'A report generated with the ShipIt data.';
+COMMENT ON COLUMN ShipItReport.datecreated IS 'The date this report run was created.';
+COMMENT ON COLUMN ShipItReport.csvfile IS 'A csv file with the report';
+
+-- Continent
+COMMENT ON TABLE Continent IS 'A continent in this huge world.';
+COMMENT ON COLUMN Continent.code IS 'A two-letter code for a continent.';
+COMMENT ON COLUMN Continent.name IS 'The name of the continent.';
+
+-- TranslationImportQueueEntry
+COMMENT ON TABLE TranslationImportQueueEntry IS 'Queue with translatable resources pending to be imported into Rosetta.';
+COMMENT ON COLUMN TranslationImportQueueEntry.path IS 'The path (included the filename) where this file was stored when we imported it.';
+COMMENT ON COLUMN TranslationImportQueueEntry.content IS 'The file content that is being imported.';
+COMMENT ON COLUMN TranslationImportQueueEntry.importer IS 'The person that did the import.';
+COMMENT ON COLUMN TranslationImportQueueEntry.dateimported IS 'The timestamp when the import was done.';
+COMMENT ON COLUMN TranslationImportQueueEntry.distrorelease IS 'The distribution release related to this import.';
+COMMENT ON COLUMN TranslationImportQueueEntry.sourcepackagename IS 'The source package name related to this import.';
+COMMENT ON COLUMN TranslationImportQueueEntry.productseries IS 'The product series related to this import.';
+COMMENT ON COLUMN TranslationImportQueueEntry.is_blocked IS 'If this flag is set, the row should be blocked and not imported.';
+COMMENT ON COLUMN TranslationImportQueueEntry.is_published IS 'Notes whether is a published upload.';
+COMMENT ON COLUMN TranslationImportQueueEntry.pofile IS 'Link to the POFile where this import will end.';
+COMMENT ON COLUMN TranslationImportQueueEntry.potemplate IS 'Link to the POTemplate where this import will end.';

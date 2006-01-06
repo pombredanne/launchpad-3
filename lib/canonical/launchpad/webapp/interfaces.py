@@ -7,6 +7,7 @@ import logging
 from zope.interface import Interface, Attribute, implements
 from zope.app.security.interfaces import IAuthenticationService, IPrincipal
 from zope.app.pluggableauth.interfaces import IPrincipalSource
+from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from zope.schema import Int, Text, Object, Datetime, TextLine
 
 from canonical.launchpad import _
@@ -100,6 +101,27 @@ class ILaunchpadPrincipal(IPrincipal):
     This is used for the launchpad.AnyPerson permission.
     """
 
+
+class ILaunchpadDatabaseAdapter(IZopeDatabaseAdapter):
+    """The Launchpad customized database adapter"""
+    def readonly():
+        """Set the connection to read only.
+        
+        This should only be called at the start of the transaction to
+        avoid confusing code that defers making database changes until
+        transaction commit time.
+        """
+
+    def switchUser(self, dbuser=None):
+        """Change the PostgreSQL user we are connected as, defaulting to the
+        default Launchpad user.
+       
+        This involves closing the existing connection and reopening it;
+        uncommitted changes will be lost. The new connection will also open
+        in read/write mode so calls to readonly() will need to be made
+        after switchUser.
+        """
+
 #
 # Browser notifications
 #
@@ -140,10 +162,6 @@ class INotificationList(Interface):
 
 class INotificationRequest(Interface):
 
-    uuid = TextLine(
-            description=u"Token used to lookup the notifications in the session"
-            )
-
     notifications = Object(
         description=u"""
             Notifications received from previous request as well as any
@@ -152,32 +170,11 @@ class INotificationRequest(Interface):
         schema=INotificationList
         )
 
-    def getNotifications(levels=BrowserNotificationLevel.ALL_LEVELS):
-        """Retrieve a list of notifications, which are XHTML fragments.
-         
-        levels is a sequence of levels. Only the notifications with matching
-        levels are returned. By default, all notifications are returned.
-        Notifications are always returned in the order they were added.
-
-        An empty list is returned if there are no matching notifications.
-
-        An empty list is returned if there is no notification information
-        in the query string, or if the notification parameter is invalid
-        for the current user.
-        """
-
 
 class INotificationResponse(Interface):
-    """This class is responsible for removing notifications that it assumes
-    have been displayed to the user (ie. there was a lpnotifications in
-    the request, but redirect has not been called). It is also responsible
-    for checking all the notifications in the session and removing ones
-    that are more than 30 minutes old.
+    """This class is responsible for propogating any notifications that
+    have been set when redirect() is called.
     """
-
-    uuid = TextLine(
-            description=u"Token used to lookup the notifications in the session"
-            )
 
     def addNotification(msg, level=BrowserNotificationLevel.NOTICE, **kw):
         """Append the given message to the list of notifications
@@ -216,4 +213,20 @@ class INotificationResponse(Interface):
         """As per IHTTPApplicationResponse.redirect, except notifications
         are preserved.
         """
+
  
+class IErrorReport(Interface):
+    id = TextLine(description=u"the name of this error report")
+    type = TextLine(description=u"the type of the exception that occurred")
+    value = TextLine(description=u"the value of the exception that occurred")
+    time = Datetime(description=u"the time at which the exception occurred")
+    tb_text = Text(description=u"a text version of the traceback")
+    username = TextLine(description=u"the user associated with the request")
+    url = TextLine(description=u"the URL for the failed request")
+    req_vars = Attribute('the request variables')
+
+
+class IErrorReportRequest(Interface):
+    oopsid = TextLine(
+        description=u"""an identifier for the exception, or None if no 
+        exception has occurred""")

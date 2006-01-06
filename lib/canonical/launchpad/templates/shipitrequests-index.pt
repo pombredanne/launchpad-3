@@ -141,7 +141,7 @@
                     <span tal:condition="not: shipitrequest/shipment"
                       >(unshipped)</span>
                     <span tal:condition="shipitrequest/shipment"
-                      >(sent for shipping in 
+                      >(sent for shipping on 
                       <span tal:replace="
                         shipitrequest/shipment/shippingrun/datecreated/fmt:date"
                         />)

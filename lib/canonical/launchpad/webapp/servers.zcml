@@ -22,4 +22,13 @@
         component="canonical.launchpad.webapp.servers.debughttp"
         provides="zope.app.server.servertype.IServerType"
         />
+
+    <!-- This is the HTTP server, but making each request have the
+        InternalHTTPLayer as the first layer searched.  Effectively, this turns
+        on the internal only pages. -->
+    <utility
+        name="InternalHTTP"
+        component="canonical.launchpad.webapp.servers.internalhttp"
+        provides="zope.app.server.servertype.IServerType"
+        />
 </configure>

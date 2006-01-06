@@ -3,15 +3,17 @@
 from subprocess import Popen, PIPE, STDOUT
 from canonical.launchpad.scripts import log
 
+class ExecutionError(Exception):
+    """The command executed in a cal() returned a non-zero status"""
+
 def call(cmd):
     """Run a command, raising a RuntimeError if the command failed"""
     log.debug("Running %s" % cmd)
     p = Popen(cmd, shell=True, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
-    (out, err) = p.communicate()
+    out, err = p.communicate()
     for line in out.splitlines():
         log.debug("> %s" % line)
     if p.returncode != 0:
-        msg = "Error %d running %s" % (p.returncode, cmd)
-        log.error(msg)
-        raise RuntimeError(msg)
+        raise ExecutionError("Error %d running %s" % (p.returncode, cmd))
     return p.returncode
+

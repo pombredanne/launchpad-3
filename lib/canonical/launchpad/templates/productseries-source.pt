@@ -1,20 +1,19 @@
+<tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
   lang="en"
   metal:use-macro="context/@@main_template/master"
   i18n:domain="rosetta"
 >
   <body>
-    <div metal:fill-slot="body">
+    <div metal:fill-slot="main">
       <table>
         <tbody>
           <tr>
             <td style="width: 75%; padding-right: 1em;">
 
-              <tal:processform condition="view/editSource" omit-tag="" />
-
               <h1>Upstream Source Import</h1>
-              
-              <p tal:condition="not:view/errormsgs">
+
+              <p tal:condition="not:view/has_errors">
                 Once you enter the details of the
                 <abbr title="revision control system">RCS</abbr>
                 you use for this product series,
@@ -23,13 +22,9 @@
                 This lets distributors share code with you more efficiently,
                 and also allows distributed upstream development.
               </p>
-  
-              <div tal:repeat="errmsg view/errormsgs" tal:omit-tag>
-                <p class="portalMessage" tal:content="errmsg" />
-              </div>
 
               <form method="post" name="mf">
-  
+
                 <h2>Package in Ubuntu,
                   <span tal:replace="view/curr_ubuntu_release/title">
                     The Hoary Hedgehog Release
@@ -68,24 +63,6 @@
 
                 <h2>Source import details</h2>
 
-                <table>
-                  <tbody>
-                    <tr>
-                      <th><label>Revision Control System:</label></th>
-                      <td>
-                        <div>
-                           <tal:rcs replace="structure view/rcs_selector" />
-                           <span class="fieldRequired">(Required)</span>
-                        </div>
-                        <div class="formHelp">
-                          The type of revision control used by the upstream
-                          developers of this branch.
-                        </div>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-                
                 <fieldset>
                   <legend>Revision Control Repository</legend>
 
@@ -94,11 +71,15 @@
                   </div>
 
                   <fieldset>
-                    <legend>CVS Repository</legend>
+                    <legend>
+                     <input type="radio" name="rcstype" value="cvs"
+                            onClick="javascript:updateWidgets()"
+                            tal:attributes="checked not:view/svnrepository" />
+                      CVS</legend>
                     <table>
                       <tbody>
                         <tr>
-                          <th><label>CVS Repository Root:</label></th>
+                          <th><label>Repository Root:</label></th>
                           <td>
                             <input type="text" name="cvsroot" size="30"
                             tal:attributes="value view/cvsroot" />
@@ -112,7 +93,7 @@
                           </code></td>
                         </tr>
                         <tr>
-                          <th><label>CVS Module:</label></th>
+                          <th><label>Module:</label></th>
                           <td>
                             <input type="text" name="cvsmodule" size="30"
                             tal:attributes="value view/cvsmodule" />
@@ -120,7 +101,7 @@
                           </td>
                         </tr>
                         <tr>
-                          <th><label>CVS Branch Name:</label></th>
+                          <th><label>Branch Name:</label></th>
                           <td>
                             <div>
                               <input type="text" name="cvsbranch" size="30"
@@ -138,11 +119,15 @@
                   </fieldset>
 
                   <fieldset>
-                    <legend>SVN Repository</legend>
+                    <legend>
+                      <input type="radio" name="rcstype" value="svn"
+                              onClick="javascript: updateWidgets()" 
+                              tal:attributes="checked view/svnrepository" />
+                      SVN</legend>
                     <table>
                       <tbody>
                         <tr>
-                          <th><label>SVN Repository:</label></th>
+                          <th><label>Repository:</label></th>
                           <td>
                             <div>
                               <input type="text" name="svnrepository" size="30"
@@ -166,13 +151,75 @@
                   </fieldset>
                 </fieldset>
 
+
+                <fieldset>
+                  <legend>FTP Details</legend>
+                  <table>
+                    <tbody>
+                      <tr>
+                        <th><label>Root Directory URL:</label></th>
+                        <td>
+                          <input name="releaseroot" size=40
+                          tal:attributes="value context/releaseroot" />
+                        </td>
+                      </tr>
+                      <tr class="formHelp">
+                        <th>Example:</th>
+                        <td>
+                          <code>ftp://www.mozilla.org/pub/firefox/1.1/</code>
+                        </td>
+                      </tr>
+                      <tr class="formHelp">
+                        <th />
+                        <td>
+                          The directory containing releases that are
+                          part of this series.
+                          Launchpad automatically scans this directory
+                          regularly to import new releases.
+                        </td>
+                      </tr>
+                      <tr>
+                        <th><label>Filename Pattern:</label></th>
+                        <td>
+                          <input name="releasefileglob" size=40
+                          tal:attributes="value context/releasefileglob" />
+                        </td>
+                      </tr>
+                      <tr class="formHelp">
+                        <th>Example:</th>
+                        <td><code>firefox-1.1.*.src.tgz</code></td>
+                      </tr>
+                      <tr class="formHelp">
+                        <th />
+                        <td>
+                          Launchpad uses this pattern to find new releases of
+                          <span tal:replace="context/product/displayname" />
+                          when they are uploaded to the root directory.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </fieldset>
+
+      <script type="text/javascript">
+        function updateWidgets() {
+          var form = document.forms['mf'];
+          state = (form.rcstype[0].checked == false);
+          form.cvsroot.disabled =  state;
+          form.cvsbranch.disabled =  state;
+          form.cvsmodule.disabled =  state;
+          form.svnrepository.disabled = ! state;
+        }
+      updateWidgets();
+      </script>
+
                 <div class="actions">
                   <tal:x condition="nothing">
                     DO NOT CHANGE THE VALUE OF THIS.
                     It is used to verify that the correct form was posted.
                   </tal:x>
                   <input type="submit"
-                     name="Update RCS Details"
+                     name="edit_productseries_source"
                      value="Update RCS Details" />
                 </div>
               </form>
@@ -188,3 +235,4 @@
     <metal:nomenu fill-slot="column_two"></metal:nomenu>
   </body>
 </html>
+</tal:layout>

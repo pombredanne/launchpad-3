@@ -11,18 +11,31 @@ __all__ = [
 
 from zope.schema import Bool, Choice, Int, Text, TextLine
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
+from zope.component import getUtility
 
-from canonical.launchpad.fields import Title, Summary, Description
+from canonical.launchpad import _
+from canonical.launchpad.fields import (
+    ContentNameField, Description, Summary, Title)
 from canonical.launchpad.interfaces import (
     IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.validation import valid_webref
 
-_ = MessageIDFactory('launchpad')
+
+class ProductNameField(ContentNameField):
+
+    errormessage = _("%s is already in use by another product.")
+
+    @property
+    def _content_iface(self):
+        return IProduct
+
+    def _getByName(self, name):
+        return getUtility(IProductSet).getByName(name)
+
 
 class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
-    """A Hatchery Product.
+    """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
     Products. Each Project may be responsible for several Products.
@@ -49,7 +62,14 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
         description=_("""Product owner, it can either a valid Person or Team
             inside Launchpad context."""))
 
-    name = TextLine(
+    bugcontact = Choice(
+        title=_("Bug Contact"),
+        description=_(
+            "The person or team who will receive all bugmail for this "
+            "product"),
+        required=False, vocabulary='ValidPersonOrTeam')
+
+    name = ProductNameField(
         title=_('Name'),
         constraint=name_validator,
         description=_("""The short name of this product, which must be
@@ -231,7 +251,7 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
         """
 
     def newSeries(name, displayname, summary):
-        """Creates a new ProductSeries for this series."""
+        """Creates a new ProductSeries for this product."""
 
     def getSeries(name):
         """Returns the series for this product that has the name given, or
@@ -247,6 +267,10 @@ class IProduct(IHasOwner, IBugTarget, ISpecificationTarget, ITicketTarget):
     def ensureRelatedBounty(bounty):
         """Ensure that the bounty is linked to this product. Return None.
         """
+
+    def newBranch(name, title, url, home_page, lifecycle_status, summary,
+                  whiteboard):
+        """Create a new Branch for this product."""
 
 
 class IProductSet(Interface):
@@ -265,6 +289,13 @@ class IProductSet(Interface):
 
         If the product can't be found a zope.exceptions.NotFoundError will be
         raised.
+        """
+
+    def getByName(name, default=None, ignore_inactive=False):
+        """Return the product with the given name, ignoring inactive products
+        if ignore_inactive is True.
+
+        Return the default value if there is no such product.
         """
 
     def createProduct(owner, name, displayname, title, summary,

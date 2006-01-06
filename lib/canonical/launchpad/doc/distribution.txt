@@ -27,11 +27,31 @@ To retrieve a specific distribution, use IDistributionSet.get:
 Once you've got a distribution, you can retrieve a source package if you
 have a SourcePackageName object for it.
 
-    >>> from canonical.launchpad.database.sourcepackagename import SourcePackageName
+    >>> from canonical.launchpad.database.sourcepackagename import (
+    ...                                          SourcePackageName)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSourcePackage,
+    ...     IDistributionSourcePackageRelease)
+
     >>> evo = SourcePackageName.byName("evolution")
     >>> evo_ubuntu = ubuntu.getSourcePackage(evo)
     >>> print evo_ubuntu.name
     evolution
+
+    >>> IDistributionSourcePackage.providedBy(evo_ubuntu)
+    True
+
+    >>> from canonical.launchpad.database.sourcepackagerelease import (
+    ...                                           SourcePackageRelease)
+    >>> sourcepackagerelease = SourcePackageRelease.selectOneBy(
+    ...     sourcepackagenameID=evo.id, version='1.0')
+    >>> sourcepackagerelease.name
+    u'evolution'
+
+    >>> evo_ubuntu_rel = ubuntu.getSourcePackageRelease(
+    ...                    sourcepackagerelease)
+    >>> IDistributionSourcePackageRelease.providedBy(evo_ubuntu_rel)
+    True
 
 You can also get a release by name:
 
@@ -51,6 +71,43 @@ You can list development distroreleases:
     >>> for devdist in devdists:
     ...     print devdist.name
     hoary
+
+Retrieving packages by name, returns a tuple of
+Source/BinaryPackageName instancefound within this distribution:
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ISourcePackageName, IBinaryPackageName)
+    >>> source_name, bin_name = ubuntu.getPackageNames('pmount')
+    >>> ISourcePackageName.providedBy(source_name)
+    True
+    >>> IBinaryPackageName.providedBy(bin_name)
+    True
+    >>> source_name.name, bin_name.name
+    (u'pmount', u'pmount')
+
+Prevents wrong usage by and assertion error:
+
+    >>> name_tuple = ubuntu.getPackageNames(ubuntu)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only ever call this with a string
+
+Raises NotFoundError for following conditions:
+
+    >>> name_tuple = ubuntu.getPackageNames('@#$')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 'Invalid package name: @#$'
+
+    >>> name_tuple = ubuntu.getPackageNames('zeca')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 'Unknown package: zeca'
+
+    >>> name_tuple = ubuntu.getPackageNames('1234')
+    Traceback (most recent call last):
+    ...
+    NotFoundError: 'Unknown package: 1234'
 
 
 CVE BugTasks on a Distribution
@@ -84,7 +141,7 @@ way to decompose that into the distrorelease and the pocket. Distribution
 can do that for us.
 
 If we ask for a totally unknown distrorelease, we raise NotFoundError
-    >>> ubuntu.getDistroReleaseAndPocket('unknown') 
+    >>> ubuntu.getDistroReleaseAndPocket('unknown')
     Traceback (most recent call last):
     ...
     NotFoundError: 'unknown'
@@ -104,6 +161,13 @@ on the other side.
     hoary
     >>> print pocket.name
     SECURITY
+
+Find the backports pocket, too:
+    >>> dr, pocket = ubuntu.getDistroReleaseAndPocket('hoary-backports')
+    >>> print dr.name
+    hoary
+    >>> print pocket.name
+    BACKPORTS
 
 If we ask for a valid distrorelease which doesn't have a given pocket it should
 raise NotFoundError for us

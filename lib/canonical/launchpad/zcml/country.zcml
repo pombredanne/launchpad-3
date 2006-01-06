@@ -20,4 +20,8 @@
         <allow interface="canonical.launchpad.interfaces.ICountrySet" />
     </securedutility>
 
+    <content class="canonical.launchpad.database.Continent">
+        <allow interface="canonical.launchpad.interfaces.IContinent" />
+    </content>
+
 </configure>

@@ -12,7 +12,7 @@ class BugSetBase:
 
     def __init__(self, bug=None):
         self.bug = bug
-        self.title = 'A set of Bugs'
+        self.title = 'Malone: Bug Management in Launchpad'
 
     def __getitem__(self, id):
         item = self.table.selectOne(self.table.q.id == id)

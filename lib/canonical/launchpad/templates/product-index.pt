@@ -85,14 +85,14 @@
 
   <tal:block condition="context/branches">
 
-    <h2>Bazaar branches</h2>
+    <h2>Bazaar Branches</h2>
 
     <div>
 
       <ul>
         <li tal:repeat="branch context/branches">
           <a
-            tal:attributes="href string:http://bazaar.ubuntu.com/${branch/getPackageName}"
+            tal:attributes="href branch/fmt:url"
             tal:content="branch/title"
           >branch title</a>
         </li>

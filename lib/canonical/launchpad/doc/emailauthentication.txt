@@ -15,7 +15,7 @@ emails:
 Now Sample Person and Foo Bar have one GPG key each. Next, let's get
 a test email that's signed and try to authenticate the user who sent it:
 
-    >>> from canonical.launchpad.helpers import read_test_message
+    >>> from canonical.launchpad.mail.ftests import read_test_message
     >>> msg = read_test_message('signed_detached.txt')
     >>> principal = authenticateEmail(msg)
 
@@ -66,6 +66,22 @@ As well as signed multipart messages:
     >>> launchbag.login
     'foo.bar@canonical.com'
 
+When dealing with inline signatures, lines that begin with a '-'
+character in the signed content are required to be escaped, so we need
+to deal with it if we receive a dash escaped message.
+
+    >>> msg = read_test_message('signed_dash_escaped.txt')
+    >>> principal = authenticateEmail(msg)
+    >>> principal is not None
+    True
+    >>> name, addr = email.Utils.parseaddr(msg['From'])
+    >>> from_user = getUtility(IPersonSet).getByEmail(addr)
+    >>> launchbag.user == from_user
+    True
+    >>> launchbag.login
+    'test@canonical.com'
+
+
 Since a GPG key can be associated with several addresses, the user to
 authenticate is extracted from the From header. If the key used to sign
 the email doesn't belong to that user, he won't be authenticated, as
@@ -90,3 +106,61 @@ InvalidSignature will be raised:
     Traceback (most recent call last):
       ...
     InvalidSignature:...
+
+Before the signature is verified, the signed text's line endings should
+be canonicalised to \r\n. In order to ensure that the line endings in
+signed_canonicalised.txt are not already '\r\n', we recreate the test
+message.
+
+    >>> from canonical.launchpad.mail import SignedMessage
+    >>> msg = read_test_message('signed_canonicalised.txt')
+    >>> msg_lines = msg.as_string().splitlines()
+    >>> msg = email.message_from_string(
+    ...     '\n'.join(msg_lines), _class=SignedMessage)
+    >>> msg.parsed_string = msg.as_string()
+
+    >>> from canonical.launchpad.interfaces import IGPGHandler
+    >>> getUtility(IGPGHandler).getVerifiedSignature(
+    ...     msg.signedContent, msg.signature)
+    Traceback (most recent call last):
+    ...
+    GPGVerificationError: Bad signature
+
+    >>> getUtility(IGPGHandler).getVerifiedSignature(
+    ...     msg.signedContent.replace('\n', '\r\n'), msg.signature)
+    <...PymeSignature...>
+
+authenticateEmail() doesn't have any problems verifying the signature:
+
+    >>> from canonical.launchpad.interfaces import IPerson
+    >>> for line_ending in '\n', '\r\n':
+    ...     msg = email.message_from_string(
+    ...         line_ending.join(msg_lines), _class=SignedMessage)
+    ...     msg.parsed_string = msg.as_string()
+    ...     principal = authenticateEmail(msg)
+    ...     authenticated_person = IPerson(principal)
+    ...     print authenticated_person.preferredemail.email
+    test@canonical.com
+    test@canonical.com
+
+Python's email library unfolds the headers, which means that we have to
+be careful when extracting the signed content when folded headers are
+signed.
+
+    >>> msg = read_test_message('signed_folded_header.txt')
+    >>> print msg.parsed_string #doctest: -NORMALIZE_WHITESPACE
+    Date:...
+    ...
+    Content-Type: multipart/mixed;
+     boundary="--------------------EuxKj2iCbKjpUGkD"
+    ...
+
+    >>> print msg.as_string() #doctest: -NORMALIZE_WHITESPACE
+    Date:...
+    ...
+    Content-Type: multipart/mixed; boundary="--------------------EuxKj2iCbKjpUGkD"
+    ...
+
+    >>> principal = authenticateEmail(msg)
+    >>> print IPerson(principal).displayname
+    Sample Person

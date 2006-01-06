@@ -234,7 +234,9 @@ def main(options):
         for obj_name, perm in config.items(username):
             if '.' not in obj_name:
                 continue
-            assert obj_name in schema.keys(), 'Bad object name %r'%(obj_name,)
+            if obj_name not in schema.keys():
+                log.warn('Bad object name %r', obj_name)
+                continue
             obj = schema[obj_name]
 
             found.add(obj)

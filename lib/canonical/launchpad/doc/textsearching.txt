@@ -110,6 +110,13 @@ We also support 'or' as a boolean operation:
     Carlos Valdivia Yag?e
     Mark Shuttleworth
 
+NULL searches will return nothing:
+
+    >>> runsql("""
+    ...     SELECT displayname FROM Person
+    ...         WHERE fti @@ ftq(NULL) ORDER BY displayname
+    ...     """)
+
 
 ftq(text) & _ftq(text)
 ----------------------

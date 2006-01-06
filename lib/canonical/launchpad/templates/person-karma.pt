@@ -41,11 +41,13 @@
         <td tal:content="cache/category/title">Bug Management</td>
         <td tal:content="cache/karmavalue">10</td>
       </tr>
-      <tr>
-        <td><b>Total:</b></td>
-        <td tal:content="context/karma">34</td>
-      </tr>
     </tbody>
+  </table>
+  <table>
+    <tr>
+      <td><b>Total:</b></td>
+      <td tal:content="context/karma">34</td>
+    </tr>
   </table>
 
   <tal:latest_events condition="context/latestKarma">

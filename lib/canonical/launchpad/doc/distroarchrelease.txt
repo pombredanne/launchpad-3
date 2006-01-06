@@ -33,5 +33,5 @@ instance:
 Since 'at' isn't available in our sampledata (not even published), 
 None is returned:
 
-   >>> assert hoary_i386.findDepCandidateByName("at") is None
-
+   >>> hoary_i386.findDepCandidateByName("at") is None
+   True

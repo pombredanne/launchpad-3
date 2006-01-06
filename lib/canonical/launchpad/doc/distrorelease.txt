@@ -144,3 +144,35 @@ again" type set of assertions.
    1
    >>> len(humpy_i386.getReleasedPackages('pmount'))
    1
+
+DistroRelease can build meta objects for packages
+-------------------------------------------------
+
+   >>> from canonical.launchpad.interfaces import (
+   ...     ISourcePackage,
+   ...     IDistroReleaseBinaryPackage,
+   ...     IDistroReleaseSourcePackageRelease)
+
+
+   >>> pmount_src_name =  SourcePackageName.byName('pmount')
+   >>> pmount_source = hoary.getSourcePackage(pmount_src_name)
+   >>> ISourcePackage.providedBy(pmount_source)
+   True
+
+   >>> from canonical.launchpad.database.binarypackagename import (
+   ...                                       BinaryPackageName)
+   >>> pmount_bin_name =  BinaryPackageName.byName('pmount')
+   >>> pmount_binary = hoary.getBinaryPackage(pmount_bin_name)
+   >>> IDistroReleaseBinaryPackage.providedBy(pmount_binary)
+   True
+
+   >>> from canonical.launchpad.database.sourcepackagerelease import (
+   ...                                           SourcePackageRelease)
+   >>> pmount_rel = SourcePackageRelease.selectOneBy(
+   ...     sourcepackagenameID=pmount_src_name.id, version='0.1-1')
+   >>> pmount_rel.sourcepackagename.name
+   u'pmount'
+
+   >>> pmount_srcrel = hoary.getSourcePackageRelease(pmount_rel)
+   >>> IDistroReleaseSourcePackageRelease.providedBy(pmount_srcrel)
+   True

@@ -49,6 +49,8 @@ class Product(SQLBase):
         foreignKey="Project", dbName="project", notNull=False, default=None)
     owner = ForeignKey(
         foreignKey="Person", dbName="owner", notNull=True)
+    bugcontact = ForeignKey(
+        dbName='bugcontact', foreignKey='Person', notNull=False, default=None)
     name = StringCol(
         dbName='name', notNull=True, alternateID=True, unique=True)
     displayname = StringCol(dbName='displayname', notNull=True)
@@ -171,8 +173,8 @@ class Product(SQLBase):
 
     def newTicket(self, owner, title, description):
         """See ITicketTarget."""
-        return Ticket(title=title, description=description, owner=owner,
-            product=self)
+        return Ticket(
+            title=title, description=description, owner=owner, product=self)
 
     def getTicket(self, ticket_num):
         """See ITicketTarget."""
@@ -329,6 +331,16 @@ class Product(SQLBase):
         ProductBounty(product=self, bounty=bounty)
         return None
 
+    def newBranch(self, name, title, url, home_page, lifecycle_status,
+                  summary, whiteboard):
+        """See IProduct."""
+        from canonical.launchpad.database import Branch
+        return Branch(
+            product=self, name=name, title=title, url=url, home_page=home_page,
+            lifecycle_status=lifecycle_status, summary=summary,
+            whiteboard=whiteboard)
+        
+
 
 class ProductSet:
     implements(IProductSet)
@@ -361,6 +373,17 @@ class ProductSet:
                                 str(productid))
 
         return product
+    
+    def getByName(self, name, default=None, ignore_inactive=False):
+        """See canonical.launchpad.interfaces.product.IProductSet."""
+        if ignore_inactive:
+            product = Product.selectOneBy(name=name, active=True)
+        else:
+            product = Product.selectOneBy(name=name)
+        if product is None:
+            return default
+        return product
+
 
     def createProduct(self, owner, name, displayname, title, summary,
                       description, project=None, homepageurl=None,

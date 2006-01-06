@@ -29,7 +29,7 @@
   <browser:menus
       module="canonical.launchpad.browser.person"
       classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
-          PersonSpecsMenu PersonSupportMenu PeopleContextMenu"
+          PersonSpecsMenu PersonSupportMenu PersonCodeMenu PeopleContextMenu"
       />
 
   <browser:url
@@ -58,7 +58,7 @@
       for="canonical.launchpad.interfaces.IPerson"
       schema="canonical.launchpad.interfaces.IPerson"
       class="canonical.launchpad.browser.PersonEditView"
-      label="Edit Person Details"
+      label="Edit Personal Details"
       fields="name displayname givenname familyname timezone"
       permission="launchpad.Edit"
       template="../templates/person-edit.pt"
@@ -119,28 +119,9 @@
           template="../templates/person-index.pt"
           lp:url="/people/$Person.name/" />
       <browser:page
-          name="+branches"
-          template="../templates/person-branches.pt"
-          lp:url="/people/$Person.name/+branches" />
-      <browser:page
           name="+packages"
           template="../templates/person-packages.pt"
           lp:url="/people/$Person.name/+packages" />
-      <browser:page
-          name="+assignedbugs"
-          facet="bugs"
-          template="../templates/person-assignedbugs.pt"
-          lp:url="/people/$Person.name/+assignedbugs" />
-      <browser:page
-          name="+packagebugs"
-          facet="bugs"
-          template="../templates/person-packagebugs.pt"
-          lp:url="/people/$Person.name/+packagebugs" />
-      <browser:page
-          name="+reportedbugs"
-          facet="bugs"
-          template="../templates/person-reportedbugs.pt"
-          lp:url="/people/$Person.name/+reportedbugs" />
       <browser:page
           name="+karma"
           template="../templates/person-karma.pt"
@@ -164,13 +145,13 @@
           template="../templates/person-portlet-emails.pt"
           lp:url="/people/$Person.name/+portlet-emails" />
       <browser:page
+          name="+portlet-team-assignedbugs"
+          template="../templates/person-portlet-team-assignedbugs.pt"
+          lp:url="/people/$Person.name/+portlet-team-assignedbugs" />
+      <browser:page
           name="+portlet-details"
           template="../templates/person-portlet-details.pt"
           lp:url="/people/$Person.name/+portlet-details" />
-      <browser:page
-          name="+portlet-editdetails"
-          template="../templates/person-portlet-editdetails.pt"
-          lp:url="/people/$Person.name/+portlet-editdetails" />
       <!-- this should be on IPerson because we don't always know if it is a
       team or a person -->
       <browser:page
@@ -188,12 +169,54 @@
       />
 
   <browser:page
-    for="canonical.launchpad.interfaces.IPerson"
-    class="canonical.launchpad.browser.TicketTargetView"
-    name="+portlet-latesttickets"
-    permission="zope.Public"
-    template="../templates/tickettarget-portlet-latesttickets.pt"
-    />
+      for="canonical.launchpad.interfaces.IPerson"
+      name="+bugtask-macros-buglisting"
+      permission="zope.Public"
+      template="../templates/bugtask-macros-buglisting.pt" />
+
+  <browser:page
+      name="+assignedbugs"
+      for="canonical.launchpad.interfaces.IPerson"
+      facet="bugs"
+      class="canonical.launchpad.browser.PersonAssignedBugTaskSearchListingView"
+      permission="zope.Public"
+      template="../templates/person-assignedbugs.pt"
+      lp:url="/people/$Person.name/+assignedbugs" />
+
+  <browser:page
+      name="+packagebugs"
+      for="canonical.launchpad.interfaces.IPerson"
+      facet="bugs"
+      class="canonical.launchpad.browser.BugTasksOnMaintainedSoftwareSearchListingView"
+      permission="zope.Public"
+      template="../templates/person-packagebugs.pt"
+      lp:url="/people/$Person.name/+packagebugs" />
+
+  <browser:page
+      name="+reportedbugs"
+      for="canonical.launchpad.interfaces.IPerson"
+      facet="bugs"
+      class="canonical.launchpad.browser.ReportedBugTaskSearchListingView"
+      permission="zope.Public"
+      template="../templates/person-reportedbugs.pt"
+      lp:url="/people/$Person.name/+reportedbugs" />
+
+  <browser:page
+      name="+subscribedbugs"
+      for="canonical.launchpad.interfaces.IPerson"
+      facet="bugs"
+      class="canonical.launchpad.browser.SubscribedBugTaskSearchListingView"
+      permission="zope.Public"
+      template="../templates/person-subscribedbugs.pt"
+      lp:url="/people/$Person.name/+subscribedbugs" />
+
+  <browser:page
+      for="canonical.launchpad.interfaces.IPerson"
+      class="canonical.launchpad.browser.TicketTargetView"
+      name="+portlet-latesttickets"
+      permission="zope.Public"
+      template="../templates/tickettarget-portlet-latesttickets.pt"
+      />
 
   <!-- Adding SSH keys is the only possibly harmful thing that can be done
   without the user's password, so we use a special permission here to make
@@ -308,79 +331,96 @@
         template="../templates/tickettarget-tickets.pt" />
   </browser:pages>
 
+  <browser:pages
+    for="canonical.launchpad.interfaces.IPerson"
+    class="canonical.launchpad.browser.BranchTargetView"
+    permission="zope.Public"
+    facet="code"
+    >
+    <!-- there is trickery here, in the view class, which detects the view
+    name and then gives the template a different set of branches to work
+    with.-->
+    <browser:page
+        name="+branches"
+        template="../templates/branchtarget-branches.pt" />
+    <browser:page
+        name="+authoredbranches"
+        template="../templates/branchtarget-branches.pt" />
+    <browser:page
+        name="+registeredbranches"
+        template="../templates/branchtarget-branches.pt" />
+    <browser:page
+        name="+subscribedbranches"
+        template="../templates/branchtarget-branches.pt" />
+  </browser:pages>
+
   <!-- Team Views -->
 
-  <browser:pages
+  <browser:page
       for="canonical.launchpad.interfaces.ITeam"
       permission="zope.Public"
-      class="canonical.launchpad.browser.PersonView">
-      <browser:page
-        name="+teamhierarchy"
-        template="../templates/person-teamhierarchy.pt"
-        lp:url="/people/$person.id/+teamhierarchy" />
-  </browser:pages>
+      class="canonical.launchpad.browser.PersonView"
+      name="+teamhierarchy"
+      template="../templates/person-teamhierarchy.pt"
+      lp:url="/people/$person.id/+teamhierarchy">
+  </browser:page>
 
-  <browser:pages
+  <browser:page
       for="canonical.launchpad.interfaces.ITeam"
       permission="launchpad.Edit"
-      class="canonical.launchpad.browser.TeamEmailView">
-        <browser:page
-            name="+editemail"
-            template="../templates/team-editemail.pt"
-            lp:url="/people/$team.id/+editemail" />
-  </browser:pages>
+      class="canonical.launchpad.browser.TeamEmailView"
+      name="+editemail"
+      template="../templates/team-editemail.pt"
+      lp:url="/people/$team.id/+editemail"> 
+  </browser:page>
 
   <browser:editform
       name="+edit"
       for="canonical.launchpad.interfaces.ITeam"
       class="canonical.launchpad.browser.TeamEditView"
       schema="canonical.launchpad.interfaces.ITeam"
-      fields="displayname teamdescription defaultmembershipperiod 
+      fields="name displayname teamdescription defaultmembershipperiod 
               defaultrenewalperiod subscriptionpolicy"
       permission="launchpad.Edit"
       template="../templates/team-edit.pt"
       lp:url="/people/$person.id/+edit">
   </browser:editform>
 
-  <browser:pages
+  <browser:page
       for="canonical.launchpad.interfaces.ITeam"
       permission="launchpad.Admin"
-      class="canonical.launchpad.browser.TeamReassignmentView">
-        <browser:page
-            name="+reassign"
-            template="../templates/object-reassignment.pt"
-            lp:url="/people/$team.id/+reassign" />
-  </browser:pages>
+      class="canonical.launchpad.browser.TeamReassignmentView"
+      name="+reassign"
+      template="../templates/object-reassignment.pt"
+      lp:url="/people/$team.id/+reassign">
+  </browser:page>
 
-  <browser:pages
+  <browser:page
       for="canonical.launchpad.interfaces.ITeam"
       permission="launchpad.AnyPerson"
-      class="canonical.launchpad.browser.TeamJoinView">
-      <browser:page
-          name="+join"
-          template="../templates/team-join.pt"
-          lp:url="/people/$person.id/+join" />
-  </browser:pages>
+      class="canonical.launchpad.browser.TeamJoinView"
+      name="+join"
+      template="../templates/team-join.pt"
+      lp:url="/people/$person.id/+join">
+  </browser:page>
 
-  <browser:pages
+  <browser:page
       for="canonical.launchpad.interfaces.ITeam"
       permission="launchpad.AnyPerson"
-      class="canonical.launchpad.browser.TeamLeaveView">
-      <browser:page
-          name="+leave"
-          template="../templates/team-leave.pt"
-          lp:url="/people/$team.id/+leave" />
-  </browser:pages>
+      class="canonical.launchpad.browser.TeamLeaveView"
+      name="+leave"
+      template="../templates/team-leave.pt"
+      lp:url="/people/$team.id/+leave">
+  </browser:page>
 
-  <browser:pages
+  <browser:page
       for="canonical.launchpad.interfaces.ITeam"
       permission="zope.Public"
-      class="canonical.launchpad.browser.PersonView">
-      <browser:page
-          name="+polls"
-          template="../templates/team-polls.pt"
-          lp:url="/people/$team.id/+polls" />
-  </browser:pages>
+      class="canonical.launchpad.browser.PersonView"
+      name="+polls"
+      template="../templates/team-polls.pt"
+      lp:url="/people/$team.id/+polls">
+  </browser:page>
 
   <browser:addform
       name="+newpoll"
@@ -394,6 +434,69 @@
       template="../templates/team-newpoll.pt"
       lp:url="/people/$team.id/+newpoll">
   </browser:addform>
+
+  <browser:page
+      name="+members"
+      for="canonical.launchpad.interfaces.ITeam"
+      permission="zope.Public"
+      class="canonical.launchpad.browser.TeamMembersView"
+      template="../templates/team-members.pt"
+      lp:url="people/$team/+members">
+  </browser:page>
+
+  <browser:addform
+      name="+addmember"
+      for="canonical.launchpad.interfaces.ITeam"
+      schema="canonical.launchpad.interfaces.ITeamMember"
+      fields="newmember"
+      class="canonical.launchpad.browser.TeamMemberAddView"
+      permission="launchpad.Edit"
+      template="../templates/team-addmember.pt"
+      lp:url="people/$team/+addmember">
+  </browser:addform>
+
+  <browser:page
+      name="+editproposedmembers"
+      for="canonical.launchpad.interfaces.ITeam"
+      permission="launchpad.Edit"
+      class="canonical.launchpad.browser.ProposedTeamMembersEditView"
+      template="../templates/team-editproposed.pt"
+      lp:url="people/$team/+editproposedmembers">
+  </browser:page>
+
+  <browser:addform
+      name="+addbranch"
+      for="canonical.launchpad.interfaces.IPerson"
+      schema="canonical.launchpad.interfaces.IBranch"
+      fields="product name owner author title url home_page lifecycle_status summary"
+      class="canonical.launchpad.browser.BranchAddView"
+      facet="code"
+      keyword_arguments="product name owner author title url home_page lifecycle_status summary"
+      permission="launchpad.AnyPerson"
+      template="../templates/person-branch-add.pt">
+      <browser:widget
+          field="url"
+          class="zope.app.form.browser.TextWidget"
+          displayWidth="65" />
+      <browser:widget
+          field="home_page"
+          class="zope.app.form.browser.TextWidget"
+          displayWidth="65" />
+      <browser:widget
+          field="title"
+          class="zope.app.form.browser.TextWidget"
+          displayWidth="65" />
+      <browser:widget
+          field="summary"
+          class="zope.app.form.browser.TextAreaWidget"
+          height="5" />
+      <browser:widget
+          field="owner"
+          class="canonical.widgets.HiddenUserWidget" />
+      <browser:widget
+          field="author"
+          class="canonical.widgets.ContextWidget" />
+    </browser:addform>
 
   <!-- PersonSet -->
   <content class="canonical.launchpad.database.PersonSet">
@@ -515,4 +618,9 @@
         template="../templates/people-portlet-about.pt" />
   </browser:pages>
 </facet>
+
+<adapter for="canonical.launchpad.webapp.interfaces.ILaunchpadPrincipal"
+    provides="canonical.launchpad.interfaces.IPerson"
+    factory="canonical.launchpad.components.person.personFromPrincipal" />
+
 </configure>

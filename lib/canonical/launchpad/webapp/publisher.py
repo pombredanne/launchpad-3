@@ -84,8 +84,8 @@ class stepto(DecoratorAdvisor):
 class redirection:
     """A redirection is used for two related purposes.
 
-    It is a class advisor in its two argument form.  It says what name
-    is mapped to where.
+    It is a class advisor in its two argument form or as a descriptor.
+    It says what name is mapped to where.
 
     It is an object returned from a traversal method in its one argument
     form.  It says that the result of such traversal is a redirect.
@@ -96,12 +96,25 @@ class redirection:
 
     def __init__(self, arg1, arg2=None, status=None):
         if arg2 is None:
+            self.fromname = None
             self.toname = arg1
         else:
             self.fromname = arg1
-            self.toname = arg2
+            self.toname = lambda self: arg2
             addClassAdvisor(self.advise)
         self.status = status
+
+    def __call__(self, fn):
+        # We are being used as a descriptor.
+        assert self.fromname is None, (
+            "redirection() can not be used as a descriptor in its "
+            "two argument form")
+
+        self.fromname = self.toname
+        self.toname = fn
+        addClassAdvisor(self.advise)
+
+        return fn
 
     def advise(self, cls):
         redirections = cls.__dict__.get('__redirections__')
@@ -158,6 +171,16 @@ class LaunchpadView(UserAttributeCache):
         return self.index
 
     def render(self):
+        """Return the body of the response.
+        
+        If the mime type of request.response starts with text/, then
+        the result of this method is encoded to the charset of
+        request.response. If there is no charset, it is encoded to 
+        utf8. Otherwise, the result of this method is treated as bytes.
+
+        XXX: Steve Alexander says this is a convenient lie. That is, its
+        not quite right, but good enough for most uses.
+        """
         return self.template()
 
     def __call__(self):
@@ -277,6 +300,9 @@ def nearest(obj, *interfaces):
 
 class RootObject:
     implements(ILaunchpadApplication, ILaunchpadRoot)
+    # These next two needed by the Z3 API browser
+    __parent__ = None
+    __name__ = 'Launchpad'
 
 
 rootObject = ProxyFactory(RootObject(), NamesChecker(["__class__"]))
@@ -382,6 +408,10 @@ class Navigation:
         if self.newlayer is not None:
             setFirstLayer(request, self.newlayer)
 
+        # store the current context object in the request's
+        # traversed_objects list:
+        request.traversed_objects.append(self.context)
+
         # Next, if there is a breadcrumb for the context, add it to the
         # request's list of breadcrumbs.
         breadcrumb_text = self.breadcrumb()
@@ -436,7 +466,7 @@ class Navigation:
         if redirections is not None:
             if name in redirections:
                 urlto, status = redirections[name]
-                return RedirectionView(urlto, request, status=status)
+                return RedirectionView(urlto(self), request, status=status)
 
         # Finally, use the self.traverse() method.  This can return
         # an object to be traversed, or raise NotFoundError.  It must not

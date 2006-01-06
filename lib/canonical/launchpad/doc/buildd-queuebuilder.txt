@@ -72,8 +72,9 @@ build jobs will be created.
 
 Only Ubuntu/Warty/i386 and Debian/Woody/i386 have an available CHROOT. 
 
-  >>> [(arch.distrorelease.name, arch.architecturetag) for arch in bm._archreleases]
-  [(u'woody', u'i386'), (u'warty', u'i386')]
+  >>> sorted((arch.distrorelease.name, arch.architecturetag)
+  ...        for arch in bm._archreleases)
+  [(u'warty', u'i386'), (u'woody', u'i386')]
 
 Adding a new dummy sourcepackagerelease and publish it in Ubuntu/Warty/i386:
 

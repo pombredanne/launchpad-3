@@ -5,6 +5,11 @@
    <body>
    <div metal:fill-slot="main">
      <div metal:use-macro="context/@@launchpad_addform/addform">
+       <p metal:fill-slot="extra_info">
+         When comparing the signed code of conduct with the reference
+         copy, white space differences are ignored.  You may wish to
+         use this fact to alter the checksum of the signed content.
+       </p>
        <div class="portalMessage" metal:fill-slot="extra_top"
             tal:condition="view/errors" tal:content="structure view/errors">
        </div>

@@ -1,0 +1,16 @@
+<div class="portlet" tal:condition="context/myactivememberships">
+
+  <h4>Bugs assigned to:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul tal:repeat="membership context/myactivememberships">
+      <li class="bugs">
+        <a tal:attributes="href string:${membership/team/fmt:url}/+assignedbugs"
+          ><span tal:replace="membership/team/browsername" /></a>
+      </li>
+    </ul>
+    
+  </div>
+
+</div>

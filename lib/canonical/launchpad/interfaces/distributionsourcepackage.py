@@ -6,12 +6,22 @@ __metaclass__ = type
 
 __all__ = [
     'IDistributionSourcePackage',
+    'DuplicateBugContactError',
+    'DeleteBugContactError'
     ]
 
 from zope.interface import Attribute
 
 from canonical.launchpad.interfaces.bug import IBugTarget
 from canonical.launchpad.interfaces.tickettarget import ITicketTarget
+
+class DuplicateBugContactError(Exception):
+    """Raised when trying to add a package bug contact that already exists."""
+
+
+class DeleteBugContactError(Exception):
+    """Raised when an error occurred trying to delete a bug contact."""
+
 
 class IDistributionSourcePackage(ITicketTarget, IBugTarget):
 
@@ -25,26 +35,50 @@ class IDistributionSourcePackage(ITicketTarget, IBugTarget):
     # XXX sabdfl 16/10/2005
     distro = Attribute("The distribution.")
 
-    by_distroreleases = Attribute("Return a list of "
-        "DistroReleaseSourcePackage "
-        "objects, each representing this same source package in the "
-        "releases of this distribution.")
+    by_distroreleases = Attribute(
+        "Return a list of DistroReleaseSourcePackage objects, each "
+        "representing this same source package in the releases of this "
+        "distribution.")
 
     subscribers = Attribute("The subscribers to this package.")
 
-    currentrelease = Attribute("""The latest published SourcePackageRelease
-        of a source package with this name in the distribution or
-        distrorelease, or None if no source package with that name is
-        published in this distrorelease.""")
+    currentrelease = Attribute(
+        "The latest published SourcePackageRelease of a source package with "
+        "this name in the distribution or distrorelease, or None if no source "
+        "package with that name is published in this distrorelease.")
 
-    releases = Attribute("The list of all releases of this source "
+    releases = Attribute(
+        "The list of all releases of this source package in this distribution.")
+
+    publishing_history = Attribute(
+        "Return a list of publishing records for this source package in this "
+        "distribution.")
+
+    binary_package_names = Attribute(
+        "A string of al the binary package names associated with this source "
         "package in this distribution.")
 
-    publishing_history = Attribute("Return a list of publishing "
-        "records for this source package in this distribution.")
+    bugcontacts = Attribute(
+        "The list of people or teams that is explicitly Cc'd to all public "
+        "bugs filed on this package.")
 
-    binary_package_names = Attribute("A string of al the binary package "
-        "names associated with this source package in this distribution.")
+    def addBugContact(person):
+        """Add a bug contact for this package.
+
+        :person: An IPerson or ITeam.
+        """
+
+    def removeBugContact(person):
+        """Remove a bug contact from this package.
+
+        :person: An IPerson or ITeam.
+        """
+
+    def isBugContact(person):
+        """Is person a bug contact for this package?
+
+        If yes, the PackageBugContact is returned. Otherwise False is returned.
+        """
 
     def subscribe(person):
         """Subscribe a person to this package.
@@ -81,4 +115,3 @@ class IDistributionSourcePackage(ITicketTarget, IBugTarget):
         Distro sourcepackages compare not equal if either of their distribution
         or sourcepackagename compare not equal.
         """
-

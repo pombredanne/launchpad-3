@@ -10,13 +10,14 @@ __all__ = [
     'ISpecificationDelta',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
 
 from zope.interface import Interface, Attribute
+from zope.component import getUtility
 
-from zope.schema import Datetime, Int, Choice, Text, TextLine, Float, Bool
+from zope.schema import Datetime, Int, Choice, Text, TextLine, Bool
 
-from canonical.launchpad.fields import Summary, Title, TimeInterval
+from canonical.launchpad import _
+from canonical.launchpad.fields import ContentNameField, Summary, Title 
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.validation import valid_webref
@@ -25,14 +26,22 @@ from canonical.lp.dbschema import (
     SpecificationStatus, SpecificationPriority, SpecificationDelivery)
 
 
-_ = MessageIDFactory('launchpad')
+class SpecNameField(ContentNameField):
 
+    errormessage = _("%s is already in use by another specification.")
 
+    @property
+    def _content_iface(self):
+        return ISpecification
+
+    def _getByName(self, name):
+        return getUtility(ISpecificationSet).getByName(name)
+
+        
 class ISpecification(IHasOwner):
-    """The core bounty description."""
+    """A Specification."""
 
-    # id = Int(title=_('Specification ID'), required=True, readonly=True)
-    name = TextLine(
+    name = SpecNameField(
         title=_('Name'), required=True, description=_(
             "May contain letters, numbers, and dashes only. "
             "Examples: mozilla-type-ahead-find, postgres-smart-serial."),
@@ -227,6 +236,12 @@ class ISpecificationSet(Interface):
 
     def __iter__():
         """Iterate over all specifications."""
+
+    def getByName(name, default=None):
+        """Return the specification with the given name.
+
+        Return the default value if there is no such specification.
+        """
 
     def new(name, title, specurl, summary, priority, status, owner,
         assignee=None, drafter=None, approver=None, product=None,

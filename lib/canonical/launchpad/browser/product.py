@@ -14,13 +14,15 @@ __all__ = [
     'ProductSpecificationsMenu',
     'ProductBountiesMenu',
     'ProductTranslationsMenu',
+    'ProductCodeMenu',
     'ProductSetContextMenu',
     'ProductView',
     'ProductEditView',
     'ProductSeriesAddView',
     'ProductRdfView',
     'ProductSetView',
-    'ProductAddView'
+    'ProductAddView',
+    'ProductBugContactEditView'
     ]
 
 from warnings import warn
@@ -29,7 +31,7 @@ import zope.security.interfaces
 from zope.component import getUtility
 from zope.event import notify
 from zope.app.form.browser.add import AddView
-from zope.app.event.objectevent import ObjectCreatedEvent, ObjectModifiedEvent
+from zope.app.event.objectevent import ObjectCreatedEvent 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
@@ -93,7 +95,9 @@ class ProductFacets(StandardLaunchpadFacets):
     usedfor = IProduct
 
     enable_only = ['overview', 'bugs', 'support', 'bounties', 'specifications',
-                   'translations', 'calendar']
+                   'translations', 'calendar', 'code']
+
+    links = StandardLaunchpadFacets.links + ['code']
 
     def overview(self):
         target = ''
@@ -132,6 +136,12 @@ class ProductFacets(StandardLaunchpadFacets):
         summary = 'Translations of %s in Rosetta' % self.context.displayname
         return Link(target, text, summary)
 
+    def code(self):
+        target = '+branches'
+        text = 'Code'
+        summary = 'Bazaar Branches for %s' % self.context.displayname
+        return Link(target, text, summary)
+
     def calendar(self):
         target = '+calendar'
         text = 'Calendar'
@@ -145,13 +155,17 @@ class ProductOverviewMenu(ApplicationMenu):
     usedfor = IProduct
     facet = 'overview'
     links = [
-        'edit', 'reassign', 'distributions', 'packages', 'series_add',
-        'milestone_add', 'launchpad_usage', 'rdf', 'administer'
-        ]
+        'edit', 'editbugcontact', 'reassign', 'distributions', 'packages',
+        'series_add', 'branch_add', 'milestone_add', 'launchpad_usage', 'rdf',
+        'administer']
 
     def edit(self):
         text = 'Edit Product Details'
         return Link('+edit', text, icon='edit')
+
+    def editbugcontact(self):
+        text = 'Edit Bug Contact'
+        return Link('+editbugcontact', text, icon='edit')
 
     def reassign(self):
         text = 'Change Maintainer'
@@ -168,6 +182,10 @@ class ProductOverviewMenu(ApplicationMenu):
     def series_add(self):
         text = 'Add Release Series'
         return Link('+addseries', text, icon='add')
+
+    def branch_add(self):
+        text = 'Add Branch'
+        return Link('+addbranch', text, icon='add')
 
     def milestone_add(self):
         text = 'Add Milestone'
@@ -264,6 +282,18 @@ class ProductTranslationsMenu(ApplicationMenu):
         text = 'Edit Template Names'
         return Link('+potemplatenames', text, icon='edit')
 
+
+class ProductCodeMenu(ApplicationMenu):
+
+    usedfor = IProduct
+    facet = 'code'
+    links = ['new']
+
+    def new(self):
+        text = 'Add Bazaar Branch'
+        return Link('+addbranch', text, icon='add')
+
+
 def _sort_distros(a, b):
     """Put Ubuntu first, otherwise in alpha order."""
     if a['name'] == 'ubuntu':
@@ -348,11 +378,21 @@ class ProductView:
             return None
 
     def templateviews(self):
+        """Return the view class of the IPOTemplate associated with the context.
+        """
         target = self.context.primary_translatable
         if target is None:
             return []
-        return [POTemplateView(template, self.request)
-                for template in target.currentpotemplates]
+        templateview_list = [
+            POTemplateView(template, self.request)
+            for template in target.currentpotemplates
+            ]
+
+        # Initialize the views.
+        for templateview in templateview_list:
+            templateview.initialize()
+
+        return templateview_list
 
     def requestCountry(self):
         return ICountry(self.request, None)
@@ -369,7 +409,6 @@ class ProductView:
         title, and an attribute "packagings" which is a list of the relevant
         packagings for this distro and product.
         """
-
         distros = {}
         # first get a list of all relevant packagings
         all_packagings = []
@@ -403,31 +442,6 @@ class ProductView:
         return [product for product in self.context.project.products
                         if product.id != self.context.id]
 
-    def edit(self):
-        """
-        Update the contents of a Product. This method is called by a
-        tal:dummy element in a page template. It checks to see if a
-        form has been submitted that has a specific element, and if
-        so it continues to process the form, updating the fields of
-        the database as it goes.
-        """
-        # check that we are processing the correct form, and that
-        # it has been POST'ed
-        form = self.form
-        if form.get("Update") != "Update Product":
-            return
-        if self.request.method != "POST":
-            return
-        # Extract details from the form and update the Product
-        self.context.displayname = form['displayname']
-        self.context.title = form['title']
-        self.context.summary = form['summary']
-        self.context.description = form['description']
-        self.context.homepageurl = form['homepageurl']
-        notify(ObjectModifiedEvent(self.context))
-        # now redirect to view the product
-        self.request.response.redirect(self.request.URL[-1])
-
     def potemplatenames(self):
         potemplatenames = set([])
 
@@ -438,12 +452,8 @@ class ProductView:
         return sorted(potemplatenames, key=lambda item: item.name)
 
 
-class ProductEditView(ProductView, SQLObjectEditView):
+class ProductEditView(SQLObjectEditView):
     """View class that lets you edit a Product object."""
-
-    def __init__(self, context, request):
-        ProductView.__init__(self, context, request)
-        SQLObjectEditView.__init__(self, context, request)
 
     def changed(self):
         # If the name changed then the URL will have changed
@@ -596,3 +606,27 @@ class ProductAddView(AddView):
     def nextURL(self):
         return self._nextURL
 
+
+class ProductBugContactEditView(SQLObjectEditView):
+    """Browser view class for editing the product bug contact."""
+    def changed(self):
+        """Redirect to the product page with a success message."""
+        product = self.context
+        contact_email = None
+
+        if product.bugcontact:
+            contact_email = product.bugcontact.preferredemail.email
+
+        if contact_email:
+            # The bug contact was set to a new person or team.
+            self.request.response.addNotification(
+                "Successfully changed the bug contact to %s" % contact_email)
+        else:
+            # The bug contact was set to noone.
+            self.request.response.addNotification(
+                "Successfully cleared the bug contact. This means that there "
+                "is no longer a contact address that will receive all bugmail "
+                "for this product. You can, of course, set the bug contact "
+                "again at any time.")
+
+        self.request.response.redirect(canonical_url(product))

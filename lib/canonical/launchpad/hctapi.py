@@ -496,6 +496,8 @@ def get_changeset_from(obj):
         return None
 
     from hct.branch import Changeset
+    # FIXME: Robert Collins says obj.getPackageName() should be replaced by
+    # obj.revision_id.  See bug #4117. -- David Allouche 2005-09-06
     return Changeset(obj.getPackageName())
 
 def get_manifest_from(obj):

@@ -29,6 +29,8 @@ class DistroArchReleaseNavigation(GetitemNavigation):
 
     usedfor = IDistroArchRelease
 
+    def breadcrumb(self):
+        return self.context.architecturetag
 
 class DistroArchReleaseFacets(StandardLaunchpadFacets):
 
@@ -39,7 +41,7 @@ class DistroArchReleaseFacets(StandardLaunchpadFacets):
 class DistroArchReleaseContextMenu(ContextMenu):
 
     usedfor = IDistroArchRelease
-    links = ['packagesearch', 'admin']
+    links = ['packagesearch', 'admin', 'builds']
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
@@ -50,13 +52,13 @@ class DistroArchReleaseContextMenu(ContextMenu):
         text = 'Search Packages'
         return Link('+search', text, icon='search')
 
+    def builds(self):
+        text = 'View Builds'
+        return Link('+builds', text, icon='info')
+
 
 class DistroArchReleaseView(BuildRecordsView):
     """Default DistroArchRelease view class."""
-
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
 
 
 class DistroArchReleaseBinariesView:

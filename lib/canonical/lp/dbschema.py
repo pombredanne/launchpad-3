@@ -32,6 +32,8 @@ __all__ = (
 'BountyDifficulty',
 'BountyStatus',
 'BranchRelationships',
+'BranchLifecycleStatus',
+'BranchReviewStatus',
 'BugTaskStatus',
 'BugAttachmentType',
 'BugTrackerType',
@@ -134,7 +136,7 @@ class DBSchemaValidator(validators.Validator):
         """Convert from DBSchema Item to int.
 
         >>> validator = DBSchemaValidator(schema=BugTaskStatus)
-        >>> validator.fromPython(BugTaskStatus.PENDINGUPLOAD, None)
+        >>> validator.fromPython(BugTaskStatus.FIXCOMMITTED, None)
         25
         >>> validator.fromPython(ImportTestStatus.NEW, None)
         Traceback (most recent call last):
@@ -169,7 +171,7 @@ class DBSchemaValidator(validators.Validator):
         """Convert from int to DBSchema Item.
 
         >>> validator = DBSchemaValidator(schema=BugTaskStatus)
-        >>> validator.toPython(25, None) is BugTaskStatus.PENDINGUPLOAD
+        >>> validator.toPython(25, None) is BugTaskStatus.FIXCOMMITTED
         True
 
         """
@@ -1843,38 +1845,41 @@ class PackagePublishingPocket(DBSchema):
     RELEASE = Item(0, """
         Release
 
-        This is the "release" pocket, it contains the versions of the
-        packages that were published when the release was made. For releases
-        that are still under development, this is the only pocket into which
-        packages will be published.
+        The package versions that were published
+        when the distribution release was made.
+        For releases that are still under development,
+        packages are published here only.
         """)
 
     SECURITY = Item(10, """
         Security
 
-        This is the pocket into which we publish only security fixes to the
-        released distribution. It is highly advisable to ensure that your
-        system has the security pocket enabled.
+        Package versions containing security fixes for the released
+        distribution.
+        It is a good idea to have security updates turned on for your system.
         """)
 
     UPDATES = Item(20, """
         Updates
 
-        This is the pocket into which we publish packages with new
-        functionality after a release has been made. It is usually
-        enabled by default after a fresh install.
+        Package versions including new features after the distribution
+        release has been made.
+        Updates are usually turned on by default after a fresh install.
         """)
 
     PROPOSED = Item(30, """
         Proposed
 
-        This is the pocket into which we publish packages with new
-        functionality after a release has been made, which we would like to
-        have widely tested but not yet made part of a default installation.
-        People who "live on the edge" will have enabled the "proposed"
-        pocket, and so will start testing these packages. Once they are
-        proven safe for wider deployment they will go into the updates
-        pocket.
+        Package versions including new functions that should be widely
+        tested, but that are not yet part of a default installation.
+        People who "live on the edge" will test these packages before they
+        are accepted for use in "Updates".
+        """)
+
+    BACKPORTS = Item(40, """
+        Backports
+
+        Backported packages.
         """)
 
 class SourcePackageRelationships(DBSchema):
@@ -2130,55 +2135,166 @@ class BugInfestationStatus(DBSchema):
         """)
 
 
+class BranchLifecycleStatus(DBSchema):
+    """Branch Lifecycle Status
+
+    This indicates the status of the branch, as part of an overall
+    "lifecycle". The idea is to indicate to other people how mature this
+    branch is, or whether or not the code in the branch has been deprecated.
+    Essentially, this tells us what the author of the branch thinks of the
+    code in the branch.
+    """
+
+    NEW = Item(1, """
+        New
+
+        This branch has just been created, and we know nothing else about
+        it.
+        """)
+
+    EXPERIMENTAL = Item(10, """
+        Experimental
+
+        This branch contains code that is considered experimental. It is
+        still under active development and should not be merged into
+        production infrastructure.
+        """)
+
+    DEVELOPMENT = Item(30, """
+        Development
+
+        This branch contains substantial work that is shaping up nicely, but
+        is not yet ready for merging or production use. The work is
+        incomplete, or untested.
+        """)
+
+    MATURE = Item(50, """
+        Mature
+
+        The developer considers this code mature. That means that it
+        completely addresses the issues it is supposed to, that it is tested,
+        and that it has been found to be stable enough for the developer to
+        recommend it to others for inclusion in their work.
+        """)
+
+    MERGED = Item(70, """
+        Merged
+
+        This code has successfully been merged into its target branch(es),
+        and no further development is anticipated on the branch.
+        """)
+
+    ABANDONED = Item(80, """
+        Abandoned
+
+        This branch contains work which the author has abandoned, likely
+        because it did not prove fruitful.
+        """)
+
+
+class BranchReviewStatus(DBSchema):
+    """Branch Review Cycle
+
+    This is an indicator of what the project thinks about this branch.
+    Typically, it will be set by the upstream as part of a review process
+    before the branch lands on an official series.
+    """
+
+    NONE = Item(10, """
+        None
+
+        This branch has not been queued for review, and no review has been
+        done on it.
+        """)
+
+    REQUESTED = Item(20, """
+        Requested
+
+        The author has requested a review of the branch. This usually
+        indicates that the code is mature and ready for merging, but it may
+        also indicate that the author would like some feedback on the
+        direction in which he is headed.
+        """)
+
+    NEEDSWORK = Item(30, """
+        Needs Further Work
+
+        The reviewer feels that this branch is not yet ready for merging, or
+        is not on the right track. Detailed comments would be found in the
+        reviewer discussion around the branch, see those for a list of the
+        issues to be addressed or discussed.
+        """)
+
+    MERGECONDITIONAL = Item(50, """
+        Conditional Merge Approved
+
+        The reviewer has said that this branch can be merged if specific
+        issues are addressed. The review feedback will be contained in the
+        branch discussion. Once those are addressed by the author the branch
+        can be merged without further review.
+        """)
+
+    MERGEAPPROVED = Item(60, """
+        Merge Approved
+
+        The reviewer is satisfied that the branch can be merged without
+        further changes.
+        """)
+
+
 class BugTaskStatus(DBSchema):
     """Bug Task Status
 
-    Bugs are assigned to products and to source packages in Malone. The
-    task carries a status - new, open or closed. This schema
-    documents those possible status values.
+    The various possible states for a bugfix in a specific place.
     """
 
-    NEW = Item(10, """
-        New
+    UNCONFIRMED = Item(10, """
+        Unconfirmed
 
-        This is a new bug and has not yet been accepted by the maintainer
-        of this product or source package.
+        This is a new bug and has not yet been confirmed by the maintainer of
+        this product or source package.
         """)
 
-    NEEDINFO = Item(15, """
-        NeedInfo
+    NEEDSINFO = Item(15, """
+        Needs Info
 
-        More info is required before making further progress on this
-        bug, likely from the reporter. E.g. the exact error message
-        the user saw, the URL the user was visiting when the bug
-        occurred, etc.
+        More info is required before making further progress on this bug, likely
+        from the reporter. E.g. the exact error message the user saw, the URL
+        the user was visiting when the bug occurred, etc.
         """)
 
-    ACCEPTED = Item(20, """
-        Accepted
-
-        This bug has been reviewed, perhaps verified, and accepted as
-        something needing fixing.
-        """)
-
-    PENDINGUPLOAD = Item(25, """
-        PendingUpload
-
-        The source package with the fix has been sent off to the buildds.
-        The bug will be resolved once the newly uploaded package is
-        completed.
-        """)
-
-    FIXED = Item(30, """
-        Fixed
-
-        This bug has been fixed.
-        """)
-
-    REJECTED = Item(40, """
+    REJECTED = Item(17, """
         Rejected
 
         This bug has been rejected, e.g. in cases of operator-error.
+        """)
+
+    CONFIRMED = Item(20, """
+        Confirmed
+
+        This bug has been reviewed, verified, and confirmed as something needing
+        fixing.
+        """)
+
+    INPROGRESS = Item(22, """
+        In Progress
+
+        The person assigned to fix this bug is currently working on fixing it.
+        """)
+
+    FIXCOMMITTED = Item(25, """
+        Fix Committed
+
+        This bug has been fixed in version control, but the fix has
+        not yet made it into a released version of the affected
+        software.
+        """)
+
+    FIXRELEASED = Item(30, """
+        Fix Released
+
+        The fix for this bug is available in a released version of the
+        affected software.
         """)
 
 
@@ -2518,6 +2634,13 @@ class LoginTokenType(DBSchema):
 
         A user has submited a new GPG key to his account and it need to
         be validated.
+        """)
+
+    VALIDATESIGNONLYGPG = Item(7, """
+        Validate a sign-only GPG key
+
+        A user has submitted a new sign-only GPG key to his account and it
+        needs to be validated.
         """)
 
 

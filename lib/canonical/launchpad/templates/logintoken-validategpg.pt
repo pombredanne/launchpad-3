@@ -1,0 +1,49 @@
+<tal:do-this-first tal:content="view/processForm" />
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<div metal:fill-slot="main">
+
+    <div tal:condition="not: view/successfullyProcessed">
+      <h1>Confirm GPG key: <span tal:replace="context/fingerprint"/> by 
+         <span tal:replace="context/requester/displayname"/></h1>
+
+      <div tal:condition="view/errormessage" class="portalMessage"
+           tal:content="structure view/errormessage">
+      </div>
+
+      <p>To confirm your GPG key, please enter your Launchpad password.</p>
+
+      <form autocomplete="off" name="validate" action="" method="POST">
+        <div class="field">
+
+          <label>Launchpad Password</label>
+          <br>
+          <input type="password" size="30" name="password" />
+          <br>
+
+          <tal:block condition="not: request/lp:person">
+            <label>
+              <input type="checkbox" checked="checked" name="logmein" />
+              Log me in after validating my key.
+            </label><br />
+          </tal:block>
+
+          <div class="formControls">
+            <input type="submit" name="SUBMIT_CHANGES" value="Submit" />
+          </div>
+
+        </div>
+      </form>
+    </div>
+
+</div>
+
+
+</body>
+</html>

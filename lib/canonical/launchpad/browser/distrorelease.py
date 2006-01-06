@@ -79,7 +79,7 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
     usedfor = IDistroRelease
     facet = 'overview'
     links = ['search', 'support', 'packaging', 'edit', 'reassign',
-             'addport', 'admin']
+             'addport', 'admin', 'builds']
 
     def edit(self):
         text = 'Edit Details'
@@ -112,6 +112,10 @@ class DistroReleaseOverviewMenu(ApplicationMenu):
     def admin(self):
         text = 'Administer'
         return Link('+admin', text, icon='edit')
+
+    def builds(self):
+        text = 'View Builds'
+        return Link('+builds', text, icon='info')
 
 
 class DistroReleaseBugsMenu(ApplicationMenu):
@@ -148,13 +152,11 @@ class DistroReleaseSpecificationsMenu(ApplicationMenu):
 
 class DistroReleaseView(BuildRecordsView):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
+    def initialize(self):
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
         self.languages = helpers.request_languages(self.request)
-        self.text = request.form.get('text')
+        self.text = self.request.form.get('text')
         self.matches = 0
         self._results = None
 
@@ -164,7 +166,7 @@ class DistroReleaseView(BuildRecordsView):
 
     def searchresults(self):
         """Try to find the packages in this distro release that match
-        the given text, then present those as a list. 
+        the given text, then present those as a list.
         """
         if self._results is None:
             self._results = self.context.searchPackages(self.text)
@@ -190,8 +192,18 @@ class DistroReleaseView(BuildRecordsView):
         return helpers.browserLanguages(self.request)
 
     def templateviews(self):
-        return [POTemplateView(template, self.request)
-                for template in self.context.currentpotemplates]
+        """Return the view class of the IPOTemplate associated with the context.
+        """
+        templateview_list = [
+            POTemplateView(template, self.request)
+            for template in self.context.currentpotemplates
+            ]
+
+        # Initialize the views.
+        for templateview in templateview_list:
+            templateview.initialize()
+
+        return templateview_list
 
     def distroreleaselanguages(self):
         """Yields a DistroReleaseLanguage object for each language this

@@ -37,6 +37,23 @@
          tal:attributes="href dcu/uploader/fmt:url" /><br />
     </tal:per_component>
 
+
+    <b>Releases:</b><br />
+    <ul tal:condition="context/releases">
+      <li tal:repeat="release context/releases"
+          class="distroreleases">
+        <a tal:attributes="href release/fmt:url">
+          <span tal:replace="release/name"/>
+          <span tal:replace="release/version"/>
+          (<span tal:replace="release/releasestatus/name"/>)
+        </a>
+      </li>
+    </ul>
+
+    <p tal:condition="not: context/releases">
+       <span tal:replace="context/title"/> has no official releases yet.
+    </p>
+
   </div>
 </div>
 

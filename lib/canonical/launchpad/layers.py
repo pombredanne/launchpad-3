@@ -4,6 +4,7 @@ to do with manipulating layers.
 """
 
 __metaclass__ = type
+
 try:
     from zope.publisher.interfaces.browser import IDefaultBrowserLayer
 except ImportError:
@@ -38,6 +39,15 @@ class DebugLayer(Interface):
     This derives from Interface beacuse it is just a marker that this
     is a debug-related request.
     """
+
+    
+class InternalHTTPLayer(Interface):
+    """The `InternalHTTPLayer` layer.
+
+    This derives from Interface beacuse it is just a marker that this
+    is a request from inside the datacentre only.
+    """
+
 
 class PageTestLayer(Interface):
     """The `PageTestLayer` layer. (need to register a 404 view for this and

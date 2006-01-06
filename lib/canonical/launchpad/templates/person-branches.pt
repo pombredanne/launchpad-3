@@ -3,29 +3,32 @@
   lang="en"
   metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad">
-
 <body>
   
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
+<metal:leftportlets fill-slot="portlets_one"
+  ><div tal:replace="structure context/@@+portlet-details"
+/></metal:leftportlets>
     
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-calendar" />
-</metal:rightportlets>
+<metal:rightportlets fill-slot="portlets_two"
+  ><div tal:replace="structure context/@@+portlet-calendar"
+/></metal:rightportlets>
 
 <div metal:fill-slot="main">
-
   <h1>Bazaar Branches</h1>
 
-  <p>
-    (Grey areas indicate parts of the page that are not yet implemented.
-    Please try again later.)
-  </p>
+  <tal:has_authored_branches condition="context/authored_branches"
+    ><h2>Branches Authored</h2>
+    <tal:block repeat="branch context/authored_branches"
+      ><div tal:replace="structure branch/@@+summary-listing"
+    /></tal:block
+  ></tal:has_authored_branches
 
-  <tal:block repeat="branch context/branches">
-    <div tal:replace="structure branch/@@+summary-listing" />
-  </tal:block>
+  ><tal:has_registered_branches condition="context/registered_branches"
+    ><h2>Branches Registered</h2>
+    <tal:block repeat="branch context/registered_branches"
+      ><div tal:replace="structure branch/@@+summary-listing"
+    /></tal:block
+  ></tal:has_registered_branches>
 
 </div> 
 </body>

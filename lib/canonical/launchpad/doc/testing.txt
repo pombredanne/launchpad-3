@@ -80,6 +80,18 @@ containing no data, you can use `launchpad_empty` as the template.
 0
 >>> PgTestSetup().tearDown()
 
+We can also specify the user that we connect as to avoid connecting as the
+PostgreSQL default user.
+
+>>> from canonical.config import config
+>>> pgsetup = PgTestSetup(dbuser='statistician')
+>>> connection = pgsetup.connect()
+>>> cursor = connection.cursor()
+>>> cursor.execute("SELECT current_user")
+>>> cursor.fetchone()[0]
+'statistician'
+>>> pgsetup.tearDown()
+
 
 LaunchpadTestSetup
 ------------------
@@ -97,7 +109,27 @@ Note that at this level, you cannot access any of the SQLBase objects
 >>> cursor.execute("SELECT displayname FROM person WHERE name='carlos'")
 >>> cursor.fetchone()[0]
 u'Carlos Perell\xf3 Mar\xedn'
+
+By default, LaunchpadTestSetup connects as the 'launchpad' user:
+
+>>> cursor.execute("SELECT current_user")
+>>> cursor.fetchone()[0]
+'launchpad'
+
 >>> LaunchpadTestSetup().tearDown()
+
+You can connect as a different database user using the same mechanism
+described above for PgTestSetup
+
+>>> lpsetup = LaunchpadTestSetup()
+>>> lpsetup.dbuser = 'statistician'
+>>> lpsetup.setUp()
+>>> connection = lpsetup.connect()
+>>> cursor = connection.cursor()
+>>> cursor.execute("SELECT current_user")
+>>> cursor.fetchone()[0]
+'statistician'
+>>> lpsetup.tearDown()
 
 
 LaunchpadZopelessTestSetup
@@ -127,6 +159,21 @@ And always remember to tearDown or you will victimize other tests!
 
 >>> LaunchpadZopelessTestSetup().tearDown()
 
+
+In general, Zopeless tests should never be running as the launchpad user.
+You can select the user you connect as:
+
+>>> setup = LaunchpadZopelessTestSetup(dbuser=config.librarian.dbuser)
+>>> setup.setUp()
+>>> from canonical.launchpad.database import SourcePackageName
+>>> SourcePackageName.get(1).name
+Traceback (most recent call last):
+...
+ProgrammingError: ERROR:  permission denied for relation sourcepackagename
+...
+>>> setup.tearDown()
+
+
 LaunchpadFunctionalTestSetup
 ----------------------------
 
@@ -151,6 +198,35 @@ by ftesting.zcml
 True
 
 >>> LaunchpadFunctionalTestSetup().tearDown()
+
+You can change the user that the tests connect as:
+
+>>> setup = LaunchpadFunctionalTestSetup(dbuser=config.librarian.dbuser)
+>>> setup.setUp()
+>>> connection = setup.connect()
+>>> cursor = connection.cursor()
+>>> cursor.execute('SELECT current_user')
+>>> cursor.fetchone()[0]
+'librarian'
+>>> SourcePackageName.get(1).name
+Traceback (most recent call last):
+...
+ProgrammingError: ERROR:  permission denied ...
+>>> setup.tearDown()
+
+And the next test will be unaffected:
+
+>>> setup = LaunchpadFunctionalTestSetup()
+>>> setup.setUp()
+>>> connection = setup.connect()
+>>> cursor = connection.cursor()
+>>> cursor.execute('SELECT current_user')
+>>> cursor.fetchone()[0]
+'launchpad'
+>>> SourcePackageName.get(1).name
+u'mozilla-firefox'
+>>> setup.tearDown()
+
 
 LibrarianTestSetup
 ------------------

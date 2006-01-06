@@ -11,7 +11,7 @@
   <content class="canonical.launchpad.database.Ticket">
     <allow interface="canonical.launchpad.interfaces.ITicket" />
     <require
-      permission="launchpad.Edit"
+      permission="launchpad.AnyPerson"
       set_schema="canonical.launchpad.interfaces.ITicket" />
   </content>
 

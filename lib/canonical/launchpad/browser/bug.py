@@ -18,6 +18,7 @@ __all__ = [
     'DeprecatedAssignedBugsView']
 
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, structured, Navigation)
@@ -27,6 +28,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import GeneralFormView
+from canonical.launchpad.helpers import check_permission
 
 
 class BugSetNavigation(Navigation):
@@ -134,6 +136,14 @@ class BugView:
         """
         return getUtility(ILaunchBag).bugtask
 
+    def taskLink(self, bugtask):
+        """Return the proper link to the bugtask whether it's editable"""
+        user = getUtility(ILaunchBag).user
+        if check_permission('launchpad.Edit', user):
+            return canonical_url(bugtask) + "/+editstatus"
+        else:
+            return canonical_url(bugtask) + "/+viewstatus"
+
     def getFixRequestRowCSSClassForBugTask(self, bugtask):
         """Return the fix request row CSS class for the bugtask.
 
@@ -165,6 +175,23 @@ class BugView:
                 maintainers.add(task.maintainer)
 
         return maintainers
+    
+    def duplicates(self):
+        """Return a list of dicts with the id and title of this bug dupes.
+
+        If the bug isn't accessible to the user, the title stored in the dict
+        will be 'Private Bug'
+        """
+        dupes = []
+        for bug in self.context.duplicates:
+            dupe = {}
+            try:
+                dupe['title'] = bug.title
+            except Unauthorized:
+                dupe['title'] = 'Private Bug'
+            dupe['id'] = bug.id
+            dupes.append(dupe)
+        return dupes
 
 
 class BugWithoutContextView:

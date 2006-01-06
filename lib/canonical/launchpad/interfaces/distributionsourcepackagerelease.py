@@ -25,6 +25,9 @@ class IDistributionSourcePackageRelease(ISourcePackageRelease):
     distribution = Attribute("The distribution.")
     sourcepackagerelease = Attribute("The source package release.")
 
+    sourcepackage = Attribute("Meta DistributionSourcePackage correspondont "
+                              "to this release.")
+
     name = Attribute("The source package name as text")
     displayname = Attribute("Display name for this package.")
     title = Attribute("Title for this package.")
@@ -48,4 +51,3 @@ class IDistributionSourcePackageRelease(ISourcePackageRelease):
     sample_binary_packages = Attribute("A single binary package of each "
         "named package produced from this source package in this "
         "distribution. The are each of form DistroReleaseBinaryPackage.")
-

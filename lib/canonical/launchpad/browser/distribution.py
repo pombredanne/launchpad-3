@@ -9,6 +9,7 @@ __all__ = [
     'DistributionView',
     'DistributionSetView',
     'DistributionSetAddView',
+    'DistributionBugContactEditView'
     ]
 
 from zope.component import getUtility
@@ -16,15 +17,18 @@ from zope.app.form.browser.add import AddView
 from zope.event import notify
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.security.interfaces import Unauthorized
+from canonical.lp.z3batching import Batch
+from canonical.lp.batching import BatchNavigator
 
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPerson, IPublishedPackageSet,
     NotFoundError)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
+from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
-    GetitemNavigation, stepthrough, stepto)
+    GetitemNavigation, stepthrough, stepto, canonical_url, redirection)
 
 
 class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -58,6 +62,8 @@ class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
         except ValueError:
             raise NotFoundError
         return self.context.getTicket(ticket_num)
+
+    redirection('+ticket', '+tickets')
 
 
 class DistributionSetNavigation(GetitemNavigation):
@@ -94,11 +100,15 @@ class DistributionOverviewMenu(ApplicationMenu):
     usedfor = IDistribution
     facet = 'overview'
     links = ['search', 'allpkgs', 'milestone_add', 'members', 'edit',
-             'reassign', 'addrelease']
+             'editbugcontact', 'reassign', 'addrelease', 'builds']
 
     def edit(self):
         text = 'Edit Details'
         return Link('+edit', text, icon='edit')
+
+    def editbugcontact(self):
+        text = 'Edit Bug Contact'
+        return Link('+editbugcontact', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
@@ -126,6 +136,9 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'Add Release'
         return Link('+addrelease', text, icon='add')
 
+    def builds(self):
+        text = 'View Builds'
+        return Link('+builds', text, icon='info')
 
 class DistributionBugsMenu(ApplicationMenu):
 
@@ -211,31 +224,47 @@ class DistributionTranslationsMenu(ApplicationMenu):
 class DistributionView(BuildRecordsView):
     """Default Distribution view class."""
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        form = self.request.form
-        self.text = form.get('text', None)
+    def initialize(self):
+        """Initialize template control fields.
+
+        Also check if the search action was invoked and setup a batched
+        list with the results if necessary.
+        """
+        # initialize control fields
         self.matches = 0
         self.detailed = True
-        self._results = None
+        self.search_requested = False
 
-        self.searchrequested = False
-        if self.text is not None and self.text != '':
-            self.searchrequested = True
+        # check if the user invoke search, if not dismiss
+        self.text = self.request.form.get('text', None)
+        if not self.text:
+            return
 
-    def searchresults(self):
-        """Try to find the source packages in this distribution that match
-        the given text, then present those as a list. Cache previous results
-        so the search is only done once.
-        """
-        if self._results is None:
-            self._results = self.context.searchSourcePackages(self.text)
-        self.matches = len(self._results)
+        # setup a batched list with the results
+        self.search_requested = True
+        results = self.search_results()
+        start = int(self.request.get('batch_start', 0))
+        # store the results list length
+        self.matches = len(results)
+        # check if detailed list view is allowed for this result set.
+        self.check_detailed_view()
+        # since we are using the results length in the layout, we can save
+        # one query by passing this number to Batch initialization
+        self.batch = Batch(results, start, _listlength=self.matches)
+        self.batchnav = BatchNavigator(self.batch, self.request)
+
+    def check_detailed_view(self):
+        """Enable detailed list view only for sets smaller than 5 matches."""
         if self.matches > 5:
             self.detailed = False
-        return self._results
 
+    def search_results(self):
+        """Return IDistributionSourcePackages according given a text.
+
+        Try to find the source packages in this distribution that match
+        the given text.
+        """
+        return self.context.searchSourcePackages(self.text)
 
 class DistributionSetView:
 
@@ -280,3 +309,28 @@ class DistributionSetAddView(AddView):
     def nextURL(self):
         return self._nextURL
 
+
+class DistributionBugContactEditView(SQLObjectEditView):
+    """Browser view for editing the distribution bug contact."""
+    def changed(self):
+        """Redirect to the distribution page."""
+        distribution = self.context
+        contact_email = None
+
+        if distribution.bugcontact:
+            contact_email = distribution.bugcontact.preferredemail.email
+
+        if contact_email:
+            # The bug contact was set to a new person or team.
+            self.request.response.addNotification(
+                "Successfully changed the distribution bug contact to %s" %
+                contact_email)
+        else:
+            # The bug contact was set to noone.
+            self.request.response.addNotification(
+                "Successfully cleared the distribution bug contact. This "
+                "means that there is no longer a distro-wide contact for "
+                "bugmail. You can, of course, set a distribution bug "
+                "contact again whenever you want to.")
+
+        self.request.response.redirect(canonical_url(distribution))

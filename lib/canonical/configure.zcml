@@ -108,7 +108,6 @@
         />
 
     <include package="canonical.widgets" />
-    <include package="canonical.database" />
     <include package="canonical.launchpad" />
 
     <content class="canonical.publication.LoginRoot">

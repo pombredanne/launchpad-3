@@ -139,6 +139,12 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
 
         The name given may be an IBinaryPackageName or a string.
         """
+        
+    def getSourcePackageRelease(sourcepackagerelease):
+        """Return a IDistroReleaseSourcePackageRelease
+
+        sourcepackagerelease is an ISourcePackageRelease.
+        """
 
     def findBinariesByName(name):
         """Return an iterator over binary packages with a name that matches

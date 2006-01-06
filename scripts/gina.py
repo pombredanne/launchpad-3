@@ -30,16 +30,16 @@ from canonical.config import config
 from canonical.launchpad.scripts import logger_options, log
 from canonical.launchpad.scripts.lockfile import LockFile
 
+from canonical.launchpad.scripts.gina import ExecutionError
 from canonical.launchpad.scripts.gina.katie import Katie
 from canonical.launchpad.scripts.gina.archive import (ArchiveComponentItems,
     PackagesMap, MangledArchiveError)
 
 from canonical.launchpad.scripts.gina.handlers import (ImporterHandler,
-    MultiplePackageReleaseError, NoSourcePackageError)
+    MultiplePackageReleaseError, NoSourcePackageError, DataSetupError)
 from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
     BinaryPackageData, MissingRequiredArguments, DisplayNameDecodingError,
     PoolFileNotFound, InvalidVersionError)
-
 
 
 def _get_keyring(keyrings_root):
@@ -173,6 +173,13 @@ def run_gina(options, ztm, target_section):
                                        dry_run, kdb, package_root, keyrings,
                                        pocket)
 
+    for archtag in archs:
+        try:
+            importer_handler.ensure_archinfo(archtag)
+        except DataSetupError:
+            log.exception("Database setup required for run on %s" % archtag)
+            sys.exit(1)
+
     if spnames_only:
         log.info('Running in SourcePackageName-only mode...')
         for source in packages_map.src_map.itervalues():
@@ -183,7 +190,6 @@ def run_gina(options, ztm, target_section):
 
     import_sourcepackages(packages_map, kdb, package_root, keyrings,
                           importer_handler)
-    importer_handler.publish_sourcepackages(pocket)
     importer_handler.commit()
 
     if source_only:
@@ -192,7 +198,6 @@ def run_gina(options, ztm, target_section):
 
     import_binarypackages(packages_map, kdb, package_root, keyrings,
                           importer_handler)
-    importer_handler.publish_binarypackages(pocket)
     importer_handler.commit()
 
 
@@ -213,7 +218,7 @@ def import_sourcepackages(packages_map, kdb, package_root,
                                      importer_handler)
             except psycopg.Error:
                 log.exception("Database error: unable to create "
-                              "Source Package for %s. Retrying once.."
+                              "SourcePackage for %s. Retrying once.."
                               % package_name)
                 importer_handler.abort()
                 time.sleep(15)
@@ -224,14 +229,14 @@ def import_sourcepackages(packages_map, kdb, package_root,
             log.exception("Unable to create SourcePackageData for %s" % 
                           package_name)
             continue
-        except PoolFileNotFound:
+        except (PoolFileNotFound, ExecutionError):
             # Problems with katie db stuff of opening files
             log.exception("Error processing package files for %s" %
                           package_name)
             continue
         except psycopg.Error:
             log.exception("Database errors made me give up: unable to create "
-                          "Source Package for %s" % package_name)
+                          "SourcePackage for %s" % package_name)
             importer_handler.abort()
             continue
         except MultiplePackageReleaseError:
@@ -262,33 +267,33 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
     nosource = []
 
     # Run over all the architectures we have
-    for arch in packages_map.bin_map.keys():
+    for archtag in packages_map.bin_map.keys():
         count = 0
-        npacks = len(packages_map.bin_map[arch])
+        npacks = len(packages_map.bin_map[archtag])
         log.info('%i Binary Packages to be imported for %s' % 
-                 (npacks, arch))
+                 (npacks, archtag))
         # Go over binarypackages importing them for this architecture
-        for binary in sorted(packages_map.bin_map[arch].values(),
+        for binary in sorted(packages_map.bin_map[archtag].values(),
                              key=lambda x: x.get("Package")):
             count += 1
             package_name = binary.get("Package", "unknown")
             try:
                 try:
-                    do_one_binarypackage(binary, arch, kdb, package_root,
+                    do_one_binarypackage(binary, archtag, kdb, package_root,
                                          keyrings, importer_handler)
                 except psycopg.Error:
-                    log.exception("Database errors when importing a"
-                                  "Binary Package for %s. Retrying once.."
+                    log.exception("Database errors when importing a "
+                                  "BinaryPackage for %s. Retrying once.."
                                   % package_name)
                     importer_handler.abort()
                     time.sleep(15)
-                    do_one_binarypackage(binary, arch, kdb, package_root,
+                    do_one_binarypackage(binary, archtag, kdb, package_root,
                                          keyrings, importer_handler)
             except (InvalidVersionError, MissingRequiredArguments):
                 log.exception("Unable to create BinaryPackageData for %s" % 
                               package_name)
                 continue
-            except PoolFileNotFound:
+            except (PoolFileNotFound, ExecutionError):
                 # Problems with katie db stuff of opening files
                 log.exception("Error processing package files for %s" %
                               package_name)
@@ -299,7 +304,7 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
                 continue
             except psycopg.Error:
                 log.exception("Database errors made me give up: unable to "
-                              "create Binary Package for %s" % package_name)
+                              "create BinaryPackage for %s" % package_name)
                 importer_handler.abort()
                 continue
             except NoSourcePackageError:
@@ -318,18 +323,15 @@ def import_binarypackages(packages_map, kdb, package_root, keyrings,
             for pkg in nosource:
                 log.warn(pkg)
 
-        importer_handler.commit()
 
-
-def do_one_binarypackage(binary, arch, kdb, package_root, keyrings,
+def do_one_binarypackage(binary, archtag, kdb, package_root, keyrings,
                          importer_handler):
     binary_data = BinaryPackageData(**binary)
-    if importer_handler.preimport_binarycheck(arch, binary_data):
+    if importer_handler.preimport_binarycheck(archtag, binary_data):
         log.info('%s already exists in the archive' % binary_data.package)
         return
-    binary_data.ensure_complete(kdb)
     binary_data.process_package(kdb, package_root, keyrings)
-    importer_handler.import_binarypackage(arch, binary_data)
+    importer_handler.import_binarypackage(archtag, binary_data)
     importer_handler.commit()
 
 

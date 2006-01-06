@@ -43,11 +43,12 @@ def send_ticket_email_reminders():
             'ticket_title': ticket.title,
             'answerer': ticket.answerer.displayname,
             'ticket_url': canonical_url(ticket)}
-        submitter_email = submitter.preferredemail.email
+        submitter_email = str(submitter.preferredemail.email)
         simple_sendmail(
             "Launchpad Support System <noreply@launchpad.net>",
             submitter_email,
-            "Support request #%s has been answered",
+            "Your Launchpad support request #%s on %s has been answered" % (
+                ticket.id, ticket.target.displayname),
             mailwrapper.format(body))
         log.info("Sent reminder to %s regarding ticket #%s" % (
             submitter_email, ticket.id))

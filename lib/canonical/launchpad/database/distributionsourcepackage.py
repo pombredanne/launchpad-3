@@ -12,22 +12,27 @@ from sqlobject import SQLObjectNotFound
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import IDistributionSourcePackage
+from canonical.launchpad.interfaces import (
+    IDistributionSourcePackage, DuplicateBugContactError, DeleteBugContactError)
+
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
-from canonical.launchpad.database.distributionsourcepackagecache import \
-    DistributionSourcePackageCache
-from canonical.launchpad.database.distributionsourcepackagerelease import \
-    DistributionSourcePackageRelease
-from canonical.launchpad.database.publishing import \
-    SourcePackagePublishingHistory
-from canonical.launchpad.database.sourcepackagerelease import \
-    SourcePackageRelease
+from canonical.launchpad.database.distributionsourcepackagecache import (
+    DistributionSourcePackageCache)
+from canonical.launchpad.database.distributionsourcepackagerelease import (
+    DistributionSourcePackageRelease)
+from canonical.launchpad.database.packagebugcontact import PackageBugContact
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishingHistory)
+from canonical.launchpad.database.sourcepackagerelease import (
+    SourcePackageRelease)
+from canonical.launchpad.database.sourcepackage import SourcePackage
 from canonical.launchpad.database.ticket import Ticket
-from sourcerer.deb.version import Version
+from sourcerer.deb.version import Version, BadUpstreamError
 from canonical.launchpad.helpers import shortlist
 
+_arg_not_provided = object()
 
 class DistributionSourcePackage:
     """This is a "Magic Distribution Source Package". It is not an
@@ -99,10 +104,18 @@ class DistributionSourcePackage:
             clauseTables=['SourcePackagePublishing', 'DistroRelease'])
 
         # sort by version
-        releases = sorted(shortlist(sprs),
-            key=lambda item: Version(item.version))
+        try:
+            releases = sorted(shortlist(sprs),
+                              key=lambda item: Version(item.version))
+        # XXX cprov : Sourcerer Version model doesn't cope with
+        # version containing letters, so if it happens we rely
+        # on DB order (datecreated) -> bug # 6040
+        except BadUpstreamError:
+            releases = shortlist(sprs)
+
         if len(releases) == 0:
             return None
+
         return DistributionSourcePackageRelease(
             distribution=self.distribution,
             sourcepackagerelease=releases[-1])
@@ -118,6 +131,50 @@ class DistributionSourcePackage:
             limit=quantity)
 
     @property
+    def bugcontacts(self):
+        """See IDistributionSourcePackage."""
+        # Use "list" here because it's possible that this list will be longer
+        # than a "shortlist", though probably uncommon.
+        return list(PackageBugContact.selectBy(
+            distributionID=self.distribution.id,
+            sourcepackagenameID=self.sourcepackagename.id))
+
+    def addBugContact(self, person):
+        """See IDistributionSourcePackage."""
+        contact_already_exists = self.isBugContact(person)
+
+        if contact_already_exists:
+            raise DuplicateBugContactError(
+                "%s is already one of the bug contacts for %s." %
+                (person.name, self.displayname))
+        else:
+            PackageBugContact(
+                distribution=self.distribution,
+                sourcepackagename=self.sourcepackagename,
+                bugcontact=person)
+
+    def removeBugContact(self, person):
+        """See IDistributionSourcePackage."""
+        contact_to_remove = self.isBugContact(person)
+
+        if not contact_to_remove:
+            raise DeleteBugContactError("%s is not a bug contact for this package.")
+        else:
+            contact_to_remove.destroySelf()
+
+    def isBugContact(self, person):
+        """See IDistributionSourcePackage."""
+        package_bug_contact = PackageBugContact.selectOneBy(
+            distributionID=self.distribution.id,
+            sourcepackagenameID=self.sourcepackagename.id,
+            bugcontactID=person.id)
+
+        if package_bug_contact:
+            return package_bug_contact
+        else:
+            return False
+
+    @property
     def binary_package_names(self):
         """See IDistributionSourcePackage."""
         cache = DistributionSourcePackageCache.selectOne("""
@@ -131,15 +188,10 @@ class DistributionSourcePackage:
     @property
     def by_distroreleases(self):
         """See IDistributionSourcePackage."""
-        # XXX, Brad Bollenbach, 2005-10-24: DistroReleaseSourcePackage is not
-        # even imported into this module. This suggests that this method is an
-        # unused/untested code path. See
-        # See https://launchpad.net/products/launchpad/+bug/3531.
         result = []
-        for release in self.releases:
-            candidate = DistroReleaseSourcePackage(release,
-                self.sourcepackagename)
-            if candidate.was_uploaded:
+        for release in self.distribution.releases:
+            candidate = SourcePackage(self.sourcepackagename, release)
+            if candidate.currentrelease:
                 result.append(candidate)
         return result
 
@@ -194,7 +246,8 @@ class DistributionSourcePackage:
 
     def newTicket(self, owner, title, description):
         """See ITicketTarget."""
-        return Ticket(title=title, description=description, owner=owner,
+        return Ticket(
+            title=title, description=description, owner=owner,
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
 

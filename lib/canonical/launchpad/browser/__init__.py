@@ -11,6 +11,8 @@ from canonical.launchpad.browser.binarypackagename import *
 from canonical.launchpad.browser.binarypackagerelease import *
 from canonical.launchpad.browser.bounty import *
 from canonical.launchpad.browser.bountysubscription import *
+from canonical.launchpad.browser.branch import *
+from canonical.launchpad.browser.branchtarget import *
 from canonical.launchpad.browser.bug import *
 from canonical.launchpad.browser.bugattachment import *
 from canonical.launchpad.browser.bugextref import *
@@ -74,6 +76,7 @@ from canonical.launchpad.browser.teammembership import *
 from canonical.launchpad.browser.build import *
 from canonical.launchpad.browser.builder import *
 from canonical.launchpad.browser.translationgroup import *
+from canonical.launchpad.browser.translationimportqueue import *
 from canonical.launchpad.browser.translator import *
 from canonical.launchpad.browser.widgets import *
 from canonical.launchpad.browser.calendarwidgets import *

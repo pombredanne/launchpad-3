@@ -9,7 +9,7 @@ from zope.interface import implements
 from canonical.launchpad.interfaces import ILibraryFileAliasSet
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.database.sqlbase import SQLBase
-from canonical.database.constants import UTC_NOW
+from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from sqlobject import StringCol, ForeignKey, IntCol, RelatedJoin, BoolCol
 
@@ -37,7 +37,7 @@ class LibraryFileAlias(SQLBase):
     filename = StringCol(notNull=True)
     mimetype = StringCol(notNull=True)
     expires = UtcDateTimeCol(notNull=False, default=None)
-    last_accessed = UtcDateTimeCol(notNull=False, default=None)
+    last_accessed = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
     @property
     def url(self):

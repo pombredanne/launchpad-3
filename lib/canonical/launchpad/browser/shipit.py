@@ -7,7 +7,7 @@ __all__ = [
     'ShippingRequestsView', 'ShipItLoginView', 'ShipItRequestView',
     'ShipItUnauthorizedView', 'StandardShipItRequestsView',
     'ShippingRequestURL', 'StandardShipItRequestURL', 'ShipItExportsView',
-    'ShipItNavigation', 'RedirectToOldestPendingRequest',
+    'ShipItNavigation', 'RedirectToOldestPendingRequest', 'ShipItReportsView',
     'StandardShipItRequestSetNavigation', 'ShippingRequestSetNavigation']
     
 
@@ -24,6 +24,7 @@ from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.login import LoginOrRegister
+from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp import (
     canonical_url, Navigation, stepto, redirection)
 from canonical.launchpad.mail.sendmail import simple_sendmail
@@ -32,7 +33,7 @@ from canonical.launchpad.helpers import positiveIntOrZero, intOrZero
 from canonical.launchpad.interfaces import (
     IStandardShipItRequestSet, IShippingRequestSet, ILaunchBag, IShipItCountry,
     ShippingRequestStatus, ILaunchpadCelebrities, ICanonicalUrlData,
-    IShippingRunSet, IShipItApplication)
+    IShippingRunSet, IShipItApplication, IShipItReportSet)
 import canonical.launchpad.layers
 
 from canonical.launchpad import _
@@ -74,7 +75,7 @@ class ShipItUnauthorizedView(SystemErrorView):
 class ShipItLoginView(LoginOrRegister):
     """Process the login form and redirect the user to the request page."""
 
-    def get_application_url(self):
+    def getApplicationURL(self):
         return 'https://launchpad.net'
 
     def process_form(self):
@@ -301,7 +302,7 @@ Reason:
         """Return True if the given order should be automatically approved.
 
         Any order placed by a shipit admin is automatically approved.
-        Also, orders placed by normal users with a total of 80 CDs or less
+        Also, orders placed by normal users with a total of 50 CDs or less
         get approved automatically if the user doesn't have any order that
         was already shipped.
         """
@@ -312,7 +313,7 @@ Reason:
 
         # XXX: Ideally it should be possible to tweak this number through
         # a web interface. -- Guilherme Salgado 2005-09-27
-        if recipient.shippedShipItRequests() or order.totalCDs > 80:
+        if recipient.shippedShipItRequests() or order.totalCDs > 50:
             return False
         else:
             return True
@@ -546,6 +547,8 @@ Reason:
 
         Add an error message to self.addressFormMessages if it doesn't.
         """
+        if not value:
+            self.addressFormMessages.append(_('You must enter a phone number.'))
         if value and len(value) > 16:
             self.addressFormMessages.append(_(
                 "Your phone mumber must be less than 16 characters. Leave it "
@@ -576,7 +579,7 @@ class ShippingRequestsView:
 
     submitted = False
     selectedStatus = 'pending'
-    selectedType = 'custom'
+    selectedType = 'any'
     recipient_text = ''
 
     def standardShipItRequests(self):
@@ -685,6 +688,17 @@ class ShippingRequestAdminView:
         ppcapproved = positiveIntOrZero(form.get('quantityppc'))
         return [x86approved, amd64approved, ppcapproved]
 
+    def recipientHasOtherShippedRequests(self):
+        """Return True if the recipient has other requests that were already
+        sent to the shipping company."""
+        shipped_requests = self.context.recipient.shippedShipItRequests()
+        if not shipped_requests:
+            return False
+        elif len(shipped_requests) == 1 and shipped_requests[0] == self.context:
+            return False
+        else:
+            return True
+
     def processForm(self):
         user = getUtility(ILaunchBag).user
         context = self.context
@@ -734,6 +748,13 @@ class ShippingRequestAdminView:
             url = '%s?previous=%d&%s=1' % (canonical_url(next_order),
                                            self.context.id, previous_action)
             self.request.response.redirect(url)
+
+
+class ShipItReportsView(LaunchpadView):
+    """The view for the list of shipit reports."""
+
+    def initialize(self):
+        self.reports = getUtility(IShipItReportSet).getAll()
 
 
 class ShipItExportsView:

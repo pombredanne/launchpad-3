@@ -1,0 +1,17 @@
+<div class="portlet">
+  <h4>Subscribers to <span tal:replace="context/title">Thunderbird Mainline</span>:</h4>
+
+  <div class="portletBody portletContent">
+
+    <ul class="people">
+      <li tal:repeat="person context/subscribers">
+        <a href="#"
+           tal:content="person/browsername"
+           tal:attributes="href person/fmt:url">Dafydd Harries</a>
+      </li>
+      <li class="info" tal:condition="not: context/subscribers">
+        <i>No subscribers</i>
+      </li>
+    </ul>
+
+</div>

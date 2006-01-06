@@ -1,10 +1,11 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['SourcePackageRelease', 'SourcePackageReleaseSet']
+__all__ = ['SourcePackageRelease']
 
 import sets
-from urllib2 import URLError
+import tarfile
+from StringIO import StringIO
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -12,24 +13,26 @@ from zope.component import getUtility
 from sqlobject import StringCol, ForeignKey, MultipleJoin
 
 from canonical.launchpad.helpers import shortlist
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
     EnumCol, SourcePackageUrgency, SourcePackageFormat,
-    SourcePackageFileType, BuildStatus)
+    SourcePackageFileType, BuildStatus, TicketStatus)
 
-from canonical.launchpad.interfaces import (ISourcePackageRelease,
-    ISourcePackageReleaseSet)
+from canonical.launchpad.interfaces import (
+    ISourcePackageRelease, ILaunchpadCelebrities, ITranslationImportQueue)
 
 from canonical.launchpad.database.binarypackagerelease import (
      BinaryPackageRelease)
 
+from canonical.launchpad.database.ticket import Ticket
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishing)
 
 from canonical.launchpad.database.files import SourcePackageReleaseFile
+from canonical.librarian.interfaces import ILibrarianClient
 
 class SourcePackageRelease(SQLBase):
     implements(ISourcePackageRelease)
@@ -78,6 +81,11 @@ class SourcePackageRelease(SQLBase):
         return self.sourcepackagename.name
 
     @property
+    def sourcepackage(self):
+        """See ISourcePackageRelease."""
+        return self.uploaddistrorelease.getSourcePackage(self.name)
+
+    @property
     def title(self):
         return '%s - %s' % (self.sourcepackagename.name, self.version)
 
@@ -122,12 +130,32 @@ class SourcePackageRelease(SQLBase):
             return None
 
     @property
+    def open_tickets_count(self):
+        """See ISourcePackageRelease."""
+        results = Ticket.select("""
+            status IN (%s, %s) AND
+            distribution = %s AND
+            sourcepackagename = %s
+            """ % sqlvalues(TicketStatus.NEW, TicketStatus.OPEN,
+                            self.uploaddistrorelease.distribution.id,
+                            self.sourcepackagename.id))
+        return results.count()
+
+    @property
     def binaries(self):
-        clauseTables = ['SourcePackageRelease', 'BinaryPackageRelease', 'Build']
+        clauseTables = ['SourcePackageRelease', 'BinaryPackageRelease',
+                        'Build']
         query = ('SourcePackageRelease.id = Build.sourcepackagerelease'
                  ' AND BinaryPackageRelease.build = Build.id '
                  ' AND Build.sourcepackagerelease = %i' % self.id)
         return BinaryPackageRelease.select(query, clauseTables=clauseTables)
+
+    @property
+    def meta_binaries(self):
+        """See ISourcePackageRelease."""        
+        return [binary.build.distroarchrelease.distrorelease.getBinaryPackage(
+                                    binary.binarypackagename)
+                for binary in self.binaries]
 
     @property
     def current_publishings(self):
@@ -142,12 +170,14 @@ class SourcePackageRelease(SQLBase):
     def architecturesReleased(self, distroRelease):
         # The import is here to avoid a circular import. See top of module.
         from canonical.launchpad.database.soyuz import DistroArchRelease
-        clauseTables = ['BinaryPackagePublishing', 'BinaryPackageRelease', 'Build']
+        clauseTables = ['BinaryPackagePublishing', 'BinaryPackageRelease',
+                        'Build']
 
         archReleases = sets.Set(DistroArchRelease.select(
             'BinaryPackagePublishing.distroarchrelease = DistroArchRelease.id '
             'AND DistroArchRelease.distrorelease = %d '
-            'AND BinaryPackagePublishing.binarypackagerelease = BinaryPackageRelease.id '
+            'AND BinaryPackagePublishing.binarypackagerelease = '
+            'BinaryPackageRelease.id '
             'AND BinaryPackageRelease.build = Build.id '
             'AND Build.sourcepackagerelease = %d'
             % (distroRelease.id, self.id),
@@ -189,17 +219,33 @@ class SourcePackageRelease(SQLBase):
         return Build.selectOneBy(sourcepackagereleaseID=self.id,
                                  distroarchreleaseID=distroarchrelease.id)
 
+    def attachTranslationFiles(self, tarball_alias, is_published,
+        importer=None):
+        """See ISourcePackageRelease."""
+        client = getUtility(ILibrarianClient)
 
-class SourcePackageReleaseSet:
+        tarball_file = client.getFileByAlias(tarball_alias)
+        tarball = tarfile.open('', 'r', StringIO(tarball_file.read()))
 
-    implements(ISourcePackageReleaseSet)
+        # Get the list of files to attach.
+        filenames = [name for name in tarball.getnames()
+                     if name.startswith('source/') or name.startswith('./source/')
+                     if name.endswith('.pot') or name.endswith('.po')
+                     ]
 
-    def getByCreatorID(self, personID):
-        querystr = """sourcepackagerelease.creator = %d AND
-                      sourcepackagerelease.sourcepackagename = 
-                        sourcepackagename.id""" % personID
-        return SourcePackageRelease.select(
-            querystr,
-            orderBy='SourcePackageName.name',
-            clauseTables=['SourcePackageRelease', 'SourcePackageName'])
+        if importer is None:
+            importer = getUtility(ILaunchpadCelebrities).rosetta_expert
+
+        translation_import_queue_set = getUtility(ITranslationImportQueue)
+
+        # Attach all files
+        for filename in filenames:
+            # Fetch the file
+            content = tarball.extractfile(filename).read()
+            # Add it to the queue.
+            translation_import_queue_set.addOrUpdateEntry(
+                filename, content, is_published, importer,
+                sourcepackagename=self.sourcepackagename,
+                distrorelease=self.uploaddistrorelease)
+
 

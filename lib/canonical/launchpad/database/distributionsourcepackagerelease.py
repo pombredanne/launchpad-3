@@ -9,6 +9,7 @@ __all__ = [
     ]
 
 from zope.interface import implements
+from zope.component import getUtility
 
 from canonical.launchpad.interfaces import IDistributionSourcePackageRelease
 
@@ -36,6 +37,12 @@ class DistributionSourcePackageRelease:
     def __init__(self, distribution, sourcepackagerelease):
         self.distribution = distribution
         self.sourcepackagerelease = sourcepackagerelease
+
+    @property
+    def sourcepackage(self):
+        """See IDistributionSourcePackageRelease"""
+        return self.distribution.getSourcePackage(
+            self.sourcepackagerelease.sourcepackagename)
 
     @property
     def name(self):

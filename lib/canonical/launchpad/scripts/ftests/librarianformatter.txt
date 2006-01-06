@@ -78,6 +78,17 @@ Traceback (most recent call last):
     ...
 RuntimeError: An Exception
 
+We keep exceptions from expiring for about 3 months.
+
+>>> match = re.search('/(\d+)/', url)
+>>> alias_id = match.group(1)
+>>> from canonical.launchpad.database import LibraryFileAlias
+>>> transaction.abort() # To see db changes made by the librarian
+>>> alias = LibraryFileAlias.get(alias_id)
+>>> now = datetime.now().replace(tzinfo=utc)
+>>> alias.expires > now + timedelta(days=89)
+True
+
 Note that we also need to remain informative with dud exceptions, such as
 those with a non-ASCII string representation or no string representation
 at all

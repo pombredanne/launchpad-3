@@ -35,17 +35,4 @@
         />
     </browser:pages>
 
-    <!-- SourcePackageReleaseSet -->
-    <content class="canonical.launchpad.database.SourcePackageReleaseSet">
-      <allow
-        interface="canonical.launchpad.interfaces.ISourcePackageReleaseSet" />
-    </content>
-
-    <securedutility
-      class="canonical.launchpad.database.SourcePackageReleaseSet"
-      provides="canonical.launchpad.interfaces.ISourcePackageReleaseSet">
-      <allow
-        interface="canonical.launchpad.interfaces.ISourcePackageReleaseSet" />
-    </securedutility>
-
 </configure>

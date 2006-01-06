@@ -101,15 +101,27 @@ long.  This aids in the display of code samples:
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"""See IRosettaStats."""<br />
     &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;return self.currentCount</p>
 
+It is common for reply emails to quote other messages using the
+greater-than character.  Quoted lines should not be considered part of
+the preceding paragraph, even if it is between 60 and 80 characters:
+
+    >>> text = (
+    ...     'This line is 70 characters.  Next is a quoted line we '
+    ...     'are replying to:\n'
+    ...     '> This line is not part of the above run of text.')
+    >>> print test_tales('foo/fmt:text-to-html', foo=text)
+    <p>This line is 70 characters.  Next is a quoted line we are replying to:<br />
+    &gt; This line is not part of the above run of text.</p>
+
 
 fmt:text-to-html knows how to linkify URLs:
 
     >>> text = (
     ...     'http://localhost:8086/bar/baz/foo.html\n'
-    ...     'http://localhost:8086/bar/baz/foo.bar.html\n'
-    ...     'http://localhost:8086/bar/baz/foo.bar.html.\n'
+    ...     'ftp://localhost:8086/bar/baz/foo.bar.html\n'
+    ...     'sftp://localhost:8086/bar/baz/foo.bar.html.\n'
     ...     'http://localhost:8086/bar/baz/foo.bar.html;\n'
-    ...     'http://localhost:8086/bar/baz/foo.bar.html:\n'
+    ...     'news://localhost:8086/bar/baz/foo.bar.html:\n'
     ...     'http://localhost:8086/bar/baz/foo.bar.html?\n'
     ...     'http://localhost:8086/bar/baz/foo.bar.html,\n'
     ...     '<http://localhost:8086/bar/baz/foo.bar.html>\n'
@@ -130,10 +142,10 @@ fmt:text-to-html knows how to linkify URLs:
     ...     'http://localhost/bar/baz/foo.bar.html?a=b&b=a:\n')
     >>> print test_tales('foo/fmt:text-to-html', foo=text)
     <p><a rel="nofollow" href="http://localhost:8086/bar/baz/foo.html">http://localhost:8086/bar/baz/foo.html</a><br />
-    <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a><br />
-    <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>.<br />
+    <a rel="nofollow" href="ftp://localhost:8086/bar/baz/foo.bar.html">ftp://localhost:8086/bar/baz/foo.bar.html</a><br />
+    <a rel="nofollow" href="sftp://localhost:8086/bar/baz/foo.bar.html">sftp://localhost:8086/bar/baz/foo.bar.html</a>.<br />
     <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>;<br />
-    <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>:<br />
+    <a rel="nofollow" href="news://localhost:8086/bar/baz/foo.bar.html">news://localhost:8086/bar/baz/foo.bar.html</a>:<br />
     <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>?<br />
     <a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>,<br />
     &lt;<a rel="nofollow" href="http://localhost:8086/bar/baz/foo.bar.html">http://localhost:8086/bar/baz/foo.bar.html</a>&gt;<br />

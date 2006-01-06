@@ -10,15 +10,16 @@ __all__ = [
     'IBugTaskSearch',
     'IUpstreamBugTaskSearch',
     'IDistroBugTaskSearch',
+    'IPersonBugTaskSearch',
     'IBugTaskDelta',
     'IUpstreamBugTask',
     'IDistroBugTask',
     'IDistroReleaseBugTask',
     'ISelectResultsSlicable',
     'IBugTaskSet',
-    'IBugTasksReport',
     'BugTaskSearchParams',
-    'UNRESOLVED_BUGTASK_STATUSES']
+    'UNRESOLVED_BUGTASK_STATUSES',
+    'RESOLVED_BUGTASK_STATUSES']
 
 from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
@@ -34,8 +35,20 @@ from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 
 _ = MessageIDFactory('launchpad')
 
+# XXX: Brad Bollenbach, 2005-12-02: In theory, NEEDSINFO belongs in
+# UNRESOLVED_BUGTASK_STATUSES, but the semantics of our current reports would
+# break if it were added to the list below. See
+# <https://launchpad.net/malone/bugs/5320>
 UNRESOLVED_BUGTASK_STATUSES = (
-    dbschema.BugTaskStatus.NEW, dbschema.BugTaskStatus.ACCEPTED)
+    dbschema.BugTaskStatus.UNCONFIRMED,
+    dbschema.BugTaskStatus.CONFIRMED,
+    dbschema.BugTaskStatus.INPROGRESS)
+
+RESOLVED_BUGTASK_STATUSES = (
+    dbschema.BugTaskStatus.FIXCOMMITTED,
+    dbschema.BugTaskStatus.FIXRELEASED,
+    dbschema.BugTaskStatus.REJECTED)
+
 
 class IBugTask(IHasDateCreated):
     """A description of a bug needing fixing in a particular product
@@ -55,7 +68,7 @@ class IBugTask(IHasDateCreated):
         title=_('Milestone'), required=False, vocabulary='Milestone')
     status = Choice(
         title=_('Status'), vocabulary='BugTaskStatus',
-        default=dbschema.BugTaskStatus.NEW)
+        default=dbschema.BugTaskStatus.UNCONFIRMED)
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
     priority = Choice(
@@ -118,6 +131,29 @@ class IBugTask(IHasDateCreated):
         severity.
         """
 
+    def updateTargetNameCache(self):
+        """Update the targetnamecache field in the database.
+
+        This method is meant to be called when an IBugTask is created or
+        modified and will also be called from the update_stats.py cron script
+        to ensure that the targetnamecache is properly updated when, for
+        example, an IDistribution is renamed.
+        """
+
+    def asEmailHeaderValue(self):
+        """Return a value suitable for an email header value for this bugtask.
+
+        The return value is a single line of arbitrary length, so header folding
+        should be done by the callsite, as needed.
+
+        For an upstream task, this value might look like:
+
+          product=firefox; status=New; priority=None; assignee=None;
+
+        See doc/bugmail-headers.txt for a complete explanation and more
+        examples.
+        """
+
 
 class INullBugTask(IBugTask):
     """A marker interface for an IBugTask that doesn't exist in a context.
@@ -143,7 +179,7 @@ class IBugTaskSearch(Interface):
     status = List(
         title=_('Status:'),
         value_type=IBugTask['status'],
-        default=[dbschema.BugTaskStatus.NEW, dbschema.BugTaskStatus.ACCEPTED],
+        default=list(UNRESOLVED_BUGTASK_STATUSES),
         required=False)
     severity = List(
         title=_('Severity:'),
@@ -172,6 +208,10 @@ class IUpstreamBugTaskSearch(IBugTaskSearch):
 class IDistroBugTaskSearch(IBugTaskSearch):
     """The schema used by the bug task search form of a distribution or
     distribution release."""
+
+
+class IPersonBugTaskSearch(IBugTaskSearch):
+    """The schema used by the bug task search form of a person."""
 
 
 class IBugTaskDelta(Interface):
@@ -328,7 +368,7 @@ class BugTaskSearchParams:
                  assignee=None, sourcepackagename=None,
                  binarypackagename=None, owner=None,
                  statusexplanation=None, attachmenttype=None,
-                 orderby=None, omit_dupes=False):
+                 orderby=None, omit_dupes=False, subscriber=None):
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
@@ -344,6 +384,7 @@ class BugTaskSearchParams:
         self.user = user
         self.orderby = orderby
         self.omit_dupes = omit_dupes
+        self.subscriber = subscriber
 
         self._has_context = False
 
@@ -417,12 +458,13 @@ class IBugTaskSet(Interface):
         """
 
     def maintainedBugTasks(person, minseverity=None, minpriority=None,
-                         showclosed=None, orderby=None, user=None):
+                           showclosed=None, orderby=None, user=None):
         """Return all bug tasks assigned to a package/product maintained by
         :person:.
 
-        By default, closed (FIXED, REJECTED) tasks are not returned. If you
-        want closed tasks too, just pass showclosed=True.
+        By default, closed (FIXCOMMITTED, REJECTED) tasks are not
+        returned. If you want closed tasks too, just pass
+        showclosed=True.
 
         If minseverity is not None, return only the bug tasks with severity 
         greater than minseverity. The same is valid for minpriority/priority.
@@ -437,53 +479,3 @@ class IBugTaskSet(Interface):
         <user> is None, no private bugtasks will be returned.
         """
 
-    def bugTasksWithSharedInterest(person1, person2, orderBy=None, user=None):
-        """Return all bug tasks which person1 and person2 share some interest.
-
-        We assume they share some interest if they're both members of the
-        maintainer of a given product/package. 
-
-        If you want the results ordered, you have to explicitly specify an
-        <orderBy>. Otherwise the order used is not predictable.
-        <orderBy> can be either a string with the column name you want to sort
-        or a list of column names as strings.
-
-        The <user> parameter is necessary to make sure we don't return any
-        bugtask of a private bug for which the user is not subscribed. If
-        <user> is None, no private bugtasks will be returned.
-        """
-
-
-class IBugTasksReport(Interface):
-
-    user = Attribute(_("The user for whom this report will be generated"))
-
-    minseverity = Attribute(_(
-        "The minimum severity of tasks to display in this report."))
-
-    minpriority = Attribute(_(
-        "The minimum priority of bug fixing tasks to display in this "
-        "report."))
-
-    showclosed = Attribute(_(
-        "Whether or not to show closed bugs on this report."))
-
-    def maintainedPackageBugs():
-        """Return an iterator over the tasks of bugs on distro
-        packages the user maintains."""
-
-    def maintainedProductBugs():
-        """Return an iterator over the tasks of bugs on upstream
-        products the user maintains."""
-
-    def productAssigneeBugs():
-        """Return an iterator over the bugtasks on upstream products
-        which are assigned directly to the user."""
-
-    def packageAssigneeBugs():
-        """Return an iterator over the bug tasks on distro packages
-        which are assigned directly to the user."""
-
-    def assignedBugs():
-        """An iterator over ALL the bugs directly or indirectly assigned
-        to the person."""

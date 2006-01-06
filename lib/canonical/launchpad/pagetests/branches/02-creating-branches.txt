@@ -1,0 +1,170 @@
+= Creating Branches =
+
+We should be able to create a new branch from a product.
+
+First, check that the +addbranch link is visible on product overview page and
+the product code facet page.
+
+  >>> print http(r"""
+  ... GET /products/applets/ HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ..."http://localhost:9000/products/applets/+addbranch"...
+
+  >>> print http(r"""
+  ... GET /products/applets/+branches HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ..."http://localhost:9000/products/applets/+addbranch"...
+
+Let's make sure we can load the branch creation form on a product.
+
+  >>> print http(r"""
+  ... GET /products/applets/+addbranch HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+Now, post the branch creation form for the product.
+
+  >>> print http(r"""
+  ... POST /products/applets/+addbranch HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1276
+  ... Content-Type: multipart/form-data; boundary=---------------------------10133907381973361475472259166
+  ... Cookie: launchpad=XEJ1RoB92REqSdZahy5y.gVGBDo01dWhgSd.HER7DezKTr2eoFzkoU
+  ... Referer: http://localhost:9000/products/applets/+addbranch
+  ... 
+  ... -----------------------------10133907381973361475472259166
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... main
+  ... -----------------------------10133907381973361475472259166
+  ... Content-Disposition: form-data; name="field.author"
+  ... 
+  ... 
+  ... -----------------------------10133907381973361475472259166
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Gnome Panel Applets Mainline
+  ... -----------------------------10133907381973361475472259166
+  ... Content-Disposition: form-data; name="field.url"
+  ... 
+  ... http://example.com/applets/main
+  ... -----------------------------10133907381973361475472259166
+  ... Content-Disposition: form-data; name="field.home_page"
+  ... 
+  ... 
+  ... -----------------------------10133907381973361475472259166
+  ... Content-Disposition: form-data; name="field.lifecycle_status"
+  ... 
+  ... Development
+  ... -----------------------------10133907381973361475472259166
+  ... Content-Disposition: form-data; name="field.lifecycle_status-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------10133907381973361475472259166
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... Main branch of development for GNOME Panel Applets.
+  ... -----------------------------10133907381973361475472259166
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------10133907381973361475472259166--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/people/name16/+branch/applets/main
+  ...
+
+Let's make sure we can see the page for the newly created branch.
+
+  >>> print http(r"""
+  ... GET /people/name16/+branch/applets/main HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+We can also create a branch from a person's page. First, check that the
++addbranch link is present in the code facet of a person.
+
+
+  >>> print http(r"""
+  ... GET /people/lifeless/+branches HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ..."http://localhost:9000/people/lifeless/+addbranch"...
+
+When creating a branch from a person, we have the option not to specify an
+associated product.
+
+  >>> print http(r"""
+  ... GET /people/lifeless/+addbranch HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+
+Let's post the branch creation form for a "junk" branch, that is a branch with
+no associated product.
+
+  >>> print http(r"""
+  ... POST /people/lifeless/+addbranch HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1315
+  ... Content-Type: multipart/form-data; boundary=---------------------------16855892469756896411380849908
+  ... Cookie: launchpad=XEJ1RoB92REqSdZahy5y.gVGBDo01dWhgSd.HER7DezKTr2eoFzkoU
+  ... Referer: http://localhost:9000/people/lifeless/+addbranch
+  ... 
+  ... -----------------------------16855892469756896411380849908
+  ... Content-Disposition: form-data; name="field.product"
+  ... 
+  ... 
+  ... -----------------------------16855892469756896411380849908
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... pyresources
+  ... -----------------------------16855892469756896411380849908
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Resource Management for Unit Tests
+  ... -----------------------------16855892469756896411380849908
+  ... Content-Disposition: form-data; name="field.url"
+  ... 
+  ... http://example.com/~lifeless/pyresources/
+  ... -----------------------------16855892469756896411380849908
+  ... Content-Disposition: form-data; name="field.home_page"
+  ... 
+  ... 
+  ... -----------------------------16855892469756896411380849908
+  ... Content-Disposition: form-data; name="field.lifecycle_status"
+  ... 
+  ... New
+  ... -----------------------------16855892469756896411380849908
+  ... Content-Disposition: form-data; name="field.lifecycle_status-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------16855892469756896411380849908
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... A resource management framework for handling unit test fixtures in Python.
+  ... -----------------------------16855892469756896411380849908
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------16855892469756896411380849908--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/people/name16/+branch/+junk/pyresources
+  ...
+
+Let's make sure we can see the page for the newly created junk branch.
+
+  >>> print http(r"""
+  ... GET /people/name16/+branch/+junk/pyresources HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  ...

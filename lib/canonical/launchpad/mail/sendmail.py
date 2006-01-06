@@ -11,7 +11,11 @@ messaging settings -- stub 2004-10-21
 
 """
 
-__all__ = ['sendmail', 'simple_sendmail', 'raw_sendmail']
+__all__ = [
+    'sendmail',
+    'simple_sendmail',
+    'simple_sendmail_from_person',
+    'raw_sendmail']
 
 import sets
 from email.Utils import make_msgid, formatdate, parseaddr, formataddr
@@ -27,47 +31,27 @@ from zope.security.proxy import isinstance as zisinstance
 
 from canonical.config import config
 from canonical.lp import isZopeless
+from canonical.launchpad.helpers import is_ascii_only
 
 # email package by default ends up encoding UTF8 messages using base64,
 # which sucks as they look like spam to stupid spam filters. We define
 # our own custom charset definition to force quoted printable.
 Charset.add_charset('utf8', Charset.QP, Charset.QP, 'utf8')
 
-def encode_address_field(address_field):
-    """Encodes an address field according to RFC 2047.
 
-    An address field can look like either:
+def do_paranoid_email_content_validation(from_addr, to_addrs, subject, body):
+    """Validate various bits of the email.
 
-        Some Name <someaddress>
+    Extremely paranoid parameter checking is required to ensure we
+    raise an exception rather than stick garbage in the mail
+    queue. Currently, the Z3 mailer is too forgiving and accepts badly
+    formatted emails which the delivery mechanism then can't send.
 
-    or:
-
-        someaddress
-
-    Only 'Some Name' should be encoded.
+    An AssertionError will be raised if one of the parameters is
+    invalid.
     """
-    name, address = parseaddr(address_field)
-    return formataddr((str(Header(name)), str(address)))
-
-
-def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
-    """Send an email from from_addr to to_addrs with the subject and body
-    provided. to_addrs can be a list, tuple, or ASCII/Unicode string.
-
-    Arbitrary headers can be set using the headers parameter.
-
-    Returns the Message-Id.
-    """
-
-    # Extremely paranoid parameter checking is required to ensure
-    # we raise an exception rather than stick garbage in the mail
-    # queue. Currently, the Z3 mailer is too forgiving and accepts
-    # badly formatted emails which the delivery mechanism then
-    # can't send.
     # XXX: These checks need to be migrated upstream if this bug
     # still exists in modern Z3 -- StuartBishop 20050319
-    if zisinstance(to_addrs, basestring):
-        to_addrs = [to_addrs]
     assert (zisinstance(to_addrs, (list, tuple, sets.Set, set))
             and len(to_addrs) > 0), 'Invalid To: %r' % (to_addrs,)
     assert zisinstance(from_addr, basestring), \
@@ -79,14 +63,55 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
         assert zisinstance(addr, basestring) and bool(addr), \
                 'Invalid recipient: %r in %r' % (addr, to_addrs)
 
+
+def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
+    """Send an email from from_addr to to_addrs with the subject and body
+    provided. to_addrs can be a list, tuple, or ASCII string.
+
+    Arbitrary headers can be set using the headers parameter. If the value for a
+    given key in the headers dict is a list or tuple, the header will be added
+    to the message once for each value in the list.
+
+    Returns the Message-Id.
+    """
+    if zisinstance(to_addrs, basestring):
+        to_addrs = [to_addrs]
+
+    # It's the caller's responsibility to encode the address fields to
+    # ASCII strings.
+    for address in [from_addr] + list(to_addrs):
+        if not isinstance(address, str) or not is_ascii_only(address):
+            raise AssertionError(
+                'Expected an ASCII str object, got: %r' % address)
+
+
+    do_paranoid_email_content_validation(
+        from_addr=from_addr, to_addrs=to_addrs, subject=subject, body=body)
+
     msg = MIMEText(body.encode('utf8'), 'plain', 'utf8')
-    for k,v in headers.items():
-        del msg[k]
-        msg[k] = v
-    msg['To'] = ','.join([encode_address_field(addr) for addr in to_addrs])
-    msg['From'] = encode_address_field(from_addr)
+    # The header_body_values may be a list or tuple of values, so we will add a
+    # header once for each value provided for that header. (X-Launchpad-Bug,
+    # for example, may often be set more than once for a bugmail.)
+    for header, header_body_values in headers.items():
+        if not zisinstance(header_body_values, (list, tuple)):
+            header_body_values = [header_body_values]
+        for header_body_value in header_body_values:
+            msg[header] = header_body_value
+    msg['To'] = ','.join(to_addrs)
+    msg['From'] = from_addr
     msg['Subject'] = subject
     return sendmail(msg)
+
+
+def simple_sendmail_from_person(person, to_addrs, subject, body, headers={}):
+    """Sends a mail using the given person as the From address.
+
+    It works just like simple_sendmail, excepts that it ensures that the
+    From header is properly encoded.
+    """
+    name = str(Header(person.displayname))
+    from_addr = str(formataddr((name, person.preferredemail.email)))
+    return simple_sendmail(from_addr, to_addrs, subject, body, headers=headers)
 
 
 def sendmail(message):

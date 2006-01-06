@@ -62,19 +62,19 @@ class SprintContextMenu(ContextMenu):
         return Link('+edit', text, icon='edit')
 
     def confirmed(self):
-        text = 'Show confirmed'
+        text = 'Show Confirmed'
         return Link('.', text, icon='info')
 
     def all(self):
-        text = 'Show all'
+        text = 'Show All'
         return Link('./?show=all', text, icon='info')
 
     def deferred(self):
-        text = 'Show deferred'
+        text = 'Show Deferred'
         return Link('./?show=deferred', text, icon='info')
 
     def submitted(self):
-        text = 'Show new'
+        text = 'Show New'
         return Link('./?show=submitted', text, icon='info')
 
 

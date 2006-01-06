@@ -36,5 +36,9 @@ class FileBugView(SQLObjectAddView):
         return self.addedBug
 
     def nextURL(self):
+        # Give the user some feedback on the bug just opened.
+        self.request.response.addNotification(
+            "Thank you for your bug report.")
+
         task = self.addedBug.bugtasks[0]
         return canonical_url(task)

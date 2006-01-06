@@ -1,0 +1,48 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+  </metal:leftportlets>
+
+  <div metal:fill-slot="main">
+
+    <metal:page
+        use-macro="context/@@+bugtask-macros-buglisting/page"
+        tal:define="task_batch_navigator view/search">
+
+      <metal:heading fill-slot="heading">
+        <h1>Bugs <span tal:replace="context/browsername"/> is subscribed to</h1>
+      </metal:heading>
+
+      <metal:extra_search_widgets_in_table
+          tal:condition="view/show_advanced_form"
+          metal:fill-slot="extra_search_widgets_in_table">
+
+        <input type="hidden" name="advanced" value="1" />
+
+        <metal:widget 
+          use-macro="context/@@+bugtask-macros-buglisting/assignee_widget_in_table" />
+        <metal:widget 
+          use-macro="context/@@+bugtask-macros-buglisting/include_dupes_widget_in_table" />
+        <metal:widget 
+          use-macro="context/@@+bugtask-macros-buglisting/statusexplanation_widget_in_table" />
+      </metal:extra_search_widgets_in_table>
+
+      <metal:extra_search_widgets_below_table
+          tal:condition="view/show_advanced_form"
+          metal:fill-slot="extra_search_widgets_below_table">
+        <metal:widget 
+          use-macro="context/@@+bugtask-macros-buglisting/extra_widgets_in_own_table" />
+      </metal:extra_search_widgets_below_table>
+
+    </metal:page>
+
+  </div>
+
+</body>
+</html>

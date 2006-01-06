@@ -11,6 +11,8 @@ from canonical.config import config
 
 class UpdateStatsTest(LaunchpadTestCase):
 
+    dbuser = 'statistician'
+
     def tearDown(self):
         con = self.connect()
         # Force a commit here so test harness optimizations know the database

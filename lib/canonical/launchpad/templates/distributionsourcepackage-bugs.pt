@@ -5,6 +5,10 @@
 
 <body>
 
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:content="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
 <div metal:fill-slot="main"
      tal:define="listing_columns view/task_columns">
 

@@ -7,6 +7,9 @@
 
     <content class="canonical.launchpad.database.GPGKey">
         <allow interface="canonical.launchpad.interfaces.IGPGKey"/>
+        <require
+            permission="launchpad.Edit"
+            set_attributes="active can_encrypt" />
     </content>
 
     <!-- GPGKeySet -->

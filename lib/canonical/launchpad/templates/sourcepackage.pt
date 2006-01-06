@@ -7,7 +7,6 @@
 
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
-    <div tal:replace="structure context/@@+portlet-translations" />
     <div tal:replace="structure context/distrorelease/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-hctstatus" />
   </metal:leftportlets>
@@ -20,39 +19,33 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Source Package Overview</h1>
-
-  <p class="documentDescription">
-    This page shows the specific versions of the
-    <span tal:replace="context/sourcepackagename/name">apache2</span> source
-    package that are published in each pocket of the
-    <span tal:replace="context/distrorelease/displayname">Hoary</span>
-    distribution release.
-  </p>
+  <h1>Versions published</h1>
 
   <p class="portalMessage" tal:condition="not:context/currentrelease">
     There is no current release of this source package 
     in <span tal:replace="context/distrorelease/title" />.
+    You can still report bugs, make translations, and so on,
+    but they might not be used until the package is published.
   </p>
 
-  <tal:block repeat="pocket view/published_by_pocket">
-    <tal:block condition="pocket/packages">
-      <p><b tal:content="pocket/pocketdetails/title">Plain</b>:</p>
-
-      <p style="margin-left: 20px;" 
-         tal:content="pocket/pocketdetails/description">
-        The description of the pocket.
-      </p>
-
-      <ul>
-        <li tal:repeat="spr pocket/packages">
-          <a tal:content="spr/displayname"
-             tal:attributes="href spr/fmt:url">apache2</a>
-        </li>
-      </ul>
+  <dl tal:condition="view/published_by_pocket">
+    <tal:block repeat="pocket view/published_by_pocket">
+      <tal:block condition="pocket/packages">
+        <dt><dfn tal:content="pocket/pocketdetails/title">Plain</dfn></dt>
+        <dd>
+          <p tal:content="pocket/pocketdetails/description">
+            The description of the pocket.
+          </p>
+          <ul>
+            <li tal:repeat="spr pocket/packages">
+              <a tal:content="spr/displayname"
+                 tal:attributes="href spr/fmt:url">apache2</a>
+            </li>
+          </ul>
+        </dd>
+      </tal:block>
     </tal:block>
-  </tal:block>
-
+  </dl>
   <tal:block tal:condition="context/currentrelease"
              tal:define="current context/currentrelease">
 

@@ -34,18 +34,28 @@
       <b>Derives from:</b><br />
       <a tal:attributes="href context/parentrelease/fmt:url">
       <span tal:replace="context/parentrelease/distribution/name" />
-      <span tal:replace="context/parentrelease/name" /></a>
-    </span>
-    <br />
+      <span tal:replace="context/parentrelease/name" /></a> <br />
+    </span> 
+
+    <span tal:condition="context/nominatedarchindep" tal:omit-tag>
+      <b>Nominated Independent Architecture:</b><br />
+      <img src="/++resource++architecture">
+      <a tal:attributes="href context/nominatedarchindep/fmt:url"
+         tal:content="context/nominatedarchindep/architecturetag" /> <br />
+    </span> 
 
     <span tal:condition="context/architectures" tal:omit-tag>
       <b>Architectures:</b><br />
         <ul>
           <li tal:repeat="arch context/architectures"
-            class="architecture"
-          ><a tal:content="arch/architecturetag"
-            tal:attributes="href arch/fmt:url"
-          /></li>
+              class="architecture">
+              <a tal:attributes="href arch/fmt:url">
+                <span tal:replace="arch/architecturetag"/>
+                <tal:official condition="arch/official">
+                   (official)
+                </tal:official>
+              </a>
+          </li>
         </ul>
     </span>
    

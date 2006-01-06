@@ -11,6 +11,7 @@ from zope.i18nmessageid import MessageIDFactory
 import zope.app.publication.interfaces
 import zope.publisher.interfaces.browser
 import zope.app.traversing.interfaces
+from zope.schema import Bool
 from persistent import IPersistent
 
 _ = MessageIDFactory('launchpad')
@@ -56,6 +57,7 @@ class ILaunchpadCelebrities(Interface):
     debbugs = Attribute("The Debian Bug Tracker")
     shipit_admin = Attribute("The ShipIt Administrators.")
     launchpad_developers = Attribute("The Launchpad development team.")
+    ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
 
 
 class ICrowd(Interface):
@@ -307,6 +309,11 @@ class ILaunchBag(Interface):
 
     timezone = Attribute("The user's time zone")
 
+    developer = Bool(
+        title=u'True if a member of the launchpad developers celebrity'
+        )
+
+
 class IOpenLaunchBag(ILaunchBag):
     def add(ob):
         '''Stick the object into the correct attribute of the ILaunchBag,
@@ -315,6 +322,13 @@ class IOpenLaunchBag(ILaunchBag):
         '''Empty the bag'''
     def setLogin(login):
         '''Set the login to the given value.'''
+    def setDeveloper():
+        '''Set the developer flag.
+        
+        Because we use this during exception handling, we need this set
+        and cached at the start of the transaction in case our database
+        connection blows up.
+        '''
 
 
 class IStructuredString(Interface):
@@ -539,6 +553,20 @@ class ILaunchpadBrowserApplicationRequest(
     breadcrumbs = Attribute(
         'List of IBreadcrumb objects.  This is appended to during traversal'
         ' so that a page can render appropriate breadcrumbs.')
+
+    traversed_objects = Attribute(
+        'List of traversed objects.  This is appended to during traversal.')
+
+    def getNearest(*some_interfaces):
+        """Searches for the last traversed object to implement one of
+        the given interfaces.
+
+        Returns an (object, matching_interface) tuple.  If the object
+        implements more than one of the interfaces, the first one is
+        returned.
+
+        If no matching object is found, the tuple (None, None) is returned.
+        """
 
 
 class IBreadcrumb(Interface):

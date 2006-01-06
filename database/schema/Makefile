@@ -19,6 +19,9 @@ DBNAME=launchpad_dev
 TEST_DBNAME=launchpad_ftest_template
 EMPTY_DBNAME=launchpad_empty
 
+# The session database name.
+SESSION_DBNAME=session_dev
+
 # The latest schema dump from production. Database patches are relative
 # to this baseline. This dump should be updated every production rollout
 # to ensure that the development database remains in sync with reality
@@ -27,22 +30,22 @@ EMPTY_DBNAME=launchpad_empty
 #             launchpad_prod | grep -v '^--'
 # Then, manually, the 'SET client_min_messages' line is added and
 # the first two CREATEs commented out (plpythonu stuff)
-REV=25
+REV=40
 BASELINE=launchpad-${REV}-00-0.sql
-MD5SUM=98cc2671d99142bead06fe90503bfc9c  launchpad-25-00-0.sql
+MD5SUM=38f4499b444fcbef5b0348980e36c76c  launchpad-40-00-0.sql
 default: all
 
 # NB. Yes - we run fti.py twice. This should be fixed sometime, but
 # it is currently needed to get the fti columns populated correctly.
 test: create 
 	@ echo "* Installing tsearch2 into ts2 schema"
-	@ ${PYTHON} fti.py --setup-only -d ${TEST_DBNAME}
+	@ ${PYTHON} fti.py -q --setup-only -d ${TEST_DBNAME}
 	@ echo "* Loading base database schema"
 	@ psql -d ${TEST_DBNAME} -f ${BASELINE} | grep : | cat
 	@ echo "* Patching the database schema"
 	@ ${PYTHON} upgrade.py -d ${TEST_DBNAME}
 	@ echo "* Setting up full text indexes"
-	@ ${PYTHON} fti.py -d ${TEST_DBNAME}
+	@ ${PYTHON} fti.py -q -d ${TEST_DBNAME}
 	@ echo "* Adding comments"
 	@ psql -d ${TEST_DBNAME} -f comments.sql | grep : | cat
 	@ echo "* Security setup"
@@ -53,12 +56,19 @@ test: create
 	@ echo "* Loading sample data"
 	@ psql -v ON_ERROR_STOP=1 -d ${TEST_DBNAME} -f $(SAMPLEDATA) > /dev/null
 	@ echo "* Setting up full text indexes"
-	@ ${PYTHON} fti.py -d ${EMPTY_DBNAME}
-	@ ${PYTHON} fti.py -d ${TEST_DBNAME}
+	@ ${PYTHON} fti.py -q -d ${EMPTY_DBNAME}
+	@ ${PYTHON} fti.py -q -d ${TEST_DBNAME}
 	@ echo "* Resetting sequences"
 	@ ${PYTHON} reset_sequences.py -d ${TEST_DBNAME}
 	@ echo "* Vacuuming"
 	@ psql -d ${TEST_DBNAME} -c 'vacuum full analyze' | grep : | cat
+	@ echo "* Creating session database '${SESSION_DBNAME}' (if necessary)"
+	@if [ "$$((`psql -l | grep ${SESSION_DBNAME} | wc -l`))" = '0' ]; \
+	    then createdb -E UNICODE ${SESSION_DBNAME} | grep : | cat ; \
+	    psql -q -d ${SESSION_DBNAME} -f launchpad_session.sql ; \
+	fi
+	@ echo "* Adding session tables to '${TEST_DBNAME}'"
+	psql -q -d ${TEST_DBNAME} -f launchpad_session.sql
 
 dev: test
 	@ echo "* Creating ${DBNAME}"
@@ -155,7 +165,7 @@ newsample-soyuz:
 
 newsampledata:
 	pg_dump --schema=public --disable-triggers -a -D -O -d ${DBNAME} \
-	| grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|SELECT pg_catalog\.setval\|^--\)" \
+	| grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\)" \
 	| $(PYTHON) sort_sql.py \
 	> $(NEWSAMPLEDATA)
 

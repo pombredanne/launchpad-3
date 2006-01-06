@@ -19,6 +19,8 @@ import sys
 import time
 from optparse import OptionParser
 from cStringIO import StringIO
+from datetime import datetime, timedelta
+from pytz import utc
 
 from zope.component import getUtility
 
@@ -52,14 +54,16 @@ class LibrarianFormatter(logging.Formatter):
             pass
         if not exception_string:
             exception_string = str(ei[0]).split('.')[-1]
-   
+  
+        expiry = datetime.now().replace(tzinfo=utc) + timedelta(days=90)
         try:
             filename = base(
                     long(sha.new(traceback).hexdigest(),16), 62
                     ) + '.txt'
             url = librarian.remoteAddFile(
                     filename, len(traceback), StringIO(traceback),
-                    'text/plain;charset=%s' % sys.getdefaultencoding()
+                    'text/plain;charset=%s' % sys.getdefaultencoding(),
+                    expires=expiry
                     )
             return ' -> %s (%s)' % (url, exception_string)
         except UploadFailed:

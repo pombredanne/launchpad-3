@@ -96,7 +96,7 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     usedfor = ISourcePackage
     facet = 'overview'
-    links = ['hct', 'changelog', 'buildlog']
+    links = ['hct', 'changelog', 'buildlog', 'builds']
 
     def hct(self):
         text = structured(
@@ -111,6 +111,10 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     def upstream(self):
         return Link('+packaging', 'Edit Upstream Link', icon='edit')
+
+    def builds(self):
+        text = 'View Builds'
+        return Link('+builds', text, icon='info')        
 
 
 class SourcePackageBugsMenu(ApplicationMenu):
@@ -153,17 +157,14 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
 
 class SourcePackageView(BuildRecordsView):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.user = getUtility(ILaunchBag).user
+    def initialize(self):
         # lets add a widget for the product series to which this package is
         # mapped in the Packaging table
         raw_field = IPackaging['productseries']
         bound_field = raw_field.bind(self.context)
         self.productseries_widget = zapi.getViewProviding(bound_field,
-            IInputWidget, request)
-        self.productseries_widget.setRenderedValue(context.productseries)
+            IInputWidget, self.request)
+        self.productseries_widget.setRenderedValue(self.context.productseries)
         # List of languages the user is interested on based on their browser,
         # IP address and launchpad preferences.
         self.languages = helpers.request_languages(self.request)
@@ -260,8 +261,16 @@ class SourcePackageView(BuildRecordsView):
         return helpers.browserLanguages(self.request)
 
     def templateviews(self):
-        return [POTemplateView(template, self.request)
+        """Return the view class of the IPOTemplate associated with the context.
+        """
+        templateview_list = [POTemplateView(template, self.request)
                 for template in self.context.currentpotemplates]
+
+        # Initialize the views.
+        for templateview in templateview_list:
+            templateview.initialize()
+
+        return templateview_list
 
     def potemplatenames(self):
         potemplatenames = []

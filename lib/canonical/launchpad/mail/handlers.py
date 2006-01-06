@@ -8,11 +8,14 @@ from zope.interface import implements
 from zope.event import notify
 from zope.exceptions import NotFoundError
 
-from canonical.launchpad.helpers import Snapshot
+from canonical.launchpad.helpers import Snapshot, is_maintainer
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IMessageSet, IBugEmailCommand, IBug, IMailHandler,
-    IBugMessageSet, BugCreationConstraintsError)
-from canonical.launchpad.mail.commands import emailcommands
+    ILaunchBag, IMessageSet, IBugEmailCommand, IBugTaskEmailCommand,
+    IBugEditEmailCommand, IBugTaskEditEmailCommand, IBug, IBugTask,
+    IMailHandler, IBugMessageSet, CreatedBugWithNoBugTasksError,
+    EmailProcessingError, IUpstreamBugTask, IDistroBugTask,
+    IDistroReleaseBugTask)
+from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
 
@@ -36,18 +39,80 @@ def get_main_body(signed_msg):
         return msg.get_payload(decode=True)
 
 
-def get_edited_fields(modified_event, another_event):
-    """Combines two events' edited_fields."""
-    edited_fields = modified_event.edited_fields
-    if ISQLObjectModifiedEvent.providedBy(another_event):
-        edited_fields += another_event.edited_fields
-    return edited_fields
+def get_bugtask_type(bugtask):
+    """Returns the specific IBugTask interface the the bugtask provides.
+
+        >>> from canonical.launchpad.interfaces import (
+        ...     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
+        >>> from zope.interface import classImplementsOnly
+        >>> class BugTask:
+        ...     pass
+
+    :bugtask: has to provide a specific bugtask interface:
+
+        >>> get_bugtask_type(BugTask()) #doctest: +ELLIPSIS
+        Traceback (most recent call last):
+        ...
+        AssertionError...
+
+    When it does, the specific interface is returned:
+
+        >>> classImplementsOnly(BugTask, IUpstreamBugTask)
+        >>> get_bugtask_type(BugTask()) #doctest: +ELLIPSIS
+        <...IUpstreamBugTask>
+
+        >>> classImplementsOnly(BugTask, IDistroBugTask)
+        >>> get_bugtask_type(BugTask()) #doctest: +ELLIPSIS
+        <...IDistroBugTask>
+
+        >>> classImplementsOnly(BugTask, IDistroReleaseBugTask)
+        >>> get_bugtask_type(BugTask()) #doctest: +ELLIPSIS
+        <...IDistroReleaseBugTask>
+    """
+    bugtask_interfaces = [
+        IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask
+        ]
+    for interface in bugtask_interfaces:
+        if interface.providedBy(bugtask):
+            return interface
+    # The bugtask didn't provide any specific interface.
+    raise AssertionError(
+        'No specific bugtask interface was provided by %r' % bugtask)
+
+
+def guess_bugtask(bug, person):
+    """Guess which bug task the person intended to edit.
+
+    Return None if no bug task could be guessed.
+    """
+    if len(bug.bugtasks) == 1:
+        return bug.bugtasks[0]
+    else:
+        for bugtask in bug.bugtasks:
+            if IUpstreamBugTask.providedBy(bugtask):
+                # Is the person an upstream maintainer?
+                if is_maintainer(bugtask.product, person):
+                    return bugtask
+            elif IDistroBugTask.providedBy(bugtask):
+                # Is the person a member of the distribution?
+                if person.inTeam(bugtask.distribution.members):
+                    return bugtask
+                else:
+                    # Is the person one of the package bug contacts?
+                    distro_sourcepackage = bugtask.distribution.getSourcePackage(
+                        bugtask.sourcepackagename)
+                    if distro_sourcepackage.isBugContact(person):
+                        return bugtask
+
+    return None
 
 
 class IncomingEmailError(Exception):
     """Indicates that something went wrong processing the mail."""
-    def __init__(self, message):
+
+    def __init__(self, message, failing_command=None):
         self.message = message
+        self.failing_command = failing_command
 
 
 class MaloneHandler:
@@ -78,41 +143,43 @@ class MaloneHandler:
                 if words and words[0] in command_names:
                     command = emailcommands.get(
                         name=words[0], string_args=words[1:])
-                    if commands and commands[-1].isSubCommand(command): 
-                        commands[-1].addSubCommandToBeExecuted(command)
-                    else:
-                        commands.append(command)
+                    commands.append(command)
         return commands
 
 
     def process(self, signed_msg, to_addr, filealias=None):
         commands = self.getCommands(signed_msg)
-
         user, host = to_addr.split('@')
-
         add_comment_to_bug = False
-        if user.lower() == 'new':
-            # A submit request.   
-            commands.insert(0, emailcommands.get('bug', ['new']))
-        elif user.isdigit():
-            # A comment to a bug. We set add_comment_to_bug to True so
-            # that the comment gets added to the bug later. We don't add
-            # the comment now, since we want to let the 'bug' command
-            # handle the possible errors that can occur while getting
-            # the bug.
-            add_comment_to_bug = True
-            commands.insert(0, emailcommands.get('bug', [user]))
-        elif user.lower() != 'edit':
-            # Indicate that we didn't handle the mail.
-            return False
 
-        bug = None
-        bug_event = None
         try:
+            if user.lower() == 'new':
+                # A submit request.
+                commands.insert(0, emailcommands.get('bug', ['new']))
+                if signed_msg.signature is None:
+                    raise IncomingEmailError(
+                        get_error_message('not-gpg-signed.txt'))
+            elif user.isdigit():
+                # A comment to a bug. We set add_comment_to_bug to True so
+                # that the comment gets added to the bug later. We don't add
+                # the comment now, since we want to let the 'bug' command
+                # handle the possible errors that can occur while getting
+                # the bug.
+                add_comment_to_bug = True
+                commands.insert(0, emailcommands.get('bug', [user]))
+            elif user.lower() != 'edit':
+                # Indicate that we didn't handle the mail.
+                return False
+
+            bug = None
+            bug_event = None
+            bugtask = None
+            bugtask_event = None
+
             while len(commands) > 0:
                 command = commands.pop(0)
                 try:
-                    if IBugEmailCommand.providedBy(command):   
+                    if IBugEmailCommand.providedBy(command):
                         if bug_event is not None:
                             notify(bug_event)
                             bug_event = None
@@ -129,34 +196,43 @@ class MaloneHandler:
                             bugmessage = bug.linkMessage(message)
                             notify(SQLObjectCreatedEvent(bugmessage))
                             add_comment_to_bug = False
-                        bug_snapshot = Snapshot(bug, providing=IBug)
-                    else:
-                        ob, ob_event = command.execute(bug, bug_event)
-                        # The bug can be edited by several commands. Let's wait
-                        # firing off the event until all commands related to
-                        # the bug have been executed.
-                        if ob_event is not None:
-                            if ob != bug:
-                                notify(ob_event)
-                            elif ISQLObjectModifiedEvent.providedBy(ob_event):
-                                edited_fields = get_edited_fields(
-                                    ob_event, bug_event)
-                                bug_event = SQLObjectModifiedEvent(
-                                    bug, bug_snapshot, edited_fields)
-                except ValueError, error:
-                    raise IncomingEmailError(str(error))
+                    elif IBugTaskEmailCommand.providedBy(command):
+                        if bugtask_event is not None:
+                            notify(bugtask_event)
+                            bugtask_event = None
+                        bugtask, bugtask_event = command.execute(bug)
+                    elif IBugEditEmailCommand.providedBy(command):
+                        bug, bug_event = command.execute(bug, bug_event)
+                    elif IBugTaskEditEmailCommand.providedBy(command):
+                        if bugtask is None:
+                            bugtask = guess_bugtask(
+                                bug, getUtility(ILaunchBag).user)
+                            if bugtask is None:
+                                raise IncomingEmailError(get_error_message(
+                                    'no-default-affects.txt',
+                                    bug_id=bug.id,
+                                    nr_of_bugtasks=len(bug.bugtasks)))
+                        bugtask, bugtask_event = command.execute(
+                            bugtask, bugtask_event)
+
+                except EmailProcessingError, error:
+                    raise IncomingEmailError(
+                        str(error), failing_command=command)
 
             if bug_event is not None:
                 try:
                     notify(bug_event)
-                except BugCreationConstraintsError, error:
-                    raise IncomingEmailError(str(error))
+                except CreatedBugWithNoBugTasksError:
+                    raise IncomingEmailError(
+                        get_error_message('no-affects-target-on-submit.txt'))
+            if bugtask_event is not None:
+                notify(bugtask_event)
 
         except IncomingEmailError, error:
             transaction.abort()
             send_process_error_notification(
-                signed_msg['From'],
+                str(getUtility(ILaunchBag).user.preferredemail.email),
                 'Submit Request Failure',
-                error.message)
+                error.message, error.failing_command)
 
         return True

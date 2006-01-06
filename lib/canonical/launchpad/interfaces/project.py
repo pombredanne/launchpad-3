@@ -11,34 +11,26 @@ __all__ = [
     'IProjectBugTrackerSet',
     ]
 
-from canonical.launchpad.fields import Title, Summary
+from canonical.launchpad import _
+from canonical.launchpad.fields import ContentNameField, Summary, Title 
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.interfaces.launchpad import IHasOwner
-from canonical.launchpad.interfaces.person import NameAlreadyTaken
-
+from canonical.launchpad.interfaces.validation import valid_webref
 from zope.component import getUtility
 from zope.schema import Bool, Choice, Int, Text, TextLine
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
-
-_ = MessageIDFactory('launchpad')
 
 
-class ProjectNameField(TextLine):
+class ProjectNameField(ContentNameField):
 
-    def _validate(self, value):
-        TextLine._validate(self, value)
-        if (IProject.providedBy(self.context) and 
-            value == getattr(self.context, self.__name__)):
-            # The name wasn't changed.
-            return
+    errormessage = _("%s is already in use by another project.")
 
-        try:
-            project = getUtility(IProjectSet)[value]
-        except KeyError:
-            pass
-        else:
-            raise NameAlreadyTaken(value)
+    @property
+    def _content_iface(self):
+        return IProject
+
+    def _getByName(self, name):
+        return getUtility(IProjectSet).getByName(name)
 
 
 class IProject(IHasOwner):
@@ -90,11 +82,14 @@ class IProject(IHasOwner):
 
     homepageurl = TextLine(
         title=_('Homepage URL'),
+        required=False,
+        constraint=valid_webref,
         description=_("""The project home page. Please include the http://"""))
 
     wikiurl = TextLine(
         title=_('Wiki URL'),
         required=False,
+        constraint=valid_webref,
         description=_("""The URL of this project's wiki, if it has one.
             Please include the http://"""))
 
@@ -181,20 +176,22 @@ class IProjectSet(Interface):
     def __getitem__(name):
         """Get a project by its name."""
 
-    def get(productid):
+    def get(projectid):
         """Get a project by its id.
 
-        If the product can't be found a zope.exceptions.NotFoundError will be
+        If the project can't be found a zope.exceptions.NotFoundError will be
         raised.
         """
 
-    def new(name, title, displayname, summary, description, owner, url):
-        """Creates a new project with the given name.
-
-        Returns that project.
-
-        Raises an KeyError if a project with that name already exists.
+    def getByName(name, default=None, ignore_inactive=False):
+        """Return the project with the given name, ignoring inactive projects
+        if ignore_inactive is True.
+        
+        Return the default value if there is no such project.
         """
+
+    def new(name, title, displayname, summary, description, owner, url):
+        """Create and return a project with the given arguments."""
 
     def count_all():
         """Return the total number of projects registered in Launchpad."""

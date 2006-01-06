@@ -114,6 +114,13 @@
         permission="launchpad.Admin" 
         template="../templates/shipit-exports.pt" />
 
+    <browser:page
+        name="reports"
+        for="canonical.launchpad.interfaces.IShipItApplication"
+        class="canonical.launchpad.browser.ShipItReportsView"
+        permission="launchpad.Admin" 
+        template="../templates/shipit-reports.pt" />
+
 
     <!-- ShippingRequest -->
     <content class="canonical.launchpad.database.ShippingRequest">
@@ -307,6 +314,20 @@
         class="canonical.launchpad.database.ShippingRunSet"
         provides="canonical.launchpad.interfaces.IShippingRunSet">
         <allow interface="canonical.launchpad.interfaces.IShippingRunSet" />
+    </securedutility>
+
+    <!-- ShipItReport -->
+    <content class="canonical.launchpad.database.ShipItReport">
+        <allow interface="canonical.launchpad.interfaces.IShipItReport" />
+        <require 
+            permission="launchpad.Admin"
+            set_schema="canonical.launchpad.interfaces.IShipItReport" />
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.ShipItReportSet"
+        provides="canonical.launchpad.interfaces.IShipItReportSet">
+        <allow interface="canonical.launchpad.interfaces.IShipItReportSet" />
     </securedutility>
 
 </configure>

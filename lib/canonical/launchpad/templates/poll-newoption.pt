@@ -10,7 +10,8 @@
   </metal:leftportlets>
 
   <div metal:fill-slot="main">
-    <tal:block condition="not: context/isClosed">
+
+    <tal:block condition="context/isNotYetOpened">
       <div metal:use-macro="context/@@launchpad_addform/addform">
 
         <h1 metal:fill-slot="heading">
@@ -20,9 +21,12 @@
       </div>
     </tal:block>
 
-    <tal:block condition="context/isClosed">
-      <p class="portalMessage">
+    <tal:block condition="not: context/isNotYetOpened">
+      <p class="portalMessage" tal:condition="context/isClosed">
         This poll is already closed, you can't add new options.
+      </p>
+      <p class="portalMessage" tal:condition="context/isOpen">
+        This poll is already open, you can't add new options.
       </p>
     </tal:block>
 

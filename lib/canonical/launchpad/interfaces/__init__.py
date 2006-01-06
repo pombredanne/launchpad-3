@@ -16,13 +16,13 @@ from canonical.launchpad.interfaces.specificationtarget import *
 from canonical.launchpad.interfaces.tickettarget import *
 from canonical.launchpad.interfaces.messagetarget import *
 
-# these should be alphabetically sorted
-from canonical.launchpad.interfaces.archuser import *
 from canonical.launchpad.interfaces.binarypackagerelease import *
 from canonical.launchpad.interfaces.binarypackagename import *
 from canonical.launchpad.interfaces.bounty import *
 from canonical.launchpad.interfaces.bountymessage import *
 from canonical.launchpad.interfaces.bountysubscription import *
+from canonical.launchpad.interfaces.branch import *
+from canonical.launchpad.interfaces.branchsubscription import *
 from canonical.launchpad.interfaces.bugactivity import *
 from canonical.launchpad.interfaces.bugattachment import *
 from canonical.launchpad.interfaces.bugextref import *
@@ -70,7 +70,6 @@ from canonical.launchpad.interfaces.librarian import *
 from canonical.launchpad.interfaces.logintoken import *
 from canonical.launchpad.interfaces.mail import *
 from canonical.launchpad.interfaces.mailbox import *
-from canonical.launchpad.interfaces.maintainership import *
 from canonical.launchpad.interfaces.manifestancestry import *
 from canonical.launchpad.interfaces.manifestentry import *
 from canonical.launchpad.interfaces.manifest import *
@@ -102,10 +101,10 @@ from canonical.launchpad.interfaces.project import *
 from canonical.launchpad.interfaces.projectbounty import *
 from canonical.launchpad.interfaces.publishedpackage import *
 from canonical.launchpad.interfaces.publishing import *
-from canonical.launchpad.interfaces.pyarch import *
 from canonical.launchpad.interfaces.queue import *
 from canonical.launchpad.interfaces.rawfiledata import *
 from canonical.launchpad.interfaces.rosetta import *
+from canonical.launchpad.interfaces.revision import *
 from canonical.launchpad.interfaces.rosettastats import *
 from canonical.launchpad.interfaces.schema import *
 from canonical.launchpad.interfaces.section import *
@@ -123,12 +122,14 @@ from canonical.launchpad.interfaces.sprint import *
 from canonical.launchpad.interfaces.sprintattendance import *
 from canonical.launchpad.interfaces.sprintspecification import *
 from canonical.launchpad.interfaces.ssh import *
+from canonical.launchpad.interfaces.teammembership import *
 from canonical.launchpad.interfaces.ticket import *
 from canonical.launchpad.interfaces.ticketbug import *
 from canonical.launchpad.interfaces.ticketmessage import *
 from canonical.launchpad.interfaces.ticketreopening import *
 from canonical.launchpad.interfaces.ticketsubscription import *
 from canonical.launchpad.interfaces.translationgroup import *
+from canonical.launchpad.interfaces.translationimportqueue import *
 from canonical.launchpad.interfaces.translator import *
 from canonical.launchpad.interfaces.vpoexport import *
 from canonical.launchpad.interfaces.wikiname import *

@@ -1,0 +1,51 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+<body>
+
+  <div metal:fill-slot="body">
+
+  <h1>ShipIt Reports</h1>
+
+  <table>
+  <tbody>
+  <tr>
+  <td width="80%">
+
+  <p tal:condition="not: view/reports">
+    No reports were generated yet
+  </p>
+
+  <table tal:condition="view/reports" 
+         width="60%" class="listing sortable" id="reports">
+    <thead>
+      <tr>
+        <th>date</th>
+        <th>csv file</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="report view/reports">
+        <td tal:content="report/datecreated/fmt:date" />
+        <td><a tal:content="report/csvfile/filename"
+               tal:attributes="href report/csvfile/url" />
+        </td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  </td>
+  <td
+    width="20%"
+    style="vertical-align: top;"
+    tal:content="structure context/@@+portlet-navigation"
+  />
+  </tr>
+  </table>  
+  
+</div>
+
+</body>
+</html>

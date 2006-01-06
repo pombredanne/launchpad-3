@@ -8,81 +8,45 @@
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" /> 
-  <div tal:replace="structure context/distribution/@@+portlet-details" />
+  <div tal:replace="structure context/@@+portlet-langstats" /> 
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-langstats" /> 
   <div tal:replace="structure context/@@+portlet-latestbugs" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main" tal:define="distro context/distribution">
     
-  <h1>Distribution release overview</h1> 
+  <h1><span tal:replace="context/title" /> overview</h1> 
 
     <div class="documentDescription"
-      tal:content="structure context/summary/fmt:text-to-html">
-       Release summary
-    </div>
+         tal:content="structure context/summary/fmt:text-to-html"/>
             
-        <tal:architectures condition="context/architectures">
-          <h2>Architectures</h2>
-
-        <table class="listing">
-          <thead>          
-            <tr>
-              <th>Family</th>
-              <th>Title</th>
-              <th>Architecture</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr tal:repeat="arch context/architectures"
-                tal:attributes="onclick string:window.location='${arch/architecturetag}'">
-              <td>
-                <span tal:content="arch/processorfamily/name">
-                  processorfamily name
-                </span>
-                <tal:official condition="arch/official">
-                  (official)
-                </tal:official>
-              </td>
-              <td>
-	      <a tal:attributes="href arch/architecturetag"
-                 tal:content="arch/processorfamily/title">
-                architecturename 
-              </a>
-              </td>
-              <td tal:content="arch/architecturetag">architecturetag</td>
-            </tr>
-          </tbody>
-      </table>
-      </tal:architectures>
-
-      <div class="highlighted" style="font-size: 80%;">
-        <p tal:replace="structure context/description/fmt:text-to-html">
-          Distribution description
-        </p>
-      </div>
+    <div class="highlighted" style="font-size: 80%;">
+      <p tal:replace="structure context/description/fmt:text-to-html"/>
+    </div>
 
 
-      <tal:block tal:define="sourcecount context/sourcecount "
-                 tal:condition="sourcecount" tal:omit-tag>
-
-      <h2>Search Packages</h2>
-
-      <p>This release of
-      <span tal:replace="context/distribution/displayname" /> contains
-      <span tal:replace="context/binarycount" /> software packages, 
-      across <span tal:replace="context/architecturecount" /> architectures
-      from a total of <span tal:replace="sourcecount" /> source
-      packages.</p>
+    <tal:block tal:define="sourcecount context/sourcecount"
+               tal:condition="sourcecount" tal:omit-tag>
+    <h2>Binary Packages in <span tal:replace="context/title" /></h2>
+      <p>
+         This release of 
+         <span tal:replace="context/distribution/displayname" /> contains
+         <span tal:replace="context/binarycount" /> software packages, 
+         across <span tal:replace="context/architecturecount" /> architectures
+         from a total of <span tal:replace="sourcecount" /> source 
+         packages.
+      </p>
 
       <form name="search" action="+search" method="GET">
         <input title="Search Packages" size="35" type="text" name="text"/>
         <input type="submit" value="Search"/>
       </form>
+    </tal:block>
 
+    <tal:block tal:condition="not: context/binarycount">
+      <p><span tal:replace="context/title" /> has no packages available.</p>
     </tal:block>
 
 </div>

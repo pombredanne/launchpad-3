@@ -9,27 +9,40 @@
     <div tal:replace="structure context/@@+portlet-details" />
   </metal:leftportlets>
 
+  <metal:leftportlets fill-slot="portlets_two">
+    <div tal:replace="structure context/@@+portlet-team-assignedbugs" />
+  </metal:leftportlets>
+
   <div metal:fill-slot="main">
 
-    <tal:block define="tasks_assigned view/bugTasksAssignedToPerson">
+    <metal:page
+        use-macro="context/@@+bugtask-macros-buglisting/page"
+        tal:define="task_batch_navigator view/search">
 
-      <h1>Bugs Assigned to <span tal:replace="context/browsername" /></h1>
+      <metal:heading fill-slot="heading">
+        <h1>Bugs Assigned to <span tal:replace="context/browsername" /></h1>
+      </metal:heading>
 
-      <p tal:condition="not: tasks_assigned">No bugs have been
-      assigned to <span tal:replace="context/browsername" />.</p>
+      <metal:extra_search_widgets_in_table
+          tal:condition="view/show_advanced_form"
+          metal:fill-slot="extra_search_widgets_in_table">
 
-      <tal:block tal:condition="tasks_assigned">
+        <input type="hidden" name="advanced" value="1" />
 
-      <div style="margin-bottom: 1em"
-           tal:define="tasks tasks_assigned;">
+        <metal:widget 
+          use-macro="context/@@+bugtask-macros-buglisting/include_dupes_widget_in_table" />
+        <metal:widget 
+          use-macro="context/@@+bugtask-macros-buglisting/statusexplanation_widget_in_table" />
+      </metal:extra_search_widgets_in_table>
 
-      <tal:assignedbugs
-          metal:use-macro="context/@@+bugtask-macros-tableview/table" />
+      <metal:extra_search_widgets_below_table
+          tal:condition="view/show_advanced_form"
+          metal:fill-slot="extra_search_widgets_below_table">
+        <metal:widget 
+          use-macro="context/@@+bugtask-macros-buglisting/extra_widgets_in_own_table" />
+      </metal:extra_search_widgets_below_table>
 
-      </div>
-
-    </tal:block>
-    </tal:block>
+    </metal:page>
 
   </div>
 

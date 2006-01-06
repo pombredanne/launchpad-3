@@ -1,0 +1,10 @@
+  Test the page where we list the reports we generated for shipit.
+
+  >>> print http(r"""
+  ... GET /shipit/++vh++http:shipit.async.com.br:80/++/reports HTTP/1.1
+  ... Authorization: Basic bWFyaWxpemVAaGJkLmNvbTp0ZXN0
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...<h1>ShipIt Reports</h1>...
+  ...

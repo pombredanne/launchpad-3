@@ -24,6 +24,10 @@
     tal:define="listing_columns view/task_columns;
                 task_batch_navigator view/search">
 
+  <metal:heading fill-slot="heading">
+    <h1>Bugs in <span tal:replace="context/title">Title</span></h1>
+  </metal:heading>
+
 </metal:page>
 
 </div>

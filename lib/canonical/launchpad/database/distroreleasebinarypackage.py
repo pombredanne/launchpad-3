@@ -99,5 +99,3 @@ class DistroReleaseBinaryPackage:
         return sorted(ret, key=lambda a: (
             a.distroarchrelease.architecturetag,
             a.datecreated))
-
-

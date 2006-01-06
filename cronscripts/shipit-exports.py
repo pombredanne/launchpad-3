@@ -51,7 +51,6 @@ def parse_options(args):
 
 def create_shippingrun(request_ids, ztm, logger_obj):
     """Create a new ShippingRun containing all the given requests."""
-    from zope.security.proxy import removeSecurityProxy
     requestset = getUtility(IShippingRequestSet)
     shipmentset = getUtility(IShipmentSet)
     shippingrun = getUtility(IShippingRunSet).new()
@@ -64,11 +63,8 @@ def create_shippingrun(request_ids, ztm, logger_obj):
             continue
         assert not request.cancelled
         assert request.shipment is None
-        # XXX: Steve needs to fix
-        # https://launchpad.net/products/launchpad/+bug/1971 so I can get rid
-        # of this removeSecurityProxy call. -- Guilherme Salgado 2005-09-30
-        naked_shippingservice = removeSecurityProxy(request.shippingservice)
-        shipment = shipmentset.new(request, naked_shippingservice, shippingrun)
+        shipment = shipmentset.new(
+            request, request.shippingservice, shippingrun)
     return shippingrun
 
 
