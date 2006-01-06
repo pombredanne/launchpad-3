@@ -74,6 +74,7 @@ def main(argv):
         branchset = getUtility(IBranchSet)
 
         for branch in branchset:
+            # the prefixurl in the config should normally end with '/'
             branch_url = "%s%08x" % (prefixurl, branch.id)
             try:
                 bzrsync = BzrSync(ztm, branch.id, branch_url, logger_object)
