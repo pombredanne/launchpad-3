@@ -85,7 +85,6 @@ def main(argv):
                 logger_object.error("Failed to scan: %s", branch_url)
             else: 
                 bzrsync.syncHistory()
-                logger_object.info("Scanned: %s", branch_url)
 
         logger_object.debug('Finished branches update')
     finally:
