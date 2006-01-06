@@ -29,7 +29,7 @@ from zope.event import notify
 from zope.interface import providedBy
 from zope.component import getUtility, getView
 from zope.app.form.utility import (
-    setUpWidgets, setUpEditWidgets, getWidgetsData, applyWidgetsChanges)
+    setUpWidgets, getWidgetsData, applyWidgetsChanges)
 from zope.app.form.interfaces import IInputWidget, WidgetsError
 
 from canonical.lp import dbschema
@@ -387,13 +387,14 @@ class BugTaskEditView(GeneralFormView):
     def __init__(self, context, request):
         GeneralFormView.__init__(self, context, request)
 
-        # A simple hack to provide a useful error message to the user if they
-        # make a change comment but don't change anything. This hack avoids the
-        # mind-bending complexity of the Z3 form/widget machinery.
+        # A simple hack, which avoids the mind-bending Z3 form/widget
+        # complexity, to provide the user a useful error message if they make a
+        # change comment but don't change anything.
         self.comment_on_change_error = ""
 
     @property
     def initial_values(self):
+        """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         field_values = {}
         for name in self.schema.names():
             field_values[name] = getattr(self.context, name)
@@ -401,11 +402,7 @@ class BugTaskEditView(GeneralFormView):
         return field_values
 
     def validate(self, data):
-        """Validate the change comment.
-
-        If a change comment was submitted, verify that a change was
-        made. Add the change comment to the form data to process.
-        """
+        """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         bugtask = self.context
         comment_on_change = self.request.form.get("comment_on_change")
         if comment_on_change:
@@ -428,11 +425,7 @@ class BugTaskEditView(GeneralFormView):
         return data
 
     def process(self):
-        """Update the bug task with the user's changes.
-
-        A BugMessage will be created if the user specified a
-        comment_on_change.
-        """
+        """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         bugtask = self.context
         new_values = getWidgetsData(self, self.schema, self.fieldNames)
 
@@ -465,16 +458,8 @@ class BugTaskEditView(GeneralFormView):
                     edited_fields=self.fieldNames,
                     comment_on_change=comment_on_change))
 
-##     def _setUpWidgets(self):
-##         """Override widget setup to provide an edit form.
-
-##         This ensures fields are populated with existing object values.
-##         """
-##         setUpEditWidgets(self, self.schema, names=self.fieldNames)
-
     def nextURL(self):
-        """Redirect the browser to the bug page when we successfully update
-        the bug task."""
+        """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         return canonical_url(self.context)
 
 

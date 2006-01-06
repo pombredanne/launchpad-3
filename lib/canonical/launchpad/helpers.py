@@ -9,7 +9,6 @@ be better as a method on an existing content object or IFooSet object.
 __metaclass__ = type
 
 import email
-from email.Utils import make_msgid
 import subprocess
 import gettextpo
 import os

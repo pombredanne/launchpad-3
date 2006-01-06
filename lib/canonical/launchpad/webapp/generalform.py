@@ -127,7 +127,10 @@ class GeneralFormView(BrowserView):
             self._abortAndSetStatus()
             return self.process_status
 
-        # Validate the form.
+        # Do custom validation defined in subclasses. This would generally
+        # include form-level validation, or validation of fields shown on the
+        # form that don't map to schema fields, and thus don't have "widgets" in
+        # the Zope 3 sense.
         try:
             self.validate(data)
         except WidgetsError, errors:
