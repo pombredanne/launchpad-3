@@ -53,6 +53,11 @@ class LaunchpadCelebrities:
         return getUtility(IPersonSet).getByName('launchpad')
 
     @property
+    def mirror_admin(self):
+        """See ILaunchpadCelebrities."""
+        return getUtility(IPersonSet).getByName('mirror-admins')
+
+    @property
     def ubuntu_bugzilla(self):
         """See ILaunchpadCelebrities."""
         return getUtility(IBugTrackerSet)['ubuntu-bugzilla']

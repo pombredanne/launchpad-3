@@ -43,6 +43,7 @@ from canonical.launchpad.interfaces.cve import *
 from canonical.launchpad.interfaces.cvereference import *
 from canonical.launchpad.interfaces.distribution import *
 from canonical.launchpad.interfaces.distributionbounty import *
+from canonical.launchpad.interfaces.distributionmirror import *
 from canonical.launchpad.interfaces.distributionsourcepackage import *
 from canonical.launchpad.interfaces.distributionsourcepackagecache import *
 from canonical.launchpad.interfaces.distributionsourcepackagerelease import *
