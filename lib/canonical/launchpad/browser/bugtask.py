@@ -392,6 +392,14 @@ class BugTaskEditView(GeneralFormView):
         # mind-bending complexity of the Z3 form/widget machinery.
         self.comment_on_change_error = ""
 
+    @property
+    def initial_values(self):
+        field_values = {}
+        for name in self.schema.names():
+            field_values[name] = getattr(self.context, name)
+
+        return field_values
+
     def validate(self, data):
         """Validate the change comment.
 
@@ -457,12 +465,12 @@ class BugTaskEditView(GeneralFormView):
                     edited_fields=self.fieldNames,
                     comment_on_change=comment_on_change))
 
-    def _setUpWidgets(self):
-        """Override widget setup to provide an edit form.
+##     def _setUpWidgets(self):
+##         """Override widget setup to provide an edit form.
 
-        This ensures fields are populated with existing object values.
-        """
-        setUpEditWidgets(self, self.schema, names=self.fieldNames)
+##         This ensures fields are populated with existing object values.
+##         """
+##         setUpEditWidgets(self, self.schema, names=self.fieldNames)
 
     def nextURL(self):
         """Redirect the browser to the bug page when we successfully update

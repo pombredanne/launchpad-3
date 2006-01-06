@@ -73,7 +73,7 @@ class GeneralFormView(BrowserView):
         Returns a dict of fieldname:value pairs if all form data
         submitted is valid.
         """
-        return getWidgetsData(self, self.schema, names=self.fieldNames)
+        pass
 
     @property
     def initial_values(self):
