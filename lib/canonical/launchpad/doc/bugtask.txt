@@ -355,6 +355,21 @@ There's also support for searching tasks based on a string of text, e.g.:
     >>> print [bugtask.bug.id for bugtask in bugtasks]
     [5]
 
+searchtext is also used in a substring search against the target name:
+
+    >>> params = BugTaskSearchParams(searchtext="mozilla-firefoxX", user=None)
+    >>> bugtasks = debian.searchTasks(params)
+    >>> print bugtasks.count()
+    0
+    >>> params = BugTaskSearchParams(searchtext="mozilla-firefox", user=None)
+    >>> bugtasks = debian.searchTasks(params)
+    >>> print bugtasks.count()
+    4
+    >>> params = BugTaskSearchParams(searchtext="mozilla-fire", user=None)
+    >>> bugtasks = debian.searchTasks(params)
+    >>> print bugtasks.count()
+    4
+
 It's also possible to iterate over all the bug tasks:
 
     >>> bugtasks = [bugtask for bugtasks in bugtaskset]

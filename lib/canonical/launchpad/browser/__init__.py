@@ -28,6 +28,7 @@ from canonical.launchpad.browser.cal import *
 from canonical.launchpad.browser.codeofconduct import *
 from canonical.launchpad.browser.cve import *
 from canonical.launchpad.browser.distribution import *
+from canonical.launchpad.browser.distributionmirror import *
 from canonical.launchpad.browser.distributionsourcepackage import *
 from canonical.launchpad.browser.distributionsourcepackagerelease import *
 from canonical.launchpad.browser.distroarchrelease import *

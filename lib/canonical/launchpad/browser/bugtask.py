@@ -392,14 +392,13 @@ class BugTaskEditView(GeneralFormView):
         # mind-bending complexity of the Z3 form/widget machinery.
         self.comment_on_change_error = ""
 
-    def validate(self):
+    def validate(self, data):
         """Validate the change comment.
 
         If a change comment was submitted, verify that a change was
         made. Add the change comment to the form data to process.
         """
         bugtask = self.context
-        data = GeneralFormView.validate(self)
         comment_on_change = self.request.form.get("comment_on_change")
         if comment_on_change:
             # There was a comment on this change, so make sure that a
