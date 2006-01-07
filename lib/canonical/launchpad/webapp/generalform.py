@@ -40,6 +40,7 @@ class GeneralFormView(BrowserView):
     """
 
     errors = ()
+    top_of_page_errors = ()
     process_status = None
     label = ''
     _arguments = []
@@ -65,6 +66,21 @@ class GeneralFormView(BrowserView):
         """
         return self._nextURL
 
+    def doSchemaValidation(self, data):
+        """Override this to do any validation that must take into account the
+        value of multiple widgets.
+
+        To indicate any problem, this method should raise WidgetError(errors),
+        where errors is a list with the encountered problems.
+        """
+        pass
+
+    @property
+    def initial_values(self):
+        """Override this in your subclass if you want any widgets to have
+        initial values.
+        """
+        return {}
 
     # internal methods, should not be overridden
     def __init__(self, context, request):
@@ -72,7 +88,8 @@ class GeneralFormView(BrowserView):
         self._setUpWidgets()
 
     def _setUpWidgets(self):
-        setUpWidgets(self, self.schema, IInputWidget, names=self.fieldNames)
+        setUpWidgets(self, self.schema, IInputWidget, names=self.fieldNames,
+                     initial=self.initial_values)
 
     def setPrefix(self, prefix):
         for widget in self.widgets():
@@ -104,9 +121,15 @@ class GeneralFormView(BrowserView):
             data = getWidgetsData(self, self.schema, names=self.fieldNames)
         except WidgetsError, errors:
             self.errors = errors
-            self.process_status = _(
-                "Please fix the problems below and try again.")
-            get_transaction().abort()
+            self._abortAndSetStatus()
+            return self.process_status
+
+        # now we can do schema validation, in case our subclass wants.
+        try:
+            self.doSchemaValidation(data)
+        except WidgetsError, errors:
+            self.top_of_page_errors = errors
+            self._abortAndSetStatus()
             return self.process_status
 
         # pass the resulting validated data to the form's self.process() and
@@ -128,6 +151,11 @@ class GeneralFormView(BrowserView):
             self.request.response.redirect(self.nextURL())
 
         return self.process_status
+
+    def _abortAndSetStatus(self):
+        """Abort the current transaction and set self.process_status."""
+        self.process_status = _("Please fix the problems below and try again.")
+        get_transaction().abort()
 
 
 def GeneralFormViewFactory(name, schema, label, permission, layer,

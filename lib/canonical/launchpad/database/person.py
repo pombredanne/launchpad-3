@@ -33,8 +33,7 @@ from canonical.launchpad.interfaces import (
     IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet, ISSHKey,
     IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
     UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet, IKarmaSet,
-    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, NotFoundError, 
-    IKarmaCacheSet)
+    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, IKarmaCacheSet)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -857,14 +856,6 @@ class PersonSet:
     def __init__(self):
         self.title = 'Launchpad People'
 
-    def __getitem__(self, personid):
-        """See IPersonSet."""
-        person = self.get(personid)
-        if person is None:
-            raise NotFoundError(personid)
-        else:
-            return person
-
     def topPeople(self):
         """See IPersonSet."""
         # The odd ordering here is to ensure we hit the PostgreSQL
@@ -1475,14 +1466,6 @@ class EmailAddressSet:
             return EmailAddress.get(emailid)
         except SQLObjectNotFound:
             return default
-
-    def __getitem__(self, emailid):
-        """See IEmailAddressSet."""
-        email = self.get(emailid)
-        if email is None:
-            raise NotFoundError(emailid)
-        else:
-            return email
 
     def getByPerson(self, person):
         return EmailAddress.selectBy(personID=person.id, orderBy='email')
