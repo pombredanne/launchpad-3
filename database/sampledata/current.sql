@@ -892,6 +892,10 @@ INSERT INTO componentselection (id, distrorelease, component) VALUES (2, 10, 1);
 INSERT INTO componentselection (id, distrorelease, component) VALUES (3, 10, 2);
 INSERT INTO componentselection (id, distrorelease, component) VALUES (4, 10, 3);
 INSERT INTO componentselection (id, distrorelease, component) VALUES (5, 10, 4);
+INSERT INTO componentselection (id, distrorelease, component) VALUES (6, 11, 1);
+INSERT INTO componentselection (id, distrorelease, component) VALUES (7, 11, 2);
+INSERT INTO componentselection (id, distrorelease, component) VALUES (8, 11, 3);
+INSERT INTO componentselection (id, distrorelease, component) VALUES (9, 11, 4);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'componentselection'::pg_catalog.regclass;
@@ -1257,7 +1261,16 @@ INSERT INTO distribution (id, name, title, description, domainname, "owner", luc
 Environment as its default desktop after install.', 'kubuntu.org', 1, NULL, 'kubuntu', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
 Environment as its default desktop after install.', 1, NULL, 1, NULL, NULL, NULL);
 INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, NULL, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1, NULL, NULL, NULL);
-
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, uploadsender, uploadadmin, bugcontact) VALUES (8, 'ubuntutest', 'Ubuntu Test', 'Ubuntu Test', 'ubuntulinux.org', 17, '[publishing]
+pendingremovalduration=5
+root=/var/tmp/archive
+archiveroot=/var/tmp/archive/ubuntutest
+poolroot=/var/tmp/archive/ubuntutest/pool
+distsroot=/var/tmp/archive/ubuntutest/dists
+overrideroot=/var/tmp/archive/ubuntutest-overrides
+cacheroot=/var/tmp/archive/ubuntutest-cache
+miscroot=/var/tmp/archive/ubuntutest-misc
+', 'ubuntutest', 'Ubuntu Test summary', 17, NULL, 1, NULL, NULL, NULL);
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distribution'::pg_catalog.regclass;
 
@@ -1322,6 +1335,9 @@ INSERT INTO distrorelease (id, distribution, name, title, description, version, 
 INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount) VALUES (9, 7, '2k5', 'Guada 2005', 'This release places extra emphasis on usability and installability. The installer is adapted from Ubuntu to assume your country, language, keyboard and time zone preference, thus ensuring that installs ask the minimum number of questions possible.', '2005', 2, NULL, 3, 4, NULL, 'Guada 2005 is a rapid-install version of
 Ubuntu Hoary for the Andalucian marketplace.', 'Guada2005', NULL, 0, NULL, NULL, 0, 0);
 INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount) VALUES (10, 1, 'breezy-autotest', 'Breezy Badger Autotest', 'Autotest version of Breezy', '6.6.6', 1, '2005-12-01 10:00:00', 1, 1, '[publishing]
+components = main restricted universe multiverse
+', 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, NULL, NULL, 0, 0);
+INSERT INTO distrorelease (id, distribution, name, title, description, version, releasestatus, datereleased, parentrelease, "owner", lucilleconfig, summary, displayname, datelastlangpack, messagecount, nominatedarchindep, changeslist, binarycount, sourcecount) VALUES (11, 8, 'breezy-autotest', 'Breezy Badger Autotest', 'Autotest version of Breezy', '6.6.6', 1, '2006-01-08 10:00:00', 1, 1, '[publishing]
 components = main restricted universe multiverse
 ', 'Autosync uploader test', 'Breezy Badger Autotest', NULL, 0, NULL, NULL, 0, 0);
 
@@ -8374,6 +8390,42 @@ INSERT INTO sectionselection (id, distrorelease, section) VALUES (34, 10, 32);
 INSERT INTO sectionselection (id, distrorelease, section) VALUES (35, 10, 33);
 INSERT INTO sectionselection (id, distrorelease, section) VALUES (36, 10, 34);
 INSERT INTO sectionselection (id, distrorelease, section) VALUES (37, 10, 35);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (38, 11, 4);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (39, 11, 1);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (40, 11, 5);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (41, 11, 6);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (42, 11, 7);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (43, 11, 8);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (44, 11, 3);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (45, 11, 9);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (46, 11, 10);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (47, 11, 11);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (48, 11, 12);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (49, 11, 13);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (50, 11, 14);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (51, 11, 15);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (52, 11, 16);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (53, 11, 17);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (54, 11, 18);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (55, 11, 19);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (56, 11, 20);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (57, 11, 21);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (58, 11, 22);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (59, 11, 22);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (60, 11, 23);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (61, 11, 24);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (62, 11, 25);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (63, 11, 26);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (64, 11, 27);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (65, 11, 28);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (66, 11, 30);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (67, 11, 2);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (68, 11, 31);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (69, 11, 29);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (70, 11, 32);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (71, 11, 33);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (72, 11, 34);
+INSERT INTO sectionselection (id, distrorelease, section) VALUES (73, 11, 35);
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'sectionselection'::pg_catalog.regclass;
 

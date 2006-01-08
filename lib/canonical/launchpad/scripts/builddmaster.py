@@ -469,18 +469,16 @@ class BuilderGroup:
     def buildStatus_OK(self, queueItem, slave, librarian, buildid,
                        filemap=None):
         """Builder has built package entirely, get all the content back"""
-        self.storeBuildInfo(queueItem, slave, librarian, buildid)
-        queueItem.build.buildstate = dbschema.BuildStatus.FULLYBUILT
-        # Commit the transaction so that the uploader can see the updated
-        # build record 
-        self.commit()
-        temp_dir = tempfile.mkdtemp(prefix="build-%s" % buildid,
-                                    suffix=".upload")
 
-        self.logger.debug("Processing successful build %s in %s" % (
-            buildid, temp_dir))
-        
+        self.logger.debug("Processing successful build %s" % buildid)
+
         try:
+            upload_dir = tempfile.mkdtemp(prefix="build-%s-" % buildid)
+            temp_dir = os.path.join(upload_dir, "files")
+            os.mkdir(temp_dir)
+
+            self.logger.debug("Storing build result at '%s'" % temp_dir)
+
             for filename in filemap:
                 slave_file = slave.getFile(filemap[filename])
                 out_file_name = os.path.join(temp_dir, filename)
@@ -493,30 +491,38 @@ class BuilderGroup:
                     out_file.close()
 
             uploader_argv = list(self.upload_cmdline)
-            try:
-                while uploader_argv.index("BUILDID"):
-                    uploader_argv[uploader_argv.index("BUILDID")] = str(
-                        queueItem.build.id)
-            except ValueError:
-                # Assume this is "not in list" and swallow it
-                pass
-                
-            uploader_argv.append(temp_dir)
 
-            self.logger.debug("Invoking uploader on %s" % temp_dir)
+            # add extra arguments for processing a binary upload
+            extra_args = [
+                "-d", "%s" % queueItem.build.distribution.name,
+                "-r", "%s" % queueItem.build.distrorelease.name,
+                "-b", "%s" % queueitem.build.id,
+                "%s" % upload_dir,
+                ]
+            uploader_argv.extend(extra_args)
+
+            self.logger.debug("Invoking uploader on %s" % upload_dir)
             uploader_process = subprocess.Popen(uploader_argv)
             result_code = uploader_process.wait()
             self.logger.debug("Uploader returned %d" % result_code)
+
         finally:
             self.logger.debug("Cleaning up temporary directory")
-            shutil.rmtree(temp_dir)
+            shutil.rmtree(upload_dir)
 
-        self.logger.debug("Gathered build of %s completely"
-                          % queueItem.name)
+            self.logger.debug("Gathered build of %s completely"
+                              % queueItem.name)
+            # store build info
+            self.storeBuildInfo(queueItem, slave, librarian, buildid)
+            queueItem.build.buildstate = dbschema.BuildStatus.FULLYBUILT
+            queueItem.destroySelf()
 
-        # release the builder
-        slave.clean()
-        queueItem.destroySelf()
+            # release the builder
+            slave.clean()
+
+            # Commit the transaction so that the uploader can see the updated
+            # build record
+            self.commit()
 
     def buildStatus_PACKAGEFAIL(self, queueItem, slave, librarian, buildid,
                                 filemap=None):
@@ -716,7 +722,7 @@ class BuilddMaster:
             info = "builders.%s" % archrelease.processorfamily.name
             builderGroup = BuilderGroup(self.getLogger(info), self._tm,
                                         self.upload_cmdline)
-            
+
             # check the available slaves for this archrelease
             builderGroup.checkAvailableSlaves(archrelease)
 

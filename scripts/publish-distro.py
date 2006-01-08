@@ -3,6 +3,8 @@
 import logging
 import gc
 
+import _pythonpath
+
 from optparse import OptionParser
 from canonical.config import config
 from canonical.launchpad.scripts import (execute_zcml_for_scripts,

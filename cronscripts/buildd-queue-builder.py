@@ -4,7 +4,7 @@
 #         Celso Providelo <celso.providelo@canonical.com>
 #
 # Build Jobs initialization
-# 
+#
 __metaclass__ = type
 
 import sys
@@ -28,21 +28,21 @@ _default_lockfile = '/var/lock/buildd-master.lock'
 
 def rebuildQueue(log):
     """Look for and initialise new build jobs."""
-    
+
     # setup a transaction manager
-    tm = initZopeless(config.builddmaster.dbuser='fiera')
-    
+    tm = initZopeless(config.builddmaster.dbuser)
+
     buildMaster = BuilddMaster(log, tm,
                                config.builddmaster.uploader.split())
 
     # Simple container
     distroreleases = set()
-        
+
     # For every distroarchrelease we can find; put it into the build master
     for archrelease in getUtility(IDistroArchReleaseSet):
         distroreleases.add(archrelease.distrorelease)
         buildMaster.addDistroArchRelease(archrelease)
-        
+
     # For each distrorelease we care about; scan for sourcepackagereleases
     # with no build associated with the distroarchreleases we're
     # interested in
@@ -52,10 +52,10 @@ def rebuildQueue(log):
     # For each build record in NEEDSBUILD, ensure it has a
     #buildqueue entry
     buildMaster.addMissingBuildQueueEntries()
-                
+
     #Rescore the NEEDSBUILD properly
     buildMaster.sanitiseAndScoreCandidates()
- 
+
 if __name__ == '__main__':
     parser = OptionParser()
     logger_options(parser)
@@ -81,5 +81,5 @@ if __name__ == '__main__':
         rebuildQueue(log)
     finally:
         locker.release()
-    
+
     log.info("Buildd Queue Rebuilt.")

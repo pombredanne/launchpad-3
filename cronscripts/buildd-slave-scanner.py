@@ -27,16 +27,16 @@ from canonical.launchpad.scripts import (
 _default_lockfile = '/var/lock/buildd-master.lock'
 
 def doSlaveScan(logger):
-    """Proceed the Slave Scanning Process."""    
-    
+    """Proceed the Slave Scanning Process."""
+
     # setup a transaction manager
-    tm = initZopeless(config.builddmaster.dbuser='fiera')
+    tm = initZopeless(config.builddmaster.dbuser)
 
     buildMaster = BuilddMaster(logger, tm,
                                config.builddmaster.uploader.split())
 
     logger.info("Setting Builders.")
-    
+
     # For every distroarchrelease we can find;
     # put it into the build master
     for archrelease in getUtility(IDistroArchReleaseSet):
@@ -60,7 +60,7 @@ def doSlaveScan(logger):
     # Now that the slaves are free, ask the buildmaster to calculate
     # the set of build candiates
     buildCandidatesSortedByProcessor = buildMaster.sortAndSplitByProcessor()
-    
+
     logger.info("Dispatching Jobs.")
     # Now that we've gathered in all the builds;
     # dispatch the pending ones

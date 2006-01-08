@@ -66,7 +66,7 @@ the server dies or the connection succeeds.
   ...            raise RuntimeError, "Server is not starting"
   ...    else:
   ...        break
-  >>> ftp.login("ubuntu", "")
+  >>> ftp.login("ubuntutest", "")
   '230 Login Successful.'
   >>> ftp.cwd("/")
   '250 CWD command successful.'
@@ -94,7 +94,7 @@ session.
   ...
   ...     if not ftp.sock:
   ...         assert ftp.connect("localhost", 3421).startswith("220 ")
-  ...         assert ftp.login("ubuntu", "") == '230 Login Successful.'
+  ...         assert ftp.login("ubuntutest", "") == '230 Login Successful.'
   ...
   ...     tf = parse_tagfile(changes_filepath)
   ...
@@ -159,7 +159,7 @@ data in the given number seconds, we report a failure.
   ...             lines = buffer.splitlines()
   ...             buffer = lines.pop(0)
   ...             for line in lines:
-  ...                 if line == "ubuntu":
+  ...                 if line == "ubuntutest":
   ...                     continue
   ...                 if line not in expected:
   ...                     raise RuntimeError("Unexpected line found in FTP "
@@ -376,7 +376,7 @@ promote them to ACCEPTED, the failures are kept as NEW
   ...     IDistributionSet, QueueInconsistentStateError)
   >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
 
-  >>> distro = getUtility(IDistributionSet).getByName('ubuntu')
+  >>> distro = getUtility(IDistributionSet).getByName('ubuntutest')
   >>> release = distro['breezy-autotest']
 
 Let's test the of IDistroRelease.getQueueSourceItems:
@@ -449,7 +449,7 @@ the changes.
 Now we process them, one more time.
 
   >>> script = os.path.join(config.root, "scripts", "process-accepted.py")
-  >>> process = subprocess.Popen([sys.executable, script, "ubuntu"])
+  >>> process = subprocess.Popen([sys.executable, script, "ubuntutest"])
   >>> process.wait()
   0
 
@@ -469,11 +469,57 @@ These packages must now be in the publishing history. Let's check it.
   drdsl not Published
   etherwake Pending
 
+Invoke Publisher script against the 'ubuntutest' distribution:
+
+  >>> script = os.path.join(config.root, "scripts", "publish-distro.py")
+  >>> process = subprocess.Popen([sys.executable, script, "-Cq",
+  ...                             "-d", "ubuntutest"])
+  >>> process.wait()
+  0
+
+Check if the 'etherwake' source package was correctly published and is
+in the filesystem archive, we are looking for the DSC, the gzipped
+original source and the gzipped package diff:
+
+  >>> os.listdir("/var/tmp/archive/ubuntutest/pool/main/e/etherwake")
+  ['etherwake_1.08-1.dsc', 'etherwake_1.08.orig.tar.gz', 'etherwake_1.08-1.diff.gz']
+
+Check the generation of a correct Sources tag file for the main
+component of ubuntutest/breezy-autotest, containing the only the
+required entry for 'etherwake':
+
+  >>> sources_file = open("/var/tmp/archive/ubuntutest/dists/breezy-autotest"
+  ...                     "/main/source/Sources")
+  >>> print sources_file.read()
+  ...
+  Package: etherwake
+  Binary: etherwake
+  Version: 1.08-1
+  Maintainer: Alain Schroeder <alain@debian.org>
+  Build-Depends: debhelper (>> 2.0)
+  Architecture: any
+  Standards-Version: 3.5.10.0
+  Format: 1.0
+  Directory: pool/main/e/etherwake
+  Files:
+   f13711c5b8261fbb77b43ae0e8ba9360 566 etherwake_1.08-1.dsc
+   c2dc10f98bac012b900fd0b46721fc80 4455 etherwake_1.08.orig.tar.gz
+   95c1e89e3ad7bc8740793bdf7aeb7334 4145 etherwake_1.08-1.diff.gz
+  <BLANKLINE>
+  <BLANKLINE>
+
 Nice! That's enough for now.. let's kill the process and clean
 everything up.
 
   >>> import shutil
   >>> shutil.rmtree(temp_dir)
+
+Remove the test archive from filesystem.
+
+  >>> shutil.rmtree("/var/tmp/archive/ubuntutest/")
+  >>> shutil.rmtree("/var/tmp/archive/ubuntutest-cache/")
+  >>> shutil.rmtree("/var/tmp/archive/ubuntutest-misc/")
+  >>> shutil.rmtree("/var/tmp/archive/ubuntutest-overrides/")
 
   >>> ZecaTestSetup().tearDown()
   >>> LibrarianTestSetup().tearDown()

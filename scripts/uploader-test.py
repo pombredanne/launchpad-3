@@ -14,6 +14,8 @@ import sys
 import os
 import time
 
+import _pythonpath
+
 from zope.component import getUtility
 
 from contrib.glock import GlobalLock
