@@ -206,7 +206,7 @@ in the PO template. It should not be publishedfuzzy.
 
 And should be accepted by our validator.
 
-    >>> published = messageSets[0].publishedSubmission(0)
+    >>> published = messageSets[0].getPublishedSubmission(0)
     >>> published.validationstatus == TranslationValidationStatus.OK
     True
 
@@ -233,14 +233,14 @@ be the same for the active translation.
 And this one should have the validation status with an error.
 
     >>> messageSet = pofile.getPOMsgSet(u'Foo %s')
-    >>> published = messageSet.publishedSubmission(0)
+    >>> published = messageSet.getPublishedSubmission(0)
     >>> published.validationstatus == TranslationValidationStatus.UNKNOWNERROR
     True
 
 Check that the plural form was imported correctly.
 
     >>> messageSet = pofile.getPOMsgSet(u'Singular %d')
-    >>> published = messageSet.publishedSubmission(0)
+    >>> published = messageSet.getPublishedSubmission(0)
     >>> published.validationstatus == TranslationValidationStatus.OK
     True
     >>> messageSet.published_texts
