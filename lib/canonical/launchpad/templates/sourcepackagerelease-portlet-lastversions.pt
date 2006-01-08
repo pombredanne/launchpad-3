@@ -1,7 +1,7 @@
 <div class="portlet">
   <h4>Latest versions:</h4>
     <div class="portletBody portletContent">
-    <ul tal:define="lastversions view/lastversions">
+    <ul tal:define="lastversions view/lastversions" tal:condition="lastversions">
       <tal:block condition="python:view.context not in lastversions">
         <li tal:repeat="spackage lastversions">
           <a

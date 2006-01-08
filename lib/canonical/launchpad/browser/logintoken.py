@@ -317,7 +317,7 @@ class ValidateEmailView(BaseLoginTokenView):
 
 
     def _getGPGKey(self):
-        """Look up the PGP key for this login token.
+        """Look up the OpenPGP key for this login token.
 
         If the key can not be retrieved from the keyserver, the key
         has been revoked or expired, None is returned and

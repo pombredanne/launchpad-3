@@ -5,7 +5,7 @@
 
   <div class="portletBody portletContent">
 
-  <ul>
+    <ul tal:condition="context/builds">
     <li tal:repeat="build context/builds">
       <a tal:attributes="href build/fmt:url">
         <span tal:replace="build/distroarchrelease/distrorelease/name">
@@ -15,7 +15,7 @@
       </a>
       <span tal:replace="build/buildstate/title">Failure</span>
     </li>
-  </ul>
+    </ul>
     <p tal:condition="not:context/builds">
       <i>No builds recorded.</i>
     </p>

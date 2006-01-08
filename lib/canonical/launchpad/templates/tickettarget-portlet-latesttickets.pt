@@ -7,7 +7,7 @@
 
   <div class="portletBody portletContent">
 
-    <ul>
+    <ul tal:condition="view/getLatestTickets">
       <li class="spec" tal:repeat="ticket view/getLatestTickets">
         <a tal:content="ticket/title"
            tal:attributes="href ticket/fmt:url">ticket title</a>

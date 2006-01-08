@@ -1,5 +1,4 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-# -*- coding: utf-8 -*-
 
 """This module is used by the Launchpad webapp to determine titles for pages.
 
@@ -36,6 +35,7 @@ __metaclass__ = type
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IProduct, IDistribution, IDistroRelease, ILaunchBag)
+from canonical.launchpad.webapp import smartquote
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
@@ -43,12 +43,12 @@ DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
 class BugPageTitle:
     def __call__(self, context, view):
-        return u"Bug #%d: “%s”" % (context.id, context.title)
+        return smartquote('Bug #%d: "%s"') % (context.id, context.title)
 
 
 class BugTaskPageTitle:
     def __call__(self, context, view):
-        return u"Bug #%d in %s: “%s”" % (
+        return smartquote('Bug #%d in %s: "%s"') % (
             context.bug.id, context.targetname, context.bug.title)
 
 
@@ -108,19 +108,19 @@ bounty_add = 'Register a new bounty'
 
 bounty_add = 'Register a bounty in Launchpad'
 
-bounty_edit = ContextTitle(u'Edit bounty “%s”')
+bounty_edit = ContextTitle(smartquote('Edit bounty "%s"'))
 
 bounty_link = ContextTitle('Link a bounty to %s')
 
-bounty_index = ContextTitle(u'Bounty “%s”')
+bounty_index = ContextTitle(smartquote('Bounty "%s"'))
 
-bounty_subscription = ContextTitle(u'Subscription to bounty “%s”')
+bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
-branch_edit = ContextTitle(u'Edit branch “%s”')
+branch_edit = ContextTitle(smartquote('Edit branch "%s"'))
 
-branch_index = ContextTitle(u'Bazaar branch “%s”')
+branch_index = ContextTitle(smartquote('Bazaar branch "%s"'))
 
-branch_subscription = ContextTitle(u'Subscription to branch “%s”')
+branch_subscription = ContextTitle(smartquote('Subscription to branch "%s"'))
 
 branchtarget_branches = ContextTitle('Branches for %s')
 
@@ -146,7 +146,7 @@ bug_addsubscriber = LaunchbagBugID("Bug #%d - Add a subscriber")
 bug_attachment_add = LaunchbagBugID('Bug #%d - Add an attachment')
 
 def bug_attachment_edit(context, view):
-    return u'Bug #%d - Edit attachment “%s”' % (
+    return smartquote('Bug #%d - Edit attachment "%s"') % (
         context.bug.id, context.title)
 
 bug_cve = LaunchbagBugID("Bug #%d - Add CVE reference")
@@ -156,7 +156,8 @@ bug_edit = BugPageTitle()
 bug_extref_add = LaunchbagBugID("Bug #%d - Add a Web link")
 
 def bug_extref_edit(context, view):
-    return u'Bug #%d - Edit Web link “%s”' % (context.bug.id, context.title)
+    return smartquote('Bug #%d - Edit Web link "%s"') %
+        (context.bug.id, context.title)
 
 bug_index = BugPageTitle()
 
@@ -199,9 +200,9 @@ bugtask_edit = BugTaskPageTitle()
 # bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect
 
-bugtracker_edit = ContextTitle(u'Edit bug tracker “%s”')
+bugtracker_edit = ContextTitle(smartquote('Edit bug tracker "%s"'))
 
-bugtracker_index = ContextTitle(u'Bug tracker “%s”')
+bugtracker_index = ContextTitle(smartquote('Bug tracker "%s"'))
 
 bugtrackers_add = 'Register a bug tracker in Malone'
 
@@ -215,23 +216,23 @@ build_index = ContextTitle('Build details for %s')
 
 builders = 'Launchpad build farm'
 
-builder_edit = ContextTitle(u'Edit build machine “%s”')
+builder_edit = ContextTitle(smartquote('Edit build machine "%s"'))
 
-builder_index = ContextTitle(u'Build machine “%s”')
+builder_index = ContextTitle(smartquote('Build machine "%s"'))
 
-builder_cancel = ContextTitle(u'Cancel job for “%s”')
+builder_cancel = ContextTitle(smartquote('Cancel job for "%s"'))
 
 builder_mode = ContextTitle('Change mode for “%s”')
 
 calendar_index = ContextTitle('%s')
 
-calendar_event_addform = ContextTitle(u'Add event to %s')
+calendar_event_addform = ContextTitle('Add event to %s')
 
-calendar_event_display = ContextTitle(u'Event “%s”')
+calendar_event_display = ContextTitle(smartquote('Event "%s"'))
 
-calendar_event_editform = ContextTitle(u'Edit event “%s”')
+calendar_event_editform = ContextTitle(smartquote('Edit event "%s"'))
 
-calendar_subscribe = ContextTitle(u'Subscribe to “%s”')
+calendar_subscribe = ContextTitle(smartquote('Subscribe to "%s"'))
 
 calendar_subscriptions = 'Calendar subscriptions'
 
@@ -270,13 +271,15 @@ distribution_cvereport = ContextTitle('CVE reports for %s')
 
 distribution_members = ContextTitle('%s distribution members')
 
-distribution_memberteam = ContextTitle(u'Change %s’s distribution team')
+distribution_memberteam =
+    ContextTitle(smartquote("Change %s's distribution team"))
 
 distribution_translations = ContextDisplayName('Translating %s')
 
-distribution_translators = ContextTitle(u'Appoint %s’s translation group')
+distribution_translators =
+    ContextTitle(smartquote("Appoint %s's translation group"))
 
-distribution_search = ContextDisplayName(u'Search %s’s packages')
+distribution_search = ContextDisplayName(smartquote("Search %s's packages"))
 
 distribution_index = ContextTitle('%s in Launchpad')
 
@@ -294,7 +297,8 @@ distroarchrelease_index = ContextTitle('%s in Launchpad')
 
 distroarchrelease_builds = ContextTitle('%s builds')
 
-distroarchrelease_search = ContextTitle(u'Search %s’s binary packages')
+distroarchrelease_search =
+    ContextTitle(smartquote("Search %s's binary packages"))
 
 distroarchreleasebinarypackage_index = ContextTitle('%s')
 
@@ -455,29 +459,29 @@ person_changepassword = 'Change your password'
 
 person_codesofconduct = ContextDisplayName('%s Signed codes of conduct')
 
-person_edit = ContextDisplayName(u'%s’s details')
+person_edit = ContextDisplayName(smartquote("%s's details"))
 
-person_editemails = ContextDisplayName(u'%s’s e-mail addresses')
+person_editemails = ContextDisplayName(smartquote("%s's e-mail addresses"))
 
-person_editgpgkeys = ContextDisplayName(u'%s’s OpenPGP keys')
+person_editgpgkeys = ContextDisplayName(smartquote("%s's OpenPGP keys"))
 
-person_edithomepage = ContextDisplayName(u'%s’s home page')
+person_edithomepage = ContextDisplayName(smartquote("%s's home page"))
 
-person_editircnicknames = ContextDisplayName(u'%s’s IRC nicknames')
+person_editircnicknames = ContextDisplayName(smartquote("%s's IRC nicknames"))
 
-person_editjabberids = ContextDisplayName(u'%s’s Jabber IDs')
+person_editjabberids = ContextDisplayName(smartquote("%s's Jabber IDs"))
 
-person_editsshkeys = ContextDisplayName(u'%s’s SSH keys')
+person_editsshkeys = ContextDisplayName(smartquote("%s's SSH keys"))
 
-person_editwikinames = ContextDisplayName(u'%s’s wiki names')
+person_editwikinames = ContextDisplayName(smartquote("%s's wiki names"))
 
 # person_foaf is an rdf file
 
-person_images = ContextDisplayName(u'%s’s hackergotchi and emblem')
+person_images = ContextDisplayName(smartquote("%s's hackergotchi and emblem"))
 
 person_index = ContextDisplayName('%s in Launchpad')
 
-person_karma = ContextDisplayName(u'%s’s karma in Launchpad')
+person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 
 person_packages = ContextDisplayName('Packages maintained by %s')
 
@@ -511,11 +515,11 @@ pofile_upload = ContextTitle('%s upload in Rosetta')
 
 # portlet_* are portlets
 
-poll_edit = ContextTitle(u'Edit poll “%s”')
+poll_edit = ContextTitle(smartquote('Edit poll "%s"'))
 
-poll_index = ContextTitle(u'Poll: “%s”')
+poll_index = ContextTitle(smartquote('Poll: "%s"'))
 
-poll_newoption = ContextTitle(u'New option for poll “%s”')
+poll_newoption = ContextTitle(smartquote('New option for poll "%s"'))
 
 def poll_new(context, view):
     return 'Create a new Poll in team %s' % context.team.displayname
@@ -523,29 +527,29 @@ def poll_new(context, view):
 def polloption_edit(context, view):
     return 'Edit option: %s' % context.title
 
-poll_options = ContextTitle(u'Options for poll “%s”')
+poll_options = ContextTitle(smartquote('Options for poll "%s"'))
 
-poll_vote_condorcet = ContextTitle(u'Vote in poll “%s”')
+poll_vote_condorcet = ContextTitle(smartquote('Vote in poll "%s"'))
 
-poll_vote_simple = ContextTitle(u'Vote in poll “%s”')
+poll_vote_simple = ContextTitle(smartquote('Vote in poll "%s"'))
 
 potemplate_add = 'Add a new template to Rosetta'
 
 # potemplate_chart is a fragment
 
-potemplate_edit = ContextTitle(u'Edit “%s” in Rosetta')
+potemplate_edit = ContextTitle(smartquote('Edit "%s" in Rosetta'))
 
-potemplate_index = ContextTitle(u'“%s” in Rosetta')
+potemplate_index = ContextTitle(smartquote('"%s" in Rosetta'))
 
-potemplate_upload = ContextTitle(u'“%s” upload in Rosetta')
+potemplate_upload = ContextTitle(smartquote('"%s" upload in Rosetta'))
 
-potemplate_export = ContextTitle(u'Export translations of “%s”')
+potemplate_export = ContextTitle(smartquote('Export translations of "%s"'))
 
 potemplatename_add = 'Add a new template name to Rosetta'
 
-potemplatename_edit = ContextTitle(u'Edit “%s” in Rosetta')
+potemplatename_edit = ContextTitle(smartquote('Edit "%s" in Rosetta'))
 
-potemplatename_index = ContextTitle(u'“%s” in Rosetta')
+potemplatename_index = ContextTitle(smartquote('"%s" in Rosetta'))
 
 potemplatenames_index = 'Template names in Launchpad'
 
@@ -553,7 +557,8 @@ product_add = 'Register a product with Launchpad'
 
 product_bugs = ContextDisplayName('Bugs in %s')
 
-product_branches = ContextDisplayName(u'%s’s code branches in Launchpad')
+product_branches =
+    ContextDisplayName(smartquote("%s's code branches in Launchpad"))
 
 product_distros = ContextDisplayName('%s packages: Comparison of distributions')
 
@@ -563,7 +568,7 @@ product_index = ContextTitle('%s in Launchpad')
 
 product_packages = ContextDisplayName('%s packages in Launchpad')
 
-product_translations = ContextTitle(u'Translations of %s in Rosetta')
+product_translations = ContextTitle('Translations of %s in Rosetta')
 
 def productrelease(context, view):
     return '%s %s in Launchpad' % (
@@ -757,7 +762,7 @@ specification_linksprint = 'Put specification on sprint agenda'
 
 specification_status = 'Edit specification status'
 
-specification_index = ContextTitle(u'Feature specification: “%s”')
+specification_index = ContextTitle(smartquote('Feature specification: "%s"'))
 
 specification_subscription = 'Subscribe to specification'
 
@@ -773,7 +778,7 @@ specificationtarget_workload = ContextTitle('Feature workload in %s')
 
 sprint_attend = ContextTitle('Register your attendance at %s')
 
-sprint_edit = ContextTitle(u'Edit “%s” details')
+sprint_edit = ContextTitle(smartquote('Edit "%s" details'))
 
 sprint_index = ContextTitle('%s (sprint or meeting)')
 
@@ -795,13 +800,13 @@ tickets_index = 'Launchpad tech support system'
 
 ticket_add = ContextDisplayName('Request support with %s')
 
-ticket_bug = ContextId(u'Link support request #%s to a bug report')
+ticket_bug = ContextId('Link support request #%s to a bug report')
 
 ticket_edit = ContextId('Edit support request #%s details')
 
 def ticket_index(context, view):
     text = (
-        u'%s support request #%d: “%s”' %
+        smartquote('%s support request #%d: "%s"') %
         (context.target.displayname, context.id, context.title))
     return text
 
@@ -831,7 +836,7 @@ team_edit = 'Edit team information'
 
 team_editemail = ContextDisplayName('%s contact e-mail address')
 
-team_index = ContextBrowsername(u'“%s” team in Launchpad')
+team_index = ContextBrowsername(smartquote('"%s" team in Launchpad'))
 
 team_editproposed = ContextBrowsername('Proposed members of %s')
 
@@ -839,10 +844,10 @@ team_join = ContextBrowsername('Join %s')
 
 team_leave = ContextBrowsername('Leave %s')
 
-team_members = ContextBrowsername(u'“%s” members')
+team_members = ContextBrowsername(smartquote('"%s" members'))
 
 def teammembership_index(context, view):
-    return u'%s’s membership status in %s' % (
+    return smartquote("%s's membership status in %s") % (
         context.person.browsername, context.team.browsername)
 
 team_newpoll = ContextTitle('New poll for team %s')
@@ -859,7 +864,7 @@ template_index = '%EXAMPLE TITLE'
 
 template_new = 'EXAMPLE NEW TITLE'
 
-translationgroup = ContextTitle(u'“%s” Rosetta translation group')
+translationgroup = ContextTitle(smartquote('"%s" Rosetta translation group'))
 
 translationgroups = 'Rosetta translation groups'
 

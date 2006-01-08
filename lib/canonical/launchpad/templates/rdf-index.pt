@@ -7,12 +7,13 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Launchpad RDF</h1>
+  <h1>Launchpad <abbr>RDF</abbr></h1>
 
       <p>
-        Launchpad provides RDF exports of
-        project, product, branch, and release metadata,
-        using <a href="/@@/rdf/launchpad.owl">the OWL ontology</a>.
+        Launchpad provides <abbr title="Resource Description Framework">RDF</abbr>
+        exports of project, product, branch, and release metadata,
+        using <a href="/@@/rdf/launchpad.owl">an ontology defined in
+        <abbr title="Web Ontology Language">OWL</abbr></a>.
       </p>
     </div>
   </body>

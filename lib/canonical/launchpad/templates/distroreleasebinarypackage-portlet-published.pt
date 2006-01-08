@@ -4,7 +4,7 @@
 
   <div class="portletBody portletContent">
 
-    <ul>
+    <ul tal:condition="context/current_publishings">
       <li class="packages" tal:repeat="pub context/current_publishings">
         <a tal:attributes="href
             pub/distroarchreleasebinarypackagerelease/fmt:url">

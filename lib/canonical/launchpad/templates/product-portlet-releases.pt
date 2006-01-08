@@ -5,7 +5,7 @@
 
   <div class="portletBody portletContent">
 
-    <ul>
+    <ul tal:condition="context/releases">
       <li class="products" tal:repeat="release context/releases">
         <a tal:content="release/version"
            tal:attributes="href release/fmt:url">2.1.6</a>

@@ -4,7 +4,7 @@
 
   <div class="portletBody portletContent">
 
-    <ul tal:define="options context/getAllOptions">
+    <ul tal:define="options context/getAllOptions" tal:condition="options">
       <li tal:repeat="option options">
         <b tal:content="option/name">name</b>:
         <span tal:replace="option/title">The Title of the option</span>
