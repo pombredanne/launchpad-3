@@ -53,9 +53,10 @@ class BugTaskMixin:
     @property
     def maintainer(self):
         """See canonical.launchpad.interfaces.IBugTask."""
-        warn("IBugTask.maintainer was deprecated as part of "
-             "InitialBugContacts. Talk to bradb about removing this "
-             "completely from the UI and data model.", DeprecationWarning)
+        ## XXX: Disabled as per Bug 6285 -- StuartBishop 20060109
+        ## warn("IBugTask.maintainer was deprecated as part of "
+        ##      "InitialBugContacts. Talk to bradb about removing this "
+        ##      "completely from the UI and data model.", DeprecationWarning)
 
         if self.product:
             return self.product.owner

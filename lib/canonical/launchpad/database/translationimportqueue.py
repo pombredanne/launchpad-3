@@ -15,8 +15,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import DEFAULT
 from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, ITranslationImportQueue, IPOFile,
-    IPOFileSet, IPOTemplateSet, ICanAttachRawFileData, NotFoundError,
-    UnsupportedFileType, TranslationImportQueueEntryBlocked)
+    IPOFileSet, IPOTemplateSet, ICanAttachRawFileData, IPOTemplate,
+    NotFoundError, UnsupportedFileType, TranslationImportQueueEntryBlocked)
 from canonical.launchpad.database import SourcePackage
 from canonical.librarian.interfaces import ILibrarianClient
 
