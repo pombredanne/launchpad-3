@@ -276,14 +276,14 @@ def main():
     parser = optparse.OptionParser()
     logger_options(parser)
 
-    parser.add_option("-k", "--keyring", dest="keyring", metavar="FILENAME",
+    parser.add_option("-k", "--keyring", metavar="FILENAME",
                       help="OpenPGP Key Ring file to be imported.")
 
-    parser.add_option("-s", "--sleep", action="store", metavar="SECONDS",
-                      type="int", help="Wait given seconds between uploads")
+    parser.add_option("-s", "--sleep", metavar="SECONDS",type="int",
+                      help="Wait given seconds between uploads")
 
-    parser.add_option("--start-at", action="store", metavar="CHANGESNAME",
-                      help="Start at given changes filename")
+    parser.add_option("-p", "--packages", metavar="PKGLIST",
+                      help="File containing a list of package names")
 
     options, args = parser.parse_args()
 
@@ -314,6 +314,7 @@ def main():
 
     try:
         uploader_team = getUtility(IPersonSet).getByName('ubuntu-team')
+
         if not uploader_team:
             log.critical("No 'ubuntu-team' found, insert the "
                          "required DB data")
@@ -325,15 +326,30 @@ def main():
         log.info("Fetching list of files with .changes suffix")
         changes_filenames = rsync_list_filenames(rsync_url + "*.changes")
 
-        started = False
-        for changes_filename in changes_filenames:
+        # attempt to handle only list of previously selected packages
+        if options.packages:
+            log.info("Comparing with selected files from '%s'"
+                     % options.packages)
+            # fetch list from a file
+            packagenames = [pkgname.strip() for pkgname in
+                            open(options.packages).readlines()]
 
-            if not started:
-                if (not options.start_at or
-                    options.start_at == changes_filename):
-                    started = True
-                else:
-                    continue
+            changes_selected = []
+            for changes_filename in changes_filenames:
+                # changes_file is named as :
+                #    <packagename>_<version>_source.changes
+                # XXX cprov 20060108: it might be an expensive statement
+                # depending on the selected list size, but at least is
+                # performed only once.
+                packagename = changes_filename.split('_')[0]
+                if packagename in packagenames:
+                    # append the filename from the main list if it's
+                    # present in the selected list.
+                    changes_selected.append(changes_filename)
+        else:
+            changes_selected = changes_filenames
+
+        for changes_filename in changes_selected:
 
             temp_dir = tempfile.mkdtemp("-rsync-to-ftp")
             log.info("Using temporary directory at %s" % temp_dir)
