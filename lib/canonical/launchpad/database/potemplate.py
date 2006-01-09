@@ -621,36 +621,44 @@ class POTemplate(SQLBase, RosettaStats):
 class POTemplateSubset:
     implements(IPOTemplateSubset)
 
-    def __init__(self, sourcepackagename=None,
+    def __init__(self, sourcepackagename=None, from_sourcepackagename=None,
                  distrorelease=None, productseries=None):
         """Create a new POTemplateSubset object.
 
         The set of POTemplate depends on the arguments you pass to this
-        constructor. The sourcepackagename, distrorelease and productseries
-        are just filters for that set.
+        constructor. The sourcepackagename, from_sourcepackagename,
+        distrorelease and productseries are just filters for that set.
         """
         self.sourcepackagename = sourcepackagename
         self.distrorelease = distrorelease
         self.productseries = productseries
 
         if (productseries is not None and (distrorelease is not None or
-            sourcepackagename is not None)):
+            sourcepackagename is not None or
+            from_sourcepackagename is not None)):
             raise AssertionError('A product release must not be used with a'
                                  ' source package name or a distro release.')
         elif productseries is not None:
-            self.query = ('POTemplate.productseries = %d' % productseries.id)
+            self.query = ('POTemplate.productseries = %s' %
+                sqlvalues(productseries.id))
             self.orderby = None
             self.clausetables = None
+        elif distrorelease is not None and from_sourcepackagename is not None:
+            self.query = ('POTemplate.from_sourcepackagename = %s AND'
+                          ' POTemplate.distrorelease = %s ' %
+                            sqlvalues(from_sourcepackagename.id,
+                                      distrorelease.id))
+            self.sourcepackagename = from_sourcepackagename
         elif distrorelease is not None and sourcepackagename is not None:
-            self.query = ('POTemplate.sourcepackagename = %d AND'
-                          ' POTemplate.distrorelease = %d ' %
-                          (sourcepackagename.id, distrorelease.id))
+            self.query = ('POTemplate.sourcepackagename = %s AND'
+                          ' POTemplate.distrorelease = %s ' %
+                            sqlvalues(sourcepackagename.id, distrorelease.id))
             self.orderby = None
             self.clausetables = None
         elif distrorelease is not None:
             self.query = (
                 'POTemplate.distrorelease = DistroRelease.id AND'
-                ' DistroRelease.id = %d' % distrorelease.id)
+                ' DistroRelease.id = %s' % sqlvalues(distrorelease.id))
             self.orderby = 'DistroRelease.name'
             self.clausetables = ['DistroRelease']
         else:
@@ -762,13 +770,13 @@ class POTemplateSet:
     def getSubsetFromImporterSourcePackageName(self, distrorelease,
         sourcepackagename):
         """See IPOTemplateSet."""
-        if distrorelease is None or sourcepackage is None:
+        if distrorelease is None or sourcepackagename is None:
             raise AssertionError(
                 'distrorelease and sourcepackage must be not None.')
 
         return POTemplateSubset(
             distrorelease=distrorelease,
-            from_sourcepackagename=sourcepackagename)
+            sourcepackagename=sourcepackagename)
 
     def getTemplatesPendingImport(self):
         """See IPOTemplateSet."""
