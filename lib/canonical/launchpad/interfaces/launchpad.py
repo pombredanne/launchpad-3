@@ -56,6 +56,7 @@ class ILaunchpadCelebrities(Interface):
     rosetta_expert = Attribute("The Rosetta Experts team.")
     debbugs = Attribute("The Debian Bug Tracker")
     shipit_admin = Attribute("The ShipIt Administrators.")
+    mirror_admin = Attribute("The Mirror Administrators.")
     launchpad_developers = Attribute("The Launchpad development team.")
     ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
 
@@ -553,6 +554,20 @@ class ILaunchpadBrowserApplicationRequest(
     breadcrumbs = Attribute(
         'List of IBreadcrumb objects.  This is appended to during traversal'
         ' so that a page can render appropriate breadcrumbs.')
+
+    traversed_objects = Attribute(
+        'List of traversed objects.  This is appended to during traversal.')
+
+    def getNearest(*some_interfaces):
+        """Searches for the last traversed object to implement one of
+        the given interfaces.
+
+        Returns an (object, matching_interface) tuple.  If the object
+        implements more than one of the interfaces, the first one is
+        returned.
+
+        If no matching object is found, the tuple (None, None) is returned.
+        """
 
 
 class IBreadcrumb(Interface):
