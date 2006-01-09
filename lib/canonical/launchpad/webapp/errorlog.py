@@ -327,5 +327,6 @@ def end_request(event):
     # if no OOPS has been generated at the end of the request, but
     # the soft timeout has expired, log an OOPS.
     if event.request.oopsid is None and da.soft_timeout_expired():
-        print 'OOPS ID is %s' % event.request.oopsid
-    
+        globalErrorService.raising(
+            (SoftRequestTimeout, 'Soft request timeout expired', None),
+            event.request)
