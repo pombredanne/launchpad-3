@@ -536,7 +536,12 @@ class BugTaskSearchListingView(LaunchpadView):
             # there's nothing to do here.
             return
 
-        if helpers.is_maintainer(self.context):
+        user = getUtility(ILaunchBag).user
+
+        # Assign the selected tasks to the selected milestone only if the
+        # current user is the product owner, or in the team that is the product
+        # owner.
+        if user and user.inTeam(self.context.owner):
             form_params = getWidgetsData(self, self.search_form_schema)
 
             milestone_assignment = form_params.get('milestone_assignment')
@@ -555,11 +560,13 @@ class BugTaskSearchListingView(LaunchpadView):
         """Indicates whether the user can edit bugtasks directly on the page.
 
         At the moment the user can edit only product milestone
-        assignments, if the user is a maintainer of the product.
+        assignments, if the user is an owner of the product.
         """
+        user = getUtility(ILaunchBag).user
+
         return (
             self._upstreamContext() is not None and
-            helpers.is_maintainer(self.context))
+            user and user.inTeam(self.context.owner))
 
     def task_columns(self):
         """Returns a sequence of column names to be shown in the listing.

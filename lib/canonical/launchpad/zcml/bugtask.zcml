@@ -40,18 +40,17 @@
                         distrorelease milestone status statusexplanation
                         priority severity assignee binarypackagename
                         bugwatch dateassigned datecreated age owner
-                        maintainer maintainer_displayname targetname
-                        title related_tasks statusdisplayhtml statuselsewhere
-                        setStatusFromDebbugs setSeverityFromDebbugs
-                        updateTargetNameCache asEmailHeaderValue" />
+                        targetname title related_tasks statusdisplayhtml
+                        statuselsewhere setStatusFromDebbugs
+                        setSeverityFromDebbugs updateTargetNameCache
+                        asEmailHeaderValue" />
         <require
             permission="launchpad.Edit"
             set_attributes="product sourcepackagename distribution
                             distrorelease milestone status statusexplanation
                             priority severity assignee binarypackagename
                             bugwatch dateassigned datecreated age owner
-                            maintainer maintainer_displayname targetname
-                            title related_tasks statusdisplayhtml
+                            targetname title related_tasks statusdisplayhtml
                             statuselsewhere setStatusFromDebbugs
                             setSeverityFromDebbugs" />
     </content>
@@ -304,8 +303,8 @@
         for="canonical.launchpad.interfaces.IUpstreamBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
-        fields="maintainer_displayname milestone status priority
-                severity assignee bugwatch statusexplanation product"
+        fields="milestone status priority severity assignee bugwatch
+                statusexplanation product"
         label="Edit Fix Request"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit.pt"
@@ -323,8 +322,8 @@
         name="+viewstatus-page"
         for="canonical.launchpad.interfaces.IUpstreamBugTask"
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
-        fields="maintainer_displayname milestone status priority severity
-                assignee bugwatch statusexplanation"
+        fields="milestone status priority severity assignee bugwatch
+                statusexplanation"
         label="Product Fix Request"
         permission="launchpad.View"
         template="../templates/bugtask-view.pt"
