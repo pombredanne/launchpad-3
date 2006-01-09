@@ -636,9 +636,8 @@ class POTemplateSubset:
         if (productseries is not None and (distrorelease is not None or
             sourcepackagename is not None or
             from_sourcepackagename is not None)):
-            raise ValueError('A product release must not be used '
-                             'with a source package name or a distro '
-                             'release.')
+            raise AssertionError('A product release must not be used with a'
+                                 ' source package name or a distro release.')
         elif productseries is not None:
             self.query = ('POTemplate.productseries = %s' %
                 sqlvalues(productseries.id))
@@ -663,8 +662,8 @@ class POTemplateSubset:
             self.orderby = 'DistroRelease.name'
             self.clausetables = ['DistroRelease']
         else:
-            raise ValueError('You need to specify the kind '
-                             'of subset you want.')
+            raise AssertionError(
+                'You need to specify the kind of subset you want.')
 
     def __iter__(self):
         """See IPOTemplateSubset."""
@@ -760,27 +759,13 @@ class POTemplateSet:
             raise NotFoundError(name)
         return result
 
-    def getSubset(self, **kw):
+    def getSubset(self, distrorelease=None, sourcepackagename=None,
+                  productseries=None):
         """See IPOTemplateSet."""
-        if kw.get('distrorelease'):
-            # XXX: Should this really be an assert?
-            #      -- SteveAlexander 2005-04-23
-            assert 'productseries' not in kw
-
-            distrorelease = kw['distrorelease']
-
-            if kw.get('sourcepackagename'):
-                sourcepackagename = kw['sourcepackagename']
-                return POTemplateSubset(
-                    distrorelease=distrorelease,
-                    sourcepackagename=sourcepackagename)
-            else:
-                return POTemplateSubset(distrorelease=distrorelease)
-
-        # XXX: Should this really be an assert?
-        #      -- SteveAlexander 2005-04-23
-        assert kw.get('productseries')
-        return POTemplateSubset(productseries=kw['productseries'])
+        return POTemplateSubset(
+            distrorelease=distrorelease,
+            sourcepackagename=sourcepackagename,
+            productseries=productseries)
 
     def getSubsetFromImporterSourcePackageName(self, distrorelease,
         sourcepackagename):
