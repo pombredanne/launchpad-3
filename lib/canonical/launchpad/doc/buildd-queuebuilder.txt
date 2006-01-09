@@ -172,11 +172,11 @@ component the package belongs to, and the urgency of the upload.
 There is still some work to do here, for further information see the
 launchpad/scripts/builddmaster.py code. The job presented should won
 exactly ** 990 ** points last turn (5 for the default urgency 'LOW'
-1000 for the 'Main' component and -15 for one unsatisfied dependency,
+1000 for the 'Main' component and -10 for one unsatisfied dependency,
 further tests for scoring are in buildd-scoring.txt)
 
   >>> job.lastscore
-  990
+  995
 
 
 

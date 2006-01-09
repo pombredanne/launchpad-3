@@ -496,7 +496,7 @@ class BuilderGroup:
             extra_args = [
                 "-d", "%s" % queueItem.build.distribution.name,
                 "-r", "%s" % queueItem.build.distrorelease.name,
-                "-b", "%s" % queueitem.build.id,
+                "-b", "%s" % queueItem.build.id,
                 "%s" % upload_dir,
                 ]
             uploader_argv.extend(extra_args)

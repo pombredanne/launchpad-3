@@ -81,6 +81,7 @@ o DistroReleaseVocabulary - reflects the available distribution releases.
     5 ubuntu/grumpy        The Grumpy Groundhog Release
     3 ubuntu/hoary         The Hoary Hedgehog Release
     1 ubuntu/warty         The Warty Warthog Release
+    11 ubuntutest/breezy-autotest Breezy Badger Autotest
     >>> distrorelease_vocabulary.getTermByToken('ubuntu/hoary').value
     3
     >>> [term.token for term in distrorelease_vocabulary.search('woody')]
