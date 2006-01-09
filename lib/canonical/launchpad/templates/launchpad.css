@@ -477,9 +477,6 @@ ul.facets>li {
   margin: 0.25em 1em;
   padding-left: 0.5em;
 }
-ul.facets>li.current {
-  padding-left: 0.5em;
-}
 ul.facets>li ul {
   list-style-position: outside;
   margin-left: 1.5em;
