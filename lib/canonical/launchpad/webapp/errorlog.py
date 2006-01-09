@@ -44,12 +44,34 @@ def _normalise_whitespace(s):
         return None
     return ' '.join(s.split())
 
+def _safestr(obj):
+    if isinstance(obj, unicode):
+        return obj.replace('\\', '\\\\').encode('ASCII',
+                                                'backslashreplace')
+    # A call to str(obj) could raise anything at all.
+    # We'll ignore these errors, and print something
+    # useful instead, but also log the error.
+    try:
+        value = str(obj)
+    except:
+        logging.getLogger('SiteError').exception(
+            'Error in ErrorReportingService while getting a str '
+            'representation of an object')
+        value = '<unprintable %s object>' % (
+            str(type(obj).__name__)
+            )
+    # encode non-ASCII characters
+    value = value.replace('\\', '\\\\')
+    value = re.sub(r'[\x80-\xff]',
+                   lambda match: '\\x%02x' % ord(match.group(0)), value)
+    return value
+
 
 class ErrorReport:
     implements(IErrorReport)
 
     def __init__(self, id, type, value, time, tb_text, username,
-                 url, req_vars):
+                 url, req_vars, db_statements):
         self.id = id
         self.type = type
         self.value = value
@@ -64,6 +86,7 @@ class ErrorReport:
                 self.req_vars.append((name, '<hidden>'))
             else:
                 self.req_vars.append((name, value))
+        self.db_statements = db_statements
 
     def __repr__(self):
         return '<ErrorReport %s>' % self.id
@@ -79,6 +102,10 @@ class ErrorReport:
         for key, value in self.req_vars:
             fp.write('%s=%s\n' % (urllib.quote(key, safe_chars),
                                   urllib.quote(value, safe_chars)))
+        fp.write('\n')
+        for (start, end, statement) in self.db_statements:
+            fp.write('%05d-%05d %s\n' % (start, end,
+                                         _normalise_whitespace(statement)))
         fp.write('\n')
         fp.write(self.tb_text)
 
@@ -99,10 +126,20 @@ class ErrorReport:
             if not line: break
             key, value = line.split('=', 1)
             req_vars.append((urllib.unquote(key), urllib.unquote(value)))
+
+        statements = []
+        lines = lines[linenum+1:]
+        for linenum, line in enumerate(lines):
+            line = line.strip()
+            if not line: break
+            startend, statement = line.split(' ', 1)
+            start, end = startend.split('-')
+            statements.append((int(start), int(end), statement))
+
         tb_text = ''.join(lines[linenum+1:])
 
         return cls(id, exc_type, exc_value, date, tb_text,
-                   username, url, req_vars)
+                   username, url, req_vars, statements)
 
 
 class ErrorReportingService:
@@ -198,28 +235,6 @@ class ErrorReportingService:
                                                          newid))
         return oops, filename
 
-    def safestr(self, obj):
-        if isinstance(obj, unicode):
-            return obj.replace('\\', '\\\\').encode('ASCII',
-                                                    'backslashreplace')
-        # A call to str(obj) could raise anything at all.
-        # We'll ignore these errors, and print something
-        # useful instead, but also log the error.
-        try:
-            value = str(obj)
-        except:
-            logging.getLogger('SiteError').exception(
-                'Error in ErrorReportingService while getting a str '
-                'representation of an object')
-            value = '<unprintable %s object>' % (
-                str(type(obj).__name__)
-                )
-        # encode non-ASCII characters
-        value = value.replace('\\', '\\\\')
-        value = re.sub(r'[\x80-\xff]',
-                       lambda match: '\\x%02x' % ord(match.group(0)), value)
-        return value
-
     def raising(self, info, request=None, now=None):
         """See IErrorReportingService.raising()"""
         if now is not None:
@@ -238,7 +253,7 @@ class ErrorReportingService:
                                                    **{'as_html': False}))
             else:
                 tb_text = info[2]
-            tb_text = self.safestr(tb_text)
+            tb_text = _safestr(tb_text)
 
             url = None
             username = None
@@ -255,7 +270,7 @@ class ErrorReportingService:
                         login = request.principal.getLogin()
                     else:
                         login = 'unauthenticated'
-                    username = self.safestr(
+                    username = _safestr(
                         ', '.join(map(unicode, (login,
                                                 request.principal.id,
                                                 request.principal.title,
@@ -272,16 +287,20 @@ class ErrorReportingService:
                 except AttributeError:
                     pass
 
-                req_vars = sorted((self.safestr(key), self.safestr(value))
+                req_vars = sorted((_safestr(key), _safestr(value))
                                   for (key, value) in request.items())
-            strv = self.safestr(info[1])
+            strv = _safestr(info[1])
 
-            strurl = self.safestr(url)
+            strurl = _safestr(url)
+
+            statements = sorted((start, end, _safestr(statement))
+                                for (start, end, statement)
+                                    in da.get_request_statements())
 
             oopsid, filename = self.newOopsId(now)
 
             entry = ErrorReport(oopsid, strtype, strv, now, tb_text,
-                                username, strurl, req_vars)
+                                username, strurl, req_vars, statements)
             entry.write(open(filename, 'wb'))
 
             if request:
