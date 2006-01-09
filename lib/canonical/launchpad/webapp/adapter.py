@@ -23,6 +23,8 @@ __all__ = [
     'RequestExpired',
     'set_request_started',
     'clear_request_started',
+    'hard_timeout_expired',
+    'soft_timeout_expired',
     ]
 
 
@@ -122,9 +124,9 @@ def clear_request_started():
     _local.request_start_time = None
 
 
-def _request_expired():
-    """Checks whether the current request has expired."""
-    if config.launchpad.db_statement_timeout is None:
+def _check_expired(timeout):
+    """Checks whether the current request has passed the given timeout."""
+    if timeout is None:
         return False # no timeout configured
 
     starttime = getattr(_local, 'request_start_time', None)
@@ -132,8 +134,15 @@ def _request_expired():
         return False # no current request
 
     requesttime = (time.time() - starttime) * 1000
-    return requesttime > config.launchpad.db_statement_timeout
+    return requesttime > timeout
 
+def hard_timeout_expired():
+    """Returns True if the hard request timeout been reached."""
+    return _check_expired(config.launchpad.db_statement_timeout)
+
+def soft_timeout_expired():
+    """Returns True if the soft request timeout been reached."""
+    return _check_expired(config.launchpad.soft_request_timeout)
 
 class RequestExpired(RuntimeError):
     """Request has timed out."""
@@ -182,7 +191,7 @@ class CursorWrapper:
         transaction completes) and the RequestExpired exception will
         be raised.
         """
-        if _request_expired():
+        if hard_timeout_expired():
             # make sure the current transaction can not be committed by
             # sending a broken SQL statement to the database
             try:
