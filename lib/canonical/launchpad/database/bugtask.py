@@ -320,11 +320,7 @@ class BugTaskSet:
 
     def __getitem__(self, task_id):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
-        try:
-            task = BugTask.get(task_id)
-        except SQLObjectNotFound:
-            raise NotFoundError(task_id)
-        return task
+        return self.get(task_id)
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
