@@ -354,7 +354,7 @@ Viewing the people page:
 
 == Product Groups Pillar ==
 
-View the Product Groups page:
+View the product groups page:
 
   >>> print http(r"""
   ... GET /projects HTTP/1.1
