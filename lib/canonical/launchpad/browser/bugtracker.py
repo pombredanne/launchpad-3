@@ -10,21 +10,31 @@ __all__ = [
     'BugTrackerSetContextMenu',
     'BugTrackerAddView',
     'BugTrackerView',
+    'BugTrackerNavigation',
+    'RemoteBug',
     ]
 
+from zope.interface import implements
 from zope.component import getUtility
 
 from canonical.lp.dbschema import BugTrackerType
 from canonical.launchpad.interfaces import (
-    IProject, IProjectBugTrackerSet, IBugTracker, IBugTrackerSet, ILaunchBag)
+    IProject, IProjectBugTrackerSet, IBugTracker, IBugTrackerSet, IRemoteBug,
+    ILaunchBag)
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, GetitemNavigation)
+    canonical_url, ContextMenu, Link, Navigation, GetitemNavigation,
+    redirection, LaunchpadView)
 from zope.app.form.browser.editview import EditView
+
+from canonical.launchpad import _
 
 
 class BugTrackerSetNavigation(GetitemNavigation):
 
     usedfor = IBugTrackerSet
+
+    def breadcrumb(self):
+        return 'Remote Bug Trackers'
 
 
 class BugTrackerContextMenu(ContextMenu):
@@ -78,8 +88,44 @@ class BugTrackerAddView:
     def nextURL(self):
         return canonical_url(self._newtracker_)
 
+
 class BugTrackerView(EditView):
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.context))
 
+
+class BugTrackerNavigation(Navigation):
+
+    usedfor = IBugTracker
+
+    def breadcrumb(self):
+        return self.context.title
+
+    def traverse(self, remotebug):
+        bugs = self.context.getBugsWatching(remotebug)
+        if len(bugs) == 0:
+            # no bugs watching => not found
+            return None
+        elif len(bugs) == 1:
+            # one bug watching => redirect to that bug
+            return redirection(canonical_url(bugs[0]))
+        else:
+            # else list the watching bugs
+            return RemoteBug(self.context, remotebug, bugs)
+
+
+class RemoteBug:
+    """Represents a bug in a remote bug tracker."""
+
+    implements(IRemoteBug)
+
+    def __init__(self, bugtracker, remotebug, bugs):
+        self.bugtracker = bugtracker
+        self.remotebug = remotebug
+        self.bugs = bugs
+
+    @property
+    def title(self):
+        return 'Remote Bug #%s in %s' % (self.remotebug,
+                                         self.bugtracker.title)
