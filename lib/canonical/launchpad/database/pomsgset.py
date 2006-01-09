@@ -1,7 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['POMsgSet']
+__all__ = ['POMsgSet', 'DummyPOMsgSet']
 
 import gettextpo
 
@@ -17,14 +17,55 @@ from canonical.database.sqlbase import (SQLBase, sqlvalues,
 from canonical.lp.dbschema import (RosettaTranslationOrigin,
     TranslationValidationStatus)
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import IEditPOMsgSet
+from canonical.launchpad.interfaces import IPOMsgSet
 from canonical.launchpad.database.poselection import POSelection
 from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
 
 
+class DummyPOMsgSet:
+    """Represents a POMsgSet where we do not yet actually HAVE a POMsgSet for
+    that POFile and POTMsgSet.
+    """
+    implements(IPOMsgSet)
+
+    def __init__(self, pofile, potmsgset):
+        self.pofile = pofile
+        self.potmsgset = potmsgset
+        self.isfuzzy = False
+        self.commenttext = None
+
+    @property
+    def active_texts(self):
+        """See IPOMsgSet."""
+        return [None] * self.pofile.pluralforms
+
+    def getSuggestedSubmissions(self, pluralform):
+        """See IPOMsgSet."""
+        return []
+
+    def getCurrentSubmissions(self, pluralform):
+        """See IPOMsgSet."""
+        return []
+
+    def getWikiSubmissions(self, pluralform):
+        """See IPOMsgSet."""
+        return []
+
+    def updateTranslationSet(self, person, new_translations, fuzzy,
+        published, ignore_errors=False, force_edition_rights=False):
+        """See IPOMsgSet."""
+        # Need to create a valid IPOMsgSet as we get a write operation.
+        pomsgset = self.pofile.createMessageSetFromMessageSet(self.potmsgset)
+
+        # Now, we call to the same method of the new created IPOMsgSet to get
+        # the translations updated.
+        pomsgset.updateTranslationSet(person, new_translations, fuzzy,
+            published, ignore_errors, force_edition_rights)
+
+
 class POMsgSet(SQLBase):
-    implements(IEditPOMsgSet)
+    implements(IPOMsgSet)
 
     _table = 'POMsgSet'
 
@@ -108,19 +149,18 @@ class POMsgSet(SQLBase):
                """ % (self.id, pluralform),
                clauseTables=['POSelection'])
 
-    def publishedSubmission(self, pluralform):
+    def getPublishedSubmission(self, pluralform):
+        """See IPOMsgSet."""
         return POSubmission.selectOne(
-            """POSelection.pomsgset = %d AND
-               POSelection.pluralform = %d AND
+            """POSelection.pomsgset = %s AND
+               POSelection.pluralform = %s AND
                POSelection.publishedsubmission = POSubmission.id
-               """ % (self.id, pluralform),
+               """ % sqlvalues(self.id, pluralform),
                clauseTables=['POSelection'])
-
-    # IEditPOMsgSet
 
     def updateTranslationSet(self, person, new_translations, fuzzy,
         published, ignore_errors=False, force_edition_rights=False):
-        """See IEditPOMsgSet."""
+        """See IPOMsgSet."""
         # Is the person allowed to edit translations?
         is_editor = (force_edition_rights or
                      self.pofile.canEditTranslations(person))
@@ -209,7 +249,7 @@ class POMsgSet(SQLBase):
                 matches = 0
                 for pluralform in range(self.pluralforms):
                     if (self.activeSubmission(pluralform) ==
-                        self.publishedSubmission(pluralform)):
+                        self.getPublishedSubmission(pluralform)):
                         matches += 1
                 if matches == self.pluralforms:
                     # The active submission is exactly the same as the
@@ -460,14 +500,43 @@ class POMsgSet(SQLBase):
 
     def getWikiSubmissions(self, pluralform):
         """See IPOMsgSet."""
-        submissions = self.potmsgset.getWikiSubmissions(self.pofile.language,
-            pluralform)
-        active = self.activeSubmission(pluralform)
-        if active and active.potranslation:
-            active = active.potranslation
-        return [submission
-                for submission in submissions
-                if submission.potranslation != active]
+        posubmission_ids = self._connection.queryAll('''
+            SELECT DISTINCT POSubmission.id
+            FROM POSubmission
+                JOIN POMsgSet ON (POSubmission.pomsgset = POMsgSet.id AND
+                                  POMsgSet.isfuzzy = FALSE)
+                JOIN POFile ON (POMsgSet.pofile = POFile.id AND
+                                POFile.language = %s)
+                JOIN POTMsgSet ON (POMsgSet.potmsgset = POTMsgSet.id AND
+                                   POTMsgSet.primemsgid = %s)
+            WHERE
+                POSubmission.pluralform = %s
+            ''' % sqlvalues(
+                self.pofile.language.id, self.potmsgset.primemsgid_ID,
+                pluralform))
+
+        active_submission = self.activeSubmission(pluralform)
+
+        if (active_submission is not None and
+            active_submission.potranslation is not None):
+            # We look for all the IPOSubmissions with the same translation.
+            same_translation = POSubmission.select(
+                "POSubmission.potranslation = %s" %
+                    sqlvalues(active_submission.potranslation.id))
+
+            # Remove it so we don't show as suggestion something that we
+            # already have as active.
+            for posubmission_id in same_translation:
+                if posubmission_id in posubmission_ids:
+                    posubmission_ids.remove(posubmission_id)
+
+        if len(posubmission_ids) > 0:
+            ids = [str(L[0]) for L in posubmission_ids]
+            return POSubmission.select(
+                'POSubmission.id IN (%s)' % ', '.join(ids),
+                orderBy='-datecreated')
+        else:
+            return []
 
     def getSuggestedSubmissions(self, pluralform):
         """See IPOMsgSet."""
@@ -477,19 +546,26 @@ class POMsgSet(SQLBase):
             active = selection.activesubmission
         query = '''pomsgset = %s AND
                    pluralform = %s''' % sqlvalues(self.id, pluralform)
-        if active:
+        if active is not None:
+            # Don't show suggestions older than the current one.
             query += ''' AND datecreated > %s
                     ''' % sqlvalues(active.datecreated)
         return POSubmission.select(query, orderBy=['-datecreated'])
 
     def getCurrentSubmissions(self, pluralform):
         """See IPOMsgSet."""
-        submissions = self.potmsgset.getCurrentSubmissions(self.pofile.language,
-            pluralform)
+        posubmission_ids = self.potmsgset.getCurrentSubmissionsIDs(
+            self.pofile.language, pluralform)
         active = self.activeSubmission(pluralform)
-        if active and active.potranslation:
-            active = active.potranslation
-        return [submission
-                for submission in submissions
-                if submission.potranslation != active]
+
+        if active is not None and active.id in posubmission_ids:
+            posubmission_ids.remove(active.id)
+
+        if len(posubmission_ids) > 0:
+            ids = [str(L[0]) for L in posubmission_ids]
+            return POSubmission.select(
+                'POSubmission.id IN (%s)' % ', '.join(ids),
+                orderBy='-datecreated')
+        else:
+            return []
 
