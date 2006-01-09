@@ -139,11 +139,11 @@ class SiteMap(LaunchpadView):
 
     _pillars = [
         # (name, title, interface provided)
-        ('product', 'Products',       IProductSet),
-        ('distro',  'Distributions',  IDistributionSet),
-        ('person',  'People',         IPersonSet),
-        ('project', 'Product Groups', IProjectSet),
-        ('sprint',  'Meetings',       ISprintSet),
+        ('product', 'Products',      IProductSet),
+        ('distro',  'Distributions', IDistributionSet),
+        ('person',  'People',        IPersonSet),
+        ('project', 'Projects',      IProjectSet),
+        ('sprint',  'Meetings',      ISprintSet),
         ]
 
     def product_subpillar_links(self):
