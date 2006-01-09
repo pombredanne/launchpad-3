@@ -227,6 +227,8 @@ build_changes = ContextTitle('%s: Changes')
 
 build_index = ContextTitle('%s: Overview')
 
+build_reset = ContextTitle('Reset %s')
+
 builders = 'Launchpad Build Farm Overview'
 
 builder_edit = ContextTitle('Editing %s details')
@@ -284,13 +286,31 @@ debug_unauthorized = 'Launchpad - Not Permitted'
 
 default_editform = 'Default "Edit" Page'
 
+distributionmirror_addarchrelease = ContextTitle(
+    'Add new Arch Release for mirror %s')
+
+distributionmirror_addsourcerelease = ContextTitle(
+    'Add new Source Release for mirror %s')
+
+distributionmirror_edit = ContextTitle('Edit mirror %s')
+
+distributionmirror_index = ContextTitle('Mirror %s')
+
 distribution_allpackages = ContextTitle('All packages in %s')
+
+distribution_bugcontact = ContextTitle('Edit Bug Contact for %s')
 
 distribution_cvereport = ContextTitle('CVE Reports for %s')
 
 distribution_members = ContextTitle('%s distribution members')
 
 distribution_memberteam = ContextTitle("Change %s's distribution team")
+
+distribution_newmirror = ContextTitle("Register a new mirror for %s")
+
+distribution_officialmirrors = ContextTitle("Official mirrors of %s")
+
+distribution_allmirrors = ContextTitle("All mirrors of %s")
 
 distribution_translations = ContextDisplayName('Translating %s')
 
@@ -305,6 +325,8 @@ distribution_builds = ContextTitle('%s Builds')
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
 distributionsourcepackage_index = ContextTitle('%s')
+
+distributionsourcepackage_manage_bugcontacts = ContextTitle('Bug Contacts for %s')
 
 distributionsourcepackagerelease_index = ContextTitle('%s')
 
@@ -596,6 +618,8 @@ potemplatenames_index = 'Template names in Launchpad'
 
 product_add = 'Register a product with Launchpad'
 
+product_bugcontact = ContextTitle('Edit Bug Contact for %s')
+
 product_bugs = ContextDisplayName('%s upstream bug reports')
 
 product_branches = ContextDisplayName('%s\'s code branches in Launchpad')
@@ -677,6 +701,8 @@ registry_review = 'Launchpad Content Review'
 registry_to_do = 'Launchpad To-Do List'
 
 related_bounties = ContextDisplayName('Bounties for %s')
+
+remotebug_index = ContextTitle('%s')
 
 root_index = 'The Launchpad Home Page'
 

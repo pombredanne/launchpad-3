@@ -39,6 +39,7 @@
     <include file="cvereference.zcml" />
     <include file="datetime.zcml" />
     <include file="distribution.zcml" />
+    <include file="distributionmirror.zcml" />
     <include file="distributionsourcepackage.zcml" />
     <include file="distributionsourcepackagecache.zcml" />
     <include file="distributionsourcepackagerelease.zcml" />
@@ -61,10 +62,10 @@
     <include file="launchpadstatistic.zcml" />
     <include file="librarian.zcml" />
     <include file="logintoken.zcml" />
-    <include file="maintainership.zcml" />
     <include file="message.zcml" />
     <include file="milestone.zcml" />
     <include file="package.zcml" />
+    <include file="packagebugcontact.zcml" />
     <include file="packaging.zcml" />
     <include file="person.zcml" />
     <include file="poexport.zcml" />

@@ -34,7 +34,6 @@ from canonical.launchpad.database.poselection import *
 from canonical.launchpad.database.posubmission import *
 from canonical.launchpad.database.librarian import *
 from canonical.launchpad.database.launchpadstatistic import *
-from canonical.launchpad.database.maintainership import *
 from canonical.launchpad.database.infestation import *
 from canonical.launchpad.database.sourcepackage import *
 from canonical.launchpad.database.sourcepackagename import *
@@ -44,6 +43,7 @@ from canonical.launchpad.database.binarypackagename import *
 from canonical.launchpad.database.publishedpackage import *
 from canonical.launchpad.database.distribution import *
 from canonical.launchpad.database.distributionbounty import *
+from canonical.launchpad.database.distributionmirror import *
 from canonical.launchpad.database.distributionsourcepackage import *
 from canonical.launchpad.database.distributionsourcepackagecache import *
 from canonical.launchpad.database.distributionsourcepackagerelease import *
