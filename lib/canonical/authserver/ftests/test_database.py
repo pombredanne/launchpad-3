@@ -419,7 +419,10 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
               'name': u'admins'},
              {'displayname': u'testing Spanish team',
               'id': 53,
-              'name': u'testing-spanish-team'},],
+              'name': u'testing-spanish-team'},
+             {'displayname': u'Mirror Administrators', 
+              'id': 59, 'name':
+              u'mirror-admins'}],
             teams
         )
 

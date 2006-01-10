@@ -41,7 +41,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     IGPGHandler, GPGVerificationError, IGPGKeySet, IPersonSet,
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
-    IComponentSet, ISectionSet, NotFoundError)
+    IComponentSet, ISectionSet, IBuildSet, NotFoundError)
 
 from canonical.config import config
 from zope.component import getUtility
@@ -1668,7 +1668,7 @@ class NascentUpload:
                                     status=BuildStatus.FULLYBUILT)
             self.policy.build = build
         else:
-            self.policy.build = getUtility(IBuildSet).getBuildByID(build_id)
+            self.policy.build = getUtility(IBuildSet).getByBuildID(build_id)
 
         return self.policy.build
 

@@ -5,6 +5,8 @@
 
 Buildd-Slave monitor, support multiple slaves and requires LPDB access.
 """
+import urlparse
+
 from string import join
 from sqlobject import SQLObjectNotFound
 

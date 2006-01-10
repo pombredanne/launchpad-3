@@ -1,0 +1,27 @@
+<div class="portlet">
+
+  <h4><span tal:replace="context/title">Name</span> Mirror Details:</h4>
+
+  <div class="portletBody portletContent">
+
+    <b>Registrant:</b>
+    <img src="/++resource++user.gif">
+    <a tal:attributes="href context/owner/fmt:url"
+       tal:content="context/owner/browsername">owner name</a> <br />
+
+    <b>Speed:</b>
+    <span tal:content="context/speed/title" /><br />
+
+    <b>Country:</b>
+    <span tal:content="context/country/name" /><br />
+
+    <b>Content:</b>
+    <span tal:content="context/content/title" /><br />
+
+    <b tal:condition="context/isOfficial">Official</b>
+    <b tal:condition="not: context/isOfficial">Not Official</b>
+    <br />
+
+  </div>
+</div>
+

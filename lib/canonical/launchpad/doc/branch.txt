@@ -174,7 +174,7 @@ different user, Launchpad code is only concened with using this data.
 
 Let's get a branch with some revisions in it.
 
->>> sample_person = personset[12]
+>>> sample_person = personset.getByName('name12')
 >>> junk = sample_person.getBranch(None, 'junk.dev')
 
 == Revision history of Branch ==
