@@ -733,7 +733,7 @@ class POTemplateSubset:
         if self.query is None:
             query = 'POTemplate.path = %s' % path
         else:
-            query = '%s POTemplate.path = %s' % (self.query, path)
+            query = '%s AND POTemplate.path = %s' % (self.query, quote(path))
 
         return POTemplate.selectOne(query, clauseTables=self.clausetables)
 
