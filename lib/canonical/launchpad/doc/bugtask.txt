@@ -485,8 +485,6 @@ like these, use the NullBugTask object.
     True
     >>> null_bugtask.milestone is None
     True
-    >>> null_bugtask.statusexplanation is None
-    True
     >>> null_bugtask.severity is None
     True
     >>> null_bugtask.assignee is None
