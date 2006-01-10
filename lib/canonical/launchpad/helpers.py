@@ -598,16 +598,15 @@ def unix2windows_newlines(text):
     >>> unix2windows_newlines('foo\nbar\n\nbaz')
     'foo\r\nbar\r\n\r\nbaz'
     >>> unix2windows_newlines('foo\r\nbar')
-    Traceback (most recent call last):
-    ...
-    ValueError: ''foo\r\nbar'' is already converted
+    'foo\r\nbar'
     """
     if text is None:
         return None
     elif '\r\n' in text:
-        raise ValueError('\'%r\' is already converted' % text)
-
-    return text_replaced(text, {'\n': '\r\n'})
+        # The text is already using the windows newline chars
+        return text
+    else:
+        return text_replaced(text, {'\n': '\r\n'})
 
 def contract_rosetta_tabs(text):
     r"""Replace Rosetta representation of tab characters with their native form.
