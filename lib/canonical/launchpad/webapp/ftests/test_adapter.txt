@@ -168,6 +168,34 @@ If no timeout has been set, then requests will not time out:
     >>> clear_request_started()
 
 
+While a request is in progress, the Launchpad database adapter keeps a
+log of the statements executed.  First show that the statement log is
+not maintained outside of a request:
+
+    >>> get_request_statements()
+    []
+    >>> cursor.execute('SELECT 1')
+    >>> cursor.execute('SELECT 2')
+    >>> get_request_statements()
+    []
+
+Now begin a request, and issue a number of statements:
+
+    >>> set_request_started()
+    >>> cursor.execute('SELECT 1')
+    >>> cursor.execute('SELECT 2')
+    >>> for starttime, endtime, statement in get_request_statements():
+    ...     print statement
+    SELECT 1
+    SELECT 2
+
+After we complete the request, the statement log is cleared:
+
+    >>> clear_request_started()
+    >>> get_request_statements()
+    []
+
+
 Customizing the database adapter also lets us easily tweak the current
 connection. For example we can make it read only:
 
