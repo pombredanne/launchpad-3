@@ -348,5 +348,5 @@ def end_request(event):
     # the soft timeout has expired, log an OOPS.
     if event.request.oopsid is None and soft_timeout_expired():
         globalErrorService.raising(
-            (SoftRequestTimeout, 'Soft request timeout expired', None),
+            (SoftRequestTimeout, SoftRequestTimeout(event.object), None),
             event.request)
