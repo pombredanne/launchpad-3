@@ -5,8 +5,11 @@
 
 <body>
 
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+  </metal:leftportlets>
+
   <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-editdetails" />
   </metal:rightportlets>
 
   <div metal:fill-slot="main">
@@ -35,7 +38,7 @@
       <tr>
         <td><b tal:content="context/ubuntuwiki/wiki" /></td>
         <td>
-          <input type="text"
+          <input type="text" size="15"
                  tal:attributes="name string:ubuntuwikiname;
                                  value context/ubuntuwiki/wikiname" />
         </td>
@@ -52,12 +55,12 @@
 
         <tr tal:repeat="wiki context/otherwikis">
           <td>
-            <input type="text" size="40" style="margin-bottom: 0.5em;"
+            <input type="text" style="margin-bottom: 0.5em;"
                    tal:attributes="name string:wiki_${wiki/id};
                                    value wiki/wiki" />
           </td>
           <td>
-            <input type="text"
+            <input type="text" size="15"
                    tal:attributes="name string:wikiname_${wiki/id};
                                    value wiki/wikiname" />
           </td>
@@ -84,11 +87,11 @@
 
     <tr>
       <td>
-        <input name="newwiki" type="text" size="40"
+        <input name="newwiki" type="text"
                tal:attributes="value view/newwiki|nothing" />
       </td>
       <td>
-        <input name="newwikiname" type="text"
+        <input name="newwikiname" type="text" size="15"
                tal:attributes="value view/newwikiname|nothing" />
       </td>
     </tr>

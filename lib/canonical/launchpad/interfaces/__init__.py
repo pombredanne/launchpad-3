@@ -43,6 +43,7 @@ from canonical.launchpad.interfaces.cve import *
 from canonical.launchpad.interfaces.cvereference import *
 from canonical.launchpad.interfaces.distribution import *
 from canonical.launchpad.interfaces.distributionbounty import *
+from canonical.launchpad.interfaces.distributionmirror import *
 from canonical.launchpad.interfaces.distributionsourcepackage import *
 from canonical.launchpad.interfaces.distributionsourcepackagecache import *
 from canonical.launchpad.interfaces.distributionsourcepackagerelease import *
@@ -70,7 +71,6 @@ from canonical.launchpad.interfaces.librarian import *
 from canonical.launchpad.interfaces.logintoken import *
 from canonical.launchpad.interfaces.mail import *
 from canonical.launchpad.interfaces.mailbox import *
-from canonical.launchpad.interfaces.maintainership import *
 from canonical.launchpad.interfaces.manifestancestry import *
 from canonical.launchpad.interfaces.manifestentry import *
 from canonical.launchpad.interfaces.manifest import *
@@ -130,6 +130,7 @@ from canonical.launchpad.interfaces.ticketmessage import *
 from canonical.launchpad.interfaces.ticketreopening import *
 from canonical.launchpad.interfaces.ticketsubscription import *
 from canonical.launchpad.interfaces.translationgroup import *
+from canonical.launchpad.interfaces.translationimportqueue import *
 from canonical.launchpad.interfaces.translator import *
 from canonical.launchpad.interfaces.vpoexport import *
 from canonical.launchpad.interfaces.wikiname import *

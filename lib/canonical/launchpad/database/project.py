@@ -39,7 +39,7 @@ class Project(SQLBase):
     _table = "Project"
 
     # db field names
-    owner= ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
+    owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
     name = StringCol(dbName='name', notNull=True)
     displayname = StringCol(dbName='displayname', notNull=True)
     title = StringCol(dbName='title', notNull=True)
@@ -129,6 +129,16 @@ class ProjectSet:
                                 str(projectid))
         return project
 
+    def getByName(self, name, default=None, ignore_inactive=False):
+        """See canonical.launchpad.interfaces.project.IProjectSet."""
+        if ignore_inactive:
+            project = Project.selectOneBy(name=name, active=True)
+        else:
+            project = Project.selectOneBy(name=name)
+        if project is None:
+            return default
+        return project
+
     def new(self, name, displayname, title, homepageurl, summary,
             description, owner):
         r"""See canonical.launchpad.interfaces.project.IProjectSet
@@ -148,9 +158,6 @@ class ProjectSet:
         >>> p.displayname
         u'T\xe9st'
         """
-        if Project.selectBy(name=name).count():
-            raise NameAlreadyTaken("There is already a project named %s" % name)
-
         return Project(
             name=name,
             displayname=displayname,

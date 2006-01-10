@@ -49,6 +49,8 @@ class Product(SQLBase):
         foreignKey="Project", dbName="project", notNull=False, default=None)
     owner = ForeignKey(
         foreignKey="Person", dbName="owner", notNull=True)
+    bugcontact = ForeignKey(
+        dbName='bugcontact', foreignKey='Person', notNull=False, default=None)
     name = StringCol(
         dbName='name', notNull=True, alternateID=True, unique=True)
     displayname = StringCol(dbName='displayname', notNull=True)
@@ -371,6 +373,17 @@ class ProductSet:
                                 str(productid))
 
         return product
+    
+    def getByName(self, name, default=None, ignore_inactive=False):
+        """See canonical.launchpad.interfaces.product.IProductSet."""
+        if ignore_inactive:
+            product = Product.selectOneBy(name=name, active=True)
+        else:
+            product = Product.selectOneBy(name=name)
+        if product is None:
+            return default
+        return product
+
 
     def createProduct(self, owner, name, displayname, title, summary,
                       description, project=None, homepageurl=None,

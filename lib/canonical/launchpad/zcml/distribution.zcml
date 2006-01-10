@@ -13,7 +13,7 @@
             permission="launchpad.Edit"
             set_attributes="displayname title summary description
                             translationgroup translationpermission
-                            members owner"
+                            members owner bugcontact"
             />
     </content>
 
@@ -41,6 +41,38 @@
             template="../templates/bugtask-portlet-releasebugs.pt"
             lp:url="/distros/$Distribution.name/+portlet-bugtasklist-releasebugs" />
     </browser:pages>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IDistribution"
+        facet="overview"
+        permission="zope.Public">
+        <browser:page
+            name="+officialmirrors"
+            template="../templates/distribution-officialmirrors.pt" />
+        <browser:page
+            name="+allmirrors"
+            template="../templates/distribution-allmirrors.pt" />
+    </browser:pages>
+
+    <browser:generalform
+        name="+newmirror"
+        for="canonical.launchpad.interfaces.IDistribution"
+        class="canonical.launchpad.browser.DistributionMirrorAddView"
+        schema="canonical.launchpad.interfaces.IDistributionMirror"
+        fields="owner name displayname description speed country
+                content http_base_url ftp_base_url rsync_base_url
+                pulse_type pulse_source enabled official_candidate"
+        keyword_arguments="
+            owner name displayname description speed country content 
+            http_base_url ftp_base_url rsync_base_url pulse_type pulse_source
+            enabled official_candidate"
+        label="Register a new mirror"
+        permission="launchpad.AnyPerson"
+        template="../templates/distribution-newmirror.pt">
+        <browser:widget 
+            field="owner"
+            class="canonical.widgets.HiddenUserWidget" />
+    </browser:generalform>
 
     <browser:pages
         for="canonical.launchpad.interfaces.IDistribution"
@@ -89,6 +121,7 @@
             />
         <browser:page
             name="+builds"
+            facet="overview"
             template="../templates/distribution-builds.pt"
             lp:url="/distros/$distribution/+builds"
             />
@@ -186,7 +219,7 @@
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="55" />
+           displayWidth="50" />
         <browser:widget
            field="comment"
            class="zope.app.form.browser.TextAreaWidget"
@@ -213,6 +246,18 @@
         permission="launchpad.Edit"
         template="../templates/distribution-memberteam.pt"
         lp:url="/distros/$Distribution.name/+selectmemberteam" />
+
+    <browser:editform
+        name="+editbugcontact"
+        for="canonical.launchpad.interfaces.IDistribution"
+        schema="canonical.launchpad.interfaces.IDistribution"
+        class="canonical.launchpad.browser.distribution.DistributionBugContactEditView"
+        facet="overview"
+        fields="bugcontact"
+        label="Edit Bug Contact"
+        permission="launchpad.Edit"
+        template="../templates/distribution-bugcontact.pt"
+        lp:url="/distros/$Distribution.name/+bugcontact" />
 
     <browser:editform
         name="+changetranslators"

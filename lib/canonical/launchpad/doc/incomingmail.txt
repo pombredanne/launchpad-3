@@ -53,7 +53,7 @@ pass through the authentication stage:
 Now we send a few test mails to foo.com, bar.com, and baz.com:
 
     >>> import transaction
-    >>> from canonical.launchpad.helpers import read_test_message
+    >>> from canonical.launchpad.mail.ftests import read_test_message
     >>> from canonical.launchpad.mail import sendmail
 
     >>> msgids = {'foo.com': [], 'bar.com': [], 'baz.com': []}

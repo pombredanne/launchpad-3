@@ -18,6 +18,7 @@ __all__ = [
     'DeprecatedAssignedBugsView']
 
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, structured, Navigation)
@@ -174,6 +175,23 @@ class BugView:
                 maintainers.add(task.maintainer)
 
         return maintainers
+    
+    def duplicates(self):
+        """Return a list of dicts with the id and title of this bug dupes.
+
+        If the bug isn't accessible to the user, the title stored in the dict
+        will be 'Private Bug'
+        """
+        dupes = []
+        for bug in self.context.duplicates:
+            dupe = {}
+            try:
+                dupe['title'] = bug.title
+            except Unauthorized:
+                dupe['title'] = 'Private Bug'
+            dupe['id'] = bug.id
+            dupes.append(dupe)
+        return dupes
 
 
 class BugWithoutContextView:

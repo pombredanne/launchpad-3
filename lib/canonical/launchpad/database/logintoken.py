@@ -14,6 +14,7 @@ from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
+from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.interfaces import (
     ILoginToken, ILoginTokenSet, IGPGHandler, NotFoundError
@@ -26,6 +27,7 @@ class LoginToken(SQLBase):
     implements(ILoginToken)
     _table = 'LoginToken'
 
+    redirection_url = StringCol(default=None)
     requester = ForeignKey(dbName='requester', foreignKey='Person')
     requesteremail = StringCol(dbName='requesteremail', notNull=False,
                                default=None)
@@ -42,9 +44,8 @@ class LoginToken(SQLBase):
 
     def sendEmailValidationRequest(self, appurl):
         """See ILoginToken."""
-        template = open(
-            'lib/canonical/launchpad/emailtemplates/validate-email.txt').read()
-        fromaddress = "Launchpad Email Validator <noreply@ubuntu.com>"
+        template = get_email_template('validate-email.txt')
+        fromaddress = "Launchpad Email Validator <noreply@launchpad.net>"
 
         replacements = {'longstring': self.token,
                         'requester': self.requester.browsername,
@@ -54,7 +55,7 @@ class LoginToken(SQLBase):
         message = template % replacements
 
         subject = "Launchpad: Validate your email address"
-        simple_sendmail(fromaddress, self.email, subject, message)
+        simple_sendmail(fromaddress, str(self.email), subject, message)
 
     def sendGPGValidationRequest(self, appurl, key):
         """See ILoginToken."""
@@ -65,11 +66,8 @@ class LoginToken(SQLBase):
         assert self.tokentype in (LoginTokenType.VALIDATEGPG,
                                   LoginTokenType.VALIDATESIGNONLYGPG)
 
-        template = open(
-            'lib/canonical/launchpad/emailtemplates/validate-gpg.txt').read()
-            
-        fromaddress = "Launchpad OpenPGP Key Confirmation <noreply@ubuntu.com>"
-
+        template = get_email_template('validate-gpg.txt')
+        fromaddress = "Launchpad OpenGPG Key Confirmation <noreply@launchpad.net>"
         replacements = {'longstring': self.token,
                         'requester': self.requester.browsername,
                         'requesteremail': self.requesteremail,
@@ -86,7 +84,29 @@ class LoginToken(SQLBase):
                                                 key.fingerprint)
 
         subject = "Launchpad: Confirm your OpenPGP Key"
-        simple_sendmail(fromaddress, self.email, subject, message)
+        simple_sendmail(fromaddress, str(self.email), subject, message)
+
+    def sendPasswordResetEmail(self, appurl):
+        """See ILoginToken."""
+        template = get_email_template('forgottenpassword.txt')
+        fromaddress = "Launchpad Team <noreply@launchpad.net>"
+        replacements = {'longstring': self.token,
+                        'toaddress': self.email, 
+                        'appurl': appurl}
+        message = template % replacements
+
+        subject = "Launchpad: Forgotten Password"
+        simple_sendmail(fromaddress, str(self.email), subject, message)
+
+    def sendNewUserEmail(self, appurl):
+        """See ILoginToken."""
+        template = get_email_template('newuser-email.txt')
+        replacements = {'longstring': self.token, 'appurl': appurl}
+        message = template % replacements
+
+        fromaddress = "The Launchpad Team <noreply@launchpad.net>"
+        subject = "Launchpad Account Creation Instructions"
+        simple_sendmail(fromaddress, str(self.email), subject, message)
 
 
 class LoginTokenSet:
@@ -135,10 +155,12 @@ class LoginTokenSet:
             token.destroySelf()
 
     def new(self, requester, requesteremail, email, tokentype,
-            fingerprint=None):
+            fingerprint=None, redirection_url=None):
         """See ILoginTokenSet."""
         assert valid_email(email)
         if tokentype not in LoginTokenType.items:
+            # XXX: Aha! According to our policy, we shouldn't raise ValueError.
+            # -- Guilherme Salgado, 2005-12-09
             raise ValueError(
                 "tokentype is not an item of LoginTokenType: %s" % tokentype)
 
@@ -148,7 +170,8 @@ class LoginTokenSet:
         reqid = getattr(requester, 'id', None)
         return LoginToken(requesterID=reqid, requesteremail=requesteremail,
                           email=email, token=token, tokentype=tokentype,
-                          created=UTC_NOW, fingerprint=fingerprint)
+                          created=UTC_NOW, fingerprint=fingerprint,
+                          redirection_url=redirection_url)
 
     def __getitem__(self, tokentext):
         """See ILoginTokenSet."""
@@ -156,4 +179,3 @@ class LoginTokenSet:
         if token is None:
             raise NotFoundError(tokentext)
         return token
-

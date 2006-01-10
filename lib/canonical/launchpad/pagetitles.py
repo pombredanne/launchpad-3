@@ -214,6 +214,8 @@ build_changes = ContextTitle('Changes in %s')
 
 build_index = ContextTitle('Build details for %s')
 
+build_reset = ContextTitle('Reset %s')
+
 builders = 'Launchpad build farm'
 
 builder_edit = ContextTitle(smartquote('Edit build machine "%s"'))
@@ -265,7 +267,19 @@ debug_root_index = 'Launchpad Debug Home Page'
 
 default_editform = 'Default "Edit" Page'
 
+distributionmirror_addarchrelease = ContextTitle(
+    'Add new Arch Release for mirror %s')
+
+distributionmirror_addsourcerelease = ContextTitle(
+    'Add new Source Release for mirror %s')
+
+distributionmirror_edit = ContextTitle('Edit mirror %s')
+
+distributionmirror_index = ContextTitle('Mirror %s')
+
 distribution_allpackages = ContextTitle('All packages in %s')
+
+distribution_bugcontact = ContextTitle('Change bug contact for %s')
 
 distribution_cvereport = ContextTitle('CVE reports for %s')
 
@@ -273,6 +287,12 @@ distribution_members = ContextTitle('%s distribution members')
 
 distribution_memberteam = ContextTitle(
     smartquote("Change %s's distribution team"))
+
+distribution_newmirror = ContextTitle("Register a new mirror for %s")
+
+distribution_officialmirrors = ContextTitle("Official mirrors of %s")
+
+distribution_allmirrors = ContextTitle("All mirrors of %s")
 
 distribution_translations = ContextDisplayName('Translating %s')
 
@@ -288,6 +308,8 @@ distribution_builds = ContextTitle('%s builds')
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
 distributionsourcepackage_index = ContextTitle('%s')
+
+distributionsourcepackage_manage_bugcontacts = ContextTitle('Bug Contacts for %s')
 
 distributionsourcepackagerelease_index = ContextTitle('%s')
 
@@ -338,28 +360,13 @@ errorservice_index = 'Error log report'
 
 errorservice_tbentry = 'Traceback entry'
 
-foaf_mergepeople = 'Merge accounts'
-# XXX mpt 20051209: Include the account you're merging in the title
-
 foaf_mergerequest_sent = 'Merge request sent'
-
-foaf_newaccount = 'Get a Launchpad account'
 
 foaf_newteam = 'Register a new team in Launchpad'
 
 foaf_requestmerge_multiple = 'Merge Launchpad accounts'
 
 foaf_requestmerge = 'Merge Launchpad accounts'
-
-foaf_resetpassword = 'Reset your Launchpad password'
-
-foaf_validateemail = 'Confirm e-mail address'
-
-foaf_validateteamemail = 'Confirm e-mail address'
-
-foaf_validategpg = 'Confirm OpenPGP key'
-
-foaf_validatesignonlygpg = 'Confirm sign-only OpenPGP key'
 
 karmaaction_index = 'Karma actions'
 
@@ -405,6 +412,20 @@ launchpad_requestexpired = 'Error: Timeout'
 # launchpad_widget_macros doesn't need a title.
 
 logintoken_index = 'Launchpad: redirect to the logintoken page'
+
+logintoken_mergepeople = 'Merge User Accounts'
+
+logintoken_newaccount = 'Create a New Launchpad Account'
+
+logintoken_resetpassword = 'Forgotten your Password?'
+
+logintoken_validateemail = 'Validate email address'
+
+logintoken_validategpg = 'Validate GPG Key'
+
+logintoken_validatesignonlygpg = 'Validate Sign-Only GPG Key'
+
+logintoken_validateteamemail = 'Validate email address'
 
 # main_template has the code to insert one of these titles.
 
@@ -555,6 +576,8 @@ potemplatenames_index = 'Template names in Launchpad'
 
 product_add = 'Register a product with Launchpad'
 
+product_bugcontact = ContextTitle('Edit bug contact for %s')
+
 product_bugs = ContextDisplayName('Bugs in %s')
 
 product_branches = ContextDisplayName(
@@ -589,6 +612,8 @@ products_index = 'Products registered in Launchpad'
 productseries_source = 'Import product series'
 
 productseries_sourceadmin = 'Add source import'
+
+productseries_translations_upload = 'Request new translations upload'
 
 project = ContextTitle('%s in Launchpad')
 
@@ -626,6 +651,8 @@ registry_listall = 'Launchpad: Complete list' # bug 3508
 registry_review = 'Review Launchpad items'
 
 related_bounties = ContextDisplayName('Bounties for %s')
+
+remotebug_index = ContextTitle('%s')
 
 root_index = 'Launchpad'
 
@@ -865,7 +892,10 @@ template_index = '%EXAMPLE TITLE'
 template_new = 'EXAMPLE NEW TITLE'
 
 translationgroup = ContextTitle(smartquote('"%s" Rosetta translation group'))
-
 translationgroups = 'Rosetta translation groups'
+
+translationimportqueueentry_index = 'Translation Import Queue Entry'
+translationimportqueue_index = 'Translation Import Queue'
+translationimportqueue_blocked = 'Translation Import Queue - Blocked'
 
 unauthorized = 'Error: Not authorized'

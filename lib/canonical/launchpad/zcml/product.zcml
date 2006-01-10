@@ -207,6 +207,18 @@
     </browser:editform>
 
     <browser:editform
+        name="+editbugcontact"
+        for="canonical.launchpad.interfaces.IProduct"
+        schema="canonical.launchpad.interfaces.IProduct"
+        facet="overview"
+        class="canonical.launchpad.browser.ProductBugContactEditView"
+        label="Edit Product Bug Contact"
+        fields="bugcontact"
+        permission="launchpad.Edit"
+        template="../templates/product-bugcontact.pt"
+        lp:url="/products/$Product.name/+editbugcontact" />
+
+    <browser:editform
         name="+review"
         for="canonical.launchpad.interfaces.IProduct"
         facet="overview"
@@ -257,7 +269,7 @@
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="55"
+           displayWidth="50"
            extra="tabindex=1" />
         <browser:widget
            field="comment"

@@ -152,10 +152,6 @@
           name="+portlet-details"
           template="../templates/person-portlet-details.pt"
           lp:url="/people/$Person.name/+portlet-details" />
-      <browser:page
-          name="+portlet-editdetails"
-          template="../templates/person-portlet-editdetails.pt"
-          lp:url="/people/$Person.name/+portlet-editdetails" />
       <!-- this should be on IPerson because we don't always know if it is a
       team or a person -->
       <browser:page

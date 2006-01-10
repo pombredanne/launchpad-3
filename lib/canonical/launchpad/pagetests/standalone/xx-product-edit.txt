@@ -434,7 +434,7 @@ Now we try to change newproductcname2's name to newproductname.
   ... -----------------------------92338662989865824723972696--
   ... """)
   HTTP/1.1 200 Ok
-  ...This name is already in use by another product...
+  ...newproductname is already in use by another product...
   
 Now we try to change it to newproductname3.  
   

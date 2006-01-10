@@ -31,11 +31,11 @@ from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.interfaces import (
     IPOFileSet, IPOFile, IRawFileData, IPOTemplateExporter,
     ZeroLengthPOExportError, ILibraryFileAliasSet, ILaunchpadCelebrities,
-    NotFoundError)
+    NotFoundError, RawFileBusy)
 
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
-from canonical.launchpad.database.pomsgset import POMsgSet
+from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
 
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.components.poimport import import_po, OldPOImported
@@ -147,9 +147,9 @@ class POFile(SQLBase, RosettaStats):
     variant = StringCol(dbName='variant',
                         notNull=False,
                         default=None)
-    filename = StringCol(dbName='filename',
-                         notNull=False,
-                         default=None)
+    path = StringCol(dbName='path',
+                     notNull=False,
+                     default=None)
     exportfile = ForeignKey(foreignKey='LibraryFileAlias',
                             dbName='exportfile',
                             notNull=False,
@@ -162,6 +162,9 @@ class POFile(SQLBase, RosettaStats):
 
     latestsubmission = ForeignKey(foreignKey='POSubmission',
         dbName='latestsubmission', notNull=False, default=None)
+
+    from_sourcepackagename = ForeignKey(foreignKey='SourcePackageName',
+        dbName='from_sourcepackagename', notNull=False, default=None)
 
     @property
     def title(self):
@@ -246,44 +249,47 @@ class POFile(SQLBase, RosettaStats):
         """See IPOFile."""
         return iter(self.currentMessageSets())
 
-    def getPOMsgSet(self, key, onlyCurrent=False):
+    def getPOMsgSet(self, msgid_text, onlyCurrent=False):
         """See IPOFile."""
         query = 'potemplate = %d' % self.potemplate.id
         if onlyCurrent:
             query += ' AND sequence > 0'
 
-        if isinstance(key, slice):
-            # XXX: Carlos Perello Marin 19/10/04: Not sure how to handle this.
-            raise NotImplementedError
-            #return POTMsgSet.select(query, orderBy='sequence')[key]
-
-        if not isinstance(key, unicode):
-            raise TypeError(
-                "Can't index with type %s. (Must be slice or unicode.)"
-                % type(key))
+        if not isinstance(msgid_text, unicode):
+            raise AssertionError(
+                "Can't index with type %s. (Must be unicode.)" %
+                    type(msgid_text))
 
         # Find a message ID with the given text.
         try:
-            pomsgid = POMsgID.byMsgid(key)
+            pomsgid = POMsgID.byMsgid(msgid_text)
         except SQLObjectNotFound:
-            raise NotFoundError(key)
+            return None
 
         # Find a message set with the given message ID.
 
-        result = POTMsgSet.selectOne(query +
+        potmsgset = POTMsgSet.selectOne(query +
             (' AND primemsgid = %d' % pomsgid.id))
 
-        if result is None:
-            raise NotFoundError(key)
+        if potmsgset is None:
+            return None
 
-        poresult = POMsgSet.selectOneBy(potmsgsetID=result.id, pofileID=self.id)
-        if poresult is None:
-            raise NotFoundError(key)
-        return poresult
+        pomsgset = POMsgSet.selectOneBy(
+            potmsgsetID=potmsgset.id, pofileID=self.id)
+        if pomsgset is None:
+            # There isn't a POMsgSet yet, we return a Dummy one until we get a
+            # write operation that creates the real one.
+            return DummyPOMsgSet(self, potmsgset)
+        else:
+            return pomsgset
 
     def __getitem__(self, msgid_text):
         """See IPOFile."""
-        return self.getPOMsgSet(msgid_text)
+        pomsgset = self.getPOMsgSet(msgid_text)
+        if pomsgset is None:
+            raise NotFoundError(msgid_text)
+        else:
+            return pomsgset
 
     def getPOMsgSetsNotInTemplate(self):
         """See IPOFile."""
@@ -579,17 +585,37 @@ class POFile(SQLBase, RosettaStats):
             return True
 
     # ICanAttachRawFileData implementation
-    def attachRawFileData(self, contents, published, importer=None):
+    def attachRawFileData(self, contents, published, importer=None,
+        date_imported=UTC_NOW):
         """See ICanAttachRawFileData."""
+        rawfile = IRawFileData(self)
+
+        if rawfile.rawimportstatus == RosettaImportStatus.PENDING:
+            raise RawFileBusy
+
         if self.variant:
             filename = '%s@%s.po' % (
                 self.language.code, self.variant.encode('utf8'))
         else:
             filename = '%s.po' % self.language.code
 
-        helpers.attachRawFileData(self, filename, contents, importer)
+        helpers.attachRawFileData(
+            self, filename, contents, importer, date_imported)
 
-        self.rawfilepublished = published
+        rawfile.rawfilepublished = published
+
+    def attachRawFileDataAsFileAlias(self, alias, published, importer=None,
+        date_imported=UTC_NOW):
+        """See ICanAttachRawFileData."""
+        rawfile = IRawFileData(self)
+
+        if rawfile.rawimportstatus == RosettaImportStatus.PENDING:
+            raise RawFileBusy
+
+        helpers.attachRawFileDataByFileAlias(
+            self, alias, importer, date_imported)
+
+        rawfile.rawfilepublished = published
 
     # IRawFileData implementation
 
@@ -903,3 +929,42 @@ class POFileSet:
     def getDummy(self, potemplate, language):
         return DummyPOFile(potemplate, language)
 
+    def getPOFileByPathAndOrigin(self, path, productseries=None,
+        distrorelease=None, sourcepackagename=None):
+        """See IPOFileSet."""
+        if productseries is not None:
+            return POFile.selectOne('''
+                POFile.path = %s AND
+                POFile.potemplate = POTemplate.id AND
+                POTemplate.productseries = %s''' % sqlvalues(
+                    path, productseries.id),
+                clauseTables=['POTemplate'])
+        elif sourcepackagename is not None:
+            # The POTemplate belongs to a distribution and it could come from
+            # another package that the one it's linked to, so we first check
+            # to find it at IPOTemplate.from_sourcepackagename
+            pofile = POFile.selectOne('''
+                POFile.path = %s AND
+                POFile.potemplate = POTemplate.id AND
+                POTemplate.distrorelease = %s AND
+                POTemplate.from_sourcepackagename = %s''' % sqlvalues(
+                    path, distrorelease.id, sourcepackagename.id),
+                clauseTables=['POTemplate'])
+
+            if pofile is not None:
+                return pofile
+
+            # There is no pofile in that 'path' and
+            # 'from_sourcepackagename' so we do a search using the usual
+            # sourcepackagename.
+            return POFile.selectOne('''
+                POFile.path = %s AND
+                POFile.potemplate = POTemplate.id AND
+                POTemplate.distrorelease = %s AND
+                POTemplate.sourcepackagename = %s''' % sqlvalues(
+                    path, distrorelease.id, sourcepackagename.id),
+                clauseTables=['POTemplate'])
+        else:
+            raise AssertionError(
+                'Either productseries or sourcepackagename arguments must be'
+                ' not None.')

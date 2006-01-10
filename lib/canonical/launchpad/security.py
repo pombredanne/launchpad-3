@@ -16,7 +16,8 @@ from canonical.launchpad.interfaces import (
     IBugTracker, IBugAttachment, IPoll, IPollSubset, IPollOption,
     IProductRelease, IShippingRequest, IShippingRequestSet, IRequestedCDs,
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
-    IShippingRun, ISpecification)
+    IShippingRun, ISpecification, ITranslationImportQueueEntry,
+    ITranslationImportQueue, IDistributionMirror)
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -53,6 +54,23 @@ class EditByOwnersOrAdmins(AuthorizationBase):
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(self.obj.owner) or user.inTeam(admins)
+
+
+class AdminDistributionMirrorByMirrorAdmins(AuthorizationBase):
+    permission = 'launchpad.Admin'
+    usedfor = IDistributionMirror
+
+    def checkAuthenticated(self, user):
+        return user.inTeam(getUtility(ILaunchpadCelebrities).mirror_admin)
+
+
+class EditDistributionMirrorByOwnerOrMirrorAdmins(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IDistributionMirror
+
+    def checkAuthenticated(self, user):
+        mirror_admins = getUtility(ILaunchpadCelebrities).mirror_admin
+        return user.inTeam(self.obj.owner) or user.inTeam(mirror_admins)
 
 
 class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
@@ -576,3 +594,22 @@ class EditProductRelease(EditByOwnersOrAdmins):
     permission = 'launchpad.Edit'
     usedfor = IProductRelease
 
+class EditTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = ITranslationImportQueueEntry
+
+    def checkAuthenticated(self, user):
+        """Allow who added the entry, experts and admis.
+        """
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+
+        return (OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
+                user.inTeam(self.obj.importer))
+
+class AdminTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = ITranslationImportQueueEntry
+
+class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = ITranslationImportQueue

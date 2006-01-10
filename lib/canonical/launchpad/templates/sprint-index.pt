@@ -26,10 +26,9 @@
     </tal:has_homepage>
   </p>
 
-  <p class="portalMessage" tal:condition="not:context/specifications">
-    There are no specifications registered for discussion at
-    <span tal:replace="context/title">Ubuntu Below Zero</span>
-    at the moment.
+  <p tal:condition="not:context/specifications">
+    No specifications are registered for discussion at
+    <span tal:replace="context/title">Ubuntu Below Zero</span>.
   </p>
 
   <p class="lesser">

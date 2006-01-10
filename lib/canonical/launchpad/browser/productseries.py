@@ -15,6 +15,7 @@ import re
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.publisher.browser import FileUpload
 
 from CVS.protocol import CVSRoot
 import pybaz
@@ -23,17 +24,17 @@ from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 
-from canonical.launchpad.helpers import request_languages, browserLanguages
+from canonical.launchpad.helpers import (
+    request_languages, browserLanguages, is_tar_filename)
 from canonical.launchpad.interfaces import (
     IPerson, ICountry, IPOTemplateSet, ILaunchpadCelebrities, ILaunchBag,
     ISourcePackageNameSet, validate_url, IProductSeries,
-    IProductSeriesSourceSet)
-from canonical.launchpad.browser.editview import SQLObjectEditView
+    ITranslationImportQueue, IProductSeriesSourceSet)
 from canonical.launchpad.browser.potemplate import POTemplateView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     ContextMenu, Link, enabled_with_permission, Navigation, GetitemNavigation,
-    stepto, canonical_url)
+    stepto, canonical_url, LaunchpadView)
 
 from canonical.launchpad import _
 
@@ -43,7 +44,7 @@ class ProductSeriesReviewView(SQLObjectEditView):
 
         We need this because people can now change productseries'
         product and name, and this will make their canonical_url to
-        change too.         
+        change too.
         """
         self.request.response.addInfoNotification( 
             _('This Serie has been changed'))
@@ -67,8 +68,8 @@ class ProductSeriesContextMenu(ContextMenu):
 
     usedfor = IProductSeries
     links = ['overview', 'specs', 'edit', 'editsource', 'ubuntupkg',
-             'addpackage', 'addrelease', 'download', 'addpotemplate',
-             'review']
+             'addpackage', 'addrelease', 'download', 'translationupload',
+             'addpotemplate', 'review']
 
     def overview(self):
         text = 'Series Overview'
@@ -101,6 +102,10 @@ class ProductSeriesContextMenu(ContextMenu):
     def download(self):
         text = 'Download RDF Metadata'
         return Link('+rdf', text, icon='download')
+
+    def translationupload(self):
+        text = 'Request Translations Upload'
+        return Link('+translations-upload', text, icon='add')
 
     @enabled_with_permission('launchpad.Admin')
     def addpotemplate(self):
@@ -149,15 +154,11 @@ def validate_svn_repo(repo):
 # this becomes maintainable and form validation handled for us.
 # Currently, the pages just return 'System Error' as they trigger database
 # constraints. -- StuartBishop 20050502
-class ProductSeriesView(object):
+class ProductSeriesView(LaunchpadView):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.product = context.product
-        self.request = request
-        self.form = request.form
-        self.user = getUtility(ILaunchBag).user
-        self.errormsgs = []
+    def initialize(self):
+        self.product = self.context.product
+        self.form = self.request.form
         self.displayname = self.context.displayname
         self.summary = self.context.summary
         self.rcstype = self.context.rcstype
@@ -172,6 +173,7 @@ class ProductSeriesView(object):
         self.targetarchbranch = self.context.targetarchbranch
         self.targetarchversion = self.context.targetarchversion
         self.name = self.context.name
+        self.has_errors = False
         if self.context.product.project:
             self.default_targetarcharchive = self.context.product.project.name
             self.default_targetarcharchive += '@bazaar.ubuntu.com'
@@ -196,9 +198,49 @@ class ProductSeriesView(object):
         self.curr_ubuntu_release = ubuntu.currentrelease
         self.setUpPackaging()
 
+        # Check the form submission.
+        self.processForm()
+
+    def processForm(self):
+        """Process a form if it was submitted."""
+        if not self.request.method == "POST":
+            # The form was not posted, we don't do anything.
+            return
+
+        dispatch_table = {
+            'edit_productseries_source': self.editSource,
+            'admin_productseries_source': self.adminSource,
+            'set_ubuntu_pkg': self.setCurrentUbuntuPackage,
+            'translations_upload': self.translationsUpload
+        }
+        dispatch_to = [(key, method)
+                        for key,method in dispatch_table.items()
+                        if key in self.form
+                      ]
+        if len(dispatch_to) == 0:
+            # None of the know forms have been submitted.
+            # XXX 20051129  CarlosPerelloMarin: This 'if' should be removed.
+            # For more details look at
+            # https://launchpad.net/products/launchpad/+bug/5244
+            return
+        if len(dispatch_to) != 1:
+            raise AssertionError(
+                "There should be only one command in the form",
+                dispatch_to)
+        key, method = dispatch_to[0]
+        method()
+
     def templateviews(self):
-        return [POTemplateView(template, self.request)
+        """Return the view class of the IPOTemplate associated with the context.
+        """
+        templateview_list = [POTemplateView(template, self.request)
                 for template in self.context.currentpotemplates]
+
+        # Initialize the views.
+        for templateview in templateview_list:
+            templateview.initialize()
+
+        return templateview_list
 
     def setUpPackaging(self):
         """Ensure that the View class correctly reflects the packaging of
@@ -262,19 +304,14 @@ class ProductSeriesView(object):
             return False 
 
     def editSource(self, fromAdmin=False):
-        """This method processes the results of an attempt to edit the
-        upstream revision control details for this series."""
-        # see if anything was posted
-        if self.request.method != "POST":
-            return
+        """Edit the upstream revision control details for this series."""
         form = self.form
-        if form.get("Update RCS Details") is None:
-            return
         if self.context.syncCertified() and not fromAdmin:
-            self.errormsgs.append(
+            self.request.response.addErrorNotification(
                     'This Source has been certified and is now '
                     'unmodifiable.'
                     )
+            self.has_errors = True
             return
         # get the form content, defaulting to what was there
         rcstype = form.get("rcstype")
@@ -297,22 +334,32 @@ class ProductSeriesView(object):
         self.releasefileglob = form.get("releasefileglob") 
         if self.releaseroot:
             if not validate_release_root(self.releaseroot):
-                self.errormsgs.append('Invalid release root URL')
+                self.request.response.addErrorNotification(
+                    'Invalid release root URL')
+                self.has_errors = True
                 return
         # make sure we at least got something for the relevant rcs
         if rcstype == 'cvs':
             if not (self.cvsroot and self.cvsmodule and self.cvsbranch):
                 if not fromAdmin:
-                    self.errormsgs.append('Please give valid CVS details')
+                    self.request.response.addErrorNotification(
+                        'Please give valid CVS details')
+                    self.has_errors = True
                 return
             if not validate_cvs_branch(self.cvsbranch):
-                self.errormsgs.append('Your CVS branch name is invalid.')
+                self.request.response.addErrorNotification(
+                    'Your CVS branch name is invalid.')
+                self.has_errors = True
                 return
             if not validate_cvs_root(self.cvsroot, self.cvsmodule):
-                self.errormsgs.append('Your CVS root and module are invalid.')
+                self.request.response.addErrorNotification(
+                    'Your CVS root and module are invalid.')
+                self.has_errors = True
                 return
             if self.svnrepository:
-                self.errormsgs.append('Please remove the SVN repository.')
+                self.request.response.addErrorNotification(
+                    'Please remove the SVN repository.')
+                self.has_errors = True
                 return
             if not self.cvs_details_already_in_use(self.cvsroot, self.cvsmodule,
                     self.cvsbranch):
@@ -321,15 +368,19 @@ class ProductSeriesView(object):
                 return
         elif rcstype == 'svn':
             if not validate_svn_repo(self.svnrepository):
-                self.errormsgs.append('Please give valid SVN server details.')
+                self.request.response.addErrorNotification(
+                    'Please give valid SVN server details.')
+                self.has_errors = True
                 return
             if (self.cvsroot or self.cvsmodule or self.cvsbranch):
-                self.errormsgs.append(
+                self.request.response.addErrorNotification(
                     'Please remove the CVS repository details.')
+                self.has_errors = True
                 return
             if not self.svn_details_already_in_use(self.svnrepository):
-                self.errormsgs.append(
+                self.request.response.addErrorNotification(
                     'SVN repository details already in use by another product.')
+                self.has_errors = True
                 return
         oldrcstype = self.context.rcstype
         self.context.rcstype = self.rcstype
@@ -346,28 +397,28 @@ class ProductSeriesView(object):
         # make sure we also update the ubuntu packaging if it has been
         # modified
         self.setCurrentUbuntuPackage()
-        if not self.errormsgs:
+        if not self.has_errors:
             self.request.response.redirect(canonical_url(self.context))
 
     def adminSource(self):
         """Make administrative changes to the source details of the
-        upstream. Since this is a superset of the editing function we can
+        upstream.
+
+        Since this is a superset of the editing function we can
         call the edit method of the view class to get any editing changes,
         then continue parsing the form here, looking for admin-type
-        changes."""
-        # see if anything was posted
-        if self.request.method != "POST":
-            return
+        changes.
+        """
         form = self.form
-        if form.get("Update RCS Details", None) is None:
-            return
         # FTP release details
         self.releaseroot = form.get("releaseroot", self.releaseroot) or None
         self.releasefileglob = form.get("releasefileglob",
                 self.releasefileglob) or None
         if self.releaseroot:
             if not validate_release_root(self.releaseroot):
-                self.errormsgs.append('Invalid release root URL')
+                self.request.response.addErrorNotification(
+                    'Invalid release root URL')
+                self.has_errors = True
                 return
         # look for admin changes and retrieve those
         self.cvsroot = form.get('cvsroot', self.cvsroot) or None
@@ -385,20 +436,28 @@ class ProductSeriesView(object):
             'targetarchversion', self.targetarchversion).strip() or None
         # validate arch target details
         if not pybaz.NameParser.is_archive_name(self.targetarcharchive):
-            self.errormsgs.append('Invalid target Arch archive name.')
+            self.request.response.addErrorNotification(
+                'Invalid target Arch archive name.')
+            self.has_errors = True
         if not pybaz.NameParser.is_category_name(self.targetarchcategory):
-            self.errormsgs.append('Invalid target Arch category.')
+            self.request.response.addErrorNotification(
+                'Invalid target Arch category.')
+            self.has_errors = True
         if not pybaz.NameParser.is_branch_name(self.targetarchbranch):
-            self.errormsgs.append('Invalid target Arch branch name.')
+            self.request.response.addErrorNotification(
+                'Invalid target Arch branch name.')
+            self.has_errors = True
         if not pybaz.NameParser.is_version_id(self.targetarchversion):
-            self.errormsgs.append('Invalid target Arch version id.')
+            self.request.response.addErrorNotification(
+                'Invalid target Arch version id.')
+            self.has_errors = True
 
         # possibly resubmit for testing
         if self.context.autoTestFailed() and form.get('resetToAutotest', False):
             self.context.importstatus = ImportStatus.TESTING
 
         # Return if there were any errors, so as not to update anything.
-        if self.errormsgs:
+        if self.has_errors:
             return
         # update the database
         self.context.targetarcharchive = self.targetarcharchive
@@ -417,27 +476,30 @@ class ProductSeriesView(object):
                 self.context.enableAutoSync()
 
     def setCurrentUbuntuPackage(self):
-        """Sets the Packaging record for this product series in the current
+        """Set the Packaging record for this product series in the current
         Ubuntu distrorelease to be for the source package name that is given
         in the form.
         """
-        # see if anything was posted
-        if self.request.method != "POST":
-            return
         form = self.form
-        ubuntupkg = form.get("ubuntupkg", '')
+        ubuntupkg = self.form.get('ubuntupkg', '')
         if ubuntupkg == '':
+            # No package was selected.
+            self.request.response.addWarningNotification(
+                'Request ignored. You need to select a source package.')
             return
         # make sure we have a person to work with
         if self.user is None:
-            self.errormsgs.append('Please log in first!')
+            self.request.response.addErrorNotification('Please log in first!')
+            self.has_errors = True
             return
         # see if the name that is given is a real source package name
         spns = getUtility(ISourcePackageNameSet)
         try:
             spn = spns[ubuntupkg]
         except NotFoundError:
-            self.errormsgs.append('Invalid source package name %s' % ubuntupkg)
+            self.request.response.addErrorNotification(
+                'Invalid source package name %s' % ubuntupkg)
+            self.has_errors = True
             return
         # set the packaging record for this productseries in the current
         # ubuntu release. if none exists, one will be created
@@ -449,6 +511,77 @@ class ProductSeriesView(object):
 
     def browserLanguages(self):
         return browserLanguages(self.request)
+
+    def translationsUpload(self):
+        """Upload new translatable resources related to this IProductSeries.
+        """
+        form = self.form
+
+        file = self.request.form['file']
+
+        if not isinstance(file, FileUpload):
+            if file == '':
+                self.request.response.addErrorNotification(
+                    "Ignored your upload because you didn't select a file to"
+                    " upload.")
+            else:
+                # XXX: Carlos Perello Marin 2004/12/30
+                # Epiphany seems to have an unpredictable bug with upload
+                # forms (or perhaps it's launchpad because I never had
+                # problems with bugzilla). The fact is that some uploads don't
+                # work and we get a unicode object instead of a file-like
+                # object in "file". We show an error if we see that behaviour.
+                # For more info, look at bug #116.
+                self.request.response.addErrorNotification(
+                    "The upload failed because there was a problem receiving"
+                    " the data.")
+            return
+
+        filename = file.filename
+        content = file.read()
+
+        if len(content) == 0:
+            self.request.response.addWarningNotification(
+                "Ignored your upload because the uploaded file is empty.")
+            return
+
+        translation_import_queue_set = getUtility(ITranslationImportQueue)
+
+        if filename.endswith('.pot') or filename.endswith('.po'):
+            # Add it to the queue.
+            translation_import_queue_set.addOrUpdateEntry(
+                filename, content, True, self.user,
+                productseries=self.context)
+
+            self.request.response.addInfoNotification(
+                'Thank you for your upload. The file content will be'
+                ' reviewed soon by an admin and then imported into Rosetta.'
+                ' You can track its status from the <a href="%s">Translation'
+                ' Import Queue</a>' %
+                    canonical_url(translation_import_queue_set))
+
+        elif is_tar_filename(filename):
+            # Add the whole tarball to the import queue.
+            num = translation_import_queue_set.addOrUpdateEntriesFromTarball(
+                content, True, self.user,
+                productseries=self.context)
+
+            if num > 0:
+                self.request.response.addInfoNotification(
+                    'Thank you for your upload. %d files from the tarball'
+                    ' will be reviewed soon by an admin and then imported'
+                    ' into Rosetta. You can track its status from the'
+                    ' <a href="%s">Translation Import Queue</a>' % (
+                        num,
+                        canonical_url(translation_import_queue_set)))
+            else:
+                self.request.response.addWarningNotification(
+                    "Nothing has happened. The tarball you uploaded does not"
+                    " contain any file that the system can understand.")
+        else:
+            self.request.response.addWarningNotification(
+                "Ignored your upload because the file you uploaded was not"
+                " recognised as a file that can be imported.")
 
 
 class ProductSeriesEditView(SQLObjectEditView):

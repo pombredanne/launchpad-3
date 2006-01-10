@@ -20,9 +20,9 @@
   </p>
 
   <p class="portalMessage" tal:condition="not: view/specPlan">
-    Currently, there are no specifications for
+    No specifications for
     <span tal:replace="context/displayname">Ubuntu Hoary</span>
-    that can be scheduled.
+    exist that can be scheduled.
   </p>
 
   <tal:block condition="view/specPlan">

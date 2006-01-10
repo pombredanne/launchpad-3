@@ -76,7 +76,7 @@ class TestBranchesToPullSample(LaunchpadFunctionalTestCase):
         mock_request = MockRequest()
         mock_request.response = MockResponse()
         view = browser.BranchPullListing(None, mock_request)
-        expected_ids = sorted([15, 16, 17, 18, 19, 20, 21, 22, 23])
+        expected_ids = sorted([15, 16, 17, 18, 19, 20, 21, 22, 23, 24])
         got_ids = sorted([branch.id for branch in view.get_branches_to_pull()])
         self.assertEqual(got_ids, expected_ids)
         # now check refresh logic: list any branch with either no last mirrored
@@ -106,7 +106,8 @@ class TestBranchesToPullSample(LaunchpadFunctionalTestCase):
             u'20 http://localhost:8000/a',
             u'21 http://localhost:8000/b',
             u'22 http://not.launchpad.server.com/',
-            u'23 http://whynot.launchpad.server.com/'])
+            u'23 http://whynot.launchpad.server.com/',
+            u'24 http://users.example.com/gnome-terminal/launchpad'])
         self.assertEqual(sorted(listing.splitlines()), expected)
         
     def test_branch_pull_mime_type(self):

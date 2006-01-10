@@ -72,6 +72,12 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
     owner = Int(
         title=_("Owner"),
         description=_("The distro's owner."), required=True)
+    bugcontact = Choice(
+        title=_("Bug Contact"),
+        description=_(
+            "The person or team who will receive all bugmail for this "
+            "distribution"),
+        required=False, vocabulary='ValidPersonOrTeam')
     members = Choice(
         title=_("Members"),
         description=_("The distro's members team."), required=True,
@@ -80,6 +86,10 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         title=_("Lucille Config"),
         description=_("The Lucille Config."), required=False)
 
+    enabled_official_mirrors = Attribute(
+        "All enabled official mirrors of this Distribution.")
+    enabled_mirrors = Attribute(
+        "All enabled mirrors of this Distribution.")
     releases = Attribute("DistroReleases inside this Distributions")
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugCounter = Attribute("The distro bug counter")
@@ -129,6 +139,17 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
         """Return the source package release with the name or version
         given.
         """
+
+    def getMirrorByName(name):
+        """Return the mirror with the given name for this distribution or None
+        if it's not found.
+        """
+
+    def newMirror(owner, name, speed, country, content, pulse_type,
+                  displayname=None, description=None, http_base_url=None,
+                  ftp_base_url=None, rsync_base_url=None, file_list=None,
+                  official_candidate=False, enabled=False, pulse_source=None):
+        """Create a new DistributionMirror for this distribution."""
 
     def getMilestone(name):
         """Return a milestone with the given name for this distribution, or

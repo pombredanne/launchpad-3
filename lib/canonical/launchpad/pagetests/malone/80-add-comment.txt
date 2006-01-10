@@ -35,4 +35,4 @@ email.
 After the comment has been submitted, the notification email is sent:
 
   >>> len(stub.test_emails)
-  4
+  2

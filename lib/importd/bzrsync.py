@@ -84,7 +84,7 @@ class BzrSync:
             return False
         self._seen_ids.add(revision_id)
 
-        self.logger.info("synchronizing revision: %s" % revision_id)
+        self.logger.debug("synchronizing revision: %s" % revision_id)
 
         # If didsomething is True, new information was found and
         # loaded into the database.

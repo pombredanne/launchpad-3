@@ -1,7 +1,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="rosetta">
+      i18n:domain="launchpad">
 
 <body>
 
@@ -51,8 +51,8 @@
       Select an application to begin translating it into your own language.
       If your favourite open-source application is not listed here,
       check that it&#8217;s <a href="/products">registered with Launchpad</a>,
-      then <a href="mailto:rosetta-users@lists.ubuntu.com">ask the Rosetta
-      Admins</a> to import its translation templates.
+      and follow the instructions described at
+      <a href="https://wiki.ubuntu.com/RosettaFAQ">RosettaFAQ</a>
     </p>
 
     <table class="listing">

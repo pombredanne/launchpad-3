@@ -26,14 +26,20 @@ class ILoginToken(Interface):
         )
     email = Text(
         title=_('The email address that this request was sent to.'),
-                required=True,
+        required=True,
         )
     requester = Int(
         title=_('The Person that made this request.'), required=True,
         )
     requesteremail = Text(
-        title=_('The email address that was used to login when making this request.'),
-                required=False,
+        title=_('The email address that was used to login when making this '
+                'request.'),
+        required=False,
+        )
+    redirection_url = Text(
+        title=_('The URL to where we should redirect the user after processing '
+                'his request'),
+        required=False,
         )
     created = Datetime(
         title=_('The timestamp that this request was made.'), required=True,
@@ -43,12 +49,13 @@ class ILoginToken(Interface):
                 required=True,
         )
     token = Text(
-        title=_('The token (not the URL) emailed used to uniquely identify this request.'),
-                required=True,
+        title=_('The token (not the URL) emailed used to uniquely identify '
+                'this request.'),
+        required=True,
         )
     fingerprint = Text(
         title=_('OpenPGP key fingerprint used to retrive key information when necessary.'),
-                required=False,
+        required=False,
         )
 
     # used for launchpad page layout
@@ -72,6 +79,14 @@ class ILoginToken(Interface):
         """Send an email message with a magic URL to confirm the OpenPGP key.
         If fingerprint is set, send the message encrypted.
         """
+
+    def sendPasswordResetEmail(self, appurl):
+        """Send an email message to the requester with a magic URL that allows 
+        him to reset his password."""
+
+    def sendNewUserEmail(self, appurl):
+        """Send an email message to the requester with a magic URL that allows 
+        him to finish the Launchpad registration process."""
 
 
 class ILoginTokenSet(Interface):
@@ -104,7 +119,8 @@ class ILoginTokenSet(Interface):
         a single user.
         """
 
-    def new(requester, requesteremail, email, tokentype, fingerprint=None):
+    def new(requester, requesteremail, email, tokentype, fingerprint=None,
+            redirection_url=None):
         """Create a new LoginToken object. Parameters must be:
         requester: a Person object or None (in case of a new account)
 
