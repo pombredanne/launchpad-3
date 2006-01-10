@@ -10,21 +10,36 @@ import tempfile
 
 from bzrlib.branch import ScratchBranch
 import bzrlib.branch
+from bzrlib.workingtree import WorkingTree
+from bzrlib.tests import TestCase as BzrTestCase
 
-from twisted.trial import unittest
+#from twisted.trial import unittest
 from twisted.python.util import sibpath
 
 from canonical.launchpad import database
 
 
-class AcceptanceTests(unittest.TestCase):
+class AcceptanceTests(BzrTestCase):
     """ 
     These are the agreed acceptance tests for the Supermirror SFTP system's
     initial implementation of bzr support, converted from the English at
     https://wiki.launchpad.canonical.com/SupermirrorTaskList
     """
 
+    def log(self, *args):
+        import sys
+        print >> sys.stderr, 'log:', args
+
     def setUp(self):
+        # XXX: SQL: insert SSH keys for testuser
+        # XXX: SQL: insert testuser!
+
+        # XXX: start authserver.
+
+        #import logging
+        #logging.basicConfig(level=logging.DEBUG)
+
+        
         # XXX spiv 2005-12-14
         # This should be unnecessary, but bzr's use of paramiko always tries
         # password auth, even though Conch correctly tells it that only
@@ -42,7 +57,9 @@ class AcceptanceTests(unittest.TestCase):
         self.local_branch.working_tree().commit('Added foo')
 
         # Point $HOME at a test ssh config and key.
-        self.userHome = os.path.abspath(self.mktemp())
+        self.userHome = os.path.abspath(tempfile.mkdtemp())
+        import sys
+        print >>sys.stderr, 'self.userHome:', self.userHome
         os.makedirs(os.path.join(self.userHome, '.ssh'))
         os.makedirs(os.path.join(self.userHome, 'bin'))
         shutil.copyfile(
@@ -82,10 +99,12 @@ class AcceptanceTests(unittest.TestCase):
         server = start_test_sftp_server()
 
         # Push the local branch to the server
-        rv = os.system('cd %s; PYTHONPATH= bzr push %s' 
-                       % (self.local_branch.base, 
-                          server.base + '~testuser/+junk/test-branch',))
-        self.assertEqual(0, rv)
+        #rv = os.system('cd %s; PYTHONPATH= bzr push %s' 
+        #               % (self.local_branch.base, 
+        #                  server.base + '~testuser/+junk/test-branch',))
+        #self.assertEqual(0, rv)
+        #self.run_bzr('push')
+        cmd_push().run_argv([server.base + '~testuser/+junk/test-branch'])
         remote_branch = bzrlib.branch.Branch.open(
             server.base + '~testuser/+junk/test-branch')
         #remote_branch.pull(self.local_branch)
@@ -274,4 +293,110 @@ class TestSFTPServer:
         self.sftp.tearDown()
 
     last_accessed_branch_id = -1
+
+
+
+
+from bzrlib.commands import Command, Option
+from bzrlib.errors import BzrCommandError, NotBranchError
+from bzrlib.branch import Branch
+class cmd_push(Command):
+    """Push this branch into another branch.
+    
+    The remote branch will not have its working tree populated because this
+    is both expensive, and may not be supported on the remote file system.
+    
+    Some smart servers or protocols *may* put the working tree in place.
+
+    If there is no default push location set, the first push will set it.
+    After that, you can omit the location to use the default.  To change the
+    default, use --remember.
+
+    This command only works on branches that have not diverged.  Branches are
+    considered diverged if the branch being pushed to is not an older version
+    of this branch.
+
+    If branches have diverged, you can use 'bzr push --overwrite' to replace
+    the other branch completely.
+    
+    If you want to ensure you have the different changes in the other branch,
+    do a merge (see bzr help merge) from the other branch, and commit that
+    before doing a 'push --overwrite'.
+    """
+    takes_options = ['remember', 'overwrite', 
+                     Option('create-prefix', 
+                            help='Create the path leading up to the branch '
+                                 'if it does not already exist')]
+    takes_args = ['location?']
+
+    def run(self, location=None, remember=False, overwrite=False,
+            create_prefix=False, verbose=False):
+        # FIXME: Way too big!  Put this into a function called from the
+        # command.
+        import errno
+        from shutil import rmtree
+        from bzrlib.transport import get_transport
+        
+        tree_from = WorkingTree.open_containing(u'.')[0]
+        br_from = tree_from.branch
+        stored_loc = tree_from.branch.get_push_location()
+        if location is None:
+            if stored_loc is None:
+                raise BzrCommandError("No push location known or specified.")
+            else:
+                print "Using saved location: %s" % stored_loc
+                location = stored_loc
+        try:
+            br_to = Branch.open(location)
+        except NotBranchError:
+            # create a branch.
+            transport = get_transport(location).clone('..')
+            if not create_prefix:
+                try:
+                    transport.mkdir(transport.relpath(location))
+                except NoSuchFile:
+                    raise BzrCommandError("Parent directory of %s "
+                                          "does not exist." % location)
+            else:
+                current = transport.base
+                needed = [(transport, transport.relpath(location))]
+                while needed:
+                    try:
+                        transport, relpath = needed[-1]
+                        transport.mkdir(relpath)
+                        needed.pop()
+                    except NoSuchFile:
+                        new_transport = transport.clone('..')
+                        needed.append((new_transport,
+                                       new_transport.relpath(transport.base)))
+                        if new_transport.base == transport.base:
+                            raise BzrCommandError("Could not creeate "
+                                                  "path prefix.")
+            br_to = Branch.initialize(location)
+        old_rh = br_to.revision_history()
+        try:
+            try:
+                tree_to = br_to.working_tree()
+            except NoWorkingTree:
+                # TODO: This should be updated for branches which don't have a
+                # working tree, as opposed to ones where we just couldn't 
+                # update the tree.
+                warning('Unable to update the working tree of: %s' % (br_to.base,))
+                count = br_to.pull(br_from, overwrite)
+            else:
+                count = tree_to.pull(br_from, overwrite)
+        except DivergedBranches:
+            raise BzrCommandError("These branches have diverged."
+                                  "  Try a merge then push with overwrite.")
+        if br_from.get_push_location() is None or remember:
+            br_from.set_push_location(location)
+        note('%d revision(s) pushed.' % (count,))
+
+        if verbose:
+            new_rh = br_to.revision_history()
+            if old_rh != new_rh:
+                # Something changed
+                from bzrlib.log import show_changed_revisions
+                show_changed_revisions(br_to, old_rh, new_rh)
+
 
