@@ -82,12 +82,17 @@ class DistroReleaseQueue(SQLBase):
     # Join this table to the DistroReleaseQueueBuild and the
     # DistroReleaseQueueSource objects which are related.
     sources = MultipleJoin('DistroReleaseQueueSource',
-                           joinColumn='distroreleasequeue')
+                           joinColumn='distroreleasequeue',
+                           orderBy='distroreleasequeuesource.id')
+
     builds = MultipleJoin('DistroReleaseQueueBuild',
-                          joinColumn='distroreleasequeue')
+                          joinColumn='distroreleasequeue',
+                          orderBy='distroreleasequeuebuild.id')
+
     # Also the custom files associated with the build.
     customfiles = MultipleJoin('DistroReleaseQueueCustom',
-                               joinColumn='distroreleasequeue')
+                               joinColumn='distroreleasequeue',
+                               orderBy='distroreleasequeuecustom.id')
 
     def _set_status(self, value):
         """Directly write on 'status' is forbidden.

@@ -568,54 +568,112 @@ class DistroRelease(SQLBase):
         return DistroReleaseQueue.selectBy(distroreleaseID=self.id,
                                            status=status, orderBy=['id'])
 
-    def getSourceQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED,
+    def getFancyQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED,
                             name=None, version=None, exact_match=False):
         """See IDistroRelease."""
-        where_clause = (
+        # build default distroreleasequeuesource query
+        source_where_clause = (
             "distrorelease=%s AND status=%s AND distroreleasequeue.id="
             "distroreleasequeuesource.distroreleasequeue"
             % sqlvalues(self.id, status))
+        source_clauseTables = ['DistroReleaseQueueSource']
+        source_orderBy=['id']
 
-        clauseTables = [
-            'DistroReleaseQueueSource',
-            ]
-        orderBy=['id']
+        # build default distroreleasequeuebuild query
+        build_where_clause = (
+            "distrorelease=%s AND status=%s AND distroreleasequeue.id="
+            "distroreleasequeuebuild.distroreleasequeue"
+            % sqlvalues(self.id, status))
+        build_clauseTables = ['DistroReleaseQueueBuild']
+        build_orderBy=['id']
 
+        # modify default query to return matchs of a package name
         if name:
-            where_clause +="""
+            # modify source clause to lookup on sourcepackagerelease
+            source_where_clause +="""
             AND distroreleasequeuesource.sourcepackagerelease =
             sourcepackagerelease.id AND
             sourcepackagerelease.sourcepackagename=
             sourcepackagename.id
             """
+
+            # modify build clause to lookup on binarypackagerelease
+            build_where_clause +="""
+            AND distroreleasequeuebuild.build=binarypackagerelease.build
+            AND binarypackagerelease.binarypackagename=binarypackagename.id
+            """
+
+            # attempt to exact or similar names in both, builds and sources
             if exact_match:
-                where_clause += """
+                source_where_clause += """
                 AND sourcepackagename.name = '%s'
                 """ % name
+                build_where_clause += """
+                AND binarypackagename.name = '%s'
+                """ % name
             else:
-                where_clause += """
+                source_where_clause += """
                 AND sourcepackagename.name LIKE '%%%s%%'
                 """ % name
+                build_where_clause += """
+                AND binarypackagename.name LIKE '%%%s%%'
+                """ % name
 
+            # attempt for given version argument
             if version:
+                # exact or similar matches
                 if exact_match:
-                    where_clause += """
+                    source_where_clause += """
                     AND sourcepackagerelease.version = '%s'
                     """ % version
+                    build_where_clause += """
+                    AND binarypackagerelease.version = '%s'
+                    """ % version
                 else:
-                    where_clause += """
+                    source_where_clause += """
                     AND sourcepackagerelease.version LIKE '%%%s%%'
                     """ % version
+                    build_where_clause += """
+                    AND binarypackagerelease.version LIKE '%%%s%%'
+                    """ % version
 
-            clauseTables = [
+            # Fine tune source clause tables and ordering
+            source_clauseTables = [
                 'DistroReleaseQueueSource',
                 'SourcePackageRelease',
                 'SourcePackageName',
                 ]
-            orderBy = ['-sourcepackagerelease.dateuploaded']
 
-        return DistroReleaseQueue.select(
-            where_clause, clauseTables=clauseTables, orderBy=orderBy)
+            source_orderBy = [
+                '-sourcepackagerelease.dateuploaded'
+                ]
+
+            # Fine tune build clause tables and ordering
+            build_clauseTables = [
+                'DistroReleaseQueueBuild',
+                'BinaryPackageRelease',
+                'BinaryPackageName',
+                ]
+
+            build_orderBy = [
+                '-binarypackagerelease.datecreated'
+                ]
+
+        # build a SelectResult group for matching distroreleasequeuesources
+        source_results = DistroReleaseQueue.select(
+            source_where_clause, clauseTables=source_clauseTables,
+            orderBy=source_orderBy)
+
+        # build a SelectResult group for matching distroreleasequeuebuilds
+        build_results = DistroReleaseQueue.select(
+            build_where_clause, clauseTables=build_clauseTables,
+            orderBy=build_orderBy)
+
+        # mock a new order for union
+        union_orderBy=['id']
+
+        # return the UNION of sources and builds
+        return source_results.union(build_results, orderBy=union_orderBy)
 
     def createBug(self, owner, title, comment, private=False):
         """See canonical.launchpad.interfaces.IBugTarget."""

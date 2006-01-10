@@ -1383,6 +1383,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distroreleasequeue'::pg_catalog.regclass;
 
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (1, 0, 10, 0, 1);
+INSERT INTO distroreleasequeue (id, status, distrorelease, pocket, changesfile) VALUES (2, 0, 10, 0, 1);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distroreleasequeue'::pg_catalog.regclass;
@@ -1390,6 +1392,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'distroreleasequeuebuild'::pg_catalog.regclass;
 
+INSERT INTO distroreleasequeuebuild (id, distroreleasequeue, build) VALUES (1, 1, 2);
+INSERT INTO distroreleasequeuebuild (id, distroreleasequeue, build) VALUES (2, 2, 7);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'distroreleasequeuebuild'::pg_catalog.regclass;

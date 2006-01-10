@@ -118,24 +118,116 @@ Iterator:
 
  >>> for item in qset:
  ...     item.id
- 1L
+ 1
+ 2
+ 3L
 
 getter by id:
 
  >>> qset[1].id
- 1L
+ 1
 
 get by id method:
  >>> qset.get(1).id
- 1L
+ 1
 
 Counter, optionally by status (informally named "queue"):
  >>> qset.count()
- 1
+ 3
  >>> qset.count(DistroReleaseQueueStatus.ACCEPTED)
  1
  >>> qset.count(DistroReleaseQueueStatus.REJECTED)
  0
+
+Explore the queue features of a DistroRelease instance:
+
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
+
+  >>> distro = getUtility(IDistributionSet).getByName('ubuntu')
+  >>> release = distro['breezy-autotest']
+
+Let's test the of IDistroRelease.getFancyQueueItems:
+
+  >>> new_items = release.getFancyQueueItems(
+  ...    DistroReleaseQueueStatus.NEW)
+  >>> new_items.count()
+  2
+
+Ensure they are build queue entries
+
+  >>> for n in new_items:
+  ...     len(n.builds), len(n.sources)
+  (1, 0)
+  (1, 0)
+
+Exercises build side of getFancyQueueItems:
+
+Retrive queue entry for a name like 'moz'.
+
+  >>> items = release.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
+  ...                               name='moz')
+  >>> items.count()
+  1
+
+  >>> items[0].builds[0].build.binarypackages[0].name
+  u'mozilla-firefox'
+  >>> items[0].builds[0].build.binarypackages[0].version
+  u'0.9'
+
+Got a distrorelease build queue entry for 'mozilla-firefox_0.9'
+
+Try with version:
+
+  >>> items = release.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
+  ...                               name='moz', version='0.9')
+  >>> items.count()
+  1
+
+  >>> items[0].builds[0].build.binarypackages[0].name
+  u'mozilla-firefox'
+  >>> items[0].builds[0].build.binarypackages[0].version
+  u'0.9'
+
+Got the same queue entry.
+
+Let's try another entry where binary package name is LIKE 'pmount'
+
+  >>> items = release.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
+  ...                               name='pmount')
+  >>> items.count()
+  1
+
+  >>> items[0].builds[0].build.binarypackages[0].name
+  u'pmount'
+  >>> items[0].builds[0].build.binarypackages[0].version
+  u'0.1-1'
+
+Got 'pmount_0.1-1'.
+
+Look for every queue entry which package name is like 'mo'
+
+  >>> items = release.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
+  ...                               name='mo')
+  >>> items.count()
+  2
+
+  >>> for item in items:
+  ...     (item.builds[0].build.binarypackages[0].name,
+  ...      item.builds[0].build.binarypackages[0].version)
+  (u'mozilla-firefox', u'0.9')
+  (u'pmount', u'0.1-1')
+
+Got both sampledata results 'p_mo_unt' & '_mo_zilla-firefox'
+
+Try 'exact_match' for 'mozil_0.0.1'
+
+  >>> items = release.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
+  ...                 name='mozil', version='0.0.1', exact_match=True)
+  >>> items.count()
+  0
+
+There is no match on queue entries.
 
 Finally, abort the whole damned mess
 

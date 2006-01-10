@@ -238,15 +238,16 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         in the queue.
         """
 
-    def getSourceQueueItems(status=DistroReleaseQueueStatus.ACCEPTED,
+    def getFancyQueueItems(status=DistroReleaseQueueStatus.ACCEPTED,
                             name=None, version=None, exact_match=False):
-        """Get the source queue items for this distrorelease
+        """Get the union of build and source queue items for this distrorelease
 
-        Returns source queue items in a given state, matching a give name and
-        version terms. If 'status' is not supplied, default to the ACCEPTED
-        items in the queue. if 'name' and 'version' are supplied return only
-        items which the sourcepackage matches (SQL LIKE). 'name' doesn't
-        require 'version'. Use 'exact_match' argument for precise results.
+        Returns build and source queue items in a given state, matching
+        a give name and version terms. If 'status' is not supplied,
+        default to the ACCEPTED items in the queue. if 'name' and 'version'
+        are supplied return only items which the sourcepackage name and
+        binarypackage name match (SQL LIKE). 'name' doesn't require 'version'.
+        Use 'exact_match' argument for precise results.
         """
 
     def initialiseFromParent():

@@ -81,8 +81,8 @@ class QueueAction:
         self.distro = distro
         self.distrorelease = distrorelease
         self.queue = queue
-        self.queue_size = getUtility(IDistroReleaseQueueSet).count(
-            status=self.queue)
+        self.queue_size = getUtility(
+            IDistroReleaseQueueSet).count(status=self.queue)
         self.buildItems()
 
     def buildItems(self):
@@ -121,7 +121,7 @@ class QueueAction:
             if '/' in term:
                 term, version = term.strip().split('/')
 
-            self.items = self.distrorelease.getSourceQueueItems(
+            self.items = self.distrorelease.getFancyQueueItems(
                 status=self.queue, name=term, version=version,
                 exact_match=self.exact_match)
             self.items_size = self.items.count()
