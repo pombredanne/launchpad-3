@@ -215,3 +215,11 @@ CREATE OR REPLACE FUNCTION is_printable_ascii(text) RETURNS boolean AS '
 COMMENT ON FUNCTION is_printable_ascii(text) IS
     'True if the string is pure printable US-ASCII';
 
+CREATE OR REPLACE FUNCTION sleep_for_testing(double precision) RETURNS boolean AS '
+    import time
+    time.sleep(args[0])
+    return True
+' LANGUAGE plpythonu;
+
+COMMENT ON FUNCTION sleep_for_testing(double precision) IS
+    'Sleep for the given number of seconds and return True.  This function is intended to be used by tests to trigger timeout conditions.';
