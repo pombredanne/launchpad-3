@@ -1,3 +1,4 @@
+  >>> from canonical.launchpad.helpers import backslashreplace
 
 First, let's make sure we can see the page listing all registered remote bug
 trackers.
@@ -68,12 +69,12 @@ new tracker.
 
 So let's view this new bug tracker.
 
-  >>> print http(r"""
+  >>> print backslashreplace(str(http(r"""
   ... GET /malone/bugtrackers/testtrac HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
+  ... """)))
   HTTP/1.1 200 Ok
-  ...Bug tracker “Test Trac Tracker”...
+  ...Bug tracker \u201cTest Trac Tracker\u201d...
 
 And lets see if we can edit it.
 

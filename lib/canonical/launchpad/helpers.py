@@ -92,6 +92,14 @@ def text_replaced(text, replacements, _cache={}):
 
     return _cache[cachekey](text)
 
+
+def backslashreplace(str):
+    """Return a copy of the string, with non-ASCII characters rendered as
+    xNN or uNNNN. Used to test data containing typographical quotes etc.
+    """
+    return str.decode('UTF-8').encode('ASCII', 'backslashreplace')
+
+
 CHARACTERS_PER_LINE = 50
 
 class RosettaReadTarFile:

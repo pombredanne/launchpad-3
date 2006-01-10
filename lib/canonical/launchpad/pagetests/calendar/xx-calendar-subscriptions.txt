@@ -1,17 +1,18 @@
+  >>> from canonical.launchpad.helpers import backslashreplace
 
 Go to the calendar subscribe page for the Ubuntu project calendar,
 while logged in as "Sample Person:
 
-  >>> print http(r"""
+  >>> print backslashreplace(str(http(r"""
   ... GET /projects/ubuntu/+calendar/+subscribe HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
+  ... """)))
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <title>Subscribe to “Ubuntu Project Calendar”</title>
+      <title>Subscribe to \u201cUbuntu Project Calendar\u201d</title>
   ...
         <form action=".../projects/ubuntu/+calendar/+subscribe"
               method="post">
@@ -34,19 +35,19 @@ Unsubscribing from the calendar updates the field values, and also
 loses the selected colour (the colour is used to identify calendars in
 the merged view).
 
-  >>> print http(r"""
+  >>> print backslashreplace(str(http(r"""
   ... POST /projects/ubuntu/+calendar/+subscribe HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 50
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... subscribe=no&colour=%23faffd2&UPDATE_SUBMIT=Submit""")
+  ... subscribe=no&colour=%23faffd2&UPDATE_SUBMIT=Submit""")))
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <title>Subscribe to “Ubuntu Project Calendar”</title>
+      <title>Subscribe to \u201cUbuntu Project Calendar\u201d</title>
   ...
         <form action=".../projects/ubuntu/+calendar/+subscribe"
               method="post">

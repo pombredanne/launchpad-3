@@ -7,16 +7,16 @@ Setup the stub KeyServer
   
 Sign only keys are registered on the standard +editgpgkeys page.
 
-  >>> print http(r"""
+  >>> print (http(r"""
   ... GET /people/name12/+editgpgkeys HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
+  ... """))
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
     <head>
-      <title>Sample Person’s OpenPGP keys</title>
+      <title>Sample Person's OpenPGP keys</title>
   ...
 
 Claim a sign-only OpenPGP key:
@@ -237,7 +237,7 @@ Check that the key has been imported:
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   ...
-  <title>Sample Person’s OpenPGP keys</title>
+  <title>Sample Person's OpenPGP keys</title>
   ...
   1024D/17B05A8F
   (sign only)

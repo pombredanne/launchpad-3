@@ -1,3 +1,4 @@
+  >>> from canonical.launchpad.helpers import backslashreplace
 
 See if we can add a new Translation Group. First, load the +new page without
 any login credentials.
@@ -62,16 +63,16 @@ the form to create a new group, called the "polyglot" translation group.
 OK, we created it and got redirected to the page for that group. That's nice
 and clean. Let's view it.
 
-  >>> print http(r"""
+  >>> print backslashreplace(str(http(r"""
   ... GET /rosetta/groups/polyglot HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
+  ... """)))
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <title>“The PolyGlot Translation Group” Rosetta translation group</title>
+      <title>\u201cThe PolyGlot Translation Group\u201d...
   ...
     <h1>Translation group overview</h1>
   ...

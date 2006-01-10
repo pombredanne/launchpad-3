@@ -156,8 +156,8 @@ bug_edit = BugPageTitle()
 bug_extref_add = LaunchbagBugID("Bug #%d - Add a Web link")
 
 def bug_extref_edit(context, view):
-    return smartquote('Bug #%d - Edit Web link "%s"') %
-        (context.bug.id, context.title)
+    return smartquote('Bug #%d - Edit Web link "%s"') % (
+        context.bug.id, context.title)
 
 bug_index = BugPageTitle()
 
@@ -271,13 +271,13 @@ distribution_cvereport = ContextTitle('CVE reports for %s')
 
 distribution_members = ContextTitle('%s distribution members')
 
-distribution_memberteam =
-    ContextTitle(smartquote("Change %s's distribution team"))
+distribution_memberteam = ContextTitle(
+    smartquote("Change %s's distribution team"))
 
 distribution_translations = ContextDisplayName('Translating %s')
 
-distribution_translators =
-    ContextTitle(smartquote("Appoint %s's translation group"))
+distribution_translators = ContextTitle(
+    smartquote("Appoint %s's translation group"))
 
 distribution_search = ContextDisplayName(smartquote("Search %s's packages"))
 
@@ -297,8 +297,8 @@ distroarchrelease_index = ContextTitle('%s in Launchpad')
 
 distroarchrelease_builds = ContextTitle('%s builds')
 
-distroarchrelease_search =
-    ContextTitle(smartquote("Search %s's binary packages"))
+distroarchrelease_search = ContextTitle(
+    smartquote("Search %s's binary packages"))
 
 distroarchreleasebinarypackage_index = ContextTitle('%s')
 
@@ -557,8 +557,8 @@ product_add = 'Register a product with Launchpad'
 
 product_bugs = ContextDisplayName('Bugs in %s')
 
-product_branches =
-    ContextDisplayName(smartquote("%s's code branches in Launchpad"))
+product_branches = ContextDisplayName(
+    smartquote("%s's code branches in Launchpad"))
 
 product_distros = ContextDisplayName('%s packages: Comparison of distributions')
 

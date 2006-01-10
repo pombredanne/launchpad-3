@@ -1,4 +1,4 @@
-
+  >>> from canonical.launchpad.helpers import backslashreplace
 
 When viewing a calendar item for a calendar we don't have permission
 to edit (e.g. when not logged in), we get redirected to an event
@@ -31,15 +31,15 @@ instead.
 
 The event display page, when not logged in:
 
-  >>> print http(r"""
+  >>> print backslashreplace(str(http(r"""
   ... GET /people/name12/+calendar/events/1/+display HTTP/1.1
-  ... """)
+  ... """)))
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <title>Event “Event 1”</title>
+      <title>Event \u201cEvent 1\u201d</title>
   ...
   ...<h1>
   ...Event
@@ -64,16 +64,16 @@ The event display page, when not logged in:
 The event display page, when logged in (notice that the start time has
 been adjusted to the user's local time zone):
 
-  >>> print http(r"""
+  >>> print backslashreplace(str(http(r"""
   ... GET /people/name12/+calendar/events/1/+display HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
+  ... """)))
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <title>Event “Event 1”</title>
+      <title>Event \u201cEvent 1\u201d</title>
   ...
               <label...>Starting date and time</label>
   ...
@@ -83,16 +83,16 @@ been adjusted to the user's local time zone):
 
 The event edit page:
 
-  >>> print http(r"""
+  >>> print backslashreplace(str(http(r"""
   ... GET /people/name12/+calendar/events/1/+edit HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
+  ... """)))
   HTTP/1.1 200 Ok
   Content-Length: ...
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-      <title>Edit event “Event 1”</title>
+      <title>Edit event \u201cEvent 1\u201d</title>
   ...
           Edit event <q>Event 1</q>
   ...
