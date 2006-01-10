@@ -81,8 +81,8 @@ class QueueAction:
         self.distro = distro
         self.distrorelease = distrorelease
         self.queue = queue
-        self.queue_size = getUtility(
-            IDistroReleaseQueueSet).count(status=self.queue)
+        self.queue_size = getUtility(IDistroReleaseQueueSet).count(
+            status=self.queue, distrorelease=self.distrorelease)
         self.buildItems()
 
     def buildItems(self):

@@ -128,28 +128,42 @@ getter by id:
  1
 
 get by id method:
+
  >>> qset.get(1).id
  1
 
-Counter, optionally by status (informally named "queue"):
- >>> qset.count()
- 3
- >>> qset.count(DistroReleaseQueueStatus.ACCEPTED)
- 1
- >>> qset.count(DistroReleaseQueueStatus.REJECTED)
- 0
+Counter, optionally by status (informally named "queue") and or distrorelease:
 
-Explore the queue features of a DistroRelease instance:
+  >>> qset.count()
+  3
+
+  >>> qset.count(DistroReleaseQueueStatus.ACCEPTED)
+  1
+
+  >>> qset.count(DistroReleaseQueueStatus.REJECTED)
+  0
 
   >>> from canonical.launchpad.interfaces import IDistributionSet
   >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
-
   >>> distro = getUtility(IDistributionSet).getByName('ubuntu')
-  >>> release = distro['breezy-autotest']
+  >>> breezy_autotest = distro['breezy-autotest']
 
-Let's test the of IDistroRelease.getFancyQueueItems:
+  >>> qset.count(distrorelease=breezy_autotest)
+  2
 
-  >>> new_items = release.getFancyQueueItems(
+  >>> qset.count(status=DistroReleaseQueueStatus.ACCEPTED,
+  ...            distrorelease=breezy_autotest)
+  0
+
+  >>> qset.count(status=DistroReleaseQueueStatus.ACCEPTED,
+  ...            distrorelease=hoary)
+  1
+
+
+Explore the queue features of a DistroRelease instance, let's test the
+of IDistroRelease.getFancyQueueItems:
+
+  >>> new_items = breezy_autotest.getFancyQueueItems(
   ...    DistroReleaseQueueStatus.NEW)
   >>> new_items.count()
   2
@@ -161,12 +175,11 @@ Ensure they are build queue entries
   (1, 0)
   (1, 0)
 
-Exercises build side of getFancyQueueItems:
+Exercises build side of getFancyQueueItems, Retrive queue entry for a
+name like 'moz':
 
-Retrive queue entry for a name like 'moz'.
-
-  >>> items = release.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
-  ...                               name='moz')
+  >>> items = breezy_autotest.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
+  ...                                            name='moz')
   >>> items.count()
   1
 
@@ -179,8 +192,8 @@ Got a distrorelease build queue entry for 'mozilla-firefox_0.9'
 
 Try with version:
 
-  >>> items = release.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
-  ...                               name='moz', version='0.9')
+  >>> items = breezy_autotest.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
+  ...                                            name='moz', version='0.9')
   >>> items.count()
   1
 
@@ -193,8 +206,8 @@ Got the same queue entry.
 
 Let's try another entry where binary package name is LIKE 'pmount'
 
-  >>> items = release.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
-  ...                               name='pmount')
+  >>> items = breezy_autotest.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
+  ...                                            name='pmount')
   >>> items.count()
   1
 
@@ -207,8 +220,8 @@ Got 'pmount_0.1-1'.
 
 Look for every queue entry which package name is like 'mo'
 
-  >>> items = release.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
-  ...                               name='mo')
+  >>> items = breezy_autotest.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
+  ...                                            name='mo')
   >>> items.count()
   2
 
@@ -222,7 +235,7 @@ Got both sampledata results 'p_mo_unt' & '_mo_zilla-firefox'
 
 Try 'exact_match' for 'mozil_0.0.1'
 
-  >>> items = release.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
+  >>> items = breezy_autotest.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
   ...                 name='mozil', version='0.0.1', exact_match=True)
   >>> items.count()
   0

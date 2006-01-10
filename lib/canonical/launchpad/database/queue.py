@@ -450,10 +450,16 @@ class DistroReleaseQueueSet:
         except SQLObjectNotFound:
             raise NotFoundError(queue_id)
 
-    def count(self, status=None):
+    def count(self, status=None, distrorelease=None):
         """See IDistroReleaseQueueSet."""
-        clause = None
+        clause = ''
+
         if status:
-            clause = "status=%s" % sqlvalues(status)
+            clause = "status=%s AND " % sqlvalues(status)
+
+        if distrorelease:
+            clause += "distrorelease=%s" % sqlvalues(distrorelease.id)
+        else:
+            clause += "1=1"
 
         return DistroReleaseQueue.select(clause).count()

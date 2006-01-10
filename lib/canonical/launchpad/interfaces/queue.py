@@ -67,7 +67,7 @@ class IDistroReleaseQueue(Interface):
     changesfile = Attribute("The librarian alias for the changes file "
                             "associated with this upload")
     changesfilename = Attribute("The filename of the changes file.")
-    
+
     sources = Attribute("The queue sources associated with this queue item")
     builds = Attribute("The queue builds associated with the queue item")
 
@@ -81,7 +81,7 @@ class IDistroReleaseQueue(Interface):
 
     def set_new():
         """Set Queue state machine to NEW."""
-        
+
     def set_unapproved():
         """Set Queue state machine to UNAPPROVED."""
 
@@ -97,7 +97,7 @@ class IDistroReleaseQueue(Interface):
 
     def set_rejected():
         """Set Queue state machine to REJECTED."""
-    
+
     def realiseUpload(logger=None):
         """Take this ACCEPTED upload and create the publishing records for it
         as appropriate.
@@ -108,7 +108,7 @@ class IDistroReleaseQueue(Interface):
         If a logger is provided, messages will be written to it as the upload
         is entered into the publishing records.
         """
-        
+
     def addSource(spr):
         """Add the provided source package release to this queue entry."""
 
@@ -119,7 +119,7 @@ class IDistroReleaseQueue(Interface):
         """Add the provided library file alias as a custom queue entry of
         the given custom type.
         """
-    
+
 
 class IDistroReleaseQueueBuild(Interface):
     """A Queue item's related builds (for Lucille)"""
@@ -256,8 +256,10 @@ class IDistroReleaseQueueSet(Interface):
     def get(queue_id):
         """Retrieve an IDistroReleaseQueue by a given id"""
 
-    def count(self, status=None):
+    def count(self, status=None, distrorelease=None):
         """Number of IDistroReleaseQueue present in a given status.
 
-        If stautus is ommitted return the number of all entries.
+        If status is ommitted return the number of all entries.
+        'distrorelease' is optional and restrict the results in given
+        distrorelease.
         """
