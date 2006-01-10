@@ -17,6 +17,35 @@ from bzrlib.tests import TestCase as BzrTestCase
 from twisted.python.util import sibpath
 
 from canonical.launchpad import database
+from canonical.launchpad.daemons.tachandler import TacTestSetup
+
+
+class AuthserverTacTestSetup(TacTestSetup):
+    
+    def __init__(self, root):
+        self._root = root
+    
+    def setUpRoot(self):
+        if os.path.isdir(self.root):
+            shutil.rmtree(self.root)
+        os.makedirs(self.root, 0700)
+
+    @property
+    def root(self):
+        return self._root
+
+    @property
+    def tacfile(self):
+        # XXX: use standard LP authserver tac here instead, if possible
+        return sibpath(__file__, 'authserver.tac')
+
+    @property
+    def pidfile(self):
+        return os.path.join(self.root, 'authserver.pid')
+
+    @property
+    def logfile(self):
+        return os.path.join(self.root, 'authserver.log')
 
 
 class AcceptanceTests(BzrTestCase):
@@ -31,10 +60,26 @@ class AcceptanceTests(BzrTestCase):
         print >> sys.stderr, 'log:', args
 
     def setUp(self):
-        # XXX: SQL: insert SSH keys for testuser
-        # XXX: SQL: insert testuser!
+        # insert SSH keys for testuser -- and insert testuser!
+        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+        LaunchpadTestSetup().setUp()
+        connection = LaunchpadTestSetup().connect()
+        cursor = connection.cursor()
+        cursor.execute(
+            "UPDATE Person SET name = 'testuser' WHERE name = 'spiv';")
+        cursor.execute(
+            "UPDATE Person SET name = 'testteam' WHERE name = 'name17';")
+        cursor.execute("""
+            INSERT INTO SSHKey (person, keytype, keytext, comment)
+            VALUES (7, 2,
+            'AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1ktFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3DzeVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTdViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3Rgw==',
+            'testuser');
+            """)
 
         # XXX: start authserver.
+        self.userHome = os.path.abspath(tempfile.mkdtemp())
+        self.authserver = AuthserverTacTestSetup(self.userHome)
+        self.authserver.setUp()
 
         #import logging
         #logging.basicConfig(level=logging.DEBUG)
@@ -57,7 +102,6 @@ class AcceptanceTests(BzrTestCase):
         self.local_branch.working_tree().commit('Added foo')
 
         # Point $HOME at a test ssh config and key.
-        self.userHome = os.path.abspath(tempfile.mkdtemp())
         import sys
         print >>sys.stderr, 'self.userHome:', self.userHome
         os.makedirs(os.path.join(self.userHome, '.ssh'))
@@ -83,6 +127,9 @@ class AcceptanceTests(BzrTestCase):
         getpass.getpass = self.getpass
         os.environ['HOME'] = self.realHome
         os.environ['PATH'] = self.realPath
+        self.authserver.tearDown()
+        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+        LaunchpadTestSetup().tearDown()
 
     def test_1_bzr_sftp(self):
         """
