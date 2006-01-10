@@ -21,7 +21,8 @@ from zope.exceptions.exceptionformatter import format_exception
 from canonical.config import config
 from canonical.launchpad.webapp.interfaces import (
     IErrorReport, IErrorReportRequest)
-from canonical.launchpad.webapp import adapter as da
+from canonical.launchpad.webapp.adapter import (
+    RequestExpired, get_request_statements, soft_timeout_expired)
 
 UTC = pytz.timezone('UTC')
 
@@ -295,7 +296,7 @@ class ErrorReportingService:
 
             statements = sorted((start, end, _safestr(statement))
                                 for (start, end, statement)
-                                    in da.get_request_statements())
+                                    in get_request_statements())
 
             oopsid, filename = self.newOopsId(now)
 
@@ -338,14 +339,14 @@ class ErrorReportRequest:
     oopsid = None
 
 
-class SoftRequestTimeout(da.RequestExpired):
+class SoftRequestTimeout(RequestExpired):
     """Soft request timeout expired"""
 
 
 def end_request(event):
     # if no OOPS has been generated at the end of the request, but
     # the soft timeout has expired, log an OOPS.
-    if event.request.oopsid is None and da.soft_timeout_expired():
+    if event.request.oopsid is None and soft_timeout_expired():
         globalErrorService.raising(
             (SoftRequestTimeout, 'Soft request timeout expired', None),
             event.request)
