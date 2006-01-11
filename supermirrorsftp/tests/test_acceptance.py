@@ -75,6 +75,7 @@ class AcceptanceTests(BzrTestCase):
             'AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1ktFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3DzeVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTdViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3Rgw==',
             'testuser');
             """)
+        connection.commit()
 
         # XXX: start authserver.
         self.userHome = os.path.abspath(tempfile.mkdtemp())
@@ -345,8 +346,10 @@ class TestSFTPServer:
 
 
 from bzrlib.commands import Command, Option
-from bzrlib.errors import BzrCommandError, NotBranchError
+from bzrlib.errors import (BzrCommandError, NotBranchError, DivergedBranches,
+    NoWorkingTree)
 from bzrlib.branch import Branch
+from bzrlib.trace import warning
 class cmd_push(Command):
     """Push this branch into another branch.
     

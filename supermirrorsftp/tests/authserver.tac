@@ -19,7 +19,7 @@ from canonical.launchpad.daemons.tachandler import ReadyService
 
 
 application = service.Application("authserver_test")
-dbpool = ConnectionPool('psycopg', 'dbname=launchpad_dev')
+dbpool = ConnectionPool('psycopg', 'dbname=launchpad_ftest')
 storage = DatabaseUserDetailsStorage(dbpool)
 root = resource.Resource()
 versionOneAPI = UserDetailsResource(DatabaseUserDetailsStorage(dbpool))
