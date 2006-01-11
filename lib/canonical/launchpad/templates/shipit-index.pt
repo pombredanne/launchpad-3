@@ -32,9 +32,8 @@
           <a href="https://launchpad.net/+login?origin=shipit">create
           a new account</a> if you don't have one already.</p>
 
-          <p>If you have questions about shipments and dates please read the
-          <a href="http://www.ubuntulinux.org/support/documentation/faq/shipit/"
-          >Ubuntu Pressed CDs FAQ</a>.</p>
+          <p>If you have questions about shipments and dates please
+          refer to the <a href="http://www.ubuntu.com/support/faq#head-7eef2db63e0a75424cdd663ee6f7b8eedcf19607">Ubuntu FAQ</a>.</p>
           <br />
 
           <form name="login" method="POST">
