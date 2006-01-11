@@ -12,7 +12,7 @@ from bzrlib.branch import ScratchBranch
 import bzrlib.branch
 from bzrlib.workingtree import WorkingTree
 from bzrlib.tests import TestCase as BzrTestCase
-from bzrlib.errors import PermissionDenied, NoSuchFile
+from bzrlib.errors import PermissionDenied, NoSuchFile, NotBranchError
 from bzrlib.transport import get_transport
 
 #from twisted.trial import unittest
@@ -20,6 +20,7 @@ from twisted.python.util import sibpath
 
 from canonical.launchpad import database
 from canonical.launchpad.daemons.tachandler import TacTestSetup
+from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 
 
 class AuthserverTacTestSetup(TacTestSetup):
@@ -64,9 +65,8 @@ class AcceptanceTests(BzrTestCase):
     def setUp(self):
         super(AcceptanceTests, self).setUp()
         # insert SSH keys for testuser -- and insert testuser!
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        LaunchpadTestSetup().setUp()
-        connection = LaunchpadTestSetup().connect()
+        LaunchpadZopelessTestSetup().setUp()
+        connection = LaunchpadZopelessTestSetup().connect()
         cursor = connection.cursor()
         cursor.execute(
             "UPDATE Person SET name = 'testuser' WHERE name = 'spiv';")
@@ -132,8 +132,7 @@ class AcceptanceTests(BzrTestCase):
         os.environ['HOME'] = self.realHome
         os.environ['PATH'] = self.realPath
         self.authserver.tearDown()
-        from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-        LaunchpadTestSetup().tearDown()
+        LaunchpadZopelessTestSetup().tearDown()
         super(AcceptanceTests, self).tearDown()
 
     def test_1_bzr_sftp(self):
@@ -157,14 +156,7 @@ class AcceptanceTests(BzrTestCase):
         #self.assertEqual(0, rv)
         #self.run_bzr('push')
         remote_url = server.base + '~testuser/+junk/test-branch'
-        old_dir = os.getcwdu()
-        os.chdir(self.local_branch.base)
-        try:
-            self.assertEqual(bzrlib.branch.Branch.open(".").last_revision(),
-                    self.local_branch.last_revision())
-            cmd_push().run_argv([remote_url])
-        finally:
-            os.chdir(old_dir)
+        self._push(remote_url)
         remote_branch = bzrlib.branch.Branch.open(remote_url)
         #remote_branch.pull(self.local_branch)
         
@@ -174,6 +166,14 @@ class AcceptanceTests(BzrTestCase):
 
         # Tear down test server
         server.stop()
+
+    def _push(self, remote_url):
+        old_dir = os.getcwdu()
+        os.chdir(self.local_branch.base)
+        try:
+            cmd_push().run_argv([remote_url])
+        finally:
+            os.chdir(old_dir)
 
     def test_2_namespace_restrictions(self):        
         """
@@ -213,7 +213,7 @@ class AcceptanceTests(BzrTestCase):
             transport.mkdir, 'hello')
         return transport
 
-    def test_3_rename_branch(self):
+    def test_3_db_rename_branch(self):
         """
         Branches should be able to be renamed in the Launchpad webapp, and those
         renames should be immediately reflected in subsequent SFTP connections.
@@ -226,39 +226,44 @@ class AcceptanceTests(BzrTestCase):
         server = start_test_sftp_server()
         
         # Push the local branch to the server
-        remote_branch = bzrlib.branch.Branch.initialize(
-            server.base + '~testuser/+junk/test-branch')
-        remote_branch.pull(self.local_branch)
+        self._push(server.base + '~testuser/+junk/test-branch')
 
         # Rename branch in the database
-        lp_txn.begin()
+        LaunchpadZopelessTestSetup().txn.begin()
         branch = database.Branch.selectOneBy(name='test-branch')
         branch_id = branch.id
         branch.name = 'renamed-branch'
-        lp_txn.commit()
-        remote_branch = bzrlib.branch.Branch.initialize(
+        LaunchpadZopelessTestSetup().txn.commit()
+        remote_branch = bzrlib.branch.Branch.open(
             server.base + '~testuser/+junk/renamed-branch')
         self.assertEqual(
             self.local_branch.last_revision(), remote_branch.last_revision())
+        del remote_branch
 
         # Assign to a different product in the database.  This is effectively a
         # Rename as far as bzr is concerned: the URL changes.
-        lp_txn.begin()
+        LaunchpadZopelessTestSetup().txn.begin()
         branch = database.Branch.get(branch_id)
-        branch.product = database.Product.get('mozilla-firefox')
-        lp_txn.commit()
-        remote_branch = bzrlib.branch.Branch.initialize(
-            server.base + '~testuser/mozilla-firefox/renamed-branch')
+        branch.product = database.Product.byName('firefox')
+        LaunchpadZopelessTestSetup().txn.commit()
+        self.assertRaises(
+            NotBranchError,
+            bzrlib.branch.Branch.open,
+            server.base + '~testuser/+junk/renamed-branch')
+        remote_branch = bzrlib.branch.Branch.open(
+            server.base + '~testuser/firefox/renamed-branch')
         self.assertEqual(
             self.local_branch.last_revision(), remote_branch.last_revision())
+        del remote_branch
 
         # Rename person in the database.  Again, the URL changes.
-        lp_txn.begin()
+        LaunchpadZopelessTestSetup().txn.begin()
         branch = database.Branch.get(branch_id)
-        branch.person.name = 'renamed-user'
-        lp_txn.commit()
-        remote_branch = bzrlib.branch.Branch.initialize(
-            server.base + '~renamed-user/mozilla-firefox/renamed-branch')
+        branch.owner.name = 'renamed-user'
+        LaunchpadZopelessTestSetup().txn.commit()
+        server.base = server.base.replace('testuser', 'renamed-user')
+        remote_branch = bzrlib.branch.Branch.open(
+            server.base + '~renamed-user/firefox/renamed-branch')
         self.assertEqual(
             self.local_branch.last_revision(), remote_branch.last_revision())
 
