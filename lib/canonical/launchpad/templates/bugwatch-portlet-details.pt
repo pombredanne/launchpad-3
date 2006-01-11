@@ -1,5 +1,5 @@
 <div class="portlet">
-  <h4>Bug Watch Details:</h4>
+  <h4>Bug watch details:</h4>
   <div class="portletBody">
     <div class="portletContent">
     Malone <a tal:attributes="href context/bug/fmt:url">Bug #
@@ -9,11 +9,11 @@
         <span tal:replace="context/bugtracker/title">bugtracker
         title</span><br />
       </a>
-    <b>Remote Bug ID:</b>
+    <b>Remote bug ID:</b>
       <a tal:attributes="href context/url">
         <span tal:replace="context/remotebug">6642</span>
       </a><br />
-    <b>Last Status:</b>
+    <b>Last status:</b>
         <span tal:condition="not: context/remotestatus">
             None recorded
         </span>

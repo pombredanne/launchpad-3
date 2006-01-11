@@ -229,4 +229,3 @@ time.  These are made available for bookmarking:
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-

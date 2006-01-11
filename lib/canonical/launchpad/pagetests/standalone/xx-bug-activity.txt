@@ -5,5 +5,5 @@ The bug activity page is where you find the "changelog" of a bug.
   ... """)
   HTTP/1.1 200 Ok
   ...
-  <h1>Bug Activity</h1>
+  <h1>Bug activity</h1>
   ...

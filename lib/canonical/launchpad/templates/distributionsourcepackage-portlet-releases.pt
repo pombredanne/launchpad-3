@@ -1,5 +1,5 @@
 <div class="portlet">
-  <h4>Package Releases:</h4>
+  <h4>Package releases:</h4>
   <div class="portletBody portletContent">
   <ul>
     <li tal:repeat="release context/releases">
@@ -8,8 +8,7 @@
     </li>
   </ul>
   <tal:block condition="not: context/releases">
-    <img src="/++resource++info_icon.gif" />
-    No releases for this package have yet been published.
+    <i>No releases for this package have yet been published.</i>
   </tal:block>
   </div>
 </div>
