@@ -681,7 +681,7 @@ tr.highlight {
 }
 
 /* Bug Status, Severity, Priority markers */
-.statusUnconfirmed { color: Orange; }
+.statusUnconfirmed { color: #993300; }
 .statusConfirmed   { color: Red; }
 .statusFixed       { color: Black; }
 .statusReleased    { color: Green; }
