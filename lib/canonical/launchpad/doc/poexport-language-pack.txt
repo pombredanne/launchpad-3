@@ -57,7 +57,7 @@ Check that the log looks ok.
     Exporting PO file ... (2/11)
     ...
     Exporting POTemplates
-    Exporting pmount in ubuntu hoary package "pmount" (1)
+    Exporting pmount in Ubuntu Hoary package "pmount" (1)
     ...
     Adding timestamp file
     Adding mapping file
