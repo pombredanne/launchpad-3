@@ -12,6 +12,8 @@ from bzrlib.branch import ScratchBranch
 import bzrlib.branch
 from bzrlib.workingtree import WorkingTree
 from bzrlib.tests import TestCase as BzrTestCase
+from bzrlib.errors import PermissionDenied, NoSuchFile
+from bzrlib.transport import get_transport
 
 #from twisted.trial import unittest
 from twisted.python.util import sibpath
@@ -60,6 +62,7 @@ class AcceptanceTests(BzrTestCase):
         print >> sys.stderr, 'log:', args
 
     def setUp(self):
+        super(AcceptanceTests, self).setUp()
         # insert SSH keys for testuser -- and insert testuser!
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         LaunchpadTestSetup().setUp()
@@ -131,6 +134,7 @@ class AcceptanceTests(BzrTestCase):
         self.authserver.tearDown()
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         LaunchpadTestSetup().tearDown()
+        super(AcceptanceTests, self).tearDown()
 
     def test_1_bzr_sftp(self):
         """
@@ -152,9 +156,16 @@ class AcceptanceTests(BzrTestCase):
         #                  server.base + '~testuser/+junk/test-branch',))
         #self.assertEqual(0, rv)
         #self.run_bzr('push')
-        cmd_push().run_argv([server.base + '~testuser/+junk/test-branch'])
-        remote_branch = bzrlib.branch.Branch.open(
-            server.base + '~testuser/+junk/test-branch')
+        remote_url = server.base + '~testuser/+junk/test-branch'
+        old_dir = os.getcwdu()
+        os.chdir(self.local_branch.base)
+        try:
+            self.assertEqual(bzrlib.branch.Branch.open(".").last_revision(),
+                    self.local_branch.last_revision())
+            cmd_push().run_argv([remote_url])
+        finally:
+            os.chdir(old_dir)
+        remote_branch = bzrlib.branch.Branch.open(remote_url)
         #remote_branch.pull(self.local_branch)
         
         # Check that the pushed branch looks right
@@ -179,26 +190,28 @@ class AcceptanceTests(BzrTestCase):
         server = start_test_sftp_server()
 
         # Cannot push branches to products that don't exist
-        self.assertRaises(
-            PermissionError, 
-            bzrlib.branch.Branch.initialize,
-            server.base + '~testuser/fake-product/hello')
+        self._test_missing_parent_directory(server,
+                '~testuser/product-that-does-not-exist/hello')
 
-        # Teams cannot have +junk products
-        self.assertRaises(
-            PermissionError,
-            bzrlib.branch.Branch.initialize,
-            server.base + '~testteam/+junk/hello')
+        # Teams do not have +junk products
+        self._test_missing_parent_directory(server, '~testteam/+junk/hello')
 
-        # Cannot push to team directories that the user isn't a member of
-        self.assertRaises(
-            PermissionError,
-            bzrlib.branch.Branch.initialize,
-            server.base + '~not-my-team/real-product/hello')
+        # Cannot push to team directories that the user isn't a member of --
+        # they cannot see them at all.
+        self._test_missing_parent_directory(
+            server, '~not-my-team/real-product/hello')
 
-        # XXX: what about lp-incompatible branch dir names (e.g. capital
-        # Letters) -- Are they disallowed or accepted?  If accepted, what will
-        # that branch's Branch.name be in the database?
+        # XXX spiv 2006-01-11: what about lp-incompatible branch dir names (e.g.
+        # capital Letters) -- Are they disallowed or accepted?  If accepted,
+        # what will that branch's Branch.name be in the database?  Probably just
+        # disallow, and try to have a tolerable error.
+
+    def _test_missing_parent_directory(self, server, relpath):
+        transport = get_transport(server.base + relpath).clone('..')
+        self.assertRaises(
+            NoSuchFile,
+            transport.mkdir, 'hello')
+        return transport
 
     def test_3_rename_branch(self):
         """
@@ -349,7 +362,7 @@ from bzrlib.commands import Command, Option
 from bzrlib.errors import (BzrCommandError, NotBranchError, DivergedBranches,
     NoWorkingTree)
 from bzrlib.branch import Branch
-from bzrlib.trace import warning
+from bzrlib.trace import warning, note
 class cmd_push(Command):
     """Push this branch into another branch.
     
