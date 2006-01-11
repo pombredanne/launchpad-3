@@ -85,7 +85,7 @@ body {
   padding: 0;
 }
 .body {
-  margin: 0 1em 1em;
+  margin: 0 0.75em 0.75em;
 }
 
 :visited {
@@ -252,7 +252,7 @@ ol {
   font-weight: normal;
 }
 .portlet h4 { /* the base portlet heading */
-  padding: 0em 0.3em 0em 1em;
+  padding: 0em 0.3em 0em 0.75em;
   display: block;
   font-size: 1em;
 }
@@ -275,7 +275,7 @@ ol {
   border: 1px solid #8cacbb;
 }
 .portletContent {
-  padding: 1em;
+  padding: 0.75em;
 }
 
 /* -- Form controls: -- */
@@ -395,13 +395,13 @@ ul.app>li.current {
 
 /* Column definitions: */
 #portal-columns {
-  margin-top: 1em;
+  margin-top: 0.75em;
 }
 #portal-column-content {
   display: inline; /* avoid MSIE Double Float Margin bug */
   float: left;
-  margin-left: 26%; /* = 25% + 1% whitespace */
-  width: 48%; /* = 50% - 1% left whitespace - 1% right whitespace */
+  margin-left: 23.5%; /* = + 22% portlet + 1.5% gutter */
+  width: 53%; /* = 100% - 2 * (22% + 1.5%) */
 }
 * > #portal-column-content { /* hide from MSIE/Win 5 where "relative" breaks */
   position: relative; /* allow z-index to work */
@@ -410,14 +410,14 @@ ul.app>li.current {
 #portal-column-two {
   display: inline;
   float: left;
-  margin-left: 2%; /* whitespace */
-  width: 24%; /* = 25% - 1% whitespace */
+  margin-left: 1.5%; /* whitespace */
+  width: 22%;
 }
 #portal-column-one {
   display: inline;
   float: left;
   margin-left: -100%; /* flush with the left edge of the page */
-  width: 24%; /* = 25% - 1% whitespace */
+  width: 22%;
 }
 
 .sitemap, ul.facets {
