@@ -7,7 +7,7 @@ across build records.
    >>> from canonical.launchpad.database import BinaryPackageRelease
    >>> from canonical.launchpad.interfaces import (
    ...       IBinaryPackageRelease, IBinaryPackageReleaseSet)
-   >>> from zope.interface.verify import verifyObject 
+   >>> from zope.interface.verify import verifyObject
 
    >>> bin = BinaryPackageRelease.get(12)
    >>> verifyObject(IBinaryPackageRelease, bin)
@@ -37,6 +37,21 @@ Useful properties:
    ... except AttributeError, info:
    ...     'BOOM'
    'BOOM'
+
+
+Check getter method, it should return a a IBinaryPackageRelease
+instance for the passed 'version' or raise NotFoundError:
+
+# XXX cprov 20060111: this method is utterly confusing for
+# a content class, anyway it works as specified.
+
+   >>> bin['0.9'].version
+   u'0.9'
+
+   >>> bin['6.6.6']
+   Traceback (most recent call last):
+   ...
+   NotFoundError: ('Version Not Found', '6.6.6')
 
 Check IBinaryPackageRelease.override() behaviour:
 
