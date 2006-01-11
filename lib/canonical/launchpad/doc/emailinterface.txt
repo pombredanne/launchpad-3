@@ -683,7 +683,7 @@ The user is a package bug contact
     ...         bugtask.targetname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     firefox (upstream): Confirmed, assigned to Sample Person
-    mozilla-firefox (ubuntu): Confirmed, assigned to No Privileges Person
+    mozilla-firefox (Ubuntu): Confirmed, assigned to No Privileges Person
     mozilla-firefox (debian): Confirmed, assigned to no one
 
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
@@ -713,7 +713,7 @@ The user is a distribution member
     ...         bugtask.targetname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     firefox (upstream): Confirmed, assigned to Sample Person
-    mozilla-firefox (ubuntu): Unconfirmed, assigned to Sample Person
+    mozilla-firefox (Ubuntu): Unconfirmed, assigned to Sample Person
     mozilla-firefox (debian): Confirmed, assigned to no one
 
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
@@ -741,7 +741,7 @@ user, telling him that he has to use the 'affects' command.
     ...         bugtask.targetname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     firefox (upstream): Confirmed, assigned to Sample Person
-    mozilla-firefox (ubuntu): Unconfirmed, assigned to Sample Person
+    mozilla-firefox (Ubuntu): Unconfirmed, assigned to Sample Person
     mozilla-firefox (debian): Confirmed, assigned to no one
 
     >>> transaction.commit()
