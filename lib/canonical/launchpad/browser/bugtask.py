@@ -530,31 +530,28 @@ class BugTaskSearchListingView(LaunchpadView):
 
     def assign_to_milestones(self):
         """Assign bug tasks to the given milestone."""
-        if not self._upstreamContext():
-            # The context is not an upstream, so, since the only
-            # context that currently supports milestones is upstream,
-            # there's nothing to do here.
-            return
+        if self.request.form.get("Assign to Milestone"):
+            # Targeting one or more tasks to a milestone can be done only on
+            # upstreams by the upstream owner, so let's sanity check this
+            # mass-target request.
+            assert self._upstreamContext(), (
+                "Mass-targeting of bugtasks to milestones is currently only "
+                "supported for products")
+            assert self.user is not None and self.user.inTeam(self.context.owner), (
+                "You must be logged in to mass-assign bugtasks to milestones")
 
-        user = getUtility(ILaunchBag).user
+        form_params = getWidgetsData(self, self.search_form_schema)
+        milestone_assignment = form_params.get('milestone_assignment')
+        if milestone_assignment is not None:
+            taskids = self.request.form.get('task')
+            if taskids:
+                if not isinstance(taskids, (list, tuple)):
+                    taskids = [taskids]
 
-        # Assign the selected tasks to the selected milestone only if the
-        # current user is the product owner, or in the team that is the product
-        # owner.
-        if user and user.inTeam(self.context.owner):
-            form_params = getWidgetsData(self, self.search_form_schema)
-
-            milestone_assignment = form_params.get('milestone_assignment')
-            if milestone_assignment is not None:
-                taskids = self.request.form.get('task')
-                if taskids:
-                    if not isinstance(taskids, (list, tuple)):
-                        taskids = [taskids]
-
-                    bugtaskset = getUtility(IBugTaskSet)
-                    tasks = [bugtaskset.get(taskid) for taskid in taskids]
-                    for task in tasks:
-                        task.milestone = milestone_assignment
+                bugtaskset = getUtility(IBugTaskSet)
+                tasks = [bugtaskset.get(taskid) for taskid in taskids]
+                for task in tasks:
+                    task.milestone = milestone_assignment
 
     def mass_edit_allowed(self):
         """Indicates whether the user can edit bugtasks directly on the page.
@@ -562,11 +559,9 @@ class BugTaskSearchListingView(LaunchpadView):
         At the moment the user can edit only product milestone
         assignments, if the user is an owner of the product.
         """
-        user = getUtility(ILaunchBag).user
-
         return (
             self._upstreamContext() is not None and
-            user and user.inTeam(self.context.owner))
+            self.user is not None and self.user.inTeam(self.context.owner))
 
     def task_columns(self):
         """Returns a sequence of column names to be shown in the listing.
