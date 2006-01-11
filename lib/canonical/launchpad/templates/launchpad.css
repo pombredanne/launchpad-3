@@ -88,12 +88,12 @@ body {
   margin: 0 1em 1em;
 }
 
-:visited, #subpillars :link {
+:visited {
   background: none;
   color: #8888bb;
 }
 :link, .hierarchy :visited, .footer :visited,
-#pillars :visited, .facets :visited, .portlet :visited {
+.facets :visited, #pillars :visited, #subpillars :visited, .portlet :visited {
   background: none;
   color: #000088;
 }
@@ -339,9 +339,13 @@ input[type="radio"] {
   font-size: 85%;
 }
 
-/* portlet links must not be underlined -- sabdfl */
+/* sabdfl says portlet links must not be underlined */
 .portlet a {
   text-decoration: none;
+}
+/* SteveA says they should still be underlined if they're in help text */ 
+.portlet p a {
+  text-decoration: underline;
 }
 
 /* -- Page layout: -- */
@@ -423,6 +427,7 @@ ul.app>li.current {
 .sitemap, ul.facets {
   background-color: #dee7ec;
   border: 1px solid #8cacbb;
+  color: #999999;
   font-size: smaller;
   margin: 0 0 1em 0;
 }
@@ -449,9 +454,11 @@ ul.app>li.current {
   list-style: none;
   margin: 0;
 }
-.sitemap :link, .sitemap :visited, .sitemap .current {
+.sitemap li {
   display: block;
   padding: 0.25em 1em;
+}
+.sitemap :link, .sitemap :visited {
   text-decoration: none;
 }
 #pillars li.current, .facets li.current {
@@ -472,9 +479,6 @@ ul.facets :link, ul.facets :visited {
 ul.facets>li {
   list-style-position: inside;
   margin: 0.25em 1em;
-  padding-left: 0.5em;
-}
-ul.facets>li.current {
   padding-left: 0.5em;
 }
 ul.facets>li ul {
@@ -626,6 +630,21 @@ ins {
   background-color: #7090a0;
 }
 
+/* see launchpad.js:activateCollapsables() */
+.collapsible legend a, .collapsible legend a:visited {
+    text-decoration: none;
+    color: #000088;
+}
+
+img.collapseIcon {
+    text-decoration: none;
+    margin-bottom: -3px;
+}
+
+.collapsible legend a span {
+    text-decoration: underline;
+}
+
 .collapsible {
     padding: 0;
     margin: 0;
@@ -666,11 +685,11 @@ tr.highlight {
 }
 
 /* Bug Status, Severity, Priority markers */
-.statusNew           { color: Orange; }
-.statusAccepted      { color: Red; }
-.statusPendingUpload { color: Black; }
-.statusFixed         { color: Green; }
-.statusRejected      { color: Gray; }
+.statusUnconfirmed { color: Orange; }
+.statusConfirmed   { color: Red; }
+.statusFixed       { color: Black; }
+.statusReleased    { color: Green; }
+.statusRejected    { color: Gray; }
 
 .severityCritical { color: Red; }
 .severityMajor    { color: #ff6600; }
@@ -1124,8 +1143,8 @@ Calendar stuff.
 .debug-notification {
   background-position: 5px 0.5em;
   padding-left: 30px;
-  background-color: #ffce7b;
-  border: 1px solid #ddb0b0;
+  background-color: #ffffcc;
+  border: 1px solid #eeee00;
   color: Black;
   background-image: url(/++resource++info_icon.gif);
   font-size: 85%;
@@ -1137,5 +1156,5 @@ Calendar stuff.
 
 .oopsid {
   font-weight: bold;
-  color: red;
+  color: #cc0000;
 }

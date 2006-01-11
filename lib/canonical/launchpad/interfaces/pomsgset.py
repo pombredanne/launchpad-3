@@ -63,8 +63,8 @@ class IPOMsgSet(Interface):
         msgset and plural form or None if there is no currently
         active submission."""
 
-    def publishedSubmission(pluralform):
-        """Returns the published translation submission for this po
+    def getPublishedSubmission(pluralform):
+        """Return the published translation submission for this po
         msgset and plural form or None if there is no currently
         published submission."""
 

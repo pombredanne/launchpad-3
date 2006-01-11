@@ -249,19 +249,20 @@ class POFile(SQLBase, RosettaStats):
         """See IPOFile."""
         return iter(self.currentMessageSets())
 
-    def getPOMsgSet(self, key, only_current=False):
+    def getPOMsgSet(self, msgid_text, only_current=False):
         """See IPOFile."""
         query = 'potemplate = %d' % self.potemplate.id
         if only_current:
             query += ' AND sequence > 0'
 
-        if not isinstance(key, unicode):
+        if not isinstance(msgid_text, unicode):
             raise AssertionError(
-                "Can't index with type %s. (Must be unicode.)" % type(key))
+                "Can't index with type %s. (Must be unicode.)" %
+                    type(msgid_text))
 
         # Find a message ID with the given text.
         try:
-            pomsgid = POMsgID.byMsgid(key)
+            pomsgid = POMsgID.byMsgid(msgid_text)
         except SQLObjectNotFound:
             return None
 
@@ -277,10 +278,11 @@ class POFile(SQLBase, RosettaStats):
         pomsgset = POMsgSet.selectOneBy(
             potmsgsetID=potmsgset.id, pofileID=self.id)
         if pomsgset is None:
-            # We don't have such IPOMsgSet created so we create it.
-            pomsgset = self.createMessageSetFromMessageSet(self, potmsgset)
-
-        return pomsgset
+            # There isn't a POMsgSet yet, we return a Dummy one until we get a
+            # write operation that creates the real one.
+            return DummyPOMsgSet(self, potmsgset)
+        else:
+            return pomsgset
 
     def __getitem__(self, msgid_text):
         """See IPOFile."""

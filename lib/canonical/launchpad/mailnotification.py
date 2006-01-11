@@ -4,24 +4,21 @@
 
 __metaclass__ = type
 
-import re
-import os.path
 import itertools
 import sets
 import textwrap
 
 from zope.security.proxy import isinstance as zope_isinstance
 
-import canonical.launchpad
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IBugDelta, IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask,
-    IDistribution, IProduct)
+    IBugDelta, IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask)
 from canonical.launchpad.mail import (
     simple_sendmail, simple_sendmail_from_person)
 from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.components.bugtask import BugTaskDelta
-from canonical.launchpad.helpers import contactEmailAddresses
+from canonical.launchpad.helpers import (
+    contactEmailAddresses, get_email_template)
 from canonical.launchpad.webapp import canonical_url
 
 GLOBAL_NOTIFICATION_EMAIL_ADDRS = ("dilys@muse.19inch.net",)
@@ -91,16 +88,6 @@ class MailWrapper:
         # We added one line too much, remove it.
         wrapped_lines = wrapped_lines[:-1]
         return '\n'.join(wrapped_lines)
-
-
-def get_email_template(filename):
-    """Returns the email template with the given file name.
-
-    The templates are located in 'lib/canonical/launchpad/emailtemplates'.
-    """
-    base = os.path.dirname(canonical.launchpad.__file__)
-    fullpath = os.path.join(base, 'emailtemplates', filename)
-    return open(fullpath).read()
 
 
 def get_bugmail_replyto_address(bug):

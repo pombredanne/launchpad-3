@@ -43,6 +43,7 @@ from canonical.launchpad.interfaces.cve import *
 from canonical.launchpad.interfaces.cvereference import *
 from canonical.launchpad.interfaces.distribution import *
 from canonical.launchpad.interfaces.distributionbounty import *
+from canonical.launchpad.interfaces.distributionmirror import *
 from canonical.launchpad.interfaces.distributionsourcepackage import *
 from canonical.launchpad.interfaces.distributionsourcepackagecache import *
 from canonical.launchpad.interfaces.distributionsourcepackagerelease import *
@@ -70,7 +71,6 @@ from canonical.launchpad.interfaces.librarian import *
 from canonical.launchpad.interfaces.logintoken import *
 from canonical.launchpad.interfaces.mail import *
 from canonical.launchpad.interfaces.mailbox import *
-from canonical.launchpad.interfaces.maintainership import *
 from canonical.launchpad.interfaces.manifestancestry import *
 from canonical.launchpad.interfaces.manifestentry import *
 from canonical.launchpad.interfaces.manifest import *

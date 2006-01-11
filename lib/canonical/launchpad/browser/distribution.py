@@ -9,6 +9,7 @@ __all__ = [
     'DistributionView',
     'DistributionSetView',
     'DistributionSetAddView',
+    'DistributionBugContactEditView'
     ]
 
 from zope.component import getUtility
@@ -24,14 +25,19 @@ from canonical.launchpad.interfaces import (
     NotFoundError)
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
+from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
-    GetitemNavigation, stepthrough, stepto)
+    GetitemNavigation, stepthrough, stepto, canonical_url, redirection)
 
 
 class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
     usedfor = IDistribution
+
+    @redirection('+source', status=301)
+    def redirect_source(self):
+        return canonical_url(self.context)
 
     def breadcrumb(self):
         return self.context.displayname
@@ -39,6 +45,10 @@ class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
     @stepto('+packages')
     def packages(self):
         return getUtility(IPublishedPackageSet)
+
+    @stepthrough('+mirror')
+    def traverse_mirrors(self, name):
+        return self.context.getMirrorByName(name)
 
     @stepthrough('+source')
     def traverse_sources(self, name):
@@ -60,6 +70,8 @@ class DistributionNavigation(GetitemNavigation, BugTargetTraversalMixin):
         except ValueError:
             raise NotFoundError
         return self.context.getTicket(ticket_num)
+
+    redirection('+ticket', '+tickets')
 
 
 class DistributionSetNavigation(GetitemNavigation):
@@ -96,16 +108,33 @@ class DistributionOverviewMenu(ApplicationMenu):
     usedfor = IDistribution
     facet = 'overview'
     links = ['search', 'allpkgs', 'milestone_add', 'members', 'edit',
-             'reassign', 'addrelease']
+             'editbugcontact', 'reassign', 'addrelease', 'builds',
+             'officialmirrors', 'allmirrors', 'newmirror']
 
     def edit(self):
         text = 'Edit Details'
         return Link('+edit', text, icon='edit')
 
+    def editbugcontact(self):
+        text = 'Edit Bug Contact'
+        return Link('+editbugcontact', text, icon='edit')
+
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
         text = 'Change Admin'
         return Link('+reassign', text, icon='edit')
+
+    def newmirror(self):
+        text = 'Register a New Mirror'
+        return Link('+newmirror', text, icon='add')
+
+    def officialmirrors(self):
+        text = 'List Official Mirrors'
+        return Link('+officialmirrors', text, icon='info')
+
+    def allmirrors(self):
+        text = 'List All Mirrors'
+        return Link('+allmirrors', text, icon='info')
 
     def allpkgs(self):
         text = 'List All Packages'
@@ -128,6 +157,9 @@ class DistributionOverviewMenu(ApplicationMenu):
         text = 'Add Release'
         return Link('+addrelease', text, icon='add')
 
+    def builds(self):
+        text = 'View Builds'
+        return Link('+builds', text, icon='info')
 
 class DistributionBugsMenu(ApplicationMenu):
 
@@ -224,7 +256,7 @@ class DistributionView(BuildRecordsView):
         self.detailed = True
         self.search_requested = False
 
-        # check if the user invoke search, if not dismiss 
+        # check if the user invoke search, if not dismiss
         self.text = self.request.form.get('text', None)
         if not self.text:
             return
@@ -298,3 +330,28 @@ class DistributionSetAddView(AddView):
     def nextURL(self):
         return self._nextURL
 
+
+class DistributionBugContactEditView(SQLObjectEditView):
+    """Browser view for editing the distribution bug contact."""
+    def changed(self):
+        """Redirect to the distribution page."""
+        distribution = self.context
+        contact_email = None
+
+        if distribution.bugcontact:
+            contact_email = distribution.bugcontact.preferredemail.email
+
+        if contact_email:
+            # The bug contact was set to a new person or team.
+            self.request.response.addNotification(
+                "Successfully changed the distribution bug contact to %s" %
+                contact_email)
+        else:
+            # The bug contact was set to noone.
+            self.request.response.addNotification(
+                "Successfully cleared the distribution bug contact. This "
+                "means that there is no longer a distro-wide contact for "
+                "bugmail. You can, of course, set a distribution bug "
+                "contact again whenever you want to.")
+
+        self.request.response.redirect(canonical_url(distribution))

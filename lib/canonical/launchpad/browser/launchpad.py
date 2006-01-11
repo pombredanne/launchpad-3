@@ -19,7 +19,6 @@ import os.path
 from datetime import timedelta, datetime
 
 from zope.app.datetimeutils import parseDatetimetz, tzinfo, DateTimeError
-from zope.app.errorservice.interfaces import ILocalErrorReportingService
 from zope.component import getUtility
 
 import canonical.launchpad.layers
@@ -139,11 +138,11 @@ class SiteMap(LaunchpadView):
 
     _pillars = [
         # (name, title, interface provided)
-        ('product', 'Products',       IProductSet),
-        ('distro',  'Distributions',  IDistributionSet),
-        ('person',  'People',         IPersonSet),
-        ('project', 'Product Groups', IProjectSet),
-        ('sprint',  'Meetings',       ISprintSet),
+        ('product', 'Products',      IProductSet),
+        ('distro',  'Distributions', IDistributionSet),
+        ('person',  'People',        IPersonSet),
+        ('project', 'Projects',      IProjectSet),
+        ('sprint',  'Meetings',      ISprintSet),
         ]
 
     def product_subpillar_links(self):
@@ -490,7 +489,6 @@ class LaunchpadRootNavigation(Navigation):
         'foaf': IFOAFApplication,
         '+builds': IBuilderSet,
         'bounties': IBountySet,
-        'errors': ILocalErrorReportingService
         }
 
     def traverse(self, name):
