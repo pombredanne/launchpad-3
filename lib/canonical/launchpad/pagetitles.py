@@ -224,7 +224,7 @@ builder_index = ContextTitle(smartquote('Build machine "%s"'))
 
 builder_cancel = ContextTitle(smartquote('Cancel job for "%s"'))
 
-builder_mode = ContextTitle('Change mode for “%s”')
+builder_mode = ContextTitle(smartquote('Change mode for "%s"'))
 
 calendar_index = ContextTitle('%s')
 
@@ -309,7 +309,7 @@ distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
 distributionsourcepackage_index = ContextTitle('%s')
 
-distributionsourcepackage_manage_bugcontacts = ContextTitle('Bug Contacts for %s')
+distributionsourcepackage_manage_bugcontacts = ContextTitle('Bug contacts for %s')
 
 distributionsourcepackagerelease_index = ContextTitle('%s')
 
@@ -413,19 +413,19 @@ launchpad_requestexpired = 'Error: Timeout'
 
 logintoken_index = 'Launchpad: redirect to the logintoken page'
 
-logintoken_mergepeople = 'Merge User Accounts'
+logintoken_mergepeople = 'Merge Launchpad accounts'
 
-logintoken_newaccount = 'Create a New Launchpad Account'
+logintoken_newaccount = 'Create a new Launchpad account'
 
-logintoken_resetpassword = 'Forgotten your Password?'
+logintoken_resetpassword = 'Forgotten your password?'
 
-logintoken_validateemail = 'Validate email address'
+logintoken_validateemail = 'Confirm e-mail address'
 
-logintoken_validategpg = 'Validate GPG Key'
+logintoken_validategpg = 'Confirm OpenPGP key'
 
-logintoken_validatesignonlygpg = 'Validate Sign-Only GPG Key'
+logintoken_validatesignonlygpg = 'Confirm sign-only OpenPGP key'
 
-logintoken_validateteamemail = 'Validate email address'
+logintoken_validateteamemail = 'Confirm e-mail address'
 
 # main_template has the code to insert one of these titles.
 
@@ -450,12 +450,6 @@ milestone_add = ContextDisplayName('Add milestone for %s')
 milestone_index = ContextTitle('%s')
 
 milestone_edit = ContextTitle('Edit %s')
-
-no_app_component_yet = 'Missing App Component'
-
-no_page_yet = 'Missing Page'
-
-no_url_yet = 'No url for this yet'
 
 # object_pots is a fragment.
 

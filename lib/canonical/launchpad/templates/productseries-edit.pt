@@ -12,7 +12,7 @@
   <div metal:use-macro="context/@@launchpad_editform/editform">
 
     <h1 metal:fill-slot="heading">Edit &#8220;<span
-        tal:content="context/displayname">Mozilla Firefox</span>&#8221;
+        tal:replace="context/displayname">Mozilla Firefox</span>&#8221;
         release series details</h1>
 
   </div>
