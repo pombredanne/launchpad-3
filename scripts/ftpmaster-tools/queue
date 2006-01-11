@@ -108,6 +108,7 @@ class QueueAction:
         if term == '*':
             term = ''
 
+        # retrieve DistroReleaseQueue item by id
         if term.isdigit():
             try:
                 item = getUtility(IDistroReleaseQueueSet).get(int(term))
@@ -116,6 +117,8 @@ class QueueAction:
 
             self.items = [item]
             self.items_size = 1
+            self.term = None
+        # retrieve DistroReleaseQueue item by name/version key
         else:
             version = None
             if '/' in term:
@@ -125,6 +128,7 @@ class QueueAction:
                 status=self.queue, name=term, version=version,
                 exact_match=self.exact_match)
             self.items_size = self.items.count()
+            self.term = term
 
     def run(self):
         """Place holder for command action."""
@@ -158,10 +162,10 @@ class QueueAction:
 
     def visualiseItem(self, queue_item):
         """Print out a one line summary of the queue item provided."""
-        spn = queue_item.sourcepackagename.name
         sourceful = len(queue_item.sources) > 0
         binaryful = len(queue_item.builds) > 0
         sourcever = queue_item.sourceversion
+        spn = queue_item.sourcepackagename.name
         age = DurationFormatterAPI(queue_item.age).approximateduration()
         vis_item = "%8d | " % queue_item.id
         if sourceful:
@@ -185,19 +189,21 @@ class QueueAction:
         vis_item += sourcever + " | " + age
         print vis_item
 
-    def printInfo(self, queue_item):
+    def printInfo(self, queue_item, only=None):
         """Displays additional information about the provided queue item."""
         for source in queue_item.sources:
             spr = source.sourcepackagerelease
             print ("Source: %s/%s Component: %s Section: %s"
                    % (spr.sourcepackagename.name, spr.version,
                       spr.component.name, spr.section.name))
-        for build in queue_item.builds:
-            for bpr in build.build.binarypackages:
+        for queue_build in queue_item.builds:
+            for bpr in queue_build.build.binarypackages:
+                if only and only != bpr.name:
+                    continue
                 print ("Binary: %s/%s/%s Component: %s Section: %s "
                        "Priority: %s"
                        % (bpr.binarypackagename.name, bpr.version,
-                          build.build.distroarchrelease.architecturetag,
+                          queue_build.build.distroarchrelease.architecturetag,
                           bpr.component.name, bpr.section.name,
                           bpr.priority.name))
 
@@ -321,16 +327,19 @@ class QueueActionOverride(QueueAction):
 
     Where override_stanza is one of:
     source [<component>]/[<section>]
-    binary <binaryname> [<component>]/[<section>]/[<priority>]
+    binary [<component>]/[<section>]/[<priority>]
 
     In each case, when you want to leave an override alone leave it blank.
 
-    So, to set the binary 'ed' to have section 'editors' but leave the
+    So, to set a binary to have section 'editors' but leave the
     component and priority alone, do:
 
-    queue override <filter> binary ed /editors/
+    queue override <filter> binary /editors/
 
-    Or, to set ed's source's section to editors, do:
+    Binaries can only be overriden by passing a name filter, so it will
+    only override the binary package which matches the filter.
+
+    Or, to set a source's section to editors, do:
 
     queue override <filter> source /editors
     """
@@ -351,9 +360,6 @@ class QueueActionOverride(QueueAction):
                             % override_stanza)
 
         getattr(self, '_override_' + override_stanza)()
-
-        self.printRule()
-        self.printBottom()
 
     def _override_source(self):
         """Overrides sourcepackagereleases selected.
@@ -381,6 +387,10 @@ class QueueActionOverride(QueueAction):
             raise QueueActionError('Not Found: %s' % info)
 
         for queue_item in self.items:
+            # XXX 20060111 cprov: DistroReleaseQueue has only one
+            # correnpondent DistroReleaseQueueSource and lastly to
+            # a single SourcePackageRelease, it's paired to
+            # a Changefile. So the for is fluff.
             for source in queue_item.sources:
                 source.sourcepackagerelease.override(
                     component=component, section=section)
@@ -388,16 +398,17 @@ class QueueActionOverride(QueueAction):
 
     def _override_binary(self):
         """Overrides binarypackagereleases selected"""
-        # XXX cprov 20051219: not tested at all
+        if not self.term:
+            self.printUsage('Cannot Override BinaryPackage retrived by ID')
+
         try:
             overrides = self.args[2]
             component_name, section_name, priority_name = overrides.split('/')
         except IndexError, info:
-            self.printUsage('Missed override_argument argument')
+            self.printUsage('Missed "name override_argument" argument')
         except ValueError, info:
             self.printUsage('Misapplied override_stanza argument: %s'
                             % overrides)
-
         component = None
         section = None
         priority = None
@@ -410,12 +421,30 @@ class QueueActionOverride(QueueAction):
         except (NotFoundError, KeyError), info:
             raise QueueActionError('Not Found: %s' % info)
 
+        overriden = None
         for queue_item in self.items:
             for build in queue_item.builds:
+                # XXX 20060111 cprov: Different than DistroReleaseQueueSources
+                # DistroReleaseQueueBuild points to a Build, that can,
+                # and usually does, point to multiple BinaryPackageReleases.
+                # So we need to carefully select the requested package to be
+                # overriden
                 for binary in build.build.binarypackages:
-                    binary.override(component=component, section=section,
-                                    priority=priority)
-                self.printInfo(queue_item)
+                    if binary.name == self.term:
+                        overriden = binary.name
+                        print ("Overriding %s_%s (%s/%s/%s)"
+                               % (binary.name, binary.version,
+                                  binary.component.name, binary.section.name,
+                                  binary.priority.name))
+                        binary.override(component=component, section=section,
+                                        priority=priority)
+                        # break loop, just in case
+                        break
+
+                if not overriden:
+                    self.printUsage('No matches for "%s".' % self.term)
+
+                self.printInfo(queue_item, only=overriden)
 
 queue_actions = {
     'list': QueueActionList,
@@ -453,6 +482,10 @@ def main():
                       default=False,
                       help="Whether treat filter as a exact match or not.")
 
+    parser.add_option("-r", "--report", action="store_true",
+                      metavar="", default=False,
+                      help="Present queue counters and exit.")
+
     parser.add_option("-A", "--announcelist",
                       dest="announcelist", metavar="ANNOUNCELIST",
                       default=None,
@@ -464,9 +497,6 @@ def main():
     options, args = parser.parse_args()
 
     log = logger(options, "queue")
-
-    print ("Initialising connection to queue %s/%s %s"
-           % (options.distro, options.distrorelease, options.queue))
 
     exact_match = options.exact_match
 
@@ -481,11 +511,17 @@ def main():
     ztm = initZopeless(dbuser=config.uploadqueue.dbuser)
     execute_zcml_for_scripts()
 
+    if options.report:
+        return showReport(distro_name, distrorelease_name)
+
     if options.file:
         args_list = [args.strip().split() for args in
                      open(options.file).readlines()]
     else:
         args_list = [args]
+
+    print ("Initialising connection to queue %s/%s %s"
+           % (options.distro, options.distrorelease, options.queue))
 
     for single_args in args_list:
         if runCommand(queue, distro_name, distrorelease_name, exact_match,
@@ -493,6 +529,26 @@ def main():
             return 1
         if not options.dryrun:
             ztm.commit()
+        else:
+            print "DRY RUN requested, not commiting."
+
+    return 0
+
+def showReport(distro_name, distrorelease_name):
+    """Presents the Queue Counters."""
+    try:
+        distro = getUtility(IDistributionSet).getByName(distro_name)
+        distrorelease = distro[distrorelease_name]
+    except NotFoundError, info:
+        print 'Unable to found: %s' % info
+        return 1
+
+    print "Report for %s/%s" % (distro.name, distrorelease.name)
+
+    for queue in name_queue_map.values():
+        size = getUtility(IDistroReleaseQueueSet).count(
+            status=queue, distrorelease=distrorelease)
+        print "\t%s -> %s entries" % (queue.name, size)
 
     return 0
 

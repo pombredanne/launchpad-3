@@ -146,10 +146,10 @@ class DistroReleaseQueue(SQLBase):
         if len(self.sources):
             filename += "source"
             arch_done = True
-        for build in self.builds:
+        for queue_build in self.builds:
             if arch_done:
                 filename += "+"
-            filename += build.build.distroarchrelease.architecturetag
+            filename += queue_build.build.distroarchrelease.architecturetag
             arch_done = True
         filename += ".changes"
         return filename
@@ -163,11 +163,11 @@ class DistroReleaseQueue(SQLBase):
         a column at a later date.
         """
         # If we can find a source, return it
-        for source in self.sources:
-            return source.sourcepackagerelease.dateuploaded
+        for queue_source in self.sources:
+            return queue_source.sourcepackagerelease.dateuploaded
         # Ditto for builds
-        for build in self.builds:
-            return build.build.datecreated
+        for queue_build in self.builds:
+            return queue_build.build.datecreated
         # Strange, but there's no source or build, complain
         raise NotFoundError()
 
@@ -187,11 +187,11 @@ class DistroReleaseQueue(SQLBase):
         but may be made into a column at a later date.
         """
         # If there's a source, use it
-        for source in self.sources:
-            return source.sourcepackagerelease.sourcepackagename
+        for queue_source in self.sources:
+            return queue_source.sourcepackagerelease.sourcepackagename
         # ditto builds
-        for build in self.builds:
-            return build.sourcepackagerelease.sourcepackagename
+        for queue_build in self.builds:
+            return queue_build.build.sourcepackagerelease.sourcepackagename
         # strange, no source or build
         raise NotFoundError()
 
@@ -202,11 +202,11 @@ class DistroReleaseQueue(SQLBase):
         This is currently heuristic but may be more easily calculated later.
         """
         # If there's a source, use it
-        for source in self.sources:
-            return source.sourcepackagerelease.version
+        for queue_source in self.sources:
+            return queue_source.sourcepackagerelease.version
         # ditto builds
-        for build in self.builds:
-            return build.sourcepackagerelease.version
+        for queue_build in self.builds:
+            return queue_build.build.sourcepackagerelease.version
         # strange, no source or build
         raise NotFoundError()
 
@@ -217,10 +217,10 @@ class DistroReleaseQueue(SQLBase):
         # In realising an upload we first load all the sources into
         # the publishing tables, then the binaries, then we attempt
         # to publish the custom objects.
-        for source in self.sources:
-            source.publish(logger)
-        for build in self.builds:
-            build.publish(logger)
+        for queue_source in self.sources:
+            queue_source.publish(logger)
+        for queue_build in self.builds:
+            queue_build.publish(logger)
         for customfile in self.customfiles:
             customfile.publish(logger)
 

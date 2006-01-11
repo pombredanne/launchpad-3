@@ -160,6 +160,25 @@ Counter, optionally by status (informally named "queue") and or distrorelease:
   1
 
 
+Check the behaviour of @cachedproperty  attributes:
+  >>> qitem = qset.get(1)
+
+  >>> qitem.datecreated.isoformat()
+  '2004-09-27T11:57:13+00:00'
+
+  >>> qitem.age
+  datetime.timedelta(...)
+
+  >>> qitem.changesfilename
+  u'mozilla-firefox_0.9_i386.changes'
+
+  >>> qitem.sourcepackagename.name
+  u'mozilla-firefox'
+
+  >>> qitem.sourceversion
+  u'0.9'
+
+
 Explore the queue features of a DistroRelease instance, let's test the
 of IDistroRelease.getFancyQueueItems:
 
