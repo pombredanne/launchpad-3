@@ -17,8 +17,6 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
-from canonical.launchpad.helpers import shortlist
-
 from canonical.launchpad.interfaces import (
     IBuild, IBuildSet)
 
@@ -105,7 +103,7 @@ class Build(SQLBase):
     @property
     def binarypackages(self):
         """See IBuild."""
-        bpklist = shortlist(BinaryPackageRelease.selectBy(buildID=self.id))
+        bpklist = BinaryPackageRelease.selectBy(buildID=self.id)
         return sorted(bpklist, key=lambda a: a.binarypackagename.name)
 
     @property
@@ -124,7 +122,6 @@ class Build(SQLBase):
         self.gpgsigningkey = None
         self.changes = None
         self.buildlog = None
-        
 
     def __getitem__(self, name):
         return self.getBinaryPackageRelease(name)
