@@ -6,7 +6,8 @@ from its edit form.
   ... """)
   HTTP/1.1 303 See Other
   ...
-  Location: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+edit/+login?...
+  Location: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+edit/+login
+  ...
   <BLANKLINE>
 
 

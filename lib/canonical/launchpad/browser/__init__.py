@@ -28,6 +28,7 @@ from canonical.launchpad.browser.cal import *
 from canonical.launchpad.browser.codeofconduct import *
 from canonical.launchpad.browser.cve import *
 from canonical.launchpad.browser.distribution import *
+from canonical.launchpad.browser.distributionmirror import *
 from canonical.launchpad.browser.distributionsourcepackage import *
 from canonical.launchpad.browser.distributionsourcepackagerelease import *
 from canonical.launchpad.browser.distroarchrelease import *
@@ -76,6 +77,7 @@ from canonical.launchpad.browser.teammembership import *
 from canonical.launchpad.browser.build import *
 from canonical.launchpad.browser.builder import *
 from canonical.launchpad.browser.translationgroup import *
+from canonical.launchpad.browser.translationimportqueue import *
 from canonical.launchpad.browser.translator import *
 from canonical.launchpad.browser.widgets import *
 from canonical.launchpad.browser.calendarwidgets import *

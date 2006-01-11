@@ -194,6 +194,7 @@ class DummyRequest:
     def __init__(self, **form_data):
         self.form = form_data
         self.response = DummyResponse()
+        self.method = 'POST'
 
     def getURL(self):
         return "http://this.is.a/fake/url"
@@ -223,8 +224,8 @@ class DummyLaunchBag:
         self.user = user
 
 
-def test_POFileView_init():
-    """Test the __init__ method for POFileView.
+def test_POFileView_initialize():
+    """Test the initialize method for POFileView.
 
     Some boilerplate to allow us to use utilities.
 
@@ -246,6 +247,7 @@ def test_POFileView_init():
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest()
     >>> t = POFileView(context, request)
+    >>> t.initialize()
     >>> t.processTranslations()
 
     >>> context.language.code
@@ -269,6 +271,7 @@ def test_POFileView_init():
     >>> context = DummyPOFile(potemplate, language_set['cy'])
     >>> request = DummyRequest()
     >>> t = POFileView(context, request)
+    >>> t.initialize()
     >>> t.processTranslations()
 
     >>> context.language.code
@@ -286,6 +289,7 @@ def test_POFileView_init():
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest(offset=7, count=8)
     >>> t = POFileView(context, request)
+    >>> t.initialize()
     >>> t.processTranslations()
 
     >>> t.offset
@@ -301,6 +305,7 @@ def test_POFileView_init():
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest(offset='foo', count='bar')
     >>> t = POFileView(context, request)
+    >>> t.initialize()
     >>> t.processTranslations()
 
     >>> t.offset
@@ -315,6 +320,7 @@ def test_POFileView_init():
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest(show='translated')
     >>> t = POFileView(context, request)
+    >>> t.initialize()
     >>> t.processTranslations()
 
     >>> t.show
@@ -339,6 +345,7 @@ def test_POFileView_atBeginning_atEnd():
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest()
     >>> t = POFileView(context, request)
+    >>> t.initialize()
     >>> t.processTranslations()
 
     >>> t.atBeginning()
@@ -351,6 +358,7 @@ def test_POFileView_atBeginning_atEnd():
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest(offset=10)
     >>> t = POFileView(context, request)
+    >>> t.initialize()
     >>> t.processTranslations()
 
     >>> t.atBeginning()
@@ -363,6 +371,7 @@ def test_POFileView_atBeginning_atEnd():
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest(offset=30)
     >>> t = POFileView(context, request)
+    >>> t.initialize()
     >>> t.processTranslations()
 
     >>> t.atBeginning()
@@ -391,6 +400,7 @@ def test_POFileView_URLs():
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest()
     >>> t = POFileView(context, request)
+    >>> t.initialize()
     >>> t.processTranslations()
 
     >>> t.createURL()
@@ -409,6 +419,7 @@ def test_POFileView_URLs():
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest(offset=10)
     >>> t = POFileView(context, request)
+    >>> t.initialize()
     >>> t.processTranslations()
 
     >>> t.beginningURL()
@@ -430,6 +441,7 @@ def test_POFileView_URLs():
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest(offset=42, count=43)
     >>> t = POFileView(context, request)
+    >>> t.initialize()
     >>> t.processTranslations()
 
     If the offset is too high, it should drop to accomodate the count.
@@ -447,6 +459,7 @@ def test_POFileView_URLs():
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest(show='all')
     >>> t = POFileView(context, request)
+    >>> t.initialize()
     >>> t.processTranslations()
 
     >>> t.createURL()
@@ -457,6 +470,7 @@ def test_POFileView_URLs():
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest(show='translated')
     >>> t = POFileView(context, request)
+    >>> t.initialize()
     >>> t.processTranslations()
 
     >>> t.createURL()
@@ -481,6 +495,7 @@ def test_POFileView_messageSets():
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest()
     >>> t = POFileView(context, request)
+    >>> t.initialize()
     >>> t.processTranslations()
 
     >>> x = list(t.messageSets)[0]
@@ -520,6 +535,7 @@ def test_POFileView_makeTabIndex():
     >>> context = DummyPOFile(potemplate, language_set['es'])
     >>> request = DummyRequest()
     >>> t = POFileView(context, request)
+    >>> t.initialize()
     >>> t.makeTabIndex()
     1
     >>> t.makeTabIndex()

@@ -66,6 +66,13 @@ Here's the person who'll be doing the import.
     ...     contents='# Not much.',
     ...     owner=person)
 
+We should disable the pending import status added by the IPOTemplate
+creation because the current data is not valid.
+
+    >>> from canonical.lp.dbschema import RosettaImportStatus
+    >>> from canonical.launchpad.interfaces import IRawFileData
+    >>> IRawFileData(potemplate).rawimportstatus = RosettaImportStatus.IGNORE
+
 And this is the file that'll get imported.
 
     >>> potemplate_contents = r'''
@@ -199,7 +206,7 @@ in the PO template. It should not be publishedfuzzy.
 
 And should be accepted by our validator.
 
-    >>> published = messageSets[0].publishedSubmission(0)
+    >>> published = messageSets[0].getPublishedSubmission(0)
     >>> published.validationstatus == TranslationValidationStatus.OK
     True
 
@@ -226,14 +233,14 @@ be the same for the active translation.
 And this one should have the validation status with an error.
 
     >>> messageSet = pofile.getPOMsgSet(u'Foo %s')
-    >>> published = messageSet.publishedSubmission(0)
+    >>> published = messageSet.getPublishedSubmission(0)
     >>> published.validationstatus == TranslationValidationStatus.UNKNOWNERROR
     True
 
 Check that the plural form was imported correctly.
 
     >>> messageSet = pofile.getPOMsgSet(u'Singular %d')
-    >>> published = messageSet.publishedSubmission(0)
+    >>> published = messageSet.getPublishedSubmission(0)
     >>> published.validationstatus == TranslationValidationStatus.OK
     True
     >>> messageSet.published_texts
@@ -358,7 +365,6 @@ Another test, try to import a .po file that is older than previous import...
 
 The rawimportstatus should be ignored.
 
-    >>> from canonical.lp.dbschema import RosettaImportStatus
     >>> pofile.rawimportstatus == RosettaImportStatus.IGNORE
     True
 
@@ -425,7 +431,7 @@ cronscript has any problem.
 
 First, remove the recently seen cache
 
-    >>> from canonical.launchpad.scripts.rosetta import ImportProcess
+    >>> from canonical.launchpad.scripts.po_import import ImportProcess
     >>> import os, os.path
     >>> if os.path.exists(ImportProcess.POIMPORT_RECENTLY_SEEN_PICKLE):
     ...     os.unlink(ImportProcess.POIMPORT_RECENTLY_SEEN_PICKLE)

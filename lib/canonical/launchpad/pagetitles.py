@@ -227,6 +227,8 @@ build_changes = ContextTitle('%s: Changes')
 
 build_index = ContextTitle('%s: Overview')
 
+build_reset = ContextTitle('Reset %s')
+
 builders = 'Launchpad Build Farm Overview'
 
 builder_edit = ContextTitle('Editing %s details')
@@ -284,13 +286,31 @@ debug_unauthorized = 'Launchpad - Not Permitted'
 
 default_editform = 'Default "Edit" Page'
 
+distributionmirror_addarchrelease = ContextTitle(
+    'Add new Arch Release for mirror %s')
+
+distributionmirror_addsourcerelease = ContextTitle(
+    'Add new Source Release for mirror %s')
+
+distributionmirror_edit = ContextTitle('Edit mirror %s')
+
+distributionmirror_index = ContextTitle('Mirror %s')
+
 distribution_allpackages = ContextTitle('All packages in %s')
+
+distribution_bugcontact = ContextTitle('Edit Bug Contact for %s')
 
 distribution_cvereport = ContextTitle('CVE Reports for %s')
 
 distribution_members = ContextTitle('%s distribution members')
 
 distribution_memberteam = ContextTitle("Change %s's distribution team")
+
+distribution_newmirror = ContextTitle("Register a new mirror for %s")
+
+distribution_officialmirrors = ContextTitle("Official mirrors of %s")
+
+distribution_allmirrors = ContextTitle("All mirrors of %s")
 
 distribution_translations = ContextDisplayName('Translating %s')
 
@@ -305,6 +325,8 @@ distribution_builds = ContextTitle('%s Builds')
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
 distributionsourcepackage_index = ContextTitle('%s')
+
+distributionsourcepackage_manage_bugcontacts = ContextTitle('Bug Contacts for %s')
 
 distributionsourcepackagerelease_index = ContextTitle('%s')
 
@@ -369,11 +391,7 @@ foaf_dashboard = 'Your Launchpad Dashboard'
 
 foaf_index = 'Foaf Home Page'
 
-foaf_mergepeople = 'Merge User Accounts'
-
 foaf_mergerequest_sent = 'Merge User Accounts'
-
-foaf_newaccount = 'Create a New Launchpad Account'
 
 foaf_newteam = 'FOAF: Create a new Team'
 
@@ -381,17 +399,7 @@ foaf_requestmerge_multiple = 'Merge User Accounts'
 
 foaf_requestmerge = 'Merge User Accounts'
 
-foaf_resetpassword = 'Forgotten your Password?'
-
 foaf_todo = 'To-Do List'
-
-foaf_validateemail = 'Validate email address'
-
-foaf_validateteamemail = 'Validate email address'
-
-foaf_validategpg = 'Validate GPG Key'
-
-foaf_validatesignonlygpg = 'Validate Sign-Only GPG Key'
 
 karmaaction_index = 'Karma Actions'
 
@@ -439,6 +447,20 @@ launchpad_requestexpired = 'Request Took Too Long'
 # launchpad_widget_macros doesn't need a title.
 
 logintoken_index = 'Launchpad: redirect to the logintoken page'
+
+logintoken_mergepeople = 'Merge User Accounts'
+
+logintoken_newaccount = 'Create a New Launchpad Account'
+
+logintoken_resetpassword = 'Forgotten your Password?'
+
+logintoken_validateemail = 'Validate email address'
+
+logintoken_validategpg = 'Validate GPG Key'
+
+logintoken_validatesignonlygpg = 'Validate Sign-Only GPG Key'
+
+logintoken_validateteamemail = 'Validate email address'
 
 # main_template has the code to insert one of these titles.
 
@@ -596,6 +618,8 @@ potemplatenames_index = 'Template names in Launchpad'
 
 product_add = 'Register a product with Launchpad'
 
+product_bugcontact = ContextTitle('Edit Bug Contact for %s')
+
 product_bugs = ContextDisplayName('%s upstream bug reports')
 
 product_branches = ContextDisplayName('%s\'s code branches in Launchpad')
@@ -632,6 +656,8 @@ products_search = 'Launchpad: Advanced Upstream Product Search'
 productseries_source = 'Add Source Import'
 
 productseries_sourceadmin = 'Add Source Import'
+
+productseries_translations_upload = 'Request New Translations Upload'
 
 project = ContextTitle('Upstream Project: %s')
 
@@ -675,6 +701,8 @@ registry_review = 'Launchpad Content Review'
 registry_to_do = 'Launchpad To-Do List'
 
 related_bounties = ContextDisplayName('Bounties for %s')
+
+remotebug_index = ContextTitle('%s')
 
 root_index = 'The Launchpad Home Page'
 
@@ -881,15 +909,13 @@ standardshipitrequest_new = 'Create a New Standard Option'
 
 standardshipitrequest_edit = 'Edit Standard Option'
 
-def team_addmember(context, view):
-    return '%s: Add members' % context.team.browsername
+team_addmember = ContextBrowsername('%s: Add Member')
 
 team_edit = 'Edit Team Information'
 
 team_editemail = ContextDisplayName('Edit %s Contact Email Address')
 
-def team_editproposed(context, view):
-    return '%s Proposed Members' % context.team.browsername
+team_editproposed = ContextBrowsername('%s Proposed Members')
 
 team_index = ContextBrowsername('"%s" team in Launchpad')
 
@@ -897,8 +923,7 @@ team_join = ContextBrowsername('Join %s')
 
 team_leave = ContextBrowsername('Leave %s')
 
-def team_members(context, view):
-    return '"%s" members' % context.team.browsername
+team_members = ContextBrowsername('%s members')
 
 def teammembership_index(context, view):
     return 'Membership status for %s in %s' % (
@@ -920,6 +945,10 @@ template_new = 'EXAMPLE NEW TITLE'
 
 translationgroup = ContextTitle('Rosetta Translation Group: %s')
 translationgroups = 'Rosetta Translation Groups'
+
+translationimportqueueentry_index = 'Translation Import Queue Entry'
+translationimportqueue_index = 'Translation Import Queue'
+translationimportqueue_blocked = 'Translation Import Queue - Blocked'
 
 # ul_main_template is probably obselete
 

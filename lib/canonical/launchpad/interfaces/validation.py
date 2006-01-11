@@ -1,11 +1,16 @@
 
 __all__ = [
     'validate_url',
+    'valid_http_url',
+    'valid_ftp_url',
+    'valid_rsync_url',
     'valid_webref',
     'non_duplicate_bug',
     'valid_bug_number',
     'valid_emblem',
     'valid_hackergotchi',
+    'valid_unregistered_email',
+    'validate_distribution_mirror_schema',
     ]
 
 import urllib
@@ -14,10 +19,13 @@ from StringIO import StringIO
 
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
+from zope.app.form.interfaces import WidgetsError
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.validators.email import valid_email
+from canonical.lp.dbschema import MirrorPulseType
 
 def validate_url(url, valid_schemes):
     """Returns a boolean stating whether 'url' is a valid URL.
@@ -68,6 +76,30 @@ def valid_webref(web_ref):
             Not a valid URL. Please enter the full URL, including the
             scheme (for instance, http:// for a web URL), and ensure the
             URL uses either http, https or ftp.""")))
+
+def valid_ftp_url(url):
+    if validate_url(url, ['ftp']):
+        return True
+    else:
+        raise LaunchpadValidationError(_(dedent("""
+            Not a valid FTP URL. Please enter the full URL, including the
+            ftp:// part.""")))
+
+def valid_rsync_url(url):
+    if validate_url(url, ['rsync']):
+        return True
+    else:
+        raise LaunchpadValidationError(_(dedent("""
+            Not a valid Rsync URL. Please enter the full URL, including the
+            rsync:// part.""")))
+
+def valid_http_url(url):
+    if validate_url(url, ['http']):
+        return True
+    else:
+        raise LaunchpadValidationError(_(dedent("""
+            Not a valid HTTP URL. Please enter the full URL, including the
+            http:// part.""")))
 
 def non_duplicate_bug(value):
     """Prevent dups of dups.
@@ -142,3 +174,47 @@ def valid_emblem(emblem):
 def valid_hackergotchi(hackergotchi):
     return _valid_image(hackergotchi, 54000, (150,150))
 
+# XXX: matsubara 2005-12-08 This validator shouldn't be used in an editform, 
+# because editing an already registered e-mail would fail if this constraint
+# is used.
+def valid_unregistered_email(email):
+    """Check that the given email is valid and that isn't registered to
+    another user."""
+
+    from canonical.launchpad.interfaces import IEmailAddressSet
+    if valid_email(email):
+        emailset = getUtility(IEmailAddressSet)
+        if emailset.getByEmail(email) is not None:
+            raise LaunchpadValidationError(_(dedent("""
+                %s is already taken.""" % email)))
+        else:
+            return True
+    else:
+        raise LaunchpadValidationError(_(dedent("""
+            %s isn't a valid email address.""" % email)))
+
+def validate_distribution_mirror_schema(form_values):
+    """Perform schema validation according to IDistributionMirror constraints.
+
+    This validation will take place after the values of individual widgets
+    are validated. It's necessary because we have some constraints where we
+    need to take into account the value of multiple widgets.
+
+    :form_values: A dictionary mapping IDistributionMirror attributes to the
+                  values suplied by the user.
+    """
+    errors = []
+    if (form_values['pulse_type'] == MirrorPulseType.PULL 
+        and not form_values['pulse_source']):
+        errors.append(LaunchpadValidationError(_(
+            "You have choosen 'Pull' as the pulse type but have not "
+            "supplied a pulse source.")))
+
+    if not (form_values['http_base_url'] or form_values['ftp_base_url']
+            or form_values['rsync_base_url']):
+        errors.append(LaunchpadValidationError(_(
+            "All mirrors require at least one URL (HTTP, FTP or "
+            "Rsync) to be specified.")))
+
+    if errors:
+        raise WidgetsError(errors)

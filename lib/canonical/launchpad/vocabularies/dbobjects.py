@@ -21,6 +21,7 @@ __all__ = [
     'CountryNameVocabulary',
     'DistributionVocabulary',
     'DistroReleaseVocabulary',
+    'FilteredDistroArchReleaseVocabulary',
     'FilteredDistroReleaseVocabulary',
     'FilteredProductSeriesVocabulary',
     'KarmaCategoryVocabulary',
@@ -62,9 +63,9 @@ from canonical.launchpad.database import (
     BinaryPackageName, Language, Milestone, Product, Project, ProductRelease,
     ProductSeries, TranslationGroup, BugTracker, POTemplateName, Schema,
     Bounty, Country, Specification, Bug, Processor, ProcessorFamily,
-    KarmaCategory)
+    KarmaCategory, DistroArchRelease)
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ITeam, ITeamMembershipSubset, IPersonSet, IEmailAddressSet)
+    ILaunchBag, ITeam, IPersonSet, IEmailAddressSet)
 
 class IHugeVocabulary(IVocabulary):
     """Interface for huge vocabularies.
@@ -533,15 +534,13 @@ class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
 
     def __init__(self, context):
         if not context:
-            raise ValueError('ValidTeamMemberVocabulary needs a context.')
-        if ITeamMembershipSubset.providedBy(context):
-            self.team = context.team
-        elif ITeam.providedBy(context):
+            raise AssertionError('ValidTeamMemberVocabulary needs a context.')
+        if ITeam.providedBy(context):
             self.team = context
         else:
-            raise ValueError(
-                "ValidTeamMemberVocabulary's context must implement ITeam or "
-                "ITeamMembershipSubset. Got %s" % str(context))
+            raise AssertionError(
+                "ValidTeamMemberVocabulary's context must implement ITeam."
+                "Got %s" % str(context))
 
         ValidPersonOrTeamVocabulary.__init__(self, context)
         self.extra_clause = """
@@ -561,9 +560,9 @@ class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
 
     def __init__(self, context):
         if not context:
-            raise ValueError('ValidTeamOwnerVocabulary needs a context.')
+            raise AssertionError('ValidTeamOwnerVocabulary needs a context.')
         if not ITeam.providedBy(context):
-            raise ValueError(
+            raise AssertionError(
                     "ValidTeamOwnerVocabulary's context must be a team.")
         ValidPersonOrTeamVocabulary.__init__(self, context)
         self.extra_clause = """
@@ -667,9 +666,8 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
         # NB: We use '/' as the seperator because '-' is valid in
         # a product.name or productseries.name
         token = '%s/%s' % (obj.product.name, obj.name)
-        return SimpleTerm(obj.id,
-                          token,
-                          obj.product.name + ' ' + obj.name)
+        return SimpleTerm(
+            obj, token, '%s %s' % (obj.product.name, obj.name))
 
     def getTermByToken(self, token):
         try:
@@ -712,7 +710,7 @@ class FilteredDistroReleaseVocabulary(SQLObjectVocabularyBase):
 
     def _toTerm(self, obj):
         return SimpleTerm(
-            obj, obj.id, obj.distribution.name + " " + obj.name)
+            obj, obj.id, '%s %s' % (obj.distribution.name, obj.name))
 
     def __iter__(self):
         kw = {}
@@ -726,6 +724,31 @@ class FilteredDistroReleaseVocabulary(SQLObjectVocabularyBase):
                 yield self._toTerm(distrorelease)
 
 
+class FilteredDistroArchReleaseVocabulary(SQLObjectVocabularyBase):
+    """All arch releases of a particular distribution."""
+
+    _table = DistroArchRelease
+    _orderBy = ['DistroRelease.version', 'architecturetag', 'id']
+    _clauseTables = ['DistroRelease']
+
+    def _toTerm(self, obj):
+        name = "%s %s (%s)" % (obj.distrorelease.distribution.name,
+                               obj.distrorelease.name, obj.architecturetag)
+        return SimpleTerm(obj, obj.id, name)
+
+    def __iter__(self):
+        distribution = getUtility(ILaunchBag).distribution
+        if distribution:
+            query = """
+                DistroRelease.id = distrorelease AND
+                DistroRelease.distribution = %s
+                """ % sqlvalues(distribution.id)
+            results = self._table.select(
+                query, orderBy=self._orderBy, clauseTables=self._clauseTables)
+            for distroarchrelease in results:
+                yield self._toTerm(distroarchrelease)
+
+
 class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
     """Describes ProductSeries of a particular product."""
     _table = ProductSeries
@@ -733,7 +756,7 @@ class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
 
     def _toTerm(self, obj):
         return SimpleTerm(
-            obj, obj.id, obj.product.name + " " + obj.name)
+            obj, obj.id, '%s %s' % (obj.product.name, obj.name))
 
     def __iter__(self):
         launchbag = getUtility(ILaunchBag)
@@ -961,17 +984,8 @@ class POTemplateNameVocabulary(NamedSQLObjectVocabulary):
     _table = POTemplateName
     _orderBy = 'name'
 
-    def search(self, query):
-        """Return terms where query is a substring of the name"""
-        if query:
-            query = query.lower()
-            objs = self._table.select(
-                CONTAINSSTRING(POTemplateName.q.name, query),
-                orderBy=self._orderBy
-                )
-
-            for o in objs:
-                yield self._toTerm(o)
+    def _toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.translationdomain)
 
 
 class ProcessorVocabulary(NamedSQLObjectVocabulary):

@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'IBugTracker',
     'IBugTrackerSet',
+    'IRemoteBug',
     ]
 
 from zope.i18nmessageid import MessageIDFactory
@@ -47,13 +48,12 @@ class IBugTracker(Interface):
             'example, its administrators can be contacted about a security '
             'breach).'))
     watches = Attribute('The remote watches on this bug tracker.')
-    projects = Attribute("The projects which use this bug tracker.")
+    projects = Attribute('The projects which use this bug tracker.')
+    latestwatches = Attribute('The last 10 watches created.')
 
-    # properties
-    watchcount = Attribute("Return the number of watches on this "
-        "bugtracker.")
+    def getBugsWatching(remotebug):
+        """Get the bugs watching the given remote bug in this bug tracker."""
 
-    latestwatches = Attribute("Return the last 10 watches created.")
 
 class IBugTrackerSet(Interface):
     """A set of IBugTracker's.
@@ -92,4 +92,27 @@ class IBugTrackerSet(Interface):
         """Turn https into http, so that we do not create multiple
         bugtrackers unnecessarily."""
 
+    def getMostActiveBugTrackers(limit=None):
+        """Return the top IBugTrackers.
 
+        Returns a list of IBugTracker objects, ordered by the number
+        of bugwatches for each tracker, from highest to lowest.
+        """
+
+
+class IRemoteBug(Interface):
+    """A remote bug for a given bug tracker."""
+
+    bugtracker = Choice(title=_('Bug System'), required=True,
+        vocabulary='BugTracker', description=_("The bug tracker in which "
+        "the remote bug is found."))
+
+    remotebug = TextLine(title=_('Remote Bug'), required=True,
+        readonly=False, description=_("The bug number of this bug in the "
+        "remote bug system."))
+
+    bugs = Attribute(_("A list of the Launchpad bugs watching the remote bug"))
+
+    title = TextLine(
+        title=_('Title'),
+        description=_('A descriptive label for this remote bug'))

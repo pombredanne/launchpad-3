@@ -4,8 +4,15 @@
 
 __metaclass__ = type
 
-__all__ = ['BuilderSetNavigation', 'BuildFarmFacets', 'BuilderFacets',
-           'BuilderSetAddView', 'BuilderView']
+__all__ = ['BuilderSetNavigation',
+           'BuilderSetFacets',
+           'BuilderSetOverviewMenu',
+           'BuilderSetView',
+           'BuilderSetAddView',
+           'BuilderNavigation',
+           'BuilderFacets',
+           'BuilderOverviewMenu',
+           'BuilderView']
 
 import datetime
 import pytz
@@ -18,17 +25,26 @@ from zope.event import notify
 from zope.app.form.browser.add import AddView
 from zope.app.event.objectevent import ObjectCreatedEvent
 
+from canonical.lp.z3batching import Batch
+from canonical.lp.batching import BatchNavigator
+
+from canonical.launchpad.browser.build import BuildRecordsView
+
 from canonical.launchpad.interfaces import (
     IPerson, IBuilderSet, IBuilder, IBuildSet
     )
 
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, GetitemNavigation, stepthrough)
+    StandardLaunchpadFacets, GetitemNavigation, stepthrough, Link,
+    ApplicationMenu, enabled_with_permission)
 
 
 class BuilderSetNavigation(GetitemNavigation):
-
+    """Navigation methods for IBuilderSet."""
     usedfor = IBuilderSet
+
+    def breadcrumb(self):
+        return 'Build Farm'
 
     @stepthrough('+build')
     def traverse_build(self, name):
@@ -42,7 +58,15 @@ class BuilderSetNavigation(GetitemNavigation):
             return None
 
 
-class BuildFarmFacets(StandardLaunchpadFacets):
+class BuilderNavigation(GetitemNavigation):
+    """Navigation methods for IBuilder."""
+    usedfor = IBuilder
+
+    def breadcrumb(self):
+        return self.context.title
+
+
+class BuilderSetFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IBuilderSet."""
     enable_only = ['overview']
 
@@ -56,17 +80,63 @@ class BuilderFacets(StandardLaunchpadFacets):
     usedfor = IBuilder
 
 
-class BuilderView:
-    """Default Builder view class
+class BuilderSetOverviewMenu(ApplicationMenu):
+    """Overview Menu for IBuilderSet."""
+    usedfor = IBuilderSet
+    facet = 'overview'
+    links = ['add']
 
-    Implements useful actions and colect useful set for the pagetemplate.
-    """
-    __used_for__ = IBuilder
+    @enabled_with_permission('launchpad.Admin')
+    def add(self):
+        text = 'Add New Builder'
+        return Link('+new', text, icon='add')
+
+
+class BuilderOverviewMenu(ApplicationMenu):
+    """Overview Menu for IBuilder."""
+    usedfor = IBuilder
+    facet = 'overview'
+    links = ['edit', 'mode', 'cancel']
+
+    @enabled_with_permission('launchpad.Edit')
+    def edit(self):
+        text = 'Edit Details'
+        return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def mode(self):
+        text = 'Change Mode'
+        return Link('+mode', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def cancel(self):
+        text = 'Cancel Current Job'
+        return Link('+cancel', text, icon='edit')
+
+
+class CommonBuilderView:
+    """Common builder methods used in this file."""
 
     def now(self):
         """Offers the timestamp for page rendering."""
         UTC = pytz.timezone('UTC')
         return datetime.datetime.now(UTC)
+
+
+class BuilderSetView(CommonBuilderView):
+    """Default BuilderSet view class
+
+    Simply provides CommonBuilderView for the BuilderSet pagetemplate.
+    """
+    __used_for__ = IBuilderSet
+
+
+class BuilderView(CommonBuilderView, BuildRecordsView):
+    """Default Builder view class
+
+    Implements useful actions and colect useful set for the pagetemplate.
+    """
+    __used_for__ = IBuilder
 
     def cancelBuildJob(self):
         """Cancel curent job in builder."""
@@ -81,12 +151,9 @@ class BuilderView:
         # Auto Build System, getting slave building something sane. 
         return '<p>Cancel (%s). Not implemented yet</p>' % builder_id
 
-    def lastBuilds(self):
-        """Wrap up the IBuilderSet.lastBuilds method."""
-        # XXX cprov 20050823
-        # recover the number of items from the UI
-        return getUtility(IBuildSet).getBuildsForBuilder(self.context)
-
+    def showBuilderInfo(self):
+        """Hide Builder info, see BuildRecordsView for further details"""
+        return False
 
 class BuilderSetAddView(AddView):
     """Builder add view

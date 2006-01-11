@@ -63,10 +63,19 @@ Now, to test the active flag. If we disabled a product:
 >>> a52dec.active = False
 >>> flush_database_updates()
 
-It should no longer be retreivable via ProductSet's __getitem__:
+It should no longer be retrievable via ProductSet's __getitem__:
 
 >>> try:
 ...   productset[a52dec.name]
 ... except NotFoundError:
 ...   pass
 
+But it should be retrievable via getByname().
+
+>>> productset.getByName('a52dec').name
+u'a52dec'
+
+getByName() also accepts an argument to ignore inactive products.
+
+>>> print productset.getByName('a52dec', ignore_inactive=True)
+None
