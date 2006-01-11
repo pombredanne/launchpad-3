@@ -7,6 +7,7 @@ __metaclass__ = type
 
 #import unittest
 import tempfile
+from cStringIO import StringIO
 
 from bzrlib.branch import ScratchBranch
 import bzrlib.branch
@@ -21,6 +22,7 @@ from twisted.python.util import sibpath
 from canonical.launchpad import database
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
+from canonical.database.sqlbase import sqlvalues
 
 
 class AuthserverTacTestSetup(TacTestSetup):
@@ -256,7 +258,8 @@ class AcceptanceTests(BzrTestCase):
             self.local_branch.last_revision(), remote_branch.last_revision())
         del remote_branch
 
-        # Rename person in the database.  Again, the URL changes.
+        # Rename person in the database.  Again, the URL changes (and so does
+        # the username we have to connect as!).
         LaunchpadZopelessTestSetup().txn.begin()
         branch = database.Branch.get(branch_id)
         branch.owner.name = 'renamed-user'
@@ -279,9 +282,7 @@ class AcceptanceTests(BzrTestCase):
         server = start_test_sftp_server()
         
         # Push the local branch to the server
-        remote_branch = bzrlib.branch.Branch.initialize(
-            server.base + '~testuser/+junk/test-branch')
-        remote_branch.pull(self.local_branch)
+        self._push(server.base + '~testuser/+junk/test-branch')
 
         branch_id = server.last_accessed_branch_id
         server.stop()
@@ -302,7 +303,7 @@ class AcceptanceTests(BzrTestCase):
 
         # Construct a Branch object that reads directly from the on-disk storage
         # of the server.
-        server_branch = bzrlib.branch.Branch.initialize(mirror_from_path)
+        server_branch = bzrlib.branch.Branch.open(mirror_from_path)
 
         # Check that it's the branch we're looking for
         self.assertEqual(
@@ -313,13 +314,23 @@ class AcceptanceTests(BzrTestCase):
         A mapping file for use with Apache's mod_rewrite should be generated
         correctly.
         """
-        # Push branch to sftp server
-        branch_id = self._push_branch_to_sftp_server()
+        # We already test that the mapping file is correctly generated from the
+        # database in
+        # lib/canonical/launchpad/scripts/ftests/test_supermirror_rewritemap.py,
+        # so here we just need to show that creating a branch puts the right
+        # values in the database.
 
-        # Check the generated mapping file has the right contents        
-        self.assertEqual(
-            '~testuser/+junk/test-branch %d\n' % branch_id,
-            generate_path_mapping([branch_id]))
+        # Push branch to sftp server
+        self._push_branch_to_sftp_server()
+
+        # Retrieve the branch from the database.  selectOne will fail if the
+        # branch does not exist (or if somehow multiple branches match!).
+        branch = database.Branch.selectOne(
+            "owner = %s AND product IS NULL AND name = %s"
+            % sqlvalues(database.Person.byName('testuser').id, 'test-branch'))
+
+        # If we get this far, the branch has been correctly inserted into the
+        # database.
 
 
 def start_test_sftp_server():
