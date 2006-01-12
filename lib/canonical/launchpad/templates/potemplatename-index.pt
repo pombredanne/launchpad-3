@@ -41,7 +41,7 @@
 
     <tal:block condition="view/potemplates">
 
-    <h2>PO Templates using this PO Template Name</h2>
+    <h2>PO templates using this PO template name</h2>
 
     <table class="listing">
       <tbody>

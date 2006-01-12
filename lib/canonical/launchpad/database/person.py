@@ -823,7 +823,7 @@ class Person(SQLBase):
             clauseTables=['SourcePackageName'])
 
     @property
-    def is_ubuntite(self):
+    def is_ubuntero(self):
         """See IPerson."""
         sigset = getUtility(ISignedCodeOfConductSet)
         lastdate = sigset.getLastAcceptedDate()
@@ -854,7 +854,7 @@ class PersonSet:
     _defaultOrder = Person.sortingColumns
 
     def __init__(self):
-        self.title = 'Launchpad People'
+        self.title = 'People registered with Launchpad'
 
     def topPeople(self):
         """See IPersonSet."""
@@ -1056,7 +1056,7 @@ class PersonSet:
             return default
         return emailaddress.person
 
-    def getUbuntites(self, orderBy=None):
+    def getUbunteros(self, orderBy=None):
         """See IPersonSet."""
         if orderBy is None:
             orderBy = self._defaultOrder

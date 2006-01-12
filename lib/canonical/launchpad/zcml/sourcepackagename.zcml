@@ -43,7 +43,7 @@
         for="canonical.launchpad.interfaces.ISourcePackageNameSet"
         facet="overview"
         schema="canonical.launchpad.interfaces.ISourcePackageName"
-        label="Create a new Source Package Name"
+        label="Create a new source package name"
         fields="name"
         content_factory="canonical.launchpad.database.SourcePackageName"
         class="canonical.launchpad.browser.SourcePackageNameAddView"

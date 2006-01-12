@@ -42,7 +42,7 @@
         name="+new"
         for="canonical.launchpad.interfaces.IBinaryPackageNameSet"
         schema="canonical.launchpad.interfaces.IBinaryPackageName"
-        label="Create a new Binary Package Name"
+        label="Create a new binary package name"
         fields="name"
         content_factory="canonical.launchpad.database.BinaryPackageName"
         class="canonical.launchpad.browser.BinaryPackageNameAddView"

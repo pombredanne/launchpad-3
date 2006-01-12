@@ -1,9 +1,9 @@
-   GPG Encrypt/Decrypt Operation
-   =============================
+   OpenPGP Encrypt/Decrypt Operation
+   =================================
 
-This document describe the current procedure to encrypt and
-decrypt contents in Launchpad System, as well proving the methods
-can support unicode contents.
+This document describes the current procedure to encrypt and
+decrypt contents in Launchpad, and demonstrates that the methods
+can support Unicode contents.
 
     >>> from canonical.launchpad.ftests import import_public_test_keys
     >>> from canonical.launchpad.ftests import import_secret_test_key

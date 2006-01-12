@@ -101,7 +101,7 @@ class ProjectSet:
     implements(IProjectSet)
 
     def __init__(self):
-        self.title = 'Open Source Projects in the Launchpad'
+        self.title = 'Projects registered in Launchpad'
 
     def __iter__(self):
         return iter(Project.selectBy(active=True))
