@@ -166,16 +166,6 @@ class BugView:
             return False
         return self.context.isSubscribed(user)
 
-    @property
-    def maintainers(self):
-        """Return the set of maintainers associated with this IBug."""
-        maintainers = set()
-        for task in self.context.bugtasks:
-            if task.maintainer:
-                maintainers.add(task.maintainer)
-
-        return maintainers
-    
     def duplicates(self):
         """Return a list of dicts with the id and title of this bug dupes.
 

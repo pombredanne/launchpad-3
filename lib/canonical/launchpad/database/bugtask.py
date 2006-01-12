@@ -280,7 +280,7 @@ class BugTask(SQLBase, BugTaskMixin):
             # (e.g. "Unconfirmed, assigned to Foo Bar")
             assignee_html = (
                 '<img src="/++resource++user.gif" /> '
-                '<a href="/malone/assigned?name=%s">%s</a>' % (
+                '<a href="/people/%s/+assignedbugs">%s</a>' % (
                     urllib.quote_plus(assignee.name),
                     cgi.escape(assignee.browsername)))
 
