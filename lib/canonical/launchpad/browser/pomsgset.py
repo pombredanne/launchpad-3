@@ -162,7 +162,7 @@ class POMsgSetView(LaunchpadView):
             # We didn't get any translation from the website.
             self.translations = self.context.active_texts
 
-    def get_translation(self, index):
+    def getTranslation(self, index):
         """Return the active translation for the pluralform 'index'.
 
         There are as many translations as the plural form information defines
@@ -220,7 +220,7 @@ class POMsgSetView(LaunchpadView):
         # present at most three of them
         if self._wiki_submissions is not None:
             return self._wiki_submissions
-        curr = self.get_translation(index)
+        curr = self.getTranslation(index)
 
         wiki = self.context.getWikiSubmissions(index)
         suggested = self.get_suggested_submissions(index)
@@ -240,7 +240,7 @@ class POMsgSetView(LaunchpadView):
         # most 3 of them
         if self._current_submissions is not None:
             return self._current_submissions
-        curr = self.get_translation(index)
+        curr = self.getTranslation(index)
 
         current = self.context.getCurrentSubmissions(index)
         suggested = self.get_suggested_submissions(index)

@@ -248,13 +248,11 @@ def test_POFileView_initialize():
     >>> request = DummyRequest()
     >>> t = POFileView(context, request)
     >>> t.initialize()
-    >>> t.processTranslations()
-
     >>> context.language.code
     'es'
-    >>> t.pluralFormCounts
+    >>> self.context.language.pluralforms
     2
-    >>> t.lacksPluralFormInformation
+    >>> t.lacks_plural_form_information
     False
     >>> t.offset
     0
@@ -272,13 +270,12 @@ def test_POFileView_initialize():
     >>> request = DummyRequest()
     >>> t = POFileView(context, request)
     >>> t.initialize()
-    >>> t.processTranslations()
 
     >>> context.language.code
-    'cy'
-    >>> t.pluralFormCounts is None
+    'tlh'
+    >>> t.context.language.pluralforms is None
     True
-    >>> t.lacksPluralFormInformation
+    >>> t.lacks_plural_form_information
     True
 
     This is for testing the case when an explicit offset and count are
@@ -290,8 +287,6 @@ def test_POFileView_initialize():
     >>> request = DummyRequest(offset=7, count=8)
     >>> t = POFileView(context, request)
     >>> t.initialize()
-    >>> t.processTranslations()
-
     >>> t.offset
     7
     >>> t.count
@@ -306,8 +301,6 @@ def test_POFileView_initialize():
     >>> request = DummyRequest(offset='foo', count='bar')
     >>> t = POFileView(context, request)
     >>> t.initialize()
-    >>> t.processTranslations()
-
     >>> t.offset
     0
     >>> t.count
@@ -321,8 +314,6 @@ def test_POFileView_initialize():
     >>> request = DummyRequest(show='translated')
     >>> t = POFileView(context, request)
     >>> t.initialize()
-    >>> t.processTranslations()
-
     >>> t.show
     'translated'
 
@@ -346,8 +337,6 @@ def test_POFileView_atBeginning_atEnd():
     >>> request = DummyRequest()
     >>> t = POFileView(context, request)
     >>> t.initialize()
-    >>> t.processTranslations()
-
     >>> t.atBeginning()
     True
     >>> t.atEnd()
@@ -359,11 +348,9 @@ def test_POFileView_atBeginning_atEnd():
     >>> request = DummyRequest(offset=10)
     >>> t = POFileView(context, request)
     >>> t.initialize()
-    >>> t.processTranslations()
-
-    >>> t.atBeginning()
+    >>> t.is_at_beginning
     False
-    >>> t.atEnd()
+    >>> t.is_at_end()
     False
 
     >>> potemplate = DummyPOTemplate()
@@ -372,11 +359,9 @@ def test_POFileView_atBeginning_atEnd():
     >>> request = DummyRequest(offset=30)
     >>> t = POFileView(context, request)
     >>> t.initialize()
-    >>> t.processTranslations()
-
-    >>> t.atBeginning()
+    >>> t.is_at_beginning()
     False
-    >>> t.atEnd()
+    >>> t.is_at_end()
     True
 
     >>> tearDown()
@@ -401,15 +386,13 @@ def test_POFileView_URLs():
     >>> request = DummyRequest()
     >>> t = POFileView(context, request)
     >>> t.initialize()
-    >>> t.processTranslations()
-
     >>> t.createURL()
     'http://this.is.a/fake/url'
 
-    >>> t.beginningURL()
+    >>> t.beginning_URL
     'http://this.is.a/fake/url'
 
-    >>> t.endURL()
+    >>> t.end_URL
     'http://this.is.a/fake/url?offset=30'
 
     Test with offset > 0.
@@ -420,18 +403,16 @@ def test_POFileView_URLs():
     >>> request = DummyRequest(offset=10)
     >>> t = POFileView(context, request)
     >>> t.initialize()
-    >>> t.processTranslations()
-
-    >>> t.beginningURL()
+    >>> t.beginning_URL
     'http://this.is.a/fake/url'
 
-    >>> t.previousURL()
+    >>> t.previous_URL
     'http://this.is.a/fake/url'
 
-    >>> t.nextURL()
+    >>> t.next_URL
     'http://this.is.a/fake/url?offset=20'
 
-    >>> t.endURL()
+    >>> t.end_URL
     'http://this.is.a/fake/url?offset=30'
 
     Test with interesting parameters.
@@ -442,14 +423,13 @@ def test_POFileView_URLs():
     >>> request = DummyRequest(offset=42, count=43)
     >>> t = POFileView(context, request)
     >>> t.initialize()
-    >>> t.processTranslations()
 
     If the offset is too high, it should drop to accomodate the count.
 
     >>> t.createURL()
     'http://this.is.a/fake/url?count=43'
 
-    >>> t.endURL()
+    >>> t.end_URL
     'http://this.is.a/fake/url?count=43'
 
     Test handling of the 'show' parameter.
@@ -460,8 +440,6 @@ def test_POFileView_URLs():
     >>> request = DummyRequest(show='all')
     >>> t = POFileView(context, request)
     >>> t.initialize()
-    >>> t.processTranslations()
-
     >>> t.createURL()
     'http://this.is.a/fake/url'
 
@@ -471,8 +449,6 @@ def test_POFileView_URLs():
     >>> request = DummyRequest(show='translated')
     >>> t = POFileView(context, request)
     >>> t.initialize()
-    >>> t.processTranslations()
-
     >>> t.createURL()
     'http://this.is.a/fake/url?show=translated'
 
@@ -496,22 +472,20 @@ def test_POFileView_messageSets():
     >>> request = DummyRequest()
     >>> t = POFileView(context, request)
     >>> t.initialize()
-    >>> t.processTranslations()
-
-    >>> x = list(t.messageSets)[0]
+    >>> x = list(t.pomsgset_views)[0]
     >>> x.id
     1
-    >>> x.getSequence()
+    >>> x.sequence
     1
-    >>> x.getMsgID()
+    >>> x.msgid
     u'foo'
-    >>> x.getMaxLinesCount()
+    >>> x.max_lines_count
     1
-    >>> x.isMultiline()
+    >>> x.is_multi_line
     False
-    >>> x.getMsgIDPlural() is None
+    >>> x.msgid_plural is None
     True
-    >>> x.getTranslationRange()
+    >>> x.translation_range()
     [0]
     >>> x.getTranslation(0)
     'bar'
@@ -536,9 +510,9 @@ def test_POFileView_makeTabIndex():
     >>> request = DummyRequest()
     >>> t = POFileView(context, request)
     >>> t.initialize()
-    >>> t.makeTabIndex()
+    >>> t.tab_index()
     1
-    >>> t.makeTabIndex()
+    >>> t.tab_index()
     2
     """
 
