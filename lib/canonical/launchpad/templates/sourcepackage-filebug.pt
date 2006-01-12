@@ -21,7 +21,7 @@
             <div><label>Distribution</label></div>
             <div class="field"
                  tal:content="context/distribution/displayname" />
-            <div><label>Source Package Name</label></div>
+            <div><label>Source package name</label></div>
             <div class="field" tal:content="context/name" />
         </div>
 

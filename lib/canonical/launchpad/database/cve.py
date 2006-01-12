@@ -105,7 +105,7 @@ class CveSet:
 
     def __init__(self, bug=None):
         """See ICveSet."""
-        self.title = 'The Common Vulnerabilities and Exposures Database'
+        self.title = 'The Common Vulnerabilities and Exposures database'
 
     def __getitem__(self, sequence):
         """See ICveSet."""
