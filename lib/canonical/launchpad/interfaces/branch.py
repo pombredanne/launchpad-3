@@ -9,7 +9,6 @@ __all__ = [
     'IBranchSet',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
 
 from zope.interface import Interface, Attribute
 
@@ -17,12 +16,11 @@ from zope.schema import Bool, Int, Choice, Text, TextLine
 
 from canonical.lp.dbschema import BranchLifecycleStatus
 
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad import _
+from canonical.launchpad.validators.name import name_validator 
 from canonical.launchpad.interfaces import IHasOwner
-from canonical.launchpad.interfaces.validation import valid_webref
-
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad.interfaces.validation import (valid_branch_url,
+    valid_webref)
 
 
 class IBranch(IHasOwner):
@@ -33,7 +31,7 @@ class IBranch(IHasOwner):
         title=_('Name'), required=True, description=_("Keep this name very "
         "short, unique, and descriptive, because it will be used in URLs. "
         "Examples: main, devel, release-1.0, gnome-vfs."),
-        constraint=valid_name)
+        constraint=name_validator)
     title = TextLine(
         title=_('Title'), required=True, description=_("Describe the "
         "branch as clearly as possible in up to 70 characters. This "
@@ -45,7 +43,7 @@ class IBranch(IHasOwner):
     url = TextLine(
         title=_('Branch URL'), required=True,
         description=_("The URL of the branch. This is usually the URL used to"
-                      " checkout the branch."), constraint=valid_webref)
+                      " checkout the branch."), constraint=valid_branch_url)
     whiteboard = Text(title=_('Status Whiteboard'), required=False,
         description=_('Any notes on the status of this branch you would '
         'like to make. This field is a general whiteboard, your changes '

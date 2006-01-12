@@ -17,7 +17,7 @@ from zope.schema import Datetime, Int, Choice, Text, TextLine, Float
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad.fields import Summary, Title, TimeInterval
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.name import name_validator 
 from canonical.launchpad.interfaces import IHasOwner, IMessageTarget
 from canonical.lp.dbschema import BountyDifficulty, BountyStatus
 
@@ -34,7 +34,7 @@ class IBounty(IHasOwner, IMessageTarget):
             description=_("""Keep this name very short, unique, and
             descriptive, because it will be used in URLs. Examples:
             mozilla-type-ahead-find, postgres-smart-serial."""),
-            constraint=valid_name,
+            constraint=name_validator,
             )
     title = Title(
             title=_('Title'), required=True

@@ -2,6 +2,7 @@
 __all__ = [
     'validate_url',
     'valid_http_url',
+    'valid_branch_url',
     'valid_ftp_url',
     'valid_rsync_url',
     'valid_webref',
@@ -76,6 +77,15 @@ def valid_webref(web_ref):
             Not a valid URL. Please enter the full URL, including the
             scheme (for instance, http:// for a web URL), and ensure the
             URL uses either http, https or ftp.""")))
+
+def valid_branch_url(url):
+    if validate_url(url, ['http', 'https', 'ftp', 'sftp']):
+        return True
+    else:
+        raise LaunchpadValidationError(_(dedent("""
+            Not a valid URL. Please enter the full URL, including the
+            scheme (for instance, http:// for a web URL), and ensure the
+            URL uses either http, https, ftp or sftp.""")))
 
 def valid_ftp_url(url):
     if validate_url(url, ['ftp']):
