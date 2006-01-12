@@ -13,7 +13,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Rosetta Translation Groups</h1>
+  <h1>Rosetta translation groups</h1>
 
   <div class="documentDescription">
     This is a listing of all of the registered translation groups in

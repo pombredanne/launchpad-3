@@ -11,8 +11,8 @@ described later on.
 Submit a new bug
 ----------------
 
-In order to submit a new bug you send a GPG signed email to
-new@malone-domain. Note that you have to have registered your key in
+To report a bug, you send an OpenPGP-signed e-mail message to
+new@malone-domain. You must have registered your key in
 Launchpad as well. The subject of the email will be used as the summary
 of the bug, and the body will be used as the description. In the body of
 the email you have tell on what you file a bug, either a product or a
@@ -151,7 +151,7 @@ After a bug has been submitted a notification is sent out. The reply-to
 address is set to the bug address, $bugid@malone-domain. We can send
 emails to this address in order to add new comments to the bug. Note
 that we can interleave commands in the comment as well. If the comment
-includes commands, the email has to be GPG signed.
+includes commands, the email has to be OpenPGP-signed.
 
     >>> comment_mail = """From: test@canonical.com
     ... To: 1@malone-domain
@@ -335,7 +335,7 @@ If we omit the quotes, there will be an error:
 
 private yes|no
 ^^^^^^^^^^^^^^
-Changes the secrecy of the bug. Example:
+Changes the visibility of the bug. Example:
 
 (We'll subscribe Sample Person to this bug before marking it private, otherwise
 permission to complete the operation will be denied.)
@@ -683,7 +683,7 @@ The user is a package bug contact
     ...         bugtask.targetname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     firefox (upstream): Confirmed, assigned to Sample Person
-    mozilla-firefox (ubuntu): Confirmed, assigned to No Privileges Person
+    mozilla-firefox (Ubuntu): Confirmed, assigned to No Privileges Person
     mozilla-firefox (debian): Confirmed, assigned to no one
 
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
@@ -713,7 +713,7 @@ The user is a distribution member
     ...         bugtask.targetname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     firefox (upstream): Confirmed, assigned to Sample Person
-    mozilla-firefox (ubuntu): Unconfirmed, assigned to Sample Person
+    mozilla-firefox (Ubuntu): Unconfirmed, assigned to Sample Person
     mozilla-firefox (debian): Confirmed, assigned to no one
 
     >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
@@ -741,7 +741,7 @@ user, telling him that he has to use the 'affects' command.
     ...         bugtask.targetname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     firefox (upstream): Confirmed, assigned to Sample Person
-    mozilla-firefox (ubuntu): Unconfirmed, assigned to Sample Person
+    mozilla-firefox (Ubuntu): Unconfirmed, assigned to Sample Person
     mozilla-firefox (debian): Confirmed, assigned to no one
 
     >>> transaction.commit()

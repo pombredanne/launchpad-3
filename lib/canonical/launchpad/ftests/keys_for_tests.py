@@ -1,5 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-"""GPG keys used for testing.
+"""OpenPGP keys used for testing.
 
 There are two GPG keys located in the 'gpgkeys' sub directory, one for
 Sample Person and for Foo Bar. The passwords for the secret keys are

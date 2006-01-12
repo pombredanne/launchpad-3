@@ -40,7 +40,7 @@ the submitter, Sample Person, is subscribed to it:
     "[Support #8]: Can't install Ubuntu"
     >>> notification_body = add_notification.get_payload()
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    New support request #8 on ubuntu:
+    New support request #8 on Ubuntu:
     http://.../distros/ubuntu/+ticket/8
     <BLANKLINE>
     I insert the install CD in the CD-ROM drive, but it won't boot.
@@ -87,7 +87,7 @@ one to Ubuntu Team:
 
     >>> notification_body = edit_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Support request #8 on ubuntu changed:
+    Support request #8 on Ubuntu changed:
     http://.../distros/ubuntu/+ticket/8
     <BLANKLINE>
         Status: New => Answered
@@ -132,7 +132,7 @@ bug that has been linked to the request:
     >>> edit_notification = notifications[0]
     >>> notification_body = edit_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Support request #8 on ubuntu changed:
+    Support request #8 on Ubuntu changed:
     http://.../distros/ubuntu/+ticket/8
     <BLANKLINE>
         Linked to bug: #9
@@ -160,7 +160,7 @@ And if we remove the link again, we get:
     >>> edit_notification = notifications[0]
     >>> notification_body = edit_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Support request #8 on ubuntu changed:
+    Support request #8 on Ubuntu changed:
     http://.../distros/ubuntu/+ticket/8
     <BLANKLINE>
         Removed link to bug: #9
@@ -190,7 +190,7 @@ Edits to the title and description also causes notifications to be sent:
     >>> edit_notification = notifications[0]
     >>> notification_body = edit_notification.get_payload(decode=True)
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
-    Support request #8 on ubuntu changed:
+    Support request #8 on Ubuntu changed:
     http://.../distros/ubuntu/+ticket/8
     <BLANKLINE>
     Summary changed to:

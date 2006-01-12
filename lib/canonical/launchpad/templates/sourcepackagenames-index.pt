@@ -13,7 +13,7 @@
 
   <div metal:fill-slot="main">
 
-      <h1>Source Package Names</h1>
+      <h1>Source package names</h1>
 
       <form name="search" method="GET">
         Find Source Package Names: 
