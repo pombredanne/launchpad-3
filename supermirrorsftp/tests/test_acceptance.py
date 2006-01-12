@@ -15,6 +15,7 @@ from bzrlib.workingtree import WorkingTree
 from bzrlib.tests import TestCase as BzrTestCase
 from bzrlib.errors import PermissionDenied, NoSuchFile, NotBranchError
 from bzrlib.transport import get_transport
+from bzrlib.transport import sftp
 
 #from twisted.trial import unittest
 from twisted.python.util import sibpath
@@ -60,10 +61,6 @@ class AcceptanceTests(BzrTestCase):
     https://wiki.launchpad.canonical.com/SupermirrorTaskList
     """
 
-    def log(self, *args):
-        import sys
-        print >> sys.stderr, 'log:', args
-
     def setUp(self):
         super(AcceptanceTests, self).setUp()
         # insert SSH keys for testuser -- and insert testuser!
@@ -90,18 +87,6 @@ class AcceptanceTests(BzrTestCase):
         #import logging
         #logging.basicConfig(level=logging.DEBUG)
 
-        
-        # XXX spiv 2005-12-14
-        # This should be unnecessary, but bzr's use of paramiko always tries
-        # password auth, even though Conch correctly tells it that only
-        # publickey is supported.  So, we temporarily monkey-patch getpass to
-        # stop the tests hanging at a password prompt if logging in breaks.
-        import getpass
-        self.getpass = getpass.getpass
-        def newgetpass(prompt=None):
-            self.fail('getpass should not be called.')
-        getpass.getpass = newgetpass
-
         # Create a local branch with one revision
         self.local_branch = ScratchBranch(files=['foo'])
         self.local_branch.working_tree().add('foo')
@@ -118,24 +103,18 @@ class AcceptanceTests(BzrTestCase):
         shutil.copyfile(
             sibpath(__file__, 'id_dsa.pub'), 
             os.path.join(self.userHome, '.ssh', 'id_dsa.pub'))
-        shutil.copyfile(
-            sibpath(__file__, 'ssh'), 
-            os.path.join(self.userHome, 'bin', 'ssh'))
         os.chmod(os.path.join(self.userHome, '.ssh', 'id_dsa'), 0600)
-        os.chmod(os.path.join(self.userHome, 'bin', 'ssh'), 0755)
         self.realHome = os.environ['HOME']
-        self.realPath = os.environ['PATH']
         os.environ['HOME'] = self.userHome
-        os.environ['PATH'] = self.userHome + '/bin:' + self.realPath
+        self.realSshVendor = sftp._ssh_vendor
+        sftp._ssh_vendor = 'none'
 
     def tearDown(self):
-        import getpass
-        getpass.getpass = self.getpass
         os.environ['HOME'] = self.realHome
-        os.environ['PATH'] = self.realPath
         self.authserver.tearDown()
         LaunchpadZopelessTestSetup().tearDown()
         super(AcceptanceTests, self).tearDown()
+        sftp._ssh_vendor = self.realSshVendor
 
     def test_1_bzr_sftp(self):
         """
@@ -151,16 +130,9 @@ class AcceptanceTests(BzrTestCase):
         # Start test server
         server = start_test_sftp_server()
 
-        # Push the local branch to the server
-        #rv = os.system('cd %s; PYTHONPATH= bzr push %s' 
-        #               % (self.local_branch.base, 
-        #                  server.base + '~testuser/+junk/test-branch',))
-        #self.assertEqual(0, rv)
-        #self.run_bzr('push')
         remote_url = server.base + '~testuser/+junk/test-branch'
         self._push(remote_url)
         remote_branch = bzrlib.branch.Branch.open(remote_url)
-        #remote_branch.pull(self.local_branch)
         
         # Check that the pushed branch looks right
         self.assertEqual(
@@ -329,6 +301,7 @@ class AcceptanceTests(BzrTestCase):
             "owner = %s AND product IS NULL AND name = %s"
             % sqlvalues(database.Person.byName('testuser').id, 'test-branch'))
 
+        self.assertEqual(None, branch.url)
         # If we get this far, the branch has been correctly inserted into the
         # database.
 
