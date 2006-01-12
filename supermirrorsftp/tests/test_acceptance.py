@@ -108,8 +108,10 @@ class AcceptanceTests(BzrTestCase):
         os.environ['HOME'] = self.userHome
         self.realSshVendor = sftp._ssh_vendor
         sftp._ssh_vendor = 'none'
+        self.server = TestSFTPServer()
 
     def tearDown(self):
+        self.server.stop()
         os.environ['HOME'] = self.realHome
         self.authserver.tearDown()
         LaunchpadZopelessTestSetup().tearDown()
@@ -127,19 +129,13 @@ class AcceptanceTests(BzrTestCase):
         user has permission to read or write to those URLs.
         """
         
-        # Start test server
-        server = start_test_sftp_server()
-
-        remote_url = server.base + '~testuser/+junk/test-branch'
+        remote_url = self.server.base + '~testuser/+junk/test-branch'
         self._push(remote_url)
         remote_branch = bzrlib.branch.Branch.open(remote_url)
         
         # Check that the pushed branch looks right
         self.assertEqual(
             self.local_branch.last_revision(), remote_branch.last_revision())
-
-        # Tear down test server
-        server.stop()
 
     def _push(self, remote_url):
         old_dir = os.getcwdu()
@@ -160,28 +156,26 @@ class AcceptanceTests(BzrTestCase):
         should fail.
         """
 
-        # Start test server
-        server = start_test_sftp_server()
-
         # Cannot push branches to products that don't exist
-        self._test_missing_parent_directory(server,
-                '~testuser/product-that-does-not-exist/hello')
+        self._test_missing_parent_directory(
+            '~testuser/product-that-does-not-exist/hello')
 
         # Teams do not have +junk products
-        self._test_missing_parent_directory(server, '~testteam/+junk/hello')
+        self._test_missing_parent_directory(
+            '~testteam/+junk/hello')
 
         # Cannot push to team directories that the user isn't a member of --
         # they cannot see them at all.
         self._test_missing_parent_directory(
-            server, '~not-my-team/real-product/hello')
+            '~not-my-team/real-product/hello')
 
         # XXX spiv 2006-01-11: what about lp-incompatible branch dir names (e.g.
         # capital Letters) -- Are they disallowed or accepted?  If accepted,
         # what will that branch's Branch.name be in the database?  Probably just
         # disallow, and try to have a tolerable error.
 
-    def _test_missing_parent_directory(self, server, relpath):
-        transport = get_transport(server.base + relpath).clone('..')
+    def _test_missing_parent_directory(self, relpath):
+        transport = get_transport(self.server.base + relpath).clone('..')
         self.assertRaises(
             NoSuchFile,
             transport.mkdir, 'hello')
@@ -196,11 +190,8 @@ class AcceptanceTests(BzrTestCase):
         the DBA running a one-off script.
         """
 
-        # Start test server
-        server = start_test_sftp_server()
-        
         # Push the local branch to the server
-        self._push(server.base + '~testuser/+junk/test-branch')
+        self._push(self.server.base + '~testuser/+junk/test-branch')
 
         # Rename branch in the database
         LaunchpadZopelessTestSetup().txn.begin()
@@ -209,7 +200,7 @@ class AcceptanceTests(BzrTestCase):
         branch.name = 'renamed-branch'
         LaunchpadZopelessTestSetup().txn.commit()
         remote_branch = bzrlib.branch.Branch.open(
-            server.base + '~testuser/+junk/renamed-branch')
+            self.server.base + '~testuser/+junk/renamed-branch')
         self.assertEqual(
             self.local_branch.last_revision(), remote_branch.last_revision())
         del remote_branch
@@ -223,9 +214,9 @@ class AcceptanceTests(BzrTestCase):
         self.assertRaises(
             NotBranchError,
             bzrlib.branch.Branch.open,
-            server.base + '~testuser/+junk/renamed-branch')
+            self.server.base + '~testuser/+junk/renamed-branch')
         remote_branch = bzrlib.branch.Branch.open(
-            server.base + '~testuser/firefox/renamed-branch')
+            self.server.base + '~testuser/firefox/renamed-branch')
         self.assertEqual(
             self.local_branch.last_revision(), remote_branch.last_revision())
         del remote_branch
@@ -236,29 +227,11 @@ class AcceptanceTests(BzrTestCase):
         branch = database.Branch.get(branch_id)
         branch.owner.name = 'renamed-user'
         LaunchpadZopelessTestSetup().txn.commit()
-        server.base = server.base.replace('testuser', 'renamed-user')
+        self.server.base = self.server.base.replace('testuser', 'renamed-user')
         remote_branch = bzrlib.branch.Branch.open(
-            server.base + '~renamed-user/firefox/renamed-branch')
+            self.server.base + '~renamed-user/firefox/renamed-branch')
         self.assertEqual(
             self.local_branch.last_revision(), remote_branch.last_revision())
-
-    def _push_branch_to_sftp_server(self):
-        """
-        Helper function that starts a test sftp server, and uploads
-        self.local_branch to it.
-
-        Returns branch_id.
-        """
-          
-        # Start test server
-        server = start_test_sftp_server()
-        
-        # Push the local branch to the server
-        self._push(server.base + '~testuser/+junk/test-branch')
-
-        branch_id = server.last_accessed_branch_id
-        server.stop()
-        return branch_id
 
     def test_4_url_for_mirror(self):
         """
@@ -268,7 +241,8 @@ class AcceptanceTests(BzrTestCase):
         `/srv/supermirrorsftp/branches/ab/cd/ef/12`.
         """
         # Push branch to sftp server
-        branch_id = self._push_branch_to_sftp_server()
+        self._push(self.server.base + '~testuser/+junk/test-branch')
+        branch_id = self.server.last_accessed_branch_id  # XXX
 
         # Generate the path for copy-to-mirror script to use
         mirror_from_path = get_path_for_copy_to_mirror(branch_id)
@@ -293,7 +267,7 @@ class AcceptanceTests(BzrTestCase):
         # values in the database.
 
         # Push branch to sftp server
-        self._push_branch_to_sftp_server()
+        self._push(self.server.base + '~testuser/+junk/test-branch')
 
         # Retrieve the branch from the database.  selectOne will fail if the
         # branch does not exist (or if somehow multiple branches match!).
@@ -305,9 +279,6 @@ class AcceptanceTests(BzrTestCase):
         # If we get this far, the branch has been correctly inserted into the
         # database.
 
-
-def start_test_sftp_server():
-    return TestSFTPServer()
 
 from canonical.launchpad.daemons import tachandler
 import os
