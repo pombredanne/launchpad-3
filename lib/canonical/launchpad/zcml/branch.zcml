@@ -80,7 +80,7 @@
     schema="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchEditView"
     facet="code"
-    label="Edit Branch Details"
+    label="Edit branch details"
     fields="author title url home_page summary whiteboard"
     permission="launchpad.Edit"
     template="../templates/branch-edit.pt">
@@ -111,7 +111,7 @@
     schema="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchEditView"
     facet="code"
-    label="Set Branch Status"
+    label="Set branch status"
     fields="lifecycle_status whiteboard"
     permission="launchpad.Edit"
     template="../templates/branch-edit.pt">
@@ -126,7 +126,7 @@
     schema="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchEditView"
     facet="code"
-    label="Branch Administration"
+    label="Branch administration"
     fields="owner product name whiteboard"
     permission="launchpad.Admin"
     template="../templates/branch-edit.pt">

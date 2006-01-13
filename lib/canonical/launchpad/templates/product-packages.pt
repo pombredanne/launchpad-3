@@ -11,7 +11,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Distribution Packages</h1>
+  <h1>Distribution packages</h1>
 
   <p class="documentDescription">This page lists any distribution packages
     that are known for the different release series of
@@ -27,7 +27,7 @@
 
   <tal:series repeat="series context/serieslist">
     
-    <h2>Release Series: <span tal:replace="series/name">main</span></h2>
+    <h2>Release series: <span tal:replace="series/name">main</span></h2>
 
     <table class="listing" tal:condition="series/packagings">
       <thead>

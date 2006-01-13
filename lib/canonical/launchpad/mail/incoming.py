@@ -88,7 +88,7 @@ def authenticateEmail(mail):
     raise InvalidSignature(
         "The key used to sign the email doesn't belong to the user.")
 
-    # The GPG signature couldn't be verified  
+    # The OpenPGP signature couldn't be verified  
     setupInteraction(authutil.unauthenticatedPrincipal())
 
 

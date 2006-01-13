@@ -15,7 +15,7 @@
       <div tal:condition="members" style="margin: 2em 0em">
       <form name="proposed" action="" method="POST">
 
-        <p>The following users want to join this team but their subscription
+        <p>These people want to join this team but their subscription
         must be approved. Please select the action (Approve, Deny, Hold) for 
         each user and click on <em>Submit</em>.</p>
 

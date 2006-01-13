@@ -41,7 +41,7 @@
     </tbody>
   </table>
 
-  <h2>Recent History:</h2>
+  <h2>Recent history:</h2>
 
   <p tal:condition="not:context/revision_count">
     This branch has not been scanned for revisions yet, or no revisions were
