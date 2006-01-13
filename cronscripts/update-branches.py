@@ -8,6 +8,7 @@
 import _pythonpath
 
 import sys
+import traceback
 import logging
 from optparse import OptionParser
 
@@ -73,11 +74,15 @@ def main(argv):
         branchset = getUtility(IBranchSet)
 
         for branch in branchset:
-            branch_url = "%s/%d" % (prefixurl, branch.id)
+            # the prefixurl in the config should normally end with '/'
+            branch_url = "%s%08x" % (prefixurl, branch.id)
             try:
                 bzrsync = BzrSync(ztm, branch.id, branch_url, logger_object)
             except NotBranchError:
-                logger_object.warning("Branch not found: %s" % branch_url)
+                logger_object.warning("Branch not found: %s", branch_url)
+            except:
+                logger_object.error(traceback.format_exc())
+                logger_object.error("Failed to scan: %s", branch_url)
             else: 
                 bzrsync.syncHistory()
 

@@ -64,7 +64,7 @@ Check that this submission is now the active one for this msgset/pluralform
 
 Check that this submission is not the published one
 
-    >>> pomsgset.publishedSubmission(0) == submission
+    >>> pomsgset.getPublishedSubmission(0) == submission
     False
 
 Test the origin enum column.
@@ -106,7 +106,7 @@ Now let's test that this has become both active and published
     >>> submission.potranslation.translation == u'bar'
     True
 
-    >>> pomsgset.publishedSubmission(0) == submission
+    >>> pomsgset.getPublishedSubmission(0) == submission
     True
 
 Excellent. This shows that the code to make a new published translation
@@ -131,12 +131,12 @@ published selection.
     >>> web_submission.potranslation.translation == u'baz'
     True
 
-    >>> pomsgset.publishedSubmission(0) == web_submission
+    >>> pomsgset.getPublishedSubmission(0) == web_submission
     False
 
 In fact, the published submission should still be the original one, from Pa:
 
-    >>> pomsgset.publishedSubmission(0) == submission
+    >>> pomsgset.getPublishedSubmission(0) == submission
     True
 
 And the latestsubmission for this pofile should be this one.
@@ -237,7 +237,7 @@ This new submission should not be active:
 
 And it should definitely not be published:
 
-    >>> pomsgset.publishedSubmission(0) == noneditor_submission
+    >>> pomsgset.getPublishedSubmission(0) == noneditor_submission
     False
 
 However, given NonEditorTranslations, this should be available as
