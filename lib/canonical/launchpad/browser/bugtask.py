@@ -50,6 +50,7 @@ from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
 from canonical.launchpad.components.bugtask import NullBugTask
 
+
 def get_sortorder_from_request(request):
     """Get the sortorder from the request."""
     if request.get("orderby"):
@@ -67,9 +68,7 @@ class BugTargetTraversalMixin:
     @stepthrough('+bug')
     def traverse_bug(self, name):
         """Traverses +bug portions of URLs"""
-        if name.isdigit():
-            return self._get_task_for_context(name)
-        raise NotFoundError
+        return self._get_task_for_context(name)
 
     def _get_task_for_context(self, name):
         """Return the IBugTask for this name in this context.
@@ -84,8 +83,9 @@ class BugTargetTraversalMixin:
         a TypeError is raised.
         """
         context = self.context
-        # Raises NotFoundError if no bug with that ID exists.
-        bug = getUtility(IBugSet).get(name)
+
+        # Raises NotFoundError if no bug is found
+        bug = getUtility(IBugSet).getByNameOrID(name)
 
         # Loop through this bug's tasks to try and find the appropriate task
         # for this context. We always want to return a task, whether or not
