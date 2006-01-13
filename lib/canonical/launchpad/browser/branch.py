@@ -88,6 +88,33 @@ class BranchView(LaunchpadView):
         """Is the branch author set and equal to the registrant?"""
         return self.context.author == self.context.owner
 
+    @property
+    def display_name(self):
+        """The branch title if provided, or the unique_name."""
+        if self.context.title:
+            return self.context.title
+        else:
+            return self.context.unique_name
+
+    @property
+    def edit_link_url(self):
+        """Target URL of the Edit link used in the actions portlet."""
+        # XXX: that should go away when bug #5313 is fixed.
+        #  -- DavidAllouche 2005-12-02
+        linkdata = BranchContextMenu(self.context).edit()
+        return '%s/%s' % (canonical_url(self.context), linkdata.target)
+
+    @property
+    def url(self):
+        """URL where the branch can be checked out.
+
+        This is the URL set in the database, or the Supermirror URL.
+        """
+        if self.context.url:
+            return self.context.url
+        else:
+            return self.context.supermirror_url
+
 
 class BranchEditView(SQLObjectEditView):
 

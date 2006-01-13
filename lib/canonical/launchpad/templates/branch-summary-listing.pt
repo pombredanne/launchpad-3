@@ -1,6 +1,9 @@
 <p>
 <img src="/++resource++lock_icon.gif" />
-<b><a tal:attributes="href context/fmt:url" tal:content="context/title">Mozilla Thunderbird 0.9.1</a></b>
+<b>
+  <a tal:attributes="href context/fmt:url"
+     tal:content="view/display_name">Mozilla Thunderbird 0.9.1</a>
+</b>
 - <img src="/++resource++user.gif" />
   <a tal:condition="not: context/author"
      tal:attributes="href context/owner/fmt:url"
@@ -8,14 +11,49 @@
   <a tal:condition="context/author"
      tal:attributes="href context/author/fmt:url"
      tal:content="context/author/browsername">Author</a>
+
+<tal:has_summary condition="context/summary">
   <br />
-<span tal:replace="context/summary">
-  This branch has a summary like this, it's a very simple description of
-  what the branch does.
-</span>
-<br>
-<span tal:replace="context/revision_count">35</span> revisions,
-<span tal:replace="view/count_revisions">31</span> in the past month.<br />
-<a tal:attributes="href context/home_page"
-   tal:content="context/home_page">http://wiki.launchpad.net</a>
+  <span tal:condition="context/summary" tal:replace="context/summary">
+    This branch has a summary like this, it's a very simple description of
+    what the branch does.
+  </span>
+</tal:has_summary>
+
+<br tal:condition="python:context.revision_count() or context.home_page" />
+
+<tal:has_revisions condition="context/revision_count">
+  <span tal:replace="context/revision_count">35</span> revisions,
+  <span tal:replace="view/count_revisions">31</span> in the past month.<br />
+</tal:has_revisions>
+
+<tal:has_homepage condition="context/home_page">
+  <a tal:attributes="href context/home_page"
+     tal:content="context/home_page">http://wiki.launchpad.net</a>
+</tal:has_homepage>
+
+<tal:missing_title_or_summary
+  condition="python:(not context.title) or (not context.summary)">
+  <br />
+  <tal:comment condition="nothing">
+    <!-- XXX: That duplicates the 'edit' link from the action portlet and
+         should be changed when but #5313 is fixed to comply with Once And
+         Only Once. -- DavidAllouche 2005-12-02 -->
+  </tal:comment>
+  <img src="/++resource++edit.gif" />
+  <a tal:attributes="href view/edit_link_url">Edit branch details</a>
+  <tal:missing_title
+    condition="python:(not context.title) and context.summary">
+    (this branch has no title).
+  </tal:missing_title>
+  <tal:missing_summary
+    condition="python:context.title and (not context.summary)">
+    (this branch has no summary).
+  </tal:missing_summary>
+  <tal:missing_both
+    condition="python:(not context.title) and (not context.summary)">
+    (this branch has neither title nor summary).
+  </tal:missing_both>
+</tal:missing_title_or_summary>
+
 </p>

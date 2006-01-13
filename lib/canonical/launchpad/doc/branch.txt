@@ -72,17 +72,21 @@ Branches must implement the IBranch interface.
 >>> verifyObject(IBranch, gterm_dev)
 True
 
-Branch may or may not be associated to a product, and may have no home_page
+Branch may or may not be associated to a product, and may have no home_page,
+no title, and no summary.
 
 >>> url = 'http://example.com/~ddaa/junkcode'
->>> junkcode = branchset.new('junkcode', ddaa, None, url,
-...     title, summary=summary)
+>>> junkcode = branchset.new('junkcode', ddaa, None, url)
 >>> junkcode.name
 u'junkcode'
->>> junkcode.product is None
-True
->>> junkcode.home_page is None
-True
+>>> print repr(junkcode.product)
+None
+>>> print repr(junkcode.home_page)
+None
+>>> print repr(junkcode.title)
+None
+>>> print repr(junkcode.summary)
+None
 
 == Branches and products ==
 

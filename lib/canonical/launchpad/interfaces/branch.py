@@ -35,17 +35,24 @@ class IBranch(IHasOwner):
         "Examples: main, devel, release-1.0, gnome-vfs."),
         constraint=valid_name)
     title = TextLine(
-        title=_('Title'), required=True, description=_("Describe the "
+        title=_('Title'), required=False, description=_("Describe the "
         "branch as clearly as possible in up to 70 characters. This "
         "title is displayed in every branch list or report."))
     summary = Text(
-        title=_('Summary'), required=True, description=_("A "
+        title=_('Summary'), required=False, description=_("A "
         "single-paragraph description of the branch. This will also be "
         "displayed in most branch listings."))
     url = TextLine(
-        title=_('Branch URL'), required=True,
+        title=_('Branch URL'), required=False,
         description=_("The URL of the branch. This is usually the URL used to"
-                      " checkout the branch."), constraint=valid_webref)
+            " checkout the branch. Leave that empty if the branch is hosted on"
+            " mirror.sourcecontrol.net."),
+        constraint=valid_webref)
+    supermirror_url = Attribute(
+        "Public URL of the branch on the Supermirror.")
+    unique_name = Attribute(
+        "Unique name of the branch, including the owner and product names.")
+
     whiteboard = Text(title=_('Status Whiteboard'), required=False,
         description=_('Any notes on the status of this branch you would '
         'like to make. This field is a general whiteboard, your changes '

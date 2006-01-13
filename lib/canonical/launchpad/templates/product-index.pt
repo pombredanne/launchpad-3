@@ -90,12 +90,13 @@
     <div>
 
       <ul>
-        <li tal:repeat="branch context/branches">
-          <a
-            tal:attributes="href branch/fmt:url"
-            tal:content="branch/title"
-          >branch title</a>
-        </li>
+        <tal:for_each_branch repeat="branch context/branches">
+          <li tal:condition="branch/title">
+            <a tal:attributes="href branch/fmt:url"
+               tal:content="branch/title"
+            >branch title</a>
+          </li>
+        </tal:for_each_branch>
       </ul>
 
     </div>
