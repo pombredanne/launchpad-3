@@ -124,7 +124,8 @@ class ErrorReport:
         lines = msg.fp.readlines()
         for linenum, line in enumerate(lines):
             line = line.strip()
-            if not line: break
+            if not line:
+                break
             key, value = line.split('=', 1)
             req_vars.append((urllib.unquote(key), urllib.unquote(value)))
 
@@ -132,7 +133,8 @@ class ErrorReport:
         lines = lines[linenum+1:]
         for linenum, line in enumerate(lines):
             line = line.strip()
-            if not line: break
+            if not line:
+                break
             startend, statement = line.split(' ', 1)
             start, end = startend.split('-')
             statements.append((int(start), int(end), statement))
