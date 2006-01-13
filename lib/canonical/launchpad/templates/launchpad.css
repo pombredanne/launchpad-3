@@ -283,6 +283,8 @@ textarea {
   border: 1px solid #8cacbb;  
   color: black;
   background-color: white;
+  font-family: sans-serif;
+  font-family: caption;
   width: 100%;
 }
 .fieldRequired {
@@ -709,9 +711,9 @@ tr.highlight {
 .specstatusIMPLEMENTED     { color: Green; }
 .specstatusINFORMATIONAL   { color: Green; }
 .specstatusAPPROVED        { color: Black; }
-.specstatusPENDINGAPPROVAL { color: Yellow; }
-.specstatusPENDINGREVIEW   { color: Yellow; }
-.specstatusDRAFT           { color: Orange; }
+.specstatusPENDINGAPPROVAL { color: #f09; }
+.specstatusPENDINGREVIEW   { color: #f09; }
+.specstatusDRAFT           { color: #930; }
 .specstatusBRAINDUMP       { color: Red; }
 .specstatusSUPERSEDED      { color: Gray; }
 .specstatusOBSOLETE        { color: Gray; }
