@@ -368,14 +368,6 @@ def generate_bug_edit_email(bug_delta):
                     body += _get_task_change_row(
                         fieldname, oldval_display, newval_display)
 
-            if bugtask_delta.statusexplanation is not None:
-                status_exp_line = u"%15s: %s" % (
-                    u"Explanation", bugtask_delta.statusexplanation)
-                status_exp_wrapper = MailWrapper(
-                    width=72, indent=u" " * 17, indent_first_line=False)
-                body += status_exp_wrapper.format(status_exp_line)
-                body += u"\n"
-
     if bug_delta.added_bugtasks is not None:
         if not body[-2:] == u"\n\n":
             body += u"\n"

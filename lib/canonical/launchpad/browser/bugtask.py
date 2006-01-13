@@ -396,7 +396,7 @@ class BugTaskEditView(GeneralFormView):
     def initial_values(self):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         field_values = {}
-        for name in self.schema.names():
+        for name in self.fieldNames:
             field_values[name] = getattr(self.context, name)
 
         return field_values
@@ -444,7 +444,8 @@ class BugTaskEditView(GeneralFormView):
             bugtask.bug.newMessage(
                 owner=getUtility(ILaunchBag).user,
                 subject=bugtask.bug.followup_subject(),
-                content=comment_on_change)
+                content=comment_on_change,
+                publish_create_event=False)
 
             bugtask.statusexplanation = comment_on_change
         else:

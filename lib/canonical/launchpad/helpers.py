@@ -9,6 +9,7 @@ be better as a method on an existing content object or IFooSet object.
 __metaclass__ = type
 
 import email
+from email.Utils import make_msgid
 import subprocess
 import gettextpo
 import os
@@ -47,6 +48,11 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.components.poparser import (
     POSyntaxError, POInvalidInputError, POParser)
 from canonical.launchpad.validators.gpg import valid_fingerprint
+
+# XXX, Brad Bollenbach, 2006-01-12: These cause circular imports. Moved to
+# create_bug_message for now.
+#from canonical.launchpad.database.message import Message, MessageChunk
+#from canonical.launchpad.database.bugmessage import BugMessage
 
 def text_replaced(text, replacements, _cache={}):
     """Return a new string with text replaced according to the dict provided.
@@ -119,6 +125,7 @@ class Snapshot:
                 setattr(self, name, getattr(ob, name))
         if providing is not None:
             directlyProvides(self, providing)
+
 
 def get_attribute_names(ob):
     """Gets all the attribute names ob provides.
@@ -248,10 +255,12 @@ def is_maintainer(owned_object, person=None):
     else:
         return False
 
+
 def join_lines(*lines):
     """Concatenate a list of strings, adding a newline at the end of each."""
 
     return ''.join([ x + '\n' for x in lines ])
+
 
 def string_to_tarfile(s):
     """Convert a binary string containing a tar file into a tar file obj."""
@@ -283,6 +292,7 @@ def shortest(sequence):
 
     return shortest_list
 
+
 def getRosettaBestBinaryPackageName(sequence):
     """Return the best binary package name from a list.
 
@@ -295,6 +305,7 @@ def getRosettaBestBinaryPackageName(sequence):
     """
     return shortest(sequence)[0]
 
+
 def getRosettaBestDomainPath(sequence):
     """Return the best path for a concrete .pot file from a list of paths.
 
@@ -305,6 +316,7 @@ def getRosettaBestDomainPath(sequence):
     more than one, usually, we will have only one element.
     """
     return shortest(sequence)[0]
+
 
 def getValidNameFromString(invalid_name):
     """Return a valid name based on a string.
@@ -319,9 +331,11 @@ def getValidNameFromString(invalid_name):
     # All chars should be lower case, underscores and spaces become dashes.
     return text_replaced(invalid_name.lower(), {'_': '-', ' ':'-'})
 
+
 def browserLanguages(request):
     """Return a list of Language objects based on the browser preferences."""
     return IRequestPreferredLanguages(request).getPreferredLanguages()
+
 
 def simple_popen2(command, input, in_bufsize=1024, out_bufsize=128):
     """Run a command, give it input on its standard input, and capture its
@@ -346,6 +360,7 @@ def simple_popen2(command, input, in_bufsize=1024, out_bufsize=128):
             )
     (output, nothing) = p.communicate(input)
     return output
+
 
 def contactEmailAddresses(person):
     """Return a Set of email addresses to contact this Person.
@@ -384,6 +399,7 @@ replacements = {0: {'.': ' |dot| ',
                     '@': ' {at} '}
                 }
 
+
 def obfuscateEmail(emailaddr, idx=None):
     """Return an obfuscated version of the provided email address.
 
@@ -400,6 +416,7 @@ def obfuscateEmail(emailaddr, idx=None):
         idx = random.randint(0, len(replacements) - 1)
     return text_replaced(emailaddr, replacements[idx])
 
+
 def convertToHtmlCode(text):
     """Return the given text converted to HTML codes, like &#103;.
 
@@ -407,6 +424,7 @@ def convertToHtmlCode(text):
     in a form that a 'normal' person can read.
     """
     return ''.join(["&#%s;" % ord(c) for c in text])
+
 
 def validate_translation(original, translation, flags):
     """Check with gettext if a translation is correct or not.
@@ -430,6 +448,7 @@ def validate_translation(original, translation, flags):
     # Check the msg.
     msg.check_format()
 
+
 def shortlist(sequence, longest_expected=15):
     """Return a listified version of sequence.
 
@@ -446,6 +465,7 @@ def shortlist(sequence, longest_expected=15):
               "listify sequences with no more than %d items." %
               longest_expected)
     return L
+
 
 def uploadRosettaFile(filename, contents):
     client = getUtility(ILibrarianClient)
@@ -464,6 +484,7 @@ def uploadRosettaFile(filename, contents):
 
     return alias
 
+
 def attachRawFileDataByFileAlias(raw_file_data, alias, importer,
     date_imported):
     """Attach the contents of a file to a raw file data object."""
@@ -472,11 +493,13 @@ def attachRawFileDataByFileAlias(raw_file_data, alias, importer,
     raw_file_data.rawimporter = importer
     raw_file_data.rawimportstatus = RosettaImportStatus.PENDING
 
+
 def attachRawFileData(raw_file_data, filename, contents, importer,
     date_imported):
     """Attach the contents of a file to a raw file data object."""
     alias = uploadRosettaFile(filename, contents)
     attachRawFileDataByFileAlias(raw_file_data, alias, importer, date_imported)
+
 
 def getRawFileData(raw_file_data):
     client = getUtility(ILibrarianClient)
@@ -487,6 +510,7 @@ def getRawFileData(raw_file_data):
         raise RawFileFetchFailed(str(e))
 
     return file.read()
+
 
 def count_lines(text):
     '''Count the number of physical lines in a string. This is always at least
@@ -502,6 +526,7 @@ def count_lines(text):
             count += int(ceil(float(len(line)) / CHARACTERS_PER_LINE))
 
     return count
+
 
 def request_languages(request):
     '''Turn a request into a list of languages to show.'''
@@ -525,6 +550,7 @@ def request_languages(request):
 class UnrecognisedCFormatString(ValueError):
     """Exception raised when a string containing C format sequences can't be
     parsed."""
+
 
 def parse_cformat_string(string):
     """Parse a printf()-style format string into a sequence of interpolations
@@ -569,6 +595,7 @@ def parse_cformat_string(string):
 
     return segments
 
+
 def normalize_newlines(text):
     r"""Convert newlines to Unix form.
 
@@ -584,6 +611,7 @@ def normalize_newlines(text):
     'foo\nbar\n\nbaz'
     """
     return text_replaced(text, {'\r\n': '\n', '\r': '\n'})
+
 
 def unix2windows_newlines(text):
     r"""Convert Unix form new lines to Windows ones.
@@ -607,6 +635,7 @@ def unix2windows_newlines(text):
         raise ValueError('\'%r\' is already converted' % text)
 
     return text_replaced(text, {'\n': '\r\n'})
+
 
 def contract_rosetta_tabs(text):
     r"""Replace Rosetta representation of tab characters with their native form.
@@ -640,6 +669,7 @@ def contract_rosetta_tabs(text):
     """
     return text_replaced(text, {'[tab]': '\t', r'\[tab]': '[tab]'})
 
+
 def expand_rosetta_tabs(text):
     r"""Replace tabs with their Rosetta representation.
 
@@ -671,6 +701,7 @@ def expand_rosetta_tabs(text):
     'foo\\\\\\[tab]bar'
     """
     return text_replaced(text, {'\t': '[tab]', '[tab]': r'\[tab]'})
+
 
 def parse_translation_form(form):
     """Parse a form submitted to the translation widget.
@@ -723,6 +754,7 @@ def parse_translation_form(form):
             messageSets[id]['fuzzy'] = True
 
     return messageSets
+
 
 def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
                newline=TranslationConstants.NEWLINE_CHAR):
@@ -783,6 +815,7 @@ def msgid_html(text, flags, space=TranslationConstants.SPACE_CHAR,
         })
     return html
 
+
 def check_po_syntax(s):
     parser = POParser()
 
@@ -793,6 +826,7 @@ def check_po_syntax(s):
         return False
 
     return True
+
 
 def is_tar_filename(filename):
     '''
@@ -818,6 +852,7 @@ def test_diff(lines_a, lines_b):
         tofile='actual',
         lineterm='',
         )))
+
 
 def sanitiseFingerprint(fpr):
     """Returns sanitised fingerprint if fpr is well-formed,
@@ -927,6 +962,7 @@ def get_filename_from_message_id(message_id):
     return '%s.msg' % (
             canonical.base.base(long(sha.new(message_id).hexdigest(), 16), 62))
 
+
 def getFileType(fname):
     if fname.endswith(".deb"):
         return BinaryPackageFileType.DEB
@@ -941,6 +977,7 @@ def getFileType(fname):
     if fname.endswith(".tar.gz"):
         return SourcePackageFileType.TARBALL
 
+
 def getBinaryPackageFormat(fname):
     if fname.endswith(".deb"):
         return BinaryPackageFormat.DEB
@@ -948,6 +985,7 @@ def getBinaryPackageFormat(fname):
         return BinaryPackageFormat.UDEB
     if fname.endswith(".rpm"):
         return BinaryPackageFormat.RPM
+
 
 def intOrZero(value):
     """Return int(value) or 0 if the conversion fails.
@@ -969,6 +1007,7 @@ def intOrZero(value):
         return int(value)
     except (ValueError, TypeError):
         return 0
+
 
 def positiveIntOrZero(value):
     """Return 0 if int(value) fails or if int(value) is less than 0.
@@ -993,6 +1032,7 @@ def positiveIntOrZero(value):
         return 0
     return value
 
+
 def get_email_template(filename):
     """Returns the email template with the given file name.
 
@@ -1001,6 +1041,7 @@ def get_email_template(filename):
     base = os.path.dirname(canonical.launchpad.__file__)
     fullpath = os.path.join(base, 'emailtemplates', filename)
     return open(fullpath).read()
+
 
 def is_ascii_only(string):
     """Ensure that the string contains only ASCII characters.
