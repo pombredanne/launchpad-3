@@ -66,6 +66,14 @@
                 PostgreSQL's default setting is used.
             </description>
         </key>
+        <key name="soft_request_timeout" datatype="integer" required="no">
+            <description>
+                A soft request timeout in milliseconds.  If a request
+                takes longer than this timeout, an oops will be logged.
+
+                If unset, requests will not cause soft timeouts.
+	    </description>
+	</key>
         <key name="browser_notification_level" required="no"
             datatype="canonical.config.loglevel" default="info" />
         <section name="*" type="launchpad_session" attribute="session"
