@@ -46,7 +46,7 @@ def main():
 
     parser.add_option("-l", "--loop", action="store_true", default=False,
                       help="Wait for more uploads rather than exiting.")
-    
+
     global options
     (options, args) = parser.parse_args()
 
@@ -105,7 +105,7 @@ def main():
             fsroot_lock.release()
 
             for entry in entries:
-                
+
                 entry_path = os.path.join(fsroot, entry)
                 if not os.path.isdir(entry_path):
                     continue
@@ -155,12 +155,16 @@ def main():
                             log.debug("Releasing process_upload lock")
                             lock.release()
 
-                    log.debug("Removing upload directory: %s" % entry_path)
-                    shutil.rmtree(entry_path)
+                    if not options.dryrun:
+                        log.debug("Removing upload directory: %s" % entry_path)
+                        shutil.rmtree(entry_path)
 
-                    if os.path.isfile(distro_filename):
-                        log.debug("Removing distro file: %s" % distro_filename)
-                        os.unlink(distro_filename)
+                        if os.path.isfile(distro_filename):
+                            log.debug("Removing distro file: %s"
+                                      % distro_filename)
+                            os.unlink(distro_filename)
+                    else:
+                        log.debug("Keeping contents, DRYRUN mode")
 
                     options.distro = options_distro
 
@@ -200,7 +204,7 @@ def send_mails(mails):
                 log.info(line)
         else:
             sendmail(mail_message)
-        
+
 def process_upload(upload):
     """Process an upload as provided."""
     ztm.begin()
