@@ -44,14 +44,10 @@ class IBranch(IHasOwner):
         "displayed in most branch listings."))
     url = TextLine(
         title=_('Branch URL'), required=False,
-        description=_("The URL of the branch. This is usually the URL used to"
-            " checkout the branch. Leave that empty if the branch is hosted on"
-            " mirror.sourcecontrol.net."),
+        description=_("The URL where the branch is hosted.  This is usually"
+            " the URL used to checkout the branch. Leave that empty  if the"
+            " branch is hosted on bazaar.launchpad.net."),
         constraint=valid_webref)
-    supermirror_url = Attribute(
-        "Public URL of the branch on the Supermirror.")
-    unique_name = Attribute(
-        "Unique name of the branch, including the owner and product names.")
 
     whiteboard = Text(title=_('Status Whiteboard'), required=False,
         description=_('Any notes on the status of this branch you would '

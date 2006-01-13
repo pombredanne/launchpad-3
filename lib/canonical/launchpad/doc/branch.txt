@@ -64,6 +64,8 @@ True
 u'dev'
 >>> gterm_dev.product == gterm_product
 True
+>>> gterm_dev.url
+u'http://example.com/~ddaa/gterm.dev'
 
 Branches must implement the IBranch interface.
 
@@ -73,10 +75,12 @@ Branches must implement the IBranch interface.
 True
 
 Branch may or may not be associated to a product, and may have no home_page,
-no title, and no summary.
+no title, and no summary, and even no URL.
+
+Branches with no URL are primarily hosted on the supermirror.
 
 >>> url = 'http://example.com/~ddaa/junkcode'
->>> junkcode = branchset.new('junkcode', ddaa, None, url)
+>>> junkcode = branchset.new('junkcode', ddaa, None, None)
 >>> junkcode.name
 u'junkcode'
 >>> print repr(junkcode.product)
@@ -86,6 +90,8 @@ None
 >>> print repr(junkcode.title)
 None
 >>> print repr(junkcode.summary)
+None
+>>> print repr(junkcode.url)
 None
 
 == Branches and products ==
