@@ -9,9 +9,9 @@
            tal:content="sub/person/browsername"
            tal:attributes="href sub/person/fmt:url">Dafydd Harries</a>
       </li>
-      <li class="info" tal:condition="not: context/subscriptions">
-        <i>No subscribers</i>
-      </li>
     </ul>
-
+    <p tal:condition="not: context/subscriptions">
+      <i>No subscribers.</i>
+    </p>
+  </div>
 </div>

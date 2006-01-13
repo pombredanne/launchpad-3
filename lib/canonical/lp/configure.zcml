@@ -15,19 +15,6 @@
           name="main_template"
           template="../launchpad/templates/main-template.pt"
           />
-      <browser:page
-          name="no-url-yet"
-          template="../launchpad/templates/no-url-yet.pt"
-          />
-      <browser:page
-          name="no-page-yet"
-          template="../launchpad/templates/no-page-yet.pt"
-          />
-      <browser:page
-          name="no-app-component-yet"
-          template="../launchpad/templates/no-app-component-yet.pt"
-          />
-
   </browser:pages>
 
 </configure>

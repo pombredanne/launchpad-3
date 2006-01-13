@@ -12,7 +12,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Packages - By Distribution</h1>
+  <h1>Packages by distribution</h1>
 
   <p class="documentDescription">
     This page shows the way

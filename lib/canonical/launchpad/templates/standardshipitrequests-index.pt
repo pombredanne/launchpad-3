@@ -7,7 +7,7 @@
 
   <div metal:fill-slot="body">
 
-  <h1>Standard Request Options</h1>
+  <h1>Standard request options</h1>
 
   <table>
   <tbody>

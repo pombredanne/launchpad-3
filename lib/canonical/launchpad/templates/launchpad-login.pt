@@ -49,7 +49,7 @@
         
           <!-- 3. just registered successfully: -->
           <div tal:condition="view/registration_success" tal:omit-tag>
-            <h1>Registration Mail Sent</h1>
+            <h1>Registration mail sent</h1>
             <p>Your registration URL has been sent to
             <code tal:content="view/email">email@domain.com</code>.
             Once you have followed the link included in that email

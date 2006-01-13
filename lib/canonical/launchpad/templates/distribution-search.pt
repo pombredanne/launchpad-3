@@ -11,7 +11,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Source Packages in <span tal:replace="context/title" /></h1>
+  <h1>Source packages in <span tal:replace="context/title" /></h1>
 
   <form name="search" method="GET">
     <div>

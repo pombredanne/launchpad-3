@@ -57,7 +57,7 @@
         name="+new"
         schema="canonical.launchpad.interfaces.IBugPackageInfestation"
         for="canonical.launchpad.interfaces.IBugPackageInfestationSet"
-        label="Add Infested Package Release"
+        label="Add infested package release"
         fields="sourcepackagerelease infestationstatus"
         content_factory="canonical.launchpad.database.BugPackageInfestationFactory"
         arguments=""
@@ -72,7 +72,7 @@
         class="canonical.launchpad.browser.editview.SQLObjectEditView"
         schema="canonical.launchpad.interfaces.IBugPackageInfestation"
         fields="sourcepackagerelease infestationstatus"
-        label="Edit Infested Package Release"
+        label="Edit infested package release"
         permission="launchpad.AnyPerson"
         template="../templates/default-editform.pt"
         lp:url="malone/bugs/$Bug.id/packageinfestations/$BugPackageInfestation.id/+edit" />

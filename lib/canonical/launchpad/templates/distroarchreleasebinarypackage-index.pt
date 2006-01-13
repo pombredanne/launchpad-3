@@ -17,15 +17,15 @@
 
 <div metal:fill-slot="main">
 
-  <h1 tal:content="context/summary">Summary Goes Here</h1>
+  <h1 tal:content="context/summary">Summary goes here</h1>
 
   <div class="highlighted" style="font-size: 80%;">
     <p tal:replace="structure context/description/fmt:text-to-html">
-      Package Description
+      Package description
     </p>
   </div>
 
-  <h2>Publishing History</h2>
+  <h2>Publishing history</h2>
 
   <div tal:repeat="publishing context/publishing_history"
        tal:replace="structure publishing/@@+listing-detailed" />

@@ -21,7 +21,7 @@
                            value view/assign_to_nobody;
                            checked python:view.selectedRadioButton() ==
                                           view.assign_to_nobody">
-    nobody
+    Nobody
   </label>
   <br />
 
@@ -33,7 +33,7 @@
                            value view/assign_to_me;
                            checked python:view.selectedRadioButton() ==
                                           view.assign_to_me">
-    me
+    Me
   </label>
 
   <tal:assigned condition="view/getAssigneeDisplayValue">

@@ -107,5 +107,4 @@
            replace="structure view/batchnav/@@+navigation-links"
            tal:condition="view/batch"/>
 
-
 </div>
