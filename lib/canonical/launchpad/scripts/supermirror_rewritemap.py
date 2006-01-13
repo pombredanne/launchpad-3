@@ -10,6 +10,11 @@ from canonical.launchpad.interfaces import IBranchSet
 
 
 def write_map(outfile):
+    """Write a file mapping each branch user/product/name to branch id.
+    
+    The file will be written in a format suitable for use with Apache's
+    RewriteMap directive.
+    """
     branches = getUtility(IBranchSet)
     for branch in branches:
         line = generate_mapping_for_branch(branch)
@@ -17,12 +22,13 @@ def write_map(outfile):
 
 
 def generate_mapping_for_branch(branch):
+    """Generate a single line of the branch mapping file."""
     person_name = branch.owner.name
     product = branch.product
     if product is None:
         product_name = '+junk'
     else:
-        product_name = branch.product.name
+        product_name = branch.product_name
     branch_name = branch.name
     
     branch_location = split_branch_id(branch.id)
@@ -39,7 +45,6 @@ def split_branch_id(branch_id):
         >>> split_branch_id(0xabcdef12)
         'ab/cd/ef/12'
     """
-    h = "%08x" % int(branch_id)
-    branch_location = '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])
-    return branch_location
+    hex_id = "%08x" % int(branch_id)
+    return '%s/%s/%s/%s' % (hex_id[:2], hex_id[2:4], hex_id[4:6], hex_id[6:])
 

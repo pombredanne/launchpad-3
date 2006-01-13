@@ -6,25 +6,18 @@ __metaclass__ = type
 from cStringIO import StringIO
 from unittest import TestCase, TestLoader
 
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestSetup
+from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.scripts import supermirror_rewritemap
 from canonical.lp import initZopeless
 from canonical.config import config
 
 
-class TestRewriteMapScript(TestCase):
+class TestRewriteMapScript(LaunchpadFunctionalTestCase):
 
     def setUp(self):
-        # XXX AndrewBennetts 2005-12-23:
-        # Ideally we could just inherit from LaunchpadFunctionalTestCase rather
-        # than use LaunchpadFunctionalTestSetup manually, but that doesn't allow
-        # us to set the dbuser.
-        LaunchpadFunctionalTestSetup(dbuser=config.supermirror.dbuser).setUp()
-        from canonical.launchpad.ftests import login, ANONYMOUS
-        login(ANONYMOUS)
-
-    def tearDown(self):
-        LaunchpadFunctionalTestSetup().tearDown()
+        LaunchpadFunctionalTestCase.setUp(
+            self, dbuser=config.supermirror.dbuser)
+        self.login()
 
     def test_file_generation(self):
         """A simple smoke test for the supermirror_rewritemap cronscript."""
