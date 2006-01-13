@@ -69,6 +69,7 @@ build jobs will be created.
   ...     bm.addDistroArchRelease(dar)
   ...
   WARNING:root:Disabling: No CHROOT found for The Hoary Hedgehog Release for i386 (x86) pocket 'Release'
+  WARNING:root:Disabling: No CHROOT found for Breezy Badger Autotest for i386 (x86) pocket 'Release'
 
 Only Ubuntu/Warty/i386 and Debian/Woody/i386 have an available CHROOT.
 

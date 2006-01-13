@@ -465,6 +465,8 @@ is able to build stuff properly for that one
   Unable to setup builder for ubuntu/hoary/i386.
   WARNING:root:Disabling: No CHROOT found for WOODY for i386 (x86) pocket 'Release'
   Unable to setup builder for debian/woody/i386.
+  WARNING:root:Disabling: No CHROOT found for Breezy Badger Autotest for i386 (x86) pocket 'Release'
+  Unable to setup builder for ubuntu/breezy-autotest/i386.
 
 Since we don't have any builder available yet and the ETA to have
 seems to be a little far, the next output are boring.
