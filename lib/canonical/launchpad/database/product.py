@@ -390,7 +390,7 @@ class ProductSet:
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
                       sourceforgeproject=None, programminglang=None,
-                      reviewed=None):
+                      reviewed=False):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         return Product(
             owner=owner, name=name, displayname=displayname,
