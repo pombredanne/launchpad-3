@@ -46,14 +46,15 @@ class ISignedCodeOfConduct(Interface):
         )
 
     signedcode = Text(title=_("Signed Code"),
-                      description=_("""GPG Signed Code of Conduct.
+                      description=_("""OpenPGP-signed Code of Conduct.
                       It should contain a clearsigned copy of current
                       Code of Conduct version (use: `gpg --clearsign`).""")
                       )
 
     signingkey = Choice(title=_('Signing GPG Key'),
-                        description=_("""GPG key ID used to sign the document,
-                        it must be a valid inside Launchpad context."""),
+                        description=_("""OpenPGP key ID used to sign the
+                        document. It must be valid inside the Launchpad
+                        context."""),
                         vocabulary='ValidGPGKey',
                         required=True
                         )

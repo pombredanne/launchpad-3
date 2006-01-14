@@ -19,7 +19,7 @@
      tal:define="distrorelease context/distrorelease;
                  distro distrorelease/distribution">
 
-  <h1>Release Overview</h1> 
+  <h1>Release overview</h1> 
 
   <p class="documentDescription">This page is an overview of the
     <span tal:replace="context/architecturetag">i386</span> architecture of 
@@ -28,7 +28,7 @@
     you can see the state of binary packages for this architecture.
   </p>
 
-  <h2>Search Binary Packages</h2>
+  <h2>Search binary packages</h2>
 
   <form name="search" action="+search" method="GET">
   

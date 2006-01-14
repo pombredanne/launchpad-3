@@ -6,9 +6,10 @@
 
   <body>
     <div metal:fill-slot="main">
-        <h1>
-        Sorry, you don't have permission to access this page.
-        </h1>
+        <h1>Not allowed here</h1>
+        <p>
+          Sorry, you don't have permission to access this page.
+        </p>
         <p tal:condition="request/lp:person">
           You are logged in as <span tal:content="request/lp:person/title" />.
         </p>
