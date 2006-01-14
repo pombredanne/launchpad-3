@@ -14,7 +14,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>All Registered CVE's</h1>
+  <h1>All registered CVEs</h1>
 
   <div tal:repeat="cve context"
        tal:replace="structure cve/@@+listing-detailed" />

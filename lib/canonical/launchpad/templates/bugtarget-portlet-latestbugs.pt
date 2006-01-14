@@ -1,5 +1,5 @@
 <div class="portlet">
-  <h4>Latest Bugs in <span tal:replace="context/displayname" />:</h4>
+  <h4>Latest bugs in <span tal:replace="context/displayname" />:</h4>
   <div class="portletBody">
     <div class="portletContent">
       <ul class="bug">

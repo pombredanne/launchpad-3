@@ -1,3 +1,4 @@
+  >>> from canonical.launchpad.helpers import backslashreplace
 
 First, let's make sure we can see the page listing all registered remote bug
 trackers.
@@ -6,7 +7,7 @@ trackers.
   ... GET /malone/bugtrackers/ HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...Launchpad-registered Bug Trackers...
+  ...Bug trackers registered in Malone...
 
 Now we are going to add a bug tracker. First, can we see the form?
 
@@ -15,7 +16,7 @@ Now we are going to add a bug tracker. First, can we see the form?
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...Register an External Bug Tracker...
+  ...Register an external bug tracker...
 
 Now, let's POST to the form. We expect to be redirected to the page for the
 new tracker.
@@ -68,12 +69,12 @@ new tracker.
 
 So let's view this new bug tracker.
 
-  >>> print http(r"""
+  >>> print backslashreplace(str(http(r"""
   ... GET /malone/bugtrackers/testtrac HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
+  ... """)))
   HTTP/1.1 200 Ok
-  ...Malone Bugtracker: Test Trac Tracker...
+  ...Bug tracker \u201cTest Trac Tracker\u201d...
 
 And lets see if we can edit it.
 
