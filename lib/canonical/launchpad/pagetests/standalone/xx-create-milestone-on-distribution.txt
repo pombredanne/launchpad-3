@@ -1,22 +1,53 @@
 
-First, let's see if Foo Bar can view the page to add a milestone to the
-Ubuntu distribution.
+First, let's make sure the sample user (name12) can't view the page to
+add a milestone to the Ubuntu distribution, which is owned by the Ubuntu
+Team (name17).
 
   >>> print http(r"""
   ... GET /distros/ubuntu/+addmilestone HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 403 Forbidden
+  ...
+
+
+Let's make the sample user an owner of Ubuntu for this test. The owner
+of the distribution should be able to add milestones for it, of course!
+
+  >>> from canonical.launchpad.ftests import login, logout
+  >>> login('foo.bar@canonical.com')
+
+  >>> from zope.component import getUtility
+  >>> from canonical.database.sqlbase import flush_database_updates
+  >>> from canonical.launchpad.interfaces import IDistributionSet, IPersonSet
+  >>> distroset = getUtility(IDistributionSet)
+  >>> personset = getUtility(IPersonSet)
+  >>> ubuntu = distroset.getByName("ubuntu")
+  >>> person = personset.getByEmail("test@canonical.com")
+  >>> ubuntu.owner = person
+
+  >>> import transaction
+  >>> transaction.commit()
+  >>> flush_database_updates() # bug 3989
+  >>> logout() # if you don't do this you go to zope3 jail
+
+
+Now let's go back and try the add milestone page again. It works:
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+addmilestone HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...<h1>Add a Milestone</h1>...
+  ...
 
 
 Now, if we post to that form, we should see a success, and the page should
 redirect to the Ubuntu page showing the milestone we added.
 
-
   >>> print http(r"""
   ... POST /distros/ubuntu/+addmilestone HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 434
   ... Content-Type: multipart/form-data; boundary=---------------------------114216684419655310401202000685
   ... 
@@ -63,7 +94,7 @@ database ID for the milestone, so we find the ID:
 
   >>> print http(r"""
   ... POST /distros/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1982
   ... Content-Type: multipart/form-data; boundary=---------------------------3354718323763093901439946724
   ... 
@@ -154,3 +185,4 @@ Verify that the bug now has the milestone set on the view page:
   ...
   <td>sounder01</td>
   ...
+
