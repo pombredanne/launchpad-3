@@ -71,7 +71,7 @@
         name="+admin"
         schema="canonical.launchpad.interfaces.IBounty"
         label="Administer bounty"
-        fields="name title bountystatus summary usdvalue difficulty description"
+        fields="name owner title bountystatus summary usdvalue difficulty description"
         permission="launchpad.Admin"
         template="../templates/bounty-edit.pt"
         />

@@ -36,12 +36,12 @@ class BugSetNavigation(Navigation):
     usedfor = IBugSet
 
     def traverse(self, name):
-        # If the bug is not found, we expect a NotFoundError. If the
-        # value of name is not a value that can be used to retrieve a
-        # specific bug, we expect a ValueError.
         try:
-            return getUtility(IBugSet).get(name)
+            return getUtility(IBugSet).getByNameOrID(name)
         except (NotFoundError, ValueError):
+            # If the bug is not found, we expect a NotFoundError. If the
+            # value of name is not a value that can be used to retrieve
+            # a specific bug, we expect a ValueError.
             return None
 
 

@@ -945,7 +945,7 @@ def notify_join_request(event):
         to_addrs.update(contactEmailAddresses(person))
 
     if to_addrs:
-        url = "%s/people/%s/+members/%s" % (event.appurl, team.name, user.name)
+        url = '%s/+member/%s' % (canonical_url(team), user.name)
         replacements = {'browsername': user.browsername,
                         'name': user.name,
                         'teamname': team.browsername,
