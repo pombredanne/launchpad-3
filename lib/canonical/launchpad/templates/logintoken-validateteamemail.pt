@@ -10,19 +10,19 @@
 <div metal:fill-slot="main">
 
     <div tal:condition="not: view/successfullyProcessed">
-      <h1>Validate email: <span tal:replace="context/email"></span></h1>
+      <h1>Confirm e-mail address: <code tal:content="context/email"></code></h1>
 
       <div tal:condition="view/errormessage" class="portalMessage"
            tal:content="structure view/errormessage">
       </div>
 
-      <p>You're about to make <span tal:replace="context/email" /> the contact
+      <p>You're about to make <code tal:content="context/email" /> the contact
         email address of this team. By doing so, all notifications directed to
         this team will be sent to this email address instead of going to the
         team members.</p>
 
       <form name="validate" action="" method="POST">
-        <input type="submit" name="VALIDATE" value="Ok" />
+        <input type="submit" name="VALIDATE" value="Confirm" />
       </form>
     </div>
 

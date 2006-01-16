@@ -67,7 +67,7 @@
                 <td colspan="0">
                   <label tal:attributes="for view/sourcepackagename_widget/name"
                          tal:content="view/sourcepackagename_widget/label">
-                    Source Package Name
+                    Source package name
                   </label>
                 </td>
               </tr>
@@ -81,7 +81,7 @@
                 <td colspan="0">
                   <label tal:attributes="for view/product_widget/name"
                          tal:content="view/product_widget/label">
-                    Upstream Product
+                    Upstream product
                   </label>
                 </td>
               </tr>
@@ -203,7 +203,7 @@
           </div>
         </form>
 
-        <h2>Bug Description</h2>
+        <h2>Bug description</h2>
 
         <div tal:content="structure context/bug/description/fmt:text-to-html">
           $Bug.description
@@ -213,4 +213,3 @@
     </div>
   </body>
 </html>
-

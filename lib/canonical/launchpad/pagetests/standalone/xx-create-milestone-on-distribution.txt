@@ -7,7 +7,7 @@ Ubuntu distribution.
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
-  ...<h1>Add a Milestone</h1>...
+  ...<h1>Add a milestone</h1>...
 
 
 Now, if we post to that form, we should see a success, and the page should

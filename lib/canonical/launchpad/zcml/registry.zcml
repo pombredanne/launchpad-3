@@ -40,12 +40,6 @@
         <browser:page name="+about"
             template="../templates/registry-about.pt"
             lp:url="registry/+about" />
-        <browser:page name="+dashboard"
-            template="../templates/registry-dashboard.pt"
-            lp:url="registry/+dashboard" />
-        <browser:page name="+to-do"
-            template="../templates/registry-to-do.pt"
-            lp:url="registry/+to-do" />
     </browser:pages>
 
 </configure>
