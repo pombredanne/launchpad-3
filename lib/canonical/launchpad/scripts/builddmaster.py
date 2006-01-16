@@ -790,16 +790,15 @@ class BuilddMaster:
                 self._logger.debug(header + "ABORT EMPTY ARCHHINTLIST")
                 continue
 
-            # Verify if the sourcepackagerelease build in ALL arch
+            # Verify if the sourcepackagerelease build in ALL or ANY arch
             # in this case only one build entry is needed.
-            if release.architecturehintlist == "all":
-
+            if release.architecturehintlist in ["all", "any"]:
                 # it's already there, skip to next package
                 if release.builds:
-                    self._logger.debug(header + "SKIPPING ALL")
+                    self._logger.debug(header + "SKIPPING ALL/ANY")
                     continue
 
-                # packages with an architecture hint of "all" are
+                # packages with an architecture hint of "all" or "any" are
                 # architecture independent.  Therefore we only need
                 # to build on one architecture, the distrorelease.
                 # nominatedarchindep
@@ -807,7 +806,7 @@ class BuilddMaster:
                 release.createBuild(
                     distroarchrelease=distrorelease.nominatedarchindep,
                     processor=processor)
-                self._logger.debug(header + "CREATING ALL")
+                self._logger.debug(header + "CREATING ALL/ANY")
                 continue
 
             # the sourcepackage release builds in a specific list of
@@ -819,8 +818,7 @@ class BuilddMaster:
                 # architecture and the current architecture is not
                 # mentioned in the list, continues
                 supported = release.architecturehintlist.split()
-                if ('any' not in supported and arch.architecturetag not in
-                    supported):
+                if (arch.architecturetag not in supported):
                     self._logger.debug(header + "NOT SUPPORTED %s" %
                                        arch.architecturetag)
                     continue
@@ -835,7 +833,6 @@ class BuilddMaster:
                     # processorfamily
                     release.createBuild(distroarchrelease=arch,
                                         processor=arch.default_processor)
-
                     self._logger.debug(header + "CREATING %s" %
                                        arch.architecturetag)
                 else:
