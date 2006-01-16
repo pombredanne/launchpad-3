@@ -160,7 +160,7 @@ EVENT: bug gets assigned to an upstream product
 EVENT: upstream product assignment edited
 
   >>> edit_fields = [
-  ...     "product", "milestone", "status", "assignee", "bugwatch"
+  ...     "product", "milestone", "status", "assignee", "bugwatch",
   ...     "priority", "severity"]
   >>> old_product_assignment = capture_state(product_assignment, *edit_fields)
   >>> directlyProvides(old_product_assignment, IUpstreamBugTask)

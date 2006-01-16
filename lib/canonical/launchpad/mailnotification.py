@@ -677,9 +677,6 @@ def get_task_delta(old_task, new_task):
             changes[field_name]["old"] = old_val
             changes[field_name]["new"] = new_val
 
-    if old_task.statusexplanation != new_task.statusexplanation:
-        changes["statusexplanation"] = new_task.statusexplanation
-
     if changes:
         changes["bugtask"] = old_task
         return BugTaskDelta(**changes)
