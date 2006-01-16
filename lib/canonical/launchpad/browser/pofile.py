@@ -243,7 +243,8 @@ This only needs to be done once per language. Thanks for helping Rosetta.
     @property
     def second_lang_pofile(self):
         if self.second_lang_code is not None:
-            return potemplate.getPOFileByLang(self.second_lang_code)
+            return self.context.potemplate.getPOFileByLang(
+                self.second_lang_code)
         else:
             return None
 
@@ -386,6 +387,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
 
         dispatch_table = {
             'pofile_upload': self._upload,
+            'pofile_translation_filter': self._empty,
             'submit_translations': self._store_translations
             }
         dispatch_to = [(key, method)
@@ -398,6 +400,10 @@ This only needs to be done once per language. Thanks for helping Rosetta.
                 dispatch_to)
         key, method = dispatch_to[0]
         method()
+
+    def _empty(self):
+        """Foo."""
+        raise AssertionError
 
     def _upload(self):
         """Handle a form submission to request a .po file upload."""

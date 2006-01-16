@@ -78,7 +78,8 @@ class POMsgSetView(LaunchpadView):
 
     @property
     def is_multi_line(self):
-        """Return whether the singular or plural msgid have more than one line."""
+        """Return whether the singular or plural msgid have more than one line.
+        """
         return self.max_lines_count > 1
 
     @property
@@ -189,7 +190,7 @@ class POMsgSetView(LaunchpadView):
         self.second_lang_pofile = second_lang_pofile
 
         if self.second_lang_pofile:
-            msgid_text = potmsgset.primemsgid_.msgid
+            msgid_text = self.potmsgset.primemsgid_.msgid
             if isinstance(msgid_text, str):
                 import pdb
                 pdb.set_trace()

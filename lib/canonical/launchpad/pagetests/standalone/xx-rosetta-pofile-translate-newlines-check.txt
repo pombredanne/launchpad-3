@@ -6,8 +6,10 @@ First, we check that the textarea is empty by default.
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
-  ...<textarea lang="es" rows="5"
-      name="set_149_translation_es_0" dir="ltr" tabindex="1"></textarea>...
+  ...<textarea style="width: 100%;" lang="es"
+               rows="5"
+               name="set_149_translation_es_0"
+               dir="ltr" tabindex="1"></textarea>...
   ...
 
 Now, we submit some text with new lines before and after the text, the
@@ -20,17 +22,21 @@ answer should have exactly those strings.
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... Referer: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?offset=19&count=1
   ... 
-  ... set_149_msgid=&set_149_translation_es_0=%0D%0Afoo%0D%0A%0D%0A&offset=20&show=all&SUBMIT=Save+%26+Continue""")
+  ... set_149_msgid=&set_149_translation_es_0=%0D%0Afoo%0D%0A%0D%0A&offset=20&show=all&submit_translations=Save+%26+Continue""")
   HTTP/1.1 200 Ok
-  ...<textarea lang="es" rows="5"
-      name="set_149_translation_es_0" dir="ltr" tabindex="1">
+  ...<textarea style="width: 100%;" lang="es"
+               rows="5"
+               name="set_149_translation_es_0"
+               dir="ltr" tabindex="1">
   <BLANKLINE>
   foo
   <BLANKLINE>
   </textarea>
   ...
 
-And finally, a line that does not start with a new line so we are sure we don't get extra whitespaces
+And finally, a line that does not start with a new line so we are sure we
+don't get extra whitespaces. The NORMALIZE_WHITESPACE must be there if you
+change the test to be 100% sure that the textarea content is the right one.
 
   >>> print http(r"""
   ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?count=1&offset=19 HTTP/1.1
@@ -39,11 +45,13 @@ And finally, a line that does not start with a new line so we are sure we don't 
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... Referer: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?offset=19&count=1
   ... 
-  ... set_149_msgid=&set_149_translation_es_0=foo&offset=20&show=all&SUBMIT=Save+%26+Continue""") #doctest: -NORMALIZE_WHITESPACE
+  ... set_149_msgid=&set_149_translation_es_0=foo&offset=20&show=all&submit_translations=Save+%26+Continue""") #doctest: -NORMALIZE_WHITESPACE
   HTTP/1.1 200 Ok
   ...
-  ...<textarea lang="es" rows="5"
-      name="set_149_translation_es_0" dir="ltr" tabindex="1">
+              <textarea style="width: 100%;" lang="es"
+                        rows="5"
+                        name="set_149_translation_es_0"
+                        dir="ltr" tabindex="1">
   foo</textarea>
   ...
 
@@ -56,7 +64,7 @@ adds it automatically
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... 
-  ... count=1&show=all&set_165_msgid=&set_165_translation_es_0=%25s%3A+la+opcion+%C2%AB%25s%C2%BB+es+ambigua&SUBMIT=Save+%26+Continue""")
+  ... count=1&show=all&set_165_msgid=&set_165_translation_es_0=%25s%3A+la+opcion+%C2%AB%25s%C2%BB+es+ambigua&submit_translations=Save+%26+Continue""")
   HTTP/1.1 200 Ok
   ...
             <input type="hidden" name="offset" value="1" />
@@ -70,9 +78,10 @@ This is the check, as we can see, we get the trailing new line char
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
-  ...
-                          <textarea lang="es" rows="2"
-      name="set_165_translation_es_0" dir="ltr" tabindex="1">
+  ...<textarea style="width: 100%;" lang="es"
+               rows="2"
+               name="set_165_translation_es_0"
+               dir="ltr" tabindex="1">
   %s: la opcion «%s» es ambigua
   </textarea>
   ...
@@ -85,7 +94,7 @@ Now, we do the right submit, with one trailing new line...
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... 
-  ... count=1&show=all&set_165_msgid=&set_165_translation_es_0=%25s%3A+la+opcion+%C2%AB%25s%C2%BB+es+ambigua%0D%0A&SUBMIT=Save+%26+Continue""")
+  ... count=1&show=all&set_165_msgid=&set_165_translation_es_0=%25s%3A+la+opcion+%C2%AB%25s%C2%BB+es+ambigua%0D%0A&submit_translations=Save+%26+Continue""")
   HTTP/1.1 200 Ok
   ...
             <input type="hidden" name="offset" value="1" />
@@ -99,9 +108,10 @@ And we get the same output, just one trailing new line.
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
-  ...
-                          <textarea lang="es" rows="2"
-      name="set_165_translation_es_0" dir="ltr" tabindex="1">
+  ...<textarea style="width: 100%;" lang="es"
+               rows="2"
+               name="set_165_translation_es_0"
+               dir="ltr" tabindex="1">
   %s: la opcion «%s» es ambigua
   </textarea>
   ...
@@ -114,7 +124,7 @@ Last check, the user sends two new line chars instead of just one...
   ... Content-Type: application/x-www-form-urlencoded
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... 
-  ... count=1&show=all&set_165_msgid=&set_165_translation_es_0=%25s%3A+la+opcion+%C2%AB%25s%C2%BB+es+ambigua%0D%0A%0D%0A&SUBMIT=Save+%26+Continue""")
+  ... count=1&show=all&set_165_msgid=&set_165_translation_es_0=%25s%3A+la+opcion+%C2%AB%25s%C2%BB+es+ambigua%0D%0A%0D%0A&submit_translations=Save+%26+Continue""")
   HTTP/1.1 200 Ok
   ...
             <input type="hidden" name="offset" value="1" />
@@ -129,9 +139,10 @@ And Rosetta comes to the rescue and stores just one!.
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
-  ...
-                          <textarea lang="es" rows="2"
-      name="set_165_translation_es_0" dir="ltr" tabindex="1">
+  ...<textarea style="width: 100%;" lang="es"
+               rows="2"
+               name="set_165_translation_es_0"
+               dir="ltr" tabindex="1">
   %s: la opcion «%s» es ambigua
   </textarea>
   ...

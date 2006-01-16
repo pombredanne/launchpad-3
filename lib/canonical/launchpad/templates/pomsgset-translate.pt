@@ -147,7 +147,7 @@
           tal:condition="not:pomsgset_view/is_multi_line"
           tal:attributes="
             name string:set_${pomsgset_view/id}_translation_${language_code}_${index};
-            value python:pomsgset_view.get_translation(index);
+            value python:pomsgset_view.getTranslation(index);
             tabindex view/tab_index;
             lang pomsgset_view/pofile/language/dashedcode;
             dir pomsgset_view/pofile/language/abbreviated_text_dir;
@@ -157,7 +157,7 @@
             XXX: Carlos Perello Marin 2005-05-05
             This 'python:' expression should be fixed by SteveA.
           </tal:comment>
-          <tal:with-content condition="python:pomsgset_view.get_translation(index)">
+          <tal:with-content condition="python:pomsgset_view.getTranslation(index)">
             <tal:comment tal:replace="nothing">
               The lack of indentation for tal:content is deliberate or we would
               add extra whitespaces to the textarea, which causes us to
@@ -173,9 +173,9 @@
                 lang pomsgset_view/pofile/language/dashedcode;
                 dir pomsgset_view/pofile/language/abbreviated_text_dir;
                 ">
-<tal:content replace="structure python:pomsgset_view.get_translation(index)" /></textarea>
+<tal:content replace="structure python:pomsgset_view.getTranslation(index)" /></textarea>
           </tal:with-content>
-          <tal:without-content condition="python:not pomsgset_view.get_translation(index)">
+          <tal:without-content condition="python:not pomsgset_view.getTranslation(index)">
             <tal:comment tal:replace="nothing">
               XXX: Carlos Perello Marin 2005-05-05
               This 'python:' expression should be fixed by SteveA.

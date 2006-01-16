@@ -27,7 +27,7 @@ class DummyLanguageSet:
         'ja' : DummyLanguage('ja', 1),
         'es' : DummyLanguage('es', 2),
         'fr' : DummyLanguage('fr', 3),
-        'cy' : DummyLanguage('cy', None),
+        'tlh' : DummyLanguage('tlh', None),
         }
 
     def __getitem__(self, key):
@@ -108,6 +108,9 @@ class DummyPOFile:
         return 35.0
 
     def __getitem__(self, msgid_text):
+        if msgid_text == 'foo':
+            return DummyPOMsgSet()
+
         raise KeyError, msgid_text
 
     def getPOTMsgSetTranslated(self, current=True, slice=None):
@@ -128,6 +131,11 @@ class DummyPOMsgSet:
     fuzzy = False
     commenttext = 'foo'
 
+    def __init__(self):
+        self.potmsgset = DummyPOTMsgSet()
+        self.potemplate = DummyPOTemplate()
+        self.pofile = DummyPOFile(self.potemplate, DummyLanguage('es', 2))
+
     @property
     def active_texts(self):
         return ['bar']
@@ -142,6 +150,7 @@ class DummyPOTMsgSet:
 
     def __init__(self):
         self.potemplate = DummyPOTemplate()
+        self.primemsgid_ = DummyMsgID()
 
     def flags(self):
         return []
@@ -184,8 +193,14 @@ class DummyPOTemplate:
 
 
 class DummyResponse:
+    def __init__(self):
+        self.errors = []
+
     def redirect(self, url):
         pass
+
+    def addErrorNotification(self, message):
+        self.errors.append(message)
 
 
 class DummyRequest:
@@ -194,7 +209,7 @@ class DummyRequest:
     def __init__(self, **form_data):
         self.form = form_data
         self.response = DummyResponse()
-        self.method = 'POST'
+        self.method = 'GET'
 
     def getURL(self):
         return "http://this.is.a/fake/url"
@@ -250,7 +265,7 @@ def test_POFileView_initialize():
     >>> t.initialize()
     >>> context.language.code
     'es'
-    >>> self.context.language.pluralforms
+    >>> context.language.pluralforms
     2
     >>> t.lacks_plural_form_information
     False
@@ -266,7 +281,7 @@ def test_POFileView_initialize():
 
     >>> potemplate = DummyPOTemplate()
     >>> language_set = DummyLanguageSet()
-    >>> context = DummyPOFile(potemplate, language_set['cy'])
+    >>> context = DummyPOFile(potemplate, language_set['tlh'])
     >>> request = DummyRequest()
     >>> t = POFileView(context, request)
     >>> t.initialize()
@@ -320,8 +335,8 @@ def test_POFileView_initialize():
     >>> tearDown()
     """
 
-def test_POFileView_atBeginning_atEnd():
-    """Test atBeginning and atEnd.
+def test_POFileView_is_at_beginning_is_at_end():
+    """Test is_at_beginning and is_at_end.
 
     >>> from zope.app.tests.placelesssetup import setUp, tearDown
     >>> from zope.app.tests import ztapi
@@ -337,9 +352,9 @@ def test_POFileView_atBeginning_atEnd():
     >>> request = DummyRequest()
     >>> t = POFileView(context, request)
     >>> t.initialize()
-    >>> t.atBeginning()
+    >>> t.is_at_beginning
     True
-    >>> t.atEnd()
+    >>> t.is_at_end
     False
 
     >>> potemplate = DummyPOTemplate()
@@ -350,7 +365,7 @@ def test_POFileView_atBeginning_atEnd():
     >>> t.initialize()
     >>> t.is_at_beginning
     False
-    >>> t.is_at_end()
+    >>> t.is_at_end
     False
 
     >>> potemplate = DummyPOTemplate()
@@ -359,9 +374,9 @@ def test_POFileView_atBeginning_atEnd():
     >>> request = DummyRequest(offset=30)
     >>> t = POFileView(context, request)
     >>> t.initialize()
-    >>> t.is_at_beginning()
+    >>> t.is_at_beginning
     False
-    >>> t.is_at_end()
+    >>> t.is_at_end
     True
 
     >>> tearDown()
@@ -485,7 +500,7 @@ def test_POFileView_messageSets():
     False
     >>> x.msgid_plural is None
     True
-    >>> x.translation_range()
+    >>> x.translation_range
     [0]
     >>> x.getTranslation(0)
     'bar'
@@ -510,9 +525,9 @@ def test_POFileView_makeTabIndex():
     >>> request = DummyRequest()
     >>> t = POFileView(context, request)
     >>> t.initialize()
-    >>> t.tab_index()
+    >>> t.tab_index
     1
-    >>> t.tab_index()
+    >>> t.tab_index
     2
     """
 
