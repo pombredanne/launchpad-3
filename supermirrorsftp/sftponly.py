@@ -11,7 +11,7 @@ from twisted.python import components
 from twisted.python.filepath import FilePath, InsecurePath
 from twisted.vfs.pathutils import FileSystem
 from twisted.vfs.adapters import sftp
-from supermirrorsftp.bazaarfs import SFTPServerRoot
+from canonical.supermirrorsftp.bazaarfs import SFTPServerRoot
 
 from zope.interface import implements
 import binascii

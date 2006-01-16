@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 
-#import unittest
+import unittest
 import tempfile
 from cStringIO import StringIO
 
@@ -63,6 +63,7 @@ class AcceptanceTests(BzrTestCase):
 
     def setUp(self):
         super(AcceptanceTests, self).setUp()
+
         # insert SSH keys for testuser -- and insert testuser!
         LaunchpadZopelessTestSetup().setUp()
         connection = LaunchpadZopelessTestSetup().connect()
@@ -96,7 +97,6 @@ class AcceptanceTests(BzrTestCase):
         import sys
         print >>sys.stderr, 'self.userHome:', self.userHome
         os.makedirs(os.path.join(self.userHome, '.ssh'))
-        os.makedirs(os.path.join(self.userHome, 'bin'))
         shutil.copyfile(
             sibpath(__file__, 'id_dsa'), 
             os.path.join(self.userHome, '.ssh', 'id_dsa'))
@@ -106,11 +106,17 @@ class AcceptanceTests(BzrTestCase):
         os.chmod(os.path.join(self.userHome, '.ssh', 'id_dsa'), 0600)
         self.realHome = os.environ['HOME']
         os.environ['HOME'] = self.userHome
+
+        # XXX spiv 2005-01-13: 
+        # Force bzrlib to use paramiko (because OpenSSH doesn't respect $HOME)
         self.realSshVendor = sftp._ssh_vendor
         sftp._ssh_vendor = 'none'
+
+        # Start the SFTP server
         self.server = TestSFTPServer()
 
     def tearDown(self):
+        # Undo setUp.
         self.server.stop()
         os.environ['HOME'] = self.realHome
         self.authserver.tearDown()
@@ -422,4 +428,9 @@ class cmd_push(Command):
                 from bzrlib.log import show_changed_revisions
                 show_changed_revisions(br_to, old_rh, new_rh)
 
+
+def test_suite():
+    loader = unittest.TestLoader()
+    result = loader.loadTestsFromName(__name__)
+    return result
 

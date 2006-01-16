@@ -2,15 +2,16 @@
 
 import os
 import shutil
+import unittest
 
-from twisted.trial import unittest
+from twisted.trial.unittest import TestCase
 from twisted.internet import defer
 from twisted.vfs.ivfs import VFSError, PermissionError
 
-from supermirrorsftp.sftponly import SFTPOnlyAvatar
-from supermirrorsftp.bazaarfs import SFTPServerRoot, SFTPServerBranch
+from canonical.supermirrorsftp.sftponly import SFTPOnlyAvatar
+from canonical.supermirrorsftp.bazaarfs import SFTPServerRoot, SFTPServerBranch
 
-class AvatarTestBase(unittest.TestCase):
+class AvatarTestBase(TestCase):
     def setUp(self):
         self.tmpdir = self.mktemp()
         os.mkdir(self.tmpdir)
@@ -195,4 +196,9 @@ class ProductDirsTestCase(AvatarTestBase):
         deferred.addCallback(_cb1).addCallback(_cb2)
         return deferred
 
+
+def test_suite():
+    loader = unittest.TestLoader()
+    result = loader.loadTestsFromName(__name__)
+    return result
 

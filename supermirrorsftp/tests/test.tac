@@ -15,7 +15,7 @@ from twisted.internet import defer
 from canonical.launchpad.daemons import tachandler
 from canonical.authserver.client.twistedclient import TwistedAuthServer
 
-from supermirrorsftp import sftponly
+from canonical.supermirrorsftp import sftponly
 
 keydir = sibpath(__file__, 'keys')
 hostPublicKey = keys.getPublicKeyString(
