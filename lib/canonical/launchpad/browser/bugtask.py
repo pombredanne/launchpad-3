@@ -25,9 +25,12 @@ __all__ = [
 
 import urllib
 
+from zope.event import notify
+from zope.interface import providedBy
 from zope.component import getUtility, getView
-from zope.app.form.utility import setUpWidgets, getWidgetsData
-from zope.app.form.interfaces import IInputWidget
+from zope.app.form.utility import (
+    setUpWidgets, getWidgetsData, applyWidgetsChanges)
+from zope.app.form.interfaces import IInputWidget, WidgetsError
 
 from canonical.lp import dbschema
 from canonical.launchpad.webapp import (
@@ -46,9 +49,11 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
 from canonical.launchpad.components.bugtask import NullBugTask
+from canonical.launchpad.webapp.generalform import GeneralFormView
 
 
 def get_sortorder_from_request(request):
@@ -377,13 +382,86 @@ class BugTaskReleaseTargetingView:
         self.request.response.redirect(canonical_url(bugtask))
 
 
-class BugTaskEditView(SQLObjectEditView):
-    """The view class used for the task +edit page"""
+class BugTaskEditView(GeneralFormView):
+    """The view class used for the task +editstatus page."""
+    def __init__(self, context, request):
+        GeneralFormView.__init__(self, context, request)
 
-    def changed(self):
-        """Redirect the browser to the bug page when we successfully update
-        the bug task."""
-        self.request.response.redirect(canonical_url(self.context))
+        # A simple hack, which avoids the mind-bending Z3 form/widget
+        # complexity, to provide the user a useful error message if they make a
+        # change comment but don't change anything.
+        self.comment_on_change_error = ""
+
+    @property
+    def initial_values(self):
+        """See canonical.launchpad.webapp.generalform.GeneralFormView."""
+        field_values = {}
+        for name in self.fieldNames:
+            field_values[name] = getattr(self.context, name)
+
+        return field_values
+
+    def validate(self, data):
+        """See canonical.launchpad.webapp.generalform.GeneralFormView."""
+        bugtask = self.context
+        comment_on_change = self.request.form.get("comment_on_change")
+        if comment_on_change:
+            # There was a comment on this change, so make sure that a
+            # change was actually made.
+            changed = False
+            for field_name in data:
+                current_value = getattr(bugtask, field_name)
+                if current_value != data[field_name]:
+                    changed = True
+                    break
+
+            if not changed:
+                self.comment_on_change_error = (
+                    "You provided a change comment without changing anything.")
+                # Pass the comment_on_change_error as a list here, because
+                # WidgetsError expects a list of errors.
+                raise WidgetsError([self.comment_on_change_error])
+
+        return data
+
+    def process(self):
+        """See canonical.launchpad.webapp.generalform.GeneralFormView."""
+        bugtask = self.context
+        new_values = getWidgetsData(self, self.schema, self.fieldNames)
+
+        bugtask_before_modification = helpers.Snapshot(
+            bugtask, providing=providedBy(bugtask))
+        changed = applyWidgetsChanges(
+            self, self.schema, target=bugtask, names=self.fieldNames)
+
+        comment_on_change = self.request.form.get("comment_on_change")
+
+        # The statusexplanation field is being display as a "Comment on most
+        # recent change" field now, so set it to the current change comment if
+        # there is one, otherwise clear it out.
+        if comment_on_change:
+            # Add the change comment as a comment on the bug.
+            bugtask.bug.newMessage(
+                owner=getUtility(ILaunchBag).user,
+                subject=bugtask.bug.followup_subject(),
+                content=comment_on_change,
+                publish_create_event=False)
+
+            bugtask.statusexplanation = comment_on_change
+        else:
+            bugtask.statusexplanation = ""
+
+        if changed:
+            notify(
+                SQLObjectModifiedEvent(
+                    object=bugtask,
+                    object_before_modification=bugtask_before_modification,
+                    edited_fields=self.fieldNames,
+                    comment_on_change=comment_on_change))
+
+    def nextURL(self):
+        """See canonical.launchpad.webapp.generalform.GeneralFormView."""
+        return canonical_url(self.context)
 
 
 class BugListing:
