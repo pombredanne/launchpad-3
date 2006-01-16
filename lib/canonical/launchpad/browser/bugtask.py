@@ -55,6 +55,7 @@ from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
 from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp.generalform import GeneralFormView
 
+
 def get_sortorder_from_request(request):
     """Get the sortorder from the request."""
     if request.get("orderby"):
@@ -72,9 +73,7 @@ class BugTargetTraversalMixin:
     @stepthrough('+bug')
     def traverse_bug(self, name):
         """Traverses +bug portions of URLs"""
-        if name.isdigit():
-            return self._get_task_for_context(name)
-        raise NotFoundError
+        return self._get_task_for_context(name)
 
     def _get_task_for_context(self, name):
         """Return the IBugTask for this name in this context.
@@ -89,8 +88,9 @@ class BugTargetTraversalMixin:
         a TypeError is raised.
         """
         context = self.context
-        # Raises NotFoundError if no bug with that ID exists.
-        bug = getUtility(IBugSet).get(name)
+
+        # Raises NotFoundError if no bug is found
+        bug = getUtility(IBugSet).getByNameOrID(name)
 
         # Loop through this bug's tasks to try and find the appropriate task
         # for this context. We always want to return a task, whether or not
@@ -608,36 +608,38 @@ class BugTaskSearchListingView(LaunchpadView):
 
     def assign_to_milestones(self):
         """Assign bug tasks to the given milestone."""
-        if not self._upstreamContext():
-            # The context is not an upstream, so, since the only
-            # context that currently supports milestones is upstream,
-            # there's nothing to do here.
-            return
+        if self.request.form.get("Assign to Milestone"):
+            # Targeting one or more tasks to a milestone can be done only on
+            # upstreams by the upstream owner, so let's sanity check this
+            # mass-target request.
+            assert self._upstreamContext(), (
+                "Mass-targeting of bugtasks to milestones is currently only "
+                "supported for products")
+            assert self.user is not None and self.user.inTeam(self.context.owner), (
+                "You must be logged in to mass-assign bugtasks to milestones")
 
-        if helpers.is_maintainer(self.context):
-            form_params = getWidgetsData(self, self.search_form_schema)
+        form_params = getWidgetsData(self, self.search_form_schema)
+        milestone_assignment = form_params.get('milestone_assignment')
+        if milestone_assignment is not None:
+            taskids = self.request.form.get('task')
+            if taskids:
+                if not isinstance(taskids, (list, tuple)):
+                    taskids = [taskids]
 
-            milestone_assignment = form_params.get('milestone_assignment')
-            if milestone_assignment is not None:
-                taskids = self.request.form.get('task')
-                if taskids:
-                    if not isinstance(taskids, (list, tuple)):
-                        taskids = [taskids]
-
-                    bugtaskset = getUtility(IBugTaskSet)
-                    tasks = [bugtaskset.get(taskid) for taskid in taskids]
-                    for task in tasks:
-                        task.milestone = milestone_assignment
+                bugtaskset = getUtility(IBugTaskSet)
+                tasks = [bugtaskset.get(taskid) for taskid in taskids]
+                for task in tasks:
+                    task.milestone = milestone_assignment
 
     def mass_edit_allowed(self):
         """Indicates whether the user can edit bugtasks directly on the page.
 
         At the moment the user can edit only product milestone
-        assignments, if the user is a maintainer of the product.
+        assignments, if the user is an owner of the product.
         """
         return (
             self._upstreamContext() is not None and
-            helpers.is_maintainer(self.context))
+            self.user is not None and self.user.inTeam(self.context.owner))
 
     def task_columns(self):
         """Returns a sequence of column names to be shown in the listing.

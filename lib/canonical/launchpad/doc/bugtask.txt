@@ -376,26 +376,6 @@ It's also possible to iterate over all the bug tasks:
     >>> len(bugtasks)
     19
 
-Bug Task Maintainers
---------------------
-
-The upcoming sections mention bug task maintainers, so we should
-probably clarify that before going any further. IBugTask provides a
-maintainer attribute, and a maintainer_displayname attribute; the
-latter is mainly for use in ZCML configuration on add/editforms where
-you want to show the maintainer's name. maintainer_displayname will
-probably go away in the future and be replaced by a smarter display
-widget for the maintainer name.
-
-The maintainer of an upstream task is simply the Product.owner:
-
-    >>> bugtask = bugtaskset.get(2)
-    >>> bugtask.maintainer.displayname
-    u'Sample Person'
-
-"Maintainership" of distribution source packages has been deprecated. See
-https://wiki.launchpad.canonical.com/InitialBugContacts.
-
 Editing Bug Tasks
 -----------------
 
@@ -411,12 +391,7 @@ cannot edit upstream tasks.
       ...
     Unauthorized: ('status', 'launchpad.Edit')
 
-Now let's login as a maintainer and try again.
-
-    >>> login('test@canonical.com')
-    >>> upstream_task.status = STATUS_FIXRELEASED
-
-Again, this time as someone other than the maintainer:
+Let's login and try again.
 
     >>> login('jeff.waugh@ubuntulinux.com')
     >>> upstream_task.status = STATUS_FIXRELEASED
@@ -494,10 +469,6 @@ like these, use the NullBugTask object.
     >>> null_bugtask.bugwatch is None
     True
     >>> null_bugtask.owner is None
-    True
-    >>> null_bugtask.maintainer == netapplet.owner
-    True
-    >>> null_bugtask.maintainer_displayname == netapplet.owner.displayname
     True
     >>> null_bugtask.target == netapplet
     True
@@ -708,37 +679,6 @@ As will attribute access:
 And attribute setting:
 
     >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.FIXRELEASED
-    >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.UNCONFIRMED
-
-It's all good.
-
-Privacy and Maintainers
------------------------
-
-Then logged in as the Firefox maintainer:
-
-    >>> login('test@canonical.com')
-    >>> sample_person = getUtility(ILaunchBag).user
-
-We'll find all four IBugTasks that match the search criteria. The maintainer is
-also an explicit subscriber in this case.
-
-    >>> params = BugTaskSearchParams(
-    ...     status=any(STATUS_UNCONFIRMED, STATUS_CONFIRMED),
-    ...     orderby="id", user=sample_person)
-    >>> bugtasks = upstream_mozilla.searchTasks(params)
-    >>> print bugtasks.count()
-    4
-    >>> bug_ids = [bt.bug.id for bt in bugtasks]
-    >>> print sorted(bug_ids)
-    [1, 4, 5, 6]
-
-And, as you would expect, we'll also be able to access it directly:
-
-    >>> bug_upstream_firefox_no_svg_support = bugtaskset.get(2)
-    >>> bug_upstream_firefox_no_svg_support.bug.title
-    u'Firefox does not support SVG'
-
     >>> bug_upstream_firefox_no_svg_support.status = BugTaskStatus.UNCONFIRMED
 
 Sorting Bug Tasks

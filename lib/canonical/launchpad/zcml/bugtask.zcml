@@ -40,18 +40,17 @@
                         distrorelease milestone status statusexplanation
                         priority severity assignee binarypackagename
                         bugwatch dateassigned datecreated age owner
-                        maintainer maintainer_displayname targetname
-                        title related_tasks statusdisplayhtml statuselsewhere
-                        setStatusFromDebbugs setSeverityFromDebbugs
-                        updateTargetNameCache asEmailHeaderValue" />
+                        targetname title related_tasks statusdisplayhtml
+                        statuselsewhere setStatusFromDebbugs
+                        setSeverityFromDebbugs updateTargetNameCache
+                        asEmailHeaderValue" />
         <require
             permission="launchpad.Edit"
             set_attributes="product sourcepackagename distribution
                             distrorelease milestone status statusexplanation
                             priority severity assignee binarypackagename
                             bugwatch dateassigned datecreated age owner
-                            maintainer maintainer_displayname targetname
-                            title related_tasks statusdisplayhtml
+                            targetname title related_tasks statusdisplayhtml
                             statuselsewhere setStatusFromDebbugs
                             setSeverityFromDebbugs" />
     </content>

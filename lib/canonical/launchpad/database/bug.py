@@ -4,6 +4,8 @@
 __metaclass__ = type
 __all__ = ['Bug', 'BugSet']
 
+import re
+
 from sets import Set
 from email.Utils import make_msgid
 
@@ -210,8 +212,11 @@ class Bug(SQLBase):
             self.linkCVE(cve)
 
 
+
 class BugSet:
     implements(IBugSet)
+
+    valid_bug_name_re = re.compile(r'''^[a-z][a-z0-9\\+\\.\\-]+$''')
 
     def get(self, bugid):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
@@ -220,6 +225,17 @@ class BugSet:
         except SQLObjectNotFound:
             raise NotFoundError(
                 "Unable to locate bug with ID %s" % str(bugid))
+
+    def getByNameOrID(self, bugid):
+        """See canonical.launchpad.interfaces.bug.IBugSet."""
+        if self.valid_bug_name_re.match(bugid):
+            bug = Bug.selectOneBy(name=bugid)
+            if bug is None:
+                raise NotFoundError(
+                    "Unable to locate bug with ID %s" % str(bugid))
+        else:
+            bug = self.get(bugid)
+        return bug
 
     def searchAsUser(self, user, duplicateof=None, orderBy=None, limit=None):
         """See canonical.launchpad.interfaces.bug.IBugSet."""

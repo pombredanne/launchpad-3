@@ -267,8 +267,13 @@ class IBugSet(Interface):
     def get(bugid):
         """Get a specific bug by its ID.
 
-        If it can't be found, a zope.exceptions.NotFoundError will be
-        raised.
+        If it can't be found, NotFoundError will be raised.
+        """
+
+    def getByNameOrID(bugid):
+        """Get a specific bug by its ID or nickname
+
+        If it can't be found, NotFoundError will be raised.
         """
 
     def searchAsUser(user, duplicateof=None, orderBy=None, limit=None):
