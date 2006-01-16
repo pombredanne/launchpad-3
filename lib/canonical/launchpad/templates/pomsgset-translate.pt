@@ -209,7 +209,7 @@
               tal:attributes="
                 checked pomsgset_view/is_fuzzy;
                 name string:set_${pomsgset_view/id}_fuzzy_${language_code};
-                tabindex: view/tab_index
+                tabindex view/tab_index
                 " />
             <tal:block condition="not:pomsgset_view/is_plural">
               Someone should review this translation

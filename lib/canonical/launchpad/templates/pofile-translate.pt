@@ -183,7 +183,7 @@
                          name="submit_translations"
                          value="Save &amp; Continue"
                          style="text-align: right;"
-                         tal:attributes="tabindex: view/tab_index" />
+                         tal:attributes="tabindex view/tab_index" />
                 </th>
               </tr>
             </tfoot>

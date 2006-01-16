@@ -27,7 +27,7 @@ underscore.
          dir="ltr" name="set_130_translation_en_AU_0"
          tabindex="1" />
   ...
-  <textarea style="width: 100%; lang="en-AU"
+  <textarea style="width: 100%;" lang="en-AU"
             rows="3"
             name="set_139_translation_en_AU_0"
             dir="ltr" tabindex="37"></textarea>
@@ -48,7 +48,8 @@ to left:
   <BLANKLINE>
   ...
   <input style="width: 100%;" type="text" lang="he"
-      dir="rtl" name="set_130_translation_he_0" tabindex="1" />
+         dir="rtl" name="set_130_translation_he_0"
+         tabindex="1" />
   ...
   <textarea style="width: 100%;" lang="he"
             rows="3"
