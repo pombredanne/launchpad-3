@@ -23,7 +23,7 @@ underscore.
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-  <input style="width: 100%; type="text" lang="en-AU"
+  <input style="width: 100%;" type="text" lang="en-AU"
          dir="ltr" name="set_130_translation_en_AU_0"
          tabindex="1" />
   ...
@@ -71,8 +71,9 @@ direction:
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-  <input type="text" lang="he"
-      dir="rtl" name="set_130_translation_he_0" tabindex="1" />
+  <input style="width: 100%;" type="text" lang="he"
+         dir="rtl" name="set_130_translation_he_0"
+         tabindex="1" />
   ...
   ...Spanish (Alternate Language):...
   ... lang="es" dir="ltr">...</...
