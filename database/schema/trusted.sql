@@ -114,6 +114,8 @@ COMMENT ON FUNCTION valid_cve(text) IS 'validate a common vulnerability number
 CREATE OR REPLACE FUNCTION valid_absolute_url(text) RETURNS boolean AS '
     from urlparse import urlparse
     (scheme, netloc, path, params, query, fragment) = urlparse(args[0])
+    if scheme == "sftp":
+        return 1
     if not (scheme and netloc):
         return 0
     return 1
