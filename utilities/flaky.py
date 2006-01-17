@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
 
 """Run pyflakes checks on a set of files."""
 
@@ -9,10 +10,12 @@ import traceback
 
 import pyflakes
 
+
 class Flakiness:
     COMPILE_FAILED = 0
     FLAKY = 1
     GOOD = 2
+
 
 class PyflakesResult:
     def __init__(self, filename, flakiness, messages):
@@ -21,6 +24,11 @@ class PyflakesResult:
         self.messages = messages
 
     def make_report(self):
+        """Generate a text report for the result.
+
+        Yields a line of text for each line of the report.
+        """
+
         if self.flakiness == Flakiness.GOOD:
             return
 
@@ -37,7 +45,10 @@ class PyflakesResult:
 
         yield ''
 
+
 class PyflakesStatistics:
+    """Counts of pyflakes messages over multiple Python files."""
+
     message_classes = {
         pyflakes.messages.UndefinedName: 'messages_undefined_name',
         pyflakes.messages.UnusedImport: 'messages_unused_import',
@@ -69,6 +80,8 @@ class PyflakesStatistics:
 
             for message in result.messages:
                 self.messages_total += 1
+
+                # Increment the appropriate self.messages_* count.
                 attr = PyflakesStatistics.message_classes[message.__class__]
                 statistic = getattr(self, attr)
                 setattr(self, attr, statistic + 1)
@@ -87,20 +100,22 @@ class PyflakesStatistics:
             ' - Problems total: %d' % self.messages_total,
             ]
 
+
 def find_python_files(top_path):
     for dirpath, dirnames, filenames in os.walk(top_path):
         for filename in filenames:
             if filename.endswith('.py'):
                 yield os.path.join(dirpath, filename)
 
+
 def check_file(filename):
     """Return a list of pyflakes messages for a Python file."""
 
-    code = open(filename).read()
+    source = open(filename).read()
 
     try:
-        tree = compiler.parse(code)
-    except (SyntaxError, IndentationError), e:
+        tree = compiler.parse(source)
+    except (SyntaxError, IndentationError):
         tb_info = traceback.format_exception(*sys.exc_info())
         messages = [message[:-1] for message in tb_info]
         return PyflakesResult(filename, Flakiness.COMPILE_FAILED, messages)
@@ -112,6 +127,7 @@ def check_file(filename):
             return PyflakesResult(filename, Flakiness.FLAKY, messages)
         else:
             return PyflakesResult(filename, Flakiness.GOOD, messages)
+
 
 def main(argv):
     if len(argv) < 2:
@@ -152,6 +168,7 @@ def main(argv):
         return 1
     else:
         return 0
+
 
 if __name__ == '__main__':
     sys.exit(main(sys.argv))
