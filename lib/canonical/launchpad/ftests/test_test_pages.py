@@ -29,6 +29,8 @@ class TestMakeStoryTest(unittest.TestCase):
         self.failUnless(isinstance(story, unittest.TestCase))
         result = unittest.TestResult()
         story.run(result)
+        # the current implementaiton puts a stub start and end test
+        # in the test suite, bracketing the story files.
         self.assertEqual(2, result.testsRun)
         self.assertEqual([], result.failures)
         self.assertEqual([], result.errors)
