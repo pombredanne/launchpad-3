@@ -83,6 +83,80 @@ def tearDown(test):
     else:
         LaunchpadFunctionalTestSetup().tearDown()
 
+
+class TestStory(unittest.TestCase):
+    """A test case that represents a story of doctests.
+
+    This is achieved by holding a testsuite for the story, and
+    delegating responsiblity for most methods to it.
+    We want this to be a TestCase instance and not a TestSuite
+    instance to be compatible with various test runners that
+    filter tests - they generally ignore test suites and may
+    select individual tests - but stories cannot be split up.
+    """
+
+    def __init__(self, storydir):
+        # we do not run the super __init__ because we are not using any of
+        # the base classes functionality, and we'd just have to give it a
+        # meaningless method.
+        self._storydir = storydir
+        self._suite = unittest.makeSuite(StartStory)
+        filenames = [filename
+                    for filename in os.listdir(self._storydir)
+                    if filename.lower().endswith('.txt')
+                    ]
+        filenames = sets.Set(filenames)
+        numberedfilenames = [filename for filename in filenames
+                            if len(filename) > 4
+                            and filename[:2].isdigit()
+                            and filename[2] == '-']
+        numberedfilenames = sets.Set(numberedfilenames)
+        unnumberedfilenames = filenames - numberedfilenames
+    
+        # A predictable order is important, even if it remains officially
+        # undefined for un-numbered filenames.
+        numberedfilenames = list(numberedfilenames)
+        numberedfilenames.sort()
+        unnumberedfilenames = list(unnumberedfilenames)
+        unnumberedfilenames.sort()
+    
+        for filename in unnumberedfilenames + numberedfilenames:
+            story = os.path.basename(self._storydir)
+            filename = os.path.join(
+                    os.pardir, 'pagetests', story, filename
+                    )
+            self._suite.addTest(FunctionalDocFileSuite(
+                filename, setUp=setUp, tearDown=tearDown
+                ))
+        self._suite.addTest(unittest.makeSuite(EndStory))
+
+    def countTestCases(self):
+        return self._suite.countTestCases()
+
+    def shortDescription(self):
+        return "Story: %s" % self._storydir
+
+    def id(self):
+        return self.shortDescription()
+
+    def __str__(self):
+        return self.shortDescription()
+
+    def __repr__(self):
+        return "<%s storydir=%s>" % \
+               (_strclass(self.__class__), self._storydir)
+
+    def run(self, result=None):
+        if result is None: result = self.defaultTestResult()
+        # TODO RBC 20060117 we can hook in pre and post story actions
+        # here much more tidily (and in self.debug too)
+        # - probably via self.setUp and self.tearDown
+        self._suite.run(result)
+
+    def debug(self):
+        self._suite.debug()
+
+
 def test_suite():
     suite = unittest.TestSuite()
     pagetestsdir = os.path.abspath(
@@ -97,35 +171,7 @@ def test_suite():
     stories.sort()
 
     for storydir in stories:
-        suite.addTest(unittest.makeSuite(StartStory))
-        filenames = [filename
-                    for filename in os.listdir(storydir)
-                    if filename.lower().endswith('.txt')
-                    ]
-        filenames = sets.Set(filenames)
-        numberedfilenames = [filename for filename in filenames
-                            if len(filename) > 4
-                            and filename[:2].isdigit()
-                            and filename[2] == '-']
-        numberedfilenames = sets.Set(numberedfilenames)
-        unnumberedfilenames = filenames - numberedfilenames
-
-        # A predictable order is important, even if it remains officially
-        # undefined for un-numbered filenames.
-        numberedfilenames = list(numberedfilenames)
-        numberedfilenames.sort()
-        unnumberedfilenames = list(unnumberedfilenames)
-        unnumberedfilenames.sort()
-
-        for filename in unnumberedfilenames + numberedfilenames:
-            story = os.path.basename(storydir)
-            filename = os.path.join(
-                    os.pardir, 'pagetests', story, filename
-                    )
-            suite.addTest(FunctionalDocFileSuite(
-                filename, setUp=setUp, tearDown=tearDown
-                ))
-        suite.addTest(unittest.makeSuite(EndStory))
+        suite.addTest(TestStory(storydir))
     return suite
 
 if __name__ == '__main__':
