@@ -198,6 +198,7 @@ class IBugDelta(Interface):
     bug = Attribute("The IBug, after it's been edited.")
     bugurl = Attribute("The absolute URL to the bug.")
     user = Attribute("The IPerson that did the editing.")
+    comment_on_change = Attribute("An optional comment for this change.")
 
     # fields on the bug itself
     title = Attribute("The new bug title or None.")
