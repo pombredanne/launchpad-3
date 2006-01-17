@@ -19,8 +19,7 @@ from canonical.lp.dbschema import BranchLifecycleStatus
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator 
 from canonical.launchpad.interfaces import IHasOwner
-from canonical.launchpad.interfaces.validation import (valid_branch_url,
-    valid_webref)
+from canonical.launchpad.interfaces.validation import valid_webref
 
 
 class IBranch(IHasOwner):
@@ -43,7 +42,7 @@ class IBranch(IHasOwner):
     url = TextLine(
         title=_('Branch URL'), required=True,
         description=_("The URL of the branch. This is usually the URL used to"
-                      " checkout the branch."), constraint=valid_branch_url)
+                      " checkout the branch."), constraint=valid_webref)
     whiteboard = Text(title=_('Status Whiteboard'), required=False,
         description=_('Any notes on the status of this branch you would '
         'like to make. This field is a general whiteboard, your changes '
