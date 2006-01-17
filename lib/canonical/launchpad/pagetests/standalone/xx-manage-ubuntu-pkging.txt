@@ -11,7 +11,7 @@ The form field shows that it is currnetly mapped to evolution.
   ... """)
   HTTP/1.1 200 Ok
   ...Evolution Series: MAIN...
-      <h1>Ubuntu Packaging</h1>
+      <h1>Ubuntu packaging</h1>
   ...
       <form method="POST"
             action="http://localhost:9000/products/evolution/+series/main/+ubuntupkg">

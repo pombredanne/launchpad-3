@@ -1,12 +1,14 @@
+  >>> from canonical.launchpad.helpers import backslashreplace
+
 Check that the PO Template Name edit form loads.
 
-  >>> print http(r"""
+  >>> print backslashreplace(str(http(r"""
   ... GET /potemplatenames/1/+edit HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
+  ... """)))
   HTTP/1.1 200 Ok
   ...
-      <title>Main translation domain for the Evolution 2.2 edit in Rosetta</title>
+      <title>Edit \u201cMain translation domain for the Evolution 2.2\u201d...
   ...
 
 Check that we can submit the PO Template Name edit form.

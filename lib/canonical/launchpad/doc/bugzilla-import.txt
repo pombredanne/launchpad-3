@@ -188,7 +188,7 @@ Now we import bug #1 and check the results:
   Created: 2005-04-01 00:00:00+00:00
   Subscribers:
       Sample Person
-  Task: mozilla-firefox (ubuntu)
+  Task: mozilla-firefox (Ubuntu)
       Status: UNCONFIRMED
       Distro: ubuntu
       Source package: mozilla-firefox
@@ -248,7 +248,7 @@ to notice:
   Subscribers:
       Foo Bar
       New User
-  Task: ubuntu
+  Task: Ubuntu
       Status: REJECTED
       Distro: ubuntu
       Assignee: Sample Person
@@ -283,7 +283,7 @@ Now import an ASSIGNED bug.  Things to note about this import:
   Created: 2005-04-03 00:00:00+00:00
   Subscribers:
       Sample Person
-  Task: netapplet (ubuntu)
+  Task: netapplet (Ubuntu)
       Status: CONFIRMED
       Distro: ubuntu
       Source package: netapplet
@@ -325,7 +325,7 @@ Next we import a fixed bug:
   Created: 2005-04-04 00:00:00+00:00
   Subscribers:
       Sample Person
-  Task: mozilla-firefox (ubuntu)
+  Task: mozilla-firefox (Ubuntu)
       Status: FIXRELEASED
       Distro: ubuntu
       Source package: mozilla-firefox
@@ -361,7 +361,7 @@ and attach a watch to the upstream bug tracker:
       Product: evolution
       Severity: NORMAL
       Watch: http://bugzilla.gnome.org//show_bug.cgi?id=273041
-  Task: evolution (ubuntu)
+  Task: evolution (Ubuntu)
       Status: UNCONFIRMED
       Distro: ubuntu
       Source package: evolution
@@ -369,7 +369,7 @@ and attach a watch to the upstream bug tracker:
       Priority: HIGH
       Severity: CRITICAL
       Explanation: Bugzilla status=UPSTREAM, product=Ubuntu, component=evolution
-  Task: evolution (debian)
+  Task: evolution (Debian)
       Status: UNCONFIRMED
       Distro: debian
       Source package: evolution

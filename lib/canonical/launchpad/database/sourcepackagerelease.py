@@ -251,6 +251,12 @@ class SourcePackageRelease(SQLBase):
         for filename in filenames:
             # Fetch the file
             content = tarball.extractfile(filename).read()
+            if filename.startswith('source/'):
+                # Remove the special 'source/' prefix for the path.
+                filename = filename[len('source/'):]
+            elif filename.startswith('./source/'):
+                # Remove the special './source/' prefix for the path.
+                filename = filename[len('./source/'):]
             # Add it to the queue.
             translation_import_queue_set.addOrUpdateEntry(
                 filename, content, is_published, importer,

@@ -11,7 +11,7 @@
           <tr>
             <td style="width: 75%; padding-right: 1em;">
 
-              <h1>Upstream Source Import</h1>
+              <h1>Upstream source import</h1>
 
               <p tal:condition="not:view/has_errors">
                 Once you enter the details of the
@@ -34,7 +34,7 @@
                 <table>
                   <tbody>
                     <tr>
-                      <th><label>Source Package:</label></th>
+                      <th><label>Source package:</label></th>
                       <td>
                         <div>
                           <input
@@ -64,7 +64,7 @@
                 <h2>Source import details</h2>
 
                 <fieldset>
-                  <legend>Revision Control Repository</legend>
+                  <legend>Revision control repository</legend>
 
                   <div class="formHelp">
                     Enter details below for only the selected Repository type.
@@ -79,7 +79,7 @@
                     <table>
                       <tbody>
                         <tr>
-                          <th><label>Repository Root:</label></th>
+                          <th><label>Repository root:</label></th>
                           <td>
                             <input type="text" name="cvsroot" size="30"
                             tal:attributes="value view/cvsroot" />
@@ -101,7 +101,7 @@
                           </td>
                         </tr>
                         <tr>
-                          <th><label>Branch Name:</label></th>
+                          <th><label>Branch name:</label></th>
                           <td>
                             <div>
                               <input type="text" name="cvsbranch" size="30"
@@ -157,7 +157,7 @@
                   <table>
                     <tbody>
                       <tr>
-                        <th><label>Root Directory URL:</label></th>
+                        <th><label>Root directory URL:</label></th>
                         <td>
                           <input name="releaseroot" size=40
                           tal:attributes="value context/releaseroot" />
@@ -179,7 +179,7 @@
                         </td>
                       </tr>
                       <tr>
-                        <th><label>Filename Pattern:</label></th>
+                        <th><label>Filename pattern:</label></th>
                         <td>
                           <input name="releasefileglob" size=40
                           tal:attributes="value context/releasefileglob" />

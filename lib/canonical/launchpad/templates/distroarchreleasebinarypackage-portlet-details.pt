@@ -10,12 +10,11 @@
        tal:define="cr context/currentrelease">
 
     <tal:has_currentrelease condition="cr">
-      <b>Current Release:</b>
+      <b>Current release:</b>
       <a tal:content="cr/version"
          tal:attributes="href cr/fmt:url">3.2.1-3</a><br />
     </tal:has_currentrelease>
     <tal:no_currentrelease condition="not: cr">
-      <img src="/++resource++alert" />
       <i>There is no current release for this package in
         <span tal:replace="context/distribution/displayname">ubuntu</span>
         <span tal:replace="context/distrorelease/name">hoary</span>

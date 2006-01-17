@@ -107,7 +107,7 @@ class BuilderSet(object):
     implements(IBuilderSet)
 
     def __init__(self):
-        self.title = "Launchpad BuildFarm"
+        self.title = "The Launchpad build farm"
 
     def __iter__(self):
         return iter(Builder.select())
@@ -211,7 +211,7 @@ class BuildQueueSet(object):
     implements(IBuildQueueSet)
 
     def __init__(self):
-        self.title = "Launchpad Build Queue"
+        self.title = "The Launchpad build queue"
 
     def __iter__(self):
         return iter(BuildQueue.select())

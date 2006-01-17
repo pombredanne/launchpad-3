@@ -7,7 +7,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Revision Control Summary for
+    <h1>Revision control summary for
         <span tal:replace="context/title">Project Title</span></h1>
 
     <div tal:content="context/summary">Project Summary</div>

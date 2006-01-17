@@ -130,4 +130,27 @@ And the queue should have a new entry.
    >>> len(translation_import_queue)
    1
 
+Now, the final import should work.
+First, remove the recently seen cache from the import script.
+
+    >>> from canonical.launchpad.scripts.po_import import ImportProcess
+    >>> import os, os.path
+    >>> if os.path.exists(ImportProcess.POIMPORT_RECENTLY_SEEN_PICKLE):
+    ...     os.unlink(ImportProcess.POIMPORT_RECENTLY_SEEN_PICKLE)
+
+    >>> import subprocess, sys
+    >>> process = subprocess.Popen([
+    ...     sys.executable, 'cronscripts/rosetta-poimport.py'
+    ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.STDOUT
+    ...     )
+    >>> (output, empty) = process.communicate()
+    >>> print output
+    INFO    Importing: Spanish (es) translation of pmount in Ubuntu Hoary package "pmount"
+    ...
+
+Remove the new translation import cache so it doesn't confuse anything
+
+    >>> os.unlink(ImportProcess.POIMPORT_RECENTLY_SEEN_PICKLE)
+
    >>> LibrarianTestSetup().tearDown()

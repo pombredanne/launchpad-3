@@ -698,19 +698,6 @@ COMMENT ON TABLE DistributionBounty IS 'This table records a simple link between
 
 COMMENT ON TABLE ProjectBounty IS 'This table records a simple link between a bounty and a project. This bounty will be listed on the project web page, and the project will be mentioned on the bounty web page.';
 
--- Maintainership
-
-COMMENT ON TABLE Maintainership IS 'Stores the maintainer information for a
-sourcepackage in a particular distribution. Note that this does not store
-the information per-distrorelease, but for the overall "distribution", which
-generally refers to the current development release of the distro.';
-
-COMMENT ON COLUMN Maintainership.maintainer IS 'Refers to the person
-responsible for this sourcepackage inside this distribution. Note that the
-"maintainer" for a package varies over time, so the person who was
-responsible in a previous distrorelease may no longer be listed as
-a maintainer.';
-
 -- Messaging subsytem
 COMMENT ON TABLE BugMessage IS 'This table maps a message to a bug. In other words, it shows that a particular message is associated with a particular bug.';
 COMMENT ON TABLE Message IS 'This table stores a single RFC822-style message. Messages can be threaded (using the parent field). These messages can then be referenced from elsewhere in the system, such as the BugMessage table, integrating messageboard facilities with the rest of The Launchpad.';

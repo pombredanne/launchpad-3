@@ -121,7 +121,7 @@ EVENT: bug gets assigned to a source package
   >>> latest_activity.whatchanged
   u'bug'
   >>> latest_activity.message
-  u'assigned to mozilla-firefox (ubuntu)'
+  u'assigned to mozilla-firefox (Ubuntu)'
 
 EVENT: source package assignment edited
 

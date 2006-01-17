@@ -1,7 +1,5 @@
-
 <div class="portlet" tal:condition="context/translatable_series">
-
-  <h4>Translatable Branches:</h4>
+  <h4>Translatable branches:</h4>
 
   <div class="portletBody portletContent">
 
@@ -19,7 +17,7 @@
 
 <div class="portlet" tal:condition="context/translatable_packages">
 
-  <h4>Translatable Distro Packages:</h4>
+  <h4>Translatable distro packages:</h4>
 
   <div class="portletBody portletContent ">
 
