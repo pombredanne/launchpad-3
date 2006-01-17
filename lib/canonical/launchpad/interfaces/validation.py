@@ -11,6 +11,7 @@ __all__ = [
     'valid_hackergotchi',
     'valid_unregistered_email',
     'validate_distribution_mirror_schema',
+    'valid_distributionmirror_file_list'
     ]
 
 import urllib
@@ -19,6 +20,7 @@ from StringIO import StringIO
 
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
+from zope.app.content_types import guess_content_type
 from zope.app.form.interfaces import WidgetsError
 
 from canonical.launchpad import _
@@ -192,6 +194,14 @@ def valid_unregistered_email(email):
     else:
         raise LaunchpadValidationError(_(dedent("""
             %s isn't a valid email address.""" % email)))
+
+def valid_distributionmirror_file_list(file_list=None):
+    if file_list is not None:
+        content_type, dummy = guess_content_type(body=file_list)
+        if content_type != 'text/plain':
+            raise LaunchpadValidationError(
+                "The given file is not in plain text format.")
+    return True
 
 def validate_distribution_mirror_schema(form_values):
     """Perform schema validation according to IDistributionMirror constraints.

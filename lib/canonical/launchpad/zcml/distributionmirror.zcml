@@ -67,6 +67,18 @@
     </browser:editform>
 
     <browser:generalform
+        name="+uploadfilelist"
+        for="canonical.launchpad.interfaces.IDistributionMirror"
+        schema="canonical.launchpad.interfaces.IDistributionMirror"
+        permission="launchpad.Edit"
+        label="Upload File List"
+        class="canonical.launchpad.browser.DistributionMirrorUploadFileListView"
+        fields="file_list"
+        keyword_arguments="file_list"
+        template="../templates/distributionmirror-uploadfilelist.pt">
+    </browser:generalform>
+
+    <browser:generalform
         name="+addarchrelease"
         for="canonical.launchpad.interfaces.IDistributionMirror"
         schema="canonical.launchpad.interfaces.IMirrorDistroArchRelease"

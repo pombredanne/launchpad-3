@@ -5,12 +5,13 @@ __metaclass__ = type
 __all__ = ['IDistributionMirror', 'IMirrorDistroArchRelease',
            'IMirrorDistroReleaseSource', 'IMirrorProbeRecord']
 
-from zope.schema import Bool, Choice, Datetime, TextLine
+from zope.schema import Bool, Choice, Datetime, TextLine, Bytes
 from zope.interface import Interface, Attribute
 
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.validation import (
-    valid_http_url, valid_ftp_url, valid_rsync_url)
+    valid_http_url, valid_ftp_url, valid_rsync_url, valid_webref,
+    valid_distributionmirror_file_list)
 from canonical.launchpad import _
 
 
@@ -39,9 +40,10 @@ class IDistributionMirror(Interface):
     pulse_source = TextLine(
         title=_('Pulse Source'), required=False, readonly=False,
         description=_("The URL where we can pulse this mirror, in case this "
-                      "mirror's pulse type is Pull."))
+                      "mirror's pulse type is Pull."),
+        constraint=valid_webref)
     enabled = Bool(
-        title=_('Enabled?'), required=False, readonly=False, default=False)
+        title=_('Enabled'), required=False, readonly=False, default=False)
     speed = Choice(
         title=_('Link Speed'), required=True, readonly=False,
         vocabulary='MirrorSpeed')
@@ -51,14 +53,19 @@ class IDistributionMirror(Interface):
     content = Choice(
         title=_('Content'), required=True, readonly=False, 
         vocabulary='MirrorContent')
+    file_list = Bytes(
+        title=_("File List"), required=False, readonly=False,
+        description=_("A text file containing the list of files that are "
+                      "mirrored on this mirror."),
+        constraint=valid_distributionmirror_file_list)
     pulse_type = Choice(
         title=_('Pulse Type'), required=True, readonly=False,
         vocabulary='MirrorPulseType')
     official_candidate = Bool(
-        title=_('Official Candidate?'), required=False, readonly=False,
+        title=_('Official Candidate'), required=False, readonly=False,
         default=False)
     official_approved = Bool(
-        title=_('Official Approved?'), required=False, readonly=False,
+        title=_('Official Approved'), required=False, readonly=False,
         default=False)
 
     title = Attribute('The title of this mirror')

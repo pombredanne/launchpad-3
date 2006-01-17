@@ -15,6 +15,17 @@
     <h1><span tal:replace="context/title">TITLE</span>:
       Distribution Mirror Overview</h1>
 
+    <tal:comment condition="nothing">
+      XXX: This use of "python:" here is to workaround
+      https://launchpad.net/products/launchpad/+bug/5768
+    </tal:comment>
+    <tal:non-archive-mirror condition="python: context.content.name != 'ARCHIVE'">
+      <div tal:condition="not: context/file_list" class="portalMessage">
+        We cannot check if this mirror is up to date or not because a file
+        list wasn't uploaded yet.
+      </div>
+    </tal:non-archive-mirror>
+
     <div class="highlighted" style="font-size: 80%;"
          tal:condition="context/description">
       <p tal:replace="structure context/description/fmt:text-to-html">

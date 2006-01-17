@@ -277,6 +277,8 @@ distributionmirror_edit = ContextTitle('Edit mirror %s')
 
 distributionmirror_index = ContextTitle('Mirror %s')
 
+distributionmirror_uploadfilelist = ContextTitle('Upload File List for %s')
+
 distribution_allpackages = ContextTitle('All packages in %s')
 
 distribution_bugcontact = ContextTitle('Change bug contact for %s')
