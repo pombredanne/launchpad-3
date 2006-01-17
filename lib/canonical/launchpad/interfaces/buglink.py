@@ -7,10 +7,7 @@ __metaclass__ = type
 __all__ = ['IBugLinkTarget']
 
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
-
-_ = MessageIDFactory('launchpad')
-
+from canonical.launchpad import _
 
 class IBugLinkTarget(Interface):
     """An entity which can be linked to a bug.

@@ -7,11 +7,10 @@ __all__ = ['IPoll', 'IPollSet', 'IPollSubset', 'IPollOption',
 # Imports from zope
 from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 
 from canonical.launchpad.validators.name import valid_name
 from canonical.lp.dbschema import PollSecrecy, PollAlgorithm
+from canonical.launchpad import _
 
 
 class IPoll(Interface):

@@ -2,6 +2,6 @@
 
 # Modules should 'from canonical.launchpad import _' instead of constructing
 # their own MessageIDFactory
-from zope.i18n.messageid import MessageIDFactory
-_ = MessageIDFactory("launchpad")
+from zope.i18nmessageid import MessageFactory
+_ = MessageFactory("launchpad")
 

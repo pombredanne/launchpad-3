@@ -9,15 +9,13 @@ __all__ = [
     'ICveSet',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import Choice, Datetime, Int, TextLine
 
 from canonical.launchpad.validators.cve import valid_cve
 from canonical.launchpad.interfaces.buglink import IBugLinkTarget
 from canonical.lp.dbschema import CveStatus
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class ICve(IBugLinkTarget):
     """A single CVE database entry."""

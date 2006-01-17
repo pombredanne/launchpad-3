@@ -15,7 +15,7 @@ import urllib
 
 from zope.interface import implements
 
-from zope.app.errorservice.interfaces import IErrorReportingService
+from zope.app.error.interfaces import IErrorReportingUtility
 from zope.exceptions.exceptionformatter import format_exception
 
 from canonical.config import config
@@ -104,8 +104,8 @@ class ErrorReport:
                    username, url, req_vars)
 
 
-class ErrorReportingService:
-    implements(IErrorReportingService)
+class ErrorReportingUtility:
+    implements(IErrorReportingUtility)
 
     _ignored_exceptions = set(['Unauthorized'])
     copy_to_zlog = False
@@ -208,7 +208,7 @@ class ErrorReportingService:
             value = str(obj)
         except:
             logging.getLogger('SiteError').exception(
-                'Error in ErrorReportingService while getting a str '
+                'Error in ErrorReportingUtility while getting a str '
                 'representation of an object')
             value = '<unprintable %s object>' % (
                 str(type(obj).__name__)
@@ -220,7 +220,7 @@ class ErrorReportingService:
         return value
 
     def raising(self, info, request=None, now=None):
-        """See IErrorReportingService.raising()"""
+        """See IErrorReportingUtility.raising()"""
         if now is not None:
             now = now.astimezone(UTC)
         else:
@@ -309,7 +309,7 @@ class ErrorReportingService:
                     '%s (%s)' % (url, oopsid))
 
 
-globalErrorService = ErrorReportingService()
+globalErrorUtility = ErrorReportingUtility()
 
 
 class ErrorReportRequest:

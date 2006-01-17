@@ -13,7 +13,6 @@ __all__ = [
     'IBugTarget',
     'BugDistroReleaseTargetDetails']
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
@@ -23,7 +22,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import Title, Summary, BugField
 
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class CreatedBugWithNoBugTasksError(Exception):
     """Raised when a bug is created with no bug tasks."""

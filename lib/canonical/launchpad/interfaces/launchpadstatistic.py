@@ -8,9 +8,7 @@ __all__ = ['ILaunchpadStatistic', 'ILaunchpadStatisticSet']
 
 from zope.interface import Interface
 from zope.schema import Int, TextLine
-from zope.i18nmessageid import MessageIDFactory
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class ILaunchpadStatistic(Interface):
     """A single stored statistic or value in the Launchpad system.

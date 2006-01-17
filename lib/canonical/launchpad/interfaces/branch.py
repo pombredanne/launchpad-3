@@ -9,8 +9,6 @@ __all__ = [
     'IBranchSet',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
-
 from zope.interface import Interface, Attribute
 
 from zope.schema import Bool, Int, Choice, Text, TextLine
@@ -20,9 +18,7 @@ from canonical.lp.dbschema import BranchLifecycleStatus
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.validation import valid_webref
-
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 
 class IBranch(IHasOwner):

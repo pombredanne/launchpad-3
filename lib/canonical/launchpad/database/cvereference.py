@@ -4,8 +4,6 @@ __metaclass__ = type
 __all__ = ['CveReference']
 
 from zope.interface import implements
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 
 from sqlobject import ForeignKey, StringCol
 

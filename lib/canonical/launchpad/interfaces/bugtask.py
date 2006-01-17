@@ -21,7 +21,6 @@ __all__ = [
     'UNRESOLVED_BUGTASK_STATUSES',
     'RESOLVED_BUGTASK_STATUSES']
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Choice, Datetime, Int, Text, TextLine, List)
@@ -32,8 +31,7 @@ from canonical.lp import dbschema
 from canonical.launchpad.interfaces.bugattachment import IBugAttachment
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 # XXX: Brad Bollenbach, 2005-12-02: In theory, NEEDSINFO belongs in
 # UNRESOLVED_BUGTASK_STATUSES, but the semantics of our current reports would

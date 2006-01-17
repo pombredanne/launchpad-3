@@ -9,11 +9,9 @@ __all__ = [
     'IBugWatchSet',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import Choice, Datetime, Int, TextLine
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class IBugWatch(Interface):
     """A bug on a remote system."""

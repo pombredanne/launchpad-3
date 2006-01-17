@@ -12,9 +12,7 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 from zope.schema import Choice, Int, Text
-from zope.i18nmessageid import MessageIDFactory
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class ISpecificationFeedback(Interface):
     """The queue entry for a specification on a person, including a message

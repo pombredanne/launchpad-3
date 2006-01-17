@@ -14,13 +14,10 @@ __all__ = [
 
 from zope.schema import  Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.interfaces import ISpecificationTarget
-
 from canonical.launchpad.validators.name import name_validator
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class IProductSeries(ISpecificationTarget):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""

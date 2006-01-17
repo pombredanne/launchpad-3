@@ -13,9 +13,7 @@ __all__ = [
 
 from zope.schema import Int
 from zope.interface import Interface
-from zope.i18nmessageid import MessageIDFactory
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class IDistroReleaseQueue(Interface):
     """A Queue item for Lucille"""

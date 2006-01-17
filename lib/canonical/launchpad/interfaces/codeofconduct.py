@@ -15,11 +15,9 @@ __all__ = [
     'ICodeOfConductConf',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import Datetime, Int, Text, Bool, Choice
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class ICodeOfConduct(Interface):
     """Pristine Code of Conduct content."""

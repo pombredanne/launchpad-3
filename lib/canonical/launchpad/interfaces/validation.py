@@ -1,4 +1,6 @@
+# Copyright 2005 Canonical Ltd.  All rights reserved.
 
+__metaclass__ = type
 __all__ = [
     'validate_url',
     'valid_http_url',
@@ -18,7 +20,6 @@ from textwrap import dedent
 from StringIO import StringIO
 
 from zope.component import getUtility
-from zope.exceptions import NotFoundError
 from zope.app.form.interfaces import WidgetsError
 
 from canonical.launchpad import _
@@ -26,6 +27,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import valid_email
 from canonical.lp.dbschema import MirrorPulseType
+from canonical.launchpad.interfaces import NotFoundError
 
 def validate_url(url, valid_schemes):
     """Returns a boolean stating whether 'url' is a valid URL.

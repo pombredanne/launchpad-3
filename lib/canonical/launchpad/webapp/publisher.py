@@ -10,7 +10,6 @@ __all__ = ['UserAttributeCache', 'LaunchpadView', 'canonical_url', 'nearest',
            'rootObject', 'Navigation', 'stepthrough', 'redirection', 'stepto']
 
 from zope.interface import implements
-from zope.exceptions import NotFoundError
 from zope.component import getUtility, queryView, getDefaultViewName
 from zope.interface.advice import addClassAdvisor
 import zope.security.management
@@ -25,6 +24,7 @@ from canonical.launchpad.interfaces import (
 
 # Import the launchpad.conf configuration object.
 from canonical.config import config
+from canonical.launchpad.interfaces import NotFoundError
 
 
 class DecoratorAdvisor:

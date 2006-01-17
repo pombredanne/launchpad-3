@@ -9,14 +9,12 @@ __all__ = [
     'IMilestoneSet',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import Choice, TextLine, Int, Date, Bool
 
 from canonical.launchpad.interfaces import IHasProduct
 from canonical.launchpad.validators.name import name_validator
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class IMilestone(IHasProduct):
     """A milestone, or a targeting point for bugs and other release-related

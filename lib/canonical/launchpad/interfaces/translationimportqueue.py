@@ -3,8 +3,7 @@
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, TextLine
 
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 __metaclass__ = type
 

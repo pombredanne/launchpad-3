@@ -11,9 +11,7 @@ __all__ = [
 
 from zope.schema import Int
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class IBinaryPackageFile(Interface):
     """A binary package to librarian link record."""

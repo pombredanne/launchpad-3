@@ -11,11 +11,10 @@ __all__ = [
 
 from zope.schema import Int, TextLine
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad.validators.name import valid_name
 
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class IBinaryPackageName(Interface):
     id = Int(title=_('ID'), required=True)

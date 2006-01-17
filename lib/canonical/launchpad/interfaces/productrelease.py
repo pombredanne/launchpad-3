@@ -11,7 +11,6 @@ __all__ = [
 
 from zope.schema import Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
 
 from canonical.launchpad import _
 from canonical.lp.dbschema import UpstreamFileType

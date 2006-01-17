@@ -10,13 +10,11 @@ __all__ = [
     'IRemoteBug',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import Int, Text, TextLine, Choice
 
 from canonical.lp import dbschema
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class IBugTracker(Interface):
     """A remote a bug system."""

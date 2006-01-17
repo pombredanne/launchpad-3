@@ -10,15 +10,13 @@ __all__ = [
     'GeneralFormViewFactory',
     ]
 
-from transaction import get_transaction
-
+import transaction
 from zope.interface import Interface
 from zope.schema import getFieldNamesInOrder
 from zope.publisher.interfaces.browser import IBrowserRequest
 from zope.security.checker import defineChecker, NamesChecker
 
 from zope.app import zapi
-from zope.app.i18n import ZopeMessageIDFactory as _
 from zope.app.form.interfaces import WidgetsError
 from zope.app.form.interfaces import IInputWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
@@ -27,6 +25,7 @@ from zope.app.publisher.browser import BrowserView
 
 from zope.app.form.utility import setUpWidgets, getWidgetsData
 
+from canonical.launchpad import _
 
 class GeneralFormView(BrowserView):
     """Simple Generalised Form Base Class
@@ -155,7 +154,7 @@ class GeneralFormView(BrowserView):
     def _abortAndSetStatus(self):
         """Abort the current transaction and set self.process_status."""
         self.process_status = _("Please fix the problems below and try again.")
-        get_transaction().abort()
+        transaction.abort()
 
 
 def GeneralFormViewFactory(name, schema, label, permission, layer,

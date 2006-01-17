@@ -10,9 +10,7 @@ __all__ = [
 
 from zope.interface import Interface
 from zope.schema import Choice, Int
-from zope.i18nmessageid import MessageIDFactory
-
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 class ISpecificationBug(Interface):
     """A link between a Bug and a specification."""

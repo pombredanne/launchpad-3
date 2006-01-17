@@ -11,10 +11,9 @@ __all__ = ['ISignedMessage',
            'IBugEditEmailCommand',
            'IBugTaskEditEmailCommand']
 
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
 from zope.interface import Interface, Attribute
 from zope.schema import ASCII
+from canonical.launchpad import _
 
 class ISignedMessage(Interface):
     """A message that's possibly signed with an OpenPGP key.
