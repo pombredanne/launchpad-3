@@ -105,8 +105,9 @@ class ImportProcess:
             if not file.path.endswith('.po') and not file.path.endswith('.pot'):
                 raise UnsupportedFileType('Unknown file: %s' % file.path)
             distrorelease = file.distrorelease
+            sourcepackagename = file.sourcepackagename
             productseries = file.productseries
-            if sourcepackage is not None:
+            if sourcepackagename is not None:
                 # The entry is for a sourcepackagename
                 potemplate_subset = (
                     potemplateset.getSubsetFromImporterSourcePackageName(
@@ -154,6 +155,8 @@ class ImportProcess:
                 # Do the commit to save the changes.
                 self.ztm.commit()
                 there_are_things_to_import = True
+        if there_are_things_to_import:
+            self.logger.debug('Moved elements from the queue to be imported')
 
         return there_are_things_to_import
 

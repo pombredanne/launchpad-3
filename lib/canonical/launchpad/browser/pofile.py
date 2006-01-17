@@ -590,12 +590,8 @@ class POFileView(LaunchpadView):
                     self.errorcount += 1
                     continue
 
-            # Get hold of an appropriate message set in the PO file,
-            # creating it if necessary.
-            try:
-                po_set = pofile[msgid_text]
-            except NotFoundError:
-                po_set = pofile.createMessageSetFromText(msgid_text)
+            # Get hold of an appropriate message set in the PO file.
+            po_set = pofile[msgid_text]
 
             try:
                 po_set.updateTranslationSet(

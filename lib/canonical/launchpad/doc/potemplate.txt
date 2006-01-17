@@ -1,5 +1,5 @@
 POTemplateSet
--------------
+=============
 
 Test that the security setup for IPOTemplateSet is working
 
@@ -13,8 +13,24 @@ The list of pending imports should be empty.
     >>> len(list(potemplate_list))
     0
 
+POTemplateSubset
+================
+
+getPOTemplateByPath
+-------------------
+
+    >>> from canonical.launchpad.database import ProductSeries
+    >>> productseries = ProductSeries.get(3)
+    >>> potemplatesubset = potemplate_set.getSubset(
+    ...     productseries=productseries)
+    >>> potemplate = potemplatesubset.getPOTemplateByPath(
+    ...     'po/evolution-2.2-test.pot')
+    >>> print potemplate.title
+    Template "evolution-2.2-test" in Evolution MAIN
+
+
 POTemplate
-----------
+==========
 
 Check that we can get IPOFile based on its path.
 

@@ -25,7 +25,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from canonical.lp.dbschema import (
     EnumCol, BugTaskPriority, BugTaskStatus, BugTaskSeverity)
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.searchbuilder import any, NULL
@@ -36,9 +36,9 @@ from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage)
 
 
-debbugsstatusmap = {'open': BugTaskStatus.NEW,
-                    'forwarded': BugTaskStatus.ACCEPTED,
-                    'done': BugTaskStatus.FIXED}
+debbugsstatusmap = {'open': BugTaskStatus.UNCONFIRMED,
+                    'forwarded': BugTaskStatus.CONFIRMED,
+                    'done': BugTaskStatus.FIXRELEASED}
 
 debbugsseveritymap = {'wishlist': BugTaskSeverity.WISHLIST,
                       'minor': BugTaskSeverity.MINOR,
@@ -105,7 +105,7 @@ class BugTask(SQLBase, BugTaskMixin):
     status = EnumCol(
         dbName='status', notNull=True,
         schema=BugTaskStatus,
-        default=BugTaskStatus.NEW)
+        default=BugTaskStatus.UNCONFIRMED)
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
     priority = EnumCol(
         dbName='priority', notNull=False, schema=BugTaskPriority, default=None)
@@ -274,26 +274,29 @@ class BugTask(SQLBase, BugTaskMixin):
         status = self.status
 
         if assignee:
-            assignee_name = urllib.quote_plus(assignee.name)
-            assignee_browsername = cgi.escape(assignee.browsername)
-
-            if status in (BugTaskStatus.ACCEPTED, BugTaskStatus.REJECTED,
-                          BugTaskStatus.FIXED):
-                return (
-                    '%s by <img src="/++resource++user.gif" /> '
-                    '<a href="/malone/assigned?name=%s">%s</a>' % (
-                        status.title.lower(), assignee_name,
-                        assignee_browsername))
-
-            return (
-                'assigned to <img src="/++resource++user.gif" /> '
+            # The statuses REJECTED, FIXCOMMITTED, and CONFIRMED will
+            # display with the assignee information as well. Showing
+            # assignees with other status would just be confusing
+            # (e.g. "Unconfirmed, assigned to Foo Bar")
+            assignee_html = (
+                '<img src="/++resource++user.gif" /> '
                 '<a href="/malone/assigned?name=%s">%s</a>' % (
-                    assignee_name, assignee_browsername))
-        else:
-            if status in (BugTaskStatus.REJECTED, BugTaskStatus.FIXED):
-                return status.title.lower()
+                    urllib.quote_plus(assignee.name),
+                    cgi.escape(assignee.browsername)))
 
-            return 'not assigned'
+            if status in (BugTaskStatus.REJECTED, BugTaskStatus.FIXCOMMITTED):
+                return '%s by %s' % (status.title.lower(), assignee_html)
+            elif  status == BugTaskStatus.CONFIRMED:
+                return '%s, assigned to %s' % (status.title.lower(), assignee_html)
+
+        # The status is something other than REJECTED, FIXCOMMITTED or
+        # CONFIRMED (whether assigned to someone or not), so we'll
+        # show only the status.
+        if status in (BugTaskStatus.REJECTED, BugTaskStatus.UNCONFIRMED,
+                      BugTaskStatus.FIXRELEASED):
+            return status.title.lower()
+
+        return status.title.lower() + ' (unassigned)'
 
 
 class BugTaskSet:
@@ -313,7 +316,7 @@ class BugTaskSet:
         "datecreated": "BugTask.datecreated"}
 
     def __init__(self):
-        self.title = 'A Set of Bug Tasks'
+        self.title = 'A set of bug tasks'
 
     def __getitem__(self, task_id):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
@@ -404,9 +407,12 @@ class BugTaskSet:
             extra_clauses.append(where_cond)
 
         if params.searchtext:
+            searchtext_quoted = sqlvalues(params.searchtext)[0]
+            searchtext_like_quoted = quote_like(params.searchtext)
             extra_clauses.append(
-                "(Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s))" %
-                sqlvalues(params.searchtext, params.searchtext))
+                "((Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s)) OR"
+                " (BugTask.targetnamecache ILIKE '%%' || %s || '%%'))" % (
+                searchtext_quoted, searchtext_quoted, searchtext_like_quoted))
 
         if params.statusexplanation:
             # XXX: This clause relies on the fact that the Bugtask's fti is
@@ -499,7 +505,8 @@ class BugTaskSet:
             showclosed = ""
         else:
             showclosed = (
-                ' AND BugTask.status < %s' % sqlvalues(BugTaskStatus.FIXED))
+                ' AND BugTask.status < %s' %
+                sqlvalues(BugTaskStatus.FIXCOMMITTED))
 
         priority_severity_filter = ""
         if minpriority is not None:

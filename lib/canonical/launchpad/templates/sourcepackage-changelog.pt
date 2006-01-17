@@ -20,7 +20,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1><span tal:replace="context/title"/> ChangeLog</h1>
+    <h1><span tal:replace="context/title"/> changelog</h1>
 
     <tal:block condition="context/changelog">
       <p>This is the latest changelog we have on file for this source

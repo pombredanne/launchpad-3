@@ -339,7 +339,7 @@ class SpecificationSet:
 
     def __init__(self):
         """See ISpecificationSet."""
-        self.title = 'Launchpad Feature Specifications'
+        self.title = 'Specifications registered in Launchpad'
 
     def __iter__(self):
         """See ISpecificationSet."""

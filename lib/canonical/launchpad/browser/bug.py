@@ -47,7 +47,7 @@ class BugSetNavigation(Navigation):
 
 class BugContextMenu(ContextMenu):
     usedfor = IBug
-    links = ['editdescription', 'secrecy', 'markduplicate', 'subscription',
+    links = ['editdescription', 'visibility', 'markduplicate', 'subscription',
              'addsubscriber', 'addattachment', 'linktocve', 'unlinkcve',
              'addwatch', 'filebug', 'activitylog', 'targetfix']
 
@@ -60,8 +60,8 @@ class BugContextMenu(ContextMenu):
         text = 'Edit Description'
         return Link('+edit', text, icon='edit')
 
-    def secrecy(self):
-        text = 'Bug Secrecy'
+    def visibility(self):
+        text = 'Bug Visibility'
         return Link('+secrecy', text, icon='edit')
 
     def markduplicate(self):
@@ -97,11 +97,11 @@ class BugContextMenu(ContextMenu):
 
     def unlinkcve(self):
         enabled = bool(self.context.bug.cves)
-        text = 'Remove CVE link'
+        text = 'Remove CVE Link'
         return Link('+unlinkcve', text, icon='edit', enabled=enabled)
 
     def addwatch(self):
-        text = 'Link To Other Bugtracker'
+        text = 'Link to Other Bug Tracker'
         return Link('+addwatch', text, icon='add')
 
     def filebug(self):
@@ -341,5 +341,3 @@ class DeprecatedAssignedBugsView:
         self.request.response.redirect(
             canonical_url(getUtility(ILaunchBag).user) +
             "/+assignedbugs")
-
-

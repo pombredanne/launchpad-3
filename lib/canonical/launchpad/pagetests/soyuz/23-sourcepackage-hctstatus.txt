@@ -8,5 +8,5 @@ package's +hctstatus page.
   ... """)
   HTTP/1.1 200 Ok
   ...
-    <h2>Packaging data for hoary mozilla-firefox</h2>
+    <h2>Packaging data for Hoary mozilla-firefox</h2>
   ...

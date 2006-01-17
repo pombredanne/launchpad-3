@@ -20,7 +20,7 @@
         tal:define="task_batch_navigator view/search">
 
       <metal:heading fill-slot="heading">
-        <h1>Bugs Assigned to <span tal:replace="context/browsername" /></h1>
+        <h1>Bugs assigned to <span tal:replace="context/browsername" /></h1>
       </metal:heading>
 
       <metal:extra_search_widgets_in_table

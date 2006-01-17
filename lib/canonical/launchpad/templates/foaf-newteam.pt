@@ -13,7 +13,7 @@
 
   <div metal:use-macro="context/@@launchpad_addform/addform">
 
-        <h1 metal:fill-slot="heading">Create a New Team</h1>
+        <h1 metal:fill-slot="heading">Register a new team</h1>
 
         <p metal:fill-slot="extra_info">
           Use a team to group people involved in a common task.

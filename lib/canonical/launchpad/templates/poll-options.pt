@@ -10,7 +10,7 @@
 
   <div metal:fill-slot="main">
 
-    <h1>Poll Options</h1>
+    <h1>Poll options</h1>
 
     <tal:block condition="context/getAllOptions">
       <table class="listing">
@@ -18,7 +18,7 @@
           <tr>
             <th>Name</th>
             <th>Title</th>
-            <th>Active?</th>
+            <th>Active</th>
             <th></th>
           </tr>
         </thead>
@@ -46,4 +46,3 @@
 
 </body>
 </html>
-

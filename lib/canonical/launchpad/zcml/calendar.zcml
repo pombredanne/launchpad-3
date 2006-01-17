@@ -207,7 +207,7 @@
       name="+add"
       for="schoolbell.interfaces.IEditCalendar"
       schema="schoolbell.interfaces.ICalendarEvent"
-      label="New Calendar Event"
+      label="New event"
       fields="title description location dtstart duration"
       permission="launchpad.Edit"
       template="../templates/calendar-event-addform.pt"
@@ -256,7 +256,7 @@
       for="schoolbell.interfaces.ICalendarEvent"
       schema="schoolbell.interfaces.ICalendarEvent"
       fields="title description location dtstart"
-      label="Calendar Event"
+      label="Calendar event"
       permission="zope.Public"
       template="../templates/calendar-event-display.pt"
       lp:url="$calendar/events/$event.id/+display" />
@@ -266,7 +266,7 @@
       for="schoolbell.interfaces.ICalendarEvent"
       schema="schoolbell.interfaces.ICalendarEvent"
       fields="title description location dtstart duration"
-      label="Edit Event"
+      label="Edit event"
       permission="launchpad.Edit"
       template="../templates/calendar-event-editform.pt"
       lp:url="$calendar/events/$event.id/+edit">

@@ -33,6 +33,7 @@ from canonical.launchpad.interfaces import (
     IBugTaskSet, IBugTrackerSet, IBugExternalRefSet,
     IBugAttachmentSet, IMessageSet, ILibraryFileAliasSet, ICveSet,
     IBugWatchSet, ILaunchpadCelebrities, IMilestoneSet, NotFoundError)
+from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
     BugTaskSeverity, BugTaskStatus, BugTaskPriority, BugAttachmentType)
 
@@ -251,22 +252,22 @@ class Bug:
         to the bug task's status explanation.
         """
         if self.bug_status == 'ASSIGNED':
-            bugtask.status = BugTaskStatus.ACCEPTED
+            bugtask.status = BugTaskStatus.CONFIRMED
         elif self.bug_status == 'NEEDINFO':
-            bugtask.status = BugTaskStatus.NEEDINFO
+            bugtask.status = BugTaskStatus.NEEDSINFO
         elif self.bug_status == 'PENDINGUPLOAD':
-            bugtask.status = BugTaskStatus.PENDINGUPLOAD
+            bugtask.status = BugTaskStatus.FIXCOMMITTED
         elif self.bug_status in ['RESOLVED', 'VERIFIED', 'CLOSED']:
             # depends on the resolution:
             if self.resolution == 'FIXED':
-                bugtask.status = BugTaskStatus.FIXED
+                bugtask.status = BugTaskStatus.FIXRELEASED
             elif self.resolution == 'WONTFIX':
                 bugtask.status = BugTaskStatus.REJECTED
                 bugtask.priority = BugTaskPriority.WONTFIX
             else:
                 bugtask.status = BugTaskStatus.REJECTED
         else:
-            bugtask.status = BugTaskStatus.NEW
+            bugtask.status = BugTaskStatus.UNCONFIRMED
 
         # add the status to the notes section, to account for any lost
         # information
@@ -340,21 +341,39 @@ class Bugzilla:
 
         return person
 
+    def _getPackageNames(self, bug):
+        """Returns the source and binary package names for the given bug."""
+        # we currently only support mapping Ubuntu bugs ...
+        if bug.product != 'Ubuntu':
+            raise AssertionError('product must be Ubuntu')
+
+        # kernel bugs are currently filed against the "linux"
+        # component, which is not a source or binary package.  The
+        # following mapping was provided by BenC:
+        if bug.component == 'linux':
+            cutoffdate = datetime.datetime(2004, 12, 1,
+                                           tzinfo=pytz.timezone('UTC'))
+            if bug.bug_status == 'NEEDINFO' and bug.creation_ts < cutoffdate:
+                pkgname = 'linux-source-2.6.12'
+            else:
+                pkgname = 'linux-source-2.6.15'
+        else:
+            pkgname = bug.component.encode('ASCII')
+        
+        try:
+            srcpkg, binpkg = self.ubuntu.getPackageNames(pkgname)
+        except NotFoundError, e:
+            logger.warning('could not find package name for "%s": %s',
+                           pkgname, str(e))
+            srcpkg = binpkg = None
+
+        return srcpkg, binpkg
+
     def getLaunchpadBugTarget(self, bug):
         """Returns a dictionary of arguments to createBug() that correspond
         to the given bugzilla bug.
         """
-        # we currently only support mapping Ubuntu bugs ...
-        if bug.product != 'Ubuntu':
-            raise AssertionError('product must be Ubuntu')
-        try:
-            srcpkg, binpkg = self.ubuntu.getPackageNames(
-                bug.component.encode('ASCII'))
-        except NotFoundError:
-            logger.warning('could not find package name for "%s"',
-                           bug.component.encode('ASCII'), exc_info=True)
-            srcpkg = binpkg = None
-
+        srcpkg, binpkg = self._getPackageNames(bug)
         return {
             'distribution': self.ubuntu,
             'sourcepackagename': srcpkg,
@@ -390,20 +409,7 @@ class Bugzilla:
         This function relies on the package -> product linkage having been
         entered in advance.
         """
-        # we currently only support mapping Ubuntu bugs ...
-        if bug.product != 'Ubuntu':
-            raise AssertionError('product must be Ubuntu')
-
-        # XXX: 20051208 jamesh
-        # ValueError is caught here because of https://launchpad.net/bugs/4810
-        try:
-            srcpkgname, binpkgname = self.ubuntu.getPackageNames(
-                bug.component.encode('ASCII'))
-        except ValueError:
-            logger.warning('could not find package name for "%s"',
-                           bug.component.encode('ASCII'), exc_info=True)
-            return None
-
+        srcpkgname, binpkgname = self._getPackageNames(bug)
         # find a product series
         series = None
         for release in self.ubuntu.releases:
@@ -422,8 +428,7 @@ class Bugzilla:
         # XXX: 20051024 jamesh
         # this is where bug number rewriting would be plugged in
         bug_id = int(match.group('id'))
-        url = urlparse.urljoin(self.bugtracker.baseurl,
-                               'show_bug.cgi?id=%d' % bug_id)
+        url = '%s/%d' % (canonical_url(self.bugtracker), bug_id)
         return '%s [%s]' % (match.group(0), url)
 
 
