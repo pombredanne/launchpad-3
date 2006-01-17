@@ -798,11 +798,11 @@ class POFile(SQLBase, RosettaStats):
             alias_set = getUtility(ILibraryFileAliasSet)
             return alias_set[self.exportfile.id].read()
 
-    def uncachedExport(self, included_obsolete=True):
+    def uncachedExport(self, included_obsolete=True, force_utf8=False):
         """See IPOFile."""
         exporter = IPOTemplateExporter(self.potemplate)
         return exporter.export_pofile(self.language, self.variant,
-            included_obsolete)
+            included_obsolete, force_utf8)
 
     def export(self, included_obsolete=True):
         """See IPOFile."""

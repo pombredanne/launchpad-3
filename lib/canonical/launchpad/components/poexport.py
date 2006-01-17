@@ -54,7 +54,7 @@ class OutputPOFile:
         """Append a message set to this PO file."""
         self.msgsets.append(msgset)
 
-    def export_string(self):
+    def export_string(self, force_utf8=False):
         """Return a string representation of this PO file."""
 
         # Sort all the PO file's message sets by sequence number.
@@ -71,7 +71,7 @@ class OutputPOFile:
                 continue
             else:
                 try:
-                    chunks.extend([msgset.export_string()])
+                    chunks.extend([msgset.export_string(force_utf8)])
                 except UnicodeEncodeError:
                     # This msgset has a character that is not valid based on
                     # the information stored in the header. Instead of
@@ -80,7 +80,7 @@ class OutputPOFile:
                         self.header.charset, msgset.export_unicode_string()))
                     msgset.msgstr = None
                     msgset.msgstrPlurals = None
-                    chunks.extend([msgset.export_string()])
+                    chunks.extend([msgset.export_string(force_utf8)])
 
         return '\n\n'.join(chunks)
 
@@ -125,13 +125,10 @@ class OutputMsgSet:
         self.msgstrs.append(msgstr)
 
     def export_unicode_string(self):
-        """Return a unicode string representation of this message set.
-
-        Raises a ValueError if there are errors in the message set.
-        """
+        """Return a unicode string representation of this message set."""
 
         if len(self.msgids) > 2:
-            raise ValueError("Too many message IDs for a message set.")
+            raise AssertionError("Too many message IDs for a message set.")
         elif len(self.msgids) == 2:
             msgidPlural = self.msgids[1]
 
@@ -143,7 +140,7 @@ class OutputMsgSet:
         elif self.msgids:
             msgidPlural = None
         else:
-            raise ValueError(
+            raise AssertionError(
                 "Can't export a message set with no message IDs.")
 
         if len(self.msgids) == 2 and self.msgstrs:
@@ -171,13 +168,15 @@ class OutputMsgSet:
 
         return unicode(message)
 
-    def export_string(self):
+    def export_string(self, force_utf8=False):
         """Return a string representation of this message set using PO file's
         header.charset info.
 
-        Raises a ValueError if there are errors in the message set.
+        :force_utf8: Whether the export should be as UTF-8.
         """
 
+        if force_utf8:
+            self.pofile.header.charset = 'UTF-8'
         return self.export_unicode_string().encode(self.pofile.header.charset)
 
 def last_translator_text(person):
@@ -208,11 +207,12 @@ def last_translator_text(person):
 
     return '%s <%s>' % (person.browsername, email)
 
-def export_rows(rows, pofile_output):
+def export_rows(rows, pofile_output, force_utf8=False):
     """Convert a list of PO file export view rows to a set of PO files.
 
-    pofile_output must provide IPOFileOutput. It is used to output the
-    generated PO files.
+    :pofile_output: Implements IPOFileOutput. It is used to output the
+        generated PO files.
+    :force_utf8: Whether the export should be exported as UTF-8 or not.
 
     This function depends on the rows being sorted in a very particular order.
     This allows it to minimise the amount of data that is held in memory at a
@@ -307,7 +307,7 @@ def export_rows(rows, pofile_output):
 
             if pofile:
                 pofile_output(potemplate, language, variant,
-                    pofile.export_string())
+                    pofile.export_string(force_utf8))
 
             # Generate the header of the new PO file.
 
@@ -448,7 +448,8 @@ def export_rows(rows, pofile_output):
         pofile.append(msgset)
 
     if pofile:
-        pofile_output(potemplate, language, variant, pofile.export_string())
+        pofile_output(
+            potemplate, language, variant, pofile.export_string(force_utf8))
 
 class FilePOFileOutput:
     """Output PO files from an export to a single file handle."""
@@ -571,21 +572,22 @@ class POTemplateExporter:
     def __init__(self, potemplate):
         self.potemplate = potemplate
 
-    def export_pofile(self, language, variant=None, included_obsolete=True):
+    def export_pofile(self, language, variant=None, included_obsolete=True,
+        force_utf8=False):
         """See IPOTemplateExporter."""
 
         outputbuffer = StringIO()
         self.export_pofile_to_file(outputbuffer, language, variant,
-            included_obsolete)
+            included_obsolete, force_utf8)
         return outputbuffer.getvalue()
 
     def export_pofile_to_file(self, filehandle, language, variant=None,
-                              included_obsolete=True):
+                              included_obsolete=True, force_utf8=False):
         """See IPOTemplateExporter."""
         rows = getUtility(IVPOExportSet).get_pofile_rows(
             self.potemplate, language, variant, included_obsolete)
         pofile_output = FilePOFileOutput(filehandle)
-        export_rows(rows, pofile_output)
+        export_rows(rows, pofile_output, force_utf8)
 
     def export_tarball(self):
         """See IPOTemplateExporter."""
