@@ -3,9 +3,7 @@ Introduction
 
 Vocabularies are lists of terms. In Launchpad's Component Architecture (CA), a
 vocabulary is a list of terms that a widget (normally a selection style widget)
-"speaks", i.e. its allowed values.
-
-This document is about some of the vocabularies found in Launchpad.
+"speaks", i.e., its allowed values.
 
     >>> from canonical.launchpad.ftests import login
     >>> from canonical.launchpad.interfaces import IPersonSet, IEmailAddressSet
@@ -17,24 +15,22 @@ Values, Tokens, and Titles
 ==========================
 
 In Launchpad, we generally use "tokenized vocabularies." Each term in a
-vocabulary has a value, token and title. In human terms, a term would be
-rendered in a select widget like this:
+vocabulary has a value, token and title. A term is rendered in a select widget
+like this:
 
 <option value="$token">$title</option>
 
-The Value is probably the data you would store in your DB. The Token is used to
+The $token is probably the data you would store in your DB. The Token is used to
 uniquely identify a Term, and the Title is the thing you display to the user.
-
-Have a look at a few of the vocabularies below for clarification.
 
 Launchpad Vocabularies
 ======================
 
 There are two kinds of vocabularies in Launchpad: enumerable and
-non-enumerable. In human terms, enumerable vocabularies are short and sweet
-enough to render in a select widget, where non-enumerable vocabularies require
-a special query interface to make it easy to choose just one or a couple of
-options from several hundred, or several thousand, or more.
+non-enumerable. Enumerable vocabularies are short enough to render in a select
+widget. Non-enumerable vocabularies require a query interface to make it easy to
+choose just one or a couple of options from several hundred, several thousand,
+or more.
 
 Vocabularies should not be imported - they can be retrieved from the
 vocabulary registry.
@@ -94,9 +90,60 @@ o DistroReleaseVocabulary - reflects the available distribution releases.
 Non-Enumerable Vocabularies
 ===========================
 
-Although you technically *could* iterate over these, in launchpad it
-would be stupid to do so due to their expected size on the production
-database.
+Iterating over non-enumerable vocabularies, while possible, will
+probably kill the database. Instead, these vocabularies are
+search-driven.
+
+o BinaryAndSourcePackageNameVocabulary - the list of binary and source
+  package names, ordered by name.
+
+    >>> package_name_vocabulary = vocabulary_registry.get(
+    ...     None, "BinaryAndSourcePackageNameVocabulary")
+
+When a package name matches both a binary package name and a source
+package of the exact same name, the binary package name is
+returned. This allows us, in bug reporting for example, to collect the
+most specific information possible.
+
+Let's demonstrate by searching for "mozilla-firefox", for which there is
+both a source and binary package of that name.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ISourcePackageName, IBinaryPackageName)
+
+    >>> package_name_terms = list(
+    ...     package_name_vocabulary.search("mozilla-firefox"))
+    >>> len(package_name_terms)
+    1
+    >>> IBinaryPackageName.providedBy(package_name_terms[0].value)
+    True
+    >>> package_name_terms[0].title
+    u'mozilla-firefox'
+
+Searching for "mozilla" should return the binary package name above, and
+the source package named "mozilla".
+
+    >>> package_name_terms = list(package_name_vocabulary.search("mozilla"))
+    >>> len(package_name_terms)
+    2
+    >>> [package_name_term.title for package_name_term in package_name_terms]
+    [u'mozilla', u'mozilla-firefox']
+    >>> ISourcePackageName.providedBy(package_name_terms[0].value)
+    True
+    >>> IBinaryPackageName.providedBy(package_name_terms[1].value)
+    True
+
+The search does a case-insensitive, substring match.
+
+    >>> package_name_terms = list(package_name_vocabulary.search("mOzIl"))
+    >>> len(package_name_terms)
+    2
+    >>> [package_name_term.title for package_name_term in package_name_terms]
+    [u'mozilla', u'mozilla-firefox']
+    >>> ISourcePackageName.providedBy(package_name_terms[0].value)
+    True
+    >>> IBinaryPackageName.providedBy(package_name_terms[1].value)
+    True
 
 o ProjectVocabulary - the list of selectable projects. The results are
   ordered by displayname.

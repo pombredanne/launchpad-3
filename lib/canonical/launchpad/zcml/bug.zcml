@@ -177,9 +177,9 @@
         schema="canonical.launchpad.interfaces.IBugAddForm"
         class="canonical.launchpad.browser.bug.BugAddView"
         label="Report a bug about a package"
-        fields="distribution sourcepackagename title comment private owner"
+        fields="distribution packagename title comment private owner"
         arguments=""
-        keyword_arguments="distribution sourcepackagename title comment private owner"
+        keyword_arguments="distribution packagename title comment private owner"
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
         lp:url="malone/bugs/+product">
