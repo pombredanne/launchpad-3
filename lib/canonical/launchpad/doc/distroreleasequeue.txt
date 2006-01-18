@@ -9,7 +9,7 @@ queue. To do this we set up a librarian, prepare an OpenPGP key, and then
 run the upload handler.
 
   >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()  
+  >>> LibrarianTestSetup().setUp()
   >>> from canonical.launchpad.interfaces import IGPGKeySet
   >>> from canonical.lp.dbschema import GPGKeyAlgorithm
   >>> discarded_key = getUtility(IGPGKeySet).new(26, '20687895',
@@ -35,7 +35,7 @@ We need some setup for the upload handler.
 
 Construct an upload.
 
-  >>> ed_upload = NascentUpload(findPolicyByName('anything'), 
+  >>> ed_upload = NascentUpload(findPolicyByName('anything'),
   ...     datadir(''), "ed_0.2-20_i386.changes", MockLogger())
   >>> ed_upload.changes_filename == datadir("ed_0.2-20_i386.changes")
   True
@@ -66,7 +66,7 @@ upload. If some designed check according the request state do not
 pass, the state-machine methods will raise an exception indicating the
 upload can have that state.
 
-XXX cprov 20051209: need to build a brken upload to test it properly
+XXX cprov 20051209: need to build a broken upload to test it properly
 
   >>> for item in new_queue:
   ...     try:
@@ -335,6 +335,41 @@ Try to perform single acceptance of pmount with not allowed section:
   ...     print item.sourcepackagename.name, 'ACCEPTED'
   pmount Section "heaven" is not allowed in breezy-autotest
 
+
+Construct a new upload for universe/misc and a lot of errors ;)
+
+  >>> usplash_upload = NascentUpload(findPolicyByName('anything'),
+  ...     datadir(''), "usplash_0.1-22_powerpc.changes", MockLogger())
+  >>> usplash_upload.changes_filename == datadir(
+  ...     "usplash_0.1-22_powerpc.changes")
+  True
+  >>> usplash_upload.policy.setOptions(MockOptions())
+  >>> usplash_upload.policy.can_upload_binaries = True
+  >>> usplash_upload.policy.can_upload_mixed = True
+  >>> usplash_upload.process()
+  >>> msgs = usplash_upload.do_accept()
+  >>> for msg in msgs:
+  ...    print msg
+  From: Root <root@localhost>
+  To: Root <root@localhost>
+  Precedence: bulk
+  Subject: usplash_0.1-22_powerpc.changes REJECTED
+  <BLANKLINE>
+  usplash_0.1-22_powerpc.deb: Unknown architecture: 'powerpc'.
+  Unable to find source package usplash/0.1-22 in hoary
+  usplash_0.1-22_powerpc.deb: Unable to find arch: powerpc
+  Signer has no upload rights at all to this distribution.
+  Signer is not permitted to upload to the component 'universe' of file 'usplash_0.1-22_powerpc.deb'
+  Alas, someone called do_accept when we're rejected
+  <BLANKLINE>
+  ===
+  <BLANKLINE>
+  If you don't understand why your files were rejected, or if the
+  override file requires editing, reply to this email.
+  <BLANKLINE>
+
+It aims to check if at least we are parsing and comparing sections
+properly (see nascentupload.py 818)
 
 Finally, abort the whole damned mess
 

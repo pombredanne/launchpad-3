@@ -132,6 +132,15 @@ class FileNotFound(UploadError):
     """Raised when an upload error is due to a missing file."""
 
 
+def split_section(section):
+    """Split the component out of the section."""
+    # XXX: dsilvers: 20051013: This may not be enough, check back later.
+    # bug 3137
+    if "/" not in section:
+        return "main", section
+    return section.split("/")
+
+
 class NascentUploadedFile:
     """A nascent uploaded file is a file on disk that is part of an upload.
 
@@ -153,7 +162,7 @@ class NascentUploadedFile:
         self.full_filename = os.path.join(fsroot,filename)
         self._digest = cksum
         self._size = int(size)
-        self.component, self.section = self._split_section(section)
+        self.component, self.section = split_section(section)
         self.priority = priority
         self.new = False
         self._values_checked = False
@@ -178,15 +187,6 @@ class NascentUploadedFile:
         if self.custom:
             return custom_sections[self.section]
         return None
-
-    @staticmethod
-    def _split_section(section):
-        """Split the component out of the section."""
-        # XXX: dsilvers: 20051013: This may not be enough, check back later.
-        # bug 3137
-        if "/" not in section:
-            return "main", section
-        return section.split("/")
 
     @property
     def present(self):
@@ -811,14 +811,20 @@ class NascentUpload:
             self.reject("%s: Depends field present and empty." % (
                 uploaded_file.filename))
 
+        # XXX cprov 20060118: For god sake ! the next statement is such a
+        # piece of crap, I'm sorry.
+
         # Check the section & priority match those in the .changes Files entry
-        if (control.Find("Section") and
-            uploaded_file.section != "" and
-            uploaded_file.section != control.Find("Section")):
-            self.reject("%s control file lists section as %s but changes file "
-                        "has %s." % (uploaded_file.filename,
-                                     control.Find("Section"),
-                                     uploaded_file.section))
+        control_component, control_section = split_section(
+            control.Find("Section"))
+        if ((control_component, control_section) !=
+            (uploaded_file.component, uploaded_file.section)):
+            self.reject(
+                "%s control file lists section as %s/%s but changes file "
+                "has %s/%s." % (uploaded_file.filename, control_component,
+                                control_section, uploaded_file.component,
+                                uploaded_file.section))
+
         if (control.Find("Priority") and
             uploaded_file.priority != "" and
             uploaded_file.priority != control.Find("Priority")):
