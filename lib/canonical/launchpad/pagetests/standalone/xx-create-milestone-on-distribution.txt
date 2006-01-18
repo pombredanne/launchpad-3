@@ -176,3 +176,19 @@ Verify that the bug now has the milestone set on the view page:
   <td>sounder01</td>
   ...
 
+
+XXX: why is this necessary? -- kiko, 2006-01-18 Revert owner of
+distribution back to ubuntu team, avoids PQM failure in
+xx-reassign-distribution.
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+reassign HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ...
+  ... field.owner=name17&existing=existing&CHANGE_OWNER=Change+Owner""")
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: .
+  ...
+
