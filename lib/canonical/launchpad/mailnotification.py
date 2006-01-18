@@ -235,7 +235,6 @@ def generate_bug_edit_email(bug_delta):
                 u"*** This bug has been marked a duplicate of bug %d ***\n\n" %
                 new_bug_dupe.id)
 
-
     if bug_delta.title is not None:
         body += u"Summary changed to:\n"
         body += u"    %s\n" % bug_delta.title
@@ -369,14 +368,6 @@ def generate_bug_edit_email(bug_delta):
                     body += _get_task_change_row(
                         fieldname, oldval_display, newval_display)
 
-            if bugtask_delta.statusexplanation is not None:
-                status_exp_line = u"%15s: %s" % (
-                    u"Explanation", bugtask_delta.statusexplanation)
-                status_exp_wrapper = MailWrapper(
-                    width=72, indent=u" " * 17, indent_first_line=False)
-                body += status_exp_wrapper.format(status_exp_line)
-                body += u"\n"
-
     if bug_delta.added_bugtasks is not None:
         if not body[-2:] == u"\n\n":
             body += u"\n"
@@ -403,6 +394,11 @@ def generate_bug_edit_email(bug_delta):
             body += u"%15s: %s" % (u"Status", added_bugtask.status.title)
 
     body = body.rstrip()
+
+    if bug_delta.comment_on_change:
+        comment_wrapper = MailWrapper(width=72)
+        body += "\n\nComment:\n"
+        body += comment_wrapper.format(bug_delta.comment_on_change)
 
     return (subject, body)
 
@@ -681,9 +677,6 @@ def get_task_delta(old_task, new_task):
             changes[field_name]["old"] = old_val
             changes[field_name]["new"] = new_val
 
-    if old_task.statusexplanation != new_task.statusexplanation:
-        changes["statusexplanation"] = new_task.statusexplanation
-
     if changes:
         changes["bugtask"] = old_task
         return BugTaskDelta(**changes)
@@ -759,7 +752,8 @@ def notify_bugtask_edited(modified_bugtask, event):
         bug=event.object.bug,
         bugurl=canonical_url(event.object.bug),
         bugtask_deltas=bugtask_delta,
-        user=event.user)
+        user=event.user,
+        comment_on_change=event.comment_on_change)
 
     send_bug_edit_notification(bug_delta)
 
@@ -945,7 +939,7 @@ def notify_join_request(event):
         to_addrs.update(contactEmailAddresses(person))
 
     if to_addrs:
-        url = "%s/people/%s/+members/%s" % (event.appurl, team.name, user.name)
+        url = '%s/+member/%s' % (canonical_url(team), user.name)
         replacements = {'browsername': user.browsername,
                         'name': user.name,
                         'teamname': team.browsername,

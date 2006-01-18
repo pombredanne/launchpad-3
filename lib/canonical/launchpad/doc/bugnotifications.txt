@@ -351,7 +351,7 @@ task Accepted, assigns himself to it, and adds a status note.
     >>> for name in ["status", "priority", "severity", "product",
     ...              "distribution", "distrorelease", "sourcepackagename",
     ...              "bug", "assignee", "binarypackagename", "bugwatch",
-    ...              "milestone", "statusexplanation"]:
+    ...              "milestone"]:
     ...     setattr(bugtask_before_modification, name,
     ...             getattr(firefox_crashes_in_debian, name))
     >>> firefox_crashes_in_debian.status = BugTaskStatus.FIXRELEASED
