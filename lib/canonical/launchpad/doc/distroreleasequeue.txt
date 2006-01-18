@@ -261,6 +261,81 @@ Try 'exact_match' for 'mozil_0.0.1'
 
 There is no match on queue entries.
 
+Check State Machine over DistroReleaseQueueBuilds:
+
+Performing full acceptance:
+
+  >>> items = breezy_autotest.getFancyQueueItems(DistroReleaseQueueStatus.NEW)
+  >>> for item in items:
+  ...      try:
+  ...          item.set_accepted()
+  ...      except QueueInconsistentStateError, e:
+  ...          print item.sourcepackagename.name, e
+  ...      else:
+  ...          print item.sourcepackagename.name, 'ACCEPTED'
+  mozilla-firefox ACCEPTED
+  pmount ACCEPTED
+
+
+Move the DistroReleaseQueue items back to NEW
+
+  >>> for item in items:
+  ...     item.set_new()
+
+
+Check forbidden approval of not selected Section:
+
+  >>> from zope.security.proxy import removeSecurityProxy
+  >>> from canonical.launchpad.interfaces import (
+  ...     IComponentSet, ISectionSet)
+
+Retrieve mozilla-firefox DRQ:
+
+  >>> item = breezy_autotest.getFancyQueueItems(
+  ...     DistroReleaseQueueStatus.NEW, name='mozilla')[0]
+
+Override the mozilla-firefox component to fresh created 'hell' component.
+
+XXX cprov 20060118: remove proxy magic is required for BPR instances.
+
+  >>> naked_bin = removeSecurityProxy(
+  ...       item.builds[0].build.binarypackages[0])
+  >>> naked_bin.component = getUtility(IComponentSet).new('hell')
+  >>> try:
+  ...     item.set_accepted()
+  ... except QueueInconsistentStateError, e:
+  ...     print item.sourcepackagename.name, e
+  ... else:
+  ...     print item.sourcepackagename.name, 'ACCEPTED'
+  mozilla-firefox Component "hell" is not allowed in breezy-autotest
+
+
+Check forbidden approval of not selected Section:
+
+Retrieve pmount:
+
+  >>> item = breezy_autotest.getFancyQueueItems(
+  ...     DistroReleaseQueueStatus.NEW, name='pmount')[0]
+
+Override the pmount section to fresh created 'heaven' section.
+
+XXX cprov 20060118: remove proxy magic is required for BPR instances.
+
+  >>> naked_bin = removeSecurityProxy(
+  ...       item.builds[0].build.binarypackages[0])
+  >>> naked_bin.section = getUtility(ISectionSet).new('heaven')
+
+Try to perform single acceptance of pmount with not allowed section:
+
+  >>> try:
+  ...     item.set_accepted()
+  ... except QueueInconsistentStateError, e:
+  ...     print item.sourcepackagename.name, e
+  ... else:
+  ...     print item.sourcepackagename.name, 'ACCEPTED'
+  pmount Section "heaven" is not allowed in breezy-autotest
+
+
 Finally, abort the whole damned mess
 
   >>> import transaction

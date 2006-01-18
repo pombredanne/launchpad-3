@@ -32,7 +32,7 @@ from canonical.launchpad.interfaces import (
     IDistroReleaseQueue, IDistroReleaseQueueBuild, IDistroReleaseQueueSource,
     IDistroReleaseQueueCustom, NotFoundError, QueueStateWriteProtectedError,
     QueueInconsistentStateError, QueueSourceAcceptError,
-    IDistroReleaseQueueSet)
+    QueueBuildAcceptError, IDistroReleaseQueueSet)
 
 from canonical.librarian.interfaces import DownloadFailed
 
@@ -127,6 +127,14 @@ class DistroReleaseQueue(SQLBase):
                 source.checkComponentAndSection()
             except QueueSourceAcceptError, info:
                 raise QueueInconsistentStateError(info)
+
+        for build in self.builds:
+            # as before, but for QueueBuildAcceptError
+            try:
+                build.checkComponentAndSection()
+            except QueueBuildAcceptError, info:
+                raise QueueInconsistentStateError(info)
+
         # if the previous checks applied and pass we do set the value
         self._SO_set_status(DistroReleaseQueueStatus.ACCEPTED)
 
@@ -253,6 +261,19 @@ class DistroReleaseQueueBuild(SQLBase):
         )
 
     build = ForeignKey(dbName='build', foreignKey='Build')
+
+    def checkComponentAndSection(self):
+        """See IDistroReleaseQueueBuild."""
+        distrorelease = self.distroreleasequeue.distrorelease
+        for binary in self.build.binarypackages:
+            if (binary.component not in distrorelease.components):
+                raise QueueBuildAcceptError(
+                    'Component "%s" is not allowed in %s'
+                    % (binary.component.name, distrorelease.name))
+            if (binary.section not in distrorelease.sections):
+                raise QueueBuildAcceptError(
+                    'Section "%s" is not allowed in %s' % (binary.section.name,
+                                                           distrorelease.name))
 
     def publish(self, logger=None):
         """See IDistroReleaseQueueBuild."""
