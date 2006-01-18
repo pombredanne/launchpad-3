@@ -55,7 +55,7 @@ class DistributionMirrorAddView(GeneralFormView):
     # https://launchpad.net/products/launchpad/+bug/5792 isn't fixed.
     __launchpad_facetname__ = 'overview'
 
-    def doSchemaValidation(self, form_values):
+    def validate(self, form_values):
         validate_distribution_mirror_schema(form_values)
 
     def process(self, owner, name, displayname, description, speed, country,
@@ -79,7 +79,7 @@ class DistributionMirrorEditView(SQLObjectEditView):
     def changed(self):
         self.request.response.redirect(canonical_url(self.context))
 
-    def doSchemaValidation(self, form_values):
+    def validate(self, form_values):
         validate_distribution_mirror_schema(form_values)
 
 

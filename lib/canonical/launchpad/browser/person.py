@@ -17,7 +17,7 @@ __all__ = [
     'BaseListView',
     'PeopleListView',
     'TeamListView',
-    'UbuntiteListView',
+    'UbunteroListView',
     'FOAFSearchView',
     'PersonEditView',
     'PersonEmblemView',
@@ -83,8 +83,7 @@ from canonical.launchpad.webapp import (
     enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
     redirection, GeneralFormView)
 
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 
 class BranchTraversalMixin:
@@ -168,7 +167,7 @@ class PeopleContextMenu(ContextMenu):
 
     usedfor = IPersonSet
 
-    links = ['peoplelist', 'teamlist', 'ubuntitelist', 'newteam']
+    links = ['peoplelist', 'teamlist', 'ubunterolist', 'newteam']
 
     def peoplelist(self):
         text = 'All People'
@@ -178,12 +177,12 @@ class PeopleContextMenu(ContextMenu):
         text = 'All Teams'
         return Link('+teamlist', text, icon='people')
 
-    def ubuntitelist(self):
-        text = 'All Ubuntites'
-        return Link('+ubuntitelist', text, icon='people')
+    def ubunterolist(self):
+        text = 'All Ubunteros'
+        return Link('+ubunterolist', text, icon='people')
 
     def newteam(self):
-        text = 'Create New Team'
+        text = 'Register a Team'
         return Link('+newteam', text, icon='add')
 
 
@@ -288,27 +287,27 @@ class PersonSpecsMenu(ApplicationMenu):
              'subscribed']
 
     def created(self):
-        text = 'Show Specs Created'
+        text = 'Specifications Created'
         return Link('+createdspecs', text, icon='spec')
 
     def approver(self):
-        text = 'Show Specs for Approval'
+        text = 'Specifications for Approval'
         return Link('+approverspecs', text, icon='spec')
 
     def assigned(self):
-        text = 'Show Assigned Specs'
+        text = 'Specifications Assigned'
         return Link('+assignedspecs', text, icon='spec')
 
     def drafted(self):
-        text = 'Show Drafted Specs'
+        text = 'Specifications Drafted'
         return Link('+draftedspecs', text, icon='spec')
 
     def review(self):
-        text = 'Show Feedback Requests'
+        text = 'Feedback Requests'
         return Link('+reviewspecs', text, icon='spec')
 
     def subscribed(self):
-        text = 'Show Subscribed Specs'
+        text = 'Specifications Subscribed'
         return Link('+subscribedspecs', text, icon='spec')
 
 
@@ -319,19 +318,19 @@ class PersonSupportMenu(ApplicationMenu):
     links = ['created', 'assigned', 'answered', 'subscribed']
 
     def created(self):
-        text = 'Tickets Created'
+        text = 'Requests Made'
         return Link('+createdtickets', text, icon='ticket')
 
     def assigned(self):
-        text = 'Tickets Assigned'
+        text = 'Requests Assigned'
         return Link('+assignedtickets', text, icon='ticket')
 
     def answered(self):
-        text = 'Tickets Answered'
+        text = 'Requests Answered'
         return Link('+answeredtickets', text, icon='ticket')
 
     def subscribed(self):
-        text = 'Tickets Subscribed'
+        text = 'Requests Subscribed'
         return Link('+subscribedtickets', text, icon='ticket')
 
 
@@ -342,15 +341,15 @@ class PersonCodeMenu(ApplicationMenu):
     links = ['authored', 'registered', 'subscribed', 'add']
 
     def authored(self):
-        text = 'Show Authored Branches'
+        text = 'Branches Authored'
         return Link('+authoredbranches', text, icon='branch')
 
     def registered(self):
-        text = 'Show Registered Branches'
+        text = 'Branches Registered'
         return Link('+registeredbranches', text, icon='branch')
 
     def subscribed(self):
-        text = 'Show Subscribed Branches'
+        text = 'Branches Subscribed'
         return Link('+subscribedbranches', text, icon='branch')
 
     def add(self):
@@ -439,7 +438,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def editgpgkeys(self):
         target = '+editgpgkeys'
-        text = 'Edit GPG Keys'
+        text = 'Edit OpenPGP Keys'
         summary = 'Used for the Supermirror, and when maintaining packages'
         return Link(target, text, summary, icon='edit')
 
@@ -492,7 +491,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     def polls(self):
         target = '+polls'
-        text = 'Show Polls'
+        text = 'Polls'
         return Link(target, text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
@@ -507,11 +506,11 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def joinleave(self):
         if userIsActiveTeamMember(self.context):
             target = '+leave'
-            text = 'Leave the team' # &#8230;
+            text = 'Leave the Team' # &#8230;
             icon = 'remove'
         else:
             target = '+join'
-            text = 'Join the team' # &#8230;
+            text = 'Join the Team' # &#8230;
             icon = 'add'
         return Link(target, text, icon=icon)
 
@@ -542,8 +541,8 @@ class BaseListView:
         results = getUtility(IPersonSet).getAllPersons()
         return self._getBatchNavigator(results)
 
-    def getUbuntitesList(self):
-        results = getUtility(IPersonSet).getUbuntites()
+    def getUbunterosList(self):
+        results = getUtility(IPersonSet).getUbunteros()
         return self._getBatchNavigator(results)
 
 
@@ -563,12 +562,12 @@ class TeamListView(BaseListView):
         return self.getTeamsList()
 
 
-class UbuntiteListView(BaseListView):
+class UbunteroListView(BaseListView):
 
-    header = "Ubuntite List"
+    header = "Ubuntero List"
 
     def getList(self):
-        return self.getUbuntitesList()
+        return self.getUbunterosList()
 
 
 class FOAFSearchView:
@@ -1088,7 +1087,7 @@ class PersonView:
         gpgkeyset = getUtility(IGPGKeySet)
 
         if gpgkeyset.getByFingerprint(fingerprint):
-            return 'GPG key <code>%s</code> already imported' % fingerprint
+            return 'OpenPGP key <code>%s</code> already imported' % fingerprint
 
         # import the key to the local keyring
         gpghandler = getUtility(IGPGHandler)
@@ -1098,7 +1097,7 @@ class PersonView:
             # use the content of 'key' for debug proposes; place it in a
             # blockquote because it often comes out empty.
             return (
-                """Launchpad could not import your GPG key.
+                """Launchpad could not import your OpenPGP key.
                 <ul>
                   <li>Did you enter your complete fingerprint correctly,
                   as produced by <kbd>gpg --fingerprint</kdb>?</li>
@@ -1359,7 +1358,13 @@ class TeamJoinView(PersonView):
             user.join(self.context)
             appurl = self.request.getApplicationURL()
             notify(JoinTeamRequestEvent(user, self.context, appurl))
-
+            if (self.context.subscriptionpolicy ==
+                TeamSubscriptionPolicy.MODERATED):
+                self.request.response.addInfoNotification(
+                    _('Subscription request pending approval.'))
+            else:
+                self.request.response.addInfoNotification(_(
+                    'Successfully joined %s.' % self.context.displayname))
         self.request.response.redirect('./')
 
 

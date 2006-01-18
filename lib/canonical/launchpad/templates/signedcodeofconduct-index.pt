@@ -7,13 +7,9 @@
 
 <div metal:fill-slot="main">
 
-      <h1>Signed Code of Conduct Entry</h1>
+      <h1>Signed code of conduct entry</h1>
 
-      <div class="documentDescription">
-        Signed Code of Conduct.
-      </div>
-
-      <p><dfn>Displayname:</dfn> 
+      <p><dfn>Display name:</dfn> 
          <span tal:replace="context/displayname">CoC</span></p>
 
 
@@ -22,7 +18,7 @@
        <span tal:omit-tag="" tal:condition="not:context/active">Inactive</span>
       </p>
 
-      <p><dfn>DateCreated:</dfn> 
+      <p><dfn>Date created:</dfn> 
          <span tal:replace="context/datecreated/fmt:datetime">DATE</span></p>
 
       <tal:block condition="context/recipient">
@@ -31,12 +27,12 @@
       </tal:block>
 
       <tal:block condition="context/admincomment">
-          <p><dfn>AdminComment:</dfn></p>
+          <p><dfn>Admin comment:</dfn></p>
           <pre tal:content="context/admincomment">COMMENT</pre>
       </tal:block>                  
 
       <tal:block condition="context/signedcode">
-          <p><dfn>SignedCode:</dfn></p>
+          <p><dfn>Signed code:</dfn></p>
           <pre tal:content="context/signedcode">SIGNEDCODE</pre>
       </tal:block>                  
 

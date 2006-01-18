@@ -24,7 +24,7 @@
 <div metal:fill-slot="main">
 
   <h1><span tal:replace="context/title">TITLE</span>:
-    Distribution Overview</h1>
+    Distribution overview</h1>
 
   <p class="documentDescription" tal:content="context/summary">
       Distribution Summary
@@ -36,7 +36,7 @@
     </p>
   </div>
 
-  <h2>Source Packages in <span tal:replace="context/title"/></h2>
+  <h2>Source packages in <span tal:replace="context/title"/></h2>
 
   <form name="search" action="+search" method="GET">
   

@@ -57,27 +57,6 @@
   </tr>
 </metal:include_dupes_widget>
 
-<metal:statusexplanation_widget
-  define-macro="statusexplanation_widget_in_table">
-  <tal:comment replace="nothing">
-    This macro expects that the view has the following attributes:
-    :statusexplanation_widget: The widget rendered by a TextLine field named
-                               statusexplanation_widget
-  </tal:comment>
-
-  <tr tal:condition="view/statusexplanation_widget">
-    <th>
-      <label
-        tal:attributes="for view/statusexplanation_widget/name"
-        tal:content="view/statusexplanation_widget/label"
-      >Status notes:</label>
-    </th>
-    <td>
-      <tal:block content="structure view/statusexplanation_widget" />
-    </td>
-  </tr>
-</metal:statusexplanation_widget>
-
 <metal:extra_widgets_in_own_table define-macro="extra_widgets_in_own_table">
   <tal:comment replace="nothing">
     This macro has a table with some widgets to filter a search for bugs.
@@ -144,7 +123,7 @@
       <tr>
         <th>
           <label tal:content="view/searchtext_widget/label">
-            Bug id or text:
+            Bug ID or text:
           </label>
         </th>
         <td>
