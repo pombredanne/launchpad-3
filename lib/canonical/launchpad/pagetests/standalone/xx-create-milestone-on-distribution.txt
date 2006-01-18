@@ -14,22 +14,16 @@ Team (name17).
 Let's make the sample user an owner of Ubuntu for this test. The owner
 of the distribution should be able to add milestones for it, of course!
 
-  >>> from canonical.launchpad.ftests import login, logout
-  >>> login('foo.bar@canonical.com')
-
-  >>> from zope.component import getUtility
-  >>> from canonical.database.sqlbase import flush_database_updates
-  >>> from canonical.launchpad.interfaces import IDistributionSet, IPersonSet
-  >>> distroset = getUtility(IDistributionSet)
-  >>> personset = getUtility(IPersonSet)
-  >>> ubuntu = distroset.getByName("ubuntu")
-  >>> person = personset.getByEmail("test@canonical.com")
-  >>> ubuntu.owner = person
-
-  >>> import transaction
-  >>> transaction.commit()
-  >>> flush_database_updates() # bug 3989
-  >>> logout() # if you don't do this you go to zope3 jail
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+reassign HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ...
+  ... field.owner=name12&existing=existing&CHANGE_OWNER=Change+Owner""")
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: .
+  ...
 
 
 Now let's go back and try the add milestone page again. It works:
