@@ -27,6 +27,7 @@ from canonical.database.sqlbase import (
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
+from canonical.launchpad.helpers import shortlist
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
@@ -359,7 +360,10 @@ class Person(SQLBase):
     @property
     def karma(self):
         """See IPerson."""
-        return self.karma_total_cache.karma_total
+        try:
+            return self.karma_total_cache[0].karma_total
+        except IndexError:
+            return 0
 
     def assignKarma(self, action_name):
         """See IPerson."""
@@ -369,21 +373,6 @@ class Person(SQLBase):
             raise ValueError(
                 "No KarmaAction found with name '%s'." % action_name)
         return Karma(person=self, action=action)
-
-    def updateKarmaCache(self):
-        """See IPerson."""
-        cacheset = getUtility(IKarmaCacheSet)
-        karmaset = getUtility(IKarmaSet)
-        totalkarma = 0
-        for cat in KarmaCategory.select():
-            karmavalue = karmaset.getSumByPersonAndCategory(self, cat)
-            totalkarma += karmavalue
-            cache = cacheset.getByPersonAndCategory(self, cat)
-            if cache is None:
-                cache = cacheset.new(self, cat, karmavalue)
-            else:
-                cache.karmavalue = karmavalue
-        self.karma = totalkarma
 
     def latestKarma(self, quantity=25):
         """See IPerson."""
@@ -873,7 +862,11 @@ class PersonSet:
                 LIMIT 5
                 )
             """
-        return Person.select(query, orderBy=['-id'])
+        top_people = shortlist(Person.select(query))
+        top_people.sort(
+                cmp=lambda a,b: cmp((b.karma, b.id), (a.karma, a.id))
+                )
+        return top_people
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
@@ -1106,6 +1099,7 @@ class PersonSet:
             ('person', 'merged'),
             ('emailaddress', 'person'),
             ('karmacache', 'person'),
+            ('karmatotalcache', 'person'),
             # We don't merge teams, so the poll table can be ignored
             ('poll', 'team'),
             # I don't think we need to worry about the votecast and vote
@@ -1431,10 +1425,6 @@ class PersonSet:
         # Since we've updated the database behind SQLObject's back,
         # flush its caches.
         flush_database_caches()
-
-        # And now update the karma cache for both accounts.
-        from_person.updateKarmaCache()
-        to_person.updateKarmaCache()
 
 
 class EmailAddress(SQLBase):
