@@ -32,8 +32,7 @@ def doSlaveScan(logger):
     # setup a transaction manager
     tm = initZopeless(config.builddmaster.dbuser)
 
-    buildMaster = BuilddMaster(logger, tm,
-                               config.builddmaster.uploader.split())
+    buildMaster = BuilddMaster(logger, tm)
 
     logger.info("Setting Builders.")
 

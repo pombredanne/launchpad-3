@@ -32,8 +32,7 @@ def rebuildQueue(log):
     # setup a transaction manager
     tm = initZopeless(config.builddmaster.dbuser)
 
-    buildMaster = BuilddMaster(log, tm,
-                               config.builddmaster.uploader.split())
+    buildMaster = BuilddMaster(log, tm)
 
     # Simple container
     distroreleases = set()

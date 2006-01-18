@@ -40,6 +40,7 @@ from canonical.launchpad.interfaces import (
 
 from canonical.lp import dbschema
 from canonical import encoding
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.helpers import filenameToContentType
 
@@ -83,10 +84,9 @@ class BuilderGroup:
     def rollback(self):
         self._tm.rollback()
 
-    def __init__(self, logger, tm, upload_cmdline):
+    def __init__(self, logger, tm):
         self._tm = tm
         self.logger = logger
-        self.upload_cmdline = upload_cmdline
 
     def checkAvailableSlaves(self, arch):
         """Iter through available builder-slaves for an given architecture."""
@@ -490,7 +490,7 @@ class BuilderGroup:
                     slave_file.close()
                     out_file.close()
 
-            uploader_argv = list(self.upload_cmdline)
+            uploader_argv = list(config.builddmaster.uploader.split())
 
             # add extra arguments for processing a binary upload
             extra_args = [
@@ -507,8 +507,11 @@ class BuilderGroup:
             self.logger.debug("Uploader returned %d" % result_code)
 
         finally:
-            self.logger.debug("Cleaning up temporary directory")
-            shutil.rmtree(upload_dir)
+            if not config.builddmaster.keep_files:
+                self.logger.debug("Cleaning up temporary directory")
+                shutil.rmtree(upload_dir)
+            else:
+                self.logger.debug("Keeping files at '%s'" % upload_dir)
 
             self.logger.debug("Gathered build of %s completely"
                               % queueItem.name)
@@ -660,12 +663,11 @@ class BuilddMaster:
     # DistroArchRelease
     self._archreleases[DAR]['builders'] = buildersByProcessor
     """
-    def __init__(self, logger, tm, upload_cmdline):
+    def __init__(self, logger, tm):
         self._logger = logger
         self._tm = tm
         self.librarian = getUtility(ILibrarianClient)
         self._archreleases = {}
-        self.upload_cmdline = upload_cmdline
         self._logger.info("Buildd Master has been initialised")
 
     def commit(self):
@@ -720,8 +722,7 @@ class BuilddMaster:
 
             # setup a BuilderGroup object
             info = "builders.%s" % archrelease.processorfamily.name
-            builderGroup = BuilderGroup(self.getLogger(info), self._tm,
-                                        self.upload_cmdline)
+            builderGroup = BuilderGroup(self.getLogger(info), self._tm)
 
             # check the available slaves for this archrelease
             builderGroup.checkAvailableSlaves(archrelease)
