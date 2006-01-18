@@ -85,7 +85,7 @@ body {
   padding: 0;
 }
 .body {
-  margin: 0 0.75em 0.75em;
+  margin: 0.75em 0.75em 0;
 }
 
 :visited {
@@ -392,30 +392,28 @@ ul.app>li.current {
 }
 
 /* Column definitions: */
-#portal-columns {
-  margin-top: 0.75em;
-}
 #portal-column-content {
   display: inline; /* avoid MSIE Double Float Margin bug */
   float: left;
-  margin-left: 23.5%; /* = + 22% portlet + 1.5% gutter */
-  width: 53%; /* = 100% - 2 * (22% + 1.5%) */
+  margin-left: 26%; /* = 25% + 1% whitespace */
+  width: 48%; /* = 50% - 1% left whitespace - 1% right whitespace */
 }
 * > #portal-column-content { /* hide from MSIE/Win 5 where "relative" breaks */
+  background-color: lime;
   position: relative; /* allow z-index to work */
   z-index: 1000; /* force main column to appear on top */
 }
 #portal-column-two {
   display: inline;
   float: left;
-  margin-left: 1.5%; /* whitespace */
-  width: 22%;
+  margin-left: 2%; /* whitespace */
+  width: 24%; /* = 25% - 1% whitespace */
 }
 #portal-column-one {
   display: inline;
   float: left;
   margin-left: -100%; /* flush with the left edge of the page */
-  width: 22%;
+  width: 24%; /* = 25% - 1% whitespace */
 }
 
 .sitemap, ul.facets {
