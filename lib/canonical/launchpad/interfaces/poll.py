@@ -7,11 +7,29 @@ __all__ = ['IPoll', 'IPollSet', 'IPollSubset', 'IPollOption',
 # Imports from zope
 from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
+from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator 
 from canonical.lp.dbschema import PollSecrecy, PollAlgorithm
+from canonical.launchpad.interfaces import ITeam
+from canonical.launchpad.fields import (
+            ContentNameField, Description, Summary, Title)
 
+class PollNameField(ContentNameField):
+
+    errormessage = _("%s is already in use by another poll in this team.")
+
+    @property
+    def _content_iface(self):
+        return IPoll
+
+    def _getByName(self, name):
+        team = ITeam(self.context, None)
+        if team is None:
+            team = self.context.team
+        return getUtility(IPollSet).getByTeamAndName(team, name)
+                                    
 
 class IPoll(Interface):
     """A poll for a given proposition in a team."""
@@ -22,7 +40,7 @@ class IPoll(Interface):
         title=_('The team that this poll refers to.'), required=True,
         readonly=True)
 
-    name = TextLine(
+    name = PollNameField(
         title=_('The unique name of this poll.'),
         description=_('A short unique name, beginning with a lower-case '
                       'letter or number, and containing only letters, '

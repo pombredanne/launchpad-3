@@ -198,6 +198,7 @@ class IBugDelta(Interface):
     bug = Attribute("The IBug, after it's been edited.")
     bugurl = Attribute("The absolute URL to the bug.")
     user = Attribute("The IPerson that did the editing.")
+    comment_on_change = Attribute("An optional comment for this change.")
 
     # fields on the bug itself
     title = Attribute("The new bug title or None.")
@@ -266,8 +267,13 @@ class IBugSet(Interface):
     def get(bugid):
         """Get a specific bug by its ID.
 
-        If it can't be found, a zope.exceptions.NotFoundError will be
-        raised.
+        If it can't be found, NotFoundError will be raised.
+        """
+
+    def getByNameOrID(bugid):
+        """Get a specific bug by its ID or nickname
+
+        If it can't be found, NotFoundError will be raised.
         """
 
     def searchAsUser(user, duplicateof=None, orderBy=None, limit=None):

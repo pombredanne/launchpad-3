@@ -114,6 +114,8 @@ COMMENT ON FUNCTION valid_cve(text) IS 'validate a common vulnerability number
 CREATE OR REPLACE FUNCTION valid_absolute_url(text) RETURNS boolean AS '
     from urlparse import urlparse
     (scheme, netloc, path, params, query, fragment) = urlparse(args[0])
+    if scheme == "sftp":
+        return 1
     if not (scheme and netloc):
         return 0
     return 1
@@ -215,3 +217,11 @@ CREATE OR REPLACE FUNCTION is_printable_ascii(text) RETURNS boolean AS '
 COMMENT ON FUNCTION is_printable_ascii(text) IS
     'True if the string is pure printable US-ASCII';
 
+CREATE OR REPLACE FUNCTION sleep_for_testing(double precision) RETURNS boolean AS '
+    import time
+    time.sleep(args[0])
+    return True
+' LANGUAGE plpythonu;
+
+COMMENT ON FUNCTION sleep_for_testing(double precision) IS
+    'Sleep for the given number of seconds and return True.  This function is intended to be used by tests to trigger timeout conditions.';

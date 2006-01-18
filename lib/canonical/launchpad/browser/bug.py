@@ -36,12 +36,12 @@ class BugSetNavigation(Navigation):
     usedfor = IBugSet
 
     def traverse(self, name):
-        # If the bug is not found, we expect a NotFoundError. If the
-        # value of name is not a value that can be used to retrieve a
-        # specific bug, we expect a ValueError.
         try:
-            return getUtility(IBugSet).get(name)
+            return getUtility(IBugSet).getByNameOrID(name)
         except (NotFoundError, ValueError):
+            # If the bug is not found, we expect a NotFoundError. If the
+            # value of name is not a value that can be used to retrieve
+            # a specific bug, we expect a ValueError.
             return None
 
 
@@ -166,16 +166,6 @@ class BugView:
             return False
         return self.context.isSubscribed(user)
 
-    @property
-    def maintainers(self):
-        """Return the set of maintainers associated with this IBug."""
-        maintainers = set()
-        for task in self.context.bugtasks:
-            if task.maintainer:
-                maintainers.add(task.maintainer)
-
-        return maintainers
-    
     def duplicates(self):
         """Return a list of dicts with the id and title of this bug dupes.
 

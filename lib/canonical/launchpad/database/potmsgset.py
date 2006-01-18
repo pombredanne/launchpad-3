@@ -53,7 +53,7 @@ class POTMsgSet(SQLBase):
                     ps2.publishedsubmission = POSubmission.id AND
                     ps2.pluralform = %s)
             WHERE
-                ps1 IS NOT NULL OR ps2 IS NOT NULL
+                ps1.id IS NOT NULL OR ps2.id IS NOT NULL
             ''' % sqlvalues(
                 language.id, self.primemsgid_ID, pluralform, pluralform))
 

@@ -68,10 +68,16 @@ class IBounty(IHasOwner, IMessageTarget):
     datecreated = Datetime(
             title=_('Date Created'), required=True, readonly=True,
             )
+    owner = Choice(
+        title=_('Owner'),
+        required=True,
+        vocabulary='ValidOwner',
+        description=_("""Owner (registrant) of Bounty."""))
+    # XXX is this really necessary? IDs shouldn't be exposed in
+    # interfaces. -- kiko, 2005-01-14
     ownerID = Int(
             title=_('Owner'), required=True, readonly=True
             )
-    owner = Attribute("The owner's IPerson")
 
     # joins
     subscriptions = Attribute('The set of subscriptions to this bounty.')
