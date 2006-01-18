@@ -40,6 +40,7 @@ def update_karma_cache():
     # worthless after karma_expires_after. This query produces odd results
     # when datecreated is in the future, but there is really no point adding
     # the extra WHEN clause.
+    log.info("Calculating everyones karma")
     cur.execute("""
         SELECT person, category, ROUND(SUM(
             CASE WHEN datecreated + %(karma_expires_after)s::interval
@@ -56,6 +57,8 @@ def update_karma_cache():
 
     # Suck into RAM to avoid tieing up resources on the DB.
     results = list(cur.fetchall())
+
+    log.info("Got %d (person, category) scores", len(results))
 
     # Note that we don't need to commit each iteration because we are running
     # in autocommit mode.
@@ -75,6 +78,17 @@ def update_karma_cache():
                 INSERT INTO KarmaCache (person, category, karmavalue)
                 VALUES (%(person)s, %(category)s, %(points)s)
                 """, vars())
+
+    # Update the KarmaTotalCache table
+    cur.execute("BEGIN")
+    log.info("Rebuilding KarmaTotalCache")
+    cur.execute("DELETE FROM KarmaTotalCache")
+    cur.execute("""
+        INSERT INTO KarmaTotalCache (person, karma_total)
+        SELECT person, SUM(karmavalue) FROM KarmaCache
+        GROUP BY person
+        """)
+    cur.execute("COMMIT")
 
 if __name__ == '__main__':
     parser = OptionParser()

@@ -66,7 +66,6 @@ class Person(SQLBase):
     _defaultOrder = sortingColumns
 
     name = StringCol(dbName='name', alternateID=True, notNull=True)
-    karma = IntCol(dbName='karma', notNull=True, default=0)
     password = StringCol(dbName='password', default=None)
     givenname = StringCol(dbName='givenname', default=None)
     familyname = StringCol(dbName='familyname', default=None)
@@ -91,6 +90,8 @@ class Person(SQLBase):
                            default=None)
 
     sshkeys = MultipleJoin('SSHKey', joinColumn='person')
+
+    karma_total_cache = MultipleJoin('KarmaTotalCache', joinColumn='person')
 
     subscriptionpolicy = EnumCol(
         dbName='subscriptionpolicy',
@@ -354,6 +355,11 @@ class Person(SQLBase):
     def searchTasks(self, search_params):
         """See IPerson."""
         return getUtility(IBugTaskSet).search(search_params)
+
+    @property
+    def karma(self):
+        """See IPerson."""
+        return self.karma_total_cache.karma_total
 
     def assignKarma(self, action_name):
         """See IPerson."""
@@ -859,26 +865,15 @@ class PersonSet:
     def topPeople(self):
         """See IPersonSet."""
         # The odd ordering here is to ensure we hit the PostgreSQL
-        # indexes. Ideally we want to order by karma DESC, name but
-        # that will not use the indexes (at least under PostgreSQL 7.4)
-        # and be really slow.
-
-        # This is a simpler implementation, but is triggering Bug 4818
-        # return self.getAllValidPersons(orderBy=['-karma', '-id'])[:5]
-
+        # indexes. It will not make any real difference outside of tests.
         query = """
             id in (
-                SELECT Person.id
-                FROM Person, EmailAddress
-                WHERE Person.id = EmailAddress.person
-                    AND teamowner IS NULL
-                    AND merged IS NULL
-                    AND EmailAddress.status = %d
-                ORDER BY Person.karma DESC, Person.id DESC
+                SELECT person FROM KarmaTotalCache
+                ORDER BY karma_total DESC, person DESC
                 LIMIT 5
                 )
-            """ % (EmailAddressStatus.PREFERRED.value,)
-        return Person.select(query, orderBy=['-karma', '-id'])
+            """
+        return Person.select(query, orderBy=['-id'])
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
