@@ -49,15 +49,15 @@
   <include package="zope.app.i18n" />
 
 
-  <!-- Local Component Registration -->
-  <include package="zope.app.registration" />
+  <!-- Local Component Registration - no longer in Z3.2 -->
+  <!-- <include package="zope.app.registration" /> -->
 
   <!-- Services -->
   <!-- <include package="zope.app.errorservice" /> -->
   <include package="zope.app.pluggableauth" />
-  <include package="zope.app.site" />
-  <include package="zope.app.adapter" />
-  <include package="zope.app.utility" />
+  <!-- No longer in Z3.2 <include package="zope.app.site" /> -->
+  <!-- No longer in Z3.2 <include package="zope.app.adapter" /> -->
+  <!-- No longer in Z3.2 <include package="zope.app.utility" /> -->
   <!-- not using principalannotation
   <include package="zope.app.principalannotation" />
     -->

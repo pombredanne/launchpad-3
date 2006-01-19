@@ -15,7 +15,6 @@ __all__ = [
 from datetime import datetime
 
 import transaction
-from zope.app.i18n import ZopeMessageIDFactory as _
 from zope.app.form.browser.editview import EditView
 from zope.app.form.utility import (
         setUpEditWidgets, applyWidgetsChanges,  getWidgetsData
@@ -25,6 +24,7 @@ from zope.app.form.interfaces import WidgetsError
 from zope.event import notify
 from zope.interface import providedBy
 
+from canonical.launchpad import _
 from canonical.launchpad.helpers import Snapshot
 from canonical.launchpad.event.sqlobjectevent import (
         SQLObjectModifiedEvent,  SQLObjectToBeModifiedEvent

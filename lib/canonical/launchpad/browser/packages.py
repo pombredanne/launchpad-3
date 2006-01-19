@@ -13,7 +13,6 @@ __all__ = [
 
 from urllib import quote as urlquote
 
-from zope.exceptions import NotFoundError
 from zope.component import getUtility
 from zope.app.form.utility import setUpWidgets, getWidgetsData
 from zope.app.form.interfaces import IInputWidget
@@ -23,7 +22,8 @@ from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.interfaces import (
     ILaunchBag, IBugTaskSearch, BugTaskSearchParams, IBugSet,
-    UNRESOLVED_BUGTASK_STATUSES)
+    UNRESOLVED_BUGTASK_STATUSES, NotFoundError
+    )
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.browser.bugtask import get_sortorder_from_request
 

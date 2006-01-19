@@ -18,12 +18,11 @@ from datetime import datetime
 
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
-from zope.exceptions import NotFoundError
 
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad.interfaces import (
     IPOFile, IPOExportRequestSet, ILaunchBag, ILanguageSet,
-    RawFileAttachFailed, ITranslationImportQueue)
+    RawFileAttachFailed, ITranslationImportQueue, NotFoundError)
 from canonical.launchpad.components.poparser import POHeader
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.pomsgset import POMsgSetView

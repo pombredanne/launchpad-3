@@ -24,7 +24,7 @@ from zope.app.pagetemplate.engine import Engine
 from zope.app.component.fields import LayerField
 from zope.app.file.image import Image
 import zope.app.publisher.browser.metadirectives
-from zope.app.publisher.browser.menu import menuItemDirective
+from zope.app.publisher.browser.menumeta import menuItemDirective
 import zope.app.form.browser.metaconfigure
 from zope.app.publisher.browser.viewmeta import (
     pages as original_pages,

@@ -33,9 +33,6 @@ import pytz
 
 from sqlobject import SQLObjectNotFound
 
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
-
 from zope.interface import implements
 from zope.component import getUtility
 from zope.event import notify
@@ -44,6 +41,7 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser.add import AddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 
+from canonical.launchpad import _
 from schoolbell.interfaces import IEditCalendar, ICalendarEvent
 from schoolbell.simple import SimpleCalendarEvent
 from canonical.launchpad.interfaces import (

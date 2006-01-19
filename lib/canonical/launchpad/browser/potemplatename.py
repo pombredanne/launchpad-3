@@ -14,10 +14,10 @@ __all__ = [
 
 from datetime import datetime
 
-from zope.app.i18n import ZopeMessageIDFactory as _
 from zope.component import getUtility
 from zope.app.form.browser.add import AddView
 
+from canonical.launchpad import _
 from canonical.launchpad.webapp import canonical_url, Navigation
 from canonical.launchpad.interfaces import IPOTemplateNameSet
 from canonical.launchpad.browser.editview import SQLObjectEditView

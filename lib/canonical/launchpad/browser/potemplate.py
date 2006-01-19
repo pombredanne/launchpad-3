@@ -15,10 +15,10 @@ from datetime import datetime
 
 from zope.component import getUtility
 from zope.interface import implements
-from zope.app.i18n import ZopeMessageIDFactory as _
 from zope.publisher.browser import FileUpload
 from zope.app.form.browser.add import AddView
 
+from canonical.launchpad import _
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (

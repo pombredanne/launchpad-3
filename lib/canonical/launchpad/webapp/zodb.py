@@ -14,7 +14,7 @@ import zope.thread
 from persistent.dict import PersistentDict
 from zope.security.checker import ProxyFactory
 from BTrees.OOBTree import OOBTree
-from transaction import get_transaction
+import transaction
 
 class ZODBConnection(zope.thread.local):
     """Thread local that stores the top-level ZODB object we care about."""
@@ -44,7 +44,7 @@ def bootstrapSubscriber(event):
     connection = db.open()
     root = connection.root()
     set_up_zodb_if_needed(root)
-    get_transaction().commit()
+    transaction.get().commit()
     connection.close()
 
 def handle_before_traversal(root):

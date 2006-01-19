@@ -3,11 +3,12 @@
 __metaclass__ = type
 __all__ = ['POMsgSetView']
 
-from zope.exceptions import NotFoundError
 from zope.component import getUtility
 
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import ILanguageSet, TranslationConstants
+from canonical.launchpad.interfaces import (
+        ILanguageSet, TranslationConstants, NotFoundError
+        )
 
 
 class POMsgSetView:
