@@ -5,13 +5,15 @@
 __metaclass__ = type
 
 from unittest import main, TestSuite
-from doctest import DocTestSuite
+from doctest import DocTestSuite, ELLIPSIS, NORMALIZE_WHITESPACE
 
 def test_suite():
     suite = TestSuite()
-    import canonical.launchpad.validators.url
-    suite.addTest(DocTestSuite(canonical.launchpad.validators.url))
-    suite.addTest(DocTestSuite(canonical.launchpad.validators.version))
+    import canonical.launchpad.interfaces.validation
+    suite.addTest(DocTestSuite(
+        canonical.launchpad.interfaces.validation,
+        optionflags=ELLIPSIS | NORMALIZE_WHITESPACE
+        ))
     return suite
 
 if __name__ == '__main__':
