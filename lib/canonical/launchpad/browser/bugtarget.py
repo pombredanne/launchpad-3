@@ -9,8 +9,7 @@ __all__ = ["FileBugView"]
 from zope.component import getUtility
 
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.interfaces import (
-    ILaunchBag, IDistribution, IBinaryPackageName, ISourcePackageName)
+from canonical.launchpad.interfaces import ILaunchBag, IDistribution
 from canonical.launchpad.browser.addview import SQLObjectAddView
 
 class FileBugView(SQLObjectAddView):
