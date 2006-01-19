@@ -56,6 +56,7 @@ from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp.generalform import GeneralFormView
 
 
+
 def get_sortorder_from_request(request):
     """Get the sortorder from the request."""
     if request.get("orderby"):
