@@ -6,7 +6,7 @@ is run against a fresh database instance, so we can easily avoid tests
 stomping on each other. A story might be a walkthrough of a particular use
 case, or a collection of tests based around some theme.
 
-In each story directory, all .txt files are run as "page tests".[1]
+In each story directory, all .txt files are run as "page tests".
 
 A page test is a doctest that tests pages of the launchpad application.
 
@@ -33,21 +33,24 @@ Running page tests
 
 The page tests are run as part of the 'make check' to run all tests.
 
-You can run individual page tests using:
+You can run a single story by doing:
 
-  ./pagetests 10-browse-projects.txt
+  ./test.py lib pagetests.$dirname
 
-This will run all pagetests with a prefix of 00 to 09, and then the pagetest
-you specified.
+The 'lib pagetests.' is a dead check that will be addressed at some point.
+
+Running a single page test is not supported except for the standalone pagetests
+which can be run individually:
+
+  ./test.py lib $testname.txt
+
+This will run that and only that standalone pagetest.
 
 
 Footnotes
 =========
 
-1. Including this file, README.txt.  It doesn't run any tests, but that
-   is okay.
-
-2. You can use the following authorization lines:
+1. You can use the following authorization lines:
 
   for Foo Bar (an admin user):
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
