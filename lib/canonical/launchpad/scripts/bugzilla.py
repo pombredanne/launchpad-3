@@ -33,6 +33,7 @@ from canonical.launchpad.interfaces import (
     IBugTaskSet, IBugTrackerSet, IBugExternalRefSet,
     IBugAttachmentSet, IMessageSet, ILibraryFileAliasSet, ICveSet,
     IBugWatchSet, ILaunchpadCelebrities, IMilestoneSet, NotFoundError)
+from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
     BugTaskSeverity, BugTaskStatus, BugTaskPriority, BugAttachmentType)
 
@@ -317,12 +318,9 @@ class Bugzilla:
         person = None
         launchpad_id = self.person_mapping.get(bugzilla_id)
         if launchpad_id is not None:
-            try:
-                person = self.personset[launchpad_id]
-                if person.merged is not None:
-                    person = None
-            except NotFoundError:
-                pass
+            person = self.personset.get(launchpad_id)
+            if person is not None and person.merged is not None:
+                person = None
 
         # look up the person
         if person is None:
@@ -343,21 +341,39 @@ class Bugzilla:
 
         return person
 
+    def _getPackageNames(self, bug):
+        """Returns the source and binary package names for the given bug."""
+        # we currently only support mapping Ubuntu bugs ...
+        if bug.product != 'Ubuntu':
+            raise AssertionError('product must be Ubuntu')
+
+        # kernel bugs are currently filed against the "linux"
+        # component, which is not a source or binary package.  The
+        # following mapping was provided by BenC:
+        if bug.component == 'linux':
+            cutoffdate = datetime.datetime(2004, 12, 1,
+                                           tzinfo=pytz.timezone('UTC'))
+            if bug.bug_status == 'NEEDINFO' and bug.creation_ts < cutoffdate:
+                pkgname = 'linux-source-2.6.12'
+            else:
+                pkgname = 'linux-source-2.6.15'
+        else:
+            pkgname = bug.component.encode('ASCII')
+        
+        try:
+            srcpkg, binpkg = self.ubuntu.getPackageNames(pkgname)
+        except NotFoundError, e:
+            logger.warning('could not find package name for "%s": %s',
+                           pkgname, str(e))
+            srcpkg = binpkg = None
+
+        return srcpkg, binpkg
+
     def getLaunchpadBugTarget(self, bug):
         """Returns a dictionary of arguments to createBug() that correspond
         to the given bugzilla bug.
         """
-        # we currently only support mapping Ubuntu bugs ...
-        if bug.product != 'Ubuntu':
-            raise AssertionError('product must be Ubuntu')
-        try:
-            srcpkg, binpkg = self.ubuntu.getPackageNames(
-                bug.component.encode('ASCII'))
-        except NotFoundError:
-            logger.warning('could not find package name for "%s"',
-                           bug.component.encode('ASCII'), exc_info=True)
-            srcpkg = binpkg = None
-
+        srcpkg, binpkg = self._getPackageNames(bug)
         return {
             'distribution': self.ubuntu,
             'sourcepackagename': srcpkg,
@@ -393,20 +409,7 @@ class Bugzilla:
         This function relies on the package -> product linkage having been
         entered in advance.
         """
-        # we currently only support mapping Ubuntu bugs ...
-        if bug.product != 'Ubuntu':
-            raise AssertionError('product must be Ubuntu')
-
-        # XXX: 20051208 jamesh
-        # ValueError is caught here because of https://launchpad.net/bugs/4810
-        try:
-            srcpkgname, binpkgname = self.ubuntu.getPackageNames(
-                bug.component.encode('ASCII'))
-        except ValueError:
-            logger.warning('could not find package name for "%s"',
-                           bug.component.encode('ASCII'), exc_info=True)
-            return None
-
+        srcpkgname, binpkgname = self._getPackageNames(bug)
         # find a product series
         series = None
         for release in self.ubuntu.releases:
@@ -425,8 +428,7 @@ class Bugzilla:
         # XXX: 20051024 jamesh
         # this is where bug number rewriting would be plugged in
         bug_id = int(match.group('id'))
-        url = urlparse.urljoin(self.bugtracker.baseurl,
-                               'show_bug.cgi?id=%d' % bug_id)
+        url = '%s/%d' % (canonical_url(self.bugtracker), bug_id)
         return '%s [%s]' % (match.group(0), url)
 
 
@@ -505,17 +507,22 @@ class Bugzilla:
         # from the Debian bug tracker by the "debzilla" program.  For
         # these bugs, generate a task and watch on the corresponding
         # bugs.debian.org bug.
-        if bug.alias and re.match(r'^deb\d+$', bug.alias):
-            watch = self.bugwatchset.createBugWatch(
-                lp_bug, lp_bug.owner, self.debbugs, int(bug.alias[3:]))
-            debtask = self.bugtaskset.createTask(
-                lp_bug,
-                owner=lp_bug.owner,
-                distribution=self.debian,
-                binarypackagename=target['binarypackagename'],
-                sourcepackagename=target['sourcepackagename'])
-            debtask.datecreated = bug.creation_ts
-            debtask.bugwatch = watch
+        if bug.alias:
+            if re.match(r'^deb\d+$', bug.alias):
+                watch = self.bugwatchset.createBugWatch(
+                    lp_bug, lp_bug.owner, self.debbugs, int(bug.alias[3:]))
+                debtask = self.bugtaskset.createTask(
+                    lp_bug,
+                    owner=lp_bug.owner,
+                    distribution=self.debian,
+                    binarypackagename=target['binarypackagename'],
+                    sourcepackagename=target['sourcepackagename'])
+                debtask.datecreated = bug.creation_ts
+                debtask.bugwatch = watch
+            else:
+                # generate a Launchpad name from the alias:
+                name = re.sub(r'[^a-z0-9\+\.\-]', '-', bug.alias.lower())
+                lp_bug.name = name
 
         # for UPSTREAM bugs, try to find whether the URL field contains
         # a bug reference.

@@ -54,6 +54,10 @@ __all__ = (
 'ManifestEntryType',
 'ManifestEntryHint',
 'MirrorFreshness',
+'MirrorContent',
+'MirrorPulseType',
+'MirrorSpeed',
+'MirrorStatus',
 'PackagePublishingPriority',
 'PackagePublishingStatus',
 'PackagePublishingPocket',
@@ -2685,6 +2689,147 @@ class MirrorFreshness(DBSchema):
         Freshness Unknown
 
         The Freshness was never verified and is unknown.
+        """)
+
+
+class MirrorContent(DBSchema):
+    """The content that is mirrored."""
+
+    ARCHIVE = Item(1, """
+        Archive
+
+        This mirror contains source and binary packages for a given
+        distribution. Mainly used for APT-based system.
+        """)
+
+    RELEASE = Item(2, """
+        Release
+
+        Mirror containing released installation images for a given
+        distribution.
+        """)
+
+    CDIMAGE = Item(3, """
+        CD Image
+
+        Mirrors containing CD images other than the installation ones, relesed
+        for a given distribution.
+        """)
+
+
+class MirrorPulseType(DBSchema):
+    """The method used by a mirror to update its contents."""
+
+    PULL = Item(1, """
+        Pull
+
+        Mirror has a supported network application to "pull" the original
+        content server periodically.
+        """)
+
+    PUSH = Item(2, """
+        Push
+
+        Original content server has enough access to the Mirror and is able to
+        "push" new modification as soon as they happen.
+        """)
+
+
+class MirrorSpeed(DBSchema):
+    """The speed of a given mirror."""
+
+    S128K = Item(1, """
+        128Kb per second
+
+        The upstream link of this mirror can make up to 128Kb per second.
+        """)
+
+    S256K = Item(2, """
+        256Kb per second
+
+        The upstream link of this mirror can make up to 256Kb per second.
+        """)
+
+    S512K = Item(3, """
+        512Kb per second
+
+        The upstream link of this mirror can make up to 512Kb per second.
+        """)
+
+    S1M = Item(4, """
+        1Mb per second
+
+        The upstream link of this mirror can make up to 1Mb per second.
+        """)
+
+    S2M = Item(5, """
+        2Mb per second
+
+        The upstream link of this mirror can make up to 2Mb per second.
+        """)
+
+    S10M = Item(6, """
+        10Mb per second
+
+        The upstream link of this mirror can make up to 10Mb per second.
+        """)
+
+    S100M = Item(7, """
+        100Mb per second
+
+        The upstream link of this mirror can make up to 100Mb per second.
+        """)
+
+
+class MirrorStatus(DBSchema):
+    """The status of a given mirror."""
+
+    UP = Item(1, """
+        Up to date
+
+        This mirror is up to date with the original content.
+        """)
+
+    ONEHOURBEHIND = Item(2, """
+        One hour behind
+
+        This mirror's content seems to have been last updated one hour ago.
+        """)
+
+    TWOHOURSBEHIND = Item(3, """
+        Two hours behind
+
+        This mirror's content seems to have been last updated two hours ago.
+        """)
+
+    SIXHOURSBEHIND = Item(4, """
+        Six hours behind
+
+        This mirror's content seems to have been last updated six hours ago.
+        """)
+
+    ONEDAYBEHIND = Item(5, """
+        One day behind
+
+        This mirror's content seems to have been last updated one day ago.
+        """)
+
+    TWODAYSBEHIND = Item(6, """
+        Two days behind
+
+        This mirror's content seems to have been last updated two days ago.
+        """)
+
+    ONEWEEKBEHIND = Item(7, """
+        One week behind
+
+        This mirror's content seems to have been last updated one week ago.
+        """)
+
+    UNKNOWN = Item(8, """
+        Unknown
+
+        We couldn't determine when this mirror's content was last updated.
         """)
 
 

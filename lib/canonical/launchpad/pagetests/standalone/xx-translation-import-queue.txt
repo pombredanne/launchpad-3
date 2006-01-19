@@ -166,7 +166,7 @@ Now, we attach a new file to an already existing translation resource.
   ... """)
   HTTP/1.1 200 Ok
   ...Your upload worked. The template's content will appear in Rosetta in a few minutes...
-  ...Upload a new version of Template "evolution-2.2" in ubuntu hoary package "evolution"...
+  ...Upload a new version of Template "evolution-2.2" in Ubuntu Hoary package "evolution"...
 
 Now the import queue should have two entries, latest one will be ready to
 be imported because the import was associated directly.
@@ -175,10 +175,10 @@ be imported because the import was associated directly.
   ... GET /rosetta/imports HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...evolution in ubuntu hoary...
+  ...evolution in Ubuntu Hoary...
   ...po/evolution-2.2.pot...
   ...Carlos Perelló Marín...
-  ...Template "evolution-2.2" in ubuntu hoary package "evolution"...
+  ...Template "evolution-2.2" in Ubuntu Hoary package "evolution"...
   ...Download...
   ...Mozilla Firefox Series...
   ...po/es.po...
@@ -190,6 +190,38 @@ be imported because the import was associated directly.
           </tr>
         </tbody>
       </table>
+  ...
+
+Although the latest imported entry is ready to be imported, we can edit and
+change the values.
+
+  >>> print http(r"""
+  ... POST /rosetta/imports/2/+index HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 591
+  ... Content-Type: multipart/form-data; boundary=---------------------------6511523821897126076551794692
+  ... 
+  ... -----------------------------6511523821897126076551794692
+  ... Content-Disposition: form-data; name="field.sourcepackagename"
+  ... 
+  ... evolution
+  ... -----------------------------6511523821897126076551794692
+  ... Content-Disposition: form-data; name="field.potemplatename"
+  ... 
+  ... evolution-2.2
+  ... -----------------------------6511523821897126076551794692
+  ... Content-Disposition: form-data; name="field.path"
+  ... 
+  ... po/evolution-2.2.pot
+  ... -----------------------------6511523821897126076551794692
+  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... 
+  ... Continue
+  ... -----------------------------6511523821897126076551794692--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/rosetta/imports
   ...
 
 Get the edit form for the first entry.
@@ -249,7 +281,32 @@ Is time to associate this import to the right IPOFile.
   Location: http://localhost:9000/rosetta/imports
   ...
 
-Check the removal feature.
+Check the removal feature. For that, we need first to attach a new entry.
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Length: 362
+  ... Content-Type: multipart/form-data; boundary=---------------------------13161753624926250560039312
+  ... Referer: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/+upload
+  ... 
+  ... -----------------------------13161753624926250560039312
+  ... Content-Disposition: form-data; name="file"; filename="evolution.pot"
+  ... Content-Type: text/x-gettext-translation-template
+  ... 
+  ... # foo
+  ... 
+  ... -----------------------------13161753624926250560039312
+  ... Content-Disposition: form-data; name="UPLOAD"
+  ... 
+  ... Upload
+  ... -----------------------------13161753624926250560039312--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Your upload worked. The template's content will appear in Rosetta in a few minutes...
+  ...Upload a new version of Template "evolution-2.2" in Ubuntu Hoary package "evolution"...
+
+And now, remove it.
 
   >>> print http(r"""
   ... POST /rosetta/imports HTTP/1.1
@@ -258,7 +315,7 @@ Check the removal feature.
   ... Content-Type: application/x-www-form-urlencoded
   ... Referer: http://localhost:9000/rosetta/imports
   ... 
-  ... entry-2=on&remove_import=Remove""")
+  ... entry-3=on&remove_import=Remove""")
   HTTP/1.1 200 Ok
   ...Removed 1 items...
   ...There are no pending files to be imported into Rosetta...

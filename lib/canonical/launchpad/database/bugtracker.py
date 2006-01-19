@@ -8,11 +8,13 @@ import urllib
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol, MultipleJoin, RelatedJoin
+from sqlobject.sqlbuilder import AND
 
 from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import EnumCol, BugTrackerType
 from canonical.database.sqlbase import (SQLBase, flush_database_updates,
     quote)
+from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.interfaces import (
     IBugTracker, IBugTrackerSet, NotFoundError)
@@ -52,6 +54,14 @@ class BugTracker(SQLBase):
         return BugWatch.selectBy(
             bugtrackerID=self.id, orderBy="-datecreated")[:10]
 
+    def getBugsWatching(self, remotebug):
+        """See IBugTracker"""
+        return shortlist(Bug.select(AND(BugWatch.q.bugID == Bug.q.id,
+                                        BugWatch.q.bugtrackerID == self.id,
+                                        BugWatch.q.remotebug == remotebug),
+                                    distinct=True,
+                                    orderBy=['datecreated']))
+
 
 class BugTrackerSet:
     """Implements IBugTrackerSet for a container or set of BugTracker's,
@@ -63,7 +73,7 @@ class BugTrackerSet:
     table = BugTracker
 
     def __init__(self):
-        self.title = 'Launchpad-registered Bug Trackers'
+        self.title = 'Bug trackers registered in Malone'
 
     def __getitem__(self, name):
         item = self.table.selectOne(self.table.q.name == name)

@@ -192,7 +192,7 @@ class TicketContextMenu(ContextMenu):
         return Link('+reopen', text, icon='edit', enabled=enabled)
 
     def history(self):
-        text = 'Show History'
+        text = 'History'
         return Link('+history', text, icon='list',
                     enabled=bool(self.context.reopenings))
 
@@ -246,4 +246,3 @@ class TicketSetContextMenu(ContextMenu):
     def finddistro(self):
         text = 'Find Distribution'
         return Link('/distros', text, icon='search')
-

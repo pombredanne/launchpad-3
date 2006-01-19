@@ -183,23 +183,5 @@ class Launchpad:
             print '    ', sys.exc_value
             return None
         return newmsg
-        
-    def add_sourcepackage(self, srcpkgname, distroname, maintainer):
-        if get_sourcepackagename(srcpkgname) is None:
-            srcpkgname_id = SourcePackageName(name=srcpkgname).id
-        else:
-            srcpkgname_id = get_sourcepackagename(srcpkgname).id
-        distribution = get_distro(distroname)
-        if distribution is None:
-            raise Error, 'Unknown distribution "%s"' % distroname
-        newsrcpkg = get_sourcepackage(srcpkgname, distroname)
-        if newsrcpkg is None:
-            newsrcpkg = SourcePackage(maintainer=maintainer,
-                                      summary=distroname+' package '+srcpkgname,
-                                      description=distroname +' package '+srcpkgname,
-                                      distro=distribution.id,
-                                      sourcepackagename=srcpkgname_id,
-                                      srcpackageformat=1)
-        return newsrcpkg
 
 

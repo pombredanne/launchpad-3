@@ -35,7 +35,7 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.launchpad.interfaces import (
-    IPerson, IProduct, IProductSet, IProductSeries, ISourcePackage,
+    IPerson, IPersonSet, IProduct, IProductSet, IProductSeries, ISourcePackage,
     ICountry, ICalendarOwner, NotFoundError)
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -214,7 +214,7 @@ class ProductBugsMenu(ApplicationMenu):
     links = ['filebug']
 
     def filebug(self):
-        text = 'Report a bug'
+        text = 'Report a Bug'
         return Link('+filebug', text, icon='add')
 
 
@@ -236,19 +236,19 @@ class ProductSpecificationsMenu(ApplicationMenu):
     links = ['roadmap', 'table', 'workload', 'new']
 
     def roadmap(self):
-        text = 'Show Roadmap'
+        text = 'Roadmap'
         return Link('+specplan', text, icon='info')
 
     def table(self):
-        text = 'Show Assignments'
+        text = 'Assignments'
         return Link('+specstable', text, icon='info')
 
     def workload(self):
-        text = 'Show Workload'
+        text = 'Workload'
         return Link('+workload', text, icon='info')
 
     def new(self):
-        text = 'New Specification'
+        text = 'Register a Specification'
         return Link('+addspec', text, icon='add')
 
 
@@ -259,7 +259,7 @@ class ProductBountiesMenu(ApplicationMenu):
     links = ['new', 'link']
 
     def new(self):
-        text = 'Register a New Bounty'
+        text = 'Register a Bounty'
         return Link('+addbounty', text, icon='add')
 
     def link(self):
@@ -307,7 +307,7 @@ class ProductSetContextMenu(ContextMenu):
     links = ['register', 'listall']
 
     def register(self):
-        text = 'Register a New Product'
+        text = 'Register a Product'
         return Link('+new', text, icon='add')
 
     def listall(self):
@@ -570,37 +570,71 @@ class ProductAddView(AddView):
     __used_for__ = IProduct
 
     def __init__(self, context, request):
+        fields = ["name",
+                  "displayname",
+                  "title",
+                  "summary",
+                  "description",
+                  "project",
+                  "homepageurl",
+                  "sourceforgeproject",
+                  "freshmeatproject",
+                  "wikiurl",
+                  "screenshotsurl",
+                  "downloadurl",
+                  "programminglang"]
+        owner = IPerson(request.principal, None)
+        if self.isButtSource(owner):
+            # Buttsource members get it easy and are able to change this
+            # stuff during the edit process; this saves time wasted on
+            # getting to product/+admin.
+            fields.insert(1, "owner")
+            fields.append("reviewed")
+        self.fieldNames = fields
         self.context = context
         self.request = request
         self._nextURL = '.'
         AddView.__init__(self, context, request)
 
+    def isButtSource(self, owner):
+        if owner is None:
+            return False
+        personset = getUtility(IPersonSet)
+        buttsource = personset.getByName('buttsource')
+        return owner.inTeam(buttsource)
+
     def createAndAdd(self, data):
         # add the owner information for the product
         owner = IPerson(self.request.principal, None)
-        if not owner:
+        if owner is None:
             raise zope.security.interfaces.Unauthorized(
                 "Need an authenticated Launchpad owner")
-        kw = {}
-        for key, value in data.items():
-            kw[str(key)] = value
-        kw['owner'] = owner
-        # grab a ProductSet utility
-        product_util = getUtility(IProductSet)
-        # create a brand new Product
-        # XXX cprov 20050112
-        # -> try to don't use collapsed dict as argument, use it expanded
-        # XXX cprov 20050117
-        # The required field are:
-        #    def createProduct(owner, name, displayname, title, summary,
-        #                      description, project=None, homepageurl=None,
-        #                      screenshotsurl=None, wikiurl=None,
-        #                      downloadurl=None, freshmeatproject=None,
-        #                      sourceforgeproject=None):
-        # make sure you have those required keys in the kw dict
-        product = product_util.createProduct(**kw)
+        if self.isButtSource(owner):
+            owner = data["owner"]
+            reviewed = data["reviewed"]
+        else:
+            # Zope makes sure these are never set, since they are not in
+            # self.fieldNames
+            assert "owner" not in data
+            assert "reviewed" not in data
+            reviewed = False
+        productset = getUtility(IProductSet)
+        product = productset.createProduct(owner=owner,
+                                           reviewed=reviewed,
+                                           name=data.get("name"),
+                                           displayname=data.get("displayname"),
+                                           title=data.get("title"),
+                                           summary=data.get("summary"),
+                                           description=data.get("description"),
+                                           project=data.get("project"),
+                                           homepageurl=data.get("homepageurl"),
+                                           screenshotsurl=data.get("screenshotsurl"),
+                                           wikiurl=data.get("wikiurl"),
+                                           downloadurl=data.get("downloadurl"),
+                                           freshmeatproject=data.get("freshmeatproject"),
+                                           sourceforgeproject=data.get("sourceforgeproject"))
         notify(ObjectCreatedEvent(product))
-        self._nextURL = kw['name']
+        self._nextURL = data['name']
         return product
 
     def nextURL(self):

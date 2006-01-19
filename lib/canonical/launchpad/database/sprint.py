@@ -124,7 +124,7 @@ class SprintSet:
 
     def __init__(self):
         """See ISprintSet."""
-        self.title = 'Sprints and Meetings'
+        self.title = 'Sprints and meetings'
 
     def __getitem__(self, name):
         """See ISprintSet."""

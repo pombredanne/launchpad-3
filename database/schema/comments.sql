@@ -696,19 +696,6 @@ COMMENT ON TABLE DistributionBounty IS 'This table records a simple link between
 
 COMMENT ON TABLE ProjectBounty IS 'This table records a simple link between a bounty and a project. This bounty will be listed on the project web page, and the project will be mentioned on the bounty web page.';
 
--- Maintainership
-
-COMMENT ON TABLE Maintainership IS 'Stores the maintainer information for a
-sourcepackage in a particular distribution. Note that this does not store
-the information per-distrorelease, but for the overall "distribution", which
-generally refers to the current development release of the distro.';
-
-COMMENT ON COLUMN Maintainership.maintainer IS 'Refers to the person
-responsible for this sourcepackage inside this distribution. Note that the
-"maintainer" for a package varies over time, so the person who was
-responsible in a previous distrorelease may no longer be listed as
-a maintainer.';
-
 -- Messaging subsytem
 COMMENT ON TABLE BugMessage IS 'This table maps a message to a bug. In other words, it shows that a particular message is associated with a particular bug.';
 COMMENT ON TABLE Message IS 'This table stores a single RFC822-style message. Messages can be threaded (using the parent field). These messages can then be referenced from elsewhere in the system, such as the BugMessage table, integrating messageboard facilities with the rest of The Launchpad.';
@@ -1209,6 +1196,45 @@ COMMENT ON COLUMN ShipItReport.csvfile IS 'A csv file with the report';
 COMMENT ON TABLE Continent IS 'A continent in this huge world.';
 COMMENT ON COLUMN Continent.code IS 'A two-letter code for a continent.';
 COMMENT ON COLUMN Continent.name IS 'The name of the continent.';
+
+-- DistributionMirror
+COMMENT ON TABLE DistributionMirror IS 'A mirror of a given distribution.';
+COMMENT ON COLUMN DistributionMirror.distribution IS 'The distribution to which the mirror refers to.';
+COMMENT ON COLUMN DistributionMirror.name IS 'The unique name of the mirror.';
+COMMENT ON COLUMN DistributionMirror.http_base_url IS 'The HTTP URL used to access the mirror.';
+COMMENT ON COLUMN DistributionMirror.ftp_base_url IS 'The FTP URL used to access the mirror.';
+COMMENT ON COLUMN DistributionMirror.rsync_base_url IS 'The Rsync URL used to access the mirror.';
+COMMENT ON COLUMN DistributionMirror.displayname IS 'The displayname of the mirror.';
+COMMENT ON COLUMN DistributionMirror.description IS 'A description of the mirror.';
+COMMENT ON COLUMN DistributionMirror.owner IS 'The owner of the mirror.';
+COMMENT ON COLUMN DistributionMirror.speed IS 'The speed of the mirror\'s Internet link.';
+COMMENT ON COLUMN DistributionMirror.country IS 'The country where the mirror is located.';
+COMMENT ON COLUMN DistributionMirror.content IS 'The content that is mirrored.';
+COMMENT ON COLUMN DistributionMirror.file_list IS 'A file containing the list of files the mirror contains. Used only in case the mirror\'s pulse_type is PULL';
+COMMENT ON COLUMN DistributionMirror.official_candidate IS 'Is the mirror a candidate for becoming an official mirror?';
+COMMENT ON COLUMN DistributionMirror.official_approved IS 'Is the mirror approved as one of the official ones?';
+COMMENT ON COLUMN DistributionMirror.enabled IS 'Is this mirror enabled?';
+COMMENT ON COLUMN DistributionMirror.pulse_type IS 'The method we should use to check if the mirror is up to date.';
+COMMENT ON COLUMN DistributionMirror.pulse_source IS 'A URL that we will use to check if the mirror is up to date, when the pulse_type is PULL.';
+
+-- MirrorDistroArchRelease
+COMMENT ON TABLE MirrorDistroArchRelease IS 'The mirror of the packages of a given Distro Arch Release.';
+COMMENT ON COLUMN MirrorDistroArchRelease.distribution_mirror IS 'The distribution mirror.';
+COMMENT ON COLUMN MirrorDistroArchRelease.distro_arch_release IS 'The distro arch release.';
+COMMENT ON COLUMN MirrorDistroArchRelease.status IS 'The status of the mirror, that is, how up-to-date it is.';
+COMMENT ON COLUMN MirrorDistroArchRelease.pocket IS 'The PackagePublishingPocket.';
+
+-- MirrorDistroReleaseSource
+COMMENT ON TABLE MirrorDistroReleaseSource IS 'The mirror of a given Distro Release';
+COMMENT ON COLUMN MirrorDistroReleaseSource.distribution_mirror IS 'The distribution mirror.';
+COMMENT ON COLUMN MirrorDistroReleaseSource.distro_release IS 'The Distribution Release.';
+COMMENT ON COLUMN MirrorDistroReleaseSource.status IS 'The status of the mirror, that is, how up-to-date it is.';
+
+-- MirrorProbeRecord
+COMMENT ON TABLE MirrorProbeRecord IS 'Records stored when a mirror is probed.';
+COMMENT ON COLUMN MirrorProbeRecord.distribution_mirror IS 'The DistributionMirror.';
+COMMENT ON COLUMN MirrorProbeRecord.log_file IS 'The log file of the probe.';
+COMMENT ON COLUMN MirrorProbeRecord.date_created IS 'The date and time the probe was performed.';
 
 -- TranslationImportQueueEntry
 COMMENT ON TABLE TranslationImportQueueEntry IS 'Queue with translatable resources pending to be imported into Rosetta.';

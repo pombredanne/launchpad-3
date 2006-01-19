@@ -251,7 +251,7 @@ def generate_bug_edit_email(bug_delta):
         body += u"\n"
 
     if bug_delta.private is not None:
-        body += u"Secrecy changed to:\n"
+        body += u"Visibility changed to:\n"
         if bug_delta.private['new']:
             body += u"    Private\n"
         else:
@@ -945,7 +945,7 @@ def notify_join_request(event):
         to_addrs.update(contactEmailAddresses(person))
 
     if to_addrs:
-        url = "%s/people/%s/+members/%s" % (event.appurl, team.name, user.name)
+        url = '%s/+member/%s' % (canonical_url(team), user.name)
         replacements = {'browsername': user.browsername,
                         'name': user.name,
                         'teamname': team.browsername,

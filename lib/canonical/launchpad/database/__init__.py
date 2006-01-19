@@ -43,6 +43,7 @@ from canonical.launchpad.database.binarypackagename import *
 from canonical.launchpad.database.publishedpackage import *
 from canonical.launchpad.database.distribution import *
 from canonical.launchpad.database.distributionbounty import *
+from canonical.launchpad.database.distributionmirror import *
 from canonical.launchpad.database.distributionsourcepackage import *
 from canonical.launchpad.database.distributionsourcepackagecache import *
 from canonical.launchpad.database.distributionsourcepackagerelease import *
