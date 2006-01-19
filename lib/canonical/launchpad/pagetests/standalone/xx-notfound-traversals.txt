@@ -206,6 +206,11 @@ Check a bug is traversable by nickname:
 >>> check_redirect("/malone/bugs/blackhole")
 >>> check("/products/ubuntu/+bug/blackhole")
 
+Check a bug is traversable by nickname:
+
+>>> check_redirect("/malone/bugs/blackhole")
+>>> check("/products/ubuntu/+bug/blackhole")
+
 Viewing a bug in the context of a distribution where the bug has not
 yet been reported.
 

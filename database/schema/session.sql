@@ -15,9 +15,9 @@ INSERT INTO Secret VALUES ('thooper thpetial theqwet');
 
 CREATE TABLE SessionData (
     client_id     text PRIMARY KEY,
-    last_accessed timestamp with time zone
-        NOT NULL DEFAULT CURRENT_TIMESTAMP
-    );
+    created       timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    last_accessed timestamp with time zone NOT NULL DEFAULT CURRENT_TIMESTAMP
+    ) WITHOUT OIDS;
 COMMENT ON TABLE SessionData IS 'Stores session tokens (the client_id) and the last accessed timestamp. The precision of the last access time is dependant on configuration in the Z3 application servers.';
 
 CREATE INDEX sessiondata_last_accessed_idx ON SessionData(last_accessed);
@@ -29,6 +29,6 @@ CREATE TABLE SessionPkgData (
     key        text NOT NULL,
     pickle     bytea NOT NULL,
     CONSTRAINT sessiondata_key UNIQUE (client_id, product_id, key)
-    );
+    ) WITHOUT OIDS;
 COMMENT ON TABLE SessionPkgData IS 'Stores the actual session data as a Python pickle.';
 

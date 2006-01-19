@@ -15,10 +15,13 @@
       <ul>
         <li>
           <p>
-            If you have general questions or suggestions,
-            <a href="irc://irc.freenode.net/#launchpad">join us on IRC</a> &#8212;
-            network <code>irc.freenode.net</code>,
-            channel <code>#launchpad</code>.
+            Got general questions or suggestions? Mail
+            <a
+              href="http://lists.canonical.com/mailman/listinfo/launchpad-users"
+            >the Launchpad users mailing list</a>, or
+            <a href="irc://irc.freenode.net/#launchpad">join us on IRC</a>
+            (network <code>irc.freenode.net</code>,
+            channel <code>#launchpad</code>).
           </p>
         </li>
         <li>
@@ -36,6 +39,9 @@
             </li>
             <li>
               <a href="/products/launchpad-cal/+bugs">Calendar</a>
+            </li>
+            <li>
+              <a href="/products/soyuz/+bugs">distribution management</a>
             </li>
             <li>
               <a href="/products/launchpad/+bugs">any other aspect of Launchpad</a>.
