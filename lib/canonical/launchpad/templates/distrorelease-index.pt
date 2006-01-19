@@ -29,7 +29,7 @@
 
     <tal:block tal:define="sourcecount context/sourcecount"
                tal:condition="sourcecount" tal:omit-tag>
-    <h2>Binary Packages in <span tal:replace="context/title" /></h2>
+    <h2>Binary packages in <span tal:replace="context/title" /></h2>
       <p>
          This release of 
          <span tal:replace="context/distribution/displayname" /> contains

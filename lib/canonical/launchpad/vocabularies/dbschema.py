@@ -23,6 +23,11 @@ __all__ = [
     'DistributionReleaseStatusVocabulary',
     'GPGKeyAlgorithmVocabulary',
     'InfestationStatusVocabulary',
+    'MirrorContentVocabulary',
+    'MirrorPulseTypeVocabulary',
+    'MirrorSpeedVocabulary',
+    'MirrorStatusVocabulary',
+    'PackagePublishingPocketVocabulary',
     'PackagingTypeVocabulary',
     'PollAlgorithmVocabulary',
     'PollSecrecyVocabulary',
@@ -78,6 +83,12 @@ CveStatusVocabulary = vocab_factory(dbschema.CveStatus)
 DistributionReleaseStatusVocabulary = vocab_factory(dbschema.DistributionReleaseStatus)
 GPGKeyAlgorithmVocabulary = vocab_factory(dbschema.GPGKeyAlgorithm)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
+MirrorContentVocabulary = vocab_factory(dbschema.MirrorContent)
+MirrorPulseTypeVocabulary = vocab_factory(dbschema.MirrorPulseType)
+MirrorSpeedVocabulary = vocab_factory(dbschema.MirrorSpeed)
+MirrorStatusVocabulary = vocab_factory(dbschema.MirrorStatus)
+PackagePublishingPocketVocabulary = vocab_factory(
+    dbschema.PackagePublishingPocket)
 PackagingTypeVocabulary = vocab_factory(dbschema.PackagingType)
 PollAlgorithmVocabulary = vocab_factory(dbschema.PollAlgorithm)
 PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)

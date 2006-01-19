@@ -279,9 +279,6 @@ def logInPerson(request, principal, email):
     authdata['logintime'] = datetime.utcnow()
     authdata['login'] = email
     notify(CookieAuthLoggedInEvent(request, email))
-    request.response.addNoticeNotification(
-        _(u'You have been logged in')
-        )
 
 
 class CookieLogoutPage:

@@ -9,7 +9,7 @@ from zope.event import notify
 from zope.exceptions import NotFoundError
 from zope.security.management import queryInteraction
 
-from canonical.launchpad.helpers import Snapshot, is_maintainer
+from canonical.launchpad.helpers import Snapshot
 from canonical.launchpad.interfaces import (
     ILaunchBag, IMessageSet, IBugEmailCommand, IBugTaskEmailCommand,
     IBugEditEmailCommand, IBugTaskEditEmailCommand, IBug, IBugTask,
@@ -93,7 +93,7 @@ def guess_bugtask(bug, person):
         for bugtask in bug.bugtasks:
             if IUpstreamBugTask.providedBy(bugtask):
                 # Is the person an upstream maintainer?
-                if is_maintainer(bugtask.product, person):
+                if person.inTeam(bugtask.product.owner):
                     return bugtask
             elif IDistroBugTask.providedBy(bugtask):
                 # Is the person a member of the distribution?

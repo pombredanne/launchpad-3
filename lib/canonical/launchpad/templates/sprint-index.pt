@@ -12,7 +12,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Meeting Overview</h1>
+  <h1>Meeting overview</h1>
 
   <p class="highlighted">
     <span tal:replace="context/summary">

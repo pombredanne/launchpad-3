@@ -16,7 +16,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Poll Overview</h1>
+  <h1>Poll overview</h1>
 
   <div class="highlighted" style="font-size: 80%;">
     <tal:proposition replace="structure context/proposition/fmt:text-to-html">
