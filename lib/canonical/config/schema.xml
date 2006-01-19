@@ -517,10 +517,27 @@
     </sectiontype>
 
     <sectiontype name="builddmaster">
-        <key name="dbuser" datatype="string" required="yes" />
-        <key name="uploader" datatype="string" required="yes" />
+        <key name="dbuser" datatype="string" required="yes">
+            <description>
+                BuilddMaster Datatbase user.
+            </description>
+        </key>
+        <key name="uploader" datatype="string" required="yes">
+            <description>
+                Uploader command line.
+            </description>
+        </key>
         <key name="keep_files" datatype="boolean" default="true"
-            required="no"/>
+            required="no">
+            <description>
+                Whether to keep or not the buildd uploads results files.
+            </description>
+        </key>
+        <key name="root" datatype="string" required="yes">
+            <description>
+                Directory to be created to store build results.
+            </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="canonical">

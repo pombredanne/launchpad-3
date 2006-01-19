@@ -38,13 +38,18 @@ def main():
 
     parser.add_option("-N", "--dry-run", action="store_true",
                       dest="dryrun", metavar="DRY_RUN", default=False,
-                      help="Whether to treat this as a dry-run or not.")
+                      help=("Whether to treat this as a dry-run or not. "
+                            "Implicitly set -KM."))
+
+    parser.add_option("-K", "--keep", action="store_true",
+                      dest="keep", metavar="KEEP", default=False,
+                      help="Whether to keep or not the uploads directory.")
 
     parser.add_option("-M", "--no-mails", action="store_true",
                       dest="nomails", default=False,
                       help="Whether to suppress the sending of mails or not.")
 
-    parser.add_option("-l", "--loop", action="store_true", default=False,
+    parser.add_option("-L", "--loop", action="store_true", default=False,
                       help="Wait for more uploads rather than exiting.")
 
     global options
@@ -155,7 +160,7 @@ def main():
                             log.debug("Releasing process_upload lock")
                             lock.release()
 
-                    if not options.dryrun:
+                    if not options.keep or options.dryrun:
                         log.debug("Removing upload directory: %s" % entry_path)
                         shutil.rmtree(entry_path)
 
@@ -164,7 +169,7 @@ def main():
                                       % distro_filename)
                             os.unlink(distro_filename)
                     else:
-                        log.debug("Keeping contents, DRYRUN mode")
+                        log.debug("Keeping contents")
 
                     options.distro = options_distro
 

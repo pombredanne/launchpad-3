@@ -473,15 +473,28 @@ class BuilderGroup:
         self.logger.debug("Processing successful build %s" % buildid)
 
         try:
-            upload_dir = tempfile.mkdtemp(prefix="build-%s-" % buildid)
-            temp_dir = os.path.join(upload_dir, "files")
-            os.mkdir(temp_dir)
-
-            self.logger.debug("Storing build result at '%s'" % temp_dir)
+            # ensure we have the correct build root as:
+            # <BUILDMASTER_ROOT>/<BUILD_ID>/files/
+            root = config.builddmaster.root
+            if not os.path.isdir(root):
+                self.logger.debug("Creating BuilddMaster root '%s'"
+                                  % root)
+                os.mkdir(root)
+            upload_dir = os.path.join(root, "%s" % buildid)
+            # remove previous files of the same build
+            if os.path.isdir(upload_dir):
+                self.logger.debug("Purging previous results at '%s'"
+                                  % uploader_dir)
+                shutil.rmtree(upload_dir)
+            # create a single directory to store build result files
+            os.mkdir(upload_dir)
+            result_dir = os.path.join(upload_dir, "files")
+            os.mkdir(result_dir)
+            self.logger.debug("Storing build result at '%s'" % result_dir)
 
             for filename in filemap:
                 slave_file = slave.getFile(filemap[filename])
-                out_file_name = os.path.join(temp_dir, filename)
+                out_file_name = os.path.join(result_dir, filename)
                 out_file = open(out_file_name, "wb")
                 try:
                     for chunk in file_chunks(slave_file):
@@ -502,17 +515,28 @@ class BuilderGroup:
             uploader_argv.extend(extra_args)
 
             self.logger.debug("Invoking uploader on %s" % upload_dir)
-            uploader_process = subprocess.Popen(uploader_argv)
+            uploader_process = subprocess.Popen(uploader_argv,
+                                                stdout=subprocess.PIPE)
             result_code = uploader_process.wait()
             self.logger.debug("Uploader returned %d" % result_code)
 
-        finally:
             if not config.builddmaster.keep_files:
                 self.logger.debug("Cleaning up temporary directory")
-                shutil.rmtree(upload_dir)
+                if os.path.exists(upload_dir):
+                    shutil.rmtree(upload_dir)
             else:
                 self.logger.debug("Keeping files at '%s'" % upload_dir)
+                # retrieve the uploader output and store in the build results
+                # directory
+                uploader_log = uploader_process.communicate()[0]
+                uploader_logfilename = os.path.join(upload_dir, 'uploader.log')
+                upload_logfile = os.open(uploader_logfilename)
+                upload_logfile.write(uploader_log)
+                os.close(upload_logfile)
+                self.logger.debug("Saving uploader log at '%s'"
+                                  % uploader_logfilename)
 
+        finally:
             self.logger.debug("Gathered build of %s completely"
                               % queueItem.name)
             # store build info
