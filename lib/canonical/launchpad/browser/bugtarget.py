@@ -22,24 +22,10 @@ class FileBugView(SQLObjectAddView):
         current_user = getUtility(ILaunchBag).user
 
         if IDistribution.providedBy(self.context) and packagename:
-            # If a binary package was selected create the bug with both the
-            # binary and source package, otherwise create the bug with just the
-            # source package.
-            binarypackagename = None
-            sourcepackagename = None
-            if IBinaryPackageName.providedBy(packagename):
-                distrorelease = self.context.currentrelease
-                distrorelease_i386 = distrorelease['i386']
-                i386_binarypackage = distrorelease_i386.getBinaryPackage(
-                    packagename)
-                i386_current_binarypackage = i386_binarypackage.currentrelease
-                distro_sourcepackage_release = i386_current_binarypackage.distributionsourcepackagerelease
-                sourcepackage = distro_sourcepackage_release.sourcepackage
-
-                binarypackagename = packagename
-                sourcepackagename = sourcepackage.sourcepackagename
-            else:
-                sourcepackagename = packagename
+            # We don't know if the package name we got was a source or binary
+            # package name, so let the Soyuz API figure it out for us.
+            sourcepackagename, binarypackagename = (
+                self.context.getPackageNames(str(packagename.name)))
 
             bugtarget = self.context.getSourcePackage(sourcepackagename.name)
             bug = bugtarget.createBug(

@@ -64,16 +64,22 @@
             <tal:distrotask condition="python:context.distribution or
                                       context.distrorelease">
               <tr>
-                <td colspan="0">
+                <td>
                   <label tal:attributes="for view/sourcepackagename_widget/name"
                          tal:content="view/sourcepackagename_widget/label">
                     Source package name
                   </label>
                 </td>
+                <td>
+                  <label tal:attributes="for view/binarypackagename_widget/name"
+                         tal:content="view/binarypackagename_widget/label">
+                    Binary package name
+                  </label>
+                </td>
               </tr>
               <tr>
-                <td colspan="0"
-                    tal:content="structure view/sourcepackagename_widget" nowrap />
+                <td tal:content="structure view/sourcepackagename_widget" nowrap />
+                <td tal:content="structure view/binarypackagename_widget" nowrap />
               </tr>
             </tal:distrotask>
             <tal:upstreamtask condition="python:context.product">
