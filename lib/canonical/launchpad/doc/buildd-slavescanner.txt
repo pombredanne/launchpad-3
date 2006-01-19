@@ -434,11 +434,29 @@ filesystem before uncompress.
   >>> tmp.close()
   >>> assert gzip.open(fname).read() == builder10.slave.getFile('buildlog').read()
 
-  Both access methods work as expected.
-
-  Remove the temporary file used here.
+Both access methods work as expected, remove the temporary file used here.
 
   >>> os.remove(fname)
+
+Check uploader log storage:
+
+  >>> from canonical.config import config
+  >>> uploader_log = open(os.path.join(config.builddmaster.root,
+  ...                                  '1-1', 'uploader.log'))
+
+  >>> print uploader_log.read()
+  DEBUG   Initialising connection.
+  DEBUG   Trying to lock upload directory: /var/tmp/builddmaster/1-1/files
+  DEBUG   Got the upload directory lock
+  DEBUG   Finding policy
+  DEBUG   Keeping contents
+  DEBUG   Rolling back any remaining transactions.
+  <BLANKLINE>
+
+Remove build upload results root
+
+  >>> import shutil
+  >>> shutil.rmtree(config.builddmaster.root)
 
 
 BuilddMaster class:

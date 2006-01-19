@@ -484,7 +484,7 @@ class BuilderGroup:
             # remove previous files of the same build
             if os.path.isdir(upload_dir):
                 self.logger.debug("Purging previous results at '%s'"
-                                  % uploader_dir)
+                                  % upload_dir)
                 shutil.rmtree(upload_dir)
             # create a single directory to store build result files
             os.mkdir(upload_dir)
@@ -504,9 +504,13 @@ class BuilderGroup:
                     out_file.close()
 
             uploader_argv = list(config.builddmaster.uploader.split())
+            uploader_logfilename = os.path.join(upload_dir, 'uploader.log')
+            self.logger.debug("Saving uploader log at '%s'"
+                              % uploader_logfilename)
 
             # add extra arguments for processing a binary upload
             extra_args = [
+                "--log-file", "%s" %  uploader_logfilename,
                 "-d", "%s" % queueItem.build.distribution.name,
                 "-r", "%s" % queueItem.build.distrorelease.name,
                 "-b", "%s" % queueItem.build.id,
@@ -526,15 +530,6 @@ class BuilderGroup:
                     shutil.rmtree(upload_dir)
             else:
                 self.logger.debug("Keeping files at '%s'" % upload_dir)
-                # retrieve the uploader output and store in the build results
-                # directory
-                uploader_log = uploader_process.communicate()[0]
-                uploader_logfilename = os.path.join(upload_dir, 'uploader.log')
-                upload_logfile = os.open(uploader_logfilename)
-                upload_logfile.write(uploader_log)
-                os.close(upload_logfile)
-                self.logger.debug("Saving uploader log at '%s'"
-                                  % uploader_logfilename)
 
         finally:
             self.logger.debug("Gathered build of %s completely"
