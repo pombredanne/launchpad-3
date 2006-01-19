@@ -399,7 +399,6 @@ ul.app>li.current {
   width: 48%; /* = 50% - 1% left whitespace - 1% right whitespace */
 }
 * > #portal-column-content { /* hide from MSIE/Win 5 where "relative" breaks */
-  background-color: lime;
   position: relative; /* allow z-index to work */
   z-index: 1000; /* force main column to appear on top */
 }
