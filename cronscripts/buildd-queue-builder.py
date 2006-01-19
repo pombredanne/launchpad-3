@@ -73,7 +73,7 @@ if __name__ == '__main__':
     try:
         locker.acquire()
     except OSError:
-        logger.info("Cannot Acquire Lock.")
+        log.info("Cannot Acquire Lock.")
         sys.exit(1)
 
     try:

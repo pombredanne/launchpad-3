@@ -98,13 +98,15 @@ urgency_map = {
     "emergency": SourcePackageUrgency.EMERGENCY
     }
 
-# Map priorities to their dbschema values
+# Map priorities to their dbschema valuesa
+# XXX cprov 20060119: Accepting priority absence ('-') as EXTRA
 priority_map = {
     "required": PackagePublishingPriority.REQUIRED,
     "important": PackagePublishingPriority.IMPORTANT,
     "standard": PackagePublishingPriority.STANDARD,
     "optional": PackagePublishingPriority.OPTIONAL,
-    "extra": PackagePublishingPriority.EXTRA
+    "extra": PackagePublishingPriority.EXTRA,
+    "-": PackagePublishingPriority.EXTRA
     }
 
 # Files need their content type for creating in the librarian.
@@ -412,6 +414,16 @@ class NascentUpload:
         files_archindep = False
         files_archdep = False
 
+        # XXX:We now understand better the reality of these conditions.
+        # The Architecture line specifies the package-wide
+        # architectures, not the speciifc upload. This means it is valid
+        # to receive a package upload that has:
+        #   Architecture: powerpc all
+        # and yet the files listing contains only _powerpc.deb files.
+        # Because of this, think_* is used only as a screen; if the
+        # files_X is true, then think_X must be true as well, but none
+        # of the reverses are necessarily true.
+
         for uploaded_file in self.files:
             if uploaded_file.custom:
                 files_binaryful = True
@@ -441,15 +453,13 @@ class NascentUpload:
                 "Mismatch in binaryfulness. (arch) %s != (files) %s" % (
                 think_binaryful, files_binaryful))
 
-        if files_archindep != think_archindep:
-            self.reject("Mismatch in architecture independence. "
-                        "(arch) %s != (files) %s" %
-                        (think_archindep, files_archindep))
+        if files_archindep and not think_archindep:
+            self.reject("One or more files uploaded with architecture "
+                        "'all' but changes file does not list 'all'.")
 
-        if files_archindep != think_archindep:
-            self.reject("Mismatch in architecture dependence. "
-                        "(arch) %s != (files) %s" %
-                        (think_archindep, files_archindep))
+        if files_archdep and not think_archdep:
+            self.reject("One or more files uploaded with specific "
+                        "architecture but changes file does not list it.")
 
         # Remember the information for later use in properties.
         self._sourceful = think_sourceful
@@ -1018,15 +1028,23 @@ class NascentUpload:
                 self.reject("!!WARNING!! tainted filename: '%s'." % (file));
             # Can we read the file, does its md5/size match?
             uploaded_file.checkValues()
-            if re_isadeb.match(uploaded_file.filename):
-                uploaded_file.is_source=False
+
+            if uploaded_file.section == "byhand":
+                uploaded_file.is_source = False
+                uploaded_file.type = "byhand"
+            elif uploaded_file.custom:
+                # Don't verify custom packages -- they aren't normal
+                uploaded_file.is_source = False
+            elif re_isadeb.match(uploaded_file.filename):
+                uploaded_file.is_source = False
                 self.verify_uploaded_deb_or_udeb(uploaded_file)
             elif re_issource.match(uploaded_file.filename):
-                uploaded_file.is_source=True
+                uploaded_file.is_source = True
                 self.verify_uploaded_source_file(uploaded_file)
             else:
-                # It's byhand.
-                uploaded_file.is_source=False
+                # Don't know how to handle this thing -- consider it
+                # byhand.
+                uploaded_file.is_source = False
                 uploaded_file.type = "byhand"
 
         self.logger.debug("Performing overall file verification checks.")
@@ -1046,21 +1064,17 @@ class NascentUpload:
             old = self.distrorelease.getPublishedReleases(
                 spn, self.policy.pocket)
 
-            # XXX cprov 20051207: why do we care about empty priority
-            # if the split() in line 152 never generate something like
-            # that, priority can only be a 'valid string'
-            if uploaded_file.priority not in ["", "-"]:
-                # map priority tag to dbschema
-                if uploaded_file.priority in priority_map:
-                    uf = uploaded_file
-                    uf.priority = priority_map[uf.priority]
-                # map unknown priority tags to "extra" if the file is new
-                elif not old:
-                    uploaded_file.priority = priority_map['extra']
-                # REJECT unknown tag & known file
-                else:
-                    self.reject("Unable to map priority %r for file %s" % (
-                        uploaded_file.priority, uploaded_file.filename))
+            # map priority tag to dbschema
+            if uploaded_file.priority in priority_map:
+                uf = uploaded_file
+                uf.priority = priority_map[uf.priority]
+            # map unknown priority tags to "extra" if the file is new
+            elif not old:
+                uploaded_file.priority = priority_map['extra']
+            # REJECT unknown tag & known file
+            else:
+                self.reject("Unable to map priority %r for file %s" % (
+                    uploaded_file.priority, uploaded_file.filename))
 
             # check component and section
             self.verify_components_and_sections(uploaded_file)
@@ -1095,8 +1109,16 @@ class NascentUpload:
                 uploaded_file.filename, uploaded_file.component))
 
         if uploaded_file.section not in valid_sections:
-            self.reject("%s: Section %s is not valid" % (
-                uploaded_file.filename, uploaded_file.section))
+            self.warn("Unable to grok section %s, overriding it with "
+                      % uploaded_file.section)
+            uploaded_file.section = 'misc'
+            # XXX cprov 20060119: we used to reject missaplied sections
+            # But when testing stuff in soyuz backend we got forced to
+            # accept the package linux-meta_2.6.12.16_i386.
+            # Result: packages with missapplied section goes into
+            # main/misc ... 
+            #self.reject("%s: Section %s is not valid" % (
+            #    uploaded_file.filename, uploaded_file.section))
 
     def _find_dsc(self):
         """Return the .dsc file from the files list."""
@@ -1690,8 +1712,8 @@ class NascentUpload:
             if uploaded_file.type == "udeb":
                 format=BinaryPackageFormat.UDEB
             build = self.find_build(uploaded_file.architecture)
-            # Remember the distrorelease for use in the construction
-            dr = self.distrorelease
+            component = getUtility(IComponentSet)[uploaded_file.component].id
+            section = getUtility(ISectionSet)[uploaded_file.section].id
             # Also remember the control data for the uploaded file
             control = uploaded_file.control
             binary = build.createBinaryPackageRelease(
@@ -1700,8 +1722,8 @@ class NascentUpload:
                 summary=guess_encoding(summary),
                 description=guess_encoding(description),
                 binpackageformat=format,
-                component=dr.getComponentByName(uploaded_file.component).id,
-                section=dr.getSectionByName(uploaded_file.section).id,
+                component=component,
+                section=section,
                 priority=uploaded_file.priority,
                 # XXX: dsilvers: 20051014: erm, need to work this out
                 # bug 3160
