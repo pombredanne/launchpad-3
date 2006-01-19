@@ -13,25 +13,34 @@ from canonical.launchpad.interfaces import ILaunchBag, IDistribution
 from canonical.launchpad.browser.addview import SQLObjectAddView
 
 class FileBugView(SQLObjectAddView):
-    """The view class that handles filing a bug on an IBugTarget."""
+    """Browser view for filebug forms.
+
+    This class handles bugs filed on an IBugTarget, and the 'generic' bug
+    filing, where a distribution argument is passed with the form.
+    """
 
     def create(self, title=None, comment=None, private=False,
-               packagename=None):
+               packagename=None, distribution=None):
         """Add a bug to this IBugTarget."""
         current_user = getUtility(ILaunchBag).user
+        context = self.context
+        if distribution is not None:
+            # We're being called from the generic bug filing form, so manually
+            # set the chosen distribution as the context.
+            context = distribution
 
-        if IDistribution.providedBy(self.context) and packagename:
+        if IDistribution.providedBy(context) and packagename:
             # We don't know if the package name we got was a source or binary
             # package name, so let the Soyuz API figure it out for us.
             sourcepackagename, binarypackagename = (
-                self.context.getPackageNames(str(packagename.name)))
+                context.getPackageNames(str(packagename.name)))
 
-            bugtarget = self.context.getSourcePackage(sourcepackagename.name)
+            bugtarget = context.getSourcePackage(sourcepackagename.name)
             bug = bugtarget.createBug(
                 title=title, comment=comment, private=private, owner=current_user,
                 binarypackagename=binarypackagename)
         else:
-            bug = self.context.createBug(
+            bug = context.createBug(
                 title=title, comment=comment, private=private, owner=current_user)
 
         self.addedBug = bug

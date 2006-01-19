@@ -98,7 +98,7 @@ o BinaryAndSourcePackageNameVocabulary - the list of binary and source
   package names, ordered by name.
 
     >>> package_name_vocabulary = vocabulary_registry.get(
-    ...     None, "BinaryAndSourcePackageNameVocabulary")
+    ...     None, "BinaryAndSourcePackageName")
 
 When a package name matches both a binary package name and a source
 package of the exact same name, the binary package name is

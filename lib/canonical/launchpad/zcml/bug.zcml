@@ -147,43 +147,17 @@
         />
 
     <browser:addform
-        name="+product"
-        for="canonical.launchpad.interfaces.IBugSet"
-        schema="canonical.launchpad.interfaces.IBugAddForm"
-        class="canonical.launchpad.browser.bug.BugAddView"
-        label="Report a bug about a product"
-        fields="product title comment owner"
-        arguments=""
-        keyword_arguments="product title comment owner"
-        permission="launchpad.AnyPerson"
-        template="../templates/bug-add.pt"
-        lp:url="malone/bugs/+product">
-        <browser:widget
-          field="owner"
-          class="canonical.widgets.HiddenUserWidget" />
-        <browser:widget
-           field="title"
-           class="zope.app.form.browser.TextWidget"
-           displayWidth="55" />
-        <browser:widget
-           field="comment"
-           class="zope.app.form.browser.TextAreaWidget"
-           height="10" />
-    </browser:addform>
-
-    <browser:addform
         name="+package"
         for="canonical.launchpad.interfaces.IBugSet"
         schema="canonical.launchpad.interfaces.IBugAddForm"
-        class="canonical.launchpad.browser.bug.BugAddView"
+        class="canonical.launchpad.browser.bugtarget.FileBugView"
         label="Report a bug about a package"
-        fields="distribution packagename title comment private owner"
+        fields="distribution packagename title comment private"
         arguments=""
-        keyword_arguments="distribution packagename title comment private owner"
+        keyword_arguments="distribution packagename title comment private"
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
         lp:url="malone/bugs/+product">
-        <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
