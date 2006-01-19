@@ -1,7 +1,7 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
   <vocabulary
-    name="BinaryAndSourcePackageNameVocabulary"
+    name="BinaryAndSourcePackageName"
     factory="canonical.launchpad.vocabularies.BinaryAndSourcePackageNameVocabulary"
     />
 

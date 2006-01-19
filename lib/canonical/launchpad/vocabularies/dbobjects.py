@@ -248,6 +248,8 @@ class BinaryAndSourcePackageNameVocabulary(SQLObjectVocabularyBase):
     The value returned by a widget using this vocabulary will be either an
     ISourcePackageName or an IBinaryPackageName.
     """
+    implements(IHugeVocabulary)
+
     def __contains__(self, obj):
         # Is this a source or binary package name?
         return (
@@ -255,7 +257,7 @@ class BinaryAndSourcePackageNameVocabulary(SQLObjectVocabularyBase):
             BinaryPackageName.selectOneBy(name=obj.name))
 
     def __iter__(self):
-        return self.search()
+        return self.search(query="")
 
     def getTermByToken(self, token):
         # Try to retrieve the binary package name.
@@ -272,7 +274,7 @@ class BinaryAndSourcePackageNameVocabulary(SQLObjectVocabularyBase):
         """Find matching source and binary package names."""
         cur = cursor()
 
-        if query:
+        if query is not None:
             # Search for matching binary and source package names.
             #
             # When a binary package has the same name as a source package, the
@@ -291,26 +293,17 @@ class BinaryAndSourcePackageNameVocabulary(SQLObjectVocabularyBase):
                 "WHERE name ILIKE '%%' || %s || '%%' "
                 "ORDER BY name;") % (
                 quoted_package_name, quoted_package_name))
-        else:
-            # There was no query provided, so return all unique binary/source
-            # package names.
-            cur.execute(
-                "SELECT name "
-                "FROM BinaryPackageName "
-                "UNION "
-                "SELECT name FROM SourcePackageName "
-                "ORDER BY name;")
 
-        package_name_rows = cur.fetchall()
+            package_name_rows = cur.fetchall()
 
-        bp_name_set = getUtility(IBinaryPackageNameSet)
-        sp_name_set = getUtility(ISourcePackageNameSet)
-        for package_name_row in package_name_rows:
-            obj = bp_name_set.queryByName(package_name_row[0])
-            if not obj:
-                obj = sp_name_set.queryByName(package_name_row[0])
+            bp_name_set = getUtility(IBinaryPackageNameSet)
+            sp_name_set = getUtility(ISourcePackageNameSet)
+            for package_name_row in package_name_rows:
+                obj = bp_name_set.queryByName(package_name_row[0])
+                if not obj:
+                    obj = sp_name_set.queryByName(package_name_row[0])
 
-            yield self._toTerm(obj)
+                yield self._toTerm(obj)
 
     def _toTerm(self, obj):
         return SimpleTerm(obj, obj.name, obj.name)

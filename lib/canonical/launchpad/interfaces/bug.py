@@ -242,7 +242,7 @@ class IBugAddForm(IBug):
             title=_("Package Name"), required=False,
             description=_("""The package you found this bug in,
             which was installed via apt-get, rpm, emerge or similar."""),
-            vocabulary="BinaryAndSourcePackageNameVocabulary")
+            vocabulary="BinaryAndSourcePackageName")
     distribution = Choice(
             title=_("Linux Distribution"), required=True,
             description=_("""Ubuntu, Debian, Gentoo, etc."""),
