@@ -129,7 +129,10 @@ class Branch(SQLBase):
     @property
     def pull_url(self):
         if self.url is None:
-            return '/srv/XXX/' + split_branch_id(self.id)
+            # XXX spiv 20060120: Perhaps the path prefix should be configurable
+            # rather than hardcoded, but it doesn't vary and only occurs once in
+            # the code.
+            return '/srv/sm-ng/pushsftp-hosted/' + split_branch_id(self.id)
         else:
             return self.url
 
