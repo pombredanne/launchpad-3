@@ -34,7 +34,7 @@ class FileBugView(SQLObjectAddView):
             # We don't know if the package name we got was a source or binary
             # package name, so let the Soyuz API figure it out for us.
             sourcepackagename, binarypackagename = (
-                context.getPackageNames(packagename))
+                context.getPackageNames(str(packagename)))
 
             bugtarget = context.getSourcePackage(sourcepackagename.name)
             bug = bugtarget.createBug(
