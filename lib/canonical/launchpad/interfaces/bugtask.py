@@ -100,10 +100,6 @@ class IBugTask(IHasDateCreated):
             "The age of this task, expressed as the length of time between "
             "datecreated and now."))
     owner = Int()
-    maintainer = TextLine(
-        title=_("Maintainer"), required=True, readonly=True)
-    maintainer_displayname = TextLine(
-        title=_("Maintainer"), required=True, readonly=True)
     target = Attribute("The software in which this bug should be fixed")
     targetname = Attribute("The short, descriptive name of the target")
     title = Attribute("The title of the bug related to this bugtask")

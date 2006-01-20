@@ -50,15 +50,6 @@
             template="../templates/malone-about.pt"
             lp:url="malone/+about" />
         <browser:page
-            name="+dashboard"
-            template="../templates/malone-dashboard.pt"
-            lp:url="malone/+dashboard" />
-        <browser:page
-            name="+todo"
-            template="../templates/malone-to-do.pt"
-            lp:url="malone/+todo" />
-
-        <browser:page
             name="+portlet-about"
             template="../templates/malone-portlet-about.pt" />
         <browser:page

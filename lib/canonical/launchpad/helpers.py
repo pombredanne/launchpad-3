@@ -90,6 +90,14 @@ def text_replaced(text, replacements, _cache={}):
 
     return _cache[cachekey](text)
 
+
+def backslashreplace(str):
+    """Return a copy of the string, with non-ASCII characters rendered as
+    xNN or uNNNN. Used to test data containing typographical quotes etc.
+    """
+    return str.decode('UTF-8').encode('ASCII', 'backslashreplace')
+
+
 CHARACTERS_PER_LINE = 50
 
 class SnapshotCreationError(Exception):
@@ -233,26 +241,11 @@ class RosettaWriteTarFile:
             self.add_file(filename, files[filename])
 
 
-def is_maintainer(owned_object, person=None):
-    """Is the person the maintainer of this thing?
-
-    If no person is provided, the logged in user is used.
-    owned_object provides IHasOwner.
-    """
-    if not IHasOwner.providedBy(owned_object):
-        raise TypeError(
-            "Object %r doesn't provide IHasOwner" % repr(owned_object))
-    if person is None:
-        person = getUtility(ILaunchBag).user
-    if person is not None:
-        return person.inTeam(owned_object.owner)
-    else:
-        return False
-
 def join_lines(*lines):
     """Concatenate a list of strings, adding a newline at the end of each."""
 
     return ''.join([ x + '\n' for x in lines ])
+
 
 def string_to_tarfile(s):
     """Convert a binary string containing a tar file into a tar file obj."""

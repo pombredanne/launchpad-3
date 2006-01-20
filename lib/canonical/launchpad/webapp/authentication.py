@@ -45,9 +45,8 @@ def handle(event):
     principal = auth_utility.authenticate(request)
     if principal is None:
         principal = auth_utility.unauthenticatedPrincipal()
-        if principal is None:
-            return
-    request.setPrincipal(principal)
+        if principal is not None:
+            request.setPrincipal(principal)
 
 
 class PlacelessAuthUtility:
@@ -69,6 +68,7 @@ class PlacelessAuthUtility:
             if principal is not None:
                 password = credentials.getPassword()
                 if principal.validate(password):
+                    request.setPrincipal(principal)
                     notify(BasicAuthLoggedInEvent(request, login, principal))
                     return principal
 
@@ -89,6 +89,7 @@ class PlacelessAuthUtility:
                     "User is authenticated in session, but principal is not"
                     " available in login source.")
             else:
+                request.setPrincipal(principal)
                 notify(CookieAuthPrincipalIdentifiedEvent(principal, request))
                 return principal
 

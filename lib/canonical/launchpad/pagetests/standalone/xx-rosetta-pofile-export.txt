@@ -23,7 +23,7 @@ If we GET the page while logged in, we should get a confirmation form.
   Content-Type: text/html;charset=utf-8
   ...
   <BLANKLINE>
-      <h1>PO File Export</h1>
+      <h1>PO file export</h1>
   <BLANKLINE>
   <BLANKLINE>
   <BLANKLINE>
@@ -33,12 +33,8 @@ If we GET the page while logged in, we should get a confirmation form.
   <BLANKLINE>
   <BLANKLINE>
   <BLANKLINE>
-              <p>
-              Once you have confirmed, an export of this file will be made
-              shortly, and a notification will be sent to your email address
-              <strong>carlos@canonical.com</strong>.
-              </p>
-  <BLANKLINE>
+  ...Once you complete this form, the file will be exported...
+  ...carlos@canonical.com...
   ...
 
 If we POST the page, it should add the request to the queue.
@@ -56,7 +52,7 @@ If we POST the page, it should add the request to the queue.
   <BLANKLINE>
   ...
   <BLANKLINE>
-      <h1>PO File Export</h1>
+      <h1>PO file export</h1>
   <BLANKLINE>
   <BLANKLINE>
   <BLANKLINE>

@@ -32,6 +32,12 @@
              tal:condition="status"
              tal:content="status" />
 
+          <div class="portalError"
+            tal:repeat="top_of_page_error view/top_of_page_errors|nothing"
+            tal:content="structure top_of_page_error">
+            Schema validation errors.
+          </div>
+
           <div metal:define-slot="extra_info"
             class="documentDescription"
             tal:replace="nothing">
