@@ -18,6 +18,7 @@ from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.lp.dbschema import (
     EnumCol, BranchRelationships, BranchLifecycleStatus)
 
+from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 
 class Branch(SQLBase):
     """A sequence of ordered revisions in Bazaar."""
@@ -125,6 +126,13 @@ class Branch(SQLBase):
             personID=person.id, branchID=self.id)
         return subscription is not None
 
+    @property
+    def pull_url(self):
+        if self.url is None:
+            return '/srv/XXX/' + split_branch_id(self.id)
+        else:
+            return self.url
+
 
 class BranchSet:
     """The set of all branches."""
@@ -164,8 +172,7 @@ class BranchSet:
         """See IBranchSet.get_supermirror_pull_queue."""
         return Branch.select(
             "(last_mirror_attempt is NULL "
-            " OR (%s - last_mirror_attempt > '1 day')) "
-            "AND NOT (url ILIKE 'http://bazaar.ubuntu.com/%%')" % UTC_NOW)
+            " OR (%s - last_mirror_attempt > '1 day')) " % UTC_NOW)
 
 
 class BranchRelationship(SQLBase):

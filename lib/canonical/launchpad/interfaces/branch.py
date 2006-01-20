@@ -127,6 +127,8 @@ class IBranch(IHasOwner):
                       "URL. Use this if the branch is no longer available."))
 
     cache_url = Attribute("Private mirror of the branch, for internal use.")
+    pull_url = Attribute("URL to pull from.  Same as url, unless this is a "
+                         "push branch (url is None).")
 
     # Joins
     revision_history = Attribute("The sequence of revisions in that branch.")

@@ -129,7 +129,7 @@ class BranchPullListing(LaunchpadView):
         :type branch: `IBranch`
         :rtype: unicode
         """
-        return u'%d %s' % (branch.id, branch.url)
+        return u'%d %s' % (branch.id, branch.pull_url)
 
     def branches_page(self, branches):
         """Return the full page for the supplied list of branches."""
