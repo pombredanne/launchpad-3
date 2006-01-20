@@ -239,28 +239,16 @@ class AcceptanceTests(BzrTestCase):
         self.assertEqual(
             self.local_branch.last_revision(), remote_branch.last_revision())
 
-    def test_4_url_for_mirror(self):
-        """
-        There should be an API that can generate a URL for a branch for
-        copy-to-mirror script to use. For example, for a branch with a database
-        ID of 0xabcdef12, the URL may be something like
-        `/srv/supermirrorsftp/branches/ab/cd/ef/12`.
-        """
-        # Push branch to sftp server
-        self._push(self.server.base + '~testuser/+junk/test-branch')
-        branch_id = self.server.last_accessed_branch_id  # XXX
 
-        # Generate the path for copy-to-mirror script to use
-        mirror_from_path = get_path_for_copy_to_mirror(branch_id)
-
-        # Construct a Branch object that reads directly from the on-disk storage
-        # of the server.
-        server_branch = bzrlib.branch.Branch.open(mirror_from_path)
-
-        # Check that it's the branch we're looking for
-        self.assertEqual(
-            self.local_branch.last_revision(), server_branch.last_revision())
-        
+    # Test 4: URL for mirroring
+    #    There should be an API that can generate a URL for a branch for
+    #    copy-to-mirror script to use. For example, for a branch with a database
+    #    ID of 0xabcdef12, the URL may be something like
+    #    `/srv/supermirrorsftp/branches/ab/cd/ef/12`.
+    # This is covered by
+    # canonical.launchpad.ftests.test_branchpulllist.test_branch_pull_render
+    
+    
     def test_5_mod_rewrite_data(self):
         """
         A mapping file for use with Apache's mod_rewrite should be generated
