@@ -67,8 +67,7 @@ from canonical.launchpad.database import (
     Bounty, Country, Specification, Bug, Processor, ProcessorFamily,
     KarmaCategory, DistroArchRelease)
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ITeam, IPersonSet, IEmailAddressSet, ISourcePackageNameSet,
-    IBinaryPackageNameSet)
+    ILaunchBag, ITeam, IPersonSet, IEmailAddressSet)
 
 class IHugeVocabulary(IVocabulary):
     """Interface for huge vocabularies.
@@ -250,63 +249,52 @@ class BinaryAndSourcePackageNameVocabulary(SQLObjectVocabularyBase):
     """
     implements(IHugeVocabulary)
 
-    def __contains__(self, obj):
+    def __contains__(self, name):
         # Is this a source or binary package name?
         return (
-            SourcePackageName.selectOneBy(name=obj.name) or
-            BinaryPackageName.selectOneBy(name=obj.name))
+            SourcePackageName.selectOneBy(name=name) or
+            BinaryPackageName.selectOneBy(name=name))
 
     def __iter__(self):
         return self.search(query="")
 
     def getTermByToken(self, token):
         # Try to retrieve the binary package name.
-        package_name = getUtility(IBinaryPackageNameSet).queryByName(token)
-        if not package_name:
-            # No binary by that name, so fall back to the source package.
-            package_name = getUtility(ISourcePackageNameSet).queryByName(token)
-            if not package_name:
-                raise LookupError(token)
-
-        return self._toTerm(package_name)
+        return self._toTerm(token)
 
     def search(self, query=None):
         """Find matching source and binary package names."""
+        if query is None:
+            return
+
         cur = cursor()
 
-        if query is not None:
-            # Search for matching binary and source package names.
-            #
-            # When a binary package has the same name as a source package, the
-            # binary package name will be returned in the result set, and the
-            # source package name will not. This allows the user to select the
-            # most specific package name possible, without them having to care
-            # about whether that means "source package" or "binary package".
-            quoted_package_name = quote_like(query)
+        # Search for matching binary and source package names.
+        #
+        # When a binary package has the same name as a source package, the
+        # binary package name will be returned in the result set, and the
+        # source package name will not. This allows the user to select the
+        # most specific package name possible, without them having to care
+        # about whether that means "source package" or "binary package".
+        quoted_package_name = quote_like(query)
 
-            cur.execute((
-                "SELECT name "
-                "FROM BinaryPackageName "
-                "WHERE name ILIKE '%%' || %s || '%%' "
-                "UNION "
-                "SELECT name FROM SourcePackageName "
-                "WHERE name ILIKE '%%' || %s || '%%' "
-                "ORDER BY name;") % (
-                quoted_package_name, quoted_package_name))
+        cur.execute((
+            "SELECT name "
+            "FROM BinaryPackageName "
+            "WHERE name ILIKE '%%' || %s || '%%' "
+            "UNION "
+            "SELECT name FROM SourcePackageName "
+            "WHERE name ILIKE '%%' || %s || '%%' "
+            "ORDER BY name;") % (
+            quoted_package_name, quoted_package_name))
 
-            package_name_rows = cur.fetchall()
+        package_name_rows = cur.fetchall()
 
-            bp_name_set = getUtility(IBinaryPackageNameSet)
-            sp_name_set = getUtility(ISourcePackageNameSet)
-            for package_name_row in package_name_rows:
-                obj = bp_name_set.queryByName(package_name_row[0])
-                if not obj:
-                    obj = sp_name_set.queryByName(package_name_row[0])
+        for package_name_row in package_name_rows:
+            yield self._toTerm(package_name_row[0])
 
-                yield self._toTerm(obj)
-
-    def _toTerm(self, obj):
-        return SimpleTerm(obj, obj.name, obj.name)
+    def _toTerm(self, name):
+        return SimpleTerm(name, name, name)
 
 
 class BinaryPackageNameVocabulary(NamedSQLObjectVocabulary):

@@ -9,7 +9,8 @@ __all__ = ["FileBugView"]
 from zope.component import getUtility
 
 from canonical.launchpad.webapp import canonical_url
-from canonical.launchpad.interfaces import ILaunchBag, IDistribution
+from canonical.launchpad.interfaces import (
+    ILaunchBag, IDistribution, IProduct)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 
 class FileBugView(SQLObjectAddView):
@@ -33,13 +34,14 @@ class FileBugView(SQLObjectAddView):
             # We don't know if the package name we got was a source or binary
             # package name, so let the Soyuz API figure it out for us.
             sourcepackagename, binarypackagename = (
-                context.getPackageNames(str(packagename.name)))
+                context.getPackageNames(packagename))
 
             bugtarget = context.getSourcePackage(sourcepackagename.name)
             bug = bugtarget.createBug(
                 title=title, comment=comment, private=private, owner=current_user,
                 binarypackagename=binarypackagename)
         else:
+            assert IProduct.providedBy(context)
             bug = context.createBug(
                 title=title, comment=comment, private=private, owner=current_user)
 
