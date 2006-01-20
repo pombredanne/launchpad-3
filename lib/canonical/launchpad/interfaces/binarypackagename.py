@@ -11,17 +11,16 @@ __all__ = [
 
 from zope.schema import Int, TextLine
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
 
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad import _
+from canonical.launchpad.validators.name import name_validator 
 
-_ = MessageIDFactory('launchpad')
 
 class IBinaryPackageName(Interface):
     id = Int(title=_('ID'), required=True)
 
     name = TextLine(title=_('Valid Binary package name'),
-                    required=True, constraint=valid_name)
+                    required=True, constraint=name_validator)
 
     binarypackages = Attribute('binarypackages')
 
