@@ -50,15 +50,6 @@
             template="../templates/malone-about.pt"
             lp:url="malone/+about" />
         <browser:page
-            name="+dashboard"
-            template="../templates/malone-dashboard.pt"
-            lp:url="malone/+dashboard" />
-        <browser:page
-            name="+todo"
-            template="../templates/malone-to-do.pt"
-            lp:url="malone/+todo" />
-
-        <browser:page
             name="+portlet-about"
             template="../templates/malone-portlet-about.pt" />
         <browser:page
@@ -68,6 +59,13 @@
             name="+portlet-bugtrackers"
             template="../templates/malone-portlet-bugtrackers.pt" />
     </browser:pages>
+
+    <!-- Global Malone portlets -->
+    <browser:page
+       for="*"
+       name="+portlet-malone-bugmail-filtering-faq"
+       template="../templates/malone-portlet-bugmail-filtering-faq.pt"
+       permission="zope.Public" />
 
     <!-- Preserve the /malone/assigned link to prevent linkrot. This will now
          redirect into the FOAF +assignedbugs. -->

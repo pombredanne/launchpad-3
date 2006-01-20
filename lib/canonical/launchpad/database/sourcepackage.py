@@ -5,6 +5,8 @@ __all__ = [
     'SourcePackage',
     ]
 
+from warnings import warn
+
 from zope.interface import implements
 
 from sqlobject import SQLObjectNotFound
@@ -22,7 +24,6 @@ from canonical.launchpad.interfaces import (
 
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.packaging import Packaging
-from canonical.launchpad.database.maintainership import Maintainership
 from canonical.launchpad.database.publishing import SourcePackagePublishing
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
@@ -156,12 +157,6 @@ class SourcePackage:
         return self.currentrelease.manifest
 
     @property
-    def maintainer(self):
-        querystr = "distribution=%s AND sourcepackagename=%s"
-        querystr %= sqlvalues(self.distribution, self.sourcepackagename)
-        return Maintainership.select(querystr)
-
-    @property
     def releases(self):
         """See ISourcePackage."""
         ret = SourcePackageRelease.select('''
@@ -223,7 +218,6 @@ class SourcePackage:
     @property
     def product(self):
         # we have moved to focusing on productseries as the linker
-        from warnings import warn
         warn('SourcePackage.product is deprecated, use .productseries',
              DeprecationWarning, stacklevel=2)
         ps = self.productseries
@@ -443,23 +437,21 @@ class SourcePackage:
         """See canonical.launchpad.interfaces.ISourcePackage."""
         return not self.__eq__(other)
 
-    def getBuildRecords(self, status=None, limit=10):
+    def getBuildRecords(self, status=None):
         """See IHasBuildRecords"""
+        status_clause = ''
         if status:
-            status_clause = "Build.buildstate=%s" % sqlvalues(status)
-        else:
-            status_clause = "Build.builder is not NULL"
+            status_clause = "AND Build.buildstate=%s" % sqlvalues(status)
 
         querytxt = """
             Build.sourcepackagerelease = SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishingHistory.distrorelease = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id AND
+                SourcePackageRelease.id 
             """ % sqlvalues(self.sourcepackagename.id, self.distrorelease.id)
         querytxt += status_clause
         return Build.select(querytxt,
             clauseTables=['SourcePackageRelease',
                           'SourcePackagePublishingHistory'],
-            limit=limit,
             orderBy="-datebuilt")

@@ -18,7 +18,8 @@ __all__ = [
     'ISelectResultsSlicable',
     'IBugTaskSet',
     'BugTaskSearchParams',
-    'UNRESOLVED_BUGTASK_STATUSES']
+    'UNRESOLVED_BUGTASK_STATUSES',
+    'RESOLVED_BUGTASK_STATUSES']
 
 from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
@@ -34,8 +35,20 @@ from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 
 _ = MessageIDFactory('launchpad')
 
+# XXX: Brad Bollenbach, 2005-12-02: In theory, NEEDSINFO belongs in
+# UNRESOLVED_BUGTASK_STATUSES, but the semantics of our current reports would
+# break if it were added to the list below. See
+# <https://launchpad.net/malone/bugs/5320>
 UNRESOLVED_BUGTASK_STATUSES = (
-    dbschema.BugTaskStatus.NEW, dbschema.BugTaskStatus.ACCEPTED)
+    dbschema.BugTaskStatus.UNCONFIRMED,
+    dbschema.BugTaskStatus.CONFIRMED,
+    dbschema.BugTaskStatus.INPROGRESS)
+
+RESOLVED_BUGTASK_STATUSES = (
+    dbschema.BugTaskStatus.FIXCOMMITTED,
+    dbschema.BugTaskStatus.FIXRELEASED,
+    dbschema.BugTaskStatus.REJECTED)
+
 
 class IBugTask(IHasDateCreated):
     """A description of a bug needing fixing in a particular product
@@ -55,7 +68,7 @@ class IBugTask(IHasDateCreated):
         title=_('Milestone'), required=False, vocabulary='Milestone')
     status = Choice(
         title=_('Status'), vocabulary='BugTaskStatus',
-        default=dbschema.BugTaskStatus.NEW)
+        default=dbschema.BugTaskStatus.UNCONFIRMED)
     statusexplanation = Text(
         title=_("Status notes (optional)"), required=False)
     priority = Choice(
@@ -64,7 +77,7 @@ class IBugTask(IHasDateCreated):
         title=_('Severity'), vocabulary='BugTaskSeverity',
         default=dbschema.BugTaskSeverity.NORMAL)
     assignee = Choice(
-        title=_('Assigned to:'), required=False, vocabulary='ValidAssignee')
+        title=_('Assigned to'), required=False, vocabulary='ValidAssignee')
     binarypackagename = Choice(
         title=_('Binary PackageName'), required=False,
         vocabulary='BinaryPackageName')
@@ -87,10 +100,6 @@ class IBugTask(IHasDateCreated):
             "The age of this task, expressed as the length of time between "
             "datecreated and now."))
     owner = Int()
-    maintainer = TextLine(
-        title=_("Maintainer"), required=True, readonly=True)
-    maintainer_displayname = TextLine(
-        title=_("Maintainer"), required=True, readonly=True)
     target = Attribute("The software in which this bug should be fixed")
     targetname = Attribute("The short, descriptive name of the target")
     title = Attribute("The title of the bug related to this bugtask")
@@ -166,7 +175,7 @@ class IBugTaskSearch(Interface):
     status = List(
         title=_('Status:'),
         value_type=IBugTask['status'],
-        default=[dbschema.BugTaskStatus.NEW, dbschema.BugTaskStatus.ACCEPTED],
+        default=list(UNRESOLVED_BUGTASK_STATUSES),
         required=False)
     severity = List(
         title=_('Severity:'),
@@ -449,8 +458,9 @@ class IBugTaskSet(Interface):
         """Return all bug tasks assigned to a package/product maintained by
         :person:.
 
-        By default, closed (FIXED, REJECTED) tasks are not returned. If you
-        want closed tasks too, just pass showclosed=True.
+        By default, closed (FIXCOMMITTED, REJECTED) tasks are not
+        returned. If you want closed tasks too, just pass
+        showclosed=True.
 
         If minseverity is not None, return only the bug tasks with severity 
         greater than minseverity. The same is valid for minpriority/priority.

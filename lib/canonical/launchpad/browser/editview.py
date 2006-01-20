@@ -13,8 +13,8 @@ __all__ = [
     ]
 
 from datetime import datetime
-from transaction import get_transaction
 
+import transaction
 from zope.app.i18n import ZopeMessageIDFactory as _
 from zope.app.form.browser.editview import EditView
 from zope.app.form.utility import (
@@ -35,6 +35,24 @@ class SQLObjectEditView(EditView):
     a copy of the SQLObject before and after the object was modified with
     an edit form, so that listeners can figure out *what* changed."""
 
+    top_of_page_errors = ()
+
+    def validate(self, data):
+        """Validate the form.
+
+        Override this to do any validation that must take into account the
+        value of multiple widgets.
+
+        To indicate any problem, this method should raise WidgetError(errors),
+        where errors is a list of LaunchpadValidationError objects.
+        """
+        pass
+
+    def _abortAndSetStatus(self):
+        """Abort the current transaction and set self.update_status."""
+        self.update_status = _("An error occurred.")
+        transaction.abort()
+
     def update(self):
         # This method's code is mostly copy-and-pasted from
         # EditView.update due to the fact that we want to change the
@@ -48,57 +66,71 @@ class SQLObjectEditView(EditView):
             # computed.
             return self.update_status
 
-        status = ''
+        self.update_status = ''
 
         content = self.adapted
 
         if Update in self.request:
-            changed = False
+            was_changed = False
+            new_values = None
             try:
-                # This is a really important event for handling bug
-                # privacy.  If we can see that a bug is about to be
-                # set private, we need to ensure that all implicit
-                # subscriptions are turned explicit before any more
-                # processing is done, otherwise implicit subscribers
-                # can never set a bug private. Once bug.private ==
-                # True, any further access to the bug attributes are
-                # prevented to all but explicit subscribers!
-                #
-                # -- Brad Bollenbach, 2005-03-22
                 new_values = getWidgetsData(self, self.schema, self.fieldNames)
-                notify(SQLObjectToBeModifiedEvent(content, new_values))
-
-                # a little bit of hocus pocus to be able to take a
-                # (good enough, for our purposes) snapshot of what
-                # an SQLObject looked like at a certain point in time,
-                # so that we can see what changed later
-                content_before_modification = Snapshot(
-                    content, providing=providedBy(content))
-
-                changed = applyWidgetsChanges(
-                    self, self.schema, target=content, names=self.fieldNames)
-                # We should not generate events when an adapter is used.
-                # That's the adapter's job.
-                if changed and self.context is self.adapted:
-                    notify(
-                        SQLObjectModifiedEvent(
-                            content, content_before_modification,
-                            self.fieldNames))
             except WidgetsError, errors:
                 self.errors = errors
-                status = _("An error occurred.")
-                get_transaction().abort()
-            else:
-                setUpEditWidgets(self, self.schema, source=self.adapted,
-                                 ignoreStickyValues=True, names=self.fieldNames)
-                if changed:
-                    self.changed()
-                    formatter = self.request.locale.dates.getFormatter(
-                        'dateTime', 'medium')
-                    status = _("Updated on ${date_time}")
-                    status.mapping = {'date_time': formatter.format(
-                        datetime.utcnow())}
+                self._abortAndSetStatus()
+                return self.update_status
 
-        self.update_status = status
-        return status
+            try:
+                self.validate(new_values)
+            except WidgetsError, errors:
+                self.top_of_page_errors = errors
+                self._abortAndSetStatus()
+                return self.update_status
+
+            # This is a really important event for handling bug
+            # privacy.  If we can see that a bug is about to be
+            # set private, we need to ensure that all implicit
+            # subscriptions are turned explicit before any more
+            # processing is done, otherwise implicit subscribers
+            # can never set a bug private. Once bug.private ==
+            # True, any further access to the bug attributes are
+            # prevented to all but explicit subscribers!
+            #
+            # -- Brad Bollenbach, 2005-03-22
+            notify(SQLObjectToBeModifiedEvent(content, new_values))
+
+            # a little bit of hocus pocus to be able to take a
+            # (good enough, for our purposes) snapshot of what
+            # an SQLObject looked like at a certain point in time,
+            # so that we can see what changed later
+            content_before_modification = Snapshot(
+                content, providing=providedBy(content))
+
+            try:
+                was_changed = applyWidgetsChanges(
+                    self, self.schema, target=content, names=self.fieldNames)
+            except WidgetsError, errors:
+                self.errors = errors
+                self._abortAndSetStatus()
+                return self.update_status
+
+            # We should not generate events when an adapter is used.
+            # That's the adapter's job.
+            if was_changed and self.context is self.adapted:
+                notify(
+                    SQLObjectModifiedEvent(
+                        content, content_before_modification,
+                        self.fieldNames))
+
+            setUpEditWidgets(self, self.schema, source=self.adapted,
+                             ignoreStickyValues=True, names=self.fieldNames)
+            if was_changed:
+                self.changed()
+                formatter = self.request.locale.dates.getFormatter(
+                    'dateTime', 'medium')
+                self.update_status = _("Updated on ${date_time}")
+                self.update_status.mapping = {'date_time': formatter.format(
+                    datetime.utcnow())}
+
+            return self.update_status
 

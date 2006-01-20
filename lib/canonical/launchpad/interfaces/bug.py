@@ -198,6 +198,7 @@ class IBugDelta(Interface):
     bug = Attribute("The IBug, after it's been edited.")
     bugurl = Attribute("The absolute URL to the bug.")
     user = Attribute("The IPerson that did the editing.")
+    comment_on_change = Attribute("An optional comment for this change.")
 
     # fields on the bug itself
     title = Attribute("The new bug title or None.")
@@ -260,22 +261,19 @@ class IBugAddForm(IBug):
             default=False)
 
 
-class IBugSet(IAddFormCustomization):
+class IBugSet(Interface):
     """A set of bugs."""
-
-    title = Attribute('Title')
-
-    def __getitem__(bugid):
-        """Get a Bug."""
-
-    def __iter__():
-        """Iterate through Bugs."""
 
     def get(bugid):
         """Get a specific bug by its ID.
 
-        If it can't be found, a zope.exceptions.NotFoundError will be
-        raised.
+        If it can't be found, NotFoundError will be raised.
+        """
+
+    def getByNameOrID(bugid):
+        """Get a specific bug by its ID or nickname
+
+        If it can't be found, NotFoundError will be raised.
         """
 
     def searchAsUser(user, duplicateof=None, orderBy=None, limit=None):
@@ -293,5 +291,26 @@ class IBugSet(IAddFormCustomization):
         binarypackagename=None, product=None, comment=None,
         description=None, msg=None, summary=None, datecreated=None,
         title=None, private=False, owner=None):
-        """Create a new bug, using the given details."""
+        """Create a bug and return it.
+
+        Things to note when using this factory:
+
+          * if no description is passed, the comment will be used as the
+            description
+
+          * if summary is not passed then the summary will be the
+            first sentence of the description
+
+          * the reporter will be subscribed to the bug
+
+          * distribution, product and package contacts (whichever ones are
+            applicable based on the bug report target) will bug subscribed to
+            all *public bugs only*
+
+          * for public upstreams bugs where there is no upstream bug contact,
+            the product owner will be subscribed instead
+
+          * if either product or distribution is specified, an appropiate
+            bug task will be created
+        """
 

@@ -6,9 +6,7 @@
   <div class="portletBody portletContent"
        tal:define="bugtask view/currentBugTask">
     <img alt="" src="/++resource++bug" />
-    <a href="#"
-       style="text-decoration: underline"
-       tal:attributes="href bugtask/fmt:url">
+    <a tal:attributes="href bugtask/fmt:url">
        Bug #<span tal:replace="context/id">3252543</span></a><br />
 
     <tal:nickname tal:condition="context/name">
@@ -19,14 +17,13 @@
     <b>Initial Reporter:</b><br />
     <img src="/++resource++user.gif" />
     <a tal:attributes="href context/owner/fmt:url"
-      tal:content="context/owner/browsername"
-      style="text-decoration: underline"></a><br />
+      tal:content="context/owner/browsername"></a><br />
 
     <b>First reported:</b><br />
     <span tal:replace="context/datecreated/fmt:date">12-12-2004</span>
     <br />
 
-    <b>Secrecy:</b>
+    <b>Visibility:</b>
     <tal:block condition="context/private">
       Private
       <div>(can be seen only by the bug subscribers)</div>

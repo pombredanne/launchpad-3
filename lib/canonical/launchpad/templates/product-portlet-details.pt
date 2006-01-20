@@ -19,7 +19,7 @@
         </a>
         <br />
 
-        <b>Translation Group:</b><br />
+        <b>Translation group:</b><br />
         <img src="/++resource++languages.gif">
         <tal:block condition="context/translationgroup">
         <a tal:attributes="href
@@ -30,7 +30,7 @@
         <tal:block condition="not: context/translationgroup">
         <i>Not assigned</i><br />
         </tal:block>
-        <b>Translation permissions:</b><br />
+        <b>Translation contributions:</b><br />
         <span tal:replace="context/translationpermission/title">Open</span><br />
 
         <div tal:condition="not: context/official_rosetta">
@@ -41,7 +41,7 @@
           <i>Doesn&rsquo;t use Malone</i>
         </div>
 
-        <b>Product Status:</b><br />
+        <b>Product status:</b><br />
         <span tal:condition="context/reviewed"
               tal:omit-tag>Reviewed<br /></span>
         <span tal:condition="context/active"

@@ -116,14 +116,15 @@ class TestBzrSync(helpers.WebserverTestCase):
         file = open(os.path.join(self.bzr_branch_abspath, "file"), "w")
         file.write(str(time.time()+random.random()))
         file.close()
-        inventory = self.bzr_branch.read_working_inventory()
+        working_tree = self.bzr_branch.working_tree()
+        inventory = working_tree.read_working_inventory()
         if not inventory.has_filename("file"):
-            self.bzr_branch.add("file")
+            working_tree.add("file")
         if message is None:
             message = self.LOG
         if committer is None:
             committer = self.AUTHOR
-        self.bzr_branch.commit(message, committer=committer)
+        working_tree.commit(message, committer=committer)
 
     def test_empty_branch(self):
         """Importing an empty branch does nothing."""

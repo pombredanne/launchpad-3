@@ -8,7 +8,7 @@ __metaclass__ = type
 import email
 import os.path
 
-from canonical.launchpad.mail.signedmessage import SignedMessage
+from canonical.launchpad.mail.signedmessage import signed_message_from_string
 
 testmails_path = os.path.join(os.path.dirname(__file__), 'emails')
 
@@ -17,5 +17,5 @@ def read_test_message(filename):
 
     The test messages are located in canonical/launchpad/mail/ftests/emails
     """
-    return email.message_from_file(
-        open(os.path.join(testmails_path, filename)), _class=SignedMessage)
+    message_string = open(os.path.join(testmails_path, filename)).read()
+    return signed_message_from_string(message_string)

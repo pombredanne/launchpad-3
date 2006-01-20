@@ -10,12 +10,13 @@ __all__ = [
     'NullBugTask',
     'mark_task']
 
+from warnings import warn
+
 from zope.component import getUtility
 from zope.interface import implements, directlyProvides, directlyProvidedBy
 
 from canonical.launchpad.interfaces import (
-    IBugTaskDelta, IMaintainershipSet, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, 
+    IBugTaskDelta, IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask,
     INullBugTask)
 from canonical.lp.dbschema import BugTaskStatus
 
@@ -48,27 +49,6 @@ class BugTaskMixin:
         title = 'Bug #%s in %s: "%s"' % (
             self.bug.id, self.targetname, self.bug.title)
         return title
-
-    @property
-    def maintainer(self):
-        """See canonical.launchpad.interfaces.IBugTask."""
-        if self.product:
-            return self.product.owner
-        if self.distribution and self.sourcepackagename:
-            maintainer = getUtility(IMaintainershipSet).get(
-                distribution=self.distribution,
-                sourcepackagename=self.sourcepackagename)
-            return maintainer
-
-        return None
-
-    @property
-    def maintainer_displayname(self):
-        """See canonical.launchpad.interfaces.IBugTask."""
-        if self.maintainer:
-            return self.maintainer.displayname
-        else:
-            return None
 
     @property
     def targetname(self):
@@ -159,7 +139,8 @@ class BugTaskMixin:
         if related_tasks:
             fixes_found = len(
                 [task for task in related_tasks
-                 if task.status == BugTaskStatus.FIXED])
+                 if (task.status == BugTaskStatus.FIXCOMMITTED or
+                     task.status == BugTaskStatus.FIXRELEASED)])
             if fixes_found:
                 return "fixed in %d of %d places" % (
                     fixes_found, len(self.bug.bugtasks))

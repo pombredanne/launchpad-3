@@ -8,7 +8,7 @@ from zope.interface import implements
 from zope.event import notify
 from zope.exceptions import NotFoundError
 
-from canonical.launchpad.helpers import Snapshot, is_maintainer
+from canonical.launchpad.helpers import Snapshot
 from canonical.launchpad.interfaces import (
     ILaunchBag, IMessageSet, IBugEmailCommand, IBugTaskEmailCommand,
     IBugEditEmailCommand, IBugTaskEditEmailCommand, IBug, IBugTask,
@@ -89,14 +89,20 @@ def guess_bugtask(bug, person):
         return bug.bugtasks[0]
     else:
         for bugtask in bug.bugtasks:
-            if bugtask.product and is_maintainer(bugtask.product, person):
-                return bugtask
-            elif (bugtask.distribution and
-                  person.inTeam(bugtask.distribution.members)):
-                return bugtask
-            elif (bugtask.sourcepackagename and
-                  person.inTeam(bugtask.maintainer)):
-                return bugtask
+            if IUpstreamBugTask.providedBy(bugtask):
+                # Is the person an upstream maintainer?
+                if person.inTeam(bugtask.product.owner):
+                    return bugtask
+            elif IDistroBugTask.providedBy(bugtask):
+                # Is the person a member of the distribution?
+                if person.inTeam(bugtask.distribution.members):
+                    return bugtask
+                else:
+                    # Is the person one of the package bug contacts?
+                    distro_sourcepackage = bugtask.distribution.getSourcePackage(
+                        bugtask.sourcepackagename)
+                    if distro_sourcepackage.isBugContact(person):
+                        return bugtask
 
     return None
 

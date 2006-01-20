@@ -33,8 +33,7 @@ from canonical.launchpad.interfaces import (
     IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet, ISSHKey,
     IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
     UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet, IKarmaSet,
-    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, NotFoundError, 
-    IKarmaCacheSet)
+    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, IKarmaCacheSet)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -824,7 +823,7 @@ class Person(SQLBase):
             clauseTables=['SourcePackageName'])
 
     @property
-    def is_ubuntite(self):
+    def is_ubuntero(self):
         """See IPerson."""
         sigset = getUtility(ISignedCodeOfConductSet)
         lastdate = sigset.getLastAcceptedDate()
@@ -855,15 +854,7 @@ class PersonSet:
     _defaultOrder = Person.sortingColumns
 
     def __init__(self):
-        self.title = 'Launchpad People'
-
-    def __getitem__(self, personid):
-        """See IPersonSet."""
-        person = self.get(personid)
-        if person is None:
-            raise NotFoundError(personid)
-        else:
-            return person
+        self.title = 'People registered with Launchpad'
 
     def topPeople(self):
         """See IPersonSet."""
@@ -1065,7 +1056,7 @@ class PersonSet:
             return default
         return emailaddress.person
 
-    def getUbuntites(self, orderBy=None):
+    def getUbunteros(self, orderBy=None):
         """See IPersonSet."""
         if orderBy is None:
             orderBy = self._defaultOrder
@@ -1475,14 +1466,6 @@ class EmailAddressSet:
             return EmailAddress.get(emailid)
         except SQLObjectNotFound:
             return default
-
-    def __getitem__(self, emailid):
-        """See IEmailAddressSet."""
-        email = self.get(emailid)
-        if email is None:
-            raise NotFoundError(emailid)
-        else:
-            return email
 
     def getByPerson(self, person):
         return EmailAddress.selectBy(personID=person.id, orderBy='email')

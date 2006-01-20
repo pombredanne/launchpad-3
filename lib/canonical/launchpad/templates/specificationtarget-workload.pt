@@ -11,11 +11,11 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Specification Workload</h1>
+  <h1>Specification workload</h1>
 
   <p tal:condition="not: view/workload">
     No specifications are currently assigned to people for 
-    <span tal:replace="context/displayname">Ubuntu</span>.
+    <span tal:replace="context/title">Ubuntu</span>.
   </p>
 
   <tal:workload condition="view/workload">

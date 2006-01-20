@@ -4,6 +4,8 @@
 __metaclass__ = type
 __all__ = ['Bug', 'BugSet']
 
+import re
+
 from sets import Set
 from email.Utils import make_msgid
 
@@ -29,7 +31,6 @@ from canonical.launchpad.database.bugmessage import BugMessage
 from canonical.launchpad.database.bugtask import BugTask, bugtask_sort_key
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
-from canonical.launchpad.database.maintainership import Maintainership
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 
@@ -149,39 +150,28 @@ class Bug(SQLBase):
                 if task.assignee is not None:
                     emails.update(contactEmailAddresses(task.assignee))
 
-                if task.product is not None:
-                    owner = task.product.owner
-                    emails.update(contactEmailAddresses(owner))
-                else:
-                    if task.sourcepackagename is not None:
-                        if task.distribution is not None:
-                            distribution = task.distribution
-                        else:
-                            distribution = task.distrorelease.distribution
+        return sorted(emails)
 
-                        maintainership = Maintainership.selectOneBy(
-                            sourcepackagenameID = task.sourcepackagename.id,
-                            distributionID = distribution.id)
-
-                        if maintainership is not None:
-                            maintainer = maintainership.maintainer
-                            emails.update(contactEmailAddresses(maintainer))
-
-        emails.update(contactEmailAddresses(self.owner))
-        emails = list(emails)
-        emails.sort()
-        return emails
-
-    # messages
+    # XXX, Brad Bollenbach, 2006-01-13: Setting publish_create_event to False
+    # allows us to suppress the create event when we *don't* want to have a
+    # separate email generated containing just the comment, e.g., when the user
+    # adds a comment on +editstatus. This is hackish though. See:
+    #
+    # https://launchpad.net/products/malone/+bug/25724
     def newMessage(self, owner=None, subject=None, content=None,
-        parent=None):
+                   parent=None, publish_create_event=True):
         """Create a new Message and link it to this ticket."""
-        msg = Message(parent=parent, owner=owner,
-            rfc822msgid=make_msgid('malone'), subject=subject)
+        msg = Message(
+            parent=parent, owner=owner, subject=subject,
+            rfc822msgid=make_msgid('malone'))
         MessageChunk(messageID=msg.id, content=content, sequence=1)
+
         bugmsg = BugMessage(bug=self, message=msg)
-        notify(SQLObjectCreatedEvent(bugmsg, user=owner))
-        return msg
+
+        if publish_create_event:
+            notify(SQLObjectCreatedEvent(bugmsg, user=owner))
+
+        return bugmsg.message
 
     def linkMessage(self, message):
         """See IBug."""
@@ -222,13 +212,11 @@ class Bug(SQLBase):
             self.linkCVE(cve)
 
 
-class BugSet(BugSetBase):
+
+class BugSet:
     implements(IBugSet)
 
-    def __iter__(self):
-        """See canonical.launchpad.interfaces.bug.IBugSet."""
-        for row in Bug.select():
-            yield row
+    valid_bug_name_re = re.compile(r'''^[a-z][a-z0-9\\+\\.\\-]+$''')
 
     def get(self, bugid):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
@@ -237,6 +225,17 @@ class BugSet(BugSetBase):
         except SQLObjectNotFound:
             raise NotFoundError(
                 "Unable to locate bug with ID %s" % str(bugid))
+
+    def getByNameOrID(self, bugid):
+        """See canonical.launchpad.interfaces.bug.IBugSet."""
+        if self.valid_bug_name_re.match(bugid):
+            bug = Bug.selectOneBy(name=bugid)
+            if bug is None:
+                raise NotFoundError(
+                    "Unable to locate bug with ID %s" % str(bugid))
+        else:
+            bug = self.get(bugid)
+        return bug
 
     def searchAsUser(self, user, duplicateof=None, orderBy=None, limit=None):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
@@ -301,31 +300,17 @@ class BugSet(BugSetBase):
         binarypackagename=None, product=None, comment=None,
         description=None, msg=None, summary=None, datecreated=None,
         title=None, private=False, owner=None):
-        """Create a bug and return it.
-
-        Things to note when using this factory:
-
-          * if no description is passed, the comment will be used as the
-            description
-
-          * if summary is not passed then the summary will be the
-            first sentence of the description
-
-          * the submitter will be subscribed to the bug
-
-          * if either product or distribution is specified, an appropiate
-            bug task will be created
-
-        """
-        # make sure that the factory has been passed enough information
+        """See IBugSet."""
+        # Make sure that the factory has been passed enough information.
         if comment is description is msg is None:
-            raise ValueError(
+            raise AssertionError(
                 'createBug requires a comment, msg, or description')
 
         # make sure we did not get TOO MUCH information
-        assert (comment is None or msg is None), "Too much information"
+        assert comment is None or msg is None, (
+            "Expected either a comment or a msg, but got both")
 
-        # create the bug comment if one was given
+        # Create the bug comment if one was given.
         if comment:
             rfc822msgid = make_msgid('malonedeb')
             msg = Message(subject=title, distribution=distribution,
@@ -333,7 +318,7 @@ class BugSet(BugSetBase):
             MessageChunk(
                 messageID=msg.id, sequence=1, content=comment, blobID=None)
 
-        # extract the details needed to create the bug and optional msg
+        # Extract the details needed to create the bug and optional msg.
         if not description:
             description = msg.contents
 
@@ -345,16 +330,25 @@ class BugSet(BugSetBase):
             description=description, private=private,
             owner=owner.id, datecreated=datecreated)
 
-        BugSubscription(person=owner.id, bug=bug.id)
+        bug.subscribe(owner)
 
-        # link the bug to the message
+        # Link the bug to the message.
         BugMessage(bug=bug, message=msg)
 
-        # create the task on a product if one was passed
+        # Create the task on a product if one was passed.
         if product:
             BugTask(bug=bug, product=product, owner=owner)
 
-        # create the task on a source package name if one was passed
+            # If a product bug contact has been provided, subscribe that contact
+            # to all public bugs. Otherwise subscribe the product owner to all
+            # public bugs.
+            if not bug.private:
+                if product.bugcontact:
+                    bug.subscribe(product.bugcontact)
+                else:
+                    bug.subscribe(product.owner)
+
+        # Create the task on a source package name if one was passed.
         if distribution:
             BugTask(
                 bug=bug,
@@ -363,6 +357,17 @@ class BugSet(BugSetBase):
                 binarypackagename=binarypackagename,
                 owner=owner)
 
+            # If a distribution bug contact has been provided, subscribe that
+            # contact to all public bugs.
+            if distribution.bugcontact and not bug.private:
+                bug.subscribe(distribution.bugcontact)
+
+            # Subscribe package bug contacts to public bugs, if package
+            # information was provided.
+            if sourcepackagename:
+                package = distribution.getSourcePackage(sourcepackagename)
+                if package.bugcontacts and not bug.private:
+                    for pkg_bugcontact in package.bugcontacts:
+                        bug.subscribe(pkg_bugcontact.bugcontact)
+
         return bug
-
-

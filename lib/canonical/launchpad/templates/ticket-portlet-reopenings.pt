@@ -10,9 +10,9 @@
         <a tal:attributes="href reop/reopener/fmt:url"
            tal:content="reop/reopener/browsername">Foo Bar</a>
       </li>
-      <li class="alert" tal:condition="not: context/reopenings">
-        <i>Never re-opened.</i>
-      </li>
     </ul>
-
+    <p tal:condition="not: context/reopenings">
+      <i>Never re-opened.</i>
+    </p>
+  </div>
 </div>

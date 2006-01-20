@@ -5,7 +5,7 @@ Go to the page to add a new project.
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...Register a Project With Launchpad...
+  ...Register a project with Launchpad...
 
 Testing if the validator is working for the URL field.
 Add a new project without the http://
@@ -61,9 +61,6 @@ Now we add a new project.
   >>> print http(r"""
   ... POST /projects/+new HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Length: ...
-  ... Content-Type: multipart/form-data; boundary=---------------------------43746069110828506211603039137
-  ... Referer: http://localhost:9000/projects/+new
   ... Content-Type: multipart/form-data; boundary=---------------------------43746069110828506211603039137
   ... 
   ... -----------------------------43746069110828506211603039137
@@ -97,18 +94,59 @@ Now we add a new project.
   ... -----------------------------43746069110828506211603039137--
   ... """)
   HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
+  ...
   Location: http://localhost:9000/projects/apache
-  <BLANKLINE>
-  ...Register a Project With Launchpad</h1>...
+  ...
+  ...Register a project with Launchpad</h1>...
+
+
+Tests the name field validator trying to add a project with the same name.
+
+  >>> print http(r"""
+  ... POST /projects/+new HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------43746069110828506211603039137
+  ... 
+  ... -----------------------------43746069110828506211603039137
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... apache
+  ... -----------------------------43746069110828506211603039137
+  ... Content-Disposition: form-data; name="field.displayname"
+  ... 
+  ... the Apache Project
+  ... -----------------------------43746069110828506211603039137
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... The Apache Project
+  ... -----------------------------43746069110828506211603039137
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... The Apache Project
+  ... -----------------------------43746069110828506211603039137
+  ... Content-Disposition: form-data; name="field.description"
+  ... 
+  ... The Apache Project.
+  ... -----------------------------43746069110828506211603039137
+  ... Content-Disposition: form-data; name="field.homepageurl"
+  ... 
+  ... http://www.apache.org
+  ... -----------------------------43746069110828506211603039137
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------43746069110828506211603039137--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...apache is already in use by another project...
+  ...
 
 Now see the new project.
 
   >>> print http(r"""
   ... GET /projects/apache HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Referer: http://localhost:9000/projects/+new
   ... """)
   HTTP/1.1 200 Ok
   ...The Apache Project...

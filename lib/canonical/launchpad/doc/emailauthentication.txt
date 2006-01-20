@@ -3,8 +3,8 @@ authenticated. This is done by authenticateEmail:
 
     >>> from canonical.launchpad.mail.incoming import authenticateEmail
 
-The only way of authenticating the user is by looking at the GPG
-signature. First we have to import the GPG keys we will use in the
+The only way of authenticating the user is by looking at the OpenPGP
+signature. First we have to import the OpenPGP keys we will use in the
 emails:
 
     >>> from canonical.launchpad.ftests import import_public_test_keys
@@ -12,7 +12,7 @@ emails:
     >>> import_public_test_keys()
     >>> transaction.commit()
 
-Now Sample Person and Foo Bar have one GPG key each. Next, let's get
+Now Sample Person and Foo Bar have one OpenPGP key each. Next, let's get
 a test email that's signed and try to authenticate the user who sent it:
 
     >>> from canonical.launchpad.mail.ftests import read_test_message
@@ -82,7 +82,7 @@ to deal with it if we receive a dash escaped message.
     'test@canonical.com'
 
 
-Since a GPG key can be associated with several addresses, the user to
+Since an OpenPGP key can be associated with several addresses, the user to
 authenticate is extracted from the From header. If the key used to sign
 the email doesn't belong to that user, he won't be authenticated, as
 shown below where the email was signed with Sample Person's key, but
@@ -117,6 +117,7 @@ message.
     >>> msg_lines = msg.as_string().splitlines()
     >>> msg = email.message_from_string(
     ...     '\n'.join(msg_lines), _class=SignedMessage)
+    >>> msg.parsed_string = msg.as_string()
 
     >>> from canonical.launchpad.interfaces import IGPGHandler
     >>> getUtility(IGPGHandler).getVerifiedSignature(
@@ -135,8 +136,31 @@ authenticateEmail() doesn't have any problems verifying the signature:
     >>> for line_ending in '\n', '\r\n':
     ...     msg = email.message_from_string(
     ...         line_ending.join(msg_lines), _class=SignedMessage)
+    ...     msg.parsed_string = msg.as_string()
     ...     principal = authenticateEmail(msg)
     ...     authenticated_person = IPerson(principal)
     ...     print authenticated_person.preferredemail.email
     test@canonical.com
     test@canonical.com
+
+Python's email library unfolds the headers, which means that we have to
+be careful when extracting the signed content when folded headers are
+signed.
+
+    >>> msg = read_test_message('signed_folded_header.txt')
+    >>> print msg.parsed_string #doctest: -NORMALIZE_WHITESPACE
+    Date:...
+    ...
+    Content-Type: multipart/mixed;
+     boundary="--------------------EuxKj2iCbKjpUGkD"
+    ...
+
+    >>> print msg.as_string() #doctest: -NORMALIZE_WHITESPACE
+    Date:...
+    ...
+    Content-Type: multipart/mixed; boundary="--------------------EuxKj2iCbKjpUGkD"
+    ...
+
+    >>> principal = authenticateEmail(msg)
+    >>> print IPerson(principal).displayname
+    Sample Person

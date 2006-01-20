@@ -5,10 +5,10 @@ __all__ = ['IGPGHandler', 'IPymeSignature', 'IPymeKey', 'IPymeUserId',
 
 
 class GPGVerificationError(Exception):
-    """GPG verification error."""
+    """OpenPGP verification error."""
 
 class IGPGHandler(Interface):
-    """Handler to perform GPG operations."""
+    """Handler to perform OpenPGP operations."""
 
     def verifySignature(content, signature=None):
         """Returns a PymeSignature object if content is correctly signed
@@ -43,7 +43,7 @@ class IGPGHandler(Interface):
         """
 
     def importKey(content):
-        """Returns a PymeKey object refering to an just-import GPG
+        """Returns a PymeKey object refering to a just-imported OpenPGP
         public or secret key.
 
         content must be a traditional string. It's up to the caller to
@@ -66,8 +66,8 @@ class IGPGHandler(Interface):
         content must be a traditional string. It's up to the caller to
         encode or decode properly. Fingerprint must be hexadecimal string. 
 
-        :content: the unicode content to be encrypted.
-        :fingerprint: the GPG Key's fingerprint.
+        :content: the Unicode content to be encrypted.
+        :fingerprint: the OpenPGP key's fingerprint.
         """
 
     def decryptContent(content, password):
@@ -92,7 +92,7 @@ class IGPGHandler(Interface):
         """
 
     def checkTrustDb():
-        """Check whether the GPG trust database is up to date, and
+        """Check whether the OpenPGP trust database is up to date, and
         rebuild the trust values if necessary.
 
         The results will be visible in any new retrieved key objects.
@@ -104,7 +104,7 @@ class IGPGHandler(Interface):
         """
 
     def resetLocalState():
-        """Reset the local state (i.e. GPG keyrings, trust database etc."""
+        """Reset the local state (i.e. OpenPGP keyrings, trust database etc."""
         #FIXME RBC: this should be a zope test cleanup thing per SteveA.
 
 class IPymeSignature(Interface):

@@ -45,10 +45,11 @@ class SQLObjectModifiedEvent(SQLObjectEventBase):
     implements(ISQLObjectModifiedEvent)
 
     def __init__(self, object, object_before_modification, edited_fields,
-                 user=None):
+                 user=None, comment_on_change=None):
         SQLObjectEventBase.__init__(self, object, user=user)
         self.object_before_modification = object_before_modification
         self.edited_fields = edited_fields
+        self.comment_on_change = comment_on_change
 
 
 class SQLObjectToBeModifiedEvent(SQLObjectEventBase):

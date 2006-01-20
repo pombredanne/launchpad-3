@@ -221,7 +221,7 @@
         class="canonical.launchpad.browser.editview.SQLObjectEditView"
         schema="canonical.launchpad.interfaces.IStandardShipItRequest"
         fields="quantityx86 quantityamd64 quantityppc description isdefault"
-        label="Edit Standard Option"
+        label="Edit standard option"
         permission="launchpad.Admin"
         template="../templates/standardshipitrequest-edit.pt"
         lp:url="standardshipitrequests/$request.id/+index">
@@ -275,7 +275,7 @@
         schema="canonical.launchpad.interfaces.IStandardShipItRequest"
         class="canonical.launchpad.browser.StandardShipItRequestAddView"
         fields="quantityx86 quantityamd64 quantityppc description isdefault"
-        label="Create a New Standard Option"
+        label="Create a new standard option"
         permission="launchpad.Admin"
         template="../templates/standardshipitrequest-new.pt"
         lp:url="standardshipitrequests/$request.id/+new" />

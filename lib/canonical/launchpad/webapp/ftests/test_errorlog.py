@@ -26,8 +26,11 @@ class TestErrorReport(unittest.TestCase):
         entry = ErrorReport('id', 'exc-type', 'exc-value', 'timestamp',
                             'traceback-text', 'username', 'url',
                             [('name1', 'value1'), ('name2', 'value2'),
-                             ('name1', 'value3'), ('password', 'secret1'),
-                             ('PassWd2', 'secret2')])
+                             ('name1', 'value3'),
+                             ('field.password', 'secret1'),
+                             ('PassWd2', 'secret2')],
+                            [(1, 5, 'SELECT 1'),
+                             (5, 10, 'SELECT 2')])
         self.assertEqual(entry.id, 'id')
         self.assertEqual(entry.type, 'exc-type')
         self.assertEqual(entry.value, 'exc-value')
@@ -39,8 +42,11 @@ class TestErrorReport(unittest.TestCase):
         self.assertEqual(entry.req_vars[0], ('name1', 'value1'))
         self.assertEqual(entry.req_vars[1], ('name2', 'value2'))
         self.assertEqual(entry.req_vars[2], ('name1', 'value3'))
-        self.assertEqual(entry.req_vars[3], ('password', '<hidden>'))
+        self.assertEqual(entry.req_vars[3], ('field.password', '<hidden>'))
         self.assertEqual(entry.req_vars[4], ('PassWd2', '<hidden>'))
+        self.assertEqual(len(entry.db_statements), 2)
+        self.assertEqual(entry.db_statements[0], (1, 5, 'SELECT 1'))
+        self.assertEqual(entry.db_statements[1], (5, 10, 'SELECT 2'))
 
     def test_write(self):
         """Test ErrorReport.write()"""
@@ -52,7 +58,9 @@ class TestErrorReport(unittest.TestCase):
                             'Sample User', 'http://localhost:9000/foo',
                             [('HTTP_USER_AGENT', 'Mozilla/5.0'),
                              ('HTTP_REFERER', 'http://localhost:9000/'),
-                             ('name=foo', 'hello\nworld')])
+                             ('name=foo', 'hello\nworld')],
+                            [(1, 5, 'SELECT 1'),
+                             (5, 10, 'SELECT\n2')])
         fp = StringIO.StringIO()
         entry.write(fp)
         self.assertEqual(fp.getvalue(), dedent("""\
@@ -67,6 +75,9 @@ class TestErrorReport(unittest.TestCase):
             HTTP_REFERER=http://localhost:9000/
             name%3Dfoo=hello%0Aworld
             
+            00001-00005 SELECT 1
+            00005-00010 SELECT 2
+
             traceback-text"""))
 
     def test_read(self):
@@ -83,7 +94,10 @@ class TestErrorReport(unittest.TestCase):
             HTTP_USER_AGENT=Mozilla/5.0
             HTTP_REFERER=http://localhost:9000/
             name%3Dfoo=hello%0Aworld
-            
+
+            00001-00005 SELECT 1
+            00005-00010 SELECT 2
+
             traceback-text"""))
         entry = ErrorReport.read(fp)
         self.assertEqual(entry.id, 'OOPS-A0001')
@@ -100,6 +114,9 @@ class TestErrorReport(unittest.TestCase):
         self.assertEqual(entry.req_vars[1], ('HTTP_REFERER',
                                              'http://localhost:9000/'))
         self.assertEqual(entry.req_vars[2], ('name=foo', 'hello\nworld'))
+        self.assertEqual(len(entry.db_statements), 2)
+        self.assertEqual(entry.db_statements[0], (1, 5, 'SELECT 1'))
+        self.assertEqual(entry.db_statements[1], (5, 10, 'SELECT 2'))
 
 
 class TestErrorReportingService(unittest.TestCase):
@@ -119,7 +136,7 @@ class TestErrorReportingService(unittest.TestCase):
         # first oops of the day
         now = datetime.datetime(2004, 04, 01, 00, 30, 00, tzinfo=UTC)
         oopsid, filename = service.newOopsId(now)
-        self.assertEqual(oopsid, 'OOPS-T1')
+        self.assertEqual(oopsid, 'OOPS-1T1')
         self.assertEqual(filename, '/var/tmp/lperr.test/2004-04-01/01800.T1')
         self.assertEqual(service.lastid, 1)
         self.assertEqual(service.lasterrordate, '2004-04-01')
@@ -127,7 +144,7 @@ class TestErrorReportingService(unittest.TestCase):
         # second oops of the day
         now = datetime.datetime(2004, 04, 01, 12, 00, 00, tzinfo=UTC)
         oopsid, filename = service.newOopsId(now)
-        self.assertEqual(oopsid, 'OOPS-T2')
+        self.assertEqual(oopsid, 'OOPS-1T2')
         self.assertEqual(filename, '/var/tmp/lperr.test/2004-04-01/43200.T2')
         self.assertEqual(service.lastid, 2)
         self.assertEqual(service.lasterrordate, '2004-04-01')
@@ -135,7 +152,7 @@ class TestErrorReportingService(unittest.TestCase):
         # first oops of following day
         now = datetime.datetime(2004, 04, 02, 00, 30, 00, tzinfo=UTC)
         oopsid, filename = service.newOopsId(now)
-        self.assertEqual(oopsid, 'OOPS-T1')
+        self.assertEqual(oopsid, 'OOPS-2T1')
         self.assertEqual(filename, '/var/tmp/lperr.test/2004-04-02/01800.T1')
         self.assertEqual(service.lastid, 1)
         self.assertEqual(service.lasterrordate, '2004-04-02')
@@ -160,7 +177,7 @@ class TestErrorReportingService(unittest.TestCase):
         open(os.path.join(errordir, '12346.A42'), 'w').close()
         open(os.path.join(errordir, '12346.B100'), 'w').close()
 
-        self.assertEqual(service._findLastOopsId(), 10)
+        self.assertEqual(service._findLastOopsId(errordir), 10)
 
     def test_raising(self):
         """Test ErrorReportingService.raising() with no request"""
@@ -178,7 +195,7 @@ class TestErrorReportingService(unittest.TestCase):
         lines = open(errorfile, 'r').readlines()
 
         # the header
-        self.assertEqual(lines[0], 'Oops-Id: OOPS-T1\n')
+        self.assertEqual(lines[0], 'Oops-Id: OOPS-1T1\n')
         self.assertEqual(lines[1], 'Exception-Type: Exception\n')
         self.assertEqual(lines[2], 'Exception-Value: xyz\n')
         self.assertEqual(lines[3], 'Date: 2004-04-01T00:30:00+00:00\n')
@@ -189,11 +206,14 @@ class TestErrorReportingService(unittest.TestCase):
         # no request vars
         self.assertEqual(lines[7], '\n')
 
+        # no database statements
+        self.assertEqual(lines[8], '\n')
+
         # traceback
-        self.assertEqual(lines[8], 'Traceback (innermost last):\n')
+        self.assertEqual(lines[9], 'Traceback (innermost last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise Exception(\'xyz\')
-        self.assertEqual(lines[11], 'Exception: xyz\n')
+        self.assertEqual(lines[12], 'Exception: xyz\n')
 
     def test_raising_with_request(self):
         """Test ErrorReportingService.raising() with a request"""
@@ -217,12 +237,13 @@ class TestErrorReportingService(unittest.TestCase):
 
             def items(self):
                 return [('name2', 'value2'), ('name1', 'value1'),
-                        ('name1', 'value3'), (u'\N{BLACK SQUARE}', u'value4')]
+                        ('name1', 'value3 \xa7'),
+                        (u'\N{BLACK SQUARE}', u'value4')]
 
         request = FakeRequest()
 
         try:
-            raise Exception('xyz')
+            raise Exception('xyz\nabc')
         except:
             service.raising(sys.exc_info(), request, now=now)
 
@@ -231,29 +252,32 @@ class TestErrorReportingService(unittest.TestCase):
         lines = open(errorfile, 'r').readlines()
 
         # the header
-        self.assertEqual(lines[0], 'Oops-Id: OOPS-T1\n')
+        self.assertEqual(lines[0], 'Oops-Id: OOPS-1T1\n')
         self.assertEqual(lines[1], 'Exception-Type: Exception\n')
-        self.assertEqual(lines[2], 'Exception-Value: xyz\n')
+        self.assertEqual(lines[2], 'Exception-Value: xyz abc\n')
         self.assertEqual(lines[3], 'Date: 2004-04-01T00:30:00+00:00\n')
-        self.assertEqual(lines[4], 'User: Login, 42, title, description |?|\n')
+        self.assertEqual(lines[4], 'User: Login, 42, title, description |\\u25a0|\n')
         self.assertEqual(lines[5], 'URL: http://localhost:9000/foo\n')
         self.assertEqual(lines[6], '\n')
 
         # request vars
-        self.assertEqual(lines[7], '?=value4\n')    # non-ASCII request var
+        self.assertEqual(lines[7], '\\u25a0=value4\n')    # non-ASCII request var
         self.assertEqual(lines[8], 'name1=value1\n')
-        self.assertEqual(lines[9], 'name1=value3\n')
+        self.assertEqual(lines[9], 'name1=value3 \\xa7\n')
         self.assertEqual(lines[10], 'name2=value2\n')
         self.assertEqual(lines[11], '\n')
 
+        # no database statements
+        self.assertEqual(lines[12], '\n')
+
         # traceback
-        self.assertEqual(lines[12], 'Traceback (innermost last):\n')
+        self.assertEqual(lines[13], 'Traceback (innermost last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise Exception(\'xyz\')
-        self.assertEqual(lines[15], 'Exception: xyz\n')
+        self.assertEqual(lines[16], 'Exception: xyz\n')
 
         # verify that the oopsid was set on the request
-        self.assertEqual(request.oopsid, 'OOPS-T1')
+        self.assertEqual(request.oopsid, 'OOPS-1T1')
 
     def test_raising_with_unprintable_exception(self):
         """Test ErrorReportingService.raising() with an unprintable exception"""
@@ -275,7 +299,7 @@ class TestErrorReportingService(unittest.TestCase):
         lines = open(errorfile, 'r').readlines()
 
         # the header
-        self.assertEqual(lines[0], 'Oops-Id: OOPS-T1\n')
+        self.assertEqual(lines[0], 'Oops-Id: OOPS-1T1\n')
         self.assertEqual(lines[1], 'Exception-Type: UnprintableException\n')
         self.assertEqual(lines[2], 'Exception-Value: <unprintable instance object>\n')
         self.assertEqual(lines[3], 'Date: 2004-04-01T00:30:00+00:00\n')
@@ -286,11 +310,14 @@ class TestErrorReportingService(unittest.TestCase):
         # no request vars
         self.assertEqual(lines[7], '\n')
 
+        # no database statements
+        self.assertEqual(lines[8], '\n')
+
         # traceback
-        self.assertEqual(lines[8], 'Traceback (innermost last):\n')
+        self.assertEqual(lines[9], 'Traceback (innermost last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise UnprintableException()
-        self.assertEqual(lines[11], 'UnprintableException: <unprintable instance object>\n')
+        self.assertEqual(lines[12], 'UnprintableException: <unprintable instance object>\n')
 
 
 def test_suite():
