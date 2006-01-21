@@ -417,7 +417,8 @@ class QueueActionOverride(QueueAction):
                 component = getUtility(IComponentSet)[component_name]
             if section_name:
                 section = getUtility(ISectionSet)[section_name]
-            priority = name_priority_map[priority_name]
+            if priority_name:
+                priority = name_priority_map[priority_name]
         except (NotFoundError, KeyError), info:
             raise QueueActionError('Not Found: %s' % info)
 
@@ -482,6 +483,11 @@ def main():
                       default=False,
                       help="Whether treat filter as a exact match or not.")
 
+    parser.add_option("-i", "--ignore-errors", action="store_true",
+                      dest="ignore_errors", metavar="IGNOREERRORS",
+                      default=False,
+                      help="Ignore errors when performing a list of commands.")
+
     parser.add_option("-r", "--report", action="store_true",
                       metavar="", default=False,
                       help="Present queue counters and exit.")
@@ -526,11 +532,17 @@ def main():
     for single_args in args_list:
         if runCommand(queue, distro_name, distrorelease_name, exact_match,
                       single_args):
+            # XXX cprov 20060120: dangerous option
+            if options.ignore_errors:
+                print "Ignoring error, aborting transaction ..."
+                ztm.abort()
+                continue
             return 1
+
         if not options.dryrun:
             ztm.commit()
         else:
-            print "DRY RUN requested, not commiting."
+            print "DRY RUN requested, not committing."
 
     return 0
 

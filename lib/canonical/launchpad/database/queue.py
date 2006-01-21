@@ -14,12 +14,11 @@ import os
 import tempfile
 import pytz
 from datetime import datetime
-from warnings import warn
 
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, MultipleJoin, StringCol, SQLObjectNotFound)
+    ForeignKey, MultipleJoin, SQLObjectNotFound)
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -40,8 +39,6 @@ from canonical.librarian.interfaces import DownloadFailed
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
-
-from canonical.cachedproperty import cachedproperty
 
 # There are imports below in DistroReleaseQueueCustom for various bits
 # of the archivepublisher which cause circular import errors if they
@@ -294,7 +291,7 @@ class DistroReleaseQueueBuild(SQLBase):
         for binary in self.build.binarypackages:
             target_dars = set([target_dar])
             if not binary.architecturespecific:
-                target_dars = target_dars or other_dars
+                target_dars = target_dars.union(other_dars)
                 debug(logger, "... %s/%s (Arch Independent)" % (
                     binary.binarypackagename.name,
                     binary.version))
