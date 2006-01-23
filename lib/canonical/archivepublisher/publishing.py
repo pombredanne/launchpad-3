@@ -31,11 +31,14 @@ def package_name(filename):
     """Extract a package name from a debian package filename."""
     return (os.path.basename(filename).split("_"))[0]
 
-
 def filechunks(file, chunk_size=256*1024):
     """Return an iterator which reads chunks of the given file."""
     return iter(lambda: file.read(chunk_size), '')
 
+def f_touch(*parts):
+    """Touch the file named by the arguments concatenated as a path."""
+    fname = os.path.join(*parts)
+    open(fname, "w").close()
 
 class Publisher(object):
     """Publisher is the class used to provide the facility to publish
@@ -235,17 +238,22 @@ class Publisher(object):
                 # XXX: dsilvers: As above, this needs to be integrated into
                 # the database at some point.
                 # bug 3900
-                unpocketed_release = distrorelease.split('-')[0]
                 extra_extra_overrides = os.path.join(
                     self._config.miscroot,
-                    "more-extra.override.%s.main" % (unpocketed_release))
+                    "more-extra.override.%s.main" % (distrorelease))
+                if not os.path.exists(extra_extra_overrides):
+                    unpocketed_release = "-".join(
+                        distrorelease.split('-')[:-1])
+                    extra_extra_overrides = os.path.join(
+                        self._config.miscroot,
+                        "more-extra.override.%s.main" % (unpocketed_release))
                 if os.path.exists(extra_extra_overrides):
                     eef = open(extra_extra_overrides, "r")
                     extras = {}
                     for line in eef:
                         line = line.strip()
                         if line:
-                            (package, header, value) = line.split()
+                            (package, header, value) = line.split("\t", 2)
                             pkg_extras = extras.setdefault(package, {})
                             header_values = pkg_extras.setdefault(header, [])
                             header_values.append(value)
@@ -475,10 +483,6 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                         # apt-ftparchive will dtrt.
                         open(arch_path, "w").close()
                     archs.append(arch)
-                if len(archs) == 0:
-                    self.debug("Didn't find any archs to include in config "
-                               "for %s%s" % (dr, pocketsuffix[pocket]))
-                    continue
                 self.debug("Generating apt config for %s%s" % (
                     dr, pocketsuffix[pocket]))
                 # Replace those tokens
@@ -487,14 +491,15 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                     "DISTRORELEASE": dr + pocketsuffix[pocket],
                     "DISTRORELEASEBYFILE": dr + pocketsuffix[pocket],
                     "DISTRORELEASEONDISK": dr + pocketsuffix[pocket],
-                    "ARCHITECTURES": " ".join(archs) + " source",
+                    "ARCHITECTURES": " ".join(archs + [" source"]),
                     "SECTIONS": " ".join(comps),
                     "EXTENSIONS": ".deb",
                     "CACHEINSERT": "",
                     "HIDEEXTRA": ""
                     })
                 dr_full_name = dr + pocketsuffix[pocket]
-                if dr_full_name in self._di_release_components:
+                if (dr_full_name in self._di_release_components and
+                    len(archs) > 0):
                     for component in self._di_release_components[dr_full_name]:
                         cnf.write(stanza_template % {
                             "LISTPATH": self._config.overrideroot,
@@ -630,10 +635,12 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                 if architecture != "source":
                     # Strip "binary-" off the front of the architecture before
                     # noting it in all_architectures
-                    all_architectures.add(architecture[7:])
+                    clean_architecture = architecture[7:]
+                    all_architectures.add(clean_architecture)
                     file_stub = "Packages"
                 else:
                     file_stub = "Sources"
+                    clean_architecture = architecture
                     all_architectures.add(architecture)
                 file_stub = os.path.join(component, architecture, file_stub)
                 all_files.add(file_stub)
@@ -656,7 +663,7 @@ Origin: %s
 Label: %s
 Architecture: %s
 """ % (full_name, distrorelease.version, component, distribution.name,
-       distribution.name, architecture)
+       distribution.name, clean_architecture)
                 f.write(contents)
                 f.close()
     
@@ -692,3 +699,57 @@ Description: %s
                                              distrorelease,
                                              full_distrorelease_name)
                 
+    def createEmptyPocketRequests(self):
+        """Write out empty file lists etc for pockets we want to have
+        Packages or Sources for but lack anything in them currently."""
+        all_pockets = [ suffix for _, suffix in pocketsuffix.items() ]
+        for distrorelease in self.distro:
+            comps = self._config.componentsForRelease(distrorelease.name)
+            archs = self._config.archTagsForRelease(distrorelease.name)
+            pockets = all_pockets
+            #if distrorelease.releasestatus <= DistributionReleaseStatus.FROZEN:
+            #    pockets = [""]
+            for suffix in pockets:
+                full_distrorelease_name = distrorelease.name + suffix
+                for comp in comps:
+                    # dr/comp to _di_r_c
+                    self._di_release_components.setdefault(
+                        full_distrorelease_name, set()).add(comp)
+                    # Touch the source file lists and override files
+                    f_touch(self._config.overrideroot,
+                            "_".join([full_distrorelease_name,
+                                      comp, "source"]))
+                    f_touch(self._config.overrideroot,
+                            ".".join(["override",
+                                      full_distrorelease_name, comp]))
+                    f_touch(self._config.overrideroot,
+                            ".".join(["override",
+                                      full_distrorelease_name, "extra", comp]))
+                    f_touch(self._config.overrideroot,
+                            ".".join(["override",
+                                      full_distrorelease_name, comp, "src"]))
+                    f_touch(self._config.overrideroot,
+                            ".".join(["override",
+                                      full_distrorelease_name,
+                                     comp,
+                                     "debian-installer"]))
+                    
+                    self._release_files_needed.setdefault(
+                        full_distrorelease_name, {}).setdefault(
+                        comp, set()).add("source")
+                    for arch in archs:
+                        # dr/comp/arch into _r_f_n
+                        self._release_files_needed.setdefault(
+                            full_distrorelease_name, {}).setdefault(
+                            comp, set()).add("binary-"+arch)
+                        # Touch more file lists for the archs.
+                        f_touch(self._config.overrideroot,
+                                "_".join([full_distrorelease_name,
+                                         comp,
+                                         "binary-"+arch]))
+                        f_touch(self._config.overrideroot,
+                                "_".join([full_distrorelease_name,
+                                         comp,
+                                         "debian-installer",
+                                         "binary-"+arch]))
+
