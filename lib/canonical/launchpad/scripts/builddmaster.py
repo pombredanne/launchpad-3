@@ -84,10 +84,9 @@ class BuilderGroup:
     def rollback(self):
         self._tm.rollback()
 
-    def __init__(self, logger, tm, upload_cmdline):
+    def __init__(self, logger, tm):
         self._tm = tm
         self.logger = logger
-        self.upload_cmdline = upload_cmdline
 
     def checkAvailableSlaves(self, arch):
         """Iter through available builder-slaves for an given architecture."""
@@ -682,12 +681,11 @@ class BuilddMaster:
     # DistroArchRelease
     self._archreleases[DAR]['builders'] = buildersByProcessor
     """
-    def __init__(self, logger, tm, upload_cmdline):
+    def __init__(self, logger, tm):
         self._logger = logger
         self._tm = tm
         self.librarian = getUtility(ILibrarianClient)
         self._archreleases = {}
-        self.upload_cmdline = upload_cmdline
         self._logger.info("Buildd Master has been initialised")
 
     def commit(self):
