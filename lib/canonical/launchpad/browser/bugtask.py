@@ -13,10 +13,12 @@ __all__ = [
     'BugListingPortletView',
     'BugTaskSearchListingView',
     'AssignedBugTasksView',
+    'BugTasksOldView',
     'OpenBugTasksView',
     'CriticalBugTasksView',
     'UntriagedBugTasksView',
     'UnassignedBugTasksView',
+    'AllBugTasksView',
     'AdvancedBugTaskSearchView',
     'BugTargetView',
     'BugTaskView',
@@ -48,7 +50,6 @@ from canonical.launchpad.interfaces import (
     IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
@@ -493,20 +494,18 @@ class BugListingPortletView(LaunchpadView):
     @property
     def buglistings(self):
         request = self.request
+        context = self.context
         require_login = self.user is None
         return [
-            BugListing(self.context, 'All open bugs', '+bugs-open', request),
+            BugListing(context, 'All open bugs', '+bugs-open', request),
             BugListing(
-                self.context, 'Assigned to me', '+bugs-assigned-to', request,
+                context, 'Assigned to me', '+bugs-assigned-to', request,
                 require_login=require_login),
-            BugListing(self.context, 'Critical', '+bugs-critical', request),
-            BugListing(self.context, 'Untriaged', '+bugs-untriaged', request),
-            BugListing(
-                self.context, 'Unassigned', '+bugs-unassigned', request),
-            BugListing(
-                self.context, 'All bugs ever reported', '+bugs-all', request),
-            BugListing(
-                self.context, 'Advanced search', '+bugs-advanced', request),
+            BugListing(context, 'Critical', '+bugs-critical', request),
+            BugListing(context, 'Untriaged', '+bugs-untriaged', request),
+            BugListing(context, 'Unassigned', '+bugs-unassigned', request),
+            BugListing(context, 'All bugs ever reported', '+bugs-all', request),
+            BugListing(context, 'Advanced search', '+bugs-advanced', request),
             ]
 
 
@@ -531,7 +530,8 @@ class BugTaskSearchListingView(LaunchpadView):
         else:
             raise TypeError("Unknown context: %s" % repr(self.context))
 
-        setUpWidgets(self, self.search_form_schema, IInputWidget)
+        setUpWidgets(self, self.search_form_schema, IInputWidget,
+                     initial=self.getInitialValues())
 
     @property
     def taskCount(self):
@@ -547,6 +547,12 @@ class BugTaskSearchListingView(LaunchpadView):
     def showListView(self):
         """Should the search results be displayed as a list?"""
         return True
+
+    def getInitialValues(self):
+        """Override this in your subclass if you want any widgets to have
+        initial values.
+        """
+        return {}
 
     def getExtraSearchParams(self):
         """Return extra search parameters to filter the bug list.
@@ -595,6 +601,10 @@ class BugTaskSearchListingView(LaunchpadView):
         else:
             batch = tasks
         return BatchNavigator(batch=batch, request=self.request)
+
+    def shouldShowAdvancedForm(self):
+        """Return True if this view's advanced form should be shown."""
+        return False
 
     def shouldShowSearchWidgets(self):
         """Should the search widgets be displayed on this page?"""
@@ -689,9 +699,8 @@ class BugTaskSearchListingView(LaunchpadView):
         releases = getUtility(IDistroReleaseSet).search(
             distribution=distribution, orderBy="-datereleased")
 
-        request = self.request
         return [
-            BugListing(release, release.displayname, '+bugs', request)
+            BugListing(release, release.displayname, '+bugs', self.request)
             for release in releases]
 
     def getSortLink(self, colname):
@@ -803,8 +812,30 @@ class BugTaskSearchListingView(LaunchpadView):
         return IDistroRelease(self.context, None)
 
 
-class AssignedBugTasksView(BugTaskSearchListingView):
+# XXX: Dear reviewer, please suggest me a better name for this. ;)
+# -- Guilherme Salgado, 2006-01-23
+class RedirectToAdvancedBugTasksView(BugTaskSearchListingView):
+    """A view that will render the advanced search page if the user requested
+    an advanced search form.
+    """
+
+    def render(self):
+        request = self.request
+        if request.get('advanced'):
+            # The user wants to do an advanced search, let's render the
+            # advanced page and keep the predefined values of this search.
+            new_view = getView(self.context, '+bugs-advanced', request)
+            new_view.getInitialValues = self.getInitialValues
+            return new_view()
+        else:
+            return BugTaskSearchListingView.render(self)
+
+
+class AssignedBugTasksView(RedirectToAdvancedBugTasksView):
     """All open bugs assigned to someone."""
+
+    def getInitialValues(self):
+        return {'status': UNRESOLVED_BUGTASK_STATUSES, 'assignee': self.user}
 
     def getExtraSearchParams(self):
         return {'status': any(*UNRESOLVED_BUGTASK_STATUSES),
@@ -815,36 +846,60 @@ class AssignedBugTasksView(BugTaskSearchListingView):
         return True
 
 
-class OpenBugTasksView(BugTaskSearchListingView):
+class OpenBugTasksView(RedirectToAdvancedBugTasksView):
     """All open bugs."""
+
+    def getInitialValues(self):
+        return {'status': UNRESOLVED_BUGTASK_STATUSES}
 
     def getExtraSearchParams(self):
         return {'status': any(*UNRESOLVED_BUGTASK_STATUSES)}
 
 
-class CriticalBugTasksView(BugTaskSearchListingView):
+class CriticalBugTasksView(RedirectToAdvancedBugTasksView):
     """All open critical bugs."""
+
+    def getInitialValues(self):
+        return {'status': UNRESOLVED_BUGTASK_STATUSES,
+                'severity': [dbschema.BugTaskSeverity.CRITICAL]}
 
     def getExtraSearchParams(self):
         return {'status': any(*UNRESOLVED_BUGTASK_STATUSES),
                 'severity': dbschema.BugTaskSeverity.CRITICAL}
 
 
-class UntriagedBugTasksView(BugTaskSearchListingView):
+class UntriagedBugTasksView(RedirectToAdvancedBugTasksView):
     """All untriaged bugs.
 
-    Only bugs with status NEW are considered to be untriaged.
+    Only bugs with status UNCONFIRMED are considered to be untriaged.
     """
+
+    def getInitialValues(self):
+        return {'status': [dbschema.BugTaskStatus.UNCONFIRMED]}
 
     def getExtraSearchParams(self):
         return {'status': dbschema.BugTaskStatus.UNCONFIRMED}
 
 
-class UnassignedBugTasksView(BugTaskSearchListingView):
+class UnassignedBugTasksView(RedirectToAdvancedBugTasksView):
     """All open bugs that don't have an assignee."""
+
+    def getInitialValues(self):
+        return {'status': UNRESOLVED_BUGTASK_STATUSES}
 
     def getExtraSearchParams(self):
         return {'status': any(*UNRESOLVED_BUGTASK_STATUSES), 'assignee': NULL}
+
+    def doNotShowAssignee(self):
+        """Should we not show the assignee in the list of results?"""
+        return True
+
+
+class AllBugTasksView(RedirectToAdvancedBugTasksView):
+    """All bugs ever reported."""
+
+    def getInitialValues(self):
+        return {'status': [], 'severity': []}
 
 
 class AdvancedBugTaskSearchView(BugTaskSearchListingView):
@@ -898,6 +953,30 @@ class AdvancedBugTaskSearchView(BugTaskSearchListingView):
             search_params['omit_dupes'] = True
 
         return search_params
+
+    def shouldShowAdvancedForm(self):
+        """Return True if this view's advanced form should be shown."""
+        return True
+
+    def hasSimpleMode(self):
+        """Does this view has a "simple" mode where only a small subset of
+        widgets are displayed?
+
+        We need to know this in order to provide a button to switch to that
+        mode when we are in the advanced mode.
+        """
+        return False
+
+
+class BugTasksOldView(AdvancedBugTaskSearchView):
+    """The old +bugs view has to be an AdvancedBugTaskSearchView but shouldn't
+    display the advanced widgets.
+
+    We keep this view around to not break existing bookmars.
+    """
+
+    def shouldShowAdvancedForm(self):
+        return False
 
 
 class BugTargetView:

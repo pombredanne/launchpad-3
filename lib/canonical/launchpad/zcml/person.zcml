@@ -29,7 +29,8 @@
   <browser:menus
       module="canonical.launchpad.browser.person"
       classes="PersonFacets PersonOverviewMenu TeamOverviewMenu PersonBugsMenu
-          PersonSpecsMenu PersonSupportMenu PersonCodeMenu PeopleContextMenu"
+          PersonSpecsMenu PersonSupportMenu PersonCodeMenu PeopleContextMenu
+          TeamBugsMenu"
       />
 
   <browser:url

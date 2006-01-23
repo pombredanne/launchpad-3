@@ -277,6 +277,13 @@ class PersonBugsMenu(ApplicationMenu):
         return Link('+subscribedbugs', text, icon='bugs')
 
 
+class TeamBugsMenu(PersonBugsMenu):
+
+    usedfor = ITeam
+    facet = 'bugs'
+    links = ['assignedbugs', 'softwarebugs', 'subscribedbugs']
+ 
+
 class PersonSpecsMenu(ApplicationMenu):
 
     usedfor = IPerson
@@ -653,7 +660,6 @@ class BasePersonBugTaskSearchListingView(AdvancedBugTaskSearchView):
     class. Instead, you should derive from it and use the derived class.
     """
 
-    has_advanced_form = True
     context_parameter = None
 
     def getExtraSearchParams(self):
@@ -662,11 +668,12 @@ class BasePersonBugTaskSearchListingView(AdvancedBugTaskSearchView):
         params[self.context_parameter] = self.context
         return params
 
-    def show_advanced_form(self):
+    def hasSimpleMode(self):
+        return True
+
+    def shouldShowAdvancedForm(self):
         """Return True if this view's advanced form should be shown."""
-        request = self.request
-        if ((request.get('advanced') or request.form.get('advanced')) and
-            not request.form.get('simple')):
+        if self.request.get('advanced') and not self.request.get('simple'):
             return True
         return False
 

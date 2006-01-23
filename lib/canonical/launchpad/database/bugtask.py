@@ -373,6 +373,8 @@ class BugTaskSet:
             if arg_value is None:
                 continue
             if zope_isinstance(arg_value, any):
+                if not arg_value.query_values:
+                    continue
                 # The argument value is a list of acceptable
                 # filter values.
                 arg_values = sqlvalues(*arg_value.query_values)

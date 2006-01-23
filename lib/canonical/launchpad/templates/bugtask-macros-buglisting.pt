@@ -31,7 +31,6 @@
           Unassigned bugs only
         </label>
       </div>
-      <div>
     </td>
   </tr>
 </metal:assignee_widget>
@@ -47,12 +46,12 @@
   <tr>
     <th />
     <td>
-          <tal:block content="structure view/include_dupes_widget" />
-          <label style="font-weight: normal;"
-              tal:attributes="for view/include_dupes_widget/name"
-              tal:content="structure view/include_dupes_widget/label">
-            Include duplicates
-          </label>
+      <tal:block content="structure view/include_dupes_widget" />
+      <label style="font-weight: normal;"
+          tal:attributes="for view/include_dupes_widget/name"
+          tal:content="structure view/include_dupes_widget/label">
+        Include duplicates
+      </label>
     </td>
   </tr>
 </metal:include_dupes_widget>
@@ -122,21 +121,13 @@
     <table>
       <tr>
         <th>
-          <label tal:content="view/searchtext_widget/label">
+          <label tal:attributes="for view/searchtext_widget/name"
+                 tal:content="view/searchtext_widget/label">
             Bug ID or text:
           </label>
         </th>
         <td>
           <tal:searchtext content="structure view/searchtext_widget" />
-          <input type="submit" name="search" value="Search" />
-          <tal:block condition="view/has_advanced_form|nothing">
-            <tal:block condition="view/show_advanced_form">
-              <input type="submit" name="simple" value="Simple..." />
-            </tal:block>
-            <tal:block condition="not: view/show_advanced_form">
-              <input type="submit" name="advanced" value="Advanced..." />
-            </tal:block>
-          </tal:block>
         </td>
       </tr>
       <tr>
@@ -147,19 +138,51 @@
           <metal:widget use-macro="context/@@+bugtask-macros-listview/sortwidget" />
         </td>
       </tr>
+      <tr>
+        <th>
+        </th>
+        <td>
+          <tal:block condition="not: view/shouldShowAdvancedForm">
+            <input type="submit" name="search" value="Search" />
+            <input type="submit" name="advanced" value="Advanced..." />
+          </tal:block>
+        </td>
+      </tr>
 
-      <metal:extra_widgets_in_table
-          metal:define-slot="extra_search_widgets_in_table"
-          tal:replace="nothing">
-        Slot for placing extra search widgets in side the table.
-      </metal:extra_widgets_in_table>
+      <tal:extra_search_widgets_in_table
+          condition="view/shouldShowAdvancedForm">
+
+        <input type="hidden" name="advanced" value="1" />
+
+        <tal:block condition="not: view/doNotShowAssignee|nothing">
+          <metal:widget
+            use-macro="context/@@+bugtask-macros-buglisting/assignee_widget_in_table" />
+        </tal:block>
+
+        <metal:widget 
+          use-macro="context/@@+bugtask-macros-buglisting/include_dupes_widget_in_table" />
+      </tal:extra_search_widgets_in_table>
 
     </table>
-    <metal:extra_widgets_below_table
-        metal:define-slot="extra_search_widgets_below_table"
-        tal:replace="nothing">
-      Slot for placing extra search widgets below the table.
-    </metal:extra_widgets_below_table>
+
+    <table style="width: auto;">
+      <tr>
+        <td>
+          <tal:extra_widgets_below_table
+              condition="view/shouldShowAdvancedForm">
+            <metal:widget 
+              use-macro="context/@@+bugtask-macros-buglisting/extra_widgets_in_own_table" />
+          </tal:extra_widgets_below_table>
+        </td>
+      </tr>
+      <tr tal:condition="view/shouldShowAdvancedForm">
+        <td>
+          <input type="submit" name="search" value="Search" />
+          <input tal:condition="view/hasSimpleMode|nothing"
+                 type="submit" name="simple" value="Simple..." />
+        </td>
+      </tr>
+    </table>
   </tal:show-search-widgets>
 
   <tal:navigation
@@ -172,7 +195,7 @@
   </tal:table_view>
   <tal:list_view tal:condition="view/showListView"
                  tal:define="show_targetname view/shouldShowTargetName|nothing;
-                             do_not_show_assignee view/doNotShowAssignee|nothing">
+                             doNotShowAssignee view/doNotShowAssignee|nothing">
 
       <table>
         <tr tal:repeat="task task_batch_navigator/batch">
