@@ -5,7 +5,7 @@ __all__ = ['ProductRelease', 'ProductReleaseSet', 'ProductReleaseFile']
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol, MultipleJoin
+from sqlobject import ForeignKey, StringCol, MultipleJoin, AND
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -104,4 +104,13 @@ class ProductReleaseSet(object):
                               description=description,
                               changelog=changelog)
 
+
+    def getBySeriesAndVersion(self, productseries, version, default=None):
+        """See IProductReleaseSet"""
+        query = AND(ProductRelease.q.version==version,
+                    ProductRelease.q.productseriesID==productseries.id)
+        productrelease = ProductRelease.selectOne(query)
+        if productrelease is None:
+            return default
+        return productrelease
 

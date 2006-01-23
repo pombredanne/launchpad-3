@@ -107,29 +107,6 @@ errors_address.
     >>> from canonical.launchpad.mail import stub
     >>> stub.test_emails = []
 
-Now let's send an email from Foo Bar, but signed with Sample Person's
-key:
-
-    >>> msg = read_test_message('signed_detached.txt')
-    >>> msg.replace_header('From', 'foo.bar@canonical.com')
-    >>> msgid = sendmail(msg)
-    >>> transaction.commit()
-    >>> handleMail(transaction)
-
-
-An error message was sent since the key didn't belong to Foo Bar:
-
-    >>> transaction.commit()
-    >>> from_addr, to_addr, raw_mail = stub.test_emails[-1]
-    >>> import email
-    >>> error_mail = email.message_from_string(raw_mail)
-    >>> print error_mail['Subject']
-    Unhandled Email: ...
-    >>> print error_mail.get_payload(decode=True)
-    The following email was unhandled:
-    ...
-    Invalid signature for foo.bar@canonical.com:
-        The key used to sign the email doesn't belong to the user.
 
 
 X-Original-To
@@ -147,7 +124,6 @@ address the email was sent to:
     ...     msg['From'], ['123@bar.com'], msg.as_string())
     >>> transaction.commit()
     >>> handleMail()
-    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
     >>> msgid in bar_handler.handledMails
     True
 
@@ -246,6 +222,7 @@ errors-list. This is to make it easier to detect any errors, and fine
 tune it. Later we might simply drop the email without noticing anyone
 about it.
 
+    >>> import email
     >>> from_addr, to_addr, raw_mail = stub.test_emails[-1]
     >>> error_mail = email.message_from_string(raw_mail)
     >>> error_mail['To'] == config.launchpad.errors_address

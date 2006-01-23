@@ -9,6 +9,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.event import notify
 from zope.exceptions import NotFoundError
+from zope.security.management import queryInteraction
 
 from canonical.config import config
 from canonical.launchpad.helpers import Snapshot
@@ -17,10 +18,11 @@ from canonical.launchpad.interfaces import (
     IBugEditEmailCommand, IBugTaskEditEmailCommand, IBug, IBugTask,
     IMailHandler, IBugMessageSet, CreatedBugWithNoBugTasksError,
     EmailProcessingError, IUpstreamBugTask, IDistroBugTask,
-    IDistroReleaseBugTask, ITicket, ITicketSet)
+    IDistroReleaseBugTask, IWeaklyAuthenticatedPrincipal, ITicket, ITicketSet)
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mailnotification import (
     send_process_error_notification)
+from canonical.launchpad.webapp import canonical_url
 
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectCreatedEvent)
@@ -33,7 +35,7 @@ def get_main_body(signed_msg):
     msg = signed_msg.signedMessage
     if msg is None:
         # The email wasn't signed.
-        return None
+        msg = signed_msg
     if msg.is_multipart():
         for part in msg.get_payload():
             if part.get_content_type() == 'text/plain':
@@ -110,6 +112,17 @@ def guess_bugtask(bug, person):
     return None
 
 
+def get_current_principal():
+    """Get the principal from the current interaction."""
+    interaction = queryInteraction()
+    principals = [
+        participation.principal
+        for participation in interaction.participations]
+    assert len(principals) == 1, (
+        "There should be only one principal in the current interaction.")
+    return principals[0]
+
+
 class IncomingEmailError(Exception):
     """Indicates that something went wrong processing the mail."""
 
@@ -131,12 +144,8 @@ class MaloneHandler:
         commands = []
         content = get_main_body(signed_msg)
         if content is None:
-            # The email wasn't signed, don't process any commands.
-            #XXX: We should provide an error message if the user tries to
-            #     give commands in an unsigned email.
-            #     -- Bjorn Tillenius, 2005-06-06
             return []
-        # First extract all commands from the email.   
+        # First extract all commands from the email.
         command_names = emailcommands.names()
         for line in content.splitlines():  
             # All commands have to be indented.
@@ -157,6 +166,22 @@ class MaloneHandler:
         add_comment_to_bug = False
 
         try:
+            if len(commands) > 0:
+                current_principal = get_current_principal()
+                # The security machinery doesn't know about
+                # IWeaklyAuthenticatedPrincipal yet, so do a manual
+                # check. Later we can rely on the security machinery to
+                # cause Unauthorized errors.
+                if IWeaklyAuthenticatedPrincipal.providedBy(current_principal):
+                    if signed_msg.signature is None:
+                        error_message = get_error_message('not-signed.txt')
+                    else:
+                        import_url = canonical_url(
+                            getUtility(ILaunchBag).user) + '/+editgpgkeys'
+                        error_message = get_error_message(
+                            'key-not-registered.txt', import_url=import_url)
+                    raise IncomingEmailError(error_message)
+
             if user.lower() == 'new':
                 # A submit request.
                 commands.insert(0, emailcommands.get('bug', ['new']))

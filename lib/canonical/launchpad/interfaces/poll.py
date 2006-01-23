@@ -9,9 +9,8 @@ from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
-from canonical.launchpad.fields import ContentNameField 
 from canonical.launchpad import _
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.name import name_validator 
 from canonical.lp.dbschema import PollSecrecy, PollAlgorithm
 from canonical.launchpad.interfaces import ITeam
 from canonical.launchpad.fields import (
@@ -46,7 +45,7 @@ class IPoll(Interface):
         description=_('A short unique name, beginning with a lower-case '
                       'letter or number, and containing only letters, '
                       'numbers, dots, hyphens, or plus signs.'),
-        required=True, readonly=False, constraint=valid_name)
+        required=True, readonly=False, constraint=name_validator)
 
     title = TextLine(
         title=_('The title of this poll.'), required=True, readonly=False)
