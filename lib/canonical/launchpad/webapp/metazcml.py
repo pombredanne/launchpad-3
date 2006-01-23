@@ -471,28 +471,6 @@ def favicon(_context, for_, file):
     original_page(_context, name, permission, for_, class_=Favicon)
 
 
-# The original defaultView directive is defined in the browser publisher code.
-# In it, the `layer` is hard-coded rather than available as an argument.
-# See zope/app/publisher/browser/metaconfigure.py.
-# `layer` here is called `type` there, but is not available as an argument.
-
-def defaultView(_context, name, for_=None, layer=IDefaultBrowserLayer):
-    type = layer
-    _context.action(
-        discriminator = ('defaultViewName', for_, type, name),
-        callable = handler,
-        args = (zope.component.servicenames.Adapters, 'register',
-                (for_, type), IDefaultViewName, '', name, _context.info)
-        )
-
-    if for_ is not None:
-        _context.action(
-            discriminator = None,
-            callable = provideInterface,
-            args = ('', for_)
-            )
-
-
 class IAssociatedWithAFacet(Interface):
     """A zcml schema for something that can be associated with a facet."""
 

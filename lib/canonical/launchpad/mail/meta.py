@@ -90,7 +90,7 @@ def stubMailerHandler(
            discriminator = ('utility', IMailer, name),
            callable = handler,
            args = (
-               'Utilities', 'provideUtility',
+               'provideUtility',
                IMailer, StubMailer(from_addr, [to_addr], mailer, rewrite), name,
                )
            )

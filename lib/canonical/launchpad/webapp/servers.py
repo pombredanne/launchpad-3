@@ -108,11 +108,11 @@ class LaunchpadBrowserRequest(BrowserRequest, NotificationRequest,
 
     implements(ILaunchpadBrowserApplicationRequest)
 
-    def __init__(self, body_instream, outstream, environ, response=None):
+    def __init__(self, body_instream, environ, response=None):
         self.breadcrumbs = []
         self.traversed_objects = []
         super(LaunchpadBrowserRequest, self).__init__(
-            body_instream, outstream, environ, response)
+            body_instream, environ, response)
 
     @property
     def stepstogo(self):
@@ -223,12 +223,14 @@ class HTTPPublicationRequestFactory:
         ## self._http = HTTPPublication(db)
         self._browser = LaunchpadBrowserPublication(db)
 
-    def __call__(self, input_stream, output_steam, env):
+    def __call__(self, input_stream, env, output_steam=None):
         """See zope.app.publication.interfaces.IPublicationRequestFactory"""
+        assert output_stream is None, 'output_stream is deprecated in Z3.2'
+
         method = env.get('REQUEST_METHOD', 'GET').upper()
 
         if method in self._browser_methods:
-            request = LaunchpadBrowserRequest(input_stream, output_steam, env)
+            request = LaunchpadBrowserRequest(input_stream, env)
             request.setPublication(self._browser)
         else:
             raise NotImplementedError()
@@ -241,11 +243,13 @@ class HTTPPublicationRequestFactory:
 class DebugLayerRequestFactory(HTTPPublicationRequestFactory):
     """RequestFactory that sets the DebugLayer on a request."""
 
-    def __call__(self, input_stream, output_steam, env):
+    def __call__(self, input_stream, env, output_steam=None):
         """See zope.app.publication.interfaces.IPublicationRequestFactory"""
+        assert output_stream is None, 'output_stream is deprecated in Z3.2'
+
         # Mark the request with the 'canonical.launchpad.layers.debug' layer
         request = HTTPPublicationRequestFactory.__call__(
-            self, input_stream, output_steam, env)
+            self, input_stream, env)
         canonical.launchpad.layers.setFirstLayer(
             request, canonical.launchpad.layers.DebugLayer)
         return request

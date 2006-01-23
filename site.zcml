@@ -1,12 +1,20 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
+    <!--
     <include file="zopeapp.zcml" />
+    -->
+    <include package="zope.app" />
 
     <!-- Session machinery -->
+    <!--
     <include file="zopeappsession.zcml" />
+    -->
 
     <!-- Browser Configurations -->
+    <!--
     <include file="zopeappbrowser.zcml" />
+    -->
+    <include package="zope.app" file="browser.zcml" />
 
     <include package="canonical" />
 
@@ -23,6 +31,7 @@
     <include files="package-includes/*-configure-normal.zcml" />
 
     <!-- Provide local overrides of standard configurations-->
+    <includeOverrides file="override-configure.zcml" />
     <includeOverrides file="override-configure-normal.zcml" />
 
     <include file="securitypolicy.zcml" />
