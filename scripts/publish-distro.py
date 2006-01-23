@@ -180,6 +180,14 @@ except:
     sys.exit(1)
 
 try:
+    debug("Preparing file lists and overrides.")
+    pub.createEmptyPocketRequests()
+except:
+    logging.getLogger().exception("Bad muju while preparing file lists etc.")
+    txn.abort()
+    sys.exit(1)
+
+try:
     # Now we generate overrides
     debug("Generating overrides for the distro.")
     spps = SourcePackagePublishingView.select(
@@ -283,4 +291,15 @@ except:
     txn.abort()
     sys.exit(1)
 
+try:
+    debug("Sanitising links in the pool.")
+    dp.sanitiseLinks(['main', 'restricted', 'universe', 'multiverse'])
+except:
+    logging.getLogger().exception("Bad muju while sanitising links.")
+    sys.exit(1)
+
+debug("All done, committing before bed.")
+
 txn.commit()
+
+debug("Ciao")
