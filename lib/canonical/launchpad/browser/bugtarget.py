@@ -41,7 +41,6 @@ class FileBugView(SQLObjectAddView):
                 title=title, comment=comment, private=private, owner=current_user,
                 binarypackagename=binarypackagename)
         else:
-            assert IProduct.providedBy(context)
             bug = context.createBug(
                 title=title, comment=comment, private=private, owner=current_user)
 

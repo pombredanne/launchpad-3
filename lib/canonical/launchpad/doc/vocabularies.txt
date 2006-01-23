@@ -115,8 +115,6 @@ both a source and binary package of that name.
     ...     package_name_vocabulary.search("mozilla-firefox"))
     >>> len(package_name_terms)
     1
-    >>> IBinaryPackageName.providedBy(package_name_terms[0].value)
-    True
     >>> package_name_terms[0].title
     u'mozilla-firefox'
 
@@ -128,10 +126,6 @@ the source package named "mozilla".
     2
     >>> [package_name_term.title for package_name_term in package_name_terms]
     [u'mozilla', u'mozilla-firefox']
-    >>> ISourcePackageName.providedBy(package_name_terms[0].value)
-    True
-    >>> IBinaryPackageName.providedBy(package_name_terms[1].value)
-    True
 
 The search does a case-insensitive, substring match.
 
@@ -140,10 +134,6 @@ The search does a case-insensitive, substring match.
     2
     >>> [package_name_term.title for package_name_term in package_name_terms]
     [u'mozilla', u'mozilla-firefox']
-    >>> ISourcePackageName.providedBy(package_name_terms[0].value)
-    True
-    >>> IBinaryPackageName.providedBy(package_name_terms[1].value)
-    True
 
 o ProjectVocabulary - the list of selectable projects. The results are
   ordered by displayname.
