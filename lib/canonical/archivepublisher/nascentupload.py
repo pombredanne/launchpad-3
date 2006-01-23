@@ -149,6 +149,10 @@ class NascentUploadedFile:
     The filename, along with information about it, is kept here.
     """
 
+    # This is set in NascentUpload.verify_uploaded_files and the
+    # functions it calls
+    type = None
+
     def __init__(self, fsroot, fileline, is_dsc=False):
         if is_dsc:
             # dsc files lines are always of the form:
@@ -425,7 +429,7 @@ class NascentUpload:
         # of the reverses are necessarily true.
 
         for uploaded_file in self.files:
-            if uploaded_file.custom:
+            if uploaded_file.custom or uploaded_file.section == "byhand":
                 files_binaryful = True
             else:
                 filename = uploaded_file.filename
@@ -441,8 +445,10 @@ class NascentUpload:
                       filename.endswith(".dsc")):
                     files_sourceful = True
                 else:
-                    raise UploadError("Unable to identify file %s in changes."
-                                      % filename)
+                    raise UploadError("Unable to identify file %s (%s/%s) "
+                                      "in changes." % (filename,
+                                      uploaded_file.component,
+                                      uploaded_file.section))
 
         if files_sourceful != think_sourceful:
             self.reject(
@@ -1050,7 +1056,7 @@ class NascentUpload:
         self.logger.debug("Performing overall file verification checks.")
         for uploaded_file in self.files:
             # dismiss for special upload types
-            if uploaded_file.type == "byhand" or uploaded_file.custom:
+            if uploaded_file.custom or uploaded_file.type == "byhand":
                 continue
             # reject missed priority
             if uploaded_file.priority is None:
@@ -1312,7 +1318,7 @@ class NascentUpload:
             output = dpkg_source.stdout.read()
             result = dpkg_source.wait()
             if result != 0:
-                self.reject("dpkg-source failed for %s [return code: %s]" % (
+                self.reject("dpkg-source failed for %s [return: %s]" % (
                     dsc_file.filename, result))
                 self.reject(prefix_multi_line_string(
                     output, " [dpkg-source output:] "))
@@ -1447,6 +1453,10 @@ class NascentUpload:
         self.logger.debug("Finding and applying overrides.")
 
         for uploaded_file in self.files:
+            if uploaded_file.custom or uploaded_file.section == "byhand":
+                # handled specially in insert_into_queue -- it goes
+                # into a custom queue, no overrides apply
+                continue
             if uploaded_file.is_source and uploaded_file.type == "dsc":
                 # Look up the source package overrides in the distrorelease
                 spn = getUtility(ISourcePackageNameSet).getOrCreateByName(
@@ -1798,7 +1808,7 @@ class NascentUpload:
         """
         if self.rejected:
             self.reject("Alas, someone called do_accept when we're rejected")
-            return self.do_reject()
+            return False, self.do_reject()
         try:
             interpolations = {
                 "FROM": self.sender,

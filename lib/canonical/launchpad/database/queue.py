@@ -40,6 +40,9 @@ from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
 
+
+from canonical.cachedproperty import cachedproperty
+
 # There are imports below in DistroReleaseQueueCustom for various bits
 # of the archivepublisher which cause circular import errors if they
 # are placed here.
