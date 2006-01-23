@@ -42,10 +42,11 @@ class IBinaryPackageNameSet(Interface):
     def findByName(name):
         """Find binarypackagenames by its name or part of it"""
 
-    def query(name, distribution=None, distrorelease=None,
-              distroarchrelease=None, text=None):
-        """Return the binary package names for packages that match the given
-        criteria."""
+    def queryByName(name):
+        """Return a binary package name.
+
+        If there is no matching binary package name, return None.
+        """
 
     def new(name):
         """Create a new binary package name."""

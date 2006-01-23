@@ -7,8 +7,6 @@ __all__ = [
     'BugView',
     'BugSetView',
     'BugEditView',
-    'BugAddView',
-    'BugAddingView',
     'BugLinkView',
     'BugUnlinkView',
     'BugRelatedObjectEditView',
@@ -243,35 +241,6 @@ class BugEditView(BugView, SQLObjectEditView):
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.current_bugtask))
-
-
-class BugAddView(SQLObjectAddView):
-    """View for adding a bug."""
-
-    def add(self, content):
-        self.bugadded = content
-        return content
-
-    def create(self, **kw):
-        """"Create a new bug."""
-        return getUtility(IBugSet).createBug(**kw)
-
-    def nextURL(self):
-        bugtask = self.bugadded.bugtasks[0]
-        return canonical_url(bugtask)
-
-
-class BugAddingView(SQLObjectAddView):
-    """A hack for browser:addform's that use IBug as their context.
-
-    Use this class in the class="" of a browser:addform directive
-    for IBug.
-    """
-    def add(self, content):
-        return content
-
-    def nextURL(self):
-        return "."
 
 
 class BugRelatedObjectEditView(SQLObjectEditView):
