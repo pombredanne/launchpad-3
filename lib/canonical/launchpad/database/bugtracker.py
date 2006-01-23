@@ -7,7 +7,9 @@ import urllib
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, StringCol, MultipleJoin, RelatedJoin
+from sqlobject import (
+        ForeignKey, StringCol, MultipleJoin, RelatedJoin, SQLObjectNotFound
+        )
 from sqlobject.sqlbuilder import AND
 
 from canonical.launchpad.helpers import shortlist
@@ -74,6 +76,17 @@ class BugTrackerSet:
 
     def __init__(self):
         self.title = 'Bug trackers registered in Malone'
+
+    def get(self, bugtracker_id, default=None):
+        """See IBugTrackerSet"""
+        try:
+            return BugTracker.get(bugtracker_id)
+        except SQLObjectNotFound:
+            return default
+
+    def getByName(self, name, default=None):
+        """See IBugTrackerSet"""
+        return self.table.selectOne(self.table.q.name == name)
 
     def __getitem__(self, name):
         item = self.table.selectOne(self.table.q.name == name)
