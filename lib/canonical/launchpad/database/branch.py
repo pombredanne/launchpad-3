@@ -8,9 +8,10 @@ from zope.interface import implements
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin)
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote, quote_like
 from canonical.database.datetimecol import UtcDateTimeCol
 
+from canonical.config import config
 from canonical.launchpad.interfaces import IBranch, IBranchSet
 from canonical.launchpad.database.revision import Revision, RevisionNumber
 from canonical.launchpad.database.branchsubscription import BranchSubscription
@@ -25,8 +26,8 @@ class Branch(SQLBase):
     implements(IBranch)
 
     _table = 'Branch'
-    name = StringCol(notNull=True)
-    title = StringCol(notNull=True)
+    name = StringCol(notNull=False)
+    title = StringCol(notNull=False)
     summary = StringCol(notNull=True)
     url = StringCol(dbName='url')
     whiteboard = StringCol(default=None)
@@ -149,7 +150,7 @@ class BranchSet:
         """See IBranchSet."""
         return iter(Branch.select())
 
-    def new(self, name, owner, product, url, title,
+    def new(self, name, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, home_page=None):
         """See IBranchSet."""
@@ -162,10 +163,12 @@ class BranchSet:
 
     def get_supermirror_pull_queue(self):
         """See IBranchSet.get_supermirror_pull_queue."""
-        return Branch.select(
-            "(last_mirror_attempt is NULL "
-            " OR (%s - last_mirror_attempt > '1 day')) "
-            "AND NOT (url ILIKE 'http://bazaar.ubuntu.com/%%')" % UTC_NOW)
+        supermirror_root = config.launchpad.supermirror_root
+        assert quote(supermirror_root) == quote_like(supermirror_root)
+        return Branch.select("(last_mirror_attempt is NULL "
+                             " OR (%s - last_mirror_attempt > '1 day')) "
+                             "AND NOT (url ILIKE '%s%%')"
+                             % (UTC_NOW, supermirror_root))
 
 
 class BranchRelationship(SQLBase):

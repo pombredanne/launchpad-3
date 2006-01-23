@@ -1,0 +1,27 @@
+= Branch Pages =
+
+BranchView is the general class for displaying Branches.
+
+>>> from zope.component import getView
+>>> from zope.publisher.browser import TestRequest
+>>> from canonical.launchpad.interfaces import IBranchSet
+>>> branchset = getUtility(IBranchSet)
+>>> gterm = branchset[15]
+>>> pushed = branchset[25]
+>>> gterm_view = getView(gterm, '+index', TestRequest())
+>>> pushed_view = getView(pushed, '+index', TestRequest())
+
+Each branch is associated to an URL on the Supermirror, that includes the name
+of the owner and product of the branch.
+
+>>> gterm_view.supermirror_url()
+u'http://bazaar.launchpad.net/~name12/gnome-terminal/main'
+
+A Branch has a display name that is the Branch.title if it's provided, or a
+unique name based on the Supermirror URL for that branch.
+
+>>> gterm_view.display_name()
+u'GNOME Terminal Mainline'
+>>> assert pushed_view.context.title is None
+>>> pushed_view.display_name()
+u'~name12/gnome-terminal/pushed'

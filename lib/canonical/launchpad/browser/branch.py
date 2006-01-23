@@ -17,6 +17,7 @@ import pytz
 
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.launchpad.interfaces import IBranch, IBranchSet, ILaunchBag
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.addview import SQLObjectAddView
@@ -72,7 +73,6 @@ class BranchView(LaunchpadView):
                 self.context.unsubscribe(self.user)
                 self.notices.append("You have unsubscribed from this branch.")
 
-    @property
     def user_is_subscribed(self):
         """Is the current user subscribed to this branch?"""
         if self.user is None:
@@ -87,6 +87,41 @@ class BranchView(LaunchpadView):
     def author_is_owner(self):
         """Is the branch author set and equal to the registrant?"""
         return self.context.author == self.context.owner
+
+    def _unique_name(self):
+        """Unique name of the branch, including the owner and product names."""
+        return u'~%s/%s/%s' % (
+            self.context.owner.name,
+            self.context.product_name,
+            self.context.name)
+
+    def supermirror_url(self):
+        """Public URL of the branch on the Supermirror."""
+        return config.launchpad.supermirror_root + self._unique_name()
+
+    def display_name(self):
+        """The branch title if provided, or the unique_name."""
+        if self.context.title:
+            return self.context.title
+        else:
+            return self._unique_name()
+
+    def edit_link_url(self):
+        """Target URL of the Edit link used in the actions portlet."""
+        # XXX: that should go away when bug #5313 is fixed.
+        #  -- DavidAllouche 2005-12-02
+        linkdata = BranchContextMenu(self.context).edit()
+        return '%s/%s' % (canonical_url(self.context), linkdata.target)
+
+    def url(self):
+        """URL where the branch can be checked out.
+
+        This is the URL set in the database, or the Supermirror URL.
+        """
+        if self.context.url:
+            return self.context.url
+        else:
+            return self.context.supermirror_url
 
 
 class BranchEditView(SQLObjectEditView):
