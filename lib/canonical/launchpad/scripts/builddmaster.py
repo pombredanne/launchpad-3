@@ -84,9 +84,10 @@ class BuilderGroup:
     def rollback(self):
         self._tm.rollback()
 
-    def __init__(self, logger, tm):
+    def __init__(self, logger, tm, upload_cmdline):
         self._tm = tm
         self.logger = logger
+        self.upload_cmdline = upload_cmdline
 
     def checkAvailableSlaves(self, arch):
         """Iter through available builder-slaves for an given architecture."""
@@ -469,7 +470,6 @@ class BuilderGroup:
     def buildStatus_OK(self, queueItem, slave, librarian, buildid,
                        filemap=None):
         """Builder has built package entirely, get all the content back"""
-
         self.logger.debug("Processing successful build %s" % buildid)
 
         try:
@@ -682,11 +682,12 @@ class BuilddMaster:
     # DistroArchRelease
     self._archreleases[DAR]['builders'] = buildersByProcessor
     """
-    def __init__(self, logger, tm):
+    def __init__(self, logger, tm, upload_cmdline):
         self._logger = logger
         self._tm = tm
         self.librarian = getUtility(ILibrarianClient)
         self._archreleases = {}
+        self.upload_cmdline = upload_cmdline
         self._logger.info("Buildd Master has been initialised")
 
     def commit(self):

@@ -28,7 +28,6 @@ _default_lockfile = '/var/lock/buildd-master.lock'
 
 def rebuildQueue(log):
     """Look for and initialise new build jobs."""
-
     # setup a transaction manager
     tm = initZopeless(config.builddmaster.dbuser)
 
