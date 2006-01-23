@@ -148,7 +148,7 @@ If the Architecture line does not match then we get an exception.
   >>> ed_mismatched_upload.sourceful
   True
   >>> ed_mismatched_upload.rejection_message
-  'Mismatch in binaryfulness. (arch) False != (files) True'
+  'Mismatch in binaryfulness. (arch) False != (files) True\nOne or more files uploaded with specific architecture but changes file does not list it.'
 
 We can distinguish between the arch-indep and arch-dep binary uploads.
 

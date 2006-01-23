@@ -340,14 +340,11 @@ Construct a new upload for universe/misc and a lot of errors ;)
 
   >>> usplash_upload = NascentUpload(findPolicyByName('anything'),
   ...     datadir(''), "usplash_0.1-22_powerpc.changes", MockLogger())
-  >>> usplash_upload.changes_filename == datadir(
-  ...     "usplash_0.1-22_powerpc.changes")
-  True
   >>> usplash_upload.policy.setOptions(MockOptions())
   >>> usplash_upload.policy.can_upload_binaries = True
   >>> usplash_upload.policy.can_upload_mixed = True
   >>> usplash_upload.process()
-  >>> msgs = usplash_upload.do_accept()
+  >>> res, msgs = usplash_upload.do_accept()
   >>> for msg in msgs:
   ...    print msg
   From: Root <root@localhost>

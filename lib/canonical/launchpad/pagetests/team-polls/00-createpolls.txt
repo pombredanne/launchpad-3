@@ -49,7 +49,63 @@
   ...
 
 
-  Create a new poll that will start in 2100 and last one month..
+First we try to create a poll with a invalid name to test the name field
+validator
+
+  >>> print http(r"""
+  ... POST /people/ubuntu-team/+newpoll HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------644242015206973209368907792
+  ... 
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... Election-2100
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Presidential Election 2100
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.proposition"
+  ... 
+  ... Who's going to be the next president?
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.secrecy"
+  ... 
+  ... Secret Votes (It's impossible to track a person's vote)
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.secrecy-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.allowspoilt.used"
+  ... 
+  ... 
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.allowspoilt"
+  ... 
+  ... on
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.dateopens"
+  ... 
+  ... 2100-06-04 02:00:00+00:00
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.datecloses"
+  ... 
+  ... 2100-07-04 02:00:00+00:00
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------644242015206973209368907792--
+  ... """)
+  HTTP/1.1 200 Ok 
+  ...
+  ...Invalid name 'Election-2100'...
+  ...
+
+
+And then we create a new poll that will start in 2100 and last one month..
 
   >>> print http(r"""
   ... POST /people/ubuntu-team/+newpoll HTTP/1.1
@@ -166,6 +222,59 @@
   Location: http://localhost:9000/people/ubuntu-team/+poll/dpl-2080
   ...
 
+Now lets try to insert a poll with equal name.
+
+  >>> print http(r"""
+  ... POST /people/ubuntu-team/+newpoll HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=---------------------------644242015206973209368907792
+  ... 
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... election-2100
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... PE 2100
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.proposition"
+  ... 
+  ... Next president?
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.secrecy"
+  ... 
+  ... Secret Votes (It's impossible to track a person's vote)
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.secrecy-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.allowspoilt.used"
+  ... 
+  ... 
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.allowspoilt"
+  ... 
+  ... on
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.dateopens"
+  ... 
+  ... 2100-06-04 02:00:00+00:00
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="field.datecloses"
+  ... 
+  ... 2100-07-04 02:00:00+00:00
+  ... -----------------------------644242015206973209368907792
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------644242015206973209368907792--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...election-2100 is already in use...
+  
 
   >>> print http(r"""
   ... GET /people/ubuntu-team/+poll/dpl-2080 HTTP/1.1
@@ -175,4 +284,3 @@
   ...
   ...This poll does not yet have any voting options...
   ...
-
