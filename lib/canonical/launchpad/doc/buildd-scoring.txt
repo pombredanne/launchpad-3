@@ -25,7 +25,7 @@ details about its setup in buildd-queuebuilder.txt or buildd-slavescanner.txt
   >>> import pytz
   >>> import transaction
   >>> import logging
-  >>> bm = BuilddMaster(logging.getLogger(), transaction)
+  >>> bm = BuilddMaster(logging.getLogger(), transaction, [])
 
 Let's create a 'mock' class which emulate the real behaviour of
 BuildQueue entries. 
