@@ -84,6 +84,10 @@ class BugTrackerSet:
         except SQLObjectNotFound:
             return default
 
+    def getByName(self, name, default=None):
+        """See IBugTrackerSet"""
+        return self.table.selectOne(self.table.q.name == name)
+
     def __getitem__(self, name):
         item = self.table.selectOne(self.table.q.name == name)
         if item is None:

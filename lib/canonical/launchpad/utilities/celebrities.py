@@ -49,6 +49,7 @@ class CelebrityDescriptor:
             self.id = celebrity.id
         else:
             celebrity = utility.get(self.id)
+            assert celebrity is not None, 'Celebrity id has changed'
             assert celebrity.name == self.name, 'Celebrity name has changed'
         return celebrity
 
