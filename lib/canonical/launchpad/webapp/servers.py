@@ -118,9 +118,9 @@ class LaunchpadBrowserRequest(BrowserRequest, NotificationRequest,
     def stepstogo(self):
         return StepsToGo(self)
 
-    def _createResponse(self, outstream):
+    def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""
-        return LaunchpadBrowserResponse(outstream)
+        return LaunchpadBrowserResponse()
 
     def getNearest(self, *some_interfaces):
         """See ILaunchpadBrowserApplicationRequest.getNearest()"""
@@ -135,9 +135,9 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
 
     # Note that NotificationResponse defines a 'redirect' method which
     # needs to override the 'redirect' method in BrowserResponse
-    def __init__(self, outstream, header_output=None, http_transaction=None):
+    def __init__(self, header_output=None, http_transaction=None):
         super(LaunchpadBrowserResponse, self).__init__(
-                outstream, header_output, http_transaction
+                header_output, http_transaction
                 )
 
 
@@ -223,7 +223,7 @@ class HTTPPublicationRequestFactory:
         ## self._http = HTTPPublication(db)
         self._browser = LaunchpadBrowserPublication(db)
 
-    def __call__(self, input_stream, env, output_steam=None):
+    def __call__(self, input_stream, env, output_stream=None):
         """See zope.app.publication.interfaces.IPublicationRequestFactory"""
         assert output_stream is None, 'output_stream is deprecated in Z3.2'
 

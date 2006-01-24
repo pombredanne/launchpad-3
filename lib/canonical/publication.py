@@ -156,7 +156,7 @@ class LaunchpadBrowserPublication(
         da.set_request_started()
 
         # Set the default layer.
-        adapters = zapi.getService(zapi.servicenames.Adapters)
+        adapters = zapi.getGlobalSiteManager().adapters
         layer = adapters.lookup((providedBy(request),), IDefaultSkin, '')
         if layer is not None:
             layers.setAdditionalLayer(request, layer)
@@ -217,7 +217,6 @@ class LaunchpadBrowserPublication(
             request.response.setBody('')
 
     def endRequest(self, request, object):
-        da.clear_request_started()
         superclass = zope.app.publication.browser.BrowserPublication
         superclass.endRequest(self, request, object)
-
+        da.clear_request_started()

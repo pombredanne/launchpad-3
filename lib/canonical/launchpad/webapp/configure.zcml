@@ -296,7 +296,6 @@
         permission="zope.Public"
         />
 
-
     <!-- Default favicon -->
     <browser:favicon for="*" file="../images/launchpad_favicon.png" />
 

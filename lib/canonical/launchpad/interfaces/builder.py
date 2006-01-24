@@ -17,7 +17,7 @@ from zope.schema import Choice, TextLine, Bool
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Description
 from canonical.launchpad.interfaces.launchpad import IHasOwner
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.name import name_validator 
 
 
 class IBuilder(IHasOwner):
@@ -51,7 +51,7 @@ class IBuilder(IHasOwner):
                                  'and port, e.g.: http://farm.com:8221')
                    )
     name = TextLine(title=_('Name'), required=True,
-                    constraint=valid_name,
+                    constraint=name_validator,
                     description=_('Builder Slave Name used for reference '
                                   'proposes')
                     )

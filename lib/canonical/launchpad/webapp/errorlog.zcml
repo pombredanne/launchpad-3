@@ -20,4 +20,9 @@
         component="canonical.launchpad.webapp.errorlog.globalErrorUtility" 
         />
 
+    <subscriber
+        for="zope.app.publication.interfaces.IEndRequestEvent"
+        factory="canonical.launchpad.webapp.errorlog.end_request"
+        />
+
 </configure>

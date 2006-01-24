@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'IDownloadURL',
     'IBinaryPackageFile',
     'ISourcePackageReleaseFile',
     ]
@@ -12,6 +13,11 @@ __all__ = [
 from zope.schema import Int
 from zope.interface import Interface, Attribute
 from canonical.launchpad import _
+
+class IDownloadURL(Interface):
+    filename = Attribute("Downloadable Package name")
+    fileurl = Attribute("Package full url")
+
 
 class IBinaryPackageFile(Interface):
     """A binary package to librarian link record."""
@@ -34,6 +40,7 @@ class IBinaryPackageFile(Interface):
             )
     url = Attribute("IDownloadURL instance")
 
+
 class ISourcePackageReleaseFile(Interface):
     """A source package release to librarian link record."""
 
@@ -55,3 +62,4 @@ class ISourcePackageReleaseFile(Interface):
             )
 
     url = Attribute("IDownloadURL instance")
+

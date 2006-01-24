@@ -64,6 +64,14 @@ class IBugTrackerSet(Interface):
 
     bugtracker_count = Attribute("The number of registered bug trackers.")
 
+    def get(bugtracker_id, default=None):
+        """Get a BugTracker by its id, or return default if it doesn't exist."""
+
+    def getByName(name, default=None):
+        """Get a BugTracker by its name, or return default if it doesn't
+        exist.
+        """
+
     def __getitem__(name):
         """Get a BugTracker by its name in the database.
 

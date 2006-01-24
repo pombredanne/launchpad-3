@@ -97,7 +97,7 @@ class ProductSeriesContextMenu(ContextMenu):
 
     def addrelease(self):
         text = 'Register a Release'
-        return Link('+addrelease', text, icon='edit')
+        return Link('+addrelease', text, icon='add')
 
     def download(self):
         text = 'Download RDF Metadata'

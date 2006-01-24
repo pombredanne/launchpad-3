@@ -37,8 +37,8 @@ class SQLObjectEditView(EditView):
 
     top_of_page_errors = ()
 
-    def doSchemaValidation(self, data):
-        """Perform schema wide validation.
+    def validate(self, data):
+        """Validate the form.
 
         Override this to do any validation that must take into account the
         value of multiple widgets.
@@ -81,7 +81,7 @@ class SQLObjectEditView(EditView):
                 return self.update_status
 
             try:
-                self.doSchemaValidation(new_values)
+                self.validate(new_values)
             except WidgetsError, errors:
                 self.top_of_page_errors = errors
                 self._abortAndSetStatus()

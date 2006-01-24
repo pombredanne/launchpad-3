@@ -2,7 +2,8 @@
 """Interfaces specific to mail handling."""
 
 __metaclass__ = type
-__all__ = ['ISignedMessage',
+__all__ = ['IWeaklyAuthenticatedPrincipal',
+           'ISignedMessage',
            'IMailHandler',
            'EmailProcessingError',
            'IEmailCommand',
@@ -14,6 +15,15 @@ __all__ = ['ISignedMessage',
 from zope.interface import Interface, Attribute
 from zope.schema import ASCII
 from canonical.launchpad import _
+
+
+class IWeaklyAuthenticatedPrincipal(Interface):
+    """The principal has been weakly authenticated.
+
+    At the moment it means that the user was authenticated simply by
+    looking at the From address in an email.
+    """
+
 
 class ISignedMessage(Interface):
     """A message that's possibly signed with an OpenPGP key.

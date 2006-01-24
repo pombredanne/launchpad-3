@@ -49,7 +49,10 @@ class NameNotAvailable(KeyError):
 
 
 class ILaunchpadCelebrities(Interface):
+    """Well known things.
 
+    Celebrities are SQLBase instances that have a well known name.
+    """
     buttsource = Attribute("The 'buttsource' team.")
     admin = Attribute("The 'admins' team.")
     ubuntu = Attribute("The ubuntu Distribution.")

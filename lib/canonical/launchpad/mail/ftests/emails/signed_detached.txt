@@ -4,19 +4,20 @@ To: someone@somehost
 Subject: Signed Email
 Mime-Version: 1.0
 Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="vtzGhvizbBRQ85DL"
+	protocol="application/pgp-signature";
+	boundary="'()+_,./:=?vtzGhvizbBRQ85DL"
 Content-Disposition: inline
 Status: RO
 Content-Length: 475
 
 
---vtzGhvizbBRQ85DL
+--'()+_,./:=?vtzGhvizbBRQ85DL
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
 
 Some signed content.
 
---vtzGhvizbBRQ85DL
+--'()+_,./:=?vtzGhvizbBRQ85DL
 Content-Type: application/pgp-signature; name="signature.asc"
 Content-Description: Digital signature
 Content-Disposition: inline
@@ -29,6 +30,6 @@ xIlThcNdAY9Wkd289kB5W8I=
 =fQDd
 -----END PGP SIGNATURE-----
 
---vtzGhvizbBRQ85DL--
+--'()+_,./:=?vtzGhvizbBRQ85DL--
 
 

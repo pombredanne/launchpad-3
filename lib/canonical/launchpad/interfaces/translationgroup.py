@@ -13,11 +13,11 @@ from zope.interface import Attribute
 from zope.schema import Datetime, Int, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
+from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
 
-from canonical.launchpad import _
 
 class ITranslationGroup(IHasOwner):
     """A TranslationGroup."""
@@ -30,7 +30,7 @@ class ITranslationGroup(IHasOwner):
             description=_("""Keep this name very short, unique, and
             descriptive, because it will be used in URLs. Examples:
             gnome-translation-project, ubuntu-translators."""),
-            constraint=valid_name,
+            constraint=name_validator,
             )
     title = Title(
             title=_('Title'), required=True,

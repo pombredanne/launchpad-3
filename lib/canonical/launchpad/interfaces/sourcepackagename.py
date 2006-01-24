@@ -12,8 +12,9 @@ __all__ = [
 from zope.schema import Int, TextLine
 from zope.interface import Interface, Attribute
 
-from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad import _
+from canonical.launchpad.validators.name import name_validator
+
 
 class ISourcePackageName(Interface):
     """Interface provied by a SourcePackageName.
@@ -26,7 +27,7 @@ class ISourcePackageName(Interface):
 
     id = Int(title=_("ID"), required=True)
     name = TextLine(title=_("Valid Source package name"),
-                    required=True, constraint=valid_name)
+                    required=True, constraint=name_validator)
     potemplates = Attribute("The list of PO templates that this object has.")
     packagings = Attribute("Everything we know about the packaging of "
         "packages with this source package name.")

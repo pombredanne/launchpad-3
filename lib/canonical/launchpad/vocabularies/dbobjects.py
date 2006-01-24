@@ -12,6 +12,7 @@ __all__ = [
     'IHugeVocabulary',
     'SQLObjectVocabularyBase',
     'NamedSQLObjectVocabulary',
+    'BinaryAndSourcePackageNameVocabulary',
     'BinaryPackageNameVocabulary',
     'BinaryPackageVocabulary',
     'BountyVocabulary',
@@ -56,7 +57,8 @@ from zope.security.proxy import isinstance as zisinstance
 from sqlobject import AND, OR, CONTAINSSTRING
 
 from canonical.lp.dbschema import EmailAddressStatus
-from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase, quote_like, quote, sqlvalues, cursor)
 from canonical.launchpad.database import (
     Distribution, DistroRelease, Person, SourcePackageRelease,
     SourcePackageName, BinaryPackageRelease, BugWatch, Sprint,
@@ -233,6 +235,66 @@ class CountryNameVocabulary(SQLObjectVocabularyBase):
 
     def _toTerm(self, obj):
         return SimpleTerm(obj, obj.id, obj.name)
+
+
+class BinaryAndSourcePackageNameVocabulary(SQLObjectVocabularyBase):
+    """A vocabulary for searching for binary and sourcepackage names.
+
+    This is useful for, e.g., reporting a bug on a 'package' when a reporter
+    often has no idea about whether they mean a 'binary package' or a 'source
+    package'.
+
+    The value returned by a widget using this vocabulary will be either an
+    ISourcePackageName or an IBinaryPackageName.
+    """
+    implements(IHugeVocabulary)
+
+    def __contains__(self, name):
+        # Is this a source or binary package name?
+        return (
+            SourcePackageName.selectOneBy(name=name) or
+            BinaryPackageName.selectOneBy(name=name))
+
+    def __iter__(self):
+        return self.search(query="")
+
+    def getTermByToken(self, token):
+        # Try to retrieve the binary package name.
+        return self._toTerm(token)
+
+    def search(self, query=None):
+        """Find matching source and binary package names."""
+        if query is None:
+            return
+
+        cur = cursor()
+
+        # Search for matching binary and source package names.
+        #
+        # When a binary package has the same name as a source package, the
+        # binary package name will be returned in the result set, and the
+        # source package name will not. This allows the user to select the
+        # most specific package name possible, without them having to care
+        # about whether that means "source package" or "binary package".
+        quoted_package_name = quote_like(query)
+
+        cur.execute((
+            "SELECT name "
+            "FROM BinaryPackageName "
+            "WHERE name ILIKE '%%' || %s || '%%' "
+            "UNION "
+            "SELECT name FROM SourcePackageName "
+            "WHERE name ILIKE '%%' || %s || '%%' "
+            "ORDER BY name;") % (
+            quoted_package_name, quoted_package_name))
+
+        package_name_rows = cur.fetchall()
+
+        for package_name_row in package_name_rows:
+            yield self._toTerm(package_name_row[0])
+
+    def _toTerm(self, name):
+        return SimpleTerm(name, name, name)
 
 
 class BinaryPackageNameVocabulary(NamedSQLObjectVocabulary):
