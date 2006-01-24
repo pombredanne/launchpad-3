@@ -21,6 +21,7 @@ from canonical.launchpad.helpers import (setupInteraction,
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.mail.signedmessage import signed_message_from_string
 from canonical.launchpad.mailnotification import notify_errors_list
+from canonical.librarian.interfaces import UploadFailed
 
 
 # Match '\n' and '\r' line endings. That is, all '\r' that are not
@@ -136,9 +137,13 @@ def handleMail(trans=transaction):
 
                 # File the raw_mail in the Librarian
                 file_name = get_filename_from_message_id(mail['Message-Id'])
-                file_alias = getUtility(ILibraryFileAliasSet).create(
-                        file_name, len(raw_mail),
-                        cStringIO(raw_mail), 'message/rfc822')
+                try:
+                    file_alias = getUtility(ILibraryFileAliasSet).create(
+                            file_name, len(raw_mail),
+                            cStringIO(raw_mail), 'message/rfc822')
+                except UploadFailed:
+                    log.error('Upload to Librarian failed', exc_info=True)
+                    continue
                 # Let's save the url of the file alias, otherwise we might not
                 # be able to access it later if we get a DB exception.
                 file_alias_url = file_alias.url
