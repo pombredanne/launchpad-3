@@ -244,3 +244,22 @@ class AnythingGoesUploadPolicy(AbstractUploadPolicy):
 
 AbstractUploadPolicy._registerPolicy(AnythingGoesUploadPolicy)
 
+class SecurityUploadPolicy(AbstractPolicy):
+    """The security-upload policy allows binary uploads and doesn't mail
+    anyone when we use it.
+    """
+
+    def __init__(self):
+        AbstractUploadPolicy.__init__(self)
+        self.name = "security"
+        self.unsigned_dsc_ok = True
+        self.unsigned_changes_ok = True
+        self.can_upload_mixed = False
+        self.can_upload_binaries = True
+
+    def filterRecipients(self, upload, recipients):
+        """Do not mail *ANYONE* on security uploads."""
+        return []
+
+AbstractUploadPolicy._registerPolicy(SecurityUploadPolicy)
+
