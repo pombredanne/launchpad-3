@@ -77,7 +77,7 @@ echo Waiting 10 seconds for postgresql to come up...
 sleep 10
 
 echo Creating postgresql user $(id -un)
-sudo -u postgres createuser -a -d $(id -un)
+sudo -u postgres /usr/lib/postgresql/8.0/bin/createuser -a -d $(id -un)
 
 echo
 echo Looks like everything went ok.
