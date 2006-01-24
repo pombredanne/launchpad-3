@@ -303,12 +303,18 @@ class AdminDistribution(AdminByAdminsTeam):
     usedfor = IDistribution
 
 
-class EditDistribution(AdminByAdminsTeam):
-    """Soyuz involves huge chunks of data in the archive and librarian,
-    so for the moment we are locking down admin and edit on distributions
-    and distroreleases to the Launchpad admin team."""
+class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
+    """The owner of a distribution should be able to edit its
+    information; it is mainly administrative data, such as bug
+    contacts. Note that creation of new distributions and distribution
+    releases is still protected with launchpad.Admin"""
     permission = 'launchpad.Edit'
     usedfor = IDistribution
+
+    def checkAuthenticated(self, user):
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.owner) or
+                user.inTeam(admins))
 
 
 class AdminDistroRelease(AdminByAdminsTeam):

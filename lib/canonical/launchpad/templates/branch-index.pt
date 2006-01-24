@@ -25,7 +25,7 @@
   <table>
     <tbody>
       <tr>
-        <th>Branch URL:</th>
+        <th>URL:</th>
         <td><tt><a tal:attributes="href context/url"
                    tal:content="context/url"
           >http://example.com/software/hello.devel</a></tt></td>
@@ -41,7 +41,7 @@
     </tbody>
   </table>
 
-  <h2>Recent history:</h2>
+  <h2>Recent revisions</h2>
 
   <p tal:condition="not:context/revision_count">
     This branch has not been scanned for revisions yet, or no revisions were
@@ -49,12 +49,10 @@
   </p>
 
   <tal:history_available condition="context/revision_count">
-  <p>Summary of the 10 latest revisions on that branch.</p>
   <table class="listing">
     <thead>
       <tr>
-        <td></td>
-        <th>Date</th>
+        <th colspan="2">Revision</th>
         <th tal:condition="view/user">Author</th>
         <th>Message</th>
       </tr>
@@ -70,6 +68,21 @@
   </table>
   </tal:history_available>
 
+      <h1>Nearby</h1>
+      <ul>
+        <li tal:condition="context/product">
+          <a tal:attributes="href string:${context/product/fmt:url}/+branches">
+            Other <tal:product replace="context/product/displayname" />
+            branches
+          </a>
+        </li>
+        <li>
+          <a tal:attributes="href string:${context/owner/fmt:url}/+branches">
+            Other branches by
+            <tal:person replace="context/owner/displayname" />
+          </a>
+        </li>
+      </ul>
 </div>
 </body>
 </html>

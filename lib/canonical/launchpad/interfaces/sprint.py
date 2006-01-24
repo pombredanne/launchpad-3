@@ -12,17 +12,14 @@ __all__ = [
     'ISprintSet',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
 
 from zope.interface import Interface, Attribute
 
 from zope.schema import Datetime, Int, Choice, Text, TextLine
 
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad import _
+from canonical.launchpad.validators.name import name_validator 
 from canonical.launchpad.interfaces import IHasOwner, IHasSpecifications
-
-
-_ = MessageIDFactory('launchpad')
 
 
 class ISprint(IHasOwner, IHasSpecifications):
@@ -32,7 +29,7 @@ class ISprint(IHasOwner, IHasSpecifications):
         title=_('Name'), required=True, description=_('A unique name '
         'for this sprint, or conference, or meeting. This will part of '
         'the URL so pick something short. A single word is all you get.'),
-        constraint=valid_name)
+        constraint=name_validator)
     title = TextLine(
         title=_('Title'), required=True, description=_("Please provide "
         "a title for this meeting. This will be shown in listings of "

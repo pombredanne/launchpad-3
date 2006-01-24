@@ -54,14 +54,8 @@ class BinaryPackageNameSet:
         return BinaryPackageName.select(
             CONTAINSSTRING(BinaryPackageName.q.name, name))
 
-    def query(self, name=None, distribution=None, distrorelease=None,
-              distroarchrelease=None, text=None):
-        if (name is None and distribution is None and
-            distrorelease is None and text is None):
-            raise ValueError('must give something to the query.')
-        clauseTables = set(['BinaryPackage'])
-        # XXX sabdfl 12/12/04 not done yet
-        raise NotImplementedError
+    def queryByName(self, name):
+        return BinaryPackageName.selectOneBy(name=name)
 
     def new(self, name):
         return BinaryPackageName(name=name)
