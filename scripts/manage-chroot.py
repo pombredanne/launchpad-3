@@ -14,7 +14,6 @@ import os
 from optparse import OptionParser
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.lp import initZopeless
 from canonical.librarian.interfaces import ILibrarianClient
