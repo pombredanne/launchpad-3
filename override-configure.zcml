@@ -1,0 +1,14 @@
+<configure xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser">
+
+    <!-- Change the default skin from Rotterdam -->
+    <browser:defaultSkin name="launchpad" />
+
+    <!-- Change default view name -->
+    <browser:defaultView name="+index" />
+
+    <include files="override-includes/*-configure.zcml" />
+
+    <include file="configs/+config-overrides.zcml" />
+
+</configure>
