@@ -29,8 +29,9 @@ sudo -u postgres ln -s /etc/postgresql-common/postgresql.pem $main/server.key
 
 echo Applying postgresql configuration changes...
 
-sudo -u postgres grep -q Launchpad /etc/postgresql/8.0/main/pg_hba.conf || \
-sudo -u postgres patch /etc/postgresql/8.0/main/pg_hba.conf <<'EOF'
+sudo cp -a /etc/postgresql/8.0/main/pg_hba.conf /etc/postgresql/8.0/main/pg_hba.conf.old
+sudo grep -q Launchpad /etc/postgresql/8.0/main/pg_hba.conf || \
+sudo patch /etc/postgresql/8.0/main/pg_hba.conf <<'EOF'
 --- pg_hba.conf 2005-11-02 17:33:08.000000000 -0800
 +++ /tmp/pg_hba.conf    2005-11-03 07:32:46.932400423 -0800
 @@ -58,7 +58,9 @@
@@ -45,6 +46,8 @@ sudo -u postgres patch /etc/postgresql/8.0/main/pg_hba.conf <<'EOF'
 
 
 EOF
+sudo chown --reference=/etc/postgresql/8.0/main/pg_hba.conf.old /etc/postgresql/8.0/main/pg_hba.conf
+sudo chmod --reference=/etc/postgresql/8.0/main/pg_hba.conf.old /etc/postgresql/8.0/main/pg_hba.conf
 
 sudo grep -q Launchpad /etc/postgresql/8.0/main/postgresql.conf || \
 sudo patch /etc/postgresql/8.0/main/postgresql.conf <<'EOF'
@@ -64,7 +67,9 @@ sudo patch /etc/postgresql/8.0/main/postgresql.conf <<'EOF'
 +enable_seqscan=false
 EOF
 
-sudo sed -i -e 's/^manual/auto/' /etc/postgresql/8.0/main/start.conf
+if [ -f /etc/postgresql/8.0/main/start.conf ]; then
+    sudo sed -i -e 's/^manual/auto/' /etc/postgresql/8.0/main/start.conf
+fi
 
 sudo /etc/init.d/postgresql-8.0 start
 
@@ -76,6 +81,6 @@ sudo -u postgres createuser -a -d $(id -un)
 
 echo
 echo Looks like everything went ok.
-echo Now run "make" in the database/schema subdirectory of launchpad
+echo Now run '"make schema"' at the top level of the launchpad tree.
 
 exit 0
