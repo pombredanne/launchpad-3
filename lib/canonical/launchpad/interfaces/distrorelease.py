@@ -219,18 +219,35 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         DistroReleaseBinaryPackage objects that match the given text.
         """
 
-    def createQueueEntry(pocket, status=DistroReleaseQueueStatus.ACCEPTED):
+    def createQueueEntry(pocket, changesfilename, changesfilecontent):
         """Create a queue item attached to this distrorelease and the given
-        pocket. If status is not supplied, then default to an ACCEPTED item.
+        pocket. 
+
+        The default state is NEW, sorted sqlobject declaration, any
+        modification should be performed via Queue state-machine.
+        The changesfile argument should be the text of the .changes for this
+        upload. The contents of this may be used later.
         """
 
     def newArch(architecturetag, processorfamily, official, owner):
         """Create a new port or DistroArchRelease for this DistroRelease."""
 
-    def getQueueItems(status=DistroReleaseQueueStatus):
+    def getQueueItems(status=DistroReleaseQueueStatus.ACCEPTED):
         """Get the queue items for this distrorelease that are in the given
         queue state. If status is not supplied, default to the ACCEPTED items
         in the queue.
+        """
+
+    def getFancyQueueItems(status=DistroReleaseQueueStatus.ACCEPTED,
+                            name=None, version=None, exact_match=False):
+        """Get the union of build and source queue items for this distrorelease
+
+        Returns build and source queue items in a given state, matching
+        a give name and version terms. If 'status' is not supplied,
+        default to the ACCEPTED items in the queue. if 'name' and 'version'
+        are supplied return only items which the sourcepackage name and
+        binarypackage name match (SQL LIKE). 'name' doesn't require 'version'.
+        Use 'exact_match' argument for precise results.
         """
 
     def initialiseFromParent():

@@ -16,7 +16,7 @@ reasons why we teams can have polls attached to them.
   >>> from canonical.launchpad.ftests import login
   >>> from canonical.launchpad.interfaces import IPersonSet, IPollSubset
 
-  >>> team = getUtility(IPersonSet).getByName('name17')
+  >>> team = getUtility(IPersonSet).getByName('ubuntu-team')
   >>> member = getUtility(IPersonSet).getByName('stevea')
   >>> member2 = getUtility(IPersonSet).getByName('jdub')
   >>> member3 = getUtility(IPersonSet).getByName('kamion')
@@ -26,8 +26,8 @@ reasons why we teams can have polls attached to them.
   >>> now = datetime.now(pytz.timezone('UTC'))
   >>> onesec = timedelta(seconds=1)
 
-We need to login with one of the administrators of the team named 'name17' to
-be able to create/edit polls.
+We need to login with one of the administrators of the team named 
+'ubuntu-team' to be able to create/edit polls.
   >>> login('colin.watson@ubuntulinux.com')
 
 First we get an object implementing IPollSubset, which is the set of polls for

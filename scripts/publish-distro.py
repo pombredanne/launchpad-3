@@ -3,14 +3,17 @@
 import logging
 import gc
 
+import _pythonpath
+
 from optparse import OptionParser
 from canonical.config import config
 from canonical.launchpad.scripts import (execute_zcml_for_scripts,
                                          logger, logger_options)
 
 from canonical.lp import initZopeless
-from canonical.archivepublisher import \
-     DiskPool, Poolifier, POOL_DEBIAN, Config, Publisher, Dominator
+from canonical.archivepublisher import (
+    DiskPool, Poolifier, POOL_DEBIAN, Config, Publisher, Dominator,
+    LucilleConfigError)
 import sys, os
 
 from canonical.launchpad.database import (
@@ -108,7 +111,11 @@ drs = DistroRelease.selectBy(distributionID=distro.id)
 
 debug("Finding configuration.")
 
-pubconf = Config(distro, drs)
+try:
+    pubconf = Config(distro, drs)
+except LucilleConfigError, info:
+    error(info)
+    sys.exit(1)
 
 debug("Making directories as needed.")
 
@@ -176,6 +183,14 @@ try:
     txn.commit()
 except:
     logging.getLogger().exception("Bad muju while dominating")
+    txn.abort()
+    sys.exit(1)
+
+try:
+    debug("Preparing file lists and overrides.")
+    pub.createEmptyPocketRequests()
+except:
+    logging.getLogger().exception("Bad muju while preparing file lists etc.")
     txn.abort()
     sys.exit(1)
 
@@ -283,4 +298,15 @@ except:
     txn.abort()
     sys.exit(1)
 
+try:
+    debug("Sanitising links in the pool.")
+    dp.sanitiseLinks(['main', 'restricted', 'universe', 'multiverse'])
+except:
+    logging.getLogger().exception("Bad muju while sanitising links.")
+    sys.exit(1)
+
+debug("All done, committing before bed.")
+
 txn.commit()
+
+debug("Ciao")

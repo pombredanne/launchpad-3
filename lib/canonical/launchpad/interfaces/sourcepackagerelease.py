@@ -95,6 +95,12 @@ class ISourcePackageRelease(Interface):
         Return None if not found.
         """
 
+    def override(component=None, section=None, urgency=None):
+        """Uniform method to override sourcepackagerelease attribute.
+
+        All arguments are optional and can be set individually.
+        """
+
     def attachTranslationFiles(tarball_alias, is_published, importer=None):
         """Attach a tarball with translations to be imported into Rosetta.
 

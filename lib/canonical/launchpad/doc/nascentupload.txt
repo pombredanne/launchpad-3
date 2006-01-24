@@ -148,7 +148,7 @@ If the Architecture line does not match then we get an exception.
   >>> ed_mismatched_upload.sourceful
   True
   >>> ed_mismatched_upload.rejection_message
-  'Mismatch in binaryfulness. (arch) False != (files) True'
+  'Mismatch in binaryfulness. (arch) False != (files) True\nOne or more files uploaded with specific architecture but changes file does not list it.'
 
 We can distinguish between the arch-indep and arch-dep binary uploads.
 
@@ -221,7 +221,6 @@ Finally we can ask the upload to process itself.
   DEBUG: Beginning processing.
   DEBUG: Checking signature on changes file.
   DEBUG: Verifying signature on ed_0.2-20_i386.changes
-  DEBUG: Daniel Silverstone (26) is in main's uploaders.
   DEBUG: Verifying the changes file.
   DEBUG: Verifying files in upload.
   DEBUG: Verifying source file ed_0.2-20.dsc
@@ -245,12 +244,13 @@ Finally we can ask the upload to process itself.
   >>> success, msgs = ed_upload.do_accept()
   DEBUG: Attempting to decide if James Troup is in the keyring.
   DEBUG: Decision: False
+  DEBUG: Creating a New queue entry
   >>> print success
   True
   >>> for msg in msgs:
   ...     print msg, "END"
   From: Root <root@localhost>
-  To: Root <root@localhost>, Daniel Silverstone <daniel.silverstone@canonical.com>
+  To: Root <root@localhost>
   Precedence: bulk
   Subject: ed_0.2-20_i386.changes is NEW
   <BLANKLINE>
@@ -262,8 +262,8 @@ Finally we can ask the upload to process itself.
   the override file.  It is ok otherwise, so please be patient.  New
   packages are usually added to the overrides about once a week.
   <BLANKLINE>
-  You may have gotten the distrorelease wrong.  You'll may get warnings
-  above if files already exist in other distrorelease.
+  You may have gotten the distrorelease wrong.  If so, you may get warnings
+  above if files already exist in other distroreleases.
   END
 
 (and some tear down)

@@ -64,7 +64,7 @@ To search the set of IDistroReleases, use IDistroReleaseSet.search:
 
     >>> all_ubuntu_releases = distroreleaseset.search(distribution=ubuntu)
     >>> all_ubuntu_releases.count()
-    3
+    4
 
 DistroRelease.getPublishedReleases:
 

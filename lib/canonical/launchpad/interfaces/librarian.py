@@ -59,6 +59,9 @@ class ILibraryFileAlias(Interface):
         `chunksize` defaults to the entire file.
         """
 
+    def chunks(chunksize=256*1024):
+        """Return an iterator which reads chunks of the given file."""
+
     def close():
         """Close this file."""
 

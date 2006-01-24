@@ -1,0 +1,375 @@
+== Upload processing queue ==
+
+The upload processing queue (DistroReleaseQueue and friends) is where
+uploads go after they have been checked by process-upload.py and
+before they get published by publish-distro.py.
+
+First up, we need to actually process an upload to get it into the
+queue. To do this we set up a librarian, prepare an OpenPGP key, and then
+run the upload handler.
+
+  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+  >>> LibrarianTestSetup().setUp()
+  >>> from canonical.launchpad.interfaces import IGPGKeySet
+  >>> from canonical.lp.dbschema import GPGKeyAlgorithm
+  >>> discarded_key = getUtility(IGPGKeySet).new(26, '20687895',
+  ...     '961F4EB829D7D304A77477822BC8401620687895', 1024, GPGKeyAlgorithm.D)
+  >>> from canonical.launchpad.ftests import import_public_test_keys
+  >>> import_public_test_keys()
+
+We need some setup for the upload handler.
+
+  >>> class MockLogger:
+  ...     def __init__(self, swallow=True):
+  ...         self.swallow = swallow
+  ...     def debug(self, s):
+  ...         if not self.swallow:
+  ...             print("DEBUG: "+s)
+  >>> class MockOptions:
+  ...     distro = "ubuntu"
+  ...     distrorelease = "hoary"
+
+  >>> from canonical.archivepublisher.nascentupload import NascentUpload
+  >>> from canonical.archivepublisher.uploadpolicy import findPolicyByName
+  >>> from canonical.archivepublisher.tests import datadir
+
+Construct an upload.
+
+  >>> ed_upload = NascentUpload(findPolicyByName('anything'),
+  ...     datadir(''), "ed_0.2-20_i386.changes", MockLogger())
+  >>> ed_upload.changes_filename == datadir("ed_0.2-20_i386.changes")
+  True
+  >>> ed_upload.policy.setOptions(MockOptions())
+  >>> ed_upload.policy.can_upload_binaries = True
+  >>> ed_upload.policy.can_upload_mixed = True
+  >>> ed_upload.process()
+  >>> success, msgs = ed_upload.do_accept()
+  >>> success
+  True
+
+Now the upload is in the queue, it'll likely be there as NEW because that's
+what we expect the ed upload to produce. Let's find the queue item and
+convert it to an ACCEPTED item.
+
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.interfaces import (
+  ...      IDistributionSet, QueueInconsistentStateError)
+  >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
+  >>> from canonical.database.sqlbase import flush_database_updates
+
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+  >>> hoary = ubuntu['hoary']
+  >>> new_queue = hoary.getQueueItems(DistroReleaseQueueStatus.NEW)
+
+Use state-machine method provided by DistroReleaseQueue to ACCEPT an
+upload. If some designed check according the request state do not
+pass, the state-machine methods will raise an exception indicating the
+upload can have that state.
+
+XXX cprov 20051209: need to build a broken upload to test it properly
+
+  >>> for item in new_queue:
+  ...     try:
+  ...         item.set_accepted()
+  ...     except QueueInconsistentStateError, info:
+  ...         print info
+
+Make the modification real in the DB (XXX cprov 20051209: see bug #3889)
+
+  >>> flush_database_updates()
+
+  >>> accepted_queue = hoary.getQueueItems(DistroReleaseQueueStatus.ACCEPTED)
+
+  >>> for item in accepted_queue:
+  ...     for source in item.sources:
+  ...         print source.sourcepackagerelease.sourcepackagename.name
+  ...     item.realiseUpload(MockLogger(False))
+  ed
+  DEBUG: Publishing source ed/0.2-20 to ubuntu/hoary
+  DEBUG: Publishing build to ubuntu/hoary/i386
+  DEBUG: ... ed/0.2-20 (Arch Specific)
+
+
+Confirm we can now find ed published in hoary.
+
+  >>> from canonical.launchpad.database import SourcePackagePublishing
+  >>> for release in SourcePackagePublishing.selectBy(
+  ...     distroreleaseID=hoary.id):
+  ...     if release.sourcepackagerelease.sourcepackagename.name == "ed":
+  ...         print release.sourcepackagerelease.version
+  0.2-20
+
+
+Check IDistroReleaseQueueSet behaviour:
+
+ >>> from canonical.launchpad.interfaces import IDistroReleaseQueueSet
+ >>> from zope.interface.verify import verifyObject
+
+ Grab an utility:
+
+ >>> qset = getUtility(IDistroReleaseQueueSet)
+
+Check if it implements its interface completely:
+
+ >>> verifyObject(IDistroReleaseQueueSet, qset)
+ True
+
+Iterator:
+
+ >>> for item in qset:
+ ...     item.id
+ 1
+ 2
+ 3L
+
+getter by id:
+
+ >>> qset[1].id
+ 1
+
+get by id method:
+
+ >>> qset.get(1).id
+ 1
+
+Counter, optionally by status (informally named "queue") and or distrorelease:
+
+  >>> qset.count()
+  3
+
+  >>> qset.count(DistroReleaseQueueStatus.ACCEPTED)
+  1
+
+  >>> qset.count(DistroReleaseQueueStatus.REJECTED)
+  0
+
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
+  >>> distro = getUtility(IDistributionSet).getByName('ubuntu')
+  >>> breezy_autotest = distro['breezy-autotest']
+
+  >>> qset.count(distrorelease=breezy_autotest)
+  2
+
+  >>> qset.count(status=DistroReleaseQueueStatus.ACCEPTED,
+  ...            distrorelease=breezy_autotest)
+  0
+
+  >>> qset.count(status=DistroReleaseQueueStatus.ACCEPTED,
+  ...            distrorelease=hoary)
+  1
+
+
+Check the behaviour of @cachedproperty  attributes:
+  >>> qitem = qset.get(1)
+
+  >>> qitem.datecreated.isoformat()
+  '2004-09-27T11:57:13+00:00'
+
+  >>> qitem.age
+  datetime.timedelta(...)
+
+  >>> qitem.changesfilename
+  u'mozilla-firefox_0.9_i386.changes'
+
+  >>> qitem.sourcepackagename.name
+  u'mozilla-firefox'
+
+  >>> qitem.sourceversion
+  u'0.9'
+
+
+Explore the queue features of a DistroRelease instance, let's test the
+of IDistroRelease.getFancyQueueItems:
+
+  >>> new_items = breezy_autotest.getFancyQueueItems(
+  ...    DistroReleaseQueueStatus.NEW)
+  >>> new_items.count()
+  2
+
+Ensure they are build queue entries
+
+  >>> for n in new_items:
+  ...     len(n.builds), len(n.sources)
+  (1, 0)
+  (1, 0)
+
+Exercises build side of getFancyQueueItems, Retrive queue entry for a
+name like 'moz':
+
+  >>> items = breezy_autotest.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
+  ...                                            name='moz')
+  >>> items.count()
+  1
+
+  >>> items[0].builds[0].build.binarypackages[0].name
+  u'mozilla-firefox'
+  >>> items[0].builds[0].build.binarypackages[0].version
+  u'0.9'
+
+Got a distrorelease build queue entry for 'mozilla-firefox_0.9'
+
+Try with version:
+
+  >>> items = breezy_autotest.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
+  ...                                            name='moz', version='0.9')
+  >>> items.count()
+  1
+
+  >>> items[0].builds[0].build.binarypackages[0].name
+  u'mozilla-firefox'
+  >>> items[0].builds[0].build.binarypackages[0].version
+  u'0.9'
+
+Got the same queue entry.
+
+Let's try another entry where binary package name is LIKE 'pmount'
+
+  >>> items = breezy_autotest.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
+  ...                                            name='pmount')
+  >>> items.count()
+  1
+
+  >>> items[0].builds[0].build.binarypackages[0].name
+  u'pmount'
+  >>> items[0].builds[0].build.binarypackages[0].version
+  u'0.1-1'
+
+Got 'pmount_0.1-1'.
+
+Look for every queue entry which package name is like 'mo'
+
+  >>> items = breezy_autotest.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
+  ...                                            name='mo')
+  >>> items.count()
+  2
+
+  >>> for item in items:
+  ...     (item.builds[0].build.binarypackages[0].name,
+  ...      item.builds[0].build.binarypackages[0].version)
+  (u'mozilla-firefox', u'0.9')
+  (u'pmount', u'0.1-1')
+
+Got both sampledata results 'p_mo_unt' & '_mo_zilla-firefox'
+
+Try 'exact_match' for 'mozil_0.0.1'
+
+  >>> items = breezy_autotest.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
+  ...                 name='mozil', version='0.0.1', exact_match=True)
+  >>> items.count()
+  0
+
+There is no match on queue entries.
+
+Check State Machine over DistroReleaseQueueBuilds:
+
+Performing full acceptance:
+
+  >>> items = breezy_autotest.getFancyQueueItems(DistroReleaseQueueStatus.NEW)
+  >>> for item in items:
+  ...      try:
+  ...          item.set_accepted()
+  ...      except QueueInconsistentStateError, e:
+  ...          print item.sourcepackagename.name, e
+  ...      else:
+  ...          print item.sourcepackagename.name, 'ACCEPTED'
+  mozilla-firefox ACCEPTED
+  pmount ACCEPTED
+
+
+Move the DistroReleaseQueue items back to NEW
+
+  >>> for item in items:
+  ...     item.set_new()
+
+
+Check forbidden approval of not selected Section:
+
+  >>> from zope.security.proxy import removeSecurityProxy
+  >>> from canonical.launchpad.interfaces import (
+  ...     IComponentSet, ISectionSet)
+
+Retrieve mozilla-firefox DRQ:
+
+  >>> item = breezy_autotest.getFancyQueueItems(
+  ...     DistroReleaseQueueStatus.NEW, name='mozilla')[0]
+
+Override the mozilla-firefox component to fresh created 'hell' component.
+
+XXX cprov 20060118: remove proxy magic is required for BPR instances.
+
+  >>> naked_bin = removeSecurityProxy(
+  ...       item.builds[0].build.binarypackages[0])
+  >>> naked_bin.component = getUtility(IComponentSet).new('hell')
+  >>> try:
+  ...     item.set_accepted()
+  ... except QueueInconsistentStateError, e:
+  ...     print item.sourcepackagename.name, e
+  ... else:
+  ...     print item.sourcepackagename.name, 'ACCEPTED'
+  mozilla-firefox Component "hell" is not allowed in breezy-autotest
+
+
+Check forbidden approval of not selected Section:
+
+Retrieve pmount:
+
+  >>> item = breezy_autotest.getFancyQueueItems(
+  ...     DistroReleaseQueueStatus.NEW, name='pmount')[0]
+
+Override the pmount section to fresh created 'heaven' section.
+
+XXX cprov 20060118: remove proxy magic is required for BPR instances.
+
+  >>> naked_bin = removeSecurityProxy(
+  ...       item.builds[0].build.binarypackages[0])
+  >>> naked_bin.section = getUtility(ISectionSet).new('heaven')
+
+Try to perform single acceptance of pmount with not allowed section:
+
+  >>> try:
+  ...     item.set_accepted()
+  ... except QueueInconsistentStateError, e:
+  ...     print item.sourcepackagename.name, e
+  ... else:
+  ...     print item.sourcepackagename.name, 'ACCEPTED'
+  pmount Section "heaven" is not allowed in breezy-autotest
+
+
+Construct a new upload for universe/misc and a lot of errors ;)
+
+  >>> usplash_upload = NascentUpload(findPolicyByName('anything'),
+  ...     datadir(''), "usplash_0.1-22_powerpc.changes", MockLogger())
+  >>> usplash_upload.policy.setOptions(MockOptions())
+  >>> usplash_upload.policy.can_upload_binaries = True
+  >>> usplash_upload.policy.can_upload_mixed = True
+  >>> usplash_upload.process()
+  >>> res, msgs = usplash_upload.do_accept()
+  >>> for msg in msgs:
+  ...    print msg
+  From: Root <root@localhost>
+  To: Root <root@localhost>
+  Precedence: bulk
+  Subject: usplash_0.1-22_powerpc.changes REJECTED
+  <BLANKLINE>
+  usplash_0.1-22_powerpc.deb: Unknown architecture: 'powerpc'.
+  Unable to find source package usplash/0.1-22 in hoary
+  usplash_0.1-22_powerpc.deb: Unable to find arch: powerpc
+  Signer has no upload rights at all to this distribution.
+  Signer is not permitted to upload to the component 'universe' of file 'usplash_0.1-22_powerpc.deb'
+  Alas, someone called do_accept when we're rejected
+  <BLANKLINE>
+  ===
+  <BLANKLINE>
+  If you don't understand why your files were rejected, or if the
+  override file requires editing, reply to this email.
+  <BLANKLINE>
+
+It aims to check if at least we are parsing and comparing sections
+properly (see nascentupload.py 818)
+
+Finally, abort the whole damned mess
+
+  >>> import transaction
+  >>> transaction.abort()
+

@@ -136,12 +136,14 @@ class BinaryPackageRelease(SQLBase):
             raise NotFoundError('BinaryPackageRelease not found in '
                                 'PackagePublishing')
         return packagepublishing.status.title
-    
+
     def __getitem__(self, version):
+        """Return a single BinaryPackageRelease for a given version."""
+        # XXX 20060111 cprov: Not sure it behaves as expected
         clauseTables = ["Build"]
         query = """Build.id = build
-                   AND  Build.distroarchrelease = %d
-                   AND  binarypackagename = %d
+                   AND  Build.distroarchrelease = %s
+                   AND  binarypackagename = %s
                    AND  version = %s""" % sqlvalues(
                        self.build.distroarchrelease.id,
                        self.binarypackagename.id,
@@ -182,6 +184,15 @@ class BinaryPackageRelease(SQLBase):
             pocket=pocket,
             embargo=embargo,
             )
+
+    def override(self, component=None, section=None, priority=None):
+        """See IBinaryPackageRelease."""
+        if component:
+            self.component = component
+        if section:
+            self.section = section
+        if priority:
+            self.priority = priority
 
 
 class BinaryPackageReleaseSet:

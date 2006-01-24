@@ -9,6 +9,8 @@ __all__ = [
     'DistroReleaseSet',
     ]
 
+from cStringIO import StringIO
+
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -27,8 +29,8 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
     IPublishedPackageSet, IHasBuildRecords, NotFoundError,
-    IBinaryPackageName, IBuildSet, UNRESOLVED_BUGTASK_STATUSES,
-    RESOLVED_BUGTASK_STATUSES)
+    IBinaryPackageName, ILibraryFileAliasSet, IBuildSet,
+    UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
 from canonical.database.constants import DEFAULT, UTC_NOW
 
@@ -551,19 +553,127 @@ class DistroRelease(SQLBase):
             distrorelease=self, owner=owner)
         return dar
 
-    def createQueueEntry(self, pocket,
-                         status=DistroReleaseQueueStatus.ACCEPTED):
+    def createQueueEntry(self, pocket, changesfilename, changesfilecontent):
         """See IDistroRelease."""
-
+        file_alias_set = getUtility(ILibraryFileAliasSet)
+        changes_file = file_alias_set.create(changesfilename,
+            len(changesfilecontent), StringIO(changesfilecontent),
+            'text/plain')
         return DistroReleaseQueue(distrorelease=self.id,
                                   pocket=pocket,
-                                  status=status)
+                                  changesfile=changes_file.id)
 
     def getQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED):
         """See IDistroRelease."""
-
         return DistroReleaseQueue.selectBy(distroreleaseID=self.id,
-                                           status=status)
+                                           status=status, orderBy=['id'])
+
+    def getFancyQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED,
+                            name=None, version=None, exact_match=False):
+        """See IDistroRelease."""
+        # build default distroreleasequeuesource query
+        source_where_clause = (
+            "distrorelease=%s AND status=%s AND distroreleasequeue.id="
+            "distroreleasequeuesource.distroreleasequeue"
+            % sqlvalues(self.id, status))
+        source_clauseTables = ['DistroReleaseQueueSource']
+        source_orderBy=['id']
+
+        # build default distroreleasequeuebuild query
+        build_where_clause = (
+            "distrorelease=%s AND status=%s AND distroreleasequeue.id="
+            "distroreleasequeuebuild.distroreleasequeue"
+            % sqlvalues(self.id, status))
+        build_clauseTables = ['DistroReleaseQueueBuild']
+        build_orderBy=['id']
+
+        # modify default query to return matchs of a package name
+        if name:
+            # modify source clause to lookup on sourcepackagerelease
+            source_where_clause +="""
+            AND distroreleasequeuesource.sourcepackagerelease =
+            sourcepackagerelease.id AND
+            sourcepackagerelease.sourcepackagename=
+            sourcepackagename.id
+            """
+
+            # modify build clause to lookup on binarypackagerelease
+            build_where_clause +="""
+            AND distroreleasequeuebuild.build=binarypackagerelease.build
+            AND binarypackagerelease.binarypackagename=binarypackagename.id
+            """
+
+            # attempt to exact or similar names in both, builds and sources
+            if exact_match:
+                source_where_clause += """
+                AND sourcepackagename.name = '%s'
+                """ % name
+                build_where_clause += """
+                AND binarypackagename.name = '%s'
+                """ % name
+            else:
+                source_where_clause += """
+                AND sourcepackagename.name LIKE '%%%s%%'
+                """ % name
+                build_where_clause += """
+                AND binarypackagename.name LIKE '%%%s%%'
+                """ % name
+
+            # attempt for given version argument
+            if version:
+                # exact or similar matches
+                if exact_match:
+                    source_where_clause += """
+                    AND sourcepackagerelease.version = '%s'
+                    """ % version
+                    build_where_clause += """
+                    AND binarypackagerelease.version = '%s'
+                    """ % version
+                else:
+                    source_where_clause += """
+                    AND sourcepackagerelease.version LIKE '%%%s%%'
+                    """ % version
+                    build_where_clause += """
+                    AND binarypackagerelease.version LIKE '%%%s%%'
+                    """ % version
+
+            # Fine tune source clause tables and ordering
+            source_clauseTables = [
+                'DistroReleaseQueueSource',
+                'SourcePackageRelease',
+                'SourcePackageName',
+                ]
+
+            source_orderBy = [
+                '-sourcepackagerelease.dateuploaded'
+                ]
+
+            # Fine tune build clause tables and ordering
+            build_clauseTables = [
+                'DistroReleaseQueueBuild',
+                'BinaryPackageRelease',
+                'BinaryPackageName',
+                ]
+
+            build_orderBy = [
+                '-binarypackagerelease.datecreated'
+                ]
+
+        # build a SelectResult group for matching distroreleasequeuesources
+        source_results = DistroReleaseQueue.select(
+            source_where_clause, clauseTables=source_clauseTables,
+            orderBy=source_orderBy)
+
+        # build a SelectResult group for matching distroreleasequeuebuilds
+        build_results = DistroReleaseQueue.select(
+            build_where_clause, clauseTables=build_clauseTables,
+            orderBy=build_orderBy)
+
+        # mock a new order for union
+        union_orderBy=['id']
+
+        # return the UNION of sources and builds
+        return source_results.union(build_results, orderBy=union_orderBy)
 
     def createBug(self, owner, title, comment, private=False):
         """See canonical.launchpad.interfaces.IBugTarget."""

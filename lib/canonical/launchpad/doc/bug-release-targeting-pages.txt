@@ -45,23 +45,13 @@ that the data is as we expect it to be.
 
   >>> for item in release_target_details:
   ...     print item.release.name
+  breezy-autotest
   grumpy
   hoary
   warty
 
-  >>> release_target_details[0].release.name
-  u'grumpy'
-  >>> release_target_details[0].istargeted == False
-  True
-  >>> release_target_details[0].sourcepackage.sourcepackagename == spnameset.get(1)
-  True
-  >>> release_target_details[0].assignee is None
-  True
-  >>> release_target_details[0].status is None
-  True
-
   >>> release_target_details[1].release.name
-  u'hoary'
+  u'grumpy'
   >>> release_target_details[1].istargeted == False
   True
   >>> release_target_details[1].sourcepackage.sourcepackagename == spnameset.get(1)
@@ -72,7 +62,7 @@ that the data is as we expect it to be.
   True
 
   >>> release_target_details[2].release.name
-  u'warty'
+  u'hoary'
   >>> release_target_details[2].istargeted == False
   True
   >>> release_target_details[2].sourcepackage.sourcepackagename == spnameset.get(1)
@@ -80,6 +70,17 @@ that the data is as we expect it to be.
   >>> release_target_details[2].assignee is None
   True
   >>> release_target_details[2].status is None
+  True
+
+  >>> release_target_details[3].release.name
+  u'warty'
+  >>> release_target_details[3].istargeted == False
+  True
+  >>> release_target_details[3].sourcepackage.sourcepackagename == spnameset.get(1)
+  True
+  >>> release_target_details[3].assignee is None
+  True
+  >>> release_target_details[3].status is None
   True
 
 Creating the Targeted Tasks

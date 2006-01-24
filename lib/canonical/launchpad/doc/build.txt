@@ -116,7 +116,7 @@ given build record entry.
 
 Invoke createBinaryPackageRelease with all required arguments.
 
-  >>> bin = Build.get(7).createBinaryPackageRelease(
+  >>> bin = pmount_build.createBinaryPackageRelease(
   ...                                 binarypackagename, version,
   ...                                 summary, description,
   ...                                 binpackageformat, component,
@@ -129,6 +129,70 @@ Invoke createBinaryPackageRelease with all required arguments.
 
   >>> from canonical.launchpad.interfaces import IBinaryPackageRelease
   >>> assert verifyObject(IBinaryPackageRelease, bin) is True
+
+
+Commit previous transaction, data we want to preserv:
+
+  >>> import transaction
+  >>> transaction.commit()
+
+Check binarypackages property:
+
+  >>> for b in pmount_build.binarypackages:
+  ...     b.version
+  u'0.0.1-demo'
+  u'0.1-1'
+
+Emulate a huge list of binaries for 'pmount':
+
+  >>> for i in range(15):
+  ...     version = "%d" % i
+  ...     bpname = getUtility(IBinaryPackageNameSet).ensure("test-%d"
+  ...                                                       % i).id
+  ...     b = pmount_build.createBinaryPackageRelease(
+  ...                                 bpname, version,
+  ...                                 summary, description,
+  ...                                 binpackageformat, component,
+  ...                                 section, priority, shlibdeps,
+  ...                                 depends, recommends, suggests,
+  ...                                 conflicts, replaces, provides,
+  ...                                 essential, installedsize,
+  ...                                 copyright, licence,
+  ...                                 architecturespecific)
+
+
+Check if the property still working:
+
+  >>> len(pmount_build.binarypackages)
+  17
+
+Ensure the list is ordered by 'name'
+
+  >>> for b in pmount_build.binarypackages:
+  ...     b.name, b.version
+  (u'demo', u'0.0.1-demo')
+  (u'pmount', u'0.1-1')
+  (u'test-0', u'0')
+  (u'test-1', u'1')
+  (u'test-10', u'10')
+  (u'test-11', u'11')
+  (u'test-12', u'12')
+  (u'test-13', u'13')
+  (u'test-14', u'14')
+  (u'test-2', u'2')
+  (u'test-3', u'3')
+  (u'test-4', u'4')
+  (u'test-5', u'5')
+  (u'test-6', u'6')
+  (u'test-7', u'7')
+  (u'test-8', u'8')
+  (u'test-9', u'9')
+
+Rollback transaction to no disturb the other tests:
+
+  >>> transaction.abort()
+
+
 
 The BuildSet class gives us some useful ways to consider the
 collection of builds.

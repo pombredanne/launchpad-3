@@ -7,7 +7,8 @@ __metaclass__ = type
 __all__ = ["findPolicyByName", "findPolicyByOptions"]
 
 from zope.component import getUtility
-from canonical.launchpad.interfaces import IDistributionSet
+from canonical.launchpad.interfaces import (
+    IDistributionSet, IComponentSet)
 
 # Number of seconds in an hour (used later)
 HOURS = 3600
@@ -207,7 +208,7 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
     def getDefaultPermittedComponents(self):
         """Return the set of components this distrorelease permits."""
         return set(
-            component.name for component in self.distrorelease.components)
+            component.name for component in getUtility(IComponentSet))
 
 # Register this as the 'buildd' policy
 AbstractUploadPolicy._registerPolicy(BuildDaemonUploadPolicy)
