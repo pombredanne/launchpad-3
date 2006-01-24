@@ -67,7 +67,9 @@ sudo patch /etc/postgresql/8.0/main/postgresql.conf <<'EOF'
 +enable_seqscan=false
 EOF
 
-sudo sed -i -e 's/^manual/auto/' /etc/postgresql/8.0/main/start.conf
+if [ -f /etc/postgresql/8.0/main/start.conf ]; then
+    sudo sed -i -e 's/^manual/auto/' /etc/postgresql/8.0/main/start.conf
+fi
 
 sudo /etc/init.d/postgresql-8.0 start
 
