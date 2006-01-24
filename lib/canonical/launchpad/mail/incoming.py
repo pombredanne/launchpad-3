@@ -142,8 +142,13 @@ def handleMail(trans=transaction):
                             file_name, len(raw_mail),
                             cStringIO(raw_mail), 'message/rfc822')
                 except UploadFailed:
+                    # Something went wrong in the Librarian. It could be
+                    # that it's not running, but not necessarily. Log
+                    # the error and skip the message, but don't delete
+                    # it.
                     log.error('Upload to Librarian failed', exc_info=True)
                     continue
+
                 # Let's save the url of the file alias, otherwise we might not
                 # be able to access it later if we get a DB exception.
                 file_alias_url = file_alias.url
@@ -223,11 +228,12 @@ def handleMail(trans=transaction):
             except (KeyboardInterrupt, SystemExit):
                 raise
             except:
-                # No exceptions should be raised If an exception is
-                # rasied, it's a programming error. We log the error
-                # instead of sending an email in order to keep it as
-                # simple as possible, we don't want any new exceptions
-                # raised here.
+                # This bare except is needed in order to prevent a bug
+                # in the email handling from causing the email interface
+                # to lock up. If an email causes an unexpected
+                # exception, we simply log the error and delete the
+                # email, so that it doesn't stop the rest of the emails
+                # from being processed.
                 mailbox.delete(mail_id)
                 log = getLogger('canonical.launchpad.mail')
                 if file_alias_url is not None:
