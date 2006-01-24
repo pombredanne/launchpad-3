@@ -114,109 +114,126 @@ def handleMail(trans=transaction):
         notify_errors_list(error_msg, file_alias_url)
         trans.commit()
 
+    log = getLogger('process-mail')
     mailbox = getUtility(IMailBox)
+    log.info("Opening the mail box.")
     mailbox.open()
-    for mail_id, raw_mail in mailbox.items():
-        trans.begin()
-        try:
-            mail = signed_message_from_string(raw_mail)
-        except email.Errors.MessageError, error:
-            mailbox.delete(mail_id)
-            log = getLogger('canonical.launchpad.mail')
-            log.warn("Couldn't convert email to email.Message", exc_info=True)
-            continue
+    try:
+        for mail_id, raw_mail in mailbox.items():
+            log.info("Processing mail %s" % mail_id)
+            try:
+                file_alias_url = None
+                trans.begin()
+                try:
+                    mail = signed_message_from_string(raw_mail)
+                except email.Errors.MessageError, error:
+                    mailbox.delete(mail_id)
+                    log = getLogger('canonical.launchpad.mail')
+                    log.warn(
+                        "Couldn't convert email to email.Message",
+                        exc_info=True)
+                    continue
 
-        # File the raw_mail in the Librarian
-        file_name = get_filename_from_message_id(mail['Message-Id'])
-        file_alias = getUtility(ILibraryFileAliasSet).create(
-                file_name, len(raw_mail),
-                cStringIO(raw_mail), 'message/rfc822')
-        # Let's save the url of the file alias, otherwise we might not
-        # be able to access it later if we get a DB exception.
-        file_alias_url = file_alias.url
+                # File the raw_mail in the Librarian
+                file_name = get_filename_from_message_id(mail['Message-Id'])
+                file_alias = getUtility(ILibraryFileAliasSet).create(
+                        file_name, len(raw_mail),
+                        cStringIO(raw_mail), 'message/rfc822')
+                # Let's save the url of the file alias, otherwise we might not
+                # be able to access it later if we get a DB exception.
+                file_alias_url = file_alias.url
 
-        # If something goes wrong when handling the mail, the
-        # transaction will be aborted. Therefore we need to commit the
-        # transaction now, to ensure that the mail gets stored in the
-        # Librarian.
-        trans.commit()
-        trans.begin()
+                # If something goes wrong when handling the mail, the
+                # transaction will be aborted. Therefore we need to commit the
+                # transaction now, to ensure that the mail gets stored in the
+                # Librarian.
+                trans.commit()
+                trans.begin()
 
-        # If the Return-Path header is '<>', it probably means that it's
-        # a bounce from a message we sent.
-        if mail['Return-Path'] == '<>':
-            _handle_error("Message had an empty Return-Path.", file_alias_url)
-            continue
+                # If the Return-Path header is '<>', it probably means
+                # that it's a bounce from a message we sent.
+                if mail['Return-Path'] == '<>':
+                    _handle_error(
+                        "Message had an empty Return-Path.", file_alias_url)
+                    continue
 
-        try:
-            principal = authenticateEmail(mail)
-        except InvalidSignature, error:
-            _handle_error(
-                "Invalid signature for %s:\n    %s" % (mail['From'],
-                                                       str(error)),
-                file_alias_url)
-            continue
+                try:
+                    principal = authenticateEmail(mail)
+                except InvalidSignature, error:
+                    _handle_error(
+                        "Invalid signature for %s:\n    %s" % (mail['From'],
+                                                               str(error)),
+                        file_alias_url)
+                    continue
 
-        if principal is None:
-            _handle_error('Unknown user: %s ' % mail['From'], file_alias_url)
-            continue
+                if principal is None:
+                    _handle_error(
+                        'Unknown user: %s ' % mail['From'], file_alias_url)
+                    continue
 
-        # Extract the domain the mail was sent to. Mails sent to
-        # Launchpad should have an X-Original-To header.
-        if mail.has_key('X-Original-To'):
-            addresses = [mail['X-Original-To']]
-        else:
-            log = getLogger('canonical.launchpad.mail')
-            log.warn(
-                "No X-Original-To header was present in email: %s" %
-                 file_alias_url)
-            # Process all addresses found as a fall back.
-            cc = mail.get_all('cc') or []
-            to = mail.get_all('to') or []
-            names_addresses = getaddresses(to + cc)
-            addresses = [addr for name, addr in names_addresses]
+                # Extract the domain the mail was sent to. Mails sent to
+                # Launchpad should have an X-Original-To header.
+                if mail.has_key('X-Original-To'):
+                    addresses = [mail['X-Original-To']]
+                else:
+                    log = getLogger('canonical.launchpad.mail')
+                    log.warn(
+                        "No X-Original-To header was present in email: %s" %
+                         file_alias_url)
+                    # Process all addresses found as a fall back.
+                    cc = mail.get_all('cc') or []
+                    to = mail.get_all('to') or []
+                    names_addresses = getaddresses(to + cc)
+                    addresses = [addr for name, addr in names_addresses]
 
-        handler = None
-        for email_addr in addresses:
-            user, domain = email_addr.split('@')
-            handler = queryUtility(IMailHandler, name=domain)
-            if handler is not None:
-                break
+                handler = None
+                for email_addr in addresses:
+                    user, domain = email_addr.split('@')
+                    handler = queryUtility(IMailHandler, name=domain)
+                    if handler is not None:
+                        break
 
-        if handler is None:
-            _handle_error(
-                "No handler registered for '%s' " % (', '.join(addresses)),
-                file_alias_url)
-            continue
+                if handler is None:
+                    _handle_error(
+                        "No handler registered for '%s' " % (
+                            ', '.join(addresses)),
+                        file_alias_url)
+                    continue
 
-        try:
-            handled = handler.process(mail, email_addr, file_alias)
-        except:
-            # The handler shouldn't raise any exceptions. If it
-            # does, it's a programming error. We log the error instead
-            # of sending an email in order to keep it as simple as
-            # possible, we don't want any new exceptions raised here.
-            mailbox.delete(mail_id)
-            log = getLogger('canonical.launchpad.mail')
-            log.error(
-                "An exception was raised inside the handler: %s" % (
-                    file_alias_url),
-                exc_info=True)
-            continue
+                handled = handler.process(mail, email_addr, file_alias)
 
+                if not handled:
+                    _handle_error(
+                        "Handler found, but message was not handled: %s" % (
+                            mail['From'], ),
+                        file_alias_url) 
+                    continue
 
-        if not handled:
-            _handle_error(
-                "Handler found, but message was not handled: %s" % (
-                    mail['From'], ),
-                file_alias_url) 
-            continue
+                # Commit the transaction before deleting the mail in
+                # case there are any errors. If an error occur while
+                # commiting the transaction, the mail will be deleted in
+                # the exception handler.
+                trans.commit()
+                mailbox.delete(mail_id)
+            except (KeyboardInterrupt, SystemExit):
+                raise
+            except:
+                # No exceptions should be raised If an exception is
+                # rasied, it's a programming error. We log the error
+                # instead of sending an email in order to keep it as
+                # simple as possible, we don't want any new exceptions
+                # raised here.
+                mailbox.delete(mail_id)
+                log = getLogger('canonical.launchpad.mail')
+                if file_alias_url is not None:
+                    email_info = file_alias_url
+                else:
+                    email_info = raw_mail
 
-        # Let's commit the transaction before we delete the mail, since
-        # we're favouring receiving the same mail twice in the case of
-        # an error, over loosing the processing of a message by deleting
-        # the message before committing.
-        trans.commit()
-        mailbox.delete(mail_id)
-
-    mailbox.close()
+                log.error(
+                    "An exception was raised inside the handler:\n%s" % (
+                        email_info),
+                    exc_info=True)
+    finally:
+        log.info("Closing the mail box.")
+        mailbox.close()
