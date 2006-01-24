@@ -13,11 +13,11 @@ import transaction
 from zope.component import getUtility, queryUtility
 from zope.interface import directlyProvides, directlyProvidedBy
 
+from canonical.uuid import generate_uuid
 from canonical.launchpad.interfaces import (
     IGPGHandler, ILibraryFileAliasSet, IMailHandler, IMailBox, IPerson,
     IWeaklyAuthenticatedPrincipal)
-from canonical.launchpad.helpers import (setupInteraction,
-    get_filename_from_message_id)
+from canonical.launchpad.helpers import setupInteraction
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.mail.signedmessage import signed_message_from_string
 from canonical.launchpad.mailnotification import notify_errors_list
@@ -125,18 +125,9 @@ def handleMail(trans=transaction):
             try:
                 file_alias_url = None
                 trans.begin()
-                try:
-                    mail = signed_message_from_string(raw_mail)
-                except email.Errors.MessageError, error:
-                    mailbox.delete(mail_id)
-                    log = getLogger('canonical.launchpad.mail')
-                    log.warn(
-                        "Couldn't convert email to email.Message",
-                        exc_info=True)
-                    continue
 
                 # File the raw_mail in the Librarian
-                file_name = get_filename_from_message_id(mail['Message-Id'])
+                file_name = generate_uuid()
                 try:
                     file_alias = getUtility(ILibraryFileAliasSet).create(
                             file_name, len(raw_mail),
@@ -159,6 +150,18 @@ def handleMail(trans=transaction):
                 # Librarian.
                 trans.commit()
                 trans.begin()
+
+                try:
+                    mail = signed_message_from_string(raw_mail)
+                except email.Errors.MessageError, error:
+                    mailbox.delete(mail_id)
+                    log = getLogger('canonical.launchpad.mail')
+                    log.warn(
+                        "Couldn't convert email to email.Message: %s" % (
+                            file_alias_url, ),
+                        exc_info=True)
+                    continue
+
 
                 # If the Return-Path header is '<>', it probably means
                 # that it's a bounce from a message we sent.
