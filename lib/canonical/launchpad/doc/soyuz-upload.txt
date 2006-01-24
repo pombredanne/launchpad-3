@@ -437,8 +437,9 @@ Using getQueueItem to inspect current NEW queue
   ...          print queue_item.sourcepackagename.name, e
   ...      else:
   ...          print queue_item.sourcepackagename.name, 'ACCEPTED'
-  drdsl Component "non-free" is not allowed in breezy-autotest
   etherwake ACCEPTED
+  drdsl Component "non-free" is not allowed in breezy-autotest
+
 
 
 We must flush these changes so that it gets out of the cache and
@@ -470,8 +471,8 @@ These packages must now be in the publishing history. Let's check it.
   ...         print name, sspph.status.title
   ...     else:
   ...         print name, 'not Published'
-  drdsl not Published
   etherwake Pending
+  drdsl not Published
 
 Invoke Publisher script against the 'ubuntutest' distribution:
 
