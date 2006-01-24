@@ -1,7 +1,7 @@
         Binary Package Release
         ^^^^^^^^^^^^^^^^^^^^^^
 
-BinaryPackageRelease stores unique versions of a binarypackagenames
+BinaryPackageRelease stores unique versions of binarypackagenames
 across build records.
 
    >>> from canonical.launchpad.database import BinaryPackageRelease
@@ -9,20 +9,20 @@ across build records.
    ...       IBinaryPackageRelease, IBinaryPackageReleaseSet)
    >>> from zope.interface.verify import verifyObject
 
-   >>> bin = BinaryPackageRelease.get(12)
-   >>> verifyObject(IBinaryPackageRelease, bin)
+   >>> firefox_bin_release = BinaryPackageRelease.get(12)
+   >>> verifyObject(IBinaryPackageRelease, firefox_bin_release)
    True
 
 
 Useful properties:
 
-   >>> bin.name, bin.version
+   >>> firefox_bin_release.name, firefox_bin_release.version
    (u'mozilla-firefox', u'0.9')
 
-   >>> bin.status
+   >>> firefox_bin_release.status
    'Published'
 
-   >>> bin.lastversions()
+   >>> firefox_bin_release.lastversions()
    []
    >>> from canonical.launchpad.interfaces import IDistroReleaseSet
    >>> warty = getUtility(IDistroReleaseSet).get(1)
@@ -33,30 +33,45 @@ Useful properties:
    # XXX cprov 20051219: horrible broken code, bug # 5948
 
    >>> try:
-   ...     bin.current(warty)
+   ...     firefox_bin_release.current(warty)
    ... except AttributeError, info:
    ...     'BOOM'
    'BOOM'
 
 
-Check getter method, it should return a a IBinaryPackageRelease
-instance for the passed 'version' or raise NotFoundError:
+We provide a __getitem__() method so you can access other releases
+with the same BinaryPackageName as indices of that
+BinaryPackageRelease:
 
 # XXX cprov 20060111: this method is utterly confusing for
 # a content class, anyway it works as specified.
 
-   >>> bin['0.9'].version
+   >>> firefox_bin_release['0.9'].version
    u'0.9'
 
-   >>> bin['6.6.6']
+   >>> firefox_bin_release['6.6.6']
    Traceback (most recent call last):
    ...
    NotFoundError: ('Version Not Found', '6.6.6')
 
 Check IBinaryPackageRelease.override() behaviour:
 
-   >>> bin.component.name, bin.section.name
+The override method does implicitly exactly the same than:
+
+   IBinaryPackagerelease.set(component=new_component,
+                             section=new_section,
+                             priority=new_priority)
+
+but it only sets the not-empty attributes, so you can override the
+attributes exclusively. It only exists to improve the code clarity, for
+instance, in ftp-master/queue tool.
+
+Display the current firefox component and section:
+
+   >>> firefox_bin_release.component.name, firefox_bin_release.section.name
    (u'main', u'base')
+
+Fetch brand new component, section and priority:
 
    >>> from canonical.launchpad.interfaces import (
    ...     IComponentSet, ISectionSet)
@@ -65,13 +80,14 @@ Check IBinaryPackageRelease.override() behaviour:
    >>> new_sec = getUtility(ISectionSet)['mail']
    >>> new_priority = PackagePublishingPriority.IMPORTANT
 
-Override the current binpackagerelease with new
-component/section/priority pair:
+Override the current firefox with new component/section/priority:
 
-   >>> bin.override(component=new_comp, section=new_sec,
+   >>> firefox_bin_release.override(component=new_comp, section=new_sec,
    ...              priority=new_priority)
 
-   >>> bin.component.name, bin.section.name, bin.priority.name
+Check if it got overriden correctly:
+
+   >>> firefox_bin_release.component.name, firefox_bin_release.section.name, firefox_bin_release.priority.name
    (u'universe', u'mail', 'IMPORTANT')
 
 Abort transaction to avoid error propagation of the new attributes:

@@ -46,10 +46,11 @@ class Publisher(object):
     instantiated by the archive build scripts and will be used throughout
     the processing of each DistroRelease and DistroArchRelease in question
     """
-    
+
     def __init__(self, logger, config, diskpool, distribution):
         """Initialise a publisher. Publishers need the pool root dir
-        and a DiskPool object"""
+        and a DiskPool object.
+        """
         self._config = config
         self._root = config.poolroot
         if not os.path.isdir(self._root):
@@ -81,8 +82,9 @@ class Publisher(object):
     def _publish(self, source, component, filename, alias):
         """Extract the given file from the librarian, construct the
         path to it in the pool and store the file. (assuming it's not already
-        there)"""
-        #print "%s/%s/%s: Publish from %d" % (component, source, filename, 
+        there).
+        """
+        #print "%s/%s/%s: Publish from %d" % (component, source, filename,
         #                                     alias)
         # Dir is ready, extract from the librarian...
         # self._library should be a client for fetching from the library...
@@ -264,7 +266,7 @@ class Publisher(object):
                                 [pkg, header, ", ".join(values)]))
                             ef.write("\n")
                 ef.close()
-                
+
                 if len(di_overrides):
                     # We managed to find some d-i bits in these binaries,
                     # so we output a magical "component"-ish "section"-y sort
@@ -281,7 +283,7 @@ class Publisher(object):
                         f.write("\t".join(tup))
                         f.write("\n")
                     f.close()
-                    
+
                 # XXX: use os.path.join
                 #   -- kiko, 2005-09-23
                 f = open("%s/override.%s.%s.src" % (self._config.overrideroot,
@@ -292,7 +294,7 @@ class Publisher(object):
                     f.write("\t".join(tup))
                     f.write("\n")
                 f.close()
-                
+
     def publishFileLists(self, sourcefiles, binaryfiles):
         """Collate the set of source files and binary files provided and
         write out all the file list files for them.
@@ -325,7 +327,7 @@ class Publisher(object):
             filename = f.libraryfilealiasfilename.encode('utf-8')
             architecturetag = f.architecturetag.encode('utf-8')
             architecturetag = "binary-%s" % architecturetag
-            
+
             ondiskname = self._pathfor(component, sourcepackagename, filename)
 
             filelist.setdefault(distrorelease, {})
@@ -377,11 +379,12 @@ class Publisher(object):
                         f.write("\n".join(di_files))
                         f.write("\n")
                         f.close()
-    
+
 
     def generateAptFTPConfig(self, fullpublish=False):
         """Generate an APT FTPArchive configuration from the provided
-        config object and the paths we either know or have given to us"""
+        config object and the paths we either know or have given to us.
+        """
         cnf = StringIO()
         cnf.write("""
 Dir
@@ -390,7 +393,7 @@ Dir
   OverrideDir "%s";
   CacheDir "%s";
 };
-  
+
 Default
 {
   Packages::Compress ". gzip bzip2";
@@ -406,7 +409,7 @@ TreeDefault
    Contents::Header "%s/contents.header";
 };
 
-        
+
         """ % (
         self._config.archiveroot,
         self._config.overrideroot,
@@ -523,10 +526,10 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                     if not os.path.exists(path):
                         os.makedirs(path)
 
-                
+
                 for comp in comps:
                     component_path = os.path.join(self._config.distsroot,
-                                                  dr+pocketsuffix[pocket],
+                                                  dr + pocketsuffix[pocket],
                                                   comp)
                     base_paths = [component_path]
                     if dr_full_name in self._di_release_components:
@@ -549,12 +552,13 @@ tree "dists/%(DISTRORELEASEONDISK)s"
         """Take the list of publishing records provided and unpublish them.
         You should only pass in entries you want to be unpublished because
         this will result in the files being removed if they're not otherwise
-        in use"""
+        in use.
+        """
         livefiles = set()
         condemnedfiles = set()
         details = {}
-       
-        # XXX: the duplication below begs creation of a method 
+
+        # XXX: the duplication below begs creation of a method
         #   -- kiko, 2005-09-23
         for p in livesources:
             fn = p.libraryfilealiasfilename.encode('utf-8')
@@ -605,7 +609,8 @@ tree "dists/%(DISTRORELEASEONDISK)s"
 
     def _writeSumLine(self, distrorelease_name, out_file, file_name, sum_form):
         """Write out a checksum line to the given file for the given
-        filename in the given form."""
+        filename in the given form.
+        """
         full_name = os.path.join(self._config.distsroot,
                                  distrorelease_name, file_name)
         if not os.path.exists(full_name):
@@ -620,7 +625,7 @@ tree "dists/%(DISTRORELEASEONDISK)s"
         length = len(contents)
         checksum = sum_form(contents).hexdigest()
         out_file.write(" %s % 16d %s\n" % (checksum, length, file_name))
-        
+
     def _writeDistroRelease(self, distribution, distrorelease, full_name):
         """Write out the Release files for the provided distrorelease."""
         all_components = set()
@@ -653,7 +658,7 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                 for suffix in ('', '.gz', '.bz2'):
                     if os.path.exists(di_file_stub+suffix):
                         all_files.add(di_file_stub+suffix)
-                        
+
                 f = open(os.path.join(self._config.distsroot, full_name,
                                       component, architecture, "Release"), "w")
                 contents = """Archive: %s
@@ -666,7 +671,7 @@ Architecture: %s
        distribution.name, clean_architecture)
                 f.write(contents)
                 f.close()
-    
+
         f = open(os.path.join(self._config.distsroot, full_name, "Release"),
                  "w")
         f.write("""Origin: %s
@@ -698,21 +703,21 @@ Description: %s
                     self._writeDistroRelease(self.distro,
                                              distrorelease,
                                              full_distrorelease_name)
-                
+
     def createEmptyPocketRequests(self):
         """Write out empty file lists etc for pockets we want to have
-        Packages or Sources for but lack anything in them currently."""
-        all_pockets = [ suffix for _, suffix in pocketsuffix.items() ]
+        Packages or Sources for but lack anything in them currently.
+        """
+        all_pockets = [suffix for _, suffix in pocketsuffix.items()]
         for distrorelease in self.distro:
-            comps = self._config.componentsForRelease(distrorelease.name)
-            archs = self._config.archTagsForRelease(distrorelease.name)
+            components = self._config.componentsForRelease(distrorelease.name)
+            arch_tags = self._config.archTagsForRelease(distrorelease.name)
             pockets = all_pockets
-            #if distrorelease.releasestatus <= DistributionReleaseStatus.FROZEN:
-            #    pockets = [""]
             for suffix in pockets:
                 full_distrorelease_name = distrorelease.name + suffix
-                for comp in comps:
-                    # dr/comp to _di_r_c
+                for comp in components:
+                    # organize distrorelease and component pair as
+                    # debian-installer -> distrorelease_component internal map.
                     self._di_release_components.setdefault(
                         full_distrorelease_name, set()).add(comp)
                     # Touch the source file lists and override files
@@ -731,25 +736,29 @@ Description: %s
                     f_touch(self._config.overrideroot,
                             ".".join(["override",
                                       full_distrorelease_name,
-                                     comp,
-                                     "debian-installer"]))
-                    
+                                      comp,
+                                      "debian-installer"]))
+
                     self._release_files_needed.setdefault(
-                        full_distrorelease_name, {}).setdefault(
-                        comp, set()).add("source")
-                    for arch in archs:
-                        # dr/comp/arch into _r_f_n
-                        self._release_files_needed.setdefault(
-                            full_distrorelease_name, {}).setdefault(
-                            comp, set()).add("binary-"+arch)
+                        full_distrorelease_name, {})
+
+                    self._release_files_needed.setdefault(comp, set()).add("source")
+
+                    for arch in arch_tags:
+                        # organize dr/comp/arch into temporary binary
+                        # archive map for the architecture in question.
+                        dr_special = self._release_files_needed.setdefault(
+                            full_distrorelease_name, {})
+                        dr_special.setdefault(comp, set()).add("binary-"+arch)
+
                         # Touch more file lists for the archs.
                         f_touch(self._config.overrideroot,
                                 "_".join([full_distrorelease_name,
-                                         comp,
-                                         "binary-"+arch]))
+                                          comp,
+                                          "binary-"+arch]))
                         f_touch(self._config.overrideroot,
                                 "_".join([full_distrorelease_name,
-                                         comp,
-                                         "debian-installer",
-                                         "binary-"+arch]))
+                                          comp,
+                                          "debian-installer",
+                                          "binary-"+arch]))
 

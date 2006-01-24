@@ -1,8 +1,8 @@
      Components and Sections
      ^^^^^^^^^^^^^^^^^^^^^^^
 
-Component reffers to a group of packages within a DistroRelease that
-are related by their need, shipment condition and or licencement.
+Component refers to a group of packages within a DistroRelease that
+are related by their need, shipment condition and/or license.
 
 Zope auxiliary test toolchain:
 
@@ -14,18 +14,18 @@ Importing Component content class and its interface:
  >>> from canonical.launchpad.database import Component
  >>> from canonical.launchpad.interfaces import IComponent
 
-Get an Compoenent instance from the current sampledata:
+Get an Component instance from the current sampledata:
 
- >>> component = Component.get(1)
+ >>> main = Component.get(1)
 
 Test some attributes:
 
- >>> component.id, component.name
+ >>> main.id, main.name
  (1, u'main')
 
-Check if the instace corresponds to the declared interface:
+Check if the instance corresponds to the declared interface:
 
- >>> verifyObject(IComponent, component)
+ >>> verifyObject(IComponent, main)
  True
 
 Now perform the tests for the Component ContentSet class, ComponentSet.
@@ -38,7 +38,7 @@ Check we can use the set as a utility:
 
  >>> component_set = getUtility(IComponentSet)
 
-Test iteration over the sampledata defaul components:
+Test iteration over the sampledata default components:
 
  >>> for c in component_set:
  ...    c.name
@@ -46,6 +46,8 @@ Test iteration over the sampledata defaul components:
  u'restricted'
  u'universe'
  u'multiverse'
+
+by default, they are ordered by 'id'.
 
 Test __getitem__ method, retrieving a component by name:
 
@@ -79,16 +81,16 @@ Importing Section content class and its interface:
 
 Get a Section instance from the current sampledata:
 
- >>> section = Section.get(1)
+ >>> base = Section.get(1)
 
 Test some attributes:
 
- >>> section.id, section.name
+ >>> base.id, base.name
  (1, u'base')
 
-Check if the instace corresponds to the declared interface:
+Check if the instance corresponds to the declared interface:
 
- >>> verifyObject(ISection, section)
+ >>> verifyObject(ISection, base)
  True
 
 Now perform the tests for the Section ContentSet class, SectionSet.
@@ -140,6 +142,8 @@ Test iteration over the sampledata default sections:
  u'embedded'
  u'hamradio'
  u'science'
+
+by default they are ordered by 'id'.
 
 Test __getitem__ method, retrieving a section by name:
 

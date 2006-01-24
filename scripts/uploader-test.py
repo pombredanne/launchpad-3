@@ -36,10 +36,10 @@ from canonical.launchpad.interfaces import (
 from canonical.lp import dbschema
 
 class UploaderTester:
-    """  """
+    """Methods to prepare the LP DB to recieve the testing uploads."""
     def __init__(self, ztm, log, options, uploader_team,
                  keyring=None):
-        """ """
+        """Stores passed information locally and import keyring if necessary."""
         self.ztm = ztm
         self.log = log
         self.options = options
@@ -49,11 +49,15 @@ class UploaderTester:
             self._load_keyring(keyring)
 
     def _load_keyring(self, keyring):
-        """ """
+        """Loads a passed keyring using IGpgHandler utility."""
         getUtility(IGPGHandler).importKeyringFile(keyring)
 
     def _verify_signature(self, content):
-        """ """
+        """Verify a GPG signed message.
+
+        Returns an IPymeSignature object when it succeeded or None
+        if it fails.
+        """
         self.log.debug("Verifying Signature:")
 
         try:
@@ -76,12 +80,12 @@ class UploaderTester:
         name = addr = None
         for line in content.splitlines():
             if line.startswith("Changed-By:"):
-                name, addr = rfc822.parseaddr(line[11:].strip())
+                name, addr = rfc822.parseaddr(line[len("Changed-By:"):].strip())
                 break
             elif line.startswith("Maintainer:"):
-                name, addr = rfc822.parseaddr(line[11:].strip())
-	if name is None:
-	   raise ValueError, "No valid signer address found field found"
+                name, addr = rfc822.parseaddr(line[len("Maintainer:"):].strip())
+        if name is None:
+            raise ValueError, "No valid signer address found field found"
         return name, addr
 
     def ensure_signer(self, content):
@@ -115,8 +119,6 @@ class UploaderTester:
             # retrieve user details from changes file
             displayname, email = self._extract_signer_address(content)
             # create person ...
-            # missed user details (email, displayname), parse changes
-            # is there something ready in IPersonSet ?
             user = getUtility(IPersonSet).ensurePerson(email, displayname)
             if user is None:
                 raise ValueError('Could not create user %s, %s'
@@ -134,53 +136,35 @@ class UploaderTester:
             # add user to the uploader_test team
             self.uploader_team.addMember(user)
 
-            # create a PymeKey to wrap the handy attributes
-            # it's necessary because we are based in a local keyring
-            # we may use a keyserver in the future and replace it
-            # by a importKey()
+            # create a PymeKey to wrap the handy attributes, it's necessary
+            # because we are based in a local keyring. We may use a keyserver
+            # in the future and replace it by a importKey()
             key = PymeKey(sig.fingerprint)
             # XXX cprov 20051130: missing PymeKey attribute
-            # key.active is missing from original PymeKey implementation
+            # IPymeKey.active is missing from original PymeKey implementation
             lpkey = getUtility(IGPGKeySet).new(
                 ownerID=user.id, keyid=key.keyid,
                 fingerprint=key.fingerprint,
                 algorithm=dbschema.GPGKeyAlgorithm.items[key.algorithm],
                 keysize=key.keysize, can_encrypt=key.can_encrypt)
+        except (KeyError, SQLObjectIntegrityError), info:
+            self.ztm.abort()
+            self.log.critical(str(info))
+        else:
             self.log.info("%s, %s, 0x%s", user.displayname, email, lpkey.keyid)
-        except (ValueError, SQLObjectIntegrityError), info:
-            self.ztm.abort()
-            self.log.critical(str(info))
-        else:
-            self.ztm.commit()
-
-    def ensure_component(self, name):
-        """ """
-        self.ztm.begin()
-        self.log.info('Ensure component "%s"' % name)
-        try:
-            component = getUtility(IComponentSet).ensure(name)
-        except SQLObjectIntegrityError, info:
-            self.ztm.abort()
-            self.log.critical(str(info))
-        else:
-            self.ztm.commit()
-
-    def ensure_section(self, name):
-        """ """
-        self.ztm.begin()
-        self.log.info('Ensure section "%s"' % name)
-        try:
-            component = getUtility(ISectionSet).ensure(name)
-        except SQLObjectIntegrityError, info:
-            self.ztm.abort()
-            self.log.critical(str(info))
-        else:
             self.ztm.commit()
 
 
-class FTPURLError(Exception): pass
+class FTPURLError(Exception):
+    """Local exception to mask FTPURL errors and information mismatch."""
+
 
 class FTPURL:
+    """Stores and parses FTP url schema.
+
+    It expect something like: ftp://user:passwd@host:port/path/
+    Providing those same named attributes.
+    """
     def __init__(self, url):
         scheme, rest = urllib.splittype(url)
         if scheme != "ftp":
@@ -194,9 +178,15 @@ class FTPURL:
             self.user = self.passwd = None
 
 
-class RSyncError(Exception): pass
+class RSyncError(Exception):
+    """Mask any rsync method errors."""
 
 def rsync_files(orig_url, dest_url, includes=None):
+    """Wraps the rsync app as a subprocess.
+
+    Use compressed transfer mode, accepts an optional list of includes.
+    Raises RsyncError if something goes wrong.
+    """
     if includes is not None:
         options = " ".join(["--include '%s'" % expr for expr in includes])
         options += " --exclude '*'"
@@ -210,7 +200,7 @@ def rsync_files(orig_url, dest_url, includes=None):
         raise RSyncError
 
 def rsync_list_filenames(url):
-    """ """
+    """Return a list of filenames available for rsync in a given url."""
     cmd = "rsync -z '%s'" % url
     process = subprocess.Popen(cmd, stdout=subprocess.PIPE, shell=True)
     filenames = []
@@ -222,20 +212,21 @@ def rsync_list_filenames(url):
 
 def ftp_send_files(orig_dir, ftp_url_obj):
     """Send all files from the given directory to the ftp server URL"""
-    # Do we want to keep the connection open to improve the performance?
-    # This would change the way that the poppy FTP server stores them though.
+    # XXX gustavo 20051210: Do we want to keep the connection open
+    # to improve the performance? This would change the way that
+    # the poppy FTP server stores them though.
     ftp = ftplib.FTP()
     ftp.connect(ftp_url_obj.host, ftp_url_obj.port)
     ftp.login(ftp_url_obj.user, ftp_url_obj.passwd)
     ftp.cwd(ftp_url_obj.path)
     for filename in os.listdir(orig_dir):
         file = open(os.path.join(orig_dir, filename))
-        ftp.storbinary("STOR "+filename, file)
+        ftp.storbinary("STOR " + filename, file)
         file.close()
     ftp.quit()
 
 def read_files_from_changes(filename):
-    """Return a list of useful info from the Files: section.
+    """Return a list of useful info from the 'Files:' Changesfiles section.
 
     Return a list of tuples containing (files, component, section).
     """
@@ -260,7 +251,7 @@ def read_files_from_changes(filename):
     proto_sec = set(proto_secs).pop()
 
     # extract component and section from a collapsed form, use 'main' component
-    # if it was ommited.
+    # if it was omitted.
     if '/' in proto_sec:
         component, section = proto_sec.split('/')
     else:
@@ -271,7 +262,7 @@ def read_files_from_changes(filename):
 
 
 def main():
-    """ """
+    """Initiate and run the 'rsyncing' cycle importing sources via poppy."""
     # Parse command-line arguments
     parser = optparse.OptionParser()
     logger_options(parser)
@@ -294,8 +285,12 @@ def main():
 
     log = logger(options, "uploader-test")
 
+
+    # rsync gives different treatment for non-/ terminated urls,
+    # we always want it /-terminated
     if not rsync_url.endswith('/'):
         rsync_url += '/'
+    # check on directory deep in the passed url
     rsync_url += '**/'
 
     try:
@@ -353,9 +348,9 @@ def main():
 
             temp_dir = tempfile.mkdtemp("-rsync-to-ftp")
             log.info("Using temporary directory at %s" % temp_dir)
-            try:
 
-		changes_filepath = os.path.join(temp_dir, changes_filename)
+            try:
+                changes_filepath = os.path.join(temp_dir, changes_filename)
 
                 log.info("Fetching %s" % changes_filename)
                 rsync_files(rsync_url + changes_filename, temp_dir)
@@ -368,8 +363,8 @@ def main():
                 files, component, section = read_files_from_changes(
                     changes_filepath)
 
-                tester.ensure_component(component)
-                tester.ensure_section(section)
+                getUtility(IComponentSet).ensure(component)
+                getUtility(ISectionSet).ensure(section)
 
                 log.info("Downloading additional files...")
                 rsync_files(rsync_url + '*', temp_dir, includes=files)

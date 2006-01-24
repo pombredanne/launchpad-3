@@ -41,13 +41,14 @@ class PoppyInterface:
         aborted transaction and we remove the fsroot."""
 
         if fsroot not in self.clients:
-            raise PoppyInterfaceFailure, "Unable to find fsroot in client set"
+            raise PoppyInterfaceFailure("Unable to find fsroot in client set")
 
         self.logger.debug("Processing session complete in %s" % fsroot)
 
         client = self.clients[fsroot]
         if "distro" not in client:
-            # Nope, not an authenticated client; abort
+            # Login username defines the distribution context of the upload.
+            # So abort unauthenticated sessions by removing its contents
             shutil.rmtree(fsroot)
             return
 
@@ -95,7 +96,7 @@ class PoppyInterface:
 
         The password is irrelevant to auth, as is the fsroot"""
         if fsroot not in self.clients:
-            raise PoppyInterfaceFailure, "Unable to find fsroot in client set"
+            raise PoppyInterfaceFailure("Unable to find fsroot in client set")
         try:
             d = Distribution.byName(user)
             if d:

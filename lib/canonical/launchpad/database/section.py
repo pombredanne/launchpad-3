@@ -21,6 +21,8 @@ class Section(SQLBase):
     """Section table SQLObject."""
     implements(ISection)
 
+    _defaultOrder= ['id']
+
     name = StringCol(notNull=True, alternateID=True)
 
 

@@ -340,8 +340,8 @@ class NascentUpload:
             self.changes_filename,
             allow_unsigned = self.policy.unsigned_changes_ok)
         format = float(changes["format"])
-        # XXX cprov 20051207: adopting a default format for missed ones
-        # It assumes the normally accepted version
+        # XXX cprov 20051207: adopting a default format for missing format.
+        # It assumes the normally accepted version, '1.5'
         if not format:
             format = 1.5
             return changes
@@ -1055,13 +1055,14 @@ class NascentUpload:
 
         self.logger.debug("Performing overall file verification checks.")
         for uploaded_file in self.files:
-            # dismiss for special upload types
-            if uploaded_file.custom or uploaded_file.type == "byhand":
-                continue
-            # reject missed priority
-            if uploaded_file.priority is None:
-                self.reject("%s: Priority is 'None'" % uploaded_file.filename)
 
+            if uploaded_file.custom or uploaded_file.type == "byhand":
+                # dismiss for special upload types
+                continue
+
+            if uploaded_file.priority is None:
+                # reject upload if priority is missing
+                self.reject("%s: Priority is 'None'" % uploaded_file.filename)
 
             # XXX cprov 20051205: this chunk of code is used in several place
             # in the entire file, reusing it is mandatory for first release
@@ -1070,19 +1071,18 @@ class NascentUpload:
             old = self.distrorelease.getPublishedReleases(
                 spn, self.policy.pocket)
 
-            # map priority tag to dbschema
             if uploaded_file.priority in priority_map:
+                # map priority tag to dbschema
                 uf = uploaded_file
                 uf.priority = priority_map[uf.priority]
-            # map unknown priority tags to "extra" if the file is new
             elif not old:
+                # map unknown priority tags to "extra" if the file is new
                 uploaded_file.priority = priority_map['extra']
-            # REJECT unknown tag & known file
             else:
+                # REJECT unknown tag & known file
                 self.reject("Unable to map priority %r for file %s" % (
                     uploaded_file.priority, uploaded_file.filename))
 
-            # check component and section
             self.verify_components_and_sections(uploaded_file)
 
         # Finally verify that sourceful/binaryful match the policy
@@ -1102,7 +1102,7 @@ class NascentUpload:
     def verify_components_and_sections(self, uploaded_file):
         """Check presence of the component and section from an uploaded_file.
 
-        They need to satisfy at least the NEW queue contraints that includes
+        They need to satisfy at least the NEW queue constraints that includes
         SourcePackageRelease creation, so component and section need to exist.
         Even if they might be overriden in the future.
         """
@@ -1174,7 +1174,7 @@ class NascentUpload:
             self.reject("%s: invalid version %s" % (
                 dsc_file.filename, dsc['version']))
 
-        # XXX cprov 20051207: assume DSC "1.0" format for missed value
+        # XXX cprov 20051207: assume DSC "1.0" format for missing value
         if 'format' not in dsc.keys():
            dsc['format'] = "1.0"
 
@@ -1245,8 +1245,9 @@ class NascentUpload:
         self.spn = spn
         releases = self.distrorelease.getPublishedReleases(
                 spn, self.policy.pocket)
-        beaten = False
+
         apt_pkg.InitSystem()
+
         for pub_record in releases:
              pub_version = pub_record.sourcepackagerelease.version
              if apt_pkg.VersionCompare(version, pub_version) <= 0:
@@ -1558,9 +1559,9 @@ class NascentUpload:
         # If there are no possible components, then this uploader simply does
         # not have any rights on this distribution so stop now before we
         # go processing crap.
-        #if not self.permitted_components:
-        #    self.reject("Unable to find a component acl OK for the uploader")
-        #    return
+        if not self.permitted_components:
+            self.reject("Unable to find a component acl OK for the uploader")
+            return
 
         # check rights for OLD packages, the NEW ones goes straight to queue
         if not self.is_new():
@@ -1600,9 +1601,9 @@ class NascentUpload:
         recipients = self.policy.filterRecipients(self, recipients)
         for r in recipients:
             # We should only actually send mail to people that are
-            # registered Launchpad users; this is a sanity check to
-            # avoid spamming the innocent. Not that we do that sort of
-            # thing.
+            # registered Launchpad user with preferred email;
+            # this is a sanity check to avoid spamming the innocent.
+            # Not that we do that sort of thing.
             person = getUtility(IPersonSet).getByEmail(r)
             if person is not None and person.preferredemail is not None:
                 self.recipients.append(r)
@@ -1644,26 +1645,26 @@ class NascentUpload:
 
     def insert_source_into_db(self):
         """Insert the source into the database and inform the policy."""
-        arg_sourcepackagename=self.spn.id
-        arg_version=self.changes['version']
-        arg_maintainer=self.dsc_maintainer['person'].id
-        arg_dateuploaded=UTC_NOW
-        arg_builddepends=guess_encoding(
+        arg_sourcepackagename = self.spn
+        arg_version = self.changes['version']
+        arg_maintainer = self.dsc_maintainer['person']
+        arg_dateuploaded = UTC_NOW
+        arg_builddepends = guess_encoding(
             self.dsc_contents.get('build-depends', ''))
-        arg_builddependsindep=guess_encoding(
+        arg_builddependsindep = guess_encoding(
             self.dsc_contents.get('build-depends-indep', ''))
-        arg_architecturehintlist=guess_encoding(
+        arg_architecturehintlist = guess_encoding(
             self.dsc_contents.get('architecture', ''))
         component_name = self._find_dsc().component
-        arg_component = getUtility(IComponentSet)[component_name].id
+        arg_component = getUtility(IComponentSet)[component_name]
         section_name = self._find_dsc().section
-        arg_section = getUtility(ISectionSet)[section_name].id
-        arg_creator=self.changed_by['person'].id
-        arg_urgency=urgency_map[self.changes['urgency'].lower()]
-        arg_changelog=guess_encoding(self.changes['changes'])
-        arg_dsc=guess_encoding(self.dsc_contents['filecontents'])
-        arg_dscsigningkey=self.dsc_signing_key
-        arg_manifest=None
+        arg_section = getUtility(ISectionSet)[section_name]
+        arg_creator = self.changed_by['person'].id
+        arg_urgency = urgency_map[self.changes['urgency'].lower()]
+        arg_changelog = guess_encoding(self.changes['changes'])
+        arg_dsc = guess_encoding(self.dsc_contents['filecontents'])
+        arg_dscsigningkey = self.dsc_signing_key
+        arg_manifest = None
         self.policy.sourcepackagerelease = (
             self.distrorelease.createUploadedSourcePackageRelease(
             sourcepackagename=arg_sourcepackagename,
@@ -1774,7 +1775,7 @@ class NascentUpload:
         queue_root = self.distrorelease.createQueueEntry(self.policy.pocket,
             self.changes_basename, self.changes["filecontents"])
 
-        # if it is known (already overriden properly), move it
+        # if it is known (already overridden properly), move it
         # to ACCEPTED state automatically
         if not self.is_new():
             self.logger.debug("Setting it to ACCEPTED")
@@ -1838,7 +1839,7 @@ class NascentUpload:
                 return True, [new_msg % interpolations]
             else:
                 return True, [accept_msg % interpolations,
-                               announce_msg % interpolations]
+                              announce_msg % interpolations]
         except Exception, e:
             # Any exception which occurs while processing an accept will
             # cause a rejection to occur. The exception is logged in the

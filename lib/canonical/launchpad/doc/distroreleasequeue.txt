@@ -64,7 +64,7 @@ convert it to an ACCEPTED item.
 Use state-machine method provided by DistroReleaseQueue to ACCEPT an
 upload. If some designed check according the request state do not
 pass, the state-machine methods will raise an exception indicating the
-upload can have that state.
+upload can not have that state.
 
 XXX cprov 20051209: need to build a broken upload to test it properly
 
@@ -102,35 +102,33 @@ Confirm we can now find ed published in hoary.
 
 Check IDistroReleaseQueueSet behaviour:
 
- >>> from canonical.launchpad.interfaces import IDistroReleaseQueueSet
- >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.interfaces import IDistroReleaseQueueSet
+  >>> from zope.interface.verify import verifyObject
 
- Grab an utility:
+Grab an utility:
 
- >>> qset = getUtility(IDistroReleaseQueueSet)
+  >>> qset = getUtility(IDistroReleaseQueueSet)
 
 Check if it implements its interface completely:
 
- >>> verifyObject(IDistroReleaseQueueSet, qset)
- True
+  >>> verifyObject(IDistroReleaseQueueSet, qset)
+  True
 
-Iterator:
+Iterating over IDistroReleaseQueues via iDistroReleaseQueueSet:
 
- >>> for item in qset:
- ...     item.id
- 1
- 2
- 3L
+  >>> for item in qset:
+  ...     item.id
+  1
+  2
+  3L
 
-getter by id:
+Retrieving an IDistroReleaseQueue by its id:
 
- >>> qset[1].id
- 1
+  >>> qset[1].id
+  1
 
-get by id method:
-
- >>> qset.get(1).id
- 1
+  >>> qset.get(1).id
+  1
 
 Counter, optionally by status (informally named "queue") and or distrorelease:
 
@@ -142,6 +140,8 @@ Counter, optionally by status (informally named "queue") and or distrorelease:
 
   >>> qset.count(DistroReleaseQueueStatus.REJECTED)
   0
+
+Retrieve some data from DB to play more with counter.
 
   >>> from canonical.launchpad.interfaces import IDistributionSet
   >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
@@ -179,8 +179,9 @@ Check the behaviour of @cachedproperty  attributes:
   u'0.9'
 
 
-Explore the queue features of a DistroRelease instance, let's test the
-of IDistroRelease.getFancyQueueItems:
+Explore the queue features of a DistroRelease instance, let's check
+some usages of IDistroRelease.getFancyQueueItems, which returns a list
+of IDistroReleaseQueue entries.
 
   >>> new_items = breezy_autotest.getFancyQueueItems(
   ...    DistroReleaseQueueStatus.NEW)
@@ -194,7 +195,7 @@ Ensure they are build queue entries
   (1, 0)
   (1, 0)
 
-Exercises build side of getFancyQueueItems, Retrive queue entry for a
+Exercises build side of getFancyQueueItems, Retrieve queue entry for a
 name like 'moz':
 
   >>> items = breezy_autotest.getFancyQueueItems(DistroReleaseQueueStatus.NEW,

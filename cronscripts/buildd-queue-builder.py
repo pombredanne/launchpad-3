@@ -48,10 +48,10 @@ def rebuildQueue(log):
         buildMaster.createMissingBuilds(distrorelease)
 
     # For each build record in NEEDSBUILD, ensure it has a
-    #buildqueue entry
+    # buildqueue entry
     buildMaster.addMissingBuildQueueEntries()
 
-    #Rescore the NEEDSBUILD properly
+    # Re-score the NEEDSBUILD properly
     buildMaster.sanitiseAndScoreCandidates()
 
 if __name__ == '__main__':

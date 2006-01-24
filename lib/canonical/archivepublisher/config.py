@@ -26,24 +26,27 @@ class Config(object):
                 'No Lucille config section for %s' % distribution.name)
 
         for dr in distroreleases:
-            drn = dr.name.encode('utf-8')
-            drdrn =  {
+            distrorelease_name = dr.name.encode('utf-8')
+            config_segment =  {
                 "archtags": []
                 }
-            self._distroreleases[drn] = drdrn
+
             for dar in dr.architectures:
-                drdrn["archtags"].append(dar.architecturetag.encode('utf-8'))
+                config_segement["archtags"].append(
+                    dar.architecturetag.encode('utf-8'))
 
             if not dr.lucilleconfig:
                 raise LucilleConfigError(
                     'No Lucille configuration section for %s' % dr.name)
-        
+
             strio = StringIO(dr.lucilleconfig.encode('utf-8'))
-            drdrn["config"] = ConfigParser()
-            drdrn["config"].readfp(strio)
+            config_segment["config"] = ConfigParser()
+            config_segment["config"].readfp(strio)
             strio.close()
-            comp = drdrn["config"].get("publishing","components").split(" ")
-            drdrn["components"] = comp
+            config_segment["components"] = config_segment["config"].get(
+                "publishing", "components").split(" ")
+
+            self._distroreleases[distrorelease_name] = config_segment
 
         strio = StringIO(distribution.lucilleconfig.encode('utf-8'))
         self._distroconfig = ConfigParser()
@@ -51,7 +54,7 @@ class Config(object):
         strio.close()
 
         self._extractConfigInfo()
-        
+
     def distroReleaseNames(self):
         # Because dicts iterate for keys only; this works to get dr names
         return self._distroreleases.keys()

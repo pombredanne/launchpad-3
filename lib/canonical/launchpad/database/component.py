@@ -21,6 +21,8 @@ class Component(SQLBase):
     """Component table SQLObject """
     implements(IComponent)
 
+    _defaultOrder= ['id']
+
     name = StringCol(notNull=True, alternateID=True)
 
 
@@ -54,4 +56,4 @@ class ComponentSet:
     def new(self, name):
         """See IComponentSet."""
         return Component(name=name)
-        
+

@@ -118,7 +118,6 @@ class AbstractUploadPolicy:
                 max = 2
             if len(upload.archs) > max:
                 upload.reject("Policy permits only one build per upload.")
-                
 
     def filterRecipients(self, upload, recipients):
         """Filter any recipients we feel we need to.
@@ -179,6 +178,11 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         self.can_upload_binaries = False
         self.can_upload_mixed = False
 
+    def getDefaultPermittedComponents(self):
+        """Return the set of components this distrorelease permits."""
+        return set(
+            component.name for component in getUtility(IComponentSet))
+
 # Register this as the 'insecure' policy
 AbstractUploadPolicy._registerPolicy(InsecureUploadPolicy)
 
@@ -227,6 +231,11 @@ class AutoSyncUploadPolicy(AbstractUploadPolicy):
         self.can_upload_mixed = False
         self.can_upload_binaries = False
 
+    def getDefaultPermittedComponents(self):
+        """Return the set of components this distrorelease permits."""
+        return set(
+            component.name for component in getUtility(IComponentSet))
+
 AbstractUploadPolicy._registerPolicy(AutoSyncUploadPolicy)
 
 class AnythingGoesUploadPolicy(AbstractUploadPolicy):
@@ -241,6 +250,11 @@ class AnythingGoesUploadPolicy(AbstractUploadPolicy):
         self.name = "anything"
         # We require the changes to be signed but not the dsc
         self.unsigned_dsc_ok = True
+
+    def getDefaultPermittedComponents(self):
+        """Return the set of components this distrorelease permits."""
+        return set(
+            component.name for component in getUtility(IComponentSet))
 
 AbstractUploadPolicy._registerPolicy(AnythingGoesUploadPolicy)
 
