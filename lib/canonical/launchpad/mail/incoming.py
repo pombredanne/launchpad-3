@@ -127,7 +127,7 @@ def handleMail(trans=transaction):
                 trans.begin()
 
                 # File the raw_mail in the Librarian
-                file_name = generate_uuid()
+                file_name = generate_uuid() + '.txt'
                 try:
                     file_alias = getUtility(ILibraryFileAliasSet).create(
                             file_name, len(raw_mail),
