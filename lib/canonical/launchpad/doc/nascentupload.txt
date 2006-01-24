@@ -3,7 +3,7 @@
 (First some setup. We need a librarian for this test.)
 
   >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()  
+  >>> LibrarianTestSetup().setUp()
 
 We also need to set up the OpenPGP key used to sign things so that we can
 identify the upload signer later on.
@@ -51,7 +51,7 @@ the changes file specified exists, raising FileNotFound if it does not.
   Traceback (most recent call last):
   ...
   FileNotFound: DOES-NOT-EXIST
-  >>> ed_upload = NascentUpload(findPolicyByName('insecure'), 
+  >>> ed_upload = NascentUpload(findPolicyByName('insecure'),
   ...     datadir(''), "ed_0.2-20_i386.changes", MockLogger())
   >>> ed_upload.changes_filename == datadir("ed_0.2-20_i386.changes")
   True
@@ -120,7 +120,7 @@ The nascent upload can tell us if it is sourceful or not, (ditto binaryful)
   True
 
   >>> ed_source_upload = NascentUpload(buildd_policy,
-  ...     datadir(''), "ed_0.2-20_i386.source-only-unsigned-changes", 
+  ...     datadir(''), "ed_0.2-20_i386.source-only-unsigned-changes",
   ...     MockLogger)
   >>> ed_source_upload.sourceful
   True
