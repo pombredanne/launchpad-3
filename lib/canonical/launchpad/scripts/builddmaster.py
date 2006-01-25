@@ -14,10 +14,8 @@ __all__ = ['BuilddMaster']
 
 
 import logging
-import warnings
 import xmlrpclib
 import socket
-from cStringIO import StringIO
 import datetime
 import pytz
 import tempfile
@@ -34,8 +32,7 @@ from sqlobject import SQLObjectNotFound
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.interfaces import (
-    IBuilderSet, IBuildQueueSet, IBuildSet, ILibraryFileAliasSet,
-    IBinaryPackageReleaseSet, IBinaryPackageNameSet
+    IBuilderSet, IBuildQueueSet, IBuildSet
     )
 
 from canonical.lp import dbschema
@@ -48,7 +45,7 @@ from canonical.buildd.slave import BuilderStatus
 from canonical.buildd.utils import notes
 
 
-KBYTE=1024
+KBYTE = 1024
 def file_chunks(from_file, chunk_size=256*KBYTE):
     """Using the special two-arg form of iter() iterate a file's chunks."""
     return iter(lambda: from_file.read(chunk_size), '')
@@ -114,6 +111,7 @@ class BuilderGroup:
                     raise BuildDaemonError("Failed to echo OK")
 
                 # ask builder information
+                # XXX: mechanisms is ignored? -- kiko
                 builder_vers, builder_arch, mechanisms = slave.info()
 
                 # attempt to wrong builder version
@@ -321,7 +319,7 @@ class BuilderGroup:
                 # repopen the currently compressed file, seeks its end
                 # position and return to begin, ready for Librarian
                 out_file = open(out_file_name)
-                out_file.seek(0,2)
+                out_file.seek(0, 2)
                 bytes_written = out_file.tell()
                 out_file.seek(0)
 
@@ -342,9 +340,6 @@ class BuilderGroup:
         """Verify the current build job status and perform the required
         actions for each state.
         """
-        # build the slave build job id key
-        buildid = "%s-%s" % (queueItem.build.id, queueItem.id)
-
         # XXX cprov 20051026: Removing annoying Zope Proxy, bug # 3599
         slave = removeSecurityProxy(queueItem.builder.slave)
 
@@ -434,7 +429,7 @@ class BuilderGroup:
                                                     CHROOTFAIL, BUILDERFAIL)
 
         * Build has been built successfully (BuildStatus.OK), in this case
-          we have a 'filemap', so we can retrive those files and store in
+          we have a 'filemap', so we can retrieve those files and store in
           Librarian with getFileFromSlave() and then pass the binaries to
           the uploader for processing.
         """
@@ -468,82 +463,85 @@ class BuilderGroup:
 
     def buildStatus_OK(self, queueItem, slave, librarian, buildid,
                        filemap=None):
-        """Builder has built package entirely, get all the content back"""
+        """Handle a package that built successfully.
+
+        Once built successfully, we pull the files, store them in a
+        directory, store build information and push them through the
+        uploader.
+        """
         self.logger.debug("Processing successful build %s" % buildid)
 
-        try:
-            # ensure we have the correct build root as:
-            # <BUILDMASTER_ROOT>/<BUILD_ID>/files/
-            root = config.builddmaster.root
-            if not os.path.isdir(root):
-                self.logger.debug("Creating BuilddMaster root '%s'"
-                                  % root)
-                os.mkdir(root)
-            upload_dir = os.path.join(root, "%s" % buildid)
-            # remove previous files of the same build
-            if os.path.isdir(upload_dir):
-                self.logger.debug("Purging previous results at '%s'"
-                                  % upload_dir)
+        # ensure we have the correct build root as:
+        # <BUILDMASTER_ROOT>/<BUILD_ID>/files/
+        root = config.builddmaster.root
+        if not os.path.isdir(root):
+            self.logger.debug("Creating BuilddMaster root '%s'"
+                              % root)
+            os.mkdir(root)
+        upload_dir = os.path.join(root, "%s" % buildid)
+        # remove previous files of the same build
+        if os.path.isdir(upload_dir):
+            self.logger.debug("Purging previous results at '%s'"
+                              % upload_dir)
+            shutil.rmtree(upload_dir)
+        # create a single directory to store build result files
+        os.mkdir(upload_dir)
+        result_dir = os.path.join(upload_dir, "files")
+        os.mkdir(result_dir)
+        self.logger.debug("Storing build result at '%s'" % result_dir)
+
+        for filename in filemap:
+            slave_file = slave.getFile(filemap[filename])
+            out_file_name = os.path.join(result_dir, filename)
+            out_file = open(out_file_name, "wb")
+            try:
+                for chunk in file_chunks(slave_file):
+                    out_file.write(chunk)
+            finally:
+                slave_file.close()
+                out_file.close()
+
+        uploader_argv = list(config.builddmaster.uploader.split())
+        uploader_logfilename = os.path.join(upload_dir, 'uploader.log')
+        self.logger.debug("Saving uploader log at '%s'"
+                          % uploader_logfilename)
+
+        # add extra arguments for processing a binary upload
+        extra_args = [
+            "--log-file", "%s" %  uploader_logfilename,
+            "-d", "%s" % queueItem.build.distribution.name,
+            "-r", "%s" % queueItem.build.distrorelease.name,
+            "-b", "%s" % queueItem.build.id,
+            "%s" % upload_dir,
+            ]
+        uploader_argv.extend(extra_args)
+
+        self.logger.debug("Invoking uploader on %s" % upload_dir)
+        uploader_process = subprocess.Popen(uploader_argv,
+                                            stdout=subprocess.PIPE)
+        result_code = uploader_process.wait()
+        self.logger.debug("Uploader returned %d" % result_code)
+
+        if not config.builddmaster.keep_files:
+            self.logger.debug("Cleaning up temporary directory")
+            if os.path.exists(upload_dir):
                 shutil.rmtree(upload_dir)
-            # create a single directory to store build result files
-            os.mkdir(upload_dir)
-            result_dir = os.path.join(upload_dir, "files")
-            os.mkdir(result_dir)
-            self.logger.debug("Storing build result at '%s'" % result_dir)
+        else:
+            self.logger.debug("Keeping files at '%s'" % upload_dir)
 
-            for filename in filemap:
-                slave_file = slave.getFile(filemap[filename])
-                out_file_name = os.path.join(result_dir, filename)
-                out_file = open(out_file_name, "wb")
-                try:
-                    for chunk in file_chunks(slave_file):
-                        out_file.write(chunk)
-                finally:
-                    slave_file.close()
-                    out_file.close()
+        self.logger.debug("Gathered build of %s completely"
+                          % queueItem.name)
+        # store build info
+        self.storeBuildInfo(queueItem, slave, librarian, buildid)
+        queueItem.build.buildstate = dbschema.BuildStatus.FULLYBUILT
+        queueItem.destroySelf()
 
-            uploader_argv = list(config.builddmaster.uploader.split())
-            uploader_logfilename = os.path.join(upload_dir, 'uploader.log')
-            self.logger.debug("Saving uploader log at '%s'"
-                              % uploader_logfilename)
+        # release the builder
+        slave.clean()
 
-            # add extra arguments for processing a binary upload
-            extra_args = [
-                "--log-file", "%s" %  uploader_logfilename,
-                "-d", "%s" % queueItem.build.distribution.name,
-                "-r", "%s" % queueItem.build.distrorelease.name,
-                "-b", "%s" % queueItem.build.id,
-                "%s" % upload_dir,
-                ]
-            uploader_argv.extend(extra_args)
-
-            self.logger.debug("Invoking uploader on %s" % upload_dir)
-            uploader_process = subprocess.Popen(uploader_argv,
-                                                stdout=subprocess.PIPE)
-            result_code = uploader_process.wait()
-            self.logger.debug("Uploader returned %d" % result_code)
-
-            if not config.builddmaster.keep_files:
-                self.logger.debug("Cleaning up temporary directory")
-                if os.path.exists(upload_dir):
-                    shutil.rmtree(upload_dir)
-            else:
-                self.logger.debug("Keeping files at '%s'" % upload_dir)
-
-        finally:
-            self.logger.debug("Gathered build of %s completely"
-                              % queueItem.name)
-            # store build info
-            self.storeBuildInfo(queueItem, slave, librarian, buildid)
-            queueItem.build.buildstate = dbschema.BuildStatus.FULLYBUILT
-            queueItem.destroySelf()
-
-            # release the builder
-            slave.clean()
-
-            # Commit the transaction so that the uploader can see the updated
-            # build record
-            self.commit()
+        # Commit the transaction so that the uploader can see the updated
+        # build record
+        self.commit()
 
     def buildStatus_PACKAGEFAIL(self, queueItem, slave, librarian, buildid,
                                 filemap=None):
@@ -560,7 +558,7 @@ class BuilderGroup:
 
     def buildStatus_DEPFAIL(self, queueItem, slave, librarian, buildid,
                             filemap=None):
-        """Handle a package that had missed dependencies.
+        """Handle a package that had missing dependencies.
 
         Build has failed by missing dependencies, set the job status as
         MANUALDEPWAIT, store availble information, remove BuildQueue
@@ -656,6 +654,7 @@ class BuilderGroup:
                 try:
                     slavestatus = slave.status()
                 except Exception, e:
+                    # XXX: swallowing exceptions randomly -- kiko
                     continue
                 if slavestatus[0] == BuilderStatus.IDLE:
                     return builder
@@ -837,7 +836,7 @@ class BuilddMaster:
                 # architecture and the current architecture is not
                 # mentioned in the list, continues
                 supported = release.architecturehintlist.split()
-                if (arch.architecturetag not in supported):
+                if arch.architecturetag not in supported:
                     self._logger.debug(header + "NOT SUPPORTED %s" %
                                        arch.architecturetag)
                     continue
@@ -860,7 +859,7 @@ class BuilddMaster:
         self.commit()
 
     def addMissingBuildQueueEntries(self):
-        """Create missed Buiild Jobs. """
+        """Create missing Buildd Jobs. """
         self._logger.debug("Scanning for build queue entries that are missing")
         # Get all builds in NEEDSBUILD which are for a distroarchrelease
         # that we build...
@@ -1024,7 +1023,7 @@ class BuilddMaster:
 
             # reduce score in 10 point for each unsatisfied dependency
             score -= 10
-            self._logger.warn("MISSED DEP: %r in %s %s"
+            self._logger.warn("MISSING DEP: %r in %s %s"
                               % (token, job.archrelease.distrorelease.name,
                                  job.archrelease.architecturetag))
 
@@ -1067,8 +1066,8 @@ class BuilddMaster:
         return jobs
 
     def sortByScore(self, queueItems):
-        """Sort list of job in descend order."""
-        queueItems.sort(key=lambda x: x.lastscore * -1)
+        """Sort queueItems by lastscore, in descending order."""
+        queueItems.sort(key=lambda x: x.lastscore, reverse=True)
 
     def sortAndSplitByProcessor(self):
         """Split out each build by the processor it is to be built for then
@@ -1109,8 +1108,6 @@ class BuilddMaster:
     def startBuild(self, builders, builder, queueItem, pocket):
         """Find the list of files and give them to the builder."""
 
-        build = queueItem.build
-
         self.getLogger().debug("startBuild(%s, %s, %s, %s)"
                                % (builder.url, queueItem.name,
                                   queueItem.version, pocket.title))
@@ -1145,3 +1142,4 @@ class BuilddMaster:
             builders.startBuild(builder, queueItem, filemap,
                                 "debian", pocket, args)
         self.commit()
+

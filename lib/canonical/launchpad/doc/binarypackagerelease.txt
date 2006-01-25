@@ -28,30 +28,10 @@ Useful properties:
    >>> warty = getUtility(IDistroReleaseSet).get(1)
    >>> warty.name
    u'warty'
+   >>> hoary = getUtility(IDistroReleaseSet).get(3)
+   >>> hoary.name
+   u'hoary'
 
-
-   # XXX cprov 20051219: horrible broken code, bug # 5948
-
-   >>> try:
-   ...     bin.current(warty)
-   ... except AttributeError, info:
-   ...     'BOOM'
-   'BOOM'
-
-
-Check getter method, it should return a a IBinaryPackageRelease
-instance for the passed 'version' or raise NotFoundError:
-
-# XXX cprov 20060111: this method is utterly confusing for
-# a content class, anyway it works as specified.
-
-   >>> bin['0.9'].version
-   u'0.9'
-
-   >>> bin['6.6.6']
-   Traceback (most recent call last):
-   ...
-   NotFoundError: ('Version Not Found', '6.6.6')
 
 Check IBinaryPackageRelease.override() behaviour:
 
@@ -74,6 +54,13 @@ component/section/priority pair:
    >>> bin.component.name, bin.section.name, bin.priority.name
    (u'universe', u'mail', 'IMPORTANT')
 
+Override again; ensure that only the changed item actually changes:
+
+   >>> new_sec = getUtility(ISectionSet)['net']
+   >>> bin.override(section=new_sec)
+   >>> bin.component.name, bin.section.name, bin.priority.name
+   (u'universe', u'net', 'IMPORTANT')
+
 Abort transaction to avoid error propagation of the new attributes:
 
    >>> import transaction
@@ -85,4 +72,13 @@ BinaryPackageReleaseSet utility:
    >>> verifyObject(IBinaryPackageReleaseSet, binset)
    True
 
-XXX cprov 20051219: missing wider tests bug # 5947
+   >>> ret = binset.findByNameInDistroRelease(warty.id, 'fire')
+   >>> for item in ret:
+   ...     print item.name
+   mozilla-firefox
+
+   >>> ret = binset.getByNameInDistroRelease(hoary.id, 'pmount')
+   >>> for item in ret:
+   ...     print item.name
+   pmount
+

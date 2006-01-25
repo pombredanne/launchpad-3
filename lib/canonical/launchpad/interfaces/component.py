@@ -12,12 +12,18 @@ __all__ = [
 from zope.interface import Interface, Attribute
 
 class IComponent(Interface):
+    """Represents the Component table.
+
+    This class represents the Component table, which stores valid
+    distribution components; for Ubuntu this means, for instance,
+    'main', 'restricted', 'universe', etc.
+    """
     id = Attribute("The ID")
     name = Attribute("The Component Name")
 
 
 class IComponentSet(Interface):
-    """Interface for ComponentSet"""
+    """Set manipulation tools for the Component table."""
 
     def __iter__():
         """Iterate over components."""
@@ -30,7 +36,7 @@ class IComponentSet(Interface):
 
     def ensure(name):
         """Ensure the existence of a component with given name."""
-        
+
     def new(name):
         """Create a new component."""
 

@@ -34,8 +34,8 @@ class QueueStateWriteProtectedError(Exception):
 class QueueInconsistentStateError(Exception):
     """Queue state machine error.
 
-    It's generate when the solicited state makes the record inconsistent
-    against the current system constraints.
+    It's generated when the solicited state makes the record
+    inconsistent against the current system constraints.
     """
 
 
@@ -84,26 +84,26 @@ class IDistroReleaseQueue(Interface):
 
     sourceversion = Attribute("The source package version for this item")
 
-    age = Attribute("The age of this queue item. (now - datecreated)")
+    age = Attribute("The age of this queue item.")
 
     def set_new():
-        """Set Queue state machine to NEW."""
+        """Set queue state to NEW."""
 
     def set_unapproved():
-        """Set Queue state machine to UNAPPROVED."""
+        """Set queue state to UNAPPROVED."""
 
     def set_accepted():
-        """Set Queue state machine to ACCEPTED.
+        """Set queue state to ACCEPTED.
 
         Preform the required checks on its content, so we garantee data
         integrity by code.
         """
 
     def set_done():
-        """Set Queue state machine to DONE."""
+        """Set queue state to DONE."""
 
     def set_rejected():
-        """Set Queue state machine to REJECTED."""
+        """Set queue state to REJECTED."""
 
     def realiseUpload(logger=None):
         """Take this ACCEPTED upload and create the publishing records for it
@@ -252,7 +252,7 @@ class IDistroReleaseQueueCustom(Interface):
         """
 
 class IDistroReleaseQueueSet(Interface):
-    """Set methods for IDistroReleaseQueue"""
+    """Represents a set of IDistroReleaseQueues"""
 
     def __iter__():
         """IDistroReleaseQueue iterator"""

@@ -1,7 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Distribution', 'DistributionSet', 'DistroPackageFinder']
+__all__ = ['Distribution', 'DistributionSet']
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -44,7 +44,7 @@ from canonical.lp.dbschema import (
     TranslationPermission, SpecificationSort)
 
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSet, IDistroPackageFinder, NotFoundError,
+    IDistribution, IDistributionSet, NotFoundError,
     IHasBuildRecords, ISourcePackageName, IBuildSet,
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
@@ -198,14 +198,13 @@ class Distribution(SQLBase):
     def bugCounter(self):
         counts = []
 
-        severities = [
-            BugTaskStatus.NEW,
-            BugTaskStatus.ACCEPTED,
-            BugTaskStatus.REJECTED,
-            BugTaskStatus.FIXED]
+        severities = [BugTaskStatus.NEW,
+                      BugTaskStatus.ACCEPTED,
+                      BugTaskStatus.REJECTED,
+                      BugTaskStatus.FIXED]
 
-        query = ("bugtask.distribution = %s AND "
-                 "bugtask.bugstatus = %i")
+        query = ("BugTask.distribution = %s AND "
+                 "BugTask.bugstatus = %i")
 
         for severity in severities:
             query = query % (quote(self.id), severity)
@@ -571,10 +570,3 @@ class DistributionSet:
             members=members,
             owner=owner)
 
-class DistroPackageFinder:
-
-    implements(IDistroPackageFinder)
-
-    def __init__(self, distribution=None, processorfamily=None):
-        self.distribution = distribution
-        # XXX kiko: and what about processorfamily?
