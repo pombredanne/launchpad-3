@@ -1144,3 +1144,12 @@ Calendar stuff.
   font-weight: bold;
   color: #cc0000;
 }
+
+dl.faq dt {
+    font-weight: bold;
+}
+
+dl.faq dd {
+    margin: 0.5em 1em;
+}
+
