@@ -133,7 +133,7 @@ class BugEmailCommand(EmailCommand):
                 owner=getUtility(ILaunchBag).user,
                 filealias=filealias,
                 parsed_message=parsed_msg)
-            if message.contents.strip() == '':
+            if message.text_contents.strip() == '':
                  raise EmailProcessingError(
                     get_error_message('no-affects-target-on-submit.txt'))
 

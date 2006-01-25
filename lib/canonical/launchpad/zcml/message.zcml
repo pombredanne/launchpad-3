@@ -13,11 +13,6 @@
             set_schema="canonical.launchpad.interfaces.IMessage" />
     </content>
 
-    <adapter
-        for="canonical.launchpad.interfaces.IBugMessage"
-        provides="canonical.launchpad.interfaces.IMessage"
-        factory="canonical.launchpad.components.bugmessage.BugMessageToMessageAdapter" />
-
     <!-- Page to render a HTML snippet for a single MessageChunk -->
     <browser:page
         name="+snippet"
