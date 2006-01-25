@@ -121,7 +121,7 @@ class BranchView(LaunchpadView):
         if self.context.url:
             return self.context.url
         else:
-            return self.context.supermirror_url
+            return self.supermirror_url()
 
 
 class BranchEditView(SQLObjectEditView):
