@@ -135,25 +135,59 @@ class SlaveChrootBuilder:
                 self.config['buildd']['group'],
                 self.treeroot, file))
 
+        print "Ensuring localhost is in /etc/hosts..."
+        localhost_found = False
+        try:
+            f = open("%s/chroot-autobuild/etc/hosts", "r")
+            r = f.read()
+            f.close()
+            if "localhost" in r:
+                localhost_found = True
+        except IOError:
+            # Swallow the IOError and assume we didn't find localhost
+            pass
+        if not localhost_found:
+            print "Did not find a localhost entry. Making /etc/hosts in chroot."
+            execute("echo 127.0.0.1 localhost | "
+                    "sudo sh -c 'cat >> %s/chroot-autobuild/etc/hosts'" %
+                self.treeroot)
+
     def setupApt(self, bootstrap=False):
         root = self.config['apt']['archiveroot']
         if bootstrap:
+            print "Configuring bootstrap archive apt sources"
             root = self.config['chroot']['debootstraparchive']
+        else:
+            print "Configuring production archive apt sources"
         pockets = ["-"+pocket for pocket in
                    self.config['apt']['pockets'].split()]
         pockets.append('')
-        execute("sudo rm -f %s/chroot-autobuild/etc/apt/sources.list" %
-                self.treeroot)
-        execute("sudo touch %s/chroot-autobuild/etc/apt/sources.list" %
-                self.treeroot)
+
+        # This turns the string "a b c d"
+        # into  [ ["a"], ["a", "b"], ["a", "b", "c"], ["a", "b", "c", "d"] ]
+        components = self.config['apt']['components'].split()
+        component_sets = [components[:i+1] for i in range(len(components))]
+
+        for component_set in component_sets:
+            execute("sudo rm -f %s/chroot-autobuild/etc/apt/sources.list.%s" %
+                    (self.treeroot, component_set[-1]))
+            execute("sudo touch %s/chroot-autobuild/etc/apt/sources.list.%s" %
+                    (self.treeroot, component_set[-1]))
+
+            for pocket in pockets:
+                execute("echo deb %s %s%s %s | "
+                        "sudo sh -c 'cat >> "
+                        "%s/chroot-autobuild/etc/apt/sources.list.%s'" %(
+                    root, self.config['chroot']['distrorelease'],
+                    pocket, " ".join(component_set),
+                    self.treeroot, component_set[-1]))
+
+        execute("sudo rm -f %s/chroot-autobuild/etc/apt/sources.list" %(
+            self.treeroot))
         
-        for pocket in pockets:
-            execute("echo deb %s %s%s %s | "
-                    "sudo sh -c 'cat >> "
-                    "%s/chroot-autobuild/etc/apt/sources.list'" %(
-                root, self.config['chroot']['distrorelease'],
-                pocket, self.config['apt']['components'],
-                self.treeroot))
+        execute("sudo ln -s sources.list.%s "
+                "%s/chroot-autobuild/etc/apt/sources.list" %(
+            components[0], self.treeroot))
 
         if self.config['apt']['signingdisabled'] == '1':
             execute(r'echo APT::Get::AllowUnauthenticated \"1\"\; | '
