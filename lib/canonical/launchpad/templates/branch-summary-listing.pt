@@ -38,21 +38,21 @@
   <tal:comment condition="nothing">
     <!-- XXX: That duplicates the 'edit' link from the action portlet and
          should be changed when but #5313 is fixed to comply with Once And
-         Only Once. -- DavidAllouche 2005-12-02 -->
+         Only Once. - DavidAllouche 2005-12-02 -->
   </tal:comment>
   <img src="/++resource++edit.gif" />
   <a tal:attributes="href view/edit_link_url">Edit branch details</a>
   <tal:missing_title
     condition="python:(not context.title) and context.summary">
-    (this branch has no title).
+    (this branch has no title)
   </tal:missing_title>
   <tal:missing_summary
     condition="python:context.title and (not context.summary)">
-    (this branch has no summary).
+    (this branch has no summary)
   </tal:missing_summary>
   <tal:missing_both
     condition="python:(not context.title) and (not context.summary)">
-    (this branch has neither title nor summary).
+    (this branch has neither title nor summary)
   </tal:missing_both>
 </tal:missing_title_or_summary>
 
