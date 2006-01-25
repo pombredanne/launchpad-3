@@ -181,11 +181,11 @@ class SourcePackage:
             SourcePackageRelease.sourcepackagename = %d AND
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
-            DistroRelease.distribution = %d
+            DistroRelease.distribution = %d AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id
             ''' % (self.sourcepackagename.id, self.distribution.id),
-            clauseTables=['SourcePackagePublishingHistory'])
+            clauseTables=['DistroRelease', 'SourcePackagePublishingHistory'])
 
         # sort by debian version number
         return sorted(list(ret), key=lambda item: Version(item.version))
