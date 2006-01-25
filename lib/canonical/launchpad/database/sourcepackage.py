@@ -157,17 +157,6 @@ class SourcePackage:
         return self.currentrelease.manifest
 
     @property
-    def maintainer(self):
-        # For backwards compatibility purposes only, since "Maintainership" is
-        # gone. See https://launchpad.net/malone/bugs/5485.
-        warn("SourcePackage.maintainer was deprecated with the "
-             "InitialBugContacts implementation. Please talk to "
-             "bradb about removing this property in the UI and code.",
-             DeprecationWarning)
-
-        return None
-
-    @property
     def releases(self):
         """See ISourcePackage."""
         ret = SourcePackageRelease.select('''
@@ -448,23 +437,21 @@ class SourcePackage:
         """See canonical.launchpad.interfaces.ISourcePackage."""
         return not self.__eq__(other)
 
-    def getBuildRecords(self, status=None, limit=10):
+    def getBuildRecords(self, status=None):
         """See IHasBuildRecords"""
+        status_clause = ''
         if status:
-            status_clause = "Build.buildstate=%s" % sqlvalues(status)
-        else:
-            status_clause = "Build.builder is not NULL"
+            status_clause = "AND Build.buildstate=%s" % sqlvalues(status)
 
         querytxt = """
             Build.sourcepackagerelease = SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishingHistory.distrorelease = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id AND
+                SourcePackageRelease.id 
             """ % sqlvalues(self.sourcepackagename.id, self.distrorelease.id)
         querytxt += status_clause
         return Build.select(querytxt,
             clauseTables=['SourcePackageRelease',
                           'SourcePackagePublishingHistory'],
-            limit=limit,
             orderBy="-datebuilt")

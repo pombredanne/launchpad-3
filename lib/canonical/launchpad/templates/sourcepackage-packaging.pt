@@ -15,7 +15,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Package Upstream Link</h1>
+  <h1>Package upstream link</h1>
 
   <p>
     Launchpad needs accurate information about the link between <span

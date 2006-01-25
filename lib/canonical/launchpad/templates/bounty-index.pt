@@ -17,7 +17,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Bounty Overview</h1>
+  <h1>Bounty overview</h1>
 
   <p tal:repeat="notice view/notices"
      tal:content="notice"

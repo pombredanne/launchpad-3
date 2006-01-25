@@ -32,16 +32,23 @@ __all__ = [
 def _disconnect_sqlos():
     try:
         name = getUtility(IConnectionName).name
-        db_adapter = ILaunchpadDatabaseAdapter(
-                getUtility(IZopeDatabaseAdapter, name)
-                )
+        da = ILaunchpadDatabaseAdapter(getUtility(IZopeDatabaseAdapter, name))
         # we have to disconnect long enough to drop
         # and recreate the DB
-        db_adapter.disconnect()
-        assert db_adapter._v_connection is None
-    except ComponentLookupError, err:
+        da.disconnect()
+        assert da._v_connection is None
+    except ComponentLookupError:
         # configuration not yet loaded, no worries
         pass
+
+    try:
+        da = getUtility(IZopeDatabaseAdapter, 'session')
+        da.disconnect()
+        assert da._v_connection is None
+    except ComponentLookupError:
+        # configuration not yet loaded, no worries
+        pass
+
     items = list(connCache.items())
     for key, connection in items:
         connection.rollback()
@@ -50,17 +57,17 @@ def _disconnect_sqlos():
 
 def _reconnect_sqlos(dbuser=None):
     _disconnect_sqlos()
-    db_adapter = None
+    da = None
     name = getUtility(IConnectionName).name
-    db_adapter = getUtility(IZopeDatabaseAdapter, name)
+    da = getUtility(IZopeDatabaseAdapter, name)
     if dbuser is None:
         dbuser = config.launchpad.dbuser
-    db_adapter.connect(dbuser)
+    da.connect(dbuser)
 
     # Confirm that the database adapter *really is* connected and connected
     # to the right database
-    assert db_adapter.isConnected(), 'Failed to reconnect'
-    cur = db_adapter._v_connection.cursor()
+    assert da.isConnected(), 'Failed to reconnect'
+    cur = da._v_connection.cursor()
     cur.execute('SELECT count(*) FROM LaunchpadDatabaseRevision')
     assert cur.fetchone()[0] > 0, 'Sample data not loaded!'
 
@@ -74,6 +81,10 @@ def _reconnect_sqlos(dbuser=None):
             'SELECT count(*) FROM LaunchpadDatabaseRevision'
             )
     assert r[0][0] > 0, 'SQLOS is not talking to the database'
+
+    da = getUtility(IZopeDatabaseAdapter, 'session')
+    da.connect()
+    assert da.isConnected(), 'Failed to reconnect'
 
 
 class LaunchpadTestSetup(PgTestSetup):
@@ -104,7 +115,9 @@ class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
 
 
 class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
-    def setUp(self):
+    def setUp(self, dbuser=None):
+        if dbuser is not None:
+            self.dbuser = dbuser
         _disconnect_sqlos()
         super(LaunchpadFunctionalTestSetup, self).setUp()
         FunctionalTestSetup().setUp()
@@ -148,9 +161,10 @@ class LaunchpadFunctionalTestCase(unittest.TestCase):
         login(user)
         self.__logged_in = True
 
-    def setUp(self):
+    def setUp(self, dbuser=None):
+        self.dbuser = dbuser
         unittest.TestCase.setUp(self)
-        LaunchpadFunctionalTestSetup().setUp()
+        LaunchpadFunctionalTestSetup(dbuser=self.dbuser).setUp()
         self.zodb_db = FunctionalTestSetup().db
         self.__logged_in = False
 
@@ -158,10 +172,10 @@ class LaunchpadFunctionalTestCase(unittest.TestCase):
         if self.__logged_in:
             logout()
             self.__logged_in = False
-        LaunchpadFunctionalTestSetup().tearDown()
+        LaunchpadFunctionalTestSetup(dbuser=self.dbuser).tearDown()
         unittest.TestCase.tearDown(self)
 
     def connect(self):
-        return LaunchpadFunctionalTestSetup().connect()
+        return LaunchpadFunctionalTestSetup(dbuser=self.dbuser).connect()
 
 

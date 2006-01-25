@@ -9,7 +9,10 @@ from zope.interface import classImplements
 from zope.i18n import MessageIDFactory
 
 from sqlobject import connectionForURI
-from canonical.database.sqlbase import ZopelessTransactionManager
+from canonical.database.sqlbase import (
+        ZopelessTransactionManager, DEFAULT_ISOLATION, AUTOCOMMIT_ISOLATION,
+        READ_COMMITTED_ISOLATION, SERIALIZED_ISOLATION
+        )
 
 from canonical.config import config
 
@@ -17,6 +20,13 @@ from psycopgda import adapter
 
 # Single MessageIDFactory for everyone
 from canonical.launchpad import _
+
+__all__ = [
+    'DEFAULT_ISOLATION', 'AUTOOMMIT_ISOLATION',
+    'READ_COMMITED_ISOLATION', 'SERIALIZED_ISOLATION',
+    'dbname', 'dbhost', 'dbuser', 'isZopeless', 'initZopeless',
+    'decorates', 'Passthrough'
+    ]
 
 # Allow override by environment variables for backwards compatibility.
 # This was needed to allow tests to propogate settings to spawned processes.
@@ -66,7 +76,7 @@ def isZopeless():
     return ZopelessTransactionManager._installed is not None
 
 def initZopeless(debug=False, dbname=None, dbhost=None, dbuser=None,
-                 implicitBegin=True):
+                 implicitBegin=True, isolation=DEFAULT_ISOLATION):
     registerTypes()
     if dbuser is None:
         # Nothing calling initZopeless should be connecting as the
@@ -94,7 +104,7 @@ def initZopeless(debug=False, dbname=None, dbhost=None, dbuser=None,
 
     return ZopelessTransactionManager('postgres://%s%s/%s' % (
         dbuser, dbhost, dbname,
-        ), debug=debug, implicitBegin=implicitBegin)
+        ), debug=debug, implicitBegin=implicitBegin, isolation=isolation)
 
 def decorates(interface, context='context'):
     """Make an adapter into a decorator.

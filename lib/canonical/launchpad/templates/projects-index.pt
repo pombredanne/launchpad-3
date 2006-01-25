@@ -18,7 +18,7 @@
 
     <div metal:fill-slot="main">
 
-      <h1>Launchpad projects registry</h1>
+      <h1>Projects in Launchpad</h1>
 
       <form method="get">
         <table>

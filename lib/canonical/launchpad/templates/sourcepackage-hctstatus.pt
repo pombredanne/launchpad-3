@@ -96,7 +96,7 @@
   <tal:block condition="context/productseries"
              define="ps context/productseries">
 
-    <h2>Upstream Bazaar Status</h2>
+    <h2>Upstream Bazaar status</h2>
 
     <div tal:replace="structure ps/@@+hctstatus-core" />
 

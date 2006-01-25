@@ -44,6 +44,38 @@
 
     <browser:pages
         for="canonical.launchpad.interfaces.IDistribution"
+        facet="overview"
+        permission="zope.Public">
+        <browser:page
+            name="+officialmirrors"
+            template="../templates/distribution-officialmirrors.pt" />
+        <browser:page
+            name="+allmirrors"
+            template="../templates/distribution-allmirrors.pt" />
+    </browser:pages>
+
+    <browser:generalform
+        name="+newmirror"
+        for="canonical.launchpad.interfaces.IDistribution"
+        class="canonical.launchpad.browser.DistributionMirrorAddView"
+        schema="canonical.launchpad.interfaces.IDistributionMirror"
+        fields="owner name displayname description speed country
+                content http_base_url ftp_base_url rsync_base_url
+                pulse_type pulse_source enabled official_candidate"
+        keyword_arguments="
+            owner name displayname description speed country content 
+            http_base_url ftp_base_url rsync_base_url pulse_type pulse_source
+            enabled official_candidate"
+        label="Register a new mirror"
+        permission="launchpad.AnyPerson"
+        template="../templates/distribution-newmirror.pt">
+        <browser:widget 
+            field="owner"
+            class="canonical.widgets.HiddenUserWidget" />
+    </browser:generalform>
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IDistribution"
         class="canonical.launchpad.browser.DistributionView"
         permission="zope.Public" >
         <browser:page
@@ -89,6 +121,7 @@
             />
         <browser:page
             name="+builds"
+            facet="overview"
             template="../templates/distribution-builds.pt"
             lp:url="/distros/$distribution/+builds"
             />
@@ -143,7 +176,7 @@
         name="+addrelease"
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IDistroRelease"
-        label="Register a New Distribution Release"
+        label="Register a new distribution release"
         fields="name displayname title summary description version
         parentrelease"
         content_factory="canonical.launchpad.database.DistroRelease"
@@ -163,7 +196,7 @@
         schema="canonical.launchpad.interfaces.IMilestone"
         class="canonical.launchpad.browser.milestone.MilestoneAddView"
         facet="overview"
-        label="Add a Milestone"
+        label="Add a milestone"
         fields="name dateexpected"
         keyword_arguments="name dateexpected"
         permission="launchpad.Edit"
@@ -175,11 +208,11 @@
         name="+filebug"
         for="canonical.launchpad.interfaces.IDistribution"
         schema="canonical.launchpad.interfaces.IBugAddForm"
-        label="Report a Bug in a Linux Distribution"
-        fields="sourcepackagename title comment private"
+        label="Report a bug in a Linux distribution"
+        fields="packagename title comment private"
         class="canonical.launchpad.browser.FileBugView"
         facet="bugs"
-        keyword_arguments="sourcepackagename title comment private"
+        keyword_arguments="packagename title comment private"
         permission="launchpad.AnyPerson"
         template="../templates/bug-add.pt"
         lp:url="/distros/$Distribution.name/+filebug">
@@ -209,7 +242,7 @@
         schema="canonical.launchpad.interfaces.IDistribution"
         facet="overview"
         fields="members"
-        label="Select a New Distribution Members Team"
+        label="Select a new distribution members team"
         permission="launchpad.Edit"
         template="../templates/distribution-memberteam.pt"
         lp:url="/distros/$Distribution.name/+selectmemberteam" />
@@ -233,7 +266,7 @@
         facet="translations"
         fields="translationgroup translationpermission"
         permission="launchpad.Edit"
-        label="Select a New Translation Group"
+        label="Select a new translation group"
         template="../templates/distribution-translators.pt"
         lp:url="/distros/$Distribution.name/+changetranslators" />
 
@@ -243,7 +276,7 @@
       schema="canonical.launchpad.interfaces.IDistributionBounty"
       class="canonical.launchpad.browser.bounty.BountyLinkView"
       facet="bounties"
-      label="Link an Existing Bounty"
+      label="Link an existing bounty"
       fields="distribution bounty"
       keyword_arguments="distribution bounty"
       permission="launchpad.AnyPerson"
@@ -258,7 +291,7 @@
       name="+addbounty"
       for="canonical.launchpad.interfaces.IDistribution"
       schema="canonical.launchpad.interfaces.IBounty"
-      label="Register a New Bounty"
+      label="Register a bounty"
       fields="name title summary usdvalue difficulty description"
       class="canonical.launchpad.browser.BountyAddView"
       facet="bounties"
@@ -324,7 +357,7 @@
         name="+add"
         for="canonical.launchpad.interfaces.IDistributionSet"
         schema="canonical.launchpad.interfaces.IDistribution"
-        label="Create a New Distribution in Soyuz"
+        label="Register a distribution in Soyuz"
         fields="name displayname title summary description domainname owner
                 members"
         content_factory="canonical.launchpad.database.Distribution"

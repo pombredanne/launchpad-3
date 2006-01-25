@@ -9,7 +9,6 @@ __all__ = [
     'IBranchSet',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
 
 from zope.interface import Interface, Attribute
 
@@ -17,12 +16,10 @@ from zope.schema import Bool, Int, Choice, Text, TextLine
 
 from canonical.lp.dbschema import BranchLifecycleStatus
 
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad import _
+from canonical.launchpad.validators.name import name_validator 
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.validation import valid_webref
-
-
-_ = MessageIDFactory('launchpad')
 
 
 class IBranch(IHasOwner):
@@ -33,7 +30,7 @@ class IBranch(IHasOwner):
         title=_('Name'), required=True, description=_("Keep this name very "
         "short, unique, and descriptive, because it will be used in URLs. "
         "Examples: main, devel, release-1.0, gnome-vfs."),
-        constraint=valid_name)
+        constraint=name_validator)
     title = TextLine(
         title=_('Title'), required=True, description=_("Describe the "
         "branch as clearly as possible in up to 70 characters. This "

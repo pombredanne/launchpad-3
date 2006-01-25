@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'IDownloadURL',
     'IBinaryPackageFile',
     'ISourcePackageReleaseFile',
     ]
@@ -14,6 +15,10 @@ from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
 
 _ = MessageIDFactory('launchpad')
+
+class IDownloadURL(Interface):
+    filename = Attribute("Downloadable Package name")
+    fileurl = Attribute("Package full url")
 
 class IBinaryPackageFile(Interface):
     """A binary package to librarian link record."""
@@ -57,3 +62,4 @@ class ISourcePackageReleaseFile(Interface):
             )
 
     url = Attribute("IDownloadURL instance")
+

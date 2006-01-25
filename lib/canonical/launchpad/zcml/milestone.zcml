@@ -52,7 +52,7 @@
         facet="overview"
         schema="canonical.launchpad.interfaces.IMilestone"
         fields="name dateexpected visible"
-        label="Edit Milestone"
+        label="Edit milestone"
         permission="launchpad.Edit"
         template="../templates/milestone-edit.pt"
         lp:url="/products/$Product.name/+milestone/$Milestone.name/+edit">

@@ -28,7 +28,7 @@ class MaloneApplication:
     implements(IMaloneApplication)
 
     def __init__(self):
-        self.title = 'Malone: Bug Management in Launchpad'
+        self.title = 'Malone: the Launchpad bug tracker'
 
     @property
     def bug_count(self):

@@ -82,8 +82,8 @@ Renaming
 All persons have a unique name in launchpad, so to allow them to change their
 names, we must make sure that name is not already in use by someone else.
 
->>> from canonical.launchpad.interfaces.person import (
-...     PersonNameField, StrippingTextLine)
+>>> from canonical.launchpad.fields import StrippingTextLine
+>>> from canonical.launchpad.interfaces.person import PersonNameField
 >>> field = PersonNameField(__name__='name', title=u'Unique name',
 ...                         description=u'', readonly=False, required=True)
 >>> field = field.bind(lifeless)
@@ -100,9 +100,8 @@ But you can't use Mark's name, of course. ;)
 >>> field.validate(u'sabdfl')
 Traceback (most recent call last):
   ...
-LaunchpadValidationError: ...
-This name is already in use by another person/team.
-...
+LaunchpadValidationError: ...sabdfl is already in use by another person/team...
+
 
 In the case of your displayname, the only constraint is that it can't contain
 only spaces. To ensure that, we use a StrippingTextLine in the displayname,
@@ -164,8 +163,6 @@ Must login as 'sabdfl' cause he's the owner of the Ubuntu Team.
 >>> ubuntu_translators.addMember(empty)
 >>> ubuntu_team.teamowner = empty
 >>> foo = empty.assignKarma('bugfixed')
->>> empty.updateKarmaCache()
->>> sample.updateKarmaCache()
 >>> flush_database_updates()
 
 'Sample Person' is a deactivated member of the 'Ubuntu Translators' team,
@@ -176,9 +173,9 @@ True
 >>> empty in ubuntu_translators.activemembers
 True
 >>> empty.karma
-10
+0
 >>> sample.karma
-161
+91
 
 >>> personset.merge(empty, sample)
 
@@ -186,10 +183,14 @@ True
 True
 >>> sample.inTeam(ubuntu_translators)
 True
+
+Note that we don't bother migrating karma - it will just be reset next
+time the caches are rebuilt
+
 >>> empty.karma
 0
 >>> sample.karma
-171
+91
 
 >>> from canonical.launchpad.database import Person
 >>> cur = Person._connection._connection.cursor()
@@ -230,10 +231,8 @@ class. This methods returns a sliced list of 5 valid person accounts,
 ordered by karma. A valid person account is any non-merged person with a
 preferred email address.
 
->>> empty.karma = 10000
->>> flush_database_updates()
 >>> [(person.name, person.karma) for person in personset.topPeople()]
-[(u'name12', 171), (u'name16', 40), (u'bugzilla-importer', 0), (u'jordi', 0), (u'marilize', 0)]
+[(u'name12', 91), (u'name16', 40), (u'launchpad', 0), (u'jordi', 0), (u'marilize', 0)]
 
 
 People can have karma in Launchpad
@@ -251,13 +250,7 @@ Salgado wrote the karma framework. Let's give him some karma points.
 0
 
 The value that you get through IPerson.karma is a cached value that's
-calculated daily. That's why it still 0. To calculate the karma of a given
-person at runtime we can use the updateKarmaCache method of IPerson.
-
->>> from canonical.launchpad.interfaces import IKarmaSet
->>> salgado.updateKarmaCache()
->>> salgado.karma
-10
+calculated daily. That's why it still 0.
 
 
 Searching
@@ -343,4 +336,4 @@ Maintainer.
 ...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
 ...            sprelease.version)
 (u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
-
+(u'cnews', u'Ubuntu Hoary', u'cr.g7-37')

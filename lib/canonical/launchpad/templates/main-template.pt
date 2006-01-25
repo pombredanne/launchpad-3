@@ -126,23 +126,19 @@
         >
           <tal:facet repeat="link facetmenu">
             <tal:available condition="link/enabled">
-              <tal:comment condition="nothing">
-              The unfortunate lack of whitespace below is required to
-              avoid layout issues with the tabs.
-              </tal:comment>
               <li
                 tal:condition="link/selected"
                 tal:attributes="title link/summary"
                 class="current"
-              ><strong tal:condition="link/linked">
-                  <a
-                    tal:attributes="href link/url"
-                    tal:content="structure link/escapedtext"
-                  >abc</a></strong><strong
-                  tal:condition="not: link/linked"
-                  tal:attributes="title link/summary"
+              >
+                <a tal:condition="link/linked"
+                  tal:attributes="href link/url"
                   tal:content="structure link/escapedtext"
-                >def</strong>
+                >abc</a>
+                <span
+                  tal:condition="not: link/linked"
+                  tal:replace="structure link/escapedtext"
+                >def</span>
                 <tal:menu
                   condition="not:exists:body"
                   replace="structure CONTEXTS/@@+menubox"
@@ -194,7 +190,7 @@
   </div><!-- class="body" -->
 
   <div class="footer">
-      Copyright 2004-2005 Canonical Ltd. &ndash;  <a
+      Copyright 2004-2006 Canonical Ltd. &ndash;  <a
       href="/legal">Copyright&nbsp;terms</a> &ndash;
       <a href="/feedback">Help&nbsp;us&nbsp;improve</a>
   </div>

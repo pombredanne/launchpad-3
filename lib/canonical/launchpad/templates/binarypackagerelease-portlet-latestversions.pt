@@ -1,14 +1,17 @@
 <div class="portlet">
-  <h4>Latest Versions:</h4>
-  <div class="portletBody portletContent">
-    <ul tal:define="lastversions context/lastversions">
-      <li tal:condition="not:lastversions">
-        <i>No Latest Versions.</i>	   
-      </li>
+  <h4>Latest versions:</h4>
+  <div
+    class="portletBody portletContent"
+    tal:define="lastversions context/lastversions"
+  >
+    <ul tal:condition="lastversions">
       <li tal:repeat="spackage lastversions">
         <a tal:content="string:${spackage/name}-${spackage/version}"
         tal:attributes="href spackage/version" />
       </li>
     </ul>
+    <p tal:condition="not:lastversions">
+      <i>No latest versions.</i>
+    </p>
   </div>
 </div>

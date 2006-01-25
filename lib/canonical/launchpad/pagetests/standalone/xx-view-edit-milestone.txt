@@ -6,7 +6,7 @@ We want to make sure we can view and edit a milestone.
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... """)
   HTTP/1.1 200 Ok
-  ...<h1>Edit Milestone</h1>...
+  ...<h1>Edit milestone</h1>...
 
 OK, now let's POST a change. We should be redirected back to the product
 page:

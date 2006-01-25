@@ -213,7 +213,7 @@ class LoginOrRegister:
 
         logintokenset = getUtility(ILoginTokenSet)
         token = logintokenset.new(
-            requester=None, requesteremail=None, email=self.email, 
+            requester=None, requesteremail=None, email=self.email,
             tokentype=LoginTokenType.NEWACCOUNT,
             redirection_url=request.form.get('redirection_url'))
         token.sendNewUserEmail(request.getApplicationURL())
@@ -279,9 +279,6 @@ def logInPerson(request, principal, email):
     authdata['logintime'] = datetime.utcnow()
     authdata['login'] = email
     notify(CookieAuthLoggedInEvent(request, email))
-    request.response.addNoticeNotification(
-        _(u'You have been logged in')
-        )
 
 
 class CookieLogoutPage:

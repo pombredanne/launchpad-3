@@ -5,7 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'executezcmlforscripts',
+    'execute_zcml_for_scripts',
     'logger_options',
     'logger',
     'log',

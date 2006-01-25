@@ -19,7 +19,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Bug Activity</h1>
+    <h1>Bug activity</h1>
 
     <table class="listing">
     <thead>

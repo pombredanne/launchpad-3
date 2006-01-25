@@ -22,7 +22,7 @@
         name="+edit"
         schema="canonical.launchpad.interfaces.IBugWatch"
         class="canonical.launchpad.browser.BugRelatedObjectEditView"
-        label="Change Bug Watch"
+        label="Change bug watch"
         permission="launchpad.AnyPerson"
         template="../templates/bugwatch-editform.pt"
         fields="bugtracker remotebug"
