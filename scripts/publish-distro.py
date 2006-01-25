@@ -154,10 +154,10 @@ try:
     if not (options.careful or options.careful_publishing):
         clause = clause + (" AND publishingstatus = %s" %
                            sqlvalues(PackagePublishingStatus.PENDING))
-    spps = SourcePackageFilePublishing.select(clause)
+    spps = SourcePackageFilePublishing.select(clause, orderBy=['componentname', 'libraryfilealiasfilename'])
     pub.publish(spps, isSource=True)
     debug("Attempting to publish pending binaries.")
-    pps = BinaryPackageFilePublishing.select(clause)
+    pps = BinaryPackageFilePublishing.select(clause, orderBy=['componentname', 'libraryfilealiasfilename'])
     pub.publish(pps, isSource=False)
     debug("Committing.")
     txn.commit()
