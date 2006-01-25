@@ -32,7 +32,7 @@ class Config(object):
                 }
 
             for dar in dr.architectures:
-                config_segement["archtags"].append(
+                config_segment["archtags"].append(
                     dar.architecturetag.encode('utf-8'))
 
             if not dr.lucilleconfig:
