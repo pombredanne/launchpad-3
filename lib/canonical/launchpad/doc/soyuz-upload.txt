@@ -94,6 +94,12 @@ session.
   >>> uploads = []
   >>> package_names = []
   >>>
+
+  XXX cprov 20060125: poppy still having a weird behaviour during the
+  file transfer, it suddenly closes the connection due inactivity.
+  That's why we keep polling the 'ftp.sock' attribute and reconnect if
+  it is gone. Bug # 29645
+
   >>> for changes_filepath in changes:
   ...
   ...     if not ftp.sock:
@@ -374,8 +380,8 @@ as NEW and RELEASE.
 Processing NEW Items
 ----------------------
 
-The proccessing of NEW queue entries checks the integrity of uploads
-candidates (NEW) and promote them to ACCEPTED, the failures are kept
+The processing of NEW-queue-entries checks the integrity of uploads
+candidates and promote them to ACCEPTED, the failures are kept
 as NEW
 
   >>> from canonical.launchpad.interfaces import (
@@ -416,6 +422,13 @@ Querying by status, name and version terms:
   0
 
 Using exact_match argument:
+
+As you can see exact_match arguments affects both, name & version:
+
+XXX cprov 20060125: Andrew suggest we can split the exact_match
+attribute in two, as exact_name & exact_version, which might be
+a good idea, since it produce a more controllable behaviour.
+See bug # 29642
 
   >>> items = release.getFancyQueueItems(DistroReleaseQueueStatus.NEW,
   ...                      name='dr', version='1.2', exact_match=True)

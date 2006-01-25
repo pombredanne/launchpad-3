@@ -30,7 +30,8 @@ Useful properties:
    u'warty'
 
 
-   # XXX cprov 20051219: horrible broken code, bug # 5948
+   XXX cprov 20051219: following code exposes a piece of yet-broken
+   code in Soyuz, which is precisely described in bug # 5948
 
    >>> try:
    ...     firefox_bin_release.current(warty)
@@ -63,8 +64,8 @@ The override method does implicitly exactly the same than:
                              priority=new_priority)
 
 but it only sets the not-empty attributes, so you can override the
-attributes exclusively. It only exists to improve the code clarity, for
-instance, in ftp-master/queue tool.
+attributes exclusively. It only exists to improve the code clarity,
+in ftp-master/queue tool and other scripts.
 
 Display the current firefox component and section:
 
@@ -85,7 +86,7 @@ Override the current firefox with new component/section/priority:
    >>> firefox_bin_release.override(component=new_comp, section=new_sec,
    ...              priority=new_priority)
 
-Check if it got overriden correctly:
+Check if it got overridden correctly:
 
    >>> firefox_bin_release.component.name, firefox_bin_release.section.name, firefox_bin_release.priority.name
    (u'universe', u'mail', 'IMPORTANT')
