@@ -159,15 +159,12 @@ class IKarmaTotalCache(Interface):
 
     person = Int(
             title=_("Person"), required=True, readonly=True,
-            description=_(
-                "The person which performed the actions of this "
-                "category, and thus got the karma."
-                )
+            description=_("The person who has the karma.")
             )
 
     karma_total = Int(
             title=_("Karma"), required=True, readonly=True,
-            description=_("The total karma points scored by this person.")
+            description=_("The total karma points scored by the person.")
             )
 
 

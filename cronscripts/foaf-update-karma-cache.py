@@ -28,6 +28,10 @@ def update_karma_cache():
     the KarmaCache table. If a user doesn't have an entry for that category in
     KarmaCache a new one will be created.
     """
+    # We use the autocommit transaction isolation level to minimize
+    # contention, and also allows us to not bother explicitly calling
+    # COMMIT all the time. This script in no way relies on transactions,
+    # so it is safe.
     ztm = initZopeless(
             dbuser=config.karmacacheupdater.dbuser,
             implicitBegin=False, isolation=AUTOCOMMIT_ISOLATION

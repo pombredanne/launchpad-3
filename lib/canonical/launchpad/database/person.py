@@ -863,9 +863,7 @@ class PersonSet:
                 )
             """
         top_people = shortlist(Person.select(query))
-        top_people.sort(
-                cmp=lambda a,b: cmp((b.karma, b.id), (a.karma, a.id))
-                )
+        top_people.sort(key=lambda obj: (obj.karma, obj.id), reverse=True)
         return top_people
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,

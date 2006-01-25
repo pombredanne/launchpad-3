@@ -180,7 +180,7 @@ class KarmaCacheSet:
 
 
 class KarmaTotalCache(SQLBase):
-    """See IKarmaCache."""
+    """A cached value of the total of a person's karma (all categories)."""
     implements(IKarmaTotalCache)
 
     _table = 'KarmaTotalCache'
