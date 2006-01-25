@@ -153,7 +153,7 @@ containing a signature.asc attachment.
     ...
     Some signed content.
     <BLANKLINE>
-    --vtzGhvizbBRQ85DL
+    --'()+_,./:=?vtzGhvizbBRQ85DL
     Content-Type: application/pgp-signature; name="signature.asc"
     ...
     -----BEGIN PGP SIGNATURE-----
