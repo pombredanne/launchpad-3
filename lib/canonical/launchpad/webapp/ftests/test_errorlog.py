@@ -134,31 +134,31 @@ class TestErrorReportingService(unittest.TestCase):
         service = ErrorReportingService()
 
         # first oops of the day
-        now = datetime.datetime(2004, 04, 01, 00, 30, 00, tzinfo=UTC)
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
         oopsid, filename = service.newOopsId(now)
-        self.assertEqual(oopsid, 'OOPS-1T1')
-        self.assertEqual(filename, '/var/tmp/lperr.test/2004-04-01/01800.T1')
+        self.assertEqual(oopsid, 'OOPS-91T1')
+        self.assertEqual(filename, '/var/tmp/lperr.test/2006-04-01/01800.T1')
         self.assertEqual(service.lastid, 1)
-        self.assertEqual(service.lasterrordate, '2004-04-01')
+        self.assertEqual(service.lasterrordate, '2006-04-01')
 
         # second oops of the day
-        now = datetime.datetime(2004, 04, 01, 12, 00, 00, tzinfo=UTC)
+        now = datetime.datetime(2006, 04, 01, 12, 00, 00, tzinfo=UTC)
         oopsid, filename = service.newOopsId(now)
-        self.assertEqual(oopsid, 'OOPS-1T2')
-        self.assertEqual(filename, '/var/tmp/lperr.test/2004-04-01/43200.T2')
+        self.assertEqual(oopsid, 'OOPS-91T2')
+        self.assertEqual(filename, '/var/tmp/lperr.test/2006-04-01/43200.T2')
         self.assertEqual(service.lastid, 2)
-        self.assertEqual(service.lasterrordate, '2004-04-01')
+        self.assertEqual(service.lasterrordate, '2006-04-01')
 
         # first oops of following day
-        now = datetime.datetime(2004, 04, 02, 00, 30, 00, tzinfo=UTC)
+        now = datetime.datetime(2006, 04, 02, 00, 30, 00, tzinfo=UTC)
         oopsid, filename = service.newOopsId(now)
-        self.assertEqual(oopsid, 'OOPS-2T1')
-        self.assertEqual(filename, '/var/tmp/lperr.test/2004-04-02/01800.T1')
+        self.assertEqual(oopsid, 'OOPS-92T1')
+        self.assertEqual(filename, '/var/tmp/lperr.test/2006-04-02/01800.T1')
         self.assertEqual(service.lastid, 1)
-        self.assertEqual(service.lasterrordate, '2004-04-02')
+        self.assertEqual(service.lasterrordate, '2006-04-02')
 
         # another oops with a naiive datetime
-        now = datetime.datetime(2004, 04, 02, 00, 30, 00)
+        now = datetime.datetime(2006, 04, 02, 00, 30, 00)
         self.assertRaises(ValueError, service.newOopsId, now)
 
     def test_findLastOopsId(self):
@@ -183,7 +183,7 @@ class TestErrorReportingService(unittest.TestCase):
         """Test ErrorReportingService.raising() with no request"""
         from canonical.launchpad.webapp.errorlog import ErrorReportingService
         service = ErrorReportingService()
-        now = datetime.datetime(2004, 04, 01, 00, 30, 00, tzinfo=UTC)
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
 
         try:
             raise Exception('xyz')
@@ -195,10 +195,10 @@ class TestErrorReportingService(unittest.TestCase):
         lines = open(errorfile, 'r').readlines()
 
         # the header
-        self.assertEqual(lines[0], 'Oops-Id: OOPS-1T1\n')
+        self.assertEqual(lines[0], 'Oops-Id: OOPS-91T1\n')
         self.assertEqual(lines[1], 'Exception-Type: Exception\n')
         self.assertEqual(lines[2], 'Exception-Value: xyz\n')
-        self.assertEqual(lines[3], 'Date: 2004-04-01T00:30:00+00:00\n')
+        self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
         self.assertEqual(lines[4], 'User: None\n')
         self.assertEqual(lines[5], 'URL: None\n')
         self.assertEqual(lines[6], '\n')
@@ -219,7 +219,7 @@ class TestErrorReportingService(unittest.TestCase):
         """Test ErrorReportingService.raising() with a request"""
         from canonical.launchpad.webapp.errorlog import ErrorReportingService
         service = ErrorReportingService()
-        now = datetime.datetime(2004, 04, 01, 00, 30, 00, tzinfo=UTC)
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
 
         class FakeRequest:
             URL = 'http://localhost:9000/foo'
@@ -252,10 +252,10 @@ class TestErrorReportingService(unittest.TestCase):
         lines = open(errorfile, 'r').readlines()
 
         # the header
-        self.assertEqual(lines[0], 'Oops-Id: OOPS-1T1\n')
+        self.assertEqual(lines[0], 'Oops-Id: OOPS-91T1\n')
         self.assertEqual(lines[1], 'Exception-Type: Exception\n')
         self.assertEqual(lines[2], 'Exception-Value: xyz abc\n')
-        self.assertEqual(lines[3], 'Date: 2004-04-01T00:30:00+00:00\n')
+        self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
         self.assertEqual(lines[4], 'User: Login, 42, title, description |\\u25a0|\n')
         self.assertEqual(lines[5], 'URL: http://localhost:9000/foo\n')
         self.assertEqual(lines[6], '\n')
@@ -277,13 +277,13 @@ class TestErrorReportingService(unittest.TestCase):
         self.assertEqual(lines[16], 'Exception: xyz\n')
 
         # verify that the oopsid was set on the request
-        self.assertEqual(request.oopsid, 'OOPS-1T1')
+        self.assertEqual(request.oopsid, 'OOPS-91T1')
 
     def test_raising_with_unprintable_exception(self):
         """Test ErrorReportingService.raising() with an unprintable exception"""
         from canonical.launchpad.webapp.errorlog import ErrorReportingService
         service = ErrorReportingService()
-        now = datetime.datetime(2004, 04, 01, 00, 30, 00, tzinfo=UTC)
+        now = datetime.datetime(2006, 01, 01, 00, 30, 00, tzinfo=UTC)
 
         class UnprintableException(Exception):
             def __str__(self):
@@ -302,7 +302,7 @@ class TestErrorReportingService(unittest.TestCase):
         self.assertEqual(lines[0], 'Oops-Id: OOPS-1T1\n')
         self.assertEqual(lines[1], 'Exception-Type: UnprintableException\n')
         self.assertEqual(lines[2], 'Exception-Value: <unprintable instance object>\n')
-        self.assertEqual(lines[3], 'Date: 2004-04-01T00:30:00+00:00\n')
+        self.assertEqual(lines[3], 'Date: 2006-01-01T00:30:00+00:00\n')
         self.assertEqual(lines[4], 'User: None\n')
         self.assertEqual(lines[5], 'URL: None\n')
         self.assertEqual(lines[6], '\n')

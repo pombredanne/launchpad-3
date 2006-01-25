@@ -18,7 +18,7 @@ from zope.schema import Datetime, Int, Choice, Text, TextLine, Bool
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import ContentNameField, Summary, Title 
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.validation import valid_webref
 
@@ -45,7 +45,7 @@ class ISpecification(IHasOwner):
         title=_('Name'), required=True, description=_(
             "May contain letters, numbers, and dashes only. "
             "Examples: mozilla-type-ahead-find, postgres-smart-serial."),
-        constraint=valid_name)
+        constraint=name_validator)
     title = Title(
         title=_('Title'), required=True, description=_(
             "Describe the feature as clearly as possible in up to 70 characters. "

@@ -281,10 +281,12 @@ class DistributionSourcePackage:
         search_params.setSourcePackage(self)
         return BugTaskSet().search(search_params)
 
-    def createBug(self, owner, title, comment, private=False):
+    def createBug(self, owner, title, comment, private=False,
+                  binarypackagename=None):
         """See IBugTarget."""
         return BugSet().createBug(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
+            binarypackagename=binarypackagename,
             owner=owner, title=title, comment=comment,
             private=private)

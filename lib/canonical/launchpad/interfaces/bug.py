@@ -198,6 +198,7 @@ class IBugDelta(Interface):
     bug = Attribute("The IBug, after it's been edited.")
     bugurl = Attribute("The absolute URL to the bug.")
     user = Attribute("The IPerson that did the editing.")
+    comment_on_change = Attribute("An optional comment for this change.")
 
     # fields on the bug itself
     title = Attribute("The new bug title or None.")
@@ -237,12 +238,11 @@ class IBugAddForm(IBug):
             which was installed by something other than apt-get, rpm,
             emerge or similar"""),
             vocabulary="Product")
-    sourcepackagename = Choice(
-            title=_("Source Package Name"), required=False,
-            description=_("""The distribution package you found
-            this bug in, which was installed via apt-get, rpm,
-            emerge or similar."""),
-            vocabulary="SourcePackageName")
+    packagename = Choice(
+            title=_("Package Name"), required=False,
+            description=_("""The package you found this bug in,
+            which was installed via apt-get, rpm, emerge or similar."""),
+            vocabulary="BinaryAndSourcePackageName")
     distribution = Choice(
             title=_("Linux Distribution"), required=True,
             description=_("""Ubuntu, Debian, Gentoo, etc."""),

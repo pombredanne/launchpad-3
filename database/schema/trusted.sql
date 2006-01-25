@@ -114,6 +114,8 @@ COMMENT ON FUNCTION valid_cve(text) IS 'validate a common vulnerability number
 CREATE OR REPLACE FUNCTION valid_absolute_url(text) RETURNS boolean AS '
     from urlparse import urlparse
     (scheme, netloc, path, params, query, fragment) = urlparse(args[0])
+    if scheme == "sftp":
+        return 1
     if not (scheme and netloc):
         return 0
     return 1
@@ -183,14 +185,14 @@ CREATE OR REPLACE FUNCTION is_team(text) returns boolean AS '
 COMMENT ON FUNCTION is_team(text) IS
     'True if the given name identifies a team in the Person table';
 
-
+/*
 CREATE OR REPLACE FUNCTION is_person(integer) returns boolean AS '
     SELECT count(*)>0 FROM Person WHERE id=$1 AND teamowner IS NULL;
 ' LANGUAGE sql STABLE RETURNS NULL ON NULL INPUT;
 
 COMMENT ON FUNCTION is_person(integer) IS
     'True if the given id identifies a person in the Person table';
-
+*/
 
 CREATE OR REPLACE FUNCTION is_person(text) returns boolean AS '
     SELECT count(*)>0 FROM Person WHERE name=$1 AND teamowner IS NULL;

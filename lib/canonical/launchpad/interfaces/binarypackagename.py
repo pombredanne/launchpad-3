@@ -11,17 +11,16 @@ __all__ = [
 
 from zope.schema import Int, TextLine
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
 
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad import _
+from canonical.launchpad.validators.name import name_validator 
 
-_ = MessageIDFactory('launchpad')
 
 class IBinaryPackageName(Interface):
     id = Int(title=_('ID'), required=True)
 
     name = TextLine(title=_('Valid Binary package name'),
-                    required=True, constraint=valid_name)
+                    required=True, constraint=name_validator)
 
     binarypackages = Attribute('binarypackages')
 
@@ -43,10 +42,11 @@ class IBinaryPackageNameSet(Interface):
     def findByName(name):
         """Find binarypackagenames by its name or part of it"""
 
-    def query(name, distribution=None, distrorelease=None,
-              distroarchrelease=None, text=None):
-        """Return the binary package names for packages that match the given
-        criteria."""
+    def queryByName(name):
+        """Return a binary package name.
+
+        If there is no matching binary package name, return None.
+        """
 
     def new(name):
         """Create a new binary package name."""
