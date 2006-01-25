@@ -497,8 +497,8 @@ Check if the 'etherwake' source package was correctly published and is
 in the filesystem archive, we are looking for the DSC, the gzipped
 original source and the gzipped package diff:
 
-  >>> os.listdir("/var/tmp/archive/ubuntutest/pool/main/e/etherwake")
-  ['etherwake_1.08-1.dsc', 'etherwake_1.08.orig.tar.gz', 'etherwake_1.08-1.diff.gz']
+  >>> len(os.listdir("/var/tmp/archive/ubuntutest/pool/main/e/etherwake"))
+  3
 
 Check the generation of a correct Sources tag file for the main
 component of ubuntutest/breezy-autotest, containing the only the
