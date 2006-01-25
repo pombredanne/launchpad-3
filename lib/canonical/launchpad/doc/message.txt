@@ -131,11 +131,42 @@ u'Unicode\u2122'
  1 - u'Plain text'
  3 - u'Unicode\u2122 text'
 
+The text_contents attribute contains only the text parts, since that is
+what we want to display in the UI.
+
 >>> msg.text_contents
 u'Plain text\n\nUnicode\u2122 text'
 
-Note that the second and forth chunks were not of type text/plain,
-so are stored as blobs.
+Stripping non-text parts is useful, since a lot of messages will contain
+detach GPG signatures, and they shouldn't be shown in the UI since they
+add only noise to the comment. For the sake of completeness, since this
+has been a problem before, let's look at text_contents of a message
+containing a signature.asc attachment.
+
+    >>> from canonical.launchpad.mail.ftests import read_test_message
+    >>> signed_msg = read_test_message('signed_detached.txt')
+    >>> signed_msg['Message-Id'] = '<signeddetached@testmsg>'
+    >>> print signed_msg.as_string()
+    Date...
+    ...
+    Content-Type: multipart/signed; micalg=pgp-sha1;
+    ...
+    Some signed content.
+    <BLANKLINE>
+    --vtzGhvizbBRQ85DL
+    Content-Type: application/pgp-signature; name="signature.asc"
+    ...
+    -----BEGIN PGP SIGNATURE-----
+    ...
+    -----END PGP SIGNATURE-----
+    ...
+
+    >>> signed_message = msg_set.fromEmail(signed_msg.as_string())
+    >>> print signed_message.text_contents
+    Some signed content.
+
+Note that the second and forth chunks of the previous message were not
+of type text/plain, so are stored as blobs.
 
 >>> chunks[1].sequence
 2
