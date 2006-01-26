@@ -6,6 +6,7 @@
 import logging
 import shutil
 import os
+import time
 
 from canonical.lp import initZopeless
 from canonical.launchpad.database import Distribution
@@ -62,7 +63,8 @@ class PoppyInterface:
         while True:
             self.targetcount += 1
             target_fsroot = os.path.join(self.targetpath,
-                                         "upload-%06d" % self.targetcount)
+                                         "upload-%s-%06d" % (
+                time.strftime("%Y%m%d-%H%m%S"), self.targetcount))
             if not os.path.exists(target_fsroot):
                 try:
                     shutil.move(fsroot, target_fsroot)
