@@ -1,7 +1,7 @@
 
 First, make sure we can see the page.
 
-Try to get the page unauthenticated.
+Try to get the page when unauthenticated.
 
   >>> print http(r"""
   ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1

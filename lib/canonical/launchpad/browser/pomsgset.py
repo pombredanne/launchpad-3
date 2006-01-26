@@ -37,7 +37,7 @@ class POMsgSetView(LaunchpadView):
         self.second_lang_pofile = None
         self.second_lang_msgset = None
 
-        # We don't know either the suggestions
+        # We don't know the suggestions either.
         self._wiki_submissions = None
         self._current_submissions = None
         self._suggested_submissions = None
@@ -45,10 +45,8 @@ class POMsgSetView(LaunchpadView):
 
         self.msgids = list(self.potmsgset.messageIDs())
 
-        # Sanity check
-        if len(self.msgids) == 0:
-            raise AssertionError(
-                'Found a POTMsgSet without any POMsgIDSighting')
+        assert len(self.msgids) > 0, (
+            'Found a POTMsgSet without any POMsgIDSighting')
 
         # Handle any form submission.
         self.process_form()
@@ -184,17 +182,13 @@ class POMsgSetView(LaunchpadView):
     def set_second_lang_pofile(self, second_lang_pofile):
         """Store the selected second_lang_pofile reference.
 
-        :second_lang_pofile: Is an IPOFile pointing to the language choosed by
+        :second_lang_pofile: Is an IPOFile pointing to the language chosen by
             the user as the second language to see translations from.
         """
         self.second_lang_pofile = second_lang_pofile
 
         if self.second_lang_pofile:
             msgid_text = self.potmsgset.primemsgid_.msgid
-            if isinstance(msgid_text, str):
-                import pdb
-                pdb.set_trace()
-                pass
             try:
                 self.second_lang_msgset = (
                     second_lang_pofile[msgid_text]
@@ -230,10 +224,10 @@ class POMsgSetView(LaunchpadView):
         current = self.get_current_submissions(index)
         current_texts = [c.potranslation.translation
                          for c in current]
-        self._wiki_submissions = list([submission for submission in wiki
+        self._wiki_submissions = [submission for submission in wiki
             if submission.potranslation.translation != curr and
             submission.potranslation.translation not in suggested_texts and
-            submission.potranslation.translation not in current_texts])[:3]
+            submission.potranslation.translation not in current_texts][:3]
         return self._wiki_submissions
 
     def get_current_submissions(self, index):
@@ -247,10 +241,10 @@ class POMsgSetView(LaunchpadView):
         suggested = self.get_suggested_submissions(index)
         suggested_texts = [s.potranslation.translation
                            for s in suggested]
-        self._current_submissions = list([submission
+        self._current_submissions = [submission
             for submission in current 
             if submission.potranslation.translation != curr and
-            submission.potranslation.translation not in suggested_texts])[:3]
+            submission.potranslation.translation not in suggested_texts][:3]
         return self._current_submissions
 
     def get_suggested_submissions(self, index):
@@ -260,7 +254,7 @@ class POMsgSetView(LaunchpadView):
             return self._suggested_submissions
 
         sugg = self.context.getSuggestedSubmissions(index)
-        self._suggested_submissions = list(sugg)[:3]
+        self._suggested_submissions = sugg[:3]
         return self._suggested_submissions
 
     def get_alternate_language_submissions(self, index):
@@ -273,7 +267,7 @@ class POMsgSetView(LaunchpadView):
         sec_lang = self.second_lang_pofile.language
         sec_lang_potmsgset = self.second_lang_msgset.potmsgset
         curr = sec_lang_potmsgset.getCurrentSubmissions(sec_lang, index)
-        self._second_language_submissions = list(curr)[:3]
+        self._second_language_submissions = curr[:3]
         return self._second_language_submissions
 
     def process_form(self):
@@ -316,29 +310,26 @@ class POMsgSetView(LaunchpadView):
                 self.web_needs_review = False
 
         # Extract translations.
-        for key in self.form:
-            if key.startswith('set_%d_translation_' % self.id):
-                if self.web_translations is None:
-                    raise AssertionError("Orphaned translation in form.")
-
-                match = re.match(
-                    r'set_(\d+)_translation_([a-z]+(?:_[A-Z]+)?)_(\d+)$', key)
-
-                if match:
-                    pluralform = int(match.group(3))
-                    # Store the translation for the given plural form.
-                    translation_normalized = (
-                        helpers.normalize_newlines(self.form[key]))
-                    self.web_translations[pluralform] = (
-                        helpers.contract_rosetta_tabs(translation_normalized))
+        pluralform = 0
+        while True:
+            key = 'set_%d_translation_%s_%d' % (
+                self.id, self.pofile.language.code, pluralform)
+            value = self.form.get(key)
+            if value is None:
+                # There aren't more translations for self.id.
+                break
+            # Store the translation for the given plural form.
+            translation_normalized = (
+                helpers.normalize_newlines(value))
+            self.web_translations[pluralform] = (
+                helpers.contract_rosetta_tabs(translation_normalized))
+            pluralform += 1
 
         # Extract 'needs review' statuses.
-        for key in self.form:
-            if key.startswith('set_%d_needs_review_' % self.id):
-                if self.web_needs_review is None:
-                    raise AssertionError("Orphaned 'needs review' flag in form.")
-
-                self.web_needs_review = True
+        value = self.form.get('set_%d_needs_review_%s' % (
+            self.id, self.pofile.language.code))
+        if value is not None:
+            self.web_needs_review = True
 
 
     def _submit_translations(self):
@@ -369,7 +360,7 @@ class POMsgSetView(LaunchpadView):
             # needs review.
 
             msgids_text = [pomsgid.msgid
-                           for pomsgid in list(self.potmsgset.messageIDs())]
+                           for pomsgid in self.potmsgset.messageIDs()]
 
             # Validate the translation we got from the translation form
             # to know if gettext is happy with the input.

@@ -255,10 +255,8 @@ class POFile(SQLBase, RosettaStats):
         if only_current:
             query += ' AND sequence > 0'
 
-        if not isinstance(msgid_text, unicode):
-            raise AssertionError(
-                "Can't index with type %s. (Must be unicode.)" %
-                    type(msgid_text))
+        assert isinstance(msgid_text, unicode), (
+            "Can't index with type %s. (Must be unicode.)" % type(msgid_text))
 
         # Find a message ID with the given text.
         try:

@@ -226,10 +226,13 @@ This only needs to be done once per language. Thanks for helping Rosetta.
 
     @property
     def lacks_plural_form_information(self):
+        """Return whether we now the plural forms for this language."""
         if self.context.potemplate.hasPluralMessage():
             # If there are no plural forms, we don't mind if we have or not
             # the plural form information.
             return self.context.language.pluralforms is None
+        else:
+            return False
 
     @property
     def second_lang_code(self):
@@ -339,7 +342,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
             elif self.show == 'translated':
                 filtered_potmsgsets = \
                     pofile.getPOTMsgSetTranslated(slice=slice_arg)
-            elif self.show == 'nedd_review':
+            elif self.show == 'need_review':
                 filtered_potmsgsets = \
                     pofile.getPOTMsgSetFuzzy(slice=slice_arg)
             elif self.show == 'untranslated':
@@ -469,14 +472,14 @@ This only needs to be done once per language. Thanks for helping Rosetta.
 
     def _store_translations(self):
         """Handle a form submission to store new translations."""
-        # First, we get the set of IPOTMsgSet objects sub
+        # First, we get the set of IPOTMsgSet objects submitted.
         pofile = self.context
         potemplate = pofile.potemplate
         for key in self.form:
             match = re.match('set_(\d+)_msgid$', key)
 
             if not match:
-                # The form's key is not the one we are looking for.
+                # The form's key is not one that we are looking for.
                 continue
 
             id = int(match.group(1))
@@ -498,8 +501,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
                 pomsgset = pofile.createMessageSetFromText(msgid_text)
             # Store this pomsgset inside the list of messages to process.
             pomsgset_view = POMsgSetView(pomsgset, self.request)
-            # We force the view submission so every view process its own
-            # stuff.
+            # We initialize the view so every view process its own stuff.
             pomsgset_view.initialize()
             # Set the selected alternative language to get suggestions from.
             pomsgset_view.set_second_lang_pofile(self.second_lang_pofile)
@@ -542,10 +544,10 @@ This only needs to be done once per language. Thanks for helping Rosetta.
 
         # Parameters to add to the new URL.
         parameters = {
-            'count':self.count,
-            'show':self.show,
-            'offset':offset,
-            'alt':self.second_lang_code
+            'count': self.count,
+            'show': self.show,
+            'offset': offset,
+            'alt': self.second_lang_code
             }
 
         # If we didn't get an offset as an argument, use the current one.

@@ -60,7 +60,7 @@ class IPOTMsgSet(Interface):
         """
 
     def getPOMsgSet(language, variant=None):
-        """Return the IPOMsgSet corresposponding to this IPOTMsgSet or None.
+        """Return the IPOMsgSet corresponding to this IPOTMsgSet or None.
 
         :language: The language associated with the IPOMsgSet that we want.
         :variant: The language variant.
