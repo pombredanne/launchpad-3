@@ -18,7 +18,7 @@ from sqlobject import (
     StringCol, ForeignKey, MultipleJoin, IntCol, SQLObjectNotFound,
     RelatedJoin)
 
-from canonical.database.sqlbase import (quote_like, SQLBase, sqlvalues, 
+from canonical.database.sqlbase import (quote_like, SQLBase, sqlvalues,
     flush_database_updates, cursor, flush_database_caches)
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -166,7 +166,7 @@ class DistroRelease(SQLBase):
             SourcePackagePublishing.distrorelease = %s AND
             SourcePackagePublishing.status = %s AND
             SourcePackagePublishing.pocket = %s AND
-            SourcePackagePublishing.sourcepackagerelease = 
+            SourcePackagePublishing.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename =
                 SourcePackageName.id
@@ -183,13 +183,13 @@ class DistroRelease(SQLBase):
         clauseTables = ['DistroArchRelease', 'BinaryPackagePublishing',
                         'BinaryPackageRelease']
         query = """
-            BinaryPackagePublishing.binarypackagerelease = 
+            BinaryPackagePublishing.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
             BinaryPackagePublishing.status = %s AND
             BinaryPackagePublishing.pocket = %s AND
-            BinaryPackagePublishing.distroarchrelease = 
+            BinaryPackagePublishing.distroarchrelease =
                 DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %s
             """ % sqlvalues(
@@ -568,6 +568,7 @@ class DistroRelease(SQLBase):
             len(changesfilecontent), StringIO(changesfilecontent),
             'text/plain')
         return DistroReleaseQueue(distrorelease=self.id,
+                                  status=DistroReleaseQueueStatus.NEW,
                                   pocket=pocket,
                                   changesfile=changes_file.id)
 
@@ -709,7 +710,7 @@ class DistroRelease(SQLBase):
         # layer, perform our work directly in the transaction and then throw
         # the rest of the SQLObject cache away to make sure it hasn't cached
         # anything that is no longer true.
-        
+
         # Prepare for everything by flushing updates to the database.
         flush_database_updates()
         cur = cursor()
@@ -721,7 +722,7 @@ class DistroRelease(SQLBase):
             parent_arch = self.parentrelease[arch.architecturetag]
             self._copy_binary_publishing_records(cur, arch, parent_arch)
         self._copy_lucille_config(cur)
-        
+
         # Finally, flush the caches because we've altered stuff behind the
         # back of sqlobject.
         flush_database_caches()
