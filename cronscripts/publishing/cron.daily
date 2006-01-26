@@ -11,7 +11,7 @@ INDICES=$ARCHIVEROOT/indices
 # Configuration options
 LPCONFIG=staging
 LAUNCHPADROOT=/srv/launchpad.net/codelines/current
-LOCKFILE=/srv/launchpad.net/cron.daily.lock
+LOCKFILE=/srv/launchpad.net/ubuntu-archive/cron.daily.lock
 DISTRONAME=ubuntu
 GNUPGHOME=/srv/launchpad.net/ubuntu-archive/gnupg-home
 TOUCHLIST=$ARCHIVEROOT/project/trace/$(hostname --fqdn)
