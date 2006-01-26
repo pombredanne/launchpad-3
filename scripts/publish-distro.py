@@ -242,8 +242,9 @@ except:
 try:
     # Generate apt-ftparchive config and run.
     debug("Doing apt-ftparchive work.")
-    fn = os.tmpnam()
-    f = file(fn,"w")
+    # fn = os.tmpnam()
+    fn = os.path.join(pubconf.miscroot, "apt.conf")
+    f = file(fn, "w")
     f.write(pub.generateAptFTPConfig(fullpublish=(
         options.careful or options.careful_apt)))
     f.close()
