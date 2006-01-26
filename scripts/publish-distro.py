@@ -156,6 +156,8 @@ try:
                            sqlvalues(PackagePublishingStatus.PENDING))
     spps = SourcePackageFilePublishing.select(clause, orderBy=['componentname', 'sourcepackagename', 'libraryfilealiasfilename'])
     pub.publish(spps, isSource=True)
+    debug("Flushing caches.")
+    clear_cache()
     debug("Attempting to publish pending binaries.")
     pps = BinaryPackageFilePublishing.select(clause, orderBy=['componentname', 'sourcepackagename', 'libraryfilealiasfilename'])
     pub.publish(pps, isSource=False)
