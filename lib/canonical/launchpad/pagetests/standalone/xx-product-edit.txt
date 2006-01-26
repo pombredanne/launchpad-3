@@ -7,9 +7,9 @@ Page to edit a product - does the page load?
   HTTP/1.1 200 Ok
   Content-Length: ...
   ...
-      <title>Edit Upstream Details: Mozilla Firefox</title>
+      <title>Mozilla Firefox in Launchpad</title>
   ...
-            <h1>Edit Upstream Product Details</h1>
+            <h1>Edit upstream product details</h1>
   ...
 
 We try to edit the project related to that product. First with a invalid
@@ -434,7 +434,7 @@ Now we try to change newproductcname2's name to newproductname.
   ... -----------------------------92338662989865824723972696--
   ... """)
   HTTP/1.1 200 Ok
-  ...This name is already in use by another product...
+  ...newproductname is already in use by another product...
   
 Now we try to change it to newproductname3.  
   

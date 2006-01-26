@@ -18,7 +18,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1>Translation Template</h1>
+    <h1>Translation template</h1>
 
     <p tal:condition="context/description">
       <span tal:content="context/description">A brief paragraph describing

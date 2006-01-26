@@ -48,7 +48,10 @@ class NameNotAvailable(KeyError):
 
 
 class ILaunchpadCelebrities(Interface):
+    """Well known things.
 
+    Celebrities are SQLBase instances that have a well known name.
+    """
     buttsource = Attribute("The 'buttsource' team.")
     admin = Attribute("The 'admins' team.")
     ubuntu = Attribute("The ubuntu Distribution.")
@@ -56,6 +59,7 @@ class ILaunchpadCelebrities(Interface):
     rosetta_expert = Attribute("The Rosetta Experts team.")
     debbugs = Attribute("The Debian Bug Tracker")
     shipit_admin = Attribute("The ShipIt Administrators.")
+    mirror_admin = Attribute("The Mirror Administrators.")
     launchpad_developers = Attribute("The Launchpad development team.")
     ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
 

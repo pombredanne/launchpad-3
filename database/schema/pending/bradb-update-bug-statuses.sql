@@ -1,1 +1,0 @@
-UPDATE BugTask SET status=17 WHERE status=40;

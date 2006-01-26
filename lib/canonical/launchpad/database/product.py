@@ -346,7 +346,7 @@ class ProductSet:
     implements(IProductSet)
 
     def __init__(self):
-        self.title = "Launchpad Products"
+        self.title = "Products registered in Launchpad"
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.product.IProductSet."""
@@ -373,12 +373,24 @@ class ProductSet:
                                 str(productid))
 
         return product
+    
+    def getByName(self, name, default=None, ignore_inactive=False):
+        """See canonical.launchpad.interfaces.product.IProductSet."""
+        if ignore_inactive:
+            product = Product.selectOneBy(name=name, active=True)
+        else:
+            product = Product.selectOneBy(name=name)
+        if product is None:
+            return default
+        return product
+
 
     def createProduct(self, owner, name, displayname, title, summary,
                       description, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
-                      sourceforgeproject=None, programminglang=None):
+                      sourceforgeproject=None, programminglang=None,
+                      reviewed=False):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         return Product(
             owner=owner, name=name, displayname=displayname,
@@ -387,7 +399,7 @@ class ProductSet:
             screenshotsurl=screenshotsurl, wikiurl=wikiurl,
             downloadurl=downloadurl, freshmeatproject=freshmeatproject,
             sourceforgeproject=sourceforgeproject,
-            programminglang=programminglang)
+            programminglang=programminglang, reviewed=reviewed)
 
     def forReview(self):
         """See canonical.launchpad.interfaces.product.IProductSet."""

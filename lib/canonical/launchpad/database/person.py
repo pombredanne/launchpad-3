@@ -27,14 +27,14 @@ from canonical.database.sqlbase import (
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
+from canonical.launchpad.helpers import shortlist
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
     IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet, ISSHKey,
     IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
     UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet, IKarmaSet,
-    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, NotFoundError, 
-    IKarmaCacheSet)
+    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, IKarmaCacheSet)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -67,7 +67,6 @@ class Person(SQLBase):
     _defaultOrder = sortingColumns
 
     name = StringCol(dbName='name', alternateID=True, notNull=True)
-    karma = IntCol(dbName='karma', notNull=True, default=0)
     password = StringCol(dbName='password', default=None)
     givenname = StringCol(dbName='givenname', default=None)
     familyname = StringCol(dbName='familyname', default=None)
@@ -92,6 +91,8 @@ class Person(SQLBase):
                            default=None)
 
     sshkeys = MultipleJoin('SSHKey', joinColumn='person')
+
+    karma_total_cache = MultipleJoin('KarmaTotalCache', joinColumn='person')
 
     subscriptionpolicy = EnumCol(
         dbName='subscriptionpolicy',
@@ -356,6 +357,14 @@ class Person(SQLBase):
         """See IPerson."""
         return getUtility(IBugTaskSet).search(search_params)
 
+    @property
+    def karma(self):
+        """See IPerson."""
+        try:
+            return self.karma_total_cache[0].karma_total
+        except IndexError:
+            return 0
+
     def assignKarma(self, action_name):
         """See IPerson."""
         try:
@@ -364,21 +373,6 @@ class Person(SQLBase):
             raise ValueError(
                 "No KarmaAction found with name '%s'." % action_name)
         return Karma(person=self, action=action)
-
-    def updateKarmaCache(self):
-        """See IPerson."""
-        cacheset = getUtility(IKarmaCacheSet)
-        karmaset = getUtility(IKarmaSet)
-        totalkarma = 0
-        for cat in KarmaCategory.select():
-            karmavalue = karmaset.getSumByPersonAndCategory(self, cat)
-            totalkarma += karmavalue
-            cache = cacheset.getByPersonAndCategory(self, cat)
-            if cache is None:
-                cache = cacheset.new(self, cat, karmavalue)
-            else:
-                cache.karmavalue = karmavalue
-        self.karma = totalkarma
 
     def latestKarma(self, quantity=25):
         """See IPerson."""
@@ -824,7 +818,7 @@ class Person(SQLBase):
             clauseTables=['SourcePackageName'])
 
     @property
-    def is_ubuntite(self):
+    def is_ubuntero(self):
         """See IPerson."""
         sigset = getUtility(ISignedCodeOfConductSet)
         lastdate = sigset.getLastAcceptedDate()
@@ -855,39 +849,22 @@ class PersonSet:
     _defaultOrder = Person.sortingColumns
 
     def __init__(self):
-        self.title = 'Launchpad People'
-
-    def __getitem__(self, personid):
-        """See IPersonSet."""
-        person = self.get(personid)
-        if person is None:
-            raise NotFoundError(personid)
-        else:
-            return person
+        self.title = 'People registered with Launchpad'
 
     def topPeople(self):
         """See IPersonSet."""
         # The odd ordering here is to ensure we hit the PostgreSQL
-        # indexes. Ideally we want to order by karma DESC, name but
-        # that will not use the indexes (at least under PostgreSQL 7.4)
-        # and be really slow.
-
-        # This is a simpler implementation, but is triggering Bug 4818
-        # return self.getAllValidPersons(orderBy=['-karma', '-id'])[:5]
-
+        # indexes. It will not make any real difference outside of tests.
         query = """
             id in (
-                SELECT Person.id
-                FROM Person, EmailAddress
-                WHERE Person.id = EmailAddress.person
-                    AND teamowner IS NULL
-                    AND merged IS NULL
-                    AND EmailAddress.status = %d
-                ORDER BY Person.karma DESC, Person.id DESC
+                SELECT person FROM KarmaTotalCache
+                ORDER BY karma_total DESC, person DESC
                 LIMIT 5
                 )
-            """ % (EmailAddressStatus.PREFERRED.value,)
-        return Person.select(query, orderBy=['-karma', '-id'])
+            """
+        top_people = shortlist(Person.select(query))
+        top_people.sort(key=lambda obj: (obj.karma, obj.id), reverse=True)
+        return top_people
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
@@ -1065,7 +1042,7 @@ class PersonSet:
             return default
         return emailaddress.person
 
-    def getUbuntites(self, orderBy=None):
+    def getUbunteros(self, orderBy=None):
         """See IPersonSet."""
         if orderBy is None:
             orderBy = self._defaultOrder
@@ -1120,6 +1097,7 @@ class PersonSet:
             ('person', 'merged'),
             ('emailaddress', 'person'),
             ('karmacache', 'person'),
+            ('karmatotalcache', 'person'),
             # We don't merge teams, so the poll table can be ignored
             ('poll', 'team'),
             # I don't think we need to worry about the votecast and vote
@@ -1446,10 +1424,6 @@ class PersonSet:
         # flush its caches.
         flush_database_caches()
 
-        # And now update the karma cache for both accounts.
-        from_person.updateKarmaCache()
-        to_person.updateKarmaCache()
-
 
 class EmailAddress(SQLBase):
     implements(IEmailAddress)
@@ -1475,14 +1449,6 @@ class EmailAddressSet:
             return EmailAddress.get(emailid)
         except SQLObjectNotFound:
             return default
-
-    def __getitem__(self, emailid):
-        """See IEmailAddressSet."""
-        email = self.get(emailid)
-        if email is None:
-            raise NotFoundError(emailid)
-        else:
-            return email
 
     def getByPerson(self, person):
         return EmailAddress.selectBy(personID=person.id, orderBy='email')

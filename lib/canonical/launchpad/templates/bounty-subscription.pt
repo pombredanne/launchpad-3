@@ -14,18 +14,13 @@
 
 <div metal:fill-slot="main">
 
-  <h1 tal:condition="not: view/subscription">Subscribe to Bounty</h1>
-  <h1 tal:condition="view/subscription">Unsubscribe From Bounty</h1>
+  <h1 tal:condition="not: view/subscription">Subscribe to bounty</h1>
+  <h1 tal:condition="view/subscription">Unsubscribe from bounty</h1>
 
   <p class="documentDescription">
     Bounty subscribers will be emailed copies of any comments made on
     this bounty. If you subscribe to a bounty it will show up on your
     personal pages, too.
-  </p>
-
-  <p>
-    Choose "Subscribe" to become a subscriber to this bounty, or "Cancel" to
-    return to the bounty page.
   </p>
 
   <form action="." method="POST">

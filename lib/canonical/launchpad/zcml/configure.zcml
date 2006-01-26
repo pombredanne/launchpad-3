@@ -39,6 +39,7 @@
     <include file="cvereference.zcml" />
     <include file="datetime.zcml" />
     <include file="distribution.zcml" />
+    <include file="distributionmirror.zcml" />
     <include file="distributionsourcepackage.zcml" />
     <include file="distributionsourcepackagecache.zcml" />
     <include file="distributionsourcepackagerelease.zcml" />

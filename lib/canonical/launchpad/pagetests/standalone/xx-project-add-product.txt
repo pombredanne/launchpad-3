@@ -77,5 +77,4 @@ Now let's get the page for that product to make sure it's there.
   ... GET /projects/gnome/eog HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...Product: Eye of GNOME...
-
+  ...Eye of GNOME...

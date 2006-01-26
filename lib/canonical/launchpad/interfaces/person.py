@@ -14,19 +14,17 @@ __all__ = [
     'IObjectReassignment',
     'ITeamReassignment',
     'ITeamCreation',
-    'NameAlreadyTaken',
     'EmailAddressAlreadyTaken'
     ]
 
-from textwrap import dedent
 
 from zope.schema import (
-    Choice, Datetime, Int, Text, TextLine, Password, ValidationError, Bytes)
+    Choice, Datetime, Int, Text, TextLine, Password, Bytes)
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
 from canonical.launchpad import _
-from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.fields import ContentNameField, StrippingTextLine 
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
@@ -37,37 +35,21 @@ from canonical.lp.dbschema import (
     TeamSubscriptionPolicy, TeamMembershipStatus, EmailAddressStatus)
 
 
-class StrippingTextLine(TextLine):
-    """A TextLine field that is always stripped."""
-
-    def fromUnicode(self, str):
-        return TextLine.fromUnicode(self, str.strip())
-
-
-class NameAlreadyTaken(ValidationError):
-    __doc__ = _("""This name is already in use""")
-    # XXX mpt 20050826: This should be moved out of person to be more generic.
-    # (It's currently used by projects too.)
-
-
 class EmailAddressAlreadyTaken(Exception):
     """The email address is already registered in Launchpad."""
 
 
-class PersonNameField(TextLine):
+class PersonNameField(ContentNameField):
+    
+    errormessage = _("%s is already in use by another person/team.")
 
-    def _validate(self, value):
-        TextLine._validate(self, value)
-        if (IPerson.providedBy(self.context) and 
-            value == getattr(self.context, self.__name__)):
-            # The name wasn't changed.
-            return
+    @property
+    def _content_iface(self):
+        return IPerson
 
-        person = getUtility(IPersonSet).getByName(value, ignore_merged=False)
-        if person is not None:
-            raise LaunchpadValidationError(_(dedent("""
-                This name is already in use by another person/team.
-                """ )))
+    def _getByName(self, name):
+        return getUtility(IPersonSet).getByName(name, ignore_merged=False)
+
 
 class IPerson(IHasSpecifications):
     """A Person."""
@@ -183,13 +165,13 @@ class IPerson(IHasSpecifications):
     # Properties of the Person object.
     karma_category_caches = Attribute('The caches of karma scores, by '
         'karma category.')
-    is_ubuntite = Attribute("Ubuntite Flag")
+    is_ubuntero = Attribute("Ubuntero Flag")
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
     signedcocs = Attribute("List of Signed Code Of Conduct")
-    gpgkeys = Attribute("List of valid GPGkeys ordered by ID")
-    pendinggpgkeys = Attribute("Set of GPG fingerprints pending validation")
-    inactivegpgkeys = Attribute("List of inactive GPG keys in LP Context, "
+    gpgkeys = Attribute("List of valid OpenPGP keys ordered by ID")
+    pendinggpgkeys = Attribute("Set of fingerprints pending confirmation")
+    inactivegpgkeys = Attribute("List of inactive OpenPGP keys in LP Context, "
                                 "ordered by ID")
     ubuntuwiki = Attribute("The Ubuntu WikiName of this Person.")
     otherwikis = Attribute(
@@ -341,11 +323,6 @@ class IPerson(IHasSpecifications):
 
     def assignKarma(action_name):
         """Assign karma for the action named <action_name> to this person."""
-
-    def updateKarmaCache():
-        """Update this person's karma attribute and all entries in the
-        KarmaCache table for this person.
-        """
 
     def latestKarma(quantity=25):
         """Return the latest karma actions for this person, up to the number
@@ -533,12 +510,6 @@ class IPersonSet(Interface):
 
     title = Attribute('Title')
 
-    def __getitem__(personid):
-        """Return the person with the given id.
-
-        Raise NotFoundError if there is no such person.
-        """
-    
     def topPeople():
         """Return the top 5 people by Karma score in the Launchpad."""
 
@@ -670,8 +641,8 @@ class IPersonSet(Interface):
         address.
         """
 
-    def getUbuntites(orderBy=None):
-        """Return a set of person with valid Ubuntite flag.
+    def getUbunteros(orderBy=None):
+        """Return a set of person with valid Ubuntero flag.
         
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
@@ -704,12 +675,6 @@ class IEmailAddressSet(Interface):
 
         Also make sure that the given status is an item of
         dbschema.EmailAddressStatus.
-        """
-
-    def __getitem__(emailid):
-        """Return the email address with the given id.
-
-        Raise KeyError if there is no such email address.
         """
 
     def get(emailid, default=None):

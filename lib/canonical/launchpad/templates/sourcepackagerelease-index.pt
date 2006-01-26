@@ -15,7 +15,7 @@
 
   <div metal:fill-slot="main">
 
-      <h1>Source Package Release Details</h1>
+      <h1>Source Package release details</h1>
 
       <p>
 
@@ -114,7 +114,7 @@
      <table width="100%">
      <tr><td valign="top">
 
-       <h4>Build Dependencies</h4>
+       <h2>Build dependencies</h2>
        <table>
         <tr tal:condition="not:view/builddepends"><td>No Dependencies</td></tr>
         <tr tal:repeat="dep view/builddepends">
@@ -127,10 +127,10 @@
       </table>
       </td><td valign="top">
 
-       <h5>Platform Independent Dependencies</h5>
+       <h3>Platform-independent dependencies</h3>
        <table>
         <tr tal:condition="not:view/builddependsindep"><td>No
-       Platform Independent Dependencies</td></tr>
+       platform-independent dependencies</td></tr>
         <tr tal:repeat="dep view/builddependsindep">
          <td> <a tal:content="dep/name" tal:attributes="href
            string:../../i386/${dep/name}"/>

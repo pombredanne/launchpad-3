@@ -19,8 +19,8 @@ CONFFILE=configs/${LPCONFIG}/launchpad.conf
 # DO NOT ALTER : this should just build by default
 default: inplace
 
-schema:
-	(cd database/schema; make)
+schema: build
+	$(MAKE) -C database/schema
 
 check_merge: build check importdcheck
 
@@ -120,7 +120,9 @@ debug:
 		    app = Application('Data.fs', 'site.zcml')()"
 
 clean:
+	(cd sourcecode/pygettextpo; make clean)
 	find . -type f \( -name '*.o' -o -name '*.so' \
+	    -o -name '*.la' -o -name '*.lo' \
 	    -o -name '*.py[co]' -o -name '*.dll' \) -exec rm -f {} \;
 	rm -rf build
 

@@ -67,7 +67,7 @@ class LoginToken(SQLBase):
                                   LoginTokenType.VALIDATESIGNONLYGPG)
 
         template = get_email_template('validate-gpg.txt')
-        fromaddress = "Launchpad GPG Validator <noreply@launchpad.net>"
+        fromaddress = "Launchpad OpenGPG Key Confirmation <noreply@launchpad.net>"
         replacements = {'longstring': self.token,
                         'requester': self.requester.browsername,
                         'requesteremail': self.requesteremail,
@@ -83,7 +83,7 @@ class LoginToken(SQLBase):
             message = gpghandler.encryptContent(message.encode('utf-8'),
                                                 key.fingerprint)
 
-        subject = "Launchpad: Validate your GPG Key"
+        subject = "Launchpad: Confirm your OpenPGP Key"
         simple_sendmail(fromaddress, str(self.email), subject, message)
 
     def sendPasswordResetEmail(self, appurl):
@@ -113,7 +113,7 @@ class LoginTokenSet:
     implements(ILoginTokenSet)
 
     def __init__(self):
-        self.title = 'Launchpad Email Verification System'
+        self.title = 'Launchpad e-mail address confirmation'
 
     def get(self, id, default=None):
         """See ILoginTokenSet."""
@@ -179,4 +179,3 @@ class LoginTokenSet:
         if token is None:
             raise NotFoundError(tokentext)
         return token
-

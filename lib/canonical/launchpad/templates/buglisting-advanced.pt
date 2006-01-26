@@ -35,8 +35,6 @@
       use-macro="context/@@+bugtask-macros-buglisting/assignee_widget_in_table" />
     <metal:widget 
       use-macro="context/@@+bugtask-macros-buglisting/include_dupes_widget_in_table" />
-    <metal:widget 
-      use-macro="context/@@+bugtask-macros-buglisting/statusexplanation_widget_in_table" />
 
   </metal:extra_search_widgets_in_table>
 
