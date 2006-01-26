@@ -500,10 +500,6 @@ class ValidPersonOrTeamVocabulary(
     """
     implements(IHugeVocabulary)
 
-    _join_clause = """
-        SELECT DISTINCT Person.id, Person.displayname FROM Person
-            LEFT OUTER JOIN EmailAddress ON Person.id = EmailAddress.person
-        """
     _all_valid_people_and_teams_clause = """
         (teamowner IS NOT NULL OR (
             teamowner IS NULL AND password IS NOT NULL AND
@@ -546,7 +542,14 @@ class ValidPersonOrTeamVocabulary(
             # No extra clause to filter the results
             pass
 
-        base_query = "%s WHERE %s" % (self._join_clause, where_clause)
+        # We need to use a LEFT OUTER JOIN here because teams may not have an
+        # email address.
+        base_query = """
+            SELECT DISTINCT Person.id, Person.displayname
+            FROM Person
+            LEFT OUTER JOIN EmailAddress ON Person.id = EmailAddress.person
+            WHERE %(where_clause)s
+            """ % {'where_clause': where_clause}
         if not text:
             # No text to filter, no need to do anything.
             return "%s %s" % (base_query, self._orderBy)
@@ -556,15 +559,22 @@ class ValidPersonOrTeamVocabulary(
         # column and the results where text matches the email address. We 
         # need to do this because otherwise the query would be unacceptably
         # slow.
-        fti_clause = "Person.fti @@ ftq(%s)" % quote(text)
-        fti_clause = "%s AND %s" % (base_query, fti_clause)
-        email_clause = (
-            "lower(EmailAddress.email) LIKE %s || '%%'" % quote_like(text))
-        email_clause = "%s AND %s" % (base_query, email_clause)
+        fti_query = "%s AND Person.fti @@ ftq(%s)" % (base_query, quote(text))
+
+        # Now we're going to build the query to match substrings of a
+        # person's/team's email address, and in this case we don't want to use
+        # a LEFT OUTER JOIN.
+        email_query = """
+            SELECT DISTINCT Person.id, Person.displayname
+            FROM Person
+            JOIN EmailAddress ON Person.id = EmailAddress.person
+            WHERE %(where_clause)s
+                  AND lower(EmailAddress.email) LIKE %(text)s || '%%'
+            """ % {'where_clause': where_clause, 'text': quote_like(text)}
         query_str = """
             SELECT DISTINCT *
             FROM (%s UNION %s %s) AS whatever;
-            """ % (fti_clause, email_clause, self._orderBy)
+            """ % (fti_query, email_query, self._orderBy)
         return query_str
 
     def _idToTerm(self, id):
