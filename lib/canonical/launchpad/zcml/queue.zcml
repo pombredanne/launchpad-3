@@ -7,6 +7,9 @@
 
     <content class="canonical.launchpad.database.DistroReleaseQueue">
         <allow interface="canonical.launchpad.interfaces.IDistroReleaseQueue" />
+      <require
+          permission="zope.Public"
+          set_schema="canonical.launchpad.interfaces.IDistroReleaseQueue" />
     </content>
 
     <content class="canonical.launchpad.database.DistroReleaseQueueSource">
