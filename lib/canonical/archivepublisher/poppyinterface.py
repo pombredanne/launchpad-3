@@ -19,7 +19,7 @@ class PoppyInterface:
     clients = {}
 
     def __init__(self, targetpath, logger, cmd=None, targetstart=0):
-        self.tm = initZopeless()
+        self.tm = initZopeless(dbuser='ro')
         self.targetpath = targetpath
         self.logger = logging.getLogger("%s.PoppyInterface" % logger.name)
         self.cmd = cmd
