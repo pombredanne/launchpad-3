@@ -575,7 +575,7 @@ class DistroRelease(SQLBase):
     def getQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED):
         """See IDistroRelease."""
         return DistroReleaseQueue.selectBy(distroreleaseID=self.id,
-                                           status=status)
+                                           status=status, orderBy=['id'])
 
     def getFancyQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED,
                             name=None, version=None, exact_match=False):
