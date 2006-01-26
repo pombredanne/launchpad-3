@@ -13,7 +13,7 @@
 
   <form action="" method="POST">
     <tal:block tal:condition="not: view/shouldShowConfirmationPage" >
-      <h1>Admin interface to merge two accounts.</h1>
+      <h1>Admin interface to merge two accounts</h1>
 
       <div tal:condition="view/errormessages" class="portalMessage"
            tal:repeat="errors view/errormessages"
@@ -34,17 +34,23 @@
     </tal:block>
 
     <tal:block tal:condition="view/shouldShowConfirmationPage" > 
-      <h1>Admin interface to merge two accounts. </h1>
-        <p>Are you sure you want to merge the account named 
-        <code tal:content="view/dupe_account/name">name12</code> 
-        into the account named
-        <code tal:content="view/target_account/name">name16</code>?
+      <h1>Admin interface to merge two accounts</h1>
+        <p>Are you sure you want to merge
+        <strong tal:content="view/dupe_account/displayname">name12</strong>
+        (<strong tal:content="view/dupe_account/name">name12</strong>) 
+        into
+        <strong tal:content="view/target_account/displayname">name16</strong>
+        (<strong tal:content="view/target_account/name">name16</strong>)?
         </p>
-        <a tal:replace="view/dupe_account/displayname">name12</a> email
-        addresses:
+        The following email addresses are owned by 
+        <strong tal:content="view/dupe_account/displayname">name12</strong>
+        and are going to be transferred to 
+        <strong tal:content="view/target_account/displayname">name16</strong>:
+        <br>
+        <br>
         <table>
           <tr tal:repeat="email view/emails">
-            <td tal:content="email/email">
+            <td><strong tal:content="email/email"/>
             </td>
           </tr>
         </table>
