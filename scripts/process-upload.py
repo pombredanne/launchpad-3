@@ -67,7 +67,7 @@ def main():
     if not os.path.isdir(fsroot):
         raise ValueError("%s is not a directory" % fsroot)
 
-    lock = GlobalLock('/var/lock/launchpad-process-upload.lock')
+    lock = GlobalLock('/var/lock/launchpad-upload-queue.lock')
 
     log.debug("Initialising connection.")
     global ztm
