@@ -441,15 +441,18 @@ Both access methods work as expected, remove the temporary file used here.
 Check uploader log storage:
 
   >>> from canonical.config import config
-  >>> uploader_log = open(os.path.join(config.builddmaster.root,
+  >>> uploader_log = open(os.path.join(config.builddmaster.root, 'failed',
   ...                                  '1-1', 'uploader.log'))
 
   >>> print uploader_log.read()
+  DEBUG   Creating directory /var/tmp/builddmaster/accepted
+  DEBUG   Creating directory /var/tmp/builddmaster/rejected
+  DEBUG   Creating directory /var/tmp/builddmaster/failed
   DEBUG   Initialising connection.
-  DEBUG   Trying to lock upload directory: /var/tmp/builddmaster/1-1/files
+  DEBUG   Trying to lock upload directory: /var/tmp/builddmaster/incoming/1-1
   DEBUG   Got the upload directory lock
   DEBUG   Finding policy
-  DEBUG   Keeping contents
+  DEBUG   Moving upload directory /var/tmp/builddmaster/incoming/1-1 to /var/tmp/builddmaster/failed/1-1
   DEBUG   Rolling back any remaining transactions.
   <BLANKLINE>
 

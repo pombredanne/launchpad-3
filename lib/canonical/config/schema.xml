@@ -541,12 +541,6 @@
                 to the command before executing it.
             </description>
         </key>
-        <key name="keep_files" datatype="boolean" default="true"
-            required="no">
-            <description>
-                Whether to keep or not the buildd uploads results files.
-            </description>
-        </key>
         <key name="root" datatype="string" required="yes">
             <description>
                 Directory to be created to store build results.
