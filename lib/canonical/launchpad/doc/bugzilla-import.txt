@@ -190,6 +190,7 @@ Now we import bug #1 and check the results:
   Created: 2005-04-01 00:00:00+00:00
   Subscribers:
       Sample Person
+      Foo Bar
   Task: mozilla-firefox (Ubuntu)
       Status: UNCONFIRMED
       Distro: ubuntu
@@ -329,6 +330,7 @@ Next we import a fixed bug:
   Nick: foobar
   Subscribers:
       Sample Person
+      Foo Bar
   Task: mozilla-firefox (Ubuntu)
       Status: FIXRELEASED
       Distro: ubuntu
