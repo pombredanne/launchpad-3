@@ -32,6 +32,7 @@ __all__ = [
     'TeamLeaveView',
     'PersonEditEmailsView',
     'RequestPeopleMergeView',
+    'AdminRequestPeopleMergeView',
     'FinishedPeopleMergeRequestView',
     'RequestPeopleMergeMultipleEmailsView',
     'ObjectReassignmentView',
@@ -65,8 +66,9 @@ from canonical.launchpad.interfaces import (
     IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
-    IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet, 
-    BugTaskSearchParams, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
+    IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
+    IAdminRequestPeopleMerge, BugTaskSearchParams, NotFoundError, 
+    UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.browser.bugtask import (
     BugTaskSearchListingView, AdvancedBugTaskSearchView)
@@ -78,6 +80,7 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.event.team import JoinTeamRequestEvent
+from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
@@ -167,7 +170,8 @@ class PeopleContextMenu(ContextMenu):
 
     usedfor = IPersonSet
 
-    links = ['peoplelist', 'teamlist', 'ubunterolist', 'newteam']
+    links = ['peoplelist', 'teamlist', 'ubunterolist', 'newteam',
+             'adminrequestmerge']
 
     def peoplelist(self):
         text = 'All People'
@@ -184,6 +188,11 @@ class PeopleContextMenu(ContextMenu):
     def newteam(self):
         text = 'Register a Team'
         return Link('+newteam', text, icon='add')
+
+    @enabled_with_permission('launchpad.Admin')
+    def adminrequestmerge(self):
+        text = 'Admin Merge Accounts'
+        return Link('+adminrequestmerge', text, icon='edit')
 
 
 class PersonFacets(StandardLaunchpadFacets):
@@ -1623,6 +1632,73 @@ class RequestPeopleMergeView(AddView):
         sendMergeRequestEmail(
             token, dupename, self.request.getApplicationURL())
         self._nextURL = './+mergerequest-sent?dupe=%d' % dupeaccount.id
+
+
+class AdminRequestPeopleMergeView(LaunchpadView):
+    """The view for the page where an admin can merge two accounts."""
+
+    def initialize(self):
+        self.errormessages = [] 
+        self.shouldShowConfirmationPage = False
+        setUpWidgets(self, IAdminRequestPeopleMerge, IInputWidget)
+
+    def processForm(self):
+        form = self.request.form
+        if 'continue' in form:
+            # get data from the form
+            self.dupe_account = self._getInputValue(self.dupe_account_widget)
+            self.target_account = self._getInputValue(
+                self.target_account_widget)
+            if self.errormessages:
+                return
+
+            if self.dupe_account == self.target_account:
+                self.errormessages.append(_(
+                    "You can't merge %s into itself." 
+                    % self.dupe_account.name))
+                return
+
+            emailset = getUtility(IEmailAddressSet) 
+            self.emails = emailset.getByPerson(self.dupe_account)
+            # display dupe_account email addresses and confirmation page
+            self.shouldShowConfirmationPage = True
+
+        elif 'merge' in form:
+            self._performMerge()
+            self.request.response.addInfoNotification(_(
+                'Merge completed successfully.'))
+            self.request.response.redirect(canonical_url(self.target_account))
+
+    def _getInputValue(self, widget):
+        name = self.request.get(widget.name)
+        try:
+            account = widget.getInputValue()
+        except WidgetInputError:
+            self.errormessages.append(_("You must choose an account.")) 
+            return
+        except ConversionError:
+            self.errormessages.append(_("%s is an invalid account." % name)) 
+            return
+        return account
+
+    def _performMerge(self):
+        personset = getUtility(IPersonSet)
+        emailset = getUtility(IEmailAddressSet)
+
+        dupe_name = self.request.form.get('dupe_name')
+        target_name = self.request.form.get('target_name')
+
+        self.dupe_account = personset.getByName(dupe_name)
+        self.target_account = personset.getByName(target_name) 
+
+        emails = emailset.getByPerson(self.dupe_account)
+        if emails:
+            for email in emails:
+                # transfer all emails from dupe to targe account
+                email.person = self.target_account
+                email.status = EmailAddressStatus.NEW
+
+        getUtility(IPersonSet).merge(self.dupe_account, self.target_account)
 
 
 class FinishedPeopleMergeRequestView:
