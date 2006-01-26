@@ -46,7 +46,7 @@ def main():
     distro_name = args[0]
 
     log.debug("Acquiring lock")
-    lock = GlobalLock('/var/lock/launchpad-process-accepted.lock')
+    lock = GlobalLock('/var/lock/launchpad-upload-queue.lock')
     lock.acquire(blocking=True)
 
     log.debug("Initialising connection.")
