@@ -124,8 +124,11 @@ class UploaderTester:
                 raise ValueError('Could not create user %s, %s'
                                   % (displayname, email))
 
-            # ensure the user has preferred email address
             if user.preferredemail is None:
+                # ensure the user has preferred email address
+                # XXX cprov 20060126: We really don't want to set
+                # the preferred email of a person w/o proper feedback
+                # See further info in bug # 29790
                 user_email = getUtility(IEmailAddressSet).getByEmail(email)
                 user_email.status = dbschema.EmailAddressStatus.PREFERRED
                 # ensure the DB content is modified immediately
@@ -362,7 +365,9 @@ def main():
                 log.info("Extracting files list...")
                 files, component, section = read_files_from_changes(
                     changes_filepath)
-
+                # Component and section could be created within
+                # the upload policy domain.
+                # See further info in bug # 29790
                 getUtility(IComponentSet).ensure(component)
                 getUtility(ISectionSet).ensure(section)
 

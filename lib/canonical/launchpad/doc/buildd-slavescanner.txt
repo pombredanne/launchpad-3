@@ -211,7 +211,7 @@ slave has the requested file in cache.
   >>> builder3 = MockBuilder('Package Failed',
   ...                        WaitingSlave('BuildStatus.PACKAGEFAIL'))
 
-  >>> builder4 = MockBuilder('Missed Dependency build',
+  >>> builder4 = MockBuilder('Missing Dependency build',
   ...                        WaitingSlave('BuildStatus.DEPFAIL'))
 
   >>> builder5 = MockBuilder('Bad Chroot',
@@ -315,12 +315,12 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
   >>> bqItem3.build.buildstate.title
   'Failed to build'
 
-  WAITING - DEPWAIT -> some dependency to build the package are missed, again
-  notice from builder, but Build.buildstate has the right state:
+  WAITING - DEPWAIT -> a required dependency is missing, again notice
+  from builder, but Build.buildstate has the right state:
 
   >>> bqItem4 = MockBuildQueue(2, builder4, MockBuild(2))
   >>> buildergroup.updateBuild(bqItem4, librarian)
-  CRITICAL:root:***** Missed Dependency build is MANUALDEPWAIT *****
+  CRITICAL:root:***** Missing Dependency build is MANUALDEPWAIT *****
   >>> assert bqItem4.build.builder is not None
   >>> assert bqItem4.build.datebuilt is not None
   >>> assert bqItem4.build.buildduration is not None
@@ -441,15 +441,18 @@ Both access methods work as expected, remove the temporary file used here.
 Check uploader log storage:
 
   >>> from canonical.config import config
-  >>> uploader_log = open(os.path.join(config.builddmaster.root,
+  >>> uploader_log = open(os.path.join(config.builddmaster.root, 'failed',
   ...                                  '1-1', 'uploader.log'))
 
   >>> print uploader_log.read()
+  DEBUG   Creating directory /var/tmp/builddmaster/accepted
+  DEBUG   Creating directory /var/tmp/builddmaster/rejected
+  DEBUG   Creating directory /var/tmp/builddmaster/failed
   DEBUG   Initialising connection.
-  DEBUG   Trying to lock upload directory: /var/tmp/builddmaster/1-1/files
+  DEBUG   Trying to lock upload directory: /var/tmp/builddmaster/incoming/1-1
   DEBUG   Got the upload directory lock
   DEBUG   Finding policy
-  DEBUG   Keeping contents
+  DEBUG   Moving upload directory /var/tmp/builddmaster/incoming/1-1 to /var/tmp/builddmaster/failed/1-1
   DEBUG   Rolling back any remaining transactions.
   <BLANKLINE>
 

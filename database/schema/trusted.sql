@@ -185,14 +185,14 @@ CREATE OR REPLACE FUNCTION is_team(text) returns boolean AS '
 COMMENT ON FUNCTION is_team(text) IS
     'True if the given name identifies a team in the Person table';
 
-
+/*
 CREATE OR REPLACE FUNCTION is_person(integer) returns boolean AS '
     SELECT count(*)>0 FROM Person WHERE id=$1 AND teamowner IS NULL;
 ' LANGUAGE sql STABLE RETURNS NULL ON NULL INPUT;
 
 COMMENT ON FUNCTION is_person(integer) IS
     'True if the given id identifies a person in the Person table';
-
+*/
 
 CREATE OR REPLACE FUNCTION is_person(text) returns boolean AS '
     SELECT count(*)>0 FROM Person WHERE name=$1 AND teamowner IS NULL;

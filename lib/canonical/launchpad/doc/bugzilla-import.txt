@@ -170,7 +170,7 @@ function will be used:
   ...         print '    Author:', message.owner.displayname
   ...         print '    Date:', message.datecreated
   ...         print '    Subject:', message.subject
-  ...         print '    %s' % message.contents
+  ...         print '    %s' % message.text_contents
   ...         print
   ...     if bug.attachments:
   ...         print 'Attachments:'

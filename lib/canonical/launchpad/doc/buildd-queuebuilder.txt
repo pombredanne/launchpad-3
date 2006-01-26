@@ -159,7 +159,7 @@ After sanitising the jobs, only the ones containing
 sourcepackagerelease files should remain:
 
   >>> new_jobs = bm.sanitiseAndScoreCandidates()
-  WARNING:root:MISSED DEP: [('foo', '1.0', '<<')] in warty i386
+  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in warty i386
 
   >>> len(new_jobs)
   1

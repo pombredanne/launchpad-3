@@ -4,12 +4,11 @@ __metaclass__ = type
 __all__ = [
     'Component',
     'ComponentSet'
-           ]
+    ]
 
 from zope.interface import implements
 
-from sqlobject import (
-    StringCol, SQLObjectNotFound)
+from sqlobject import StringCol
 
 from canonical.database.sqlbase import SQLBase
 
@@ -18,7 +17,8 @@ from canonical.launchpad.interfaces import (
 
 
 class Component(SQLBase):
-    """Component table SQLObject """
+    """See IComponent."""
+
     implements(IComponent)
 
     _defaultOrder= ['id']
@@ -27,7 +27,8 @@ class Component(SQLBase):
 
 
 class ComponentSet:
-    """Set manipulation tools for Component table."""
+    """See IComponentSet."""
+
     implements(IComponentSet)
 
     def __iter__(self):
@@ -37,7 +38,7 @@ class ComponentSet:
     def __getitem__(self, name):
         """See IComponentSet."""
         component = Component.selectOneBy(name=name)
-        if component:
+        if component is not None:
             return component
         raise NotFoundError(name)
 
@@ -48,7 +49,7 @@ class ComponentSet:
     def ensure(self, name):
         """See IComponentSet."""
         component = Component.selectOneBy(name=name)
-        if component:
+        if component is not None:
             return component
         return self.new(name)
 

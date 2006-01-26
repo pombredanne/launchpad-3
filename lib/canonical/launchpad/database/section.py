@@ -8,8 +8,7 @@ __all__ = [
 
 from zope.interface import implements
 
-from sqlobject import (
-    StringCol, SQLObjectNotFound)
+from sqlobject import StringCol
 
 from canonical.database.sqlbase import SQLBase
 
@@ -18,7 +17,7 @@ from canonical.launchpad.interfaces import (
 
 
 class Section(SQLBase):
-    """Section table SQLObject."""
+    """See ISection"""
     implements(ISection)
 
     _defaultOrder= ['id']
@@ -27,7 +26,7 @@ class Section(SQLBase):
 
 
 class SectionSet:
-    """Set manipulation tools for Section table."""
+    """See ISectionSet."""
     implements(ISectionSet)
 
     def __iter__(self):
@@ -37,7 +36,7 @@ class SectionSet:
     def __getitem__(self, name):
         """See ISectionSet."""
         section = Section.selectOneBy(name=name)
-        if section:
+        if section is not None:
             return section
         raise NotFoundError(name)
 
@@ -48,7 +47,7 @@ class SectionSet:
     def ensure(self, name):
         """See ISectionSet."""
         section = Section.selectOneBy(name=name)
-        if section:
+        if section is not None:
             return section
         return self.new(name)
 

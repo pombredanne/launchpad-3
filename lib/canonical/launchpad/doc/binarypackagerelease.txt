@@ -28,31 +28,10 @@ Useful properties:
    >>> warty = getUtility(IDistroReleaseSet).get(1)
    >>> warty.name
    u'warty'
+   >>> hoary = getUtility(IDistroReleaseSet).get(3)
+   >>> hoary.name
+   u'hoary'
 
-
-   # XXX cprov 20051219: horrible broken code, bug # 5948
-
-   >>> try:
-   ...     firefox_bin_release.current(warty)
-   ... except AttributeError, info:
-   ...     'BOOM'
-   'BOOM'
-
-
-We provide a __getitem__() method so you can access other releases
-with the same BinaryPackageName as indices of that
-BinaryPackageRelease:
-
-# XXX cprov 20060111: this method is utterly confusing for
-# a content class, anyway it works as specified.
-
-   >>> firefox_bin_release['0.9'].version
-   u'0.9'
-
-   >>> firefox_bin_release['6.6.6']
-   Traceback (most recent call last):
-   ...
-   NotFoundError: ('Version Not Found', '6.6.6')
 
 Check IBinaryPackageRelease.override() behaviour:
 
@@ -63,8 +42,8 @@ The override method does implicitly exactly the same than:
                              priority=new_priority)
 
 but it only sets the not-empty attributes, so you can override the
-attributes exclusively. It only exists to improve the code clarity, for
-instance, in ftp-master/queue tool.
+attributes exclusively. It only exists to improve the code clarity,
+in ftp-master/queue tool and other scripts.
 
 Display the current firefox component and section:
 
@@ -85,10 +64,19 @@ Override the current firefox with new component/section/priority:
    >>> firefox_bin_release.override(component=new_comp, section=new_sec,
    ...              priority=new_priority)
 
-Check if it got overriden correctly:
+Check if it got overridden correctly:
 
    >>> firefox_bin_release.component.name, firefox_bin_release.section.name, firefox_bin_release.priority.name
    (u'universe', u'mail', 'IMPORTANT')
+
+Override again; ensure that only the changed item actually changes:
+
+   >>> new_sec = getUtility(ISectionSet)['net']
+   >>> firefox_bin_release.override(section=new_sec)
+   >>> (firefox_bin_release.component.name,
+   ...  firefox_bin_release.section.name,
+   ...  firefox_bin_release.priority.name)
+   (u'universe', u'net', 'IMPORTANT')
 
 Abort transaction to avoid error propagation of the new attributes:
 
@@ -101,4 +89,13 @@ BinaryPackageReleaseSet utility:
    >>> verifyObject(IBinaryPackageReleaseSet, binset)
    True
 
-XXX cprov 20051219: missing wider tests bug # 5947
+   >>> ret = binset.findByNameInDistroRelease(warty.id, 'fire')
+   >>> for item in ret:
+   ...     print item.name
+   mozilla-firefox
+
+   >>> ret = binset.getByNameInDistroRelease(hoary.id, 'pmount')
+   >>> for item in ret:
+   ...     print item.name
+   pmount
+

@@ -103,7 +103,8 @@ class Build(SQLBase):
     @property
     def binarypackages(self):
         """See IBuild."""
-        bpklist = BinaryPackageRelease.selectBy(buildID=self.id)
+        bpklist = BinaryPackageRelease.selectBy(buildID=self.id,
+                                                orderBy=['id'])
         return sorted(bpklist, key=lambda a: a.binarypackagename.name)
 
     @property

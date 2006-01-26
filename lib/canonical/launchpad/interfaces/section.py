@@ -9,14 +9,23 @@ __all__ = [
     'ISectionSet',
     ]
 
+
 from zope.interface import Interface, Attribute
 
+
 class ISection(Interface):
-    id = Attribute("The ID")
-    name = Attribute("The Section Name")
+    """Represents the Section table.
+
+    A distribution section represents a tag that groups related
+    packages. Examples in Ubuntu include 'editors', 'x11' and 'net'.
+    """
+
+    id = Attribute("The section ID")
+    name = Attribute("The section name")
+
 
 class ISectionSet(Interface):
-    """Interface for SectionSet"""
+    """Represents a set of Sections."""
 
     def __iter__():
         """Iterate over section."""
@@ -29,6 +38,7 @@ class ISectionSet(Interface):
 
     def ensure(name):
         """Ensure the existence of a section with a given name."""
-        
+
     def new(name):
         """Create a new section."""
+
