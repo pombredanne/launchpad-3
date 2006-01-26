@@ -23,7 +23,7 @@ from zope.exceptions import NotFoundError
 from canonical.lp.dbschema import RosettaFileFormat
 from canonical.launchpad.interfaces import (
     IPOFile, IPOExportRequestSet, ILaunchBag, ILanguageSet,
-    RawFileAttachFailed, ITranslationImportQueue)
+    RawFileAttachFailed, ITranslationImportQueue, UnexpectedFormData)
 from canonical.launchpad.components.poparser import POHeader
 from canonical.launchpad import helpers
 from canonical.launchpad.browser.pomsgset import POMsgSetView
@@ -318,7 +318,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
     def next_URL(self):
         """Return the URL to get next self.count number of message sets."""
         if self.offset + self.count >= self.shown_count:
-            raise AssertionError('Only have %d messages, requested %d' %
+            raise UnexpectedFormData('Only have %d messages, requested %d' %
                 (self.shown_count, self.offset + self.count))
         return self.createURL(offset=(self.offset + self.count))
 
@@ -349,7 +349,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
                 filtered_potmsgsets = \
                     pofile.getPOTMsgSetUntranslated(slice=slice_arg)
             else:
-                raise AssertionError('show = "%s"' % self.show)
+                raise UnexpectedFormData('show = "%s"' % self.show)
 
             pomsgset_views = []
             for potmsgset in filtered_potmsgsets:
@@ -398,7 +398,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
                         if key in self.form
                       ]
         if len(dispatch_to) != 1:
-            raise AssertionError(
+            raise UnexpectedFormData(
                 "There should be only one command in the form",
                 dispatch_to)
         key, method = dispatch_to[0]
@@ -488,7 +488,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
                 # This should only happen if someone tries to POST his own
                 # form instead of ours, and he uses a POTMsgSet id that
                 # does not exist for this POTemplate.
-                raise AssertionError(
+                raise UnexpectedFormData(
                     "Got translation for POTMsgID %d which is not in the"
                     " template." % id)
 

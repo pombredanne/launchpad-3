@@ -10,7 +10,7 @@ from zope.component import getUtility
 
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    IPOMsgSet, TranslationConstants)
+    UnexpectedFormData, IPOMsgSet, TranslationConstants)
 from canonical.launchpad.webapp import LaunchpadView
 
 
@@ -285,7 +285,7 @@ class POMsgSetView(LaunchpadView):
                         if key in self.form
                       ]
         if len(dispatch_to) != 1:
-            raise AssertionError(
+            raise UnexpectedFormData(
                 "There should be only one command in the form",
                 dispatch_to)
         key, method = dispatch_to[0]
