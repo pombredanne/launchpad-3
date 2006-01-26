@@ -18,12 +18,12 @@ from sqlobject import (
     StringCol, ForeignKey, MultipleJoin, IntCol, SQLObjectNotFound,
     RelatedJoin)
 
-from canonical.database.sqlbase import (
-    SQLBase, sqlvalues, flush_database_updates, cursor, flush_database_caches)
+from canonical.database.sqlbase import (quote_like, SQLBase, sqlvalues, 
+    flush_database_updates, cursor, flush_database_caches)
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, BugTaskStatus, EnumCol, DistributionReleaseStatus,
+    PackagePublishingStatus, EnumCol, DistributionReleaseStatus,
     DistroReleaseQueueStatus, PackagePublishingPocket, SpecificationSort)
 
 from canonical.launchpad.interfaces import (
@@ -43,8 +43,8 @@ from canonical.launchpad.database.distroreleasesourcepackagerelease import (
 from canonical.launchpad.database.distroreleasepackagecache import (
     DistroReleasePackageCache)
 from canonical.launchpad.database.publishing import (
-    BinaryPackagePublishing, SourcePackagePublishing,
-    BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
+    SourcePackagePublishing, BinaryPackagePublishingHistory,
+    SourcePackagePublishingHistory)
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.language import Language
@@ -555,6 +555,14 @@ class DistroRelease(SQLBase):
 
     def createQueueEntry(self, pocket, changesfilename, changesfilecontent):
         """See IDistroRelease."""
+        # We store the changes file in the librarian to avoid having to
+        # deal with broken encodings in these files; this will allow us
+        # to regenerate these files as necessary.
+        #
+        # The use of StringIO here should be safe: we do no encoding of
+        # the content in the changes file (as doing so would be guessing
+        # at best, causing unpredictable corruption), and simply pass it
+        # off to the librarian.
         file_alias_set = getUtility(ILibraryFileAliasSet)
         changes_file = file_alias_set.create(changesfilename,
             len(changesfilecontent), StringIO(changesfilecontent),
@@ -566,114 +574,95 @@ class DistroRelease(SQLBase):
     def getQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED):
         """See IDistroRelease."""
         return DistroReleaseQueue.selectBy(distroreleaseID=self.id,
-                                           status=status, orderBy=['id'])
+                                           status=status)
 
     def getFancyQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED,
                             name=None, version=None, exact_match=False):
         """See IDistroRelease."""
-        # build default distroreleasequeuesource query
-        source_where_clause = (
-            "distrorelease=%s AND status=%s AND distroreleasequeue.id="
-            "distroreleasequeuesource.distroreleasequeue"
-            % sqlvalues(self.id, status))
+
+        if not name:
+            assert not version and not exact_match
+            return self.getQueueItems(status)
+
         source_clauseTables = ['DistroReleaseQueueSource']
-        source_orderBy=['id']
+        source_where_clauses = ["""
+            distroreleasequeue.id = distroreleasequeuesource.distroreleasequeue
+            AND distrorelease = %s
+            AND status = %s""" % sqlvalues(self.id, status)]
 
-        # build default distroreleasequeuebuild query
-        build_where_clause = (
-            "distrorelease=%s AND status=%s AND distroreleasequeue.id="
-            "distroreleasequeuebuild.distroreleasequeue"
-            % sqlvalues(self.id, status))
         build_clauseTables = ['DistroReleaseQueueBuild']
-        build_orderBy=['id']
+        build_where_clauses = ["""
+            distroreleasequeue.id = distroreleasequeuebuild.distroreleasequeue
+            AND distrorelease = %s
+            AND status = %s""" % sqlvalues(self.id, status)]
 
-        # modify default query to return matchs of a package name
-        if name:
-            # modify source clause to lookup on sourcepackagerelease
-            source_where_clause +="""
-            AND distroreleasequeuesource.sourcepackagerelease =
-            sourcepackagerelease.id AND
-            sourcepackagerelease.sourcepackagename=
-            sourcepackagename.id
-            """
+        # modify source clause to lookup on sourcepackagerelease
+        source_where_clauses.append("""
+            distroreleasequeuesource.sourcepackagerelease =
+            sourcepackagerelease.id""")
+        source_where_clauses.append(
+            "sourcepackagerelease.sourcepackagename = sourcepackagename.id")
 
-            # modify build clause to lookup on binarypackagerelease
-            build_where_clause +="""
-            AND distroreleasequeuebuild.build=binarypackagerelease.build
-            AND binarypackagerelease.binarypackagename=binarypackagename.id
-            """
+        # modify build clause to lookup on binarypackagerelease
+        build_where_clauses.append(
+            "distroreleasequeuebuild.build = binarypackagerelease.build")
+        build_where_clauses.append(
+            "binarypackagerelease.binarypackagename = binarypackagename.id")
 
-            # attempt to exact or similar names in both, builds and sources
+        # attempt to exact or similar names in both, builds and sources
+        if exact_match:
+            source_where_clauses.append("sourcepackagename.name = '%s'" % name)
+            build_where_clauses.append("binarypackagename.name = '%s'" % name)
+        else:
+            source_where_clauses.append(
+                "sourcepackagename.name LIKE '%%' || %s || '%%'"
+                % quote_like(name))
+
+            build_where_clauses.append(
+                "binarypackagename.name LIKE '%%' || %s || '%%'"
+                % quote_like(name))
+
+        # attempt for given version argument
+        if version:
+            # exact or similar matches
             if exact_match:
-                source_where_clause += """
-                AND sourcepackagename.name = '%s'
-                """ % name
-                build_where_clause += """
-                AND binarypackagename.name = '%s'
-                """ % name
+                source_where_clauses.append(
+                    "sourcepackagerelease.version = '%s'" % version)
+                build_where_clauses.append(
+                    "binarypackagerelease.version = '%s'" % version)
             else:
-                source_where_clause += """
-                AND sourcepackagename.name LIKE '%%%s%%'
-                """ % name
-                build_where_clause += """
-                AND binarypackagename.name LIKE '%%%s%%'
-                """ % name
+                source_where_clauses.append(
+                    "sourcepackagerelease.version LIKE '%%' || %s || '%%'"
+                    % quote_like(version))
+                build_where_clauses.append(
+                    "binarypackagerelease.version LIKE '%%' || %s || '%%'"
+                    % quote_like(version))
 
-            # attempt for given version argument
-            if version:
-                # exact or similar matches
-                if exact_match:
-                    source_where_clause += """
-                    AND sourcepackagerelease.version = '%s'
-                    """ % version
-                    build_where_clause += """
-                    AND binarypackagerelease.version = '%s'
-                    """ % version
-                else:
-                    source_where_clause += """
-                    AND sourcepackagerelease.version LIKE '%%%s%%'
-                    """ % version
-                    build_where_clause += """
-                    AND binarypackagerelease.version LIKE '%%%s%%'
-                    """ % version
+        source_clauseTables = [
+            'DistroReleaseQueueSource',
+            'SourcePackageRelease',
+            'SourcePackageName',
+            ]
+        source_orderBy = ['-sourcepackagerelease.dateuploaded']
 
-            # Fine tune source clause tables and ordering
-            source_clauseTables = [
-                'DistroReleaseQueueSource',
-                'SourcePackageRelease',
-                'SourcePackageName',
-                ]
+        build_clauseTables = [
+            'DistroReleaseQueueBuild',
+            'BinaryPackageRelease',
+            'BinaryPackageName',
+            ]
+        build_orderBy = ['-binarypackagerelease.datecreated']
 
-            source_orderBy = [
-                '-sourcepackagerelease.dateuploaded'
-                ]
-
-            # Fine tune build clause tables and ordering
-            build_clauseTables = [
-                'DistroReleaseQueueBuild',
-                'BinaryPackageRelease',
-                'BinaryPackageName',
-                ]
-
-            build_orderBy = [
-                '-binarypackagerelease.datecreated'
-                ]
-
-        # build a SelectResult group for matching distroreleasequeuesources
+        source_where_clause = " AND ".join(source_where_clauses)
         source_results = DistroReleaseQueue.select(
             source_where_clause, clauseTables=source_clauseTables,
             orderBy=source_orderBy)
 
-        # build a SelectResult group for matching distroreleasequeuebuilds
+        build_where_clause = " AND ".join(build_where_clauses)
         build_results = DistroReleaseQueue.select(
             build_where_clause, clauseTables=build_clauseTables,
             orderBy=build_orderBy)
 
-        # mock a new order for union
-        union_orderBy=['id']
-
-        # return the UNION of sources and builds
-        return source_results.union(build_results, orderBy=union_orderBy)
+        return source_results.union(build_results)
 
     def createBug(self, owner, title, comment, private=False):
         """See canonical.launchpad.interfaces.IBugTarget."""

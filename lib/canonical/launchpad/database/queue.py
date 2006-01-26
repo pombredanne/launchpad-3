@@ -65,7 +65,9 @@ class DistroReleaseQueue(SQLBase):
     """A Queue item for Lucille."""
     implements(IDistroReleaseQueue)
 
-    status = EnumCol(dbName='status', unique=False,
+    _defaultOrder = ['id']
+
+    status = EnumCol(dbName='status', unique=False, notNull=True,
                      default=DistroReleaseQueueStatus.NEW,
                      schema=DistroReleaseQueueStatus)
 
@@ -100,6 +102,9 @@ class DistroReleaseQueue(SQLBase):
         Force user to use the provided machine-state methods.
         Raises QueueStateWriteProtectedError.
         """
+        # XXX: bug #29663: this is a bit evil, but does the job. Andrew
+        # has suggested using immutable=True in the column definition.
+        #   -- kiko, 2006-01-25
         # allow 'status' write only in creation process.
         if self._SO_creating:
             self._SO_set_status(value)
@@ -150,16 +155,13 @@ class DistroReleaseQueue(SQLBase):
     def changesfilename(self):
         """A changes filename to accurately represent this upload."""
         filename = self.sourcepackagename.name + "_" + self.sourceversion + "_"
-        arch_done = False
+        arch_tags = []
         if len(self.sources):
-            filename += "source"
-            arch_done = True
+            arch_tags.append("source")
         for queue_build in self.builds:
-            if arch_done:
-                filename += "+"
-            filename += queue_build.build.distroarchrelease.architecturetag
-            arch_done = True
-        filename += ".changes"
+            tag = queue_build.build.distroarchrelease.architecturetag
+            arch_tags.append(tag)
+        filename += "+".join(arch_tags) + ".changes"
         return filename
 
     @cachedproperty
@@ -170,14 +172,11 @@ class DistroReleaseQueue(SQLBase):
         when we created it. This is heuristic for now but may be made into
         a column at a later date.
         """
-        # If we can find a source, return it
+        assert self.sources or self.builds
         for queue_source in self.sources:
             return queue_source.sourcepackagerelease.dateuploaded
-        # Ditto for builds
         for queue_build in self.builds:
             return queue_build.build.datecreated
-        # Strange, but there's no source or build, complain
-        raise NotFoundError()
 
     @property
     def age(self):
@@ -194,14 +193,11 @@ class DistroReleaseQueue(SQLBase):
         We look through sources/builds to find it. This is heuristic for now
         but may be made into a column at a later date.
         """
-        # If there's a source, use it
+        assert self.sources or self.builds
         for queue_source in self.sources:
             return queue_source.sourcepackagerelease.sourcepackagename
-        # ditto builds
         for queue_build in self.builds:
             return queue_build.build.sourcepackagerelease.sourcepackagename
-        # strange, no source or build
-        raise NotFoundError()
 
     @cachedproperty
     def sourceversion(self):
@@ -209,14 +205,11 @@ class DistroReleaseQueue(SQLBase):
 
         This is currently heuristic but may be more easily calculated later.
         """
-        # If there's a source, use it
+        assert self.sources or self.builds
         for queue_source in self.sources:
             return queue_source.sourcepackagerelease.version
-        # ditto builds
         for queue_build in self.builds:
             return queue_build.build.sourcepackagerelease.version
-        # strange, no source or build
-        raise NotFoundError()
 
     def realiseUpload(self, logger=None):
         """See IDistroReleaseQueue."""
@@ -254,6 +247,8 @@ class DistroReleaseQueue(SQLBase):
 class DistroReleaseQueueBuild(SQLBase):
     """A Queue item's related builds (for Lucille)."""
     implements(IDistroReleaseQueueBuild)
+
+    _defaultOrder = ['id']
 
     distroreleasequeue = ForeignKey(
         dbName='distroreleasequeue',
@@ -322,6 +317,8 @@ class DistroReleaseQueueBuild(SQLBase):
 class DistroReleaseQueueSource(SQLBase):
     """A Queue item's related sourcepackagereleases (for Lucille)."""
     implements(IDistroReleaseQueueSource)
+
+    _defaultOrder = ['id']
 
     distroreleasequeue = ForeignKey(
         dbName='distroreleasequeue',
@@ -473,14 +470,15 @@ class DistroReleaseQueueSet:
 
     def count(self, status=None, distrorelease=None):
         """See IDistroReleaseQueueSet."""
-        clause = ''
-
+        clauses = []
         if status:
-            clause = "status=%s AND " % sqlvalues(status)
+            clauses.append("status=%s" % sqlvalues(status))
 
         if distrorelease:
-            clause += "distrorelease=%s" % sqlvalues(distrorelease.id)
-        else:
-            clause += "1=1"
+            clauses.append("distrorelease=%s" % sqlvalues(distrorelease.id))
 
-        return DistroReleaseQueue.select(clause).count()
+        query = " AND ".join(clauses)
+        # XXX: bug #29647, select("") issues an empty where so I use
+        # this or None crap -- kiko, 2006-01-25
+        return DistroReleaseQueue.select(query or None).count()
+

@@ -15,6 +15,7 @@ import md5
 import sha
 import tempfile
 import re
+import errno
 import subprocess
 import apt_pkg
 import apt_inst
@@ -36,7 +37,7 @@ from canonical.archivepublisher.utils import (
 from canonical.lp.dbschema import (
     SourcePackageUrgency, PackagePublishingPriority,
     DistroReleaseQueueCustomFormat, BinaryPackageFormat,
-    BuildStatus, DistroReleaseQueueStatus)
+    BuildStatus)
 
 from canonical.launchpad.interfaces import (
     IGPGHandler, GPGVerificationError, IGPGKeySet, IPersonSet,
@@ -763,7 +764,8 @@ class NascentUpload:
         deb_file = open(uploaded_file.full_filename, "r")
         # Extract the control information
         try:
-            control = apt_pkg.ParseSection(apt_inst.debExtractControl(deb_file));
+            control_file = apt_inst.debExtractControl(deb_file)
+            control = apt_pkg.ParseSection(control_file)
         except:
             # Swallow everything apt_pkg and apt_inst throw at us because they
             # are not desperately pythonic and can raise odd or confusing
@@ -1176,7 +1178,7 @@ class NascentUpload:
 
         # XXX cprov 20051207: assume DSC "1.0" format for missing value
         if 'format' not in dsc.keys():
-           dsc['format'] = "1.0"
+            dsc['format'] = "1.0"
 
         # .dsc files must be version 1.0
         if dsc['format'] != "1.0":
@@ -1204,12 +1206,14 @@ class NascentUpload:
                 try:
                     apt_pkg.ParseSrcDepends(field)
                 except:
+                    # XXX: untested code
                     # Swallow everything apt_pkg throws at us because
                     # it is not desperately pythonic and can raise odd
                     # or confusing exceptions at times and is out of
                     # our control.
-                    reject("%s: invalid %s field. (cannot be parsed by apt)" %(
-                        dsc_file.filename, field_name.title()))
+                    self.reject("%s: invalid %s field; cannot be parsed "
+                                "by apt." % (dsc_file.filename, 
+                                             field_name.title()))
 
         # Verify the filename matches appropriately
         epochless_dsc_version = re_no_epoch.sub('', dsc["version"]);
@@ -1245,14 +1249,13 @@ class NascentUpload:
         self.spn = spn
         releases = self.distrorelease.getPublishedReleases(
                 spn, self.policy.pocket)
-
         apt_pkg.InitSystem()
 
         for pub_record in releases:
-             pub_version = pub_record.sourcepackagerelease.version
-             if apt_pkg.VersionCompare(version, pub_version) <= 0:
-                 self.reject("%s: Version younger than that in the archive."
-                             % (dsc_file.filename))
+            pub_version = pub_record.sourcepackagerelease.version
+            if apt_pkg.VersionCompare(version, pub_version) <= 0:
+                self.reject("%s: Version younger than that in the archive."
+                            % (dsc_file.filename))
 
         # For any file mentioned in the upload which does not exist in the
         # upload, go ahead and find it from the database.
@@ -1334,6 +1337,7 @@ class NascentUpload:
         try:
             shutil.rmtree(tmpdir)
         except OSError, e:
+            # XXX: untested code, errno was missing
             if errno.errorcode[e.errno] != 'EACCES':
                 raise UploadError("%s: couldn't remove tmp dir %s" % (
                     dsc_file.filename, tmpdir))

@@ -83,7 +83,7 @@ scoreBuildQueueEntry() method.
   >>> bq1 = MockBuildQueue('Eins', SourcePackageUrgency.LOW, 'main',
   ...                      warty386, time1, 'mozilla-firefox (= 1.0)')
   >>> bm.scoreBuildQueueEntry(bq1)
-  WARNING:root:MISSED DEP: [('mozilla-firefox', '1.0', '=')] in warty i386
+  WARNING:root:MISSING DEP: [('mozilla-firefox', '1.0', '=')] in warty i386
 
   >>> bq1.name, bq1.lastscore
   ('Eins', 995)
@@ -98,7 +98,7 @@ scoreBuildQueueEntry() method.
   >>> bq2 = MockBuildQueue('Zwei', SourcePackageUrgency.HIGH,
   ...                      'universe', warty386, time2, 'foo (= 1.0)')
   >>> bm.scoreBuildQueueEntry(bq2)
-  WARNING:root:MISSED DEP: [('foo', '1.0', '=')] in warty i386
+  WARNING:root:MISSING DEP: [('foo', '1.0', '=')] in warty i386
 
   >>> bq2.name, bq2.lastscore
   ('Zwei', 260)
@@ -128,7 +128,7 @@ scoreBuildQueueEntry() method.
   ...                      'main', hoary386, time4,
   ...                      'mozilla-firefox (= 0.9), pmount (= 0.1-1)')
   >>> bm.scoreBuildQueueEntry(bq4)
-  WARNING:root:MISSED DEP: [('mozilla-firefox', '0.9', '=')] in hoary i386
+  WARNING:root:MISSING DEP: [('mozilla-firefox', '0.9', '=')] in hoary i386
 
   >>> bq4.name, bq4.lastscore
   ('Vier', 1020)
@@ -143,8 +143,8 @@ scoreBuildQueueEntry() method.
   ...                      'restricted', warty386, time5,
   ...                      'mozilla-firefox (= 1.0), pmount (= 0.2-1)')
   >>> bm.scoreBuildQueueEntry(bq5)
-  WARNING:root:MISSED DEP: [('mozilla-firefox', '1.0', '=')] in warty i386
-  WARNING:root:MISSED DEP: [('pmount', '0.2-1', '=')] in warty i386
+  WARNING:root:MISSING DEP: [('mozilla-firefox', '1.0', '=')] in warty i386
+  WARNING:root:MISSING DEP: [('pmount', '0.2-1', '=')] in warty i386
 
   >>> bq5.name, bq5.lastscore
   ('Funf', 755)

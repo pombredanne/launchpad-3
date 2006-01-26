@@ -28,32 +28,10 @@ Useful properties:
    >>> warty = getUtility(IDistroReleaseSet).get(1)
    >>> warty.name
    u'warty'
+   >>> hoary = getUtility(IDistroReleaseSet).get(3)
+   >>> hoary.name
+   u'hoary'
 
-
-   XXX cprov 20051219: following code exposes a piece of yet-broken
-   code in Soyuz, which is precisely described in bug # 5948
-
-   >>> try:
-   ...     firefox_bin_release.current(warty)
-   ... except AttributeError, info:
-   ...     'BOOM'
-   'BOOM'
-
-
-We provide a __getitem__() method so you can access other releases
-with the same BinaryPackageName as indices of that
-BinaryPackageRelease:
-
-# XXX cprov 20060111: this method is utterly confusing for
-# a content class, anyway it works as specified.
-
-   >>> firefox_bin_release['0.9'].version
-   u'0.9'
-
-   >>> firefox_bin_release['6.6.6']
-   Traceback (most recent call last):
-   ...
-   NotFoundError: ('Version Not Found', '6.6.6')
 
 Check IBinaryPackageRelease.override() behaviour:
 
@@ -91,6 +69,15 @@ Check if it got overridden correctly:
    >>> firefox_bin_release.component.name, firefox_bin_release.section.name, firefox_bin_release.priority.name
    (u'universe', u'mail', 'IMPORTANT')
 
+Override again; ensure that only the changed item actually changes:
+
+   >>> new_sec = getUtility(ISectionSet)['net']
+   >>> firefox_bin_release.override(section=new_sec)
+   >>> (firefox_bin_release.component.name,
+   ...  firefox_bin_release.section.name,
+   ...  firefox_bin_release.priority.name)
+   (u'universe', u'net', 'IMPORTANT')
+
 Abort transaction to avoid error propagation of the new attributes:
 
    >>> import transaction
@@ -102,4 +89,13 @@ BinaryPackageReleaseSet utility:
    >>> verifyObject(IBinaryPackageReleaseSet, binset)
    True
 
-XXX cprov 20051219: missing wider tests bug # 5947
+   >>> ret = binset.findByNameInDistroRelease(warty.id, 'fire')
+   >>> for item in ret:
+   ...     print item.name
+   mozilla-firefox
+
+   >>> ret = binset.getByNameInDistroRelease(hoary.id, 'pmount')
+   >>> for item in ret:
+   ...     print item.name
+   pmount
+
