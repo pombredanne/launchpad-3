@@ -2,10 +2,9 @@
 
 from zope.app.form.browser.textwidgets import IntWidget
 from zope.component import getUtility
-from zope.exceptions import NotFoundError
 from zope.app.form.interfaces import ConversionError
 
-from canonical.launchpad.interfaces import IBugSet
+from canonical.launchpad.interfaces import IBugSet, NotFoundError
 
 class BugWidget(IntWidget):
     """A widget for displaying a field that is bound to an IBug."""

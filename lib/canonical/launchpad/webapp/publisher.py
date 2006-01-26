@@ -10,7 +10,8 @@ __all__ = ['UserAttributeCache', 'LaunchpadView', 'canonical_url', 'nearest',
            'rootObject', 'Navigation', 'stepthrough', 'redirection', 'stepto']
 
 from zope.interface import implements
-from zope.component import getUtility, queryView, getDefaultViewName
+from zope.component import getUtility, queryView
+from zope.app import zapi
 from zope.interface.advice import addClassAdvisor
 import zope.security.management
 from zope.security.checker import ProxyFactory, NamesChecker
@@ -322,7 +323,7 @@ class Navigation:
     Note that the canonical_url part of Navigation is used outside of
     the browser context.
     """
-    implements(IBrowserPublisher, IHTTPPublisher)
+    implements(IBrowserPublisher)
 
     def __init__(self, context, request=None):
         """Initialize with context and maybe with a request."""
@@ -452,10 +453,9 @@ class Navigation:
                         nextobj = None
                     return self._handle_next_object(nextobj, request, nextstep)
 
-
         # Next, look up views on the context object.  If a view exists,
         # use it.
-        view = queryView(self.context, name, request)
+        view = zapi.queryMultiAdapter((self.context, request), name=name)
         if view is not None:
             return view
 
@@ -478,7 +478,7 @@ class Navigation:
         return self._handle_next_object(nextobj, request, name)
 
     def browserDefault(self, request):
-        view_name = getDefaultViewName(self.context, request)
+        view_name = zapi.getDefaultViewName(self.context, request)
         return self.context, (view_name, )
 
 
