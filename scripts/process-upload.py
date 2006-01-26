@@ -11,7 +11,6 @@ import os
 import sys
 import time
 import fcntl
-import shutil
 import errno
 
 from optparse import OptionParser
@@ -69,9 +68,18 @@ def main():
                   "Namely the fsroot for the upload.")
         return 1
 
-    fsroot = os.path.abspath(args[0])
-    if not os.path.isdir(fsroot):
-        raise ValueError("%s is not a directory" % fsroot)
+    base_fsroot = os.path.abspath(args[0])
+    if not os.path.isdir(base_fsroot):
+        raise ValueError("%s is not a directory" % base_fsroot)
+    options.base_fsroot = base_fsroot
+
+    for subdir in ["incoming", "accepted", "rejected", "failed"]:
+        full_subdir = os.path.join(base_fsroot, subdir)
+        if not os.path.exists(full_subdir):
+            log.debug("Creating directory %s" % full_subdir)
+            os.mkdir(full_subdir)
+
+    fsroot = os.path.join(base_fsroot, "incoming")
 
     lock = GlobalLock('/var/lock/launchpad-upload-queue.lock')
 
@@ -154,27 +162,35 @@ def send_mails(mails):
             sendmail(mail_message)
 
 
-def process_upload(ztm, upload):
+def process_upload(ztm, upload, entry_path):
     """Process an upload as provided."""
     ztm.begin()
     log.info("Processing upload %s" % upload.changes_filename)
+    destination = None
     try:
         try:
             upload.process()
         except UploadPolicyError, e:
             upload.reject("UploadPolicyError made it out to the main loop: "
                           "%s " % e)
+            destination = "failed"
         except UploadError, e:
             upload.reject("UploadError made it out to the main loop: %s" % e)
+            destination = "failed"
         if upload.rejected:
             mails = upload.do_reject()
             ztm.abort()
             send_mails(mails)
+            if destination is None:
+                destination = "rejected"
         else:
             successful, mails = upload.do_accept()
-            if not successful:
+            if successful:
+                destination = "accepted"
+            else:
                 log.info("Rejection during accept. Aborting partial accept.")
                 ztm.abort()
+                destination = "rejected"
             send_mails(mails)
         if options.dryrun:
             log.info("Dry run, aborting the transaction for this upload.")
@@ -183,8 +199,30 @@ def process_upload(ztm, upload):
             log.info("Committing the transaction and any mails associated "
                      "with this upload.")
             ztm.commit()
+            move_subdirectory(entry_path, destination)
     finally:
         ztm.abort()
+
+
+def move_subdirectory(entry_path, subdir):
+    if options.keep:
+        log.debug("Keeping contents untouched")
+        return
+
+    pathname = os.path.basename(entry_path)
+
+    target_path = os.path.join(options.base_fsroot, subdir, pathname)
+    log.debug("Moving upload directory %s to %s" % (entry_path,
+                                                    target_path))
+    os.rename(entry_path, target_path)
+
+    distro_filename = entry_path + ".distro"
+    if os.path.isfile(distro_filename):
+        target_path = os.path.join(options.base_fsroot, subdir,
+                                   os.path.basename(distro_filename))
+        log.debug("Moving distro file %s to %s" % (distro_filename,
+                                                   target_path))
+        os.rename(distro_filename, target_path)
 
 
 def do_one_entry(ztm, entry, fsroot, lock):
@@ -236,21 +274,10 @@ def do_one_entry(ztm, entry, fsroot, lock):
             log.debug("Acquiring process_upload lock")
             lock.acquire(blocking=True)
             try:
-                process_upload(ztm, upload)
+                process_upload(ztm, upload, entry_path)
             finally:
                 log.debug("Releasing process_upload lock")
                 lock.release()
-
-        if not options.keep or options.dryrun:
-            log.debug("Removing upload directory: %s" % entry_path)
-            shutil.rmtree(entry_path)
-
-            if os.path.isfile(distro_filename):
-                log.debug("Removing distro file: %s"
-                          % distro_filename)
-                os.unlink(distro_filename)
-        else:
-            log.debug("Keeping contents")
 
         options.distro = options_distro
 

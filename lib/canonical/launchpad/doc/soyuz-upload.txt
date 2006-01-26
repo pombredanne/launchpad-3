@@ -33,8 +33,12 @@ We need the librarian for this test.
 First, let's create a temporary directory where we'll put
 uploaded files in.
 
+  >>> import os
   >>> import tempfile
   >>> temp_dir = tempfile.mkdtemp()
+  >>> incoming_dir = os.path.join(temp_dir, "incoming")
+  >>> accepted_dir = os.path.join(temp_dir, "accepted")
+  >>> os.mkdir(incoming_dir)
 
 
 Now, let's create a subprocess running the poppy FTP server. It won't
@@ -48,8 +52,8 @@ so that we can control what's going on.
   >>> script = os.path.join(config.root, "daemons/poppy-upload.py")
   >>> process = subprocess.Popen([sys.executable, script,
   ...                             "--cmd", "echo @distro@; ls @fsroot@",
-  ...                             temp_dir, "3421"],
-  ...                            stdout=subprocess.PIPE)
+  ...                             incoming_dir, "3421"],
+  ...                             stdout=subprocess.PIPE)
 
 
 Let's create a custom exception to be used in the scope of this test:
@@ -193,7 +197,7 @@ of these files match the uploaded ones.
   >>> def get_md5(filename):
   ...     return md5.new(open(filename).read()).digest()
   >>> def get_upload_dir(num):
-  ...     return os.path.join(temp_dir, "upload-%06d" % num)
+  ...     return os.path.join(incoming_dir, "upload-%06d" % num)
 
   >>> for i, sent_filenames in enumerate(uploads):
   ...     upload_dir = get_upload_dir(i+1)
@@ -363,6 +367,19 @@ Same thing for etherwake:
   'LOW'
   >>> spr.uploaddistrorelease.name
   u'breezy-autotest'
+
+
+  >>> def get_accepted_dir(num):
+  ...     return os.path.join(accepted_dir, "upload-%06d" % num)
+
+  >>> for i, sent_filenames in enumerate(uploads):
+  ...     upload_dir = get_accepted_dir(i+1)
+  ...     assert len(os.listdir(upload_dir)) == len(sent_filenames)
+  ...     for filename in sent_filenames:
+  ...         upload_filename = os.path.join(upload_dir,
+  ...                                        os.path.basename(filename))
+  ...         assert os.path.isfile(upload_filename)
+  ...         assert get_md5(filename) == get_md5(upload_filename)
 
 
 Now let's see if all of them are in the DistroReleaseQueue marked
