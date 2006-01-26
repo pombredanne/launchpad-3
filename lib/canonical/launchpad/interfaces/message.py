@@ -51,7 +51,8 @@ class IMessage(Interface):
             )
     bugs = Attribute(_('Bug List'))
     chunks = Attribute(_('Message pieces'))
-    contents = Attribute(_('Full message contents as plain text'))
+    text_contents = Attribute(
+        'All the text/plain chunks joined together as a unicode string.')
     followup_title = Attribute(_('Candidate title for a followup message.'))
     title = Attribute(_('The message title, usually just the subject.'))
     bugattachments = Attribute("A list of BugAttachments connected to this "

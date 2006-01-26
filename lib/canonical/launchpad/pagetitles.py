@@ -409,6 +409,8 @@ launchpad_oops = 'Error: Oops'
 
 launchpad_requestexpired = 'Error: Timeout'
 
+launchpad_faq = 'Launchpad Frequently Asked Questions'
+
 # launchpad_widget_macros doesn't need a title.
 
 logintoken_index = 'Launchpad: redirect to the logintoken page'

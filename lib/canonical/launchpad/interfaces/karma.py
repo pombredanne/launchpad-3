@@ -11,6 +11,7 @@ __all__ = [
     'IKarmaActionSet',
     'IKarmaCache',
     'IKarmaCacheSet',
+    'IKarmaTotalCache',
     'IKarmaCategory',
     ]
 
@@ -131,7 +132,7 @@ class IKarmaCache(Interface):
         vocabulary='KarmaCategory')
 
     karmavalue = Int(
-        title=_("Karma"), required=True, readonly=False,
+        title=_("Karma"), required=True, readonly=True,
         description=_("The karma points of all actions of this category "
                       "performed by this person."))
 
@@ -148,11 +149,21 @@ class IKarmaCacheSet(Interface):
         <category>.
         """
 
-    def new(person, category, karmavalue):
-        """Create a KarmaCache for <person> with <category> and <karmavalue>.
 
-        Return the newly created KarmaCache.
-        """
+class IKarmaTotalCache(Interface):
+    """A cached value of the total of a person's karma (all categories)."""
+
+    id = Int(title=_("Database ID"), required=True, readonly=True)
+
+    person = Int(
+            title=_("Person"), required=True, readonly=True,
+            description=_("The person who has the karma.")
+            )
+
+    karma_total = Int(
+            title=_("Karma"), required=True, readonly=True,
+            description=_("The total karma points scored by the person.")
+            )
 
 
 class IKarmaCategory(Interface):
