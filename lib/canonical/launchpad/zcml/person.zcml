@@ -592,6 +592,16 @@
 
   <browser:pages
       for="canonical.launchpad.interfaces.IPersonSet"
+      permission="launchpad.Admin"
+      class="canonical.launchpad.browser.AdminRequestPeopleMergeView">
+      <browser:page
+          name="+adminrequestmerge"
+          template="../templates/foaf-adminrequestmerge.pt"
+          lp:url="/people/+adminrequestmerge" />
+  </browser:pages>
+
+  <browser:pages
+      for="canonical.launchpad.interfaces.IPersonSet"
       permission="launchpad.AnyPerson"
       class="canonical.launchpad.browser.RequestPeopleMergeMultipleEmailsView">
       <browser:page
