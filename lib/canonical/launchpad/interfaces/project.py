@@ -13,7 +13,7 @@ __all__ = [
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import ContentNameField, Summary, Title 
-from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.validators.name import name_validator 
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 from canonical.launchpad.interfaces.validation import valid_webref
 from zope.component import getUtility
@@ -51,7 +51,7 @@ class IProject(IHasOwner):
         description=_("""A unique name, used in URLs, identifying the project.
             All lowercase, no special characters.
             Examples: apache, mozilla, gimp."""),
-        constraint=valid_name)
+        constraint=name_validator)
 
     displayname = TextLine(
         title=_('Display Name'),

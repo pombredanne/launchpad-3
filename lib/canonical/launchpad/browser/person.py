@@ -368,11 +368,13 @@ class PersonCodeMenu(ApplicationMenu):
 
 class CommonMenuLinks:
 
+    @enabled_with_permission('launchpad.Edit')
     def common_edit(self):
         target = '+edit'
         text = 'Edit Personal Details'
         return Link(target, text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def common_edithomepage(self):
         target = '+edithomepage'
         text = 'Edit Home Page'
@@ -395,26 +397,31 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editsshkeys', 'editgpgkeys', 'codesofconduct', 'administer',
              'common_packages']
 
+    @enabled_with_permission('launchpad.Edit')
     def editemailaddresses(self):
         target = '+editemails'
         text = 'Edit Email Addresses'
         return Link(target, text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def editwikinames(self):
         target = '+editwikinames'
         text = 'Edit Wiki Names'
         return Link(target, text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def editircnicknames(self):
         target = '+editircnicknames'
         text = 'Edit IRC Nicknames'
         return Link(target, text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def editjabberids(self):
         target = '+editjabberids'
         text = 'Edit Jabber IDs'
         return Link(target, text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def editpassword(self):
         target = '+changepassword'
         text = 'Change Password'
@@ -428,6 +435,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
             u'in Launchpad' % self.context.browsername)
         return Link(target, text, summary, icon='info')
 
+    @enabled_with_permission('launchpad.Edit')
     def editsshkeys(self):
         target = '+editsshkeys'
         text = 'Edit SSH Keys'
@@ -436,17 +444,20 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
             self.context.browsername)
         return Link(target, text, summary, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def editgpgkeys(self):
         target = '+editgpgkeys'
         text = 'Edit OpenPGP Keys'
         summary = 'Used for the Supermirror, and when maintaining packages'
         return Link(target, text, summary, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def edithackergotchi(self):
         target = '+edithackergotchi'
         text = 'Edit Hackergotchi'
         return Link(target, text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def codesofconduct(self):
         target = '+codesofconduct'
         text = 'Codes of Conduct'
@@ -1356,7 +1367,13 @@ class TeamJoinView(PersonView):
             user.join(self.context)
             appurl = self.request.getApplicationURL()
             notify(JoinTeamRequestEvent(user, self.context, appurl))
-
+            if (self.context.subscriptionpolicy ==
+                TeamSubscriptionPolicy.MODERATED):
+                self.request.response.addInfoNotification(
+                    _('Subscription request pending approval.'))
+            else:
+                self.request.response.addInfoNotification(_(
+                    'Successfully joined %s.' % self.context.displayname))
         self.request.response.redirect('./')
 
 

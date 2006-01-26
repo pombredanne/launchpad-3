@@ -12,10 +12,31 @@ __all__ = [
 from zope.schema import Choice, Datetime, Int, Text, TextLine
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
+from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.lp.dbschema import UpstreamFileType
+from canonical.launchpad.interfaces.productseries import IProductSeries
 from canonical.launchpad.validators.version import sane_version
+from canonical.launchpad.fields import ContentNameField 
+
+
+class ProductReleaseVersionField(ContentNameField):
+   
+    errormessage = _(
+        "%s is already in use by another version in this product series.")
+
+    @property
+    def _content_iface(self):
+        return IProductRelease
+    
+    def _getByName(self, version):
+        if IProductSeries.providedBy(self.context):
+            productseries = self.context
+        else:
+            productseries = self.context.productseries
+        releaseset = getUtility(IProductReleaseSet)
+        return releaseset.getBySeriesAndVersion(productseries, version) 
 
 
 class IProductRelease(Interface):
@@ -26,10 +47,10 @@ class IProductRelease(Interface):
         readonly=False, description=_('The date this release was '
         'published. Before release, this should have an estimated '
         'release date.'))
-    version = TextLine(title=_('Version'), required=True, readonly=True,
-        constraint=sane_version, description=_('The specific version '
-        'number assigned to this release. Letters and numbers are '
-        'acceptable, for releases like "1.2rc3".'))
+    version = ProductReleaseVersionField(title=_('Version'), required=True,
+        readonly=True, constraint=sane_version, description=_(
+        'The specific version number assigned to this release. Letters and'
+        'numbers are acceptable, for releases like "1.2rc3".'))
     owner = Int(title=_('Owner'), required=True, readonly=True)
     productseries = Choice(title=_('ProductSeries'), required=True,
         vocabulary='FilteredProductSeries')
@@ -64,4 +85,10 @@ class IProductReleaseSet(Interface):
     def new(version, owner, productseries, title=None, shortdesc=None,
             description=None, changelog=None):
         """Create a new ProductRelease"""
+        
+    def getBySeriesAndVersion(self, productseries, version, default=None):
+        """Get a release by its version and productseries.
+
+        If no release is found, default will be returned. 
+        """
 

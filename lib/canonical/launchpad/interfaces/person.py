@@ -325,11 +325,6 @@ class IPerson(IHasSpecifications):
     def assignKarma(action_name):
         """Assign karma for the action named <action_name> to this person."""
 
-    def updateKarmaCache():
-        """Update this person's karma attribute and all entries in the
-        KarmaCache table for this person.
-        """
-
     def latestKarma(quantity=25):
         """Return the latest karma actions for this person, up to the number
         given as quantity."""

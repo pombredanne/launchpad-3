@@ -48,12 +48,12 @@ it to return:
   ...         (3, 2, 'http://www.ubuntu.com', 'blocker', 'ASSIGNED',
   ...          datetime(2005, 4, 3, tzinfo=UTC), 'Test bug 3',
   ...          'Linux', 'P1', 'Ubuntu', 'i386', 1, '---', 'netapplet',
-  ...          '', '---', 0, '', '', ''),
+  ...          '', '---', 0, '', '', 'xyz'),
   ...         # A fixed bug
   ...         (4, 1, 'http://www.ubuntu.com', 'blocker', 'CLOSED',
   ...          datetime(2005, 4, 4, tzinfo=UTC), 'Test bug 4',
   ...          'Linux', 'P1', 'Ubuntu', 'i386', 1, '---', 'mozilla-firefox',
-  ...          'FIXED', '---', 0, '', '', ''),
+  ...          'FIXED', '---', 0, '', '', 'FooBar'),
   ...         # An UPSTREAM bug
   ...         (5, 1, 'http://bugzilla.gnome.org/show_bug.cgi?id=273041',
   ...          'blocker', 'UPSTREAM',
@@ -133,6 +133,8 @@ function will be used:
   ...     print 'Title:', bug.title
   ...     print 'Reporter:', bug.owner.displayname
   ...     print 'Created:', bug.datecreated
+  ...     if bug.name:
+  ...         print 'Nick: %s' % bug.name
   ...     print 'Subscribers:'
   ...     for sub in bug.subscriptions:
   ...         print '    %s' % sub.person.displayname
@@ -168,7 +170,7 @@ function will be used:
   ...         print '    Author:', message.owner.displayname
   ...         print '    Date:', message.datecreated
   ...         print '    Subject:', message.subject
-  ...         print '    %s' % message.contents
+  ...         print '    %s' % message.text_contents
   ...         print
   ...     if bug.attachments:
   ...         print 'Attachments:'
@@ -281,6 +283,7 @@ Now import an ASSIGNED bug.  Things to note about this import:
   Title: Test bug 3
   Reporter: Sample Person
   Created: 2005-04-03 00:00:00+00:00
+  Nick: xyz
   Subscribers:
       Sample Person
   Task: netapplet (Ubuntu)
@@ -323,6 +326,7 @@ Next we import a fixed bug:
   Title: Test bug 4
   Reporter: Sample Person
   Created: 2005-04-04 00:00:00+00:00
+  Nick: foobar
   Subscribers:
       Sample Person
   Task: mozilla-firefox (Ubuntu)

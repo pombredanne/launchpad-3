@@ -444,18 +444,12 @@
         for="canonical.launchpad.interfaces.IProductSet"
         schema="canonical.launchpad.interfaces.IProduct"
         label="Register an upstream open source product"
-        fields="project name displayname title summary description homepageurl
-                sourceforgeproject freshmeatproject wikiurl screenshotsurl
-                downloadurl programminglang"
         content_factory="canonical.launchpad.database.Product"
         facet="overview"
         class="canonical.launchpad.browser.ProductAddView"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
         >
-        <browser:widget
-           field="owner"
-           class="canonical.widgets.HiddenUserWidget" />
         <browser:widget
            field="name"
            class="zope.app.form.browser.TextWidget"

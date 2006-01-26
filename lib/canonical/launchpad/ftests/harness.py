@@ -115,7 +115,9 @@ class LaunchpadZopelessTestSetup(LaunchpadTestSetup):
 
 
 class LaunchpadFunctionalTestSetup(LaunchpadTestSetup):
-    def setUp(self):
+    def setUp(self, dbuser=None):
+        if dbuser is not None:
+            self.dbuser = dbuser
         _disconnect_sqlos()
         super(LaunchpadFunctionalTestSetup, self).setUp()
         FunctionalTestSetup().setUp()
@@ -159,9 +161,10 @@ class LaunchpadFunctionalTestCase(unittest.TestCase):
         login(user)
         self.__logged_in = True
 
-    def setUp(self):
+    def setUp(self, dbuser=None):
+        self.dbuser = dbuser
         unittest.TestCase.setUp(self)
-        LaunchpadFunctionalTestSetup().setUp()
+        LaunchpadFunctionalTestSetup(dbuser=self.dbuser).setUp()
         self.zodb_db = FunctionalTestSetup().db
         self.__logged_in = False
 
@@ -169,10 +172,10 @@ class LaunchpadFunctionalTestCase(unittest.TestCase):
         if self.__logged_in:
             logout()
             self.__logged_in = False
-        LaunchpadFunctionalTestSetup().tearDown()
+        LaunchpadFunctionalTestSetup(dbuser=self.dbuser).tearDown()
         unittest.TestCase.tearDown(self)
 
     def connect(self):
-        return LaunchpadFunctionalTestSetup().connect()
+        return LaunchpadFunctionalTestSetup(dbuser=self.dbuser).connect()
 
 

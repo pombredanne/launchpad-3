@@ -507,17 +507,22 @@ class Bugzilla:
         # from the Debian bug tracker by the "debzilla" program.  For
         # these bugs, generate a task and watch on the corresponding
         # bugs.debian.org bug.
-        if bug.alias and re.match(r'^deb\d+$', bug.alias):
-            watch = self.bugwatchset.createBugWatch(
-                lp_bug, lp_bug.owner, self.debbugs, int(bug.alias[3:]))
-            debtask = self.bugtaskset.createTask(
-                lp_bug,
-                owner=lp_bug.owner,
-                distribution=self.debian,
-                binarypackagename=target['binarypackagename'],
-                sourcepackagename=target['sourcepackagename'])
-            debtask.datecreated = bug.creation_ts
-            debtask.bugwatch = watch
+        if bug.alias:
+            if re.match(r'^deb\d+$', bug.alias):
+                watch = self.bugwatchset.createBugWatch(
+                    lp_bug, lp_bug.owner, self.debbugs, int(bug.alias[3:]))
+                debtask = self.bugtaskset.createTask(
+                    lp_bug,
+                    owner=lp_bug.owner,
+                    distribution=self.debian,
+                    binarypackagename=target['binarypackagename'],
+                    sourcepackagename=target['sourcepackagename'])
+                debtask.datecreated = bug.creation_ts
+                debtask.bugwatch = watch
+            else:
+                # generate a Launchpad name from the alias:
+                name = re.sub(r'[^a-z0-9\+\.\-]', '-', bug.alias.lower())
+                lp_bug.name = name
 
         # for UPSTREAM bugs, try to find whether the URL field contains
         # a bug reference.
@@ -559,8 +564,8 @@ class Bugzilla:
 
             # look for a message starting with "Created an attachment (id=NN)"
             for msg in lp_bug.messages:
-                if msg.contents.startswith('Created an attachment (id=%d)'
-                                           % attach_id):
+                if msg.text_contents.startswith(
+                        'Created an attachment (id=%d)' % attach_id):
                     break
             else:
                 # could not find the add message, so create one:

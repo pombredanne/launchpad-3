@@ -17,8 +17,15 @@ from canonical.config import config
 __all__ = ['SQLBase', 'quote', 'quote_like', 'quoteIdentifier', 'sqlvalues',
            'ZopelessTransactionManager', 'ConflictingTransactionManagerError',
            'flush_database_updates', 'flush_database_caches', 'cursor',
-           'begin', 'commit', 'rollback', 'alreadyInstalledMsg', 'connect']
+           'begin', 'commit', 'rollback', 'alreadyInstalledMsg', 'connect'
+           'AUTOCOMMIT_ISOLATION', 'READ_COMMITTED_ISOLATION',
+           'SERIALIZED_ISOLATION', 'DEFAULT_ISOLATION']
 
+# As per badly documented psycopg 1 constants
+AUTOCOMMIT_ISOLATION=0
+READ_COMMITTED_ISOLATION=1
+SERIALIZED_ISOLATION=3
+DEFAULT_ISOLATION=SERIALIZED_ISOLATION
 
 # First, let's monkey-patch SQLObject a little, to stop its getID function from
 # returning None for security-proxied SQLObjects!
@@ -100,7 +107,8 @@ class _ZopelessConnectionDescriptor(object):
     for a thread until `_activate` is called, and after `_deactivate` is called.
     """
     def __init__(self, connectionURI, sqlosAdapter=PostgresAdapter,
-                 debug=False, implicitActivate=True, reconnect=False):
+                 debug=False, implicitActivate=True, reconnect=False,
+                 isolation=DEFAULT_ISOLATION):
         self.connectionURI = connectionURI
         self.sqlosAdapter = sqlosAdapter
         self.transactions = {}
@@ -108,6 +116,7 @@ class _ZopelessConnectionDescriptor(object):
         self.implicitActivate = implicitActivate
         self.reconnect = reconnect
         self.alreadyActivated = False
+        self.isolation = isolation
 
     def _reconnect(self):
         first = True
@@ -146,7 +155,9 @@ class _ZopelessConnectionDescriptor(object):
             finally:
                 cur.close()
 
-            # Great!  We have a working connection.  We're done.
+            # Great!  We have a working connection.  We're done once we
+            # have reset the transaction isolation level
+            conn.set_isolation_level(self.isolation)
             return conn
 
     def _activate(self):
@@ -160,6 +171,7 @@ class _ZopelessConnectionDescriptor(object):
             conn = self._reconnect()
         else:
             conn = connectionForURI(self.connectionURI).makeConnection()
+            conn.set_isolation_level(self.isolation)
             self.alreadyActivated = True
 
         # Wrap it in SQLOS's loving arms.
@@ -184,23 +196,23 @@ class _ZopelessConnectionDescriptor(object):
         """Do nothing
 
         This used to issue a warning but it seems to be spurious.
-
         """
         pass
-        #import warnings
-        #warnings.warn("Something tried to set a _connection.  Ignored.")
 
     @classmethod
     def install(cls, connectionURI, sqlClass=SQLBase, debug=False,
-                implicitActivate=True, reconnect=False):
+                implicitActivate=True, reconnect=False,
+                isolation=DEFAULT_ISOLATION):
         if isinstance(sqlClass.__dict__.get('_connection'),
                 _ZopelessConnectionDescriptor):
             # ZopelessTransactionManager.__new__ should now prevent this from
             # happening, so raise an error if it somehow does anyway.
             raise RuntimeError, "Already installed _connection descriptor."
         cls.sqlClass = sqlClass
-        descriptor = cls(connectionURI, debug=debug,
-                         implicitActivate=implicitActivate, reconnect=reconnect)
+        descriptor = cls(
+                connectionURI, debug=debug, implicitActivate=implicitActivate,
+                reconnect=reconnect, isolation=isolation
+                )
         sqlClass._connection = descriptor
         return descriptor
 
@@ -241,7 +253,7 @@ class ZopelessTransactionManager(object):
     alreadyInited = False
 
     def __new__(cls, connectionURI, sqlClass=SQLBase, debug=False,
-                implicitBegin=True):
+                implicitBegin=True, isolation=DEFAULT_ISOLATION):
         if cls._installed is not None:
             if (cls._installed.connectionURI != connectionURI or
                 cls._installed.sqlClass != sqlClass or
@@ -255,11 +267,11 @@ class ZopelessTransactionManager(object):
             warnings.warn(alreadyInstalledMsg, stacklevel=2)
             return cls._installed
         cls._installed = object.__new__(cls, connectionURI, sqlClass, debug,
-                                        implicitBegin)
+                                        implicitBegin, DEFAULT_ISOLATION)
         return cls._installed
 
     def __init__(self, connectionURI, sqlClass=SQLBase, debug=False,
-                 implicitBegin=True):
+                 implicitBegin=True, isolation=DEFAULT_ISOLATION):
         # For some reason, Python insists on calling __init__ on anything
         # returned from __new__, even if it's not a newly constructed object
         # (i.e. type.__call__ calls __init__, rather than object.__new__ like
@@ -275,7 +287,7 @@ class ZopelessTransactionManager(object):
         self.manager = manager
         desc = _ZopelessConnectionDescriptor.install(
             connectionURI, debug=debug, implicitActivate=implicitBegin,
-            reconnect=not implicitBegin)
+            reconnect=not implicitBegin, isolation=isolation)
         self.sqlClass = sqlClass
         self.desc = desc
         # The next two instance variables are used for the check in __new__
@@ -590,7 +602,7 @@ class FakeZopelessTransactionManager:
     # ZopelessTransactionManager implement.
     #   -- Andrew Bennetts, 2005-07-12
 
-    def __init__(self, implicitBegin=False):
+    def __init__(self, implicitBegin=False, isolation=DEFAULT_ISOLATION):
         assert ZopelessTransactionManager._installed is None
         ZopelessTransactionManager._installed = self
         self.desc = FakeZopelessConnectionDescriptor.install(None)

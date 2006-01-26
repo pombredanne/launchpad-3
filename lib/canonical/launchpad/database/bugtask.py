@@ -4,7 +4,6 @@ __metaclass__ = type
 __all__ = [
     'BugTask',
     'BugTaskSet',
-    'BugTaskFactory',
     'bugtask_sort_key']
 
 import urllib
@@ -32,7 +31,7 @@ from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, NotFoundError,
+    IDistroBugTask, IDistroReleaseBugTask, NotFoundError,
     ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage)
 
 
@@ -280,7 +279,7 @@ class BugTask(SQLBase, BugTaskMixin):
             # (e.g. "Unconfirmed, assigned to Foo Bar")
             assignee_html = (
                 '<img src="/++resource++user.gif" /> '
-                '<a href="/malone/assigned?name=%s">%s</a>' % (
+                '<a href="/people/%s/+assignedbugs">%s</a>' % (
                     urllib.quote_plus(assignee.name),
                     cgi.escape(assignee.browsername)))
 
@@ -414,17 +413,6 @@ class BugTaskSet:
                 " (BugTask.targetnamecache ILIKE '%%' || %s || '%%'))" % (
                 searchtext_quoted, searchtext_quoted, searchtext_like_quoted))
 
-        if params.statusexplanation:
-            # XXX: This clause relies on the fact that the Bugtask's fti is
-            # generated using only the values of the statusexplanation column,
-            # which is not true. Unfortunately, there's no way to fix this
-            # right now, and as this doesn't seem to be a big deal, we'll
-            # leave it as is for now. More info:
-            # https://launchpad.net/products/launchpad/+bug/4066
-            # -- Guilherme Salgado, 2005-11-09
-            extra_clauses.append("BugTask.fti @@ ftq(%s)" %
-                                 sqlvalues(params.statusexplanation))
-        
         if params.subscriber is not None:
             clauseTables = ['Bug', 'BugSubscription']
             extra_clauses.append("""Bug.id = BugSubscription.bug AND
@@ -553,9 +541,3 @@ class BugTaskSet:
         return BugTask.select(
             maintainedProductBugTasksQuery + filters,
             clauseTables=['Product', 'TeamParticipation', 'BugTask', 'Bug'])
-
-
-def BugTaskFactory(context, **kw):
-    # XXX kiko: WTF, context is ignored?! LaunchBag? ARGH!
-    return BugTask(bugID=getUtility(ILaunchBag).bug.id, **kw)
-

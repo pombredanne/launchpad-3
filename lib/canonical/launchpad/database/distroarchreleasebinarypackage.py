@@ -11,6 +11,8 @@ __all__ = [
 
 from zope.interface import implements
 
+from canonical.lp.dbschema import PackagePublishingStatus
+
 from canonical.launchpad.interfaces import IDistroArchReleaseBinaryPackage
 
 from canonical.database.sqlbase import sqlvalues
@@ -22,10 +24,15 @@ from canonical.launchpad.database.publishing import \
     BinaryPackagePublishingHistory
 from canonical.launchpad.database.binarypackagerelease import \
     BinaryPackageRelease
-from sourcerer.deb.version import Version
 
 
 class DistroArchReleaseBinaryPackage:
+    """A Binary Package in the context of a Distro Arch Release. 
+
+    Binary Packages are "magic": they don't really exist in the
+    database. Instead, they are synthesized based on information from
+    the publishing and binarypackagerelease tables.
+    """
 
     implements(IDistroArchReleaseBinaryPackage)
 
@@ -91,19 +98,20 @@ class DistroArchReleaseBinaryPackage:
 
     def __getitem__(self, version):
         """See IDistroArchReleaseBinaryPackage."""
-        bpph = BinaryPackagePublishingHistory.select("""
+        bpph = BinaryPackagePublishingHistory.selectOne("""
             BinaryPackagePublishingHistory.distroarchrelease = %s AND
             BinaryPackagePublishingHistory.binarypackagerelease = 
                 BinaryPackageRelease.id AND
-            BinaryPackageRelease.version = %s
-            """ % sqlvalues(self.distroarchrelease.id, version),
-            orderBy='-datecreated',
+            BinaryPackageRelease.version = %s AND
+            BinaryPackageRelease.binarypackagename = %s
+            """ % sqlvalues(self.distroarchrelease.id, version, 
+                            self.binarypackagename.id),
             clauseTables=['binarypackagerelease'])
-        if bpph.count() == 0:
+        if bpph is None:
             return None
         return DistroArchReleaseBinaryPackageRelease(
             distroarchrelease=self.distroarchrelease,
-            binarypackagerelease=bpph[0].binarypackagerelease)
+            binarypackagerelease=bpph.binarypackagerelease)
 
     @property
     def releases(self):
@@ -132,20 +140,22 @@ class DistroArchReleaseBinaryPackage:
     @property
     def currentrelease(self):
         """See IDistroArchReleaseBinaryPackage."""
-        bprs = BinaryPackageRelease.select("""
+        releases = BinaryPackageRelease.select("""
             BinaryPackageRelease.binarypackagename = %s AND
             BinaryPackageRelease.id =
                 BinaryPackagePublishing.binarypackagerelease AND
-            BinaryPackagePublishing.distroarchrelease = %s
+            BinaryPackagePublishing.distroarchrelease = %s AND
+            BinaryPackagePublishing.status = %s
             """ % sqlvalues(self.binarypackagename.id,
-                            self.distroarchrelease.id),
+                            self.distroarchrelease.id,
+                            PackagePublishingStatus.PUBLISHED,
+                            ),
             orderBy='datecreated',
             distinct=True,
             clauseTables=['BinaryPackagePublishing',])
-        
+
         # sort by version
-        releases = sorted(list(bprs), key=lambda item: Version(item.version))
-        if len(releases) == 0:
+        if releases.count() == 0:
             return None
         return DistroArchReleaseBinaryPackageRelease(
             distroarchrelease=self.distroarchrelease,

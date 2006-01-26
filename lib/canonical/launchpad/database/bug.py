@@ -4,6 +4,8 @@
 __metaclass__ = type
 __all__ = ['Bug', 'BugSet']
 
+import re
+
 from sets import Set
 from email.Utils import make_msgid
 
@@ -150,16 +152,26 @@ class Bug(SQLBase):
 
         return sorted(emails)
 
-    # messages
+    # XXX, Brad Bollenbach, 2006-01-13: Setting publish_create_event to False
+    # allows us to suppress the create event when we *don't* want to have a
+    # separate email generated containing just the comment, e.g., when the user
+    # adds a comment on +editstatus. This is hackish though. See:
+    #
+    # https://launchpad.net/products/malone/+bug/25724
     def newMessage(self, owner=None, subject=None, content=None,
-        parent=None):
+                   parent=None, publish_create_event=True):
         """Create a new Message and link it to this ticket."""
-        msg = Message(parent=parent, owner=owner,
-            rfc822msgid=make_msgid('malone'), subject=subject)
+        msg = Message(
+            parent=parent, owner=owner, subject=subject,
+            rfc822msgid=make_msgid('malone'))
         MessageChunk(messageID=msg.id, content=content, sequence=1)
+
         bugmsg = BugMessage(bug=self, message=msg)
-        notify(SQLObjectCreatedEvent(bugmsg, user=owner))
-        return msg
+
+        if publish_create_event:
+            notify(SQLObjectCreatedEvent(bugmsg, user=owner))
+
+        return bugmsg.message
 
     def linkMessage(self, message):
         """See IBug."""
@@ -200,8 +212,11 @@ class Bug(SQLBase):
             self.linkCVE(cve)
 
 
+
 class BugSet:
     implements(IBugSet)
+
+    valid_bug_name_re = re.compile(r'''^[a-z][a-z0-9\\+\\.\\-]+$''')
 
     def get(self, bugid):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
@@ -210,6 +225,17 @@ class BugSet:
         except SQLObjectNotFound:
             raise NotFoundError(
                 "Unable to locate bug with ID %s" % str(bugid))
+
+    def getByNameOrID(self, bugid):
+        """See canonical.launchpad.interfaces.bug.IBugSet."""
+        if self.valid_bug_name_re.match(bugid):
+            bug = Bug.selectOneBy(name=bugid)
+            if bug is None:
+                raise NotFoundError(
+                    "Unable to locate bug with ID %s" % str(bugid))
+        else:
+            bug = self.get(bugid)
+        return bug
 
     def searchAsUser(self, user, duplicateof=None, orderBy=None, limit=None):
         """See canonical.launchpad.interfaces.bug.IBugSet."""
@@ -294,7 +320,7 @@ class BugSet:
 
         # Extract the details needed to create the bug and optional msg.
         if not description:
-            description = msg.contents
+            description = msg.text_contents
 
         if not datecreated:
             datecreated = UTC_NOW
