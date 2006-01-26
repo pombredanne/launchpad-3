@@ -441,7 +441,10 @@ tree "dists/%(DISTRORELEASEONDISK)s"
             db_dr = self.distro[dr]
             for pocket in pocketsuffix:
                 if (pocketsuffix[pocket] == '' and
-                    db_dr.releasestatus > DistributionReleaseStatus.FROZEN
+                    (db_dr.releasestatus not in (
+                    DistributionReleaseStatus.FROZEN,
+                    DistributionReleaseStatus.DEVELOPMENT,
+                    DistributionReleaseStatus.EXPERIMENTAL))
                     and not fullpublish):
                     # We don't write out the entries for releases in the
                     # CURRENT/SUPPORTED/OBSOLETE states (unless we're doinga
