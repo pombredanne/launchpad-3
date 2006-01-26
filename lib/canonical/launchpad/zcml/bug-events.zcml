@@ -5,62 +5,62 @@
 <subscriber
    for="canonical.launchpad.interfaces.IBug
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   factory="canonical.launchpad.subscribers.bugcreation.at_least_one_task" />
+   handler="canonical.launchpad.subscribers.bugcreation.at_least_one_task" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBug
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   factory="canonical.launchpad.mailnotification.notify_bug_added" />
+   handler="canonical.launchpad.mailnotification.notify_bug_added" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBug
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   factory="canonical.launchpad.subscribers.karma.bug_created" />
+   handler="canonical.launchpad.subscribers.karma.bug_created" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBug
         canonical.launchpad.event.interfaces.ISQLObjectToBeModifiedEvent"
-   factory="canonical.launchpad.subscribers.bugprivacy.make_subscriptions_explicit_on_private_bug" />
+   handler="canonical.launchpad.subscribers.bugprivacy.make_subscriptions_explicit_on_private_bug" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBug
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   factory="canonical.launchpad.mailnotification.notify_bug_modified" />
+   handler="canonical.launchpad.mailnotification.notify_bug_modified" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBug
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   factory="canonical.launchpad.subscribers.karma.bug_modified" />
+   handler="canonical.launchpad.subscribers.karma.bug_modified" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugTask
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   factory="canonical.launchpad.mailnotification.notify_bugtask_added" />
+   handler="canonical.launchpad.mailnotification.notify_bugtask_added" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugTask
         zope.app.event.interfaces.IObjectCreatedEvent"
-   factory="canonical.launchpad.subscribers.karma.bugtask_created" />
+   handler="canonical.launchpad.subscribers.karma.bugtask_created" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugTask
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   factory="canonical.launchpad.mailnotification.notify_bugtask_edited" />
+   handler="canonical.launchpad.mailnotification.notify_bugtask_edited" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugTask
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   factory="canonical.launchpad.subscribers.karma.bugtask_modified" />
+   handler="canonical.launchpad.subscribers.karma.bugtask_modified" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugMessage
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   factory="canonical.launchpad.mailnotification.notify_bug_comment_added" />
+   handler="canonical.launchpad.mailnotification.notify_bug_comment_added" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugMessage
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   factory="canonical.launchpad.subscribers.karma.bug_comment_added" />
+   handler="canonical.launchpad.subscribers.karma.bug_comment_added" />
 
 <!-- XXX: Brad Bollenbach, 2005-04-12:
 
@@ -73,74 +73,74 @@
 <subscriber
     for="canonical.launchpad.interfaces.IBugProductInfestation
     zope.app.event.interfaces.IObjectCreatedEvent"
-    factory="canonical.launchpad.mailnotification.notify_bug_product_infestation_added"
+    handler="canonical.launchpad.mailnotification.notify_bug_product_infestation_added"
     />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugProductInfestation
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   factory="canonical.launchpad.mailnotification.notify_bug_product_infestation_modified" />
+   handler="canonical.launchpad.mailnotification.notify_bug_product_infestation_modified" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugPackageInfestation
         zope.app.event.interfaces.IObjectCreatedEvent"
-   factory="canonical.launchpad.mailnotification.notify_bug_package_infestation_added" />
+   handler="canonical.launchpad.mailnotification.notify_bug_package_infestation_added" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugPackageInfestation
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   factory="canonical.launchpad.mailnotification.notify_bug_package_infestation_modified" />
+   handler="canonical.launchpad.mailnotification.notify_bug_package_infestation_modified" />
 
 -->
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugExternalRef
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   factory="canonical.launchpad.subscribers.karma.extref_added" />
+   handler="canonical.launchpad.subscribers.karma.extref_added" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugExternalRef
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   factory="canonical.launchpad.mailnotification.notify_bug_external_ref_added" />
+   handler="canonical.launchpad.mailnotification.notify_bug_external_ref_added" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugExternalRef
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   factory="canonical.launchpad.mailnotification.notify_bug_external_ref_edited" />
+   handler="canonical.launchpad.mailnotification.notify_bug_external_ref_edited" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugCve
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   factory="canonical.launchpad.mailnotification.notify_bug_cve_added" />
+   handler="canonical.launchpad.mailnotification.notify_bug_cve_added" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugCve
         canonical.launchpad.event.interfaces.ISQLObjectDeletedEvent"
-   factory="canonical.launchpad.mailnotification.notify_bug_cve_deleted" />
+   handler="canonical.launchpad.mailnotification.notify_bug_cve_deleted" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugCve
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   factory="canonical.launchpad.subscribers.karma.cve_added" />
+   handler="canonical.launchpad.subscribers.karma.cve_added" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugWatch
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   factory="canonical.launchpad.subscribers.karma.bugwatch_added" />
+   handler="canonical.launchpad.subscribers.karma.bugwatch_added" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugWatch
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   factory="canonical.launchpad.mailnotification.notify_bug_watch_added" />
+   handler="canonical.launchpad.mailnotification.notify_bug_watch_added" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugWatch
         canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-   factory="canonical.launchpad.mailnotification.notify_bug_watch_modified" />
+   handler="canonical.launchpad.mailnotification.notify_bug_watch_modified" />
 
 <subscriber
    for="canonical.launchpad.interfaces.IBugAttachment
         canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-   factory="canonical.launchpad.mailnotification.notify_bug_attachment_added" />
+   handler="canonical.launchpad.mailnotification.notify_bug_attachment_added" />
 
 </configure>

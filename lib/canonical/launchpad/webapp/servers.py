@@ -11,6 +11,7 @@ from zope.server.http.publisherhttpserver import PublisherHTTPServer
 from zope.app.server.servertype import ServerType
 from zope.server.http.commonaccesslogger import CommonAccessLogger
 import zope.publisher.publish
+from zope.publisher.interfaces import IRequest
 
 import canonical.launchpad.layers
 from zope.publisher.browser import BrowserRequest
@@ -106,7 +107,7 @@ class StepsToGo:
 class LaunchpadBrowserRequest(BrowserRequest, NotificationRequest,
                               ErrorReportRequest):
 
-    implements(ILaunchpadBrowserApplicationRequest)
+    implements(IRequest, ILaunchpadBrowserApplicationRequest)
 
     def __init__(self, body_instream, environ, response=None):
         self.breadcrumbs = []

@@ -43,12 +43,12 @@
   <subscriber
     for="canonical.launchpad.interfaces.ISpecification
          canonical.launchpad.event.interfaces.ISQLObjectCreatedEvent"
-    factory="canonical.launchpad.subscribers.karma.spec_created" />
+    handler="canonical.launchpad.subscribers.karma.spec_created" />
 
   <subscriber
     for="canonical.launchpad.interfaces.ISpecification
          canonical.launchpad.event.interfaces.ISQLObjectModifiedEvent"
-    factory="canonical.launchpad.subscribers.karma.spec_modified" />
+    handler="canonical.launchpad.subscribers.karma.spec_modified" />
 
   <browser:pages
     for="canonical.launchpad.interfaces.ISpecification"

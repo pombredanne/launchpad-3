@@ -322,7 +322,7 @@ class Navigation:
     Note that the canonical_url part of Navigation is used outside of
     the browser context.
     """
-    implements(IBrowserPublisher)
+    implements(IBrowserPublisher, IHTTPPublisher)
 
     def __init__(self, context, request=None):
         """Initialize with context and maybe with a request."""

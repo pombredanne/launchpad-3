@@ -13,8 +13,7 @@ from zope.app.form.browser.interfaces import IBrowserWidget
 from zope.app.form.browser.interfaces import IWidgetInputErrorView
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.schema import Int
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('malone')
+from canonical.launchpad import _
 
 # TODO: Abstract out common functionality to simplify widget definition
 

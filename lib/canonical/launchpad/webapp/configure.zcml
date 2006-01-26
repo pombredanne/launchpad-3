@@ -90,7 +90,7 @@
 
     <subscriber
         for="zope.app.appsetup.IDatabaseOpenedEvent"
-        factory="canonical.launchpad.webapp.zodb.bootstrapSubscriber"
+        handler="canonical.launchpad.webapp.zodb.bootstrapSubscriber"
         />
 
     <!-- TALES namespaces. -->
@@ -224,42 +224,42 @@
 
     <subscriber
         for="canonical.launchpad.interfaces.IAfterTraverseEvent"
-        factory="canonical.launchpad.webapp.authentication.handle"
+        handler="canonical.launchpad.webapp.authentication.handle"
         />
 
     <subscriber
         for="zope.app.publication.interfaces.IBeforeTraverseEvent"
-        factory="canonical.launchpad.webapp.authentication.handle"
+        handler="canonical.launchpad.webapp.authentication.handle"
         />
 
     <subscriber
         for="canonical.launchpad.webapp.interfaces.ILoggedInEvent"
-        factory="canonical.launchpad.webapp.authentication.handle"
+        handler="canonical.launchpad.webapp.authentication.handle"
         />
 
     <subscriber
         for="canonical.launchpad.webapp.interfaces.ILoggedOutEvent"
-        factory="canonical.launchpad.webapp.authentication.handle"
+        handler="canonical.launchpad.webapp.authentication.handle"
         />
 
     <subscriber
         for="canonical.launchpad.webapp.interfaces.IPrincipalIdentifiedEvent"
-        factory="canonical.launchpad.webapp.launchbag.set_login_in_launchbag_when_principal_identified"
+        handler="canonical.launchpad.webapp.launchbag.set_login_in_launchbag_when_principal_identified"
         />
 
     <subscriber
         for="zope.app.publication.interfaces.IBeforeTraverseEvent"
-        factory="canonical.launchpad.webapp.launchbag.set_developer_in_launchbag_before_traversal"
+        handler="canonical.launchpad.webapp.launchbag.set_developer_in_launchbag_before_traversal"
         />
 
     <subscriber
         for="canonical.launchpad.webapp.interfaces.ILoggedOutEvent"
-        factory="canonical.launchpad.webapp.launchbag.reset_login_in_launchbag_on_logout"
+        handler="canonical.launchpad.webapp.launchbag.reset_login_in_launchbag_on_logout"
         />
 
     <subscriber
         for="canonical.launchpad.webapp.interfaces.ILoggedOutEvent"
-        factory="canonical.launchpad.webapp.launchbag.reset_developer_in_launchbag_on_logout"
+        handler="canonical.launchpad.webapp.launchbag.reset_developer_in_launchbag_on_logout"
         />
 
     <utility

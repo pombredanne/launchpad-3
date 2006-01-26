@@ -51,7 +51,7 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        name="index.html"
+        name="+index"
         template="launchpad/templates/root-index.pt"
         permission="zope.Public"
         />

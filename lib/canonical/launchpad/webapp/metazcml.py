@@ -364,8 +364,11 @@ def navigation(_context, module, classes):
         layer = IDefaultBrowserLayer
         provides = IBrowserPublisher
         name = ''
-        view(_context, factory, layer, name, for_, permission=PublicPermission,
-             provides=provides)
+        # XXX: Currently broken! -- StuartBishop 20060124
+        view(_context, factory, IRequest, name, for_, layer,
+                permission=PublicPermission, provides=provides)
+        #view(_context, factory, layer, name, for_, permission=PublicPermission,
+        #     provides=provides)
 
 
 class InterfaceInstanceDispatcher:

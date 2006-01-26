@@ -12,8 +12,8 @@ import re
 import os.path
 
 from zope.interface import Interface, Attribute, implements
-from zope.component import getUtility, queryAdapter, getDefaultViewName
-
+from zope.component import getUtility, queryAdapter
+from zope.app import zapi
 from zope.publisher.interfaces import IApplicationRequest
 from zope.publisher.interfaces.browser import IBrowserApplicationRequest
 from zope.app.traversing.interfaces import ITraversable
@@ -75,7 +75,7 @@ class MenuAPI:
         requesturlobj = Url(request.getURL(), request.get('QUERY_STRING'))
         # If the default view name is being used, we will want the url
         # without the default view name.
-        defaultviewname = getDefaultViewName(self._context, request)
+        defaultviewname = zapi.getDefaultViewName(self._context, request)
         if requesturlobj.pathnoslash.endswith(defaultviewname):
             requesturlobj = Url(request.getURL(1), request.get('QUERY_STRING'))
         return requesturlobj

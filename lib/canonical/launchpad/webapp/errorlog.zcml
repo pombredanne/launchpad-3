@@ -22,7 +22,7 @@
 
     <subscriber
         for="zope.app.publication.interfaces.IEndRequestEvent"
-        factory="canonical.launchpad.webapp.errorlog.end_request"
+        handler="canonical.launchpad.webapp.errorlog.end_request"
         />
 
 </configure>
