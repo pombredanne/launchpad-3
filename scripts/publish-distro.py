@@ -177,12 +177,13 @@ try:
     for distrorelease in drs:
         if ((distrorelease.releasestatus in non_careful_domination_states) or
             options.careful or options.careful_domination):
+            debug("Domination for " + distrorelease.name)
             for pocket in PackagePublishingPocket.items:
                 judgejudy.judgeAndDominate(distrorelease, pocket, pubconf)
                 debug("Flushing caches.")
                 clear_cache()
-    debug("Committing.")
-    txn.commit()
+            debug("Committing.")
+            txn.commit()
 except:
     logging.getLogger().exception("Bad muju while dominating")
     txn.abort()
