@@ -97,12 +97,16 @@ class PoppyInterface:
         The password is irrelevant to auth, as is the fsroot"""
         if fsroot not in self.clients:
             raise PoppyInterfaceFailure("Unable to find fsroot in client set")
-        try:
-            d = Distribution.byName(user)
-            if d:
-                self.logger.debug("Accepting login for %s" % user)
-                self.clients[fsroot]["distro"] = user
-                return True
-        except object, e:
-            print e
-        return False
+
+        self.clients[fsroot]["distro"] = "ubuntu"
+        return True
+        
+        #try:
+        #    d = Distribution.byName(user)
+        #    if d:
+        #        self.logger.debug("Accepting login for %s" % user)
+        #        self.clients[fsroot]["distro"] = user
+        #        return True
+        #except object, e:
+        #    print e
+        #return False
