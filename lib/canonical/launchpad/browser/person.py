@@ -202,7 +202,6 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('', text, summary)
 
     def bugs(self):
-        target = '+assignedbugs'
         text = 'Bugs'
         summary = (
             'Bug reports that %s is involved with' % self.context.browsername)
@@ -671,9 +670,10 @@ class BasePersonBugTaskSearchListingView(AdvancedBugTaskSearchView):
     def hasSimpleMode(self):
         return True
 
-    def shouldShowAdvancedForm(self):
+    def shouldShowAdvancedSearchWidgets(self):
         """Return True if this view's advanced form should be shown."""
-        if self.request.get('advanced') and not self.request.get('simple'):
+        form = self.request.form
+        if form.get('advanced') and not form.get('simple'):
             return True
         return False
 
@@ -713,9 +713,9 @@ class PersonAssignedBugTaskSearchListingView(
 
     context_parameter = 'assignee'
 
-    def doNotShowAssignee(self):
-        """Should we not show the assignee in the list of results?"""
-        return True
+    def shouldShowAssignee(self):
+        """Should we show the assignee in the list of results?"""
+        return False
 
 
 class SubscribedBugTaskSearchListingView(BasePersonBugTaskSearchListingView):

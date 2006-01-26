@@ -94,7 +94,7 @@ class DistributionSourcePackageBugsView(AdvancedBugTaskSearchView):
     def hasSimpleMode(self):
         return True
 
-    def shouldShowAdvancedForm(self):
+    def shouldShowAdvancedSearchWidgets(self):
         """Return True if this view's advanced form should be shown."""
         if self.request.get('advanced') and not self.request.get('simple'):
             return True
