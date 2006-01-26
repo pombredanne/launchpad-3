@@ -241,7 +241,9 @@ def do_one_entry(ztm, entry, fsroot, lock):
                 log.debug("Releasing process_upload lock")
                 lock.release()
 
-        if not options.keep or options.dryrun:
+        if options.keep or options.dryrun:
+            log.debug("Keeping contents")
+        else:
             log.debug("Removing upload directory: %s" % entry_path)
             shutil.rmtree(entry_path)
 
@@ -249,8 +251,6 @@ def do_one_entry(ztm, entry, fsroot, lock):
                 log.debug("Removing distro file: %s"
                           % distro_filename)
                 os.unlink(distro_filename)
-        else:
-            log.debug("Keeping contents")
 
         options.distro = options_distro
 
