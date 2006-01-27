@@ -486,8 +486,9 @@ class BuilderGroup:
                               % incoming)
             os.mkdir(incoming)
         # create a single directory to store build result files
-        upload_dir = os.path.join(incoming, "%s" %
-                                  time.strftime("%Y%m%d-%H%m%S"))
+        upload_dir = os.path.join(incoming, "%s-%s" %
+                                  time.strftime("%Y%m%d-%H%m%S"),
+                                  buildid)
         os.mkdir(upload_dir)
         self.logger.debug("Storing build result at '%s'" % upload_dir)
 
