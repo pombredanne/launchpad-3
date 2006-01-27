@@ -143,6 +143,32 @@ this:
     >>> print distrotask.sourcepackagename.name
     evolution
 
+It's possible to file a bug on more than product/package at once:
+
+    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    ... To: new@bugs.canonical.com
+    ... Date: Fri Jun 17 10:20:23 BST 2005
+    ... Subject: Affects many packages
+    ...
+    ... A widespread bug.
+    ...  affects /distros/debian/evolution
+    ...  affects /distros/debian/mozilla-firefox
+    ...  affects /products/evolution
+    ...  affects /products/firefox
+    ... """
+    >>> process_email(submit_mail)
+    >>> bug = get_latest_added_bug()
+
+    >>> print bug.title
+    Affects many packages
+
+    >>> for bugtask in bug.bugtasks:
+    ...     print bugtask.targetname
+    evolution (upstream)
+    firefox (upstream)
+    evolution (Debian)
+    mozilla-firefox (Debian)
+
 
 Add a comment
 -------------
