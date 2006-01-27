@@ -1,0 +1,85 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+  <metal:block fill-slot="head_epilogue">
+    <style>
+      .results th {
+        color: #828282;
+        border: 1px solid #cfcfcf;
+        background-color: #E0E0E0;
+        text-align: left;
+      }
+
+      .results td {
+        border: 1px solid #cfcfcf;
+        background-color: #ededed
+      }
+    </style>
+  </metal:block>
+
+  <metal:leftcolumn fill-slot="column_one">
+  </metal:leftcolumn>
+
+  <metal:rightcolumn fill-slot="portlets_two">
+    <tal:block content="structure context/@@+portlet-otherpackages" />
+  </metal:rightcolumn>
+
+  <div metal:fill-slot="main">
+    <div style="margin-bottom: 2px;">
+      <b><small>mozilla-firefox (Ubuntu) bugs</small></b>
+    </div>
+      <input type="text" size="40" value="foobar" /> <input type="submit" value="Search" />
+      <a href=""><small>Advanced</small></a>
+      <br />
+      <br />
+      <div>
+      <small>Results <b>1 - 50</b> of <b>64</b> bugs matching <a href="">mozilla-firefox (Ubuntu)</a>, <a href="">"foobar"</a>, <a href="">targeted for ubuntu-6.04</a></small>
+      </div>
+    <table class="results">
+      <tr>
+        <th>ID</th><th>Summary</th><th>Importance</th><th>Status</th>
+      </tr>
+      <tr>
+        <td>42</td>
+        <td><a href="">drop-down list in search bar disappears when using blah blah blah</a></td>
+        <td><i style="color: red">Critical</i></td>
+        <td>Confirmed</td>
+      </tr>
+      <tr>
+        <td style="background-color: white">78</td>
+        <td style="background-color: white"><a href="">Moziall-firefox fails to print via cups, possible due to whatever</a></td>
+        <td style="background-color: white">Normal</td>
+        <td style="background-color: white">Confirmed</td>
+      </tr>
+      <tr>
+        <td>110</td>
+        <td><a href="">hangs with 100% cpu loading a page with 'mindterm' applet on JRE.blah</a></td>
+        <td><i style="color: orange">Major</i></td>
+        <td>Confirmed</td>
+      </tr>
+      <tr>
+        <td style="background-color: white">150</td>
+        <td style="background-color: white"><a href="">FTBFS: Not using -fPIC to make shared lib.</a></td>
+        <td style="background-color: white">Normal</td>
+        <td style="background-color: white">Confirmed</td>
+      </tr>
+    </table>
+    <div style="margin-bottom: 5px">
+      <small>Results <b>1 - 50</b> of <b>64</small>
+      <span style="float: right">
+      <small>
+        <span class="unavailable">&laquo; Previous</span>
+          &mdash;
+          <a rel="next"
+             href="">Next &raquo;</a>
+      </small>
+      </span>
+    </div>
+
+  </div>
+</body>
+</html>

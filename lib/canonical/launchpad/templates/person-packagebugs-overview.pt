@@ -1,0 +1,29 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+  </metal:leftportlets>
+
+  <div metal:fill-slot="main">
+    <tal:searchresults condition="request/search|nothing">
+      some search results
+    </tal:searchresults>
+    <a href="#"
+       tal:content="context/displayname"
+       tal:attributes="href context/fmt:url">Sample Person</a>
+    <tal:overview condition="not:request/search|nothing">
+    is receiving bugmail from these packages:
+    </tal:overview>
+
+    <ul>
+      <li tal:repeat="package context/getBugContactPackages"
+          tal:content="package/displayname">mozilla-firefox (Ubuntu)</li>
+    </ul>
+  </div>
+</body>
+</html>

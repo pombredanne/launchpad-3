@@ -1,0 +1,9 @@
+<div class="portlet">
+  <h4>Sample Person's other packages</h4>
+  <div class="portletBody portletContent">
+    <a href="">evolution (Ubuntu)</a><br />
+    <a href="">pmount (Ubuntu)</a>
+    <br /><br />
+    <a href="">Package bugs overview</a>
+  </div>
+</div>
