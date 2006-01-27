@@ -879,9 +879,6 @@ class RedirectToAdvancedBugTasksView(BugTaskSearchListingView):
 class AssignedBugTasksView(RedirectToAdvancedBugTasksView):
     """All open bugs assigned to someone."""
 
-    def unfilteredTaskCount(self):
-        return self.context.unassigned_bugtasks.count()
-
     def getExtraSearchParams(self):
         return {'status': any(*UNRESOLVED_BUGTASK_STATUSES),
                 'assignee': self.user}
@@ -924,6 +921,9 @@ class UntriagedBugTasksView(RedirectToAdvancedBugTasksView):
 
 class UnassignedBugTasksView(RedirectToAdvancedBugTasksView):
     """All open bugs that don't have an assignee."""
+
+    def unfilteredTaskCount(self):
+        return self.context.unassigned_bugtasks.count()
 
     def getExtraSearchParams(self):
         return {'status': any(*UNRESOLVED_BUGTASK_STATUSES), 'assignee': NULL}
