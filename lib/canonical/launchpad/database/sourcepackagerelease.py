@@ -213,11 +213,24 @@ class SourcePackageRelease(SQLBase):
                      sourcepackagerelease=self.id,
                      processor=processor.id, buildstate=status)
 
-
     def getBuildByArch(self, distroarchrelease):
         """See ISourcePackageRelease."""
-        return Build.selectOneBy(sourcepackagereleaseID=self.id,
-                                 distroarchreleaseID=distroarchrelease.id)
+        query = """
+        build.id = binarypackagerelease.build AND
+        binarypackagerelease.id =
+            binarypackagepublishing.binarypackagerelease AND
+        binarypackagepublishing.distroarchrelease = %d AND
+        build.sourcepackagerelease = %d AND
+        binarypackagerelease.architecturespecific = true
+        """  % (distroarchrelease.id, self.id)
+        tables = =['binarypackagerelease', 'binarypackagepublishing']
+        
+        builds = Build.select(query, clauseTables=tables)
+
+        if builds.count() == 0:
+            return None
+
+        return shortlist(builds)[0]
 
     def override(self, component=None, section=None, urgency=None):
         """See ISourcePackageRelease."""
