@@ -66,7 +66,7 @@ class PoppyInterface:
             self.targetcount += 1
             target_fsroot = os.path.join(self.targetpath,
                                          "upload-%s-%06d" % (
-                time.strftime("%Y%m%d-%H%m%S"), self.targetcount))
+                time.strftime("%Y%m%d-%H%M%S"), self.targetcount))
             if not os.path.exists(target_fsroot):
                 try:
                     shutil.move(fsroot, target_fsroot)
