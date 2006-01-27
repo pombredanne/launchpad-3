@@ -640,10 +640,20 @@ To set which source package the bug affects, we use:
 
     >>> submit_commands(bug_four, 'affects /distros/debian/mozilla-firefox')
     >>> len(bug_four.bugtasks)
-    3
+    2
     >>> debian_task = bug_four.bugtasks[-1]
     >>> print debian_task.sourcepackagename.name
     mozilla-firefox
+
+If we specify another source package in the same distribution, a new
+task will be created:
+
+    >>> submit_commands(bug_four, 'affects /distros/debian/evolution')
+    >>> len(bug_four.bugtasks)
+    3
+    >>> evolution_task = bug_four.bugtasks[-2]
+    >>> print evolution_task.sourcepackagename.name
+    evolution
 
 Let's take on the upstream task as well. This time we'll sneak in a
 'subscribe' command between the 'affects' and the other commands, to
