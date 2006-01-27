@@ -26,6 +26,10 @@ from canonical.launchpad.webapp.adapter import (
 
 UTC = pytz.timezone('UTC')
 
+# the section of the OOPS ID before the instance identifier is the
+# days since the epoch, which is defined as the start of 2006.
+epoch = datetime.datetime(2006, 01, 01, 00, 00, 00, tzinfo=UTC)
+
 # Restrict the rate at which errors are sent to the Zope event Log
 # (this does not affect generation of error reports).
 _rate_restrict_pool = {}
@@ -230,9 +234,10 @@ class ErrorReportingService:
             newid = self.lastid
         finally:
             self.lastid_lock.release()
+        day_number = (now - epoch).days + 1
         second_in_day = now.hour * 3600 + now.minute * 60 + now.second
         oops_prefix = config.launchpad.errorreports.oops_prefix
-        oops = 'OOPS-%d%s%d' % (now.day, oops_prefix, newid)
+        oops = 'OOPS-%d%s%d' % (day_number, oops_prefix, newid)
         filename = os.path.join(errordir, '%05d.%s%s' % (second_in_day,
                                                          oops_prefix,
                                                          newid))
