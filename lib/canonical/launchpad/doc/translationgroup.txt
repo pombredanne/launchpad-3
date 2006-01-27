@@ -55,7 +55,7 @@ Let's only allow translators from that group to translate.
     >>> from canonical.lp.dbschema import TranslationPermission
     >>> evolution.translationpermission = TranslationPermission.CLOSED
 
-Daf isn't allowed to translate into Welsh.
+Foo isn't allowed to translate into Welsh.
 
    >>> series = evolution.getSeries('main')
    >>> subset = potemplate_set.getSubset(productseries=series)
@@ -73,7 +73,7 @@ Let's add him to the group.
     ...     language=welsh,
     ...     translator=foo)
 
-Daf *is* allowed to translate into Welsh.
+Foo *is* allowed to translate into Welsh.
 
     >>> pofile.canEditTranslations(foo)
     True

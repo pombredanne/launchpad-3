@@ -339,7 +339,6 @@ class Product(SQLBase):
             product=self, name=name, title=title, url=url, home_page=home_page,
             lifecycle_status=lifecycle_status, summary=summary,
             whiteboard=whiteboard)
-        
 
 
 class ProductSet:

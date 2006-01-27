@@ -1,5 +1,5 @@
 POFile
-------
+======
 
 Get evolution template for Ubuntu Hoary
 
@@ -131,8 +131,8 @@ WARNING:root:The plural form header has an unknown error. Using the default valu
 True
 
 
-isPORevisionDateOlder check
----------------------------
+isPORevisionDateOlder
+---------------------
 
 This method helps to compare two PO files header and decide if the given one
 is older than the one we have in the IPOFile object. We are using this
@@ -168,3 +168,58 @@ Now, we check with a date that is in the past.
     >>> pofile.isPORevisionDateOlder(header)
     True
 
+canEditTranslations
+-------------------
+
+This method determines if someone is allowed to edit officially translations.
+
+Do some needed imports.
+
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from canonical.launchpad.interfaces import ITranslationGroupSet
+    >>> from canonical.launchpad.database import POFile
+    >>> from canonical.launchpad.ftests import login
+    >>> from canonical.lp.dbschema import TranslationPermission
+
+Need extra permissions to change the values.
+
+    >>> login('carlos@canonical.com')
+
+Set a translation group to test the CLOSED mode.
+
+    >>> product = getUtility(IProductSet).getByName('evolution')
+    >>> product.translationgroup = getUtility(
+    ...     ITranslationGroupSet)['testing-translation-team']
+    >>> product.translationpermission = TranslationPermission.CLOSED
+
+Get the IPOFile we are going to use.
+
+    >>> product_series = product.translatable_series[0]
+    >>> potemplate = product_series.getPOTemplate('evolution-2.2')
+    >>> pofile = potemplate.getPOFileByLang('es')
+
+A Launchpad admin must have permission always.
+
+    >>> admins = getUtility(ILaunchpadCelebrities).admin
+    >>> pofile.canEditTranslations(admins)
+    True
+
+And a Rosetta Expert too.
+
+    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+    >>> pofile.canEditTranslations(rosetta_experts)
+    True
+
+But the unpriviledged account should not.
+
+    >>> person_set = getUtility(IPersonSet)
+    >>> no_priv = person_set.getByName('no-priv')
+    >>> pofile.canEditTranslations(no_priv)
+    False
+
+We should revert our changes to prevent other tests to fail
+
+    >>> product.translationgroup = None
+    >>> product.translationpermission = TranslationPermission.OPEN
