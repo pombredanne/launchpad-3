@@ -55,7 +55,7 @@ for RELEASEFILE in $(find $DISTSROOT -name Release); do
 done
 
 # Copy in the indices
-rm $INDICES/*
+rm -f $INDICES/*
 cp $OVERRIDEROOT/override.* $INDICES
 
 # Touch everything you asked us to do

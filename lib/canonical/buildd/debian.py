@@ -85,7 +85,7 @@ class DebianBuildManager(BuildManager):
         args.extend(self._sbuildargs)
         if self.arch_indep:
             args.extend(["-A"])
-        args.extend("--comp=" + self.ogre)
+        args.extend(["--comp=" + self.ogre])
         args.extend([self._dscfile])
         self.runSubProcess( self._sbuildpath, args )
 

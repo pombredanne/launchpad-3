@@ -1,3 +1,22 @@
+launchpad-buildd (23) unstable; urgency=low
+
+  * And make apply-ogre-model use $SUDO, yay
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Fri, 27 Jan 2006 13:59:10 +0000
+
+launchpad-buildd (22) unstable; urgency=low
+
+  * Fix typo in apply-ogre-model (missing space)
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Fri, 27 Jan 2006 13:55:12 +0000
+
+launchpad-buildd (21) unstable; urgency=low
+
+  * Fix the .extend call for the --comp argument to pass it as one argument
+    instead of as - - c o m p = m a i n (which kinda doesn't work)
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Fri, 27 Jan 2006 13:45:34 +0000
+
 launchpad-buildd (20) unstable; urgency=low
 
   * Update sbuild to the latest sbuild from adam.
