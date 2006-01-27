@@ -17,6 +17,10 @@ def main():
     parser.add_option("--cmd", action="store", metavar="CMD",
                       help="Run CMD after each upload completion")
 
+    parser.add_option("--allow-user", action="store", metavar="USER",
+                      default='ubuntu',
+                      help="Username allowed to log in.")
+
     options, args = parser.parse_args()
 
     log = logger(options, "poppy-upload")
@@ -29,8 +33,9 @@ def main():
     host = "0.0.0.0"
     ident = "lucille upload server"
     numthreads = 4
-   
-    iface = PoppyInterface(root, log, cmd=options.cmd)
+
+    iface = PoppyInterface(root, log, allow_user=options.allow_user,
+                           cmd=options.cmd)
 
     run_server(host, int(port), ident, numthreads,
                iface.new_client_hook, iface.client_done_hook,

@@ -19,11 +19,13 @@ class PoppyInterface:
 
     clients = {}
 
-    def __init__(self, targetpath, logger, cmd=None, targetstart=0):
+    def __init__(self, targetpath, logger, allow_user, cmd=None,
+                 targetstart=0):
         self.tm = initZopeless(dbuser='ro')
         self.targetpath = targetpath
         self.logger = logging.getLogger("%s.PoppyInterface" % logger.name)
         self.cmd = cmd
+        self.allow_user = allow_user
         self.targetcount = targetstart
         self.lock = GlobalLock(os.path.join(self.targetpath, ".lock"))
 
@@ -100,9 +102,13 @@ class PoppyInterface:
         if fsroot not in self.clients:
             raise PoppyInterfaceFailure("Unable to find fsroot in client set")
 
-        self.clients[fsroot]["distro"] = "ubuntu"
-        return True
-        
+        # local authentication
+        if user == self.allow_user:
+            self.clients[fsroot]["distro"] = user
+            return True
+        else:
+            return False
+
         #try:
         #    d = Distribution.byName(user)
         #    if d:
