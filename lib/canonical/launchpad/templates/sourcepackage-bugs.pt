@@ -30,7 +30,7 @@
   //-->
   </script>
 
-  <table id="sourcepackagebugs">
+  <table id="sourcepackagebugs" tal:define="should_show_assignee default">
     <tr>
       <td colspan="3">
         <h2 tal:condition="not: view/unresolved_release_bugs"
@@ -68,6 +68,7 @@
     <tr tal:repeat="task view/general_unresolved_bugs">
       <metal:taskrow use-macro="task/@@+bugtask-macros-listview/item" />
     </tr>
+  </table>
 </div>
 
 </body>

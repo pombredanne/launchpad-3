@@ -211,7 +211,6 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('', text, summary)
 
     def bugs(self):
-        target = '+assignedbugs'
         text = 'Bugs'
         summary = (
             'Bug reports that %s is involved with' % self.context.browsername)
@@ -285,6 +284,13 @@ class PersonBugsMenu(ApplicationMenu):
         text = 'Bugs Subscribed'
         return Link('+subscribedbugs', text, icon='bugs')
 
+
+class TeamBugsMenu(PersonBugsMenu):
+
+    usedfor = ITeam
+    facet = 'bugs'
+    links = ['assignedbugs', 'softwarebugs', 'subscribedbugs']
+ 
 
 class PersonSpecsMenu(ApplicationMenu):
 
@@ -662,7 +668,6 @@ class BasePersonBugTaskSearchListingView(AdvancedBugTaskSearchView):
     class. Instead, you should derive from it and use the derived class.
     """
 
-    has_advanced_form = True
     context_parameter = None
 
     def getExtraSearchParams(self):
@@ -671,11 +676,13 @@ class BasePersonBugTaskSearchListingView(AdvancedBugTaskSearchView):
         params[self.context_parameter] = self.context
         return params
 
-    def show_advanced_form(self):
+    def hasSimpleMode(self):
+        return True
+
+    def shouldShowAdvancedSearchWidgets(self):
         """Return True if this view's advanced form should be shown."""
-        request = self.request
-        if ((request.get('advanced') or request.form.get('advanced')) and
-            not request.form.get('simple')):
+        form = self.request.form
+        if form.get('advanced') and not form.get('simple'):
             return True
         return False
 
@@ -715,9 +722,9 @@ class PersonAssignedBugTaskSearchListingView(
 
     context_parameter = 'assignee'
 
-    def doNotShowAssignee(self):
-        """Should we not show the assignee in the list of results?"""
-        return True
+    def shouldShowAssignee(self):
+        """Should we show the assignee in the list of results?"""
+        return False
 
 
 class SubscribedBugTaskSearchListingView(BasePersonBugTaskSearchListingView):
