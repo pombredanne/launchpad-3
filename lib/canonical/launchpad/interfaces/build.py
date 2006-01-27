@@ -38,6 +38,7 @@ class IBuild(Interface):
     title = Attribute("Build Title")
 
     # useful properties
+    was_built = Attribute("Whether or not modified by the builddfarm.")
     build_icon = Attribute("Return the icon url correspondent to buildstate.")
     distribution = Attribute("Shortcut for its distribution.")
     distributionsourcepackagerelease = Attribute("The page showing the "
