@@ -23,8 +23,6 @@ class ISourcePackage(IBugTarget, ITicketTarget):
 
     id = Attribute("ID")
 
-    maintainer = Attribute("Maintainer")
-
     name = Attribute("The text name of this source package, from "
                      "SourcePackageName.")
 

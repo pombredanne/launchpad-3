@@ -12,10 +12,13 @@ fi
 
 LAUNCHPAD_BASE=$1
 
-for dir in sourcecode lib; do
-    for f in $LAUNCHPAD_BASE/$dir/*; do
-        target=$dir/`basename $f`
-        test ! -e $target && ln -sv $f $target;
-    done
+for f in $LAUNCHPAD_BASE/sourcecode/*; do
+    target=sourcecode/`basename $f`
+    if [ ! -e "$f" ]; then
+        echo -n "Couldn't find $f; point me at the top level "
+        echo "directory of your launchpad tree"
+        exit 1
+    fi
+    test ! -e $target && ln -sv $f $target;
 done
 

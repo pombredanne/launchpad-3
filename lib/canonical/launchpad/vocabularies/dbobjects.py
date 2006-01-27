@@ -12,6 +12,7 @@ __all__ = [
     'IHugeVocabulary',
     'SQLObjectVocabularyBase',
     'NamedSQLObjectVocabulary',
+    'BinaryAndSourcePackageNameVocabulary',
     'BinaryPackageNameVocabulary',
     'BinaryPackageVocabulary',
     'BountyVocabulary',
@@ -56,7 +57,8 @@ from zope.security.proxy import isinstance as zisinstance
 from sqlobject import AND, OR, CONTAINSSTRING
 
 from canonical.lp.dbschema import EmailAddressStatus
-from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
+from canonical.database.sqlbase import (
+    SQLBase, quote_like, quote, sqlvalues, cursor)
 from canonical.launchpad.database import (
     Distribution, DistroRelease, Person, SourcePackageRelease,
     SourcePackageName, BinaryPackageRelease, BugWatch, Sprint,
@@ -233,6 +235,66 @@ class CountryNameVocabulary(SQLObjectVocabularyBase):
 
     def _toTerm(self, obj):
         return SimpleTerm(obj, obj.id, obj.name)
+
+
+class BinaryAndSourcePackageNameVocabulary(SQLObjectVocabularyBase):
+    """A vocabulary for searching for binary and sourcepackage names.
+
+    This is useful for, e.g., reporting a bug on a 'package' when a reporter
+    often has no idea about whether they mean a 'binary package' or a 'source
+    package'.
+
+    The value returned by a widget using this vocabulary will be either an
+    ISourcePackageName or an IBinaryPackageName.
+    """
+    implements(IHugeVocabulary)
+
+    def __contains__(self, name):
+        # Is this a source or binary package name?
+        return (
+            SourcePackageName.selectOneBy(name=name) or
+            BinaryPackageName.selectOneBy(name=name))
+
+    def __iter__(self):
+        return self.search(query="")
+
+    def getTermByToken(self, token):
+        # Try to retrieve the binary package name.
+        return self._toTerm(token)
+
+    def search(self, query=None):
+        """Find matching source and binary package names."""
+        if query is None:
+            return
+
+        cur = cursor()
+
+        # Search for matching binary and source package names.
+        #
+        # When a binary package has the same name as a source package, the
+        # binary package name will be returned in the result set, and the
+        # source package name will not. This allows the user to select the
+        # most specific package name possible, without them having to care
+        # about whether that means "source package" or "binary package".
+        quoted_package_name = quote_like(query)
+
+        cur.execute((
+            "SELECT name "
+            "FROM BinaryPackageName "
+            "WHERE name ILIKE '%%' || %s || '%%' "
+            "UNION "
+            "SELECT name FROM SourcePackageName "
+            "WHERE name ILIKE '%%' || %s || '%%' "
+            "ORDER BY name;") % (
+            quoted_package_name, quoted_package_name))
+
+        package_name_rows = cur.fetchall()
+
+        for package_name_row in package_name_rows:
+            yield self._toTerm(package_name_row[0])
+
+    def _toTerm(self, name):
+        return SimpleTerm(name, name, name)
 
 
 class BinaryPackageNameVocabulary(NamedSQLObjectVocabulary):
@@ -438,10 +500,6 @@ class ValidPersonOrTeamVocabulary(
     """
     implements(IHugeVocabulary)
 
-    _join_clause = """
-        SELECT DISTINCT Person.id, Person.displayname FROM Person
-            LEFT OUTER JOIN EmailAddress ON Person.id = EmailAddress.person
-        """
     _all_valid_people_and_teams_clause = """
         (teamowner IS NOT NULL OR (
             teamowner IS NULL AND password IS NOT NULL AND
@@ -484,7 +542,14 @@ class ValidPersonOrTeamVocabulary(
             # No extra clause to filter the results
             pass
 
-        base_query = "%s WHERE %s" % (self._join_clause, where_clause)
+        # We need to use a LEFT OUTER JOIN here because teams may not have an
+        # email address.
+        base_query = """
+            SELECT DISTINCT Person.id, Person.displayname
+            FROM Person
+            LEFT OUTER JOIN EmailAddress ON Person.id = EmailAddress.person
+            WHERE %(where_clause)s
+            """ % {'where_clause': where_clause}
         if not text:
             # No text to filter, no need to do anything.
             return "%s %s" % (base_query, self._orderBy)
@@ -494,15 +559,22 @@ class ValidPersonOrTeamVocabulary(
         # column and the results where text matches the email address. We 
         # need to do this because otherwise the query would be unacceptably
         # slow.
-        fti_clause = "Person.fti @@ ftq(%s)" % quote(text)
-        fti_clause = "%s AND %s" % (base_query, fti_clause)
-        email_clause = (
-            "lower(EmailAddress.email) LIKE %s || '%%'" % quote_like(text))
-        email_clause = "%s AND %s" % (base_query, email_clause)
+        fti_query = "%s AND Person.fti @@ ftq(%s)" % (base_query, quote(text))
+
+        # Now we're going to build the query to match substrings of a
+        # person's/team's email address, and in this case we don't want to use
+        # a LEFT OUTER JOIN.
+        email_query = """
+            SELECT DISTINCT Person.id, Person.displayname
+            FROM Person
+            JOIN EmailAddress ON Person.id = EmailAddress.person
+            WHERE %(where_clause)s
+                  AND lower(EmailAddress.email) LIKE %(text)s || '%%'
+            """ % {'where_clause': where_clause, 'text': quote_like(text)}
         query_str = """
             SELECT DISTINCT *
             FROM (%s UNION %s %s) AS whatever;
-            """ % (fti_clause, email_clause, self._orderBy)
+            """ % (fti_query, email_query, self._orderBy)
         return query_str
 
     def _idToTerm(self, id):

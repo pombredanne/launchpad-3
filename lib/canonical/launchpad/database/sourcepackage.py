@@ -157,17 +157,6 @@ class SourcePackage:
         return self.currentrelease.manifest
 
     @property
-    def maintainer(self):
-        # For backwards compatibility purposes only, since "Maintainership" is
-        # gone. See https://launchpad.net/malone/bugs/5485.
-        warn("SourcePackage.maintainer was deprecated with the "
-             "InitialBugContacts implementation. Please talk to "
-             "bradb about removing this property in the UI and code.",
-             DeprecationWarning)
-
-        return None
-
-    @property
     def releases(self):
         """See ISourcePackage."""
         ret = SourcePackageRelease.select('''
