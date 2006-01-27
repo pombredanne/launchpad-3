@@ -325,16 +325,16 @@ class Distribution(SQLBase):
         assert (source or binary), "searching in an explicitly empty " \
                "space is pointless"
         if source:
-            candidate = SourcePackageFilePublishing.selectOneBy(
+            candidates = SourcePackageFilePublishing.selectBy(
                 distribution=self.id,
                 libraryfilealiasfilename=filename)
-            if candidate is not None:
+            for candidate in candidates:
                 return LibraryFileAlias.get(candidate.libraryfilealias)
         if binary:
-            candidate = BinaryPackageFilePublishing.selectOneBy(
+            candidates = BinaryPackageFilePublishing.selectBy(
                 distribution=self.id,
                 libraryfilealiasfilename=filename)
-            if candidate is not None:
+            for candidate in candidates:
                 return LibraryFileAlias.get(candidate.libraryfilealias)
         raise NotFoundError(filename)
 

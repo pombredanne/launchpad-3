@@ -6,6 +6,7 @@
 import logging
 import shutil
 import os
+import time
 
 from canonical.lp import initZopeless
 from canonical.launchpad.database import Distribution
@@ -19,7 +20,7 @@ class PoppyInterface:
     clients = {}
 
     def __init__(self, targetpath, logger, cmd=None, targetstart=0):
-        self.tm = initZopeless()
+        self.tm = initZopeless(dbuser='ro')
         self.targetpath = targetpath
         self.logger = logging.getLogger("%s.PoppyInterface" % logger.name)
         self.cmd = cmd
@@ -62,7 +63,8 @@ class PoppyInterface:
         while True:
             self.targetcount += 1
             target_fsroot = os.path.join(self.targetpath,
-                                         "upload-%06d" % self.targetcount)
+                                         "upload-%s-%06d" % (
+                time.strftime("%Y%m%d-%H%m%S"), self.targetcount))
             if not os.path.exists(target_fsroot):
                 try:
                     shutil.move(fsroot, target_fsroot)
@@ -97,12 +99,16 @@ class PoppyInterface:
         The password is irrelevant to auth, as is the fsroot"""
         if fsroot not in self.clients:
             raise PoppyInterfaceFailure("Unable to find fsroot in client set")
-        try:
-            d = Distribution.byName(user)
-            if d:
-                self.logger.debug("Accepting login for %s" % user)
-                self.clients[fsroot]["distro"] = user
-                return True
-        except object, e:
-            print e
-        return False
+
+        self.clients[fsroot]["distro"] = "ubuntu"
+        return True
+        
+        #try:
+        #    d = Distribution.byName(user)
+        #    if d:
+        #        self.logger.debug("Accepting login for %s" % user)
+        #        self.clients[fsroot]["distro"] = user
+        #        return True
+        #except object, e:
+        #    print e
+        #return False

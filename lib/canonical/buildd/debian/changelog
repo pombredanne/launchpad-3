@@ -1,3 +1,11 @@
+launchpad-buildd (20) unstable; urgency=low
+
+  * Update sbuild to the latest sbuild from adam.
+  * Make sure we pass --archive=ubuntu
+  * Make sure we pass --comp=<the component we're building for>
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Thu, 26 Jan 2006 17:20:49 +0000
+
 launchpad-buildd (19) unstable; urgency=low
 
   * Add ogre support to the slave chroot tool

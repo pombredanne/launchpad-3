@@ -177,12 +177,13 @@ try:
     for distrorelease in drs:
         if ((distrorelease.releasestatus in non_careful_domination_states) or
             options.careful or options.careful_domination):
+            debug("Domination for " + distrorelease.name)
             for pocket in PackagePublishingPocket.items:
                 judgejudy.judgeAndDominate(distrorelease, pocket, pubconf)
                 debug("Flushing caches.")
                 clear_cache()
-    debug("Committing.")
-    txn.commit()
+            debug("Committing.")
+            txn.commit()
 except:
     logging.getLogger().exception("Bad muju while dominating")
     txn.abort()
@@ -241,14 +242,15 @@ except:
 try:
     # Generate apt-ftparchive config and run.
     debug("Doing apt-ftparchive work.")
-    fn = os.tmpnam()
-    f = file(fn,"w")
+    # fn = os.tmpnam()
+    fn = os.path.join(pubconf.miscroot, "apt.conf")
+    f = file(fn, "w")
     f.write(pub.generateAptFTPConfig(fullpublish=(
         options.careful or options.careful_apt)))
     f.close()
     print fn
 
-    if os.system("apt-ftparchive generate "+fn) != 0:
+    if os.system("apt-ftparchive --no-contents generate "+fn) != 0:
         raise OSError("Unable to run apt-ftparchive properly")
 
 except:
