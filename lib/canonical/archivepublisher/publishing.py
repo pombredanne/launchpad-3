@@ -651,7 +651,7 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                 else:
                     file_stub = "Sources"
                     clean_architecture = architecture
-                    all_architectures.add(architecture)
+
                 file_stub = os.path.join(component, architecture, file_stub)
                 all_files.add(file_stub)
                 all_files.add(file_stub + ".gz")
@@ -672,8 +672,8 @@ Component: %s
 Origin: %s
 Label: %s
 Architecture: %s
-""" % (full_name, distrorelease.version, component, distribution.name,
-       distribution.name, clean_architecture)
+""" % (full_name, distrorelease.version, component, distribution.displayname,
+       distribution.displayname, clean_architecture)
                 f.write(contents)
                 f.close()
 
@@ -681,13 +681,15 @@ Architecture: %s
                  "w")
         f.write("""Origin: %s
 Label: %s
+Version: %s
 Suite: %s
 Codename: %s
 Date: %s
 Architectures: %s
 Components: %s
 Description: %s
-""" % (distribution.name, distribution.name, full_name, full_name,
+""" % (distribution.displayname, distribution.displayname,
+       distribution.version, full_name, full_name,
        datetime.utcnow().strftime("%a, %d %b %Y %k:%M:%S UTC"),
        " ".join(all_architectures), " ".join(all_components),
        distrorelease.summary))
@@ -699,10 +701,19 @@ Description: %s
             self._writeSumLine(full_name, f, file_name, sha)
         f.close()
 
-    def writeReleaseFiles(self):
+    def writeReleaseFiles(self, full_run=False):
         """Write out the Release files for the provided distribution."""
         for distrorelease in self.distro:
             for pocket, suffix in pocketsuffix.items():
+                if ((not full_run) and suffix == ''
+                    and distrorelease.releasestatus not in (
+                    DistributionReleaseStatus.FROZEN,
+                    DistributionReleaseStatus.DEVELOPMENT,
+                    DistributionReleaseStatus.EXPERIMENTAL)):
+                    # We're not doing a full run, the pocket is the release
+                    # pocket and the distrorelease is now 'stable' so we
+                    # should skip writing out a Release file for it.
+                    continue
                 full_distrorelease_name = distrorelease.name + suffix
                 if full_distrorelease_name in self._release_files_needed:
                     self._writeDistroRelease(self.distro,
