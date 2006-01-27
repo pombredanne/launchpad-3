@@ -297,6 +297,9 @@ VOLATILE SECURITY DEFINER AS $$
     # view in sync when updates are made to the EmailAddress table.
     # Note that if the corresponding person is a team, changes to this table
     # have no effect.
+
+    PREF = 4 # Constant indicating preferred email address
+
     if not SD.has_key("delete_plan"):
         param_types = ["int4"]
 
@@ -317,10 +320,10 @@ VOLATILE SECURITY DEFINER AS $$
             SELECT Person.id FROM Person, EmailAddress
             WHERE Person.id = $1
                 AND EmailAddress.person = $1
-                AND status = 4
+                AND status = %(PREF)d
                 AND merged IS NULL
                 AND password IS NOT NULL
-            """, param_types)
+            """ % vars(), param_types)
 
     def is_team(person_id):
         """Return true if person_id corresponds to a team"""
@@ -334,8 +337,6 @@ VOLATILE SECURITY DEFINER AS $$
 
     old = TD["old"] or NoneDict()
     new = TD["new"] or NoneDict()
-
-    PREF = 4
 
     # Short circuit if neither person nor status has changed
     if old["person"] == new["person"] and old["status"] == new["status"]:
