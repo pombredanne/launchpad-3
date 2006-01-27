@@ -250,7 +250,7 @@ try:
     f.close()
     print fn
 
-    if os.system("apt-ftparchive generate "+fn) != 0:
+    if os.system("apt-ftparchive --no-contents generate "+fn) != 0:
         raise OSError("Unable to run apt-ftparchive properly")
 
 except:
