@@ -9174,6 +9174,45 @@ INSERT INTO translator (id, translationgroup, "language", translator, datecreate
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'translator'::pg_catalog.regclass;
 
 
+UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'validpersonorteamcache'::pg_catalog.regclass;
+
+INSERT INTO validpersonorteamcache (id) VALUES (1);
+INSERT INTO validpersonorteamcache (id) VALUES (2);
+INSERT INTO validpersonorteamcache (id) VALUES (6);
+INSERT INTO validpersonorteamcache (id) VALUES (8);
+INSERT INTO validpersonorteamcache (id) VALUES (12);
+INSERT INTO validpersonorteamcache (id) VALUES (13);
+INSERT INTO validpersonorteamcache (id) VALUES (14);
+INSERT INTO validpersonorteamcache (id) VALUES (16);
+INSERT INTO validpersonorteamcache (id) VALUES (17);
+INSERT INTO validpersonorteamcache (id) VALUES (18);
+INSERT INTO validpersonorteamcache (id) VALUES (19);
+INSERT INTO validpersonorteamcache (id) VALUES (20);
+INSERT INTO validpersonorteamcache (id) VALUES (21);
+INSERT INTO validpersonorteamcache (id) VALUES (22);
+INSERT INTO validpersonorteamcache (id) VALUES (23);
+INSERT INTO validpersonorteamcache (id) VALUES (24);
+INSERT INTO validpersonorteamcache (id) VALUES (25);
+INSERT INTO validpersonorteamcache (id) VALUES (27);
+INSERT INTO validpersonorteamcache (id) VALUES (28);
+INSERT INTO validpersonorteamcache (id) VALUES (30);
+INSERT INTO validpersonorteamcache (id) VALUES (31);
+INSERT INTO validpersonorteamcache (id) VALUES (32);
+INSERT INTO validpersonorteamcache (id) VALUES (46);
+INSERT INTO validpersonorteamcache (id) VALUES (50);
+INSERT INTO validpersonorteamcache (id) VALUES (51);
+INSERT INTO validpersonorteamcache (id) VALUES (52);
+INSERT INTO validpersonorteamcache (id) VALUES (53);
+INSERT INTO validpersonorteamcache (id) VALUES (54);
+INSERT INTO validpersonorteamcache (id) VALUES (55);
+INSERT INTO validpersonorteamcache (id) VALUES (56);
+INSERT INTO validpersonorteamcache (id) VALUES (57);
+INSERT INTO validpersonorteamcache (id) VALUES (59);
+
+
+UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'validpersonorteamcache'::pg_catalog.regclass;
+
+
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'vote'::pg_catalog.regclass;
 
 INSERT INTO vote (id, person, poll, preference, "option", token) VALUES (1, NULL, 1, 1, 4, '9WjxQq2V9p');
