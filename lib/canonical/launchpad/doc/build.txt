@@ -31,6 +31,9 @@ Let's check the complex properties of a build object.
   >>> firefox_build.title
   u'i386 build of mozilla-firefox 0.9 in ubuntu warty'
 
+  >>> firefox_build.was_built
+  True
+
   >>> firefox_build.build_icon
   '/++resource++build-success'
 
@@ -157,11 +160,11 @@ Or for a given distroarchrelease.
 And we can find builds for a given distribution by type.
 
   >>> ubuntu.getBuildRecords().count()
-  4
+  5
 
   >>> L = list(ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT))
   >>> len(L)
-  2
+  3
   >>> L[0].buildstate
   <Item FULLYBUILT (1) from <class 'canonical.lp.dbschema.BuildStatus'>>
   >>> L[1].buildstate
