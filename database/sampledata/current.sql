@@ -2987,6 +2987,8 @@ UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg
 
 UPDATE pg_catalog.pg_class SET reltriggers = 0 WHERE oid = 'packagebugcontact'::pg_catalog.regclass;
 
+INSERT INTO packagebugcontact (id, distribution, sourcepackagename, bugcontact) VALUES (1, 1, 1, 16);
+INSERT INTO packagebugcontact (id, distribution, sourcepackagename, bugcontact) VALUES (2, 1, 14, 16);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'packagebugcontact'::pg_catalog.regclass;
