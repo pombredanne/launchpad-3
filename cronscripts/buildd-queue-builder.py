@@ -7,8 +7,9 @@
 #
 __metaclass__ = type
 
+import _pythonpath
+
 import sys
-import logging
 from optparse import OptionParser
 
 from zope.component import getUtility
@@ -29,7 +30,7 @@ _default_lockfile = '/var/lock/buildd-master.lock'
 def rebuildQueue(log):
     """Look for and initialise new build jobs."""
     # setup a transaction manager
-    tm = initZopeless(config.builddmaster.dbuser)
+    tm = initZopeless(dbuser=config.builddmaster.dbuser)
 
     buildMaster = BuilddMaster(log, tm)
 

@@ -23,6 +23,7 @@ import os
 import apt_pkg
 import subprocess
 import shutil
+import time
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -484,17 +485,10 @@ class BuilderGroup:
             self.logger.debug("Creating Incoming directory '%s'"
                               % incoming)
             os.mkdir(incoming)
-
-        upload_dir = os.path.join(incoming, "%s" % buildid)
-        # remove previous files of the same build
-        if os.path.isdir(upload_dir):
-            self.logger.debug("Purging previous results at '%s'"
-                              % upload_dir)
-            shutil.rmtree(upload_dir)
         # create a single directory to store build result files
+        upload_dir = os.path.join(incoming, "%s" %
+                                  time.strftime("%Y%m%d-%H%m%S"))
         os.mkdir(upload_dir)
-        #result_dir = os.path.join(upload_dir, "files")
-        #os.mkdir(result_dir)
         self.logger.debug("Storing build result at '%s'" % upload_dir)
 
         for filename in filemap:

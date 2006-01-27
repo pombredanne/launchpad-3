@@ -7,9 +7,9 @@
 
 __metaclass__ = type
 
+import _pythonpath
+
 import sys
-import logging
-import os
 from optparse import OptionParser
 
 from zope.component import getUtility
@@ -30,7 +30,7 @@ def doSlaveScan(logger):
     """Proceed the Slave Scanning Process."""
 
     # setup a transaction manager
-    tm = initZopeless(config.builddmaster.dbuser)
+    tm = initZopeless(dbuser=config.builddmaster.dbuser)
 
     buildMaster = BuilddMaster(logger, tm)
 

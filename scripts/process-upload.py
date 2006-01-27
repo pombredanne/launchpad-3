@@ -209,7 +209,7 @@ def process_upload(ztm, upload, entry_path):
     return destination
 
 def move_subdirectory(entry_path, subdir):
-    if options.keep:
+    if options.keep or options.dryrun:
         log.debug("Keeping contents untouched")
         return
 
