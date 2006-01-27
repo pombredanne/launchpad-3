@@ -7,9 +7,9 @@
 
 __metaclass__ = type
 
+import _pythonpath
+
 import sys
-import logging
-import os
 from optparse import OptionParser
 
 from zope.component import getUtility
