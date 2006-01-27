@@ -232,5 +232,8 @@ class BuildSet:
         if status:
             condition_clauses.append('buildstate=%s' % sqlvalues(status))
 
+        # exclude gina-generated builds, they have datebuilt = null
+        condition_clauses.append('datebuilt is not null')
+
         return Build.select(' AND '.join(condition_clauses),
                             orderBy="-datebuilt")

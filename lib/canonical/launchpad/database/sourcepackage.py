@@ -448,7 +448,7 @@ class SourcePackage:
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishingHistory.distrorelease = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id 
+                SourcePackageRelease.id AND Build.datebuilt is not null
             """ % sqlvalues(self.sourcepackagename.id, self.distrorelease.id)
         querytxt += status_clause
         return Build.select(querytxt,
