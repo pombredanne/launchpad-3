@@ -12,7 +12,6 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 from zope.i18nmessageid import MessageIDFactory
-from zope.schema import Choice, TextLine, Bool
 
 _ = MessageIDFactory('launchpad')
 
@@ -38,6 +37,7 @@ class IBuild(Interface):
     title = Attribute("Build Title")
 
     # useful properties
+    was_built = Attribute("Whether or not modified by the builddfarm.")
     build_icon = Attribute("Return the icon url correspondent to buildstate.")
     distribution = Attribute("Shortcut for its distribution.")
     distributionsourcepackagerelease = Attribute("The page showing the "
@@ -52,7 +52,7 @@ class IBuild(Interface):
 
         Build record loose its history and is moved to NEEDSBUILD.
         """
-        
+
     def __getitem__(name):
         """Mapped to getBinaryPackageRelease."""
 
