@@ -64,6 +64,7 @@
             </tal:pending>
 
             <tal:was_built condition="build/was_built">
+            <td tal:content="build/datebuilt/fmt:datetime">BUILT</td>
             <td tal:condition="view/showBuilderInfo">
               <tal:block condition="build/builder">
                 <a tal:content="build/builder/title"

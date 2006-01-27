@@ -223,8 +223,9 @@ class SourcePackageRelease(SQLBase):
         build.sourcepackagerelease = %d AND
         binarypackagerelease.architecturespecific = true
         """  % (distroarchrelease.id, self.id)
+
         tables = ['binarypackagerelease', 'binarypackagepublishing']
-        
+
         builds = Build.select(query, clauseTables=tables)
 
         if builds.count() == 0:
