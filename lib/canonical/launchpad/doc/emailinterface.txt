@@ -143,30 +143,56 @@ Person got notified since he's the owner of the product:
     There is a bug in Firefox.
     ...
 
-If we would file a bug on Debian instead, we would submit a mail like
+    >>> stub.test_emails = []
+
+If we would file a bug on Ubuntu instead, we would submit a mail like
 this:
 
     >>> login('test@canonical.com')
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
     ... Date: Fri Jun 17 10:20:23 BST 2005
-    ... Subject: A bug in Debian's Evolution package
+    ... Subject: A bug in Ubuntu's Mozilla package
     ...
-    ... There's a bug in Debian.
-    ...  affects /distros/debian/evolution
+    ... There's a bug in Ubuntu.
+    ...  affects /distros/ubuntu/mozilla-firefox
     ... """
     >>> process_email(submit_mail)
     >>> bug = get_latest_added_bug()
 
     >>> print bug.title
-    A bug in Debian's Evolution package
+    A bug in Ubuntu's Mozilla package
 
     >>> distrotask = bug.bugtasks[0]
     >>> print distrotask.distribution.name
-    debian
+    ubuntu
     >>> print distrotask.sourcepackagename.name
-    evolution
+    mozilla-firefox
 
+A notification was sent to dilys, Foo Bar and Sample Person. Foo
+Bar got notified since he's a bug contact for the mozilla package:
+
+    >>> len(stub.test_emails)
+    3
+    >>> dilys_msg, foo_bar_msg, sample_person_msg = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    >>> dilys_msg['To']
+    'dilys@muse.19inch.net'
+    >>> foo_bar_msg['To']
+    'foo.bar@canonical.com'
+    >>> sample_person_msg['To']
+    'test@canonical.com'
+    >>> print sample_person_msg.get_payload()
+    Public bug reported:
+    ...
+    Affects: mozilla-firefox (Ubuntu)
+    ...
+    There's a bug in Ubuntu.
+    ...
+
+    >>> stub.test_emails = []
 
 Add a comment
 -------------
