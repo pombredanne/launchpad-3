@@ -360,6 +360,8 @@ errorservice_index = 'Error log report'
 
 errorservice_tbentry = 'Traceback entry'
 
+foaf_adminrequestmerge = 'Merge Launchpad accounts'
+
 foaf_mergerequest_sent = 'Merge request sent'
 
 foaf_newteam = 'Register a new team in Launchpad'
