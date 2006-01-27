@@ -486,7 +486,6 @@ class BugTaskSet:
                     bug.subscribe(product.bugcontact)
                 else:
                     bug.subscribe(product.owner)
-
         elif distribution:
             # If a distribution bug contact has been provided, subscribe that
             # contact to all public bugs.
@@ -500,6 +499,8 @@ class BugTaskSet:
                 if package.bugcontacts and not bug.private:
                     for pkg_bugcontact in package.bugcontacts:
                         bug.subscribe(pkg_bugcontact.bugcontact)
+        else:
+            raise AssertionError('Got no bugtask target.')
 
         return BugTask(
             bug=bug,

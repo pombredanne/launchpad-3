@@ -127,7 +127,7 @@ Another example, this time for an upstream:
     >>> sorted(new_bug.notificationRecipientAddresses())
     ['foo.bar@canonical.com', 'mark@hbd.com']
 
-If we would create a bug task on Ubuntu in the same bug, the Ubuntu bug
+If we create a bug task on Ubuntu in the same bug, the Ubuntu bug
 contact will be subscribed:
 
     >>> from canonical.launchpad.interfaces import IBugTaskSet
