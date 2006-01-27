@@ -104,6 +104,7 @@ class PoppyInterface:
 
         # local authentication
         self.clients[fsroot]["distro"] = self.allow_user
+        return True
 
         #try:
         #    d = Distribution.byName(user)
