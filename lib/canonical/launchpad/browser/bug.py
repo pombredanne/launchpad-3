@@ -7,8 +7,6 @@ __all__ = [
     'BugView',
     'BugSetView',
     'BugEditView',
-    'BugAddView',
-    'BugAddingView',
     'BugLinkView',
     'BugUnlinkView',
     'BugRelatedObjectEditView',
@@ -23,7 +21,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, structured, Navigation)
 from canonical.launchpad.interfaces import (
-    IBug, ILaunchBag, IBugSet, IBugLinkTarget,
+    IBug, ILaunchBag, IBugSet, IBugTaskSet, IBugLinkTarget,
     IDistroBugTask, IDistroReleaseBugTask, NotFoundError)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -201,8 +199,18 @@ class BugWithoutContextView:
 class BugAlsoReportInView(SQLObjectAddView):
     """View class for reporting a bug in other contexts."""
 
-    def add(self, content):
-        self.taskadded = content
+    def create(self, product=None, distribution=None, sourcepackagename=None):
+        """Create new bug task.
+
+        Only one of product and distribution may be not None, and
+        if product is None, sourcepackagename has to be None.
+        """
+        self.taskadded = getUtility(IBugTaskSet).createTask(
+            self.context.bug,
+            getUtility(ILaunchBag).user,
+            product=product,
+            distribution=distribution, sourcepackagename=sourcepackagename)
+        return self.taskadded
 
     def nextURL(self):
         """Return the user to the URL of the task they just added."""
@@ -233,35 +241,6 @@ class BugEditView(BugView, SQLObjectEditView):
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.current_bugtask))
-
-
-class BugAddView(SQLObjectAddView):
-    """View for adding a bug."""
-
-    def add(self, content):
-        self.bugadded = content
-        return content
-
-    def create(self, **kw):
-        """"Create a new bug."""
-        return getUtility(IBugSet).createBug(**kw)
-
-    def nextURL(self):
-        bugtask = self.bugadded.bugtasks[0]
-        return canonical_url(bugtask)
-
-
-class BugAddingView(SQLObjectAddView):
-    """A hack for browser:addform's that use IBug as their context.
-
-    Use this class in the class="" of a browser:addform directive
-    for IBug.
-    """
-    def add(self, content):
-        return content
-
-    def nextURL(self):
-        return "."
 
 
 class BugRelatedObjectEditView(SQLObjectEditView):

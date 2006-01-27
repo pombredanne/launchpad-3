@@ -39,7 +39,7 @@
 
   <tal:message repeat="message context/messages">
     <div class="boardComment"
-         tal:condition="python:context.description != message.contents">
+         tal:condition="python:context.description != message.text_contents">
 
       <div class="boardCommentDetails">
         <strong tal:content="message/title">$Message.title</strong>
@@ -53,7 +53,7 @@
 
       <div class="boardCommentBody">
         <tal:comment
-          content="structure message/contents/fmt:text-to-html"
+          content="structure message/text_contents/fmt:text-to-html"
         >
           Comment text.
         </tal:comment>
