@@ -221,7 +221,7 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
 
     def createQueueEntry(pocket, changesfilename, changesfilecontent):
         """Create a queue item attached to this distrorelease and the given
-        pocket. 
+        pocket.
 
         The default state is NEW, sorted sqlobject declaration, any
         modification should be performed via Queue state-machine.

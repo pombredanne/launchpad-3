@@ -167,6 +167,7 @@ def process_upload(ztm, upload, entry_path):
     ztm.begin()
     log.info("Processing upload %s" % upload.changes_filename)
     destination = None
+
     try:
         try:
             upload.process()
@@ -199,10 +200,13 @@ def process_upload(ztm, upload, entry_path):
             log.info("Committing the transaction and any mails associated "
                      "with this upload.")
             ztm.commit()
-            move_subdirectory(entry_path, destination)
     finally:
         ztm.abort()
 
+    if destination is None:
+        destination = "failed"
+
+    return destination
 
 def move_subdirectory(entry_path, subdir):
     if options.keep:
@@ -269,15 +273,22 @@ def do_one_entry(ztm, entry, fsroot, lock):
                 uploads.append(NascentUpload(
                     policy, entry_path, filename, log))
 
+        destination = None
+
         for upload in uploads:
             # XXX [2] Do we really need this lock? See [1].
             log.debug("Acquiring process_upload lock")
             lock.acquire(blocking=True)
             try:
-                process_upload(ztm, upload, entry_path)
+                destination = process_upload(ztm, upload, entry_path)
             finally:
                 log.debug("Releasing process_upload lock")
                 lock.release()
+
+        if destination is None:
+            destination = "failed"
+
+        move_subdirectory(entry_path, destination)
 
         options.distro = options_distro
 

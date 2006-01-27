@@ -16,6 +16,8 @@ Subject: %(CHANGES)s REJECTED
 
 %(REJECTION)s
 
+%(CHANGESFILE)s
+
 ===
 
 If you don't understand why your files were rejected, or if the
@@ -28,6 +30,8 @@ Precedence: bulk
 Subject: %(CHANGES)s is NEW
 
 %(SUMMARY)s
+
+%(CHANGESFILE)s
 
 Your package contains new components which requires manual editing of
 the override file.  It is ok otherwise, so please be patient.  New
@@ -44,6 +48,9 @@ Subject: %(CHANGES)s ACCEPTED INTO %(DISTRO)s/%(DISTRORELEASE)s
 
 Accepted:
 %(SUMMARY)s
+
+%(CHANGESFILE)s
+
 Announcing to %(ANNOUNCE)s
 
 Thank you for your contribution to %(DISTRO)s.

@@ -1619,7 +1619,8 @@ class NascentUpload:
         interpolations = {
             "FROM": self.sender,
             "CHANGES": self.changes_basename,
-            "REJECTION": self.rejection_message
+            "REJECTION": self.rejection_message,
+            "CHANGESFILE": guess_encoding(self.changes['filecontents'])
             }
         self.build_recipients()
         interpolations['TO'] = ", ".join(self.recipients)
@@ -1819,7 +1820,7 @@ class NascentUpload:
                 "FROM": self.sender,
                 "CHANGES": self.changes_basename,
                 "SUMMARY": self.build_summary(),
-                "CHANGESFILE": self.changes['filecontents'],
+                "CHANGESFILE": guess_encoding(self.changes['filecontents']),
                 "DISTRO": self.distro.name,
                 "DISTRORELEASE": self.policy.distroreleasename,
                 "ANNOUNCE": self.policy.announcelist,
