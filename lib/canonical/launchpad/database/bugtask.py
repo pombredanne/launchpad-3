@@ -478,17 +478,17 @@ class BugTaskSet:
         if product:
             assert distribution is None, (
                 "Can't pass both distribution and product.")
-            # If a product bug contact has been provided, subscribe that contact
-            # to all public bugs. Otherwise subscribe the product owner to all
-            # public bugs.
+            # If a product bug contact has been provided, subscribe that
+            # contact to all public bugs. Otherwise subscribe the
+            # product owner to all public bugs.
             if not bug.private:
                 if product.bugcontact:
                     bug.subscribe(product.bugcontact)
                 else:
                     bug.subscribe(product.owner)
         elif distribution:
-            # If a distribution bug contact has been provided, subscribe that
-            # contact to all public bugs.
+            # If a distribution bug contact has been provided, subscribe
+            # that contact to all public bugs.
             if distribution.bugcontact and not bug.private:
                 bug.subscribe(distribution.bugcontact)
 
