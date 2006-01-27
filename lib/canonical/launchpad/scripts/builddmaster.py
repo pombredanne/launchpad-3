@@ -276,7 +276,7 @@ class BuilderGroup:
         distroreleasename = dar.distrorelease.name
         archname = dar.architecturetag
 
-        logfilename = ('%s-%s-%s.%s_%s.log'
+        logfilename = ('buildlog_%s-%s-%s.%s_%s.txt'
                        % (distroname, distroreleasename,
                           archname, sourcename, version))
 
