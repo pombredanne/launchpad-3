@@ -891,6 +891,7 @@ class AssignedBugTasksView(RedirectToAdvancedBugTasksView):
 class OpenBugTasksView(RedirectToAdvancedBugTasksView):
     """All open bugs."""
 
+    @property
     def unfilteredTaskCount(self):
         return self.context.open_bugtasks.count()
 
@@ -901,6 +902,7 @@ class OpenBugTasksView(RedirectToAdvancedBugTasksView):
 class CriticalBugTasksView(RedirectToAdvancedBugTasksView):
     """All open critical bugs."""
 
+    @property
     def unfilteredTaskCount(self):
         return self.context.critical_bugtasks.count()
 
@@ -922,6 +924,7 @@ class UntriagedBugTasksView(RedirectToAdvancedBugTasksView):
 class UnassignedBugTasksView(RedirectToAdvancedBugTasksView):
     """All open bugs that don't have an assignee."""
 
+    @property
     def unfilteredTaskCount(self):
         return self.context.unassigned_bugtasks.count()
 
