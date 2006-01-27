@@ -103,11 +103,7 @@ class PoppyInterface:
             raise PoppyInterfaceFailure("Unable to find fsroot in client set")
 
         # local authentication
-        if user == self.allow_user:
-            self.clients[fsroot]["distro"] = user
-            return True
-        else:
-            return False
+        self.clients[fsroot]["distro"] = self.allow_user
 
         #try:
         #    d = Distribution.byName(user)
