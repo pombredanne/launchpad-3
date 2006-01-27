@@ -312,6 +312,13 @@ class IPerson(IHasSpecifications):
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
 
+    def getBugContactPackages():
+        """Return a list of packages for which this person is a bug contact.
+
+        Returns a list of IDistributionSourcePackage's, ordered alphabetically
+        (A to Z) by name.
+        """
+
     def getBranch(product_name, branch_name):
         """The branch associated to this person and product with this name.
 

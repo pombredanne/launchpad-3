@@ -10,18 +10,14 @@
   </metal:leftportlets>
 
   <div metal:fill-slot="main">
-
-    <metal:page
-        use-macro="context/@@+bugtask-macros-buglisting/page"
-        tal:define="task_batch_navigator view/search">
-
-      <metal:heading fill-slot="heading">
-        <h1>Bugs on software maintained by <span tal:replace="context/browsername" /></h1>
-      </metal:heading>
-
-    </metal:page>
-
+    Sample Person is also a bug contact for: <a href="">evolution</a>, <a href="">pmount</a> <br /><br />
+    <div style="margin-bottom: 5px; border-width: 0px 0px 1px 0px; border-style: solid">
+      <b>Search bugs in mozilla-firefox (Ubuntu)</b>
+    </div>
+    <br />
+      <center><input type="text" size="40" /> <input type="submit" value="Search" />
+      <a href=""><small>Advanced</small></a></center>
+    <br /><br />
   </div>
-
 </body>
 </html>

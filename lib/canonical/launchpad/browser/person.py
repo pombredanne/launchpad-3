@@ -50,7 +50,7 @@ from zope.app.content_types import guess_content_type
 from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.component import getUtility
+from zope.component import getUtility, getView
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any
@@ -120,6 +120,14 @@ class PersonNavigation(Navigation, CalendarTraversalMixin,
     usedfor = IPerson
 
     redirection("+bugs", "+assignedbugs")
+
+    @stepthrough("+packagebugs")
+    def traverse_packagebugs(self, name):
+        raise AssertionError, "got here"
+
+    def traverse(self, name):
+        if name == "+packagebugs":
+            return getView(self.context, "+packagebugs-overview", self.request)
 
     def breadcrumb(self):
         return self.context.displayname

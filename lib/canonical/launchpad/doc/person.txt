@@ -1,9 +1,9 @@
 Person
 ======
 
-In Launchpad, the Person class is overloaded to represent both people
-and teams. Let's log in as Robert Collins to ensure we have the
-privileges to do what we're going to demonstrate.
+The Person class is overloaded to represent both people and teams. Let's log in
+as Robert Collins to ensure we have the privileges to do what we're going to
+demonstrate.
 
 >>> from zope.component import getUtility
 >>> from zope.interface.verify import verifyObject
@@ -29,7 +29,7 @@ True
 Access to people (Persons or Teams) is done through the IPersonSet
 utility:
 
-You can create a new person using the createPersonAndEmail method of 
+You can create a new person using the createPersonAndEmail method of
 IPersonSet. All you need for that is a valid email address.
 >>> p, email = personset.createPersonAndEmail('randomuser@randomhost.com')
 >>> p.teamowner is None
@@ -43,7 +43,7 @@ False
 True
 
 An IPerson has an inTeam method to allow us to easily check if a
-person is a member of a team. It accepts an object implementing 
+person is a member of a team. It accepts an object implementing
 IPerson, which is the common use case when checking permissions.
 
 >>> ddaa = personset.getByName('ddaa')
@@ -343,3 +343,28 @@ Maintainer.
 ...            sprelease.version)
 (u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
 (u'cnews', u'Ubuntu Hoary', u'cr.g7-37')
+
+
+Bug contact packages
+--------------------
+
+A person who chooses to receive all bugmail for a package is said to be
+a "bug contact" for that package. A package may have zero, one, or more
+bug contacts.
+
+IPerson.getBugContactPackages returns this list of packages, sorted
+alphabetically (A to Z) by package name.
+
+!!! XXX REMOVE THIS !!!
+
+>>> from canonical.launchpad.interfaces import IDistributionSet
+>>> ubuntu = getUtility(IDistributionSet).get(1)
+>>> umf = ubuntu.getSourcePackage("mozilla-firefox")
+>>> pmount = ubuntu.getSourcePackage("pmount")
+>>> umf.addBugContact(foobar)
+>>> pmount.addBugContact(foobar)
+
+!!!!!!!!!!!!!!!!!!!!!!!
+
+>>> [package.name for package in foobar.getBugContactPackages()]
+[u'mozilla-firefox', u'pmount']

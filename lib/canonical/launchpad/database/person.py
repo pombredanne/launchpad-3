@@ -34,13 +34,14 @@ from canonical.launchpad.interfaces import (
     IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
     UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet, IKarmaSet,
     KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, IKarmaCacheSet)
-
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
 from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.karma import (
     KarmaAction, Karma, KarmaCategory)
+from canonical.launchpad.database.packagebugcontact import PackageBugContact
 from canonical.launchpad.database.shipit import ShippingRequest
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
@@ -301,6 +302,22 @@ class Person(SQLBase):
         """See IPerson."""
         return Branch.select('owner=%d AND (author!=%d OR author is NULL)'
                              % (self.id, self.id), orderBy='-id')
+
+    def getBugContactPackages(self):
+        """See IPerson."""
+        package_bug_contacts = shortlist(
+            PackageBugContact.selectBy(bugcontactID=self.id),
+            longest_expected=25)
+
+        packages_for_bug_contact = []
+        for package_bug_contact in package_bug_contacts:
+            packages_for_bug_contact.append(
+                package_bug_contact.distribution.getSourcePackage(
+                    package_bug_contact.sourcepackagename))
+
+        packages_for_bug_contact.sort(key=lambda x: x.name)
+
+        return packages_for_bug_contact
 
     def getBranch(self, product_name, branch_name):
         """See IPerson."""
