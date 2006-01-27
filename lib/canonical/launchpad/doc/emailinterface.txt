@@ -34,7 +34,7 @@ But if you want you can use any of the available commands as well.
 
 Let's take an example where we file a bug on Firefox:
 
-    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    >>> submit_mail = """From: Foo Bar <foo.bar@canonical.com>
     ... To: new@bugs.launchpad.ubuntu.com
     ... Date: Fri Jun 17 10:20:23 BST 2005
     ... Subject: A bug in Firefox
@@ -59,7 +59,7 @@ And since we'll pass the email directly to the correct handler,
 we'll have to authenticate the user manually:
 
     >>> from canonical.launchpad.ftests import login
-    >>> login('test@canonical.com')
+    >>> login('foo.bar@canonical.com')
 
 Now if we pass the message to the Malone handler, we can see that the
 bug got submitted correctly:
@@ -118,18 +118,21 @@ And the entire body of the email was added as a comment:
 The owner of the bug was set to the submitter:
 
     >>> print bug.owner.displayname
-    Sample Person
+    Foo Bar
 
-A notification was sent to dilys and to Sample Person:
+A notification was sent to dilys, Foo Bar and Sample Person. Sample
+Person got notified since he's the owner of the product:
 
     >>> len(stub.test_emails)
-    2
-    >>> dilys_msg, sample_person_msg = [
+    3
+    >>> dilys_msg, foo_bar_msg, sample_person_msg = [
     ...     email.message_from_string(raw_message)
     ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
     ...     ]
     >>> dilys_msg['To']
     'dilys@muse.19inch.net'
+    >>> foo_bar_msg['To']
+    'foo.bar@canonical.com'
     >>> sample_person_msg['To']
     'test@canonical.com'
     >>> print sample_person_msg.get_payload()
@@ -143,6 +146,7 @@ A notification was sent to dilys and to Sample Person:
 If we would file a bug on Debian instead, we would submit a mail like
 this:
 
+    >>> login('test@canonical.com')
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
     ... Date: Fri Jun 17 10:20:23 BST 2005
