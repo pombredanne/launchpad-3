@@ -160,11 +160,11 @@ Or for a given distroarchrelease.
 And we can find builds for a given distribution by type.
 
   >>> ubuntu.getBuildRecords().count()
-  5
+  4
 
   >>> L = list(ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT))
   >>> len(L)
-  3
+  2
   >>> L[0].buildstate
   <Item FULLYBUILT (1) from <class 'canonical.lp.dbschema.BuildStatus'>>
   >>> L[1].buildstate

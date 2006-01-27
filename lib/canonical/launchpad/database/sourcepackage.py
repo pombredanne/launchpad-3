@@ -16,7 +16,8 @@ from canonical.database.sqlbase import (
 from canonical.database.constants import UTC_NOW
 
 from canonical.lp.dbschema import (
-    BugTaskStatus, BugTaskSeverity, PackagingType, PackagePublishingPocket)
+    BugTaskStatus, BugTaskSeverity, PackagingType, PackagePublishingPocket,
+    BuildStatus)
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
@@ -439,19 +440,23 @@ class SourcePackage:
 
     def getBuildRecords(self, status=None):
         """See IHasBuildRecords"""
-        status_clause = ''
-        if status:
-            status_clause = "AND Build.buildstate=%s" % sqlvalues(status)
-
-        querytxt = """
+        query = """
             Build.sourcepackagerelease = SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishingHistory.distrorelease = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id 
+                SourcePackageRelease.id
             """ % sqlvalues(self.sourcepackagename.id, self.distrorelease.id)
-        querytxt += status_clause
-        return Build.select(querytxt,
-            clauseTables=['SourcePackageRelease',
-                          'SourcePackagePublishingHistory'],
+
+        # exclude gina-generated builds
+        # buildstate == FULLYBUILT && datebuilt == null
+        query += (" AND NOT (Build.buildstate=%s AND Build.datebuilt is NULL)"
+                  % sqlvalues(BuildStatus.FULLYBUILT))
+
+        if status is not None:
+            query += "AND Build.buildstate=%s" % sqlvalues(status)
+
+        return Build.select(
+            query, clauseTables=['SourcePackageRelease',
+                                 'SourcePackagePublishingHistory'],
             orderBy="-datebuilt")

@@ -228,8 +228,14 @@ class BuildSet:
             condition_clauses = [('distroarchrelease IN %s'
                                   % sqlvalues(arch_ids))]
 
+        # exclude gina-generated builds
+        # buildstate == FULLYBUILT && datebuilt == null
+        condition_clauses.append(
+            "NOT (Build.buildstate = %s AND Build.datebuilt is NULL)"
+            % sqlvalues(BuildStatus.FULLYBUILT))
+
         # attempt to given status
-        if status:
+        if status is not None:
             condition_clauses.append('buildstate=%s' % sqlvalues(status))
 
         return Build.select(' AND '.join(condition_clauses),
