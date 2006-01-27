@@ -23,8 +23,9 @@ from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.database.distroarchrelease import PocketChroot
 
+
 def addFile(filepath, client):
-    """Add a file to librarian."""        
+    """Add a file to librarian."""
     # verify filepath
     if not filepath:
         print 'Filepath is required'
@@ -43,9 +44,8 @@ def addFile(filepath, client):
     filename = os.path.basename(filepath)
     ftype = filenameToContentType(filename)
 
-    alias = client.addFile(filename, flen, fd, contentType=ftype)
+    return client.addFile(filename, flen, fd, contentType=ftype)
 
-    return alias
 
 def addChroot(replace, where, architecture, filepath):
     ubuntu = getUtility(IDistributionSet)['ubuntu']
@@ -56,20 +56,22 @@ def addChroot(replace, where, architecture, filepath):
     alias = addFile(filepath, client)
 
     if replace:
-        existing = PocketChroot.selectBy(distroarchreleaseID=dar.id,
-                                         pocket=pocket.value)
-        if existing:
+        existing = PocketChroot.selectOneBy(distroarchreleaseID=dar.id,
+                                            pocket=pocket.value)
+        if existing is not None:
             existing.chroot = alias
         else:
-            print >>sys.stderr, "No existing chroot found to update"
+            print >> sys.stderr, "No existing chroot found to update"
             sys.exit(1)
     else:
         PocketChroot(distroarchrelease=dar, pocket=pocket, chroot=alias)
 
-if __name__ == '__main__':
-    parser = OptionParser(usage='%prog {add|update} <distrorelease> <arch> <tarfile>')
 
-    (options,args) = parser.parse_args()
+if __name__ == '__main__':
+    parser = OptionParser(usage='%prog {add|update} <distrorelease> '
+                                '<arch> <tarfile>')
+
+    (options, args) = parser.parse_args()
 
     if not args:
         parser.print_usage(file=sys.stderr)
