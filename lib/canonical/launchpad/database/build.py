@@ -81,6 +81,11 @@ class Build(SQLBase):
             self.distroarchrelease.distrorelease.name)
 
     @property
+    def was_built(self):
+        """See IBuild"""
+        return self.buildstate is not BuildStatus.NEEDSBUILD
+
+    @property
     def build_icon(self):
         """See IBuild"""
 
@@ -143,9 +148,7 @@ class Build(SQLBase):
                                    essential, installedsize,
                                    copyright, licence,
                                    architecturespecific):
-
         """See IBuild."""
-
         return BinaryPackageRelease(buildID=self.id,
                                     binarypackagenameID=binarypackagename,
                                     version=version,

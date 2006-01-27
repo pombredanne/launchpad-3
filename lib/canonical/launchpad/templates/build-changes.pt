@@ -12,7 +12,7 @@
 <div metal:fill-slot="main">
 
     <h1>"Changes" (.dsc) File</h1>
-    
+
     <pre tal:content="context/changes" />
 
 </div>

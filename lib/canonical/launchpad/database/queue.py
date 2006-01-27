@@ -176,7 +176,7 @@ class DistroReleaseQueue(SQLBase):
         for queue_source in self.sources:
             return queue_source.sourcepackagerelease.dateuploaded
         for queue_build in self.builds:
-            return queue_build.build.datecreated
+            return queue_build.build.binarypackages[0].datecreated
 
     @property
     def age(self):

@@ -263,12 +263,24 @@ class BuilderGroup:
 
         slave.build(buildid, buildtype, chroot, filemap, args)
 
-    def getLogFromSlave(self, slave, buildid, librarian):
+    def getLogFromSlave(self, slave, queueItem, librarian):
         """Get last buildlog from slave.
 
         Invoke getFileFromSlave method with 'buildlog' identifier.
         """
-        return self.getFileFromSlave(slave, "log-for-%s.txt" % buildid,
+        sourcename = queueItem.build.sourcepackagerelease.name
+        version = queueItem.build.sourcepackagerelease.version
+
+        dar = queueItem.build.distroarchrelease
+        distroname = dar.distrorelease.distribution.name
+        distroreleasename = dar.distrorelease.name
+        archname = dar.architecturetag
+
+        logfilename = ('%s-%s-%s.%s_%s.log'
+                       % (distroname, distroreleasename,
+                          archname, sourcename, version))
+
+        return self.getFileFromSlave(slave, logfilename,
                                      'buildlog', librarian)
 
     def getFileFromSlave(self, slave, filename, sha1sum, librarian):
@@ -452,7 +464,7 @@ class BuilderGroup:
 
         Store Buildlog, datebuilt, duration and builder signature.
         """
-        queueItem.build.buildlog = self.getLogFromSlave(slave, buildid,
+        queueItem.build.buildlog = self.getLogFromSlave(slave, queueItem,
                                                         librarian)
         queueItem.build.datebuilt = UTC_NOW
         # we need dynamic datetime.now() instance to be able to perform
