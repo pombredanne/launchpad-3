@@ -39,6 +39,8 @@ vocabulary registry.
     >>> from zope.schema.vocabulary import getVocabularyRegistry
     >>> vocabulary_registry = getVocabularyRegistry()
     >>> product_vocabulary = vocabulary_registry.get(None, "Product")
+    >>> product_vocabulary.displayname
+    'Select a Product'
 
 Enumerable Vocabularies
 =======================
@@ -65,6 +67,8 @@ o DistroReleaseVocabulary - reflects the available distribution releases.
 
     >>> distrorelease_vocabulary = vocabulary_registry.get(
     ...     None,"DistroRelease")
+    >>> distrorelease_vocabulary.displayname
+    'Select a Distribution Release'
     >>> for term in distrorelease_vocabulary:
     ...     print "%s %20s %s" % (term.value, term.token, term.title)
     7 debian/sarge         Sarge
@@ -99,6 +103,8 @@ o BinaryAndSourcePackageNameVocabulary - the list of binary and source
 
     >>> package_name_vocabulary = vocabulary_registry.get(
     ...     None, "BinaryAndSourcePackageName")
+    >>> package_name_vocabulary.displayname
+    'Select a Package'
 
 When a package name matches both a binary package name and a source
 package of the exact same name, the binary package name is
@@ -139,6 +145,9 @@ o ProjectVocabulary - the list of selectable projects. The results are
   ordered by displayname.
 
     >>> project_vocabulary = vocabulary_registry.get(None, "Project")
+    >>> project_vocabulary.displayname
+    'Select a Project'
+
     >>> [p.title for p in project_vocabulary.search('mozilla')]
     [u'The Mozilla Project']
     >>> mozilla = project_vocabulary.getTermByToken('mozilla')
@@ -168,6 +177,9 @@ o ProductVocabulary - the list of selectable products. Results are
   ordered by displayname.
 
     >>> product_vocabulary = vocabulary_registry.get(None, "Product")
+    >>> product_vocabulary.displayname
+    'Select a Product'
+
     >>> product_vocabulary.search(None)
     []
     >>> gnome_products = product_vocabulary.search("gnome")
@@ -205,6 +217,9 @@ o ProductReleaseVocabulary - the list of selectable products releases.
 
     >>> productrelease_vocabulary = vocabulary_registry.get(None,
     ...                                                     "ProductRelease")
+    >>> productrelease_vocabulary.displayname
+    'Select a Product Release'
+
     >>> list(productrelease_vocabulary.search(None))
     []
     >>> evolution_releases = productrelease_vocabulary.search("evolution")
@@ -218,6 +233,8 @@ o PersonAccountToMergeVocabulary - all non-merged people. This vocabulary
   is meant to be used only in the people merge form.
 
     >>> vocab = vocabulary_registry.get(None, "PersonAccountToMerge")
+    >>> vocab.displayname
+    'Select a Person to Merge'
 
     Searching for None returns an empty list.
     >>> vocab.search(None)
@@ -279,13 +296,16 @@ o ValidPersonOrTeam - all 'valid' persons or teams. This is currently defined
   (Person.merged is None) or any team.
 
     >>> vocab = vocabulary_registry.get(None, "ValidPersonOrTeam")
-    >>> vocab.search(None)
+    >>> vocab.displayname
+    'Select a Person or Team'
+
+    >>> list(vocab.search(None))
     []
 
     Almost all teams have the word 'team' as part of their names, so a search
     for 'team' should give us some of them.
-    >>> [t.token for t in vocab.search('team')]
-    ['name21', 'name18', 'support@ubuntu.com', 'name19', 'name20', 'testing-spanish-team']
+    >>> sorted([t.token for t in vocab.search('team')])
+    ['name18', 'name19', 'name20', 'name21', 'support@ubuntu.com', 'testing-spanish-team']
 
     A search for 'support' will give us only the persons which have support
     as part of their name/displayname/givenname/familyname or the beginning of
@@ -304,13 +324,16 @@ o ValidPersonOrTeam - all 'valid' persons or teams. This is currently defined
 o ValidOwner - all valid persons and teams are also valid owners.
 
     >>> vocab = vocabulary_registry.get(None, "ValidOwner")
-    >>> vocab.search(None)
+    >>> vocab.displayname
+    'Select a Person or Team'
+
+    >>> list(vocab.search(None))
     []
 
     Almost all teams have the word 'team' as part of their names, so a search
     for 'team' should give us some of them.
-    >>> [t.token for t in vocab.search('team')]
-    ['name21', 'name18', 'support@ubuntu.com', 'name19', 'name20', 'testing-spanish-team']
+    >>> sorted([t.token for t in vocab.search('team')])
+    ['name18', 'name19', 'name20', 'name21', 'support@ubuntu.com', 'testing-spanish-team']
 
 o ValidTeamMember - With the exception of all teams that have this team as a
   member and the team itself, all valid persons and teams are valid
@@ -334,6 +357,9 @@ o ValidTeamMember - With the exception of all teams that have this team as a
  
     'name16' is a valid member for 'name17'
     >>> vocab = vocabulary_registry.get(team, "ValidTeamMember")
+    >>> vocab.displayname
+    'Select a Person or Team'
+
     >>> person in vocab
     True
     >>> [t.token for t in vocab.search('foo.bar')]
@@ -370,6 +396,9 @@ o ValidTeamOwner - With the exception of the team itself and all teams owned
 
     'name17' is not a valid owner for itself.
     >>> vocab = vocabulary_registry.get(team, "ValidTeamOwner")
+    >>> vocab.displayname
+    'Select a Person or Team'
+
     >>> team in vocab
     False
     >>> [t.token for t in vocab.search('name17')]
@@ -384,6 +413,9 @@ o ValidTeamOwner - With the exception of the team itself and all teams owned
 o Processor - all processors type available in Launchpad.
 
     >>> vocab = vocabulary_registry.get(None, "Processor")
+    >>> vocab.displayname
+    'Select a Processor'
+
     >>> stuff = vocab.search('386')
     >>> [t.token for t in stuff]
     ['386']
@@ -391,6 +423,9 @@ o Processor - all processors type available in Launchpad.
 o SchemaVocabulary - launchpad Schema Vocabulary..
 
     >>> vocabulary = vocabulary_registry.get(None,"Schema")
+    >>> vocabulary.displayname
+    'Select a Schema'
+
     >>> list(vocabulary.search(None))
     []
     >>> schemas_vocabulary = vocabulary.search("m")

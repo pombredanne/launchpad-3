@@ -137,27 +137,24 @@ class SinglePopupView(object):
     batchsize = 15
 
     def title(self):
-        return _(u'Select %s' % self.request.form['vocabulary'])
+        """See ISinglePopupView"""
+        return self.vocabulary().displayname
 
     def vocabulary(self):
+        """See ISinglePopupView"""
         factory = zapi.getUtility(IVocabularyFactory,
-            self.request.form['vocabulary']
-            )
+            self.request.form['vocabulary'])
         vocabulary = factory(self.context)
-        assert IHugeVocabulary.providedBy(vocabulary), \
-                'Invalid vocabulary %s' % self.request.form['vocabulary']
+        assert IHugeVocabulary.providedBy(vocabulary), (
+            'Invalid vocabulary %s' % self.request.form['vocabulary'])
         return vocabulary
 
     def batch(self):
-        # TODO: Dead chickens here! batching module needs refactoring.
-        # batch_end seems pointless too
-        # StuartBishop 2004/11/12
+        """See ISinglePopupView"""
         start = int(self.request.get('batch_start', 0))
-        #end = int(self.request.get('batch_end', self.batchsize))
-        search = self.request.get('search', None)
+        search_text = self.request.get('search', None)
         batch = Batch(
-                list=list(self.vocabulary().search(search)),
-                start=start, size=self.batchsize
-                )
+            list=list(self.vocabulary().search(search_text)),
+            start=start, size=self.batchsize)
         return BatchNavigator(batch=batch, request=self.request)
 

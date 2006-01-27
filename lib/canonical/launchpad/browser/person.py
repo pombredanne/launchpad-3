@@ -1587,7 +1587,7 @@ class PersonEditEmailsView:
                  self.context.id)
 
         assert emailaddress.status == EmailAddressStatus.VALIDATED
-        self.context.preferredemail = emailaddress
+        self.context.setPreferredEmail(emailaddress)
         self.message = "Your contact address has been changed to: %s" % email
 
 
