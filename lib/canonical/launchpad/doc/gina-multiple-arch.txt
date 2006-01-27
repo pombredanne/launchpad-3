@@ -189,7 +189,7 @@ And that one of the packages in main is here too:
     >>> print ekg.architecturespecific
     True
     >>> print ekg.build.processor.name
-    i386
+    386
 
 Check that the package it generates in universe was successfully
 processed. In particular, its section should be stripped of the
