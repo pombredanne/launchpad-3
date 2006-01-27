@@ -228,7 +228,10 @@ class SourcePackageRelease(SQLBase):
         builds = Build.select(query, clauseTables=tables)
 
         if builds.count() == 0:
-            return None
+            builds = Build.selectBy(distroarchreleaseID=distroarchrelease.id,
+                                    sourcepackagereleaseID=self.id)
+            if builds.count() == 0:
+                return None
 
         return shortlist(builds)[0]
 
