@@ -804,12 +804,16 @@ class BuilddMaster:
                 self._logger.debug(header + "ABORT EMPTY ARCHHINTLIST")
                 continue
 
+            hintlist = release.architecturehintlist
+            if hintlist == 'any':
+                hintlist = " ".join([arch.architecturetag for arch in archs])
+
             # Verify if the sourcepackagerelease build in ALL or ANY arch
             # in this case only one build entry is needed.
-            if release.architecturehintlist in ["all", "any"]:
+            if hintlist == 'all':
                 # it's already there, skip to next package
                 if release.builds:
-                    self._logger.debug(header + "SKIPPING ALL/ANY")
+                    self._logger.debug(header + "SKIPPING ALL")
                     continue
 
                 # packages with an architecture hint of "all" or "any" are
@@ -820,7 +824,7 @@ class BuilddMaster:
                 release.createBuild(
                     distroarchrelease=distrorelease.nominatedarchindep,
                     processor=processor)
-                self._logger.debug(header + "CREATING ALL/ANY")
+                self._logger.debug(header + "CREATING ALL")
                 continue
 
             # the sourcepackage release builds in a specific list of
@@ -831,7 +835,7 @@ class BuilddMaster:
                 # if the sourcepackagerelease doesn't build in ANY
                 # architecture and the current architecture is not
                 # mentioned in the list, continues
-                supported = release.architecturehintlist.split()
+                supported = hintlist.split()
                 if arch.architecturetag not in supported:
                     self._logger.debug(header + "NOT SUPPORTED %s" %
                                        arch.architecturetag)

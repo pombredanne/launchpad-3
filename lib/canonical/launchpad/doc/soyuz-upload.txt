@@ -51,6 +51,7 @@ so that we can control what's going on.
   >>> import os
   >>> script = os.path.join(config.root, "daemons/poppy-upload.py")
   >>> process = subprocess.Popen([sys.executable, script,
+  ...                             "--allow-user", 'ubuntutest',
   ...                             "--cmd", "echo @distro@; ls @fsroot@",
   ...                             incoming_dir, "3421"],
   ...                             stdout=subprocess.PIPE)
@@ -189,15 +190,18 @@ data in the given number seconds, we report a failure.
 
 
 At that point we must have a bunch of directories in the upload
-base directory named upload-XXXXXX, each one as a result of
+base directory named <TIMESTAMP>-XXXXXX, each one as a result of
 each FTP session. Below we ensure that, and also that the content
 of these files match the uploaded ones.
 
   >>> import md5
   >>> def get_md5(filename):
   ...     return md5.new(open(filename).read()).digest()
+
   >>> def get_upload_dir(num):
-  ...     return os.path.join(incoming_dir, "upload-%06d" % num)
+  ...     for upload_dir in os.listdir(incoming_dir):
+  ...         if upload_dir.endswith("%06d" % num):
+  ...             return os.path.join(incoming_dir, upload_dir)
 
   >>> for i, sent_filenames in enumerate(uploads):
   ...     upload_dir = get_upload_dir(i+1)
@@ -370,7 +374,9 @@ Same thing for etherwake:
 
 
   >>> def get_accepted_dir(num):
-  ...     return os.path.join(accepted_dir, "upload-%06d" % num)
+  ...     for upload_dir in os.listdir(accepted_dir):
+  ...         if upload_dir.endswith("%06d" % num):
+  ...             return os.path.join(accepted_dir, upload_dir)
 
   >>> for i, sent_filenames in enumerate(uploads):
   ...     upload_dir = get_accepted_dir(i+1)
