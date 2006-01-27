@@ -13,10 +13,10 @@
     <script type="text/javascript" src="/@@/sorttable.js"></script>
     <link rel="shortcut icon" href="/@@/ubuntuFavicon.ico" />
 
-    <style type="text/css" media="screen"> @import url(http://www.ubuntu.com/plone.css);</style>
-    <style type="text/css" media="screen"> @import url(http://www.ubuntu.com/ubuntu.css);</style>
-    <style type="text/css" media="screen"> @import url(http://www.ubuntu.com/masthead.css);</style>
-    <style type="text/css" media="screen"> @import url(http://www.ubuntu.com/discs.css);</style>
+    <style type="text/css" media="screen"> @import url(/@@/ubuntu-plone.css);</style>
+    <style type="text/css" media="screen"> @import url(/@@/ubuntu.css);</style>
+    <style type="text/css" media="screen"> @import url(/@@/ubuntu-masthead.css);</style>
+    <style type="text/css" media="screen"> @import url(/@@/ubuntu-discs.css);</style>
     <style type="text/css">
       <!-- 
         /* Visually differentiate disabled and enabled form fields. */

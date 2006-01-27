@@ -119,7 +119,63 @@ associated product.
   HTTP/1.1 200 Ok
   ...
 
-Let's post the branch creation form for a "junk" branch, that is a branch with
+
+But first we try to post a invalid Branch URL to test the field validator.
+
+  >>> print http(r"""
+  ... POST /people/lifeless/+addbranch HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Length: 1315
+  ... Content-Type: multipart/form-data; boundary=---------------------------16855892469756896411380849908
+  ... Cookie: launchpad=XEJ1RoB92REqSdZahy5y.gVGBDo01dWhgSd.HER7DezKTr2eoFzkoU
+  ... Referer: http://localhost:9000/people/lifeless/+addbranch
+  ... 
+  ... -----------------------------16855892469756896411380849908
+  ... Content-Disposition: form-data; name="field.product"
+  ... 
+  ... 
+  ... -----------------------------16855892469756896411380849908
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... pyresources
+  ... -----------------------------16855892469756896411380849908
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... Resource Management for Unit Tests
+  ... -----------------------------16855892469756896411380849908
+  ... Content-Disposition: form-data; name="field.url"
+  ... 
+  ... example.com/~lifeless/pyresources/
+  ... -----------------------------16855892469756896411380849908
+  ... Content-Disposition: form-data; name="field.home_page"
+  ... 
+  ... 
+  ... -----------------------------16855892469756896411380849908
+  ... Content-Disposition: form-data; name="field.lifecycle_status"
+  ... 
+  ... New
+  ... -----------------------------16855892469756896411380849908
+  ... Content-Disposition: form-data; name="field.lifecycle_status-empty-marker"
+  ... 
+  ... 1
+  ... -----------------------------16855892469756896411380849908
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... A resource management framework for handling unit test fixtures in Python.
+  ... -----------------------------16855892469756896411380849908
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------16855892469756896411380849908--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...
+  ...Not a valid URL. Please enter the full URL...
+  ...
+
+
+
+And now let's post the branch creation form for a "junk" branch, that is a branch with
 no associated product.
 
   >>> print http(r"""
@@ -145,7 +201,7 @@ no associated product.
   ... -----------------------------16855892469756896411380849908
   ... Content-Disposition: form-data; name="field.url"
   ... 
-  ... http://example.com/~lifeless/pyresources/
+  ... sftp://example.com/~lifeless/pyresources/
   ... -----------------------------16855892469756896411380849908
   ... Content-Disposition: form-data; name="field.home_page"
   ... 

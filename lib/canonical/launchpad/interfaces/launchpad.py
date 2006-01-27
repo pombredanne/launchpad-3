@@ -48,7 +48,10 @@ class NameNotAvailable(KeyError):
 
 
 class ILaunchpadCelebrities(Interface):
+    """Well known things.
 
+    Celebrities are SQLBase instances that have a well known name.
+    """
     buttsource = Attribute("The 'buttsource' team.")
     admin = Attribute("The 'admins' team.")
     ubuntu = Attribute("The ubuntu Distribution.")
@@ -410,7 +413,7 @@ class IMenu(Interface):
 class IMenuBase(IMenu):
     """Common interface for facets, menus, extra facets and extra menus."""
 
-    context = Attribute('the object that has this menu')
+    context = Attribute('The object that has this menu')
 
 
 class IFacetMenu(IMenuBase):

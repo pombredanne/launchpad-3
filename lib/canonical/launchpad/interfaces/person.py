@@ -11,6 +11,7 @@ __all__ = [
     'IEmailAddress',
     'IEmailAddressSet',
     'IRequestPeopleMerge',
+    'IAdminRequestPeopleMerge',
     'IObjectReassignment',
     'ITeamReassignment',
     'ITeamCreation',
@@ -330,11 +331,6 @@ class IPerson(IHasSpecifications):
 
     def assignKarma(action_name):
         """Assign karma for the action named <action_name> to this person."""
-
-    def updateKarmaCache():
-        """Update this person's karma attribute and all entries in the
-        KarmaCache table for this person.
-        """
 
     def latestKarma(quantity=25):
         """Return the latest karma actions for this person, up to the number
@@ -708,11 +704,25 @@ class IEmailAddressSet(Interface):
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want a very specific vocabulary."""
 
-    dupeaccount = Choice(title=_('Duplicated Account'), required=True,
-                         vocabulary='PersonAccountToMerge',
-                         description=_("The duplicated account you found in "
-                                       "Launchpad"))
+    dupeaccount = Choice(
+        title=_('Duplicated Account'), required=True,
+        vocabulary='PersonAccountToMerge',
+        description=_("The duplicated account you found in Launchpad"))
 
+
+class IAdminRequestPeopleMerge(Interface):
+    """The schema used by admin merge accounts page."""
+
+    dupe_account = Choice(
+        title=_('Duplicated Account'), required=True,
+        vocabulary='PersonAccountToMerge',
+        description=_("The duplicated account found in Launchpad"))
+
+    target_account = Choice(
+        title=_('Account'), required=True,
+        vocabulary='PersonAccountToMerge',
+        description=_("The account to be merged on"))
+                        
 
 class IObjectReassignment(Interface):
     """The schema used by the object reassignment page."""

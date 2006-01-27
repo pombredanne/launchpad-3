@@ -27,6 +27,38 @@ OK, best we try again, with a login!
           <h1>Create a new translation group</h1>
   ...
 
+We test if the name validator is working.
+
+  >>> print http(r"""
+  ... POST /rosetta/groups/+new HTTP/1.1
+  ... Content-Length: 784
+  ... Content-Type: multipart/form-data; boundary=---------------------------159720819458754421291687237
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... 
+  ... -----------------------------159720819458754421291687237
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... PolYglot
+  ... -----------------------------159720819458754421291687237
+  ... Content-Disposition: form-data; name="field.title"
+  ... 
+  ... The PolyGlot Translation Group
+  ... -----------------------------159720819458754421291687237
+  ... Content-Disposition: form-data; name="field.summary"
+  ... 
+  ... The PolyGlots are a well organised translation group that handles the work of translating a number of Ubuntu and upstream projects. It consists of a large number of translation teams, each specialising in their own language.
+  ... -----------------------------159720819458754421291687237
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------159720819458754421291687237--
+  ... """)
+  HTTP/1.1 200 Ok 
+  ...
+  ...Invalid name 'PolYglot'...
+  ...
+
+
 Cool, we get the page to create a translation group. Let's go ahead and POST
 the form to create a new group, called the "polyglot" translation group.
 

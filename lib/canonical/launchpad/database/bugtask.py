@@ -4,7 +4,6 @@ __metaclass__ = type
 __all__ = [
     'BugTask',
     'BugTaskSet',
-    'BugTaskFactory',
     'bugtask_sort_key']
 
 import urllib
@@ -32,7 +31,7 @@ from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, NotFoundError,
+    IDistroBugTask, IDistroReleaseBugTask, NotFoundError,
     ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage)
 
 
@@ -373,6 +372,8 @@ class BugTaskSet:
             if arg_value is None:
                 continue
             if zope_isinstance(arg_value, any):
+                if not arg_value.query_values:
+                    continue
                 # The argument value is a list of acceptable
                 # filter values.
                 arg_values = sqlvalues(*arg_value.query_values)
@@ -542,9 +543,3 @@ class BugTaskSet:
         return BugTask.select(
             maintainedProductBugTasksQuery + filters,
             clauseTables=['Product', 'TeamParticipation', 'BugTask', 'Bug'])
-
-
-def BugTaskFactory(context, **kw):
-    # XXX kiko: WTF, context is ignored?! LaunchBag? ARGH!
-    return BugTask(bugID=getUtility(ILaunchBag).bug.id, **kw)
-
