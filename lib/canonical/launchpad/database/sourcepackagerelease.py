@@ -6,6 +6,8 @@ __all__ = ['SourcePackageRelease']
 import sets
 import tarfile
 from StringIO import StringIO
+import datetime
+import pytz
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -209,9 +211,16 @@ class SourcePackageRelease(SQLBase):
             # We guess at the first processor in the family
             processor = shortlist(pf.processors)[0]
 
+        # force the current timestamp instead of the default
+        # UTC_NOW for the transaction, avoid several row with
+        # same datecreated.
+        datecreated = datetime.datetime.now(pytz.timezone('UTC'))
+
         return Build(distroarchrelease=distroarchrelease.id,
                      sourcepackagerelease=self.id,
-                     processor=processor.id, buildstate=status)
+                     processor=processor.id,
+                     buildstate=status,
+                     datecreated=datecreated)
 
     def getBuildByArch(self, distroarchrelease):
         """See ISourcePackageRelease."""
