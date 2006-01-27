@@ -66,7 +66,7 @@ class PoppyInterface:
             self.targetcount += 1
             target_fsroot = os.path.join(self.targetpath,
                                          "upload-%s-%06d" % (
-                time.strftime("%Y%m%d-%H%m%S"), self.targetcount))
+                time.strftime("%Y%m%d-%H%M%S"), self.targetcount))
             if not os.path.exists(target_fsroot):
                 try:
                     shutil.move(fsroot, target_fsroot)
@@ -103,11 +103,8 @@ class PoppyInterface:
             raise PoppyInterfaceFailure("Unable to find fsroot in client set")
 
         # local authentication
-        if user == self.allow_user:
-            self.clients[fsroot]["distro"] = user
-            return True
-        else:
-            return False
+        self.clients[fsroot]["distro"] = self.allow_user
+        return True
 
         #try:
         #    d = Distribution.byName(user)
