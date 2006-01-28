@@ -508,9 +508,9 @@ person_packagebugs = ContextDisplayName('Bugs on software %s maintains')
 
 person_packagebugs_advanced = ContextDisplayName('Bugs on software %s maintains')
 
-person_packagebugs_results = ContextDisplayName('Bugs on software %s maintains')
-
 person_packagebugs_overview = ContextDisplayName('Bugs on software %s maintains')
+
+person_packagebugs_search = ContextDisplayName('Bugs on software %s maintains')
 
 person_reportedbugs = ContextDisplayName('Bugs %s reported')
 

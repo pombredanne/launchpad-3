@@ -21,19 +21,22 @@
     </style>
   </metal:block>
 
-  <metal:leftcolumn fill-slot="column_one">
-  </metal:leftcolumn>
-
   <metal:rightcolumn fill-slot="portlets_two">
     <tal:block content="structure context/@@+portlet-otherpackages" />
   </metal:rightcolumn>
 
   <div metal:fill-slot="main">
     <div style="margin-bottom: 2px;">
-      <b><small>mozilla-firefox (Ubuntu) bugs</small></b>
+      <b>
+        <small>
+          <span tal:content="view/getPackage/displayname">
+            mozilla-firefox (Ubuntu)
+          </span>
+          bugs
+        </small>
+      </b>
     </div>
-      <input type="text" size="40" value="foobar" /> <input type="submit" value="Search" />
-      <a href=""><small>Advanced</small></a>
+      <input type="text" size="40" /> <input type="submit" value="Search" />
       <br />
       <br />
       <div>

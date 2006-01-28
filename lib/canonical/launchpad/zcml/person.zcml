@@ -192,23 +192,21 @@
       name="+packagebugs-advanced"
       for="canonical.launchpad.interfaces.IPerson"
       facet="bugs"
-      class="canonical.launchpad.browser.BugTasksOnMaintainedSoftwareSearchListingView"
       permission="zope.Public"
       template="../templates/person-packagebugs-advanced.pt" />
 
   <browser:page
-      name="+packagebugs-results"
+      name="+packagebugs-search"
       for="canonical.launchpad.interfaces.IPerson"
       facet="bugs"
-      class="canonical.launchpad.browser.BugTasksOnMaintainedSoftwareSearchListingView"
+      class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
       permission="zope.Public"
-      template="../templates/person-packagebugs-results.pt" />
+      template="../templates/person-packagebugs-search.pt" />
 
   <browser:page
       name="+packagebugs-overview"
       for="canonical.launchpad.interfaces.IPerson"
       facet="bugs"
-      class="canonical.launchpad.browser.BugTasksOnMaintainedSoftwareSearchListingView"
       permission="zope.Public"
       template="../templates/person-packagebugs-overview.pt" />
 

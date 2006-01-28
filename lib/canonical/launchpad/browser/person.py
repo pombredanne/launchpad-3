@@ -24,7 +24,7 @@ __all__ = [
     'PersonHackergotchiView',
     'PersonAssignedBugTaskSearchListingView',
     'ReportedBugTaskSearchListingView',
-    'BugTasksOnMaintainedSoftwareSearchListingView',
+    'BugContactPackageBugsSearchListingView',
     'SubscribedBugTaskSearchListingView',
     'PersonRdfView',
     'PersonView',
@@ -54,6 +54,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility, getView
 
 from canonical.database.sqlbase import flush_database_updates
+from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.searchbuilder import any
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
@@ -67,7 +68,7 @@ from canonical.launchpad.interfaces import (
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
-    IAdminRequestPeopleMerge, BugTaskSearchParams, NotFoundError, 
+    IAdminRequestPeopleMerge, BugTaskSearchParams, NotFoundError,
     UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.browser.bugtask import (
@@ -701,7 +702,7 @@ class ReportedBugTaskSearchListingView(BasePersonBugTaskSearchListingView):
     context_parameter = 'owner'
 
 
-class BugTasksOnMaintainedSoftwareSearchListingView(BugTaskSearchListingView):
+class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
     """All bugs reported on software maintained by someone."""
 
     def search(self, searchtext=None, batch_start=None):
@@ -716,6 +717,13 @@ class BugTasksOnMaintainedSoftwareSearchListingView(BugTaskSearchListingView):
             batch_start = int(self.request.get('batch_start', 0))
         batch = Batch(tasks, batch_start)
         return BatchNavigator(batch=batch, request=self.request)
+
+    def getPackage(self):
+        """Get the package whose bugs are currently being searched."""
+        form = self.request.form
+        distribution = Distribution.byName(form.get("distribution"))
+
+        return distribution.getPackage(form.get("sourcepackagename"))
 
     def shouldShowSearchWidgets(self):
         # XXX: It's not possible to search amongst the bugs on maintained

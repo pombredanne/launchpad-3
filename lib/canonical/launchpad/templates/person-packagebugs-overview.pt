@@ -5,6 +5,22 @@
 
 <body>
 
+  <metal:block fill-slot="head_epilogue">
+    <style>
+      .results th {
+        color: #828282;
+        border: 1px solid #cfcfcf;
+        background-color: #E0E0E0;
+        text-align: left;
+      }
+
+      .results td {
+        border: 1px solid #cfcfcf;
+        background-color: #ededed
+      }
+    </style>
+  </metal:block>
+
   <metal:leftportlets fill-slot="portlets_one">
     <div tal:replace="structure context/@@+portlet-details" />
   </metal:leftportlets>
@@ -20,10 +36,23 @@
     is receiving bugmail from these packages:
     </tal:overview>
 
-    <ul>
-      <li tal:repeat="package context/getBugContactPackages"
-          tal:content="package/displayname">mozilla-firefox (Ubuntu)</li>
-    </ul>
+    <br /><br />
+    <table class="results">
+      <tr>
+        <th>Package</th>
+        <th>Open</th>
+        <th>Critical</th>
+        <th>Unassigned</th>
+        <th>In Progress</th>
+      </tr>
+      <tr tal:repeat="package context/getBugContactPackages">
+        <td>
+          <a href="#"
+             tal:content="package/displayname"
+             tal:attributes="href string:${context/fmt:url}/+packagebugs-search?search=Search&distribution=${package/distribution/name}&sourcepackagename=${package/name}">mozilla-firefox (Ubuntu)</a>
+        </td>
+      </tr>
+    </table>
   </div>
 </body>
 </html>
