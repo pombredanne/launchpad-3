@@ -53,26 +53,32 @@ class SourcePackage:
         self.sourcepackagename = sourcepackagename
         self.distrorelease = distrorelease
 
-        packages = SourcePackagePublishing.select("""
+        # XXX: jamesh, please check this.
+        #      from stevea, 2006-01-28
+        package = SourcePackagePublishing.selectFirst("""
             SourcePackagePublishing.sourcepackagerelease = 
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishing.distrorelease = %s
             """ % sqlvalues(self.sourcepackagename.id,
                             self.distrorelease.id),
-            clauseTables=['SourcePackageRelease'],
-            orderBy='datepublished')
-        if len(packages) == 0:
+            orderBy='datepublished',
+            clauseTables=['SourcePackageRelease'])
+        if package is None:
             self.currentrelease = None
         else:
             self.currentrelease = DistroReleaseSourcePackageRelease(
                 distrorelease=self.distrorelease,
                 sourcepackagerelease=SourcePackageRelease.get(
-                    packages[0].sourcepackagerelease.id))
+                    package.sourcepackagerelease.id))
 
     def __getitem__(self, version):
         """See ISourcePackage."""
-        pkgs = SourcePackagePublishing.select("""
+        # XXX: 20051219 jamesh
+        # Is the orderBy clause here correct, or just to avoid the warning?
+        # I've changed this to selectOne() with a limit to avoid the
+        # len() usage.
+        pkg = SourcePackagePublishing.selectFirst("""
             SourcePackagePublishing.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.version = %s AND
@@ -82,10 +88,10 @@ class SourcePackage:
                             self.distrorelease.id),
             orderBy='id',
             clauseTables=['SourcePackageRelease'])
-        if len(pkgs) == 0:
+        if pkg is None:
             return None
         return DistroReleaseSourcePackageRelease(
-            self.distrorelease, pkgs[0].sourcepackagerelease)
+            self.distrorelease, pkg.sourcepackagerelease)
 
     def _get_ubuntu(self):
         """This is a temporary measure while
