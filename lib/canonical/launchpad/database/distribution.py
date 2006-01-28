@@ -324,6 +324,9 @@ class Distribution(SQLBase, BugTargetBase):
         """See IDistribution."""
         assert (source or binary), "searching in an explicitly empty " \
                "space is pointless"
+        # XXX: this could be done as a query on LibraryFileAlias joining
+        # on SourcePackageFilePublishing, instead of this odd for ..
+        # return -- kiko, 2006-01-27
         if source:
             candidates = SourcePackageFilePublishing.selectBy(
                 distribution=self.id,
