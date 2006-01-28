@@ -424,7 +424,7 @@ class DistroReleaseQueueCustom(SQLBase):
         dr = self.distroreleasequeue.distrorelease
         config = ArchiveConfig(dr.distribution, dr.distribution.releases)
         try:
-            process_debian_installer(config.archive_root,
+            process_debian_installer(config.archiveroot,
                                      temp_file_name,
                                      dr.name)
         finally:
