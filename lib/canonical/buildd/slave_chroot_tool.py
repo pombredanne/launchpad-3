@@ -251,7 +251,7 @@ class SlaveChrootBuilder:
                 self.config['chroot']['distrorelease'],
                 self.config['chroot']['architecture'])
 
-def proccess(chroottar, slavebin, cmd=None):
+def process(chroottar, slavebin, cmd=None):
     """Unpack, mount, chroot in, umount, repack, the chroot"""
     # We use the slavebin for the buildds to do some tasks
     execute("mkdir $HOME/build-chroot-tool")
@@ -259,7 +259,7 @@ def proccess(chroottar, slavebin, cmd=None):
     execute(slavebin + "/unpack-chroot chroot-tool " + chroottar)
     print "Mounting..."
     execute(slavebin + "/mount-chroot chroot-tool")
-    # execute the desired comand within the chroot
+    # execute the desired command within the chroot
     if cmd:
         print "Chrooting in..."
         execute(cmd)
@@ -291,11 +291,11 @@ def do_generate(conffile, slavebin):
 def do_intervene(chroottar, slavebin):
     chroot_in = ("sudo chroot $HOME/build-chroot-tool/chroot-autobuild "
                  "/bin/su -")
-    proccess(chroottar, slavebin, cmd=chroot_in)
+    process(chroottar, slavebin, cmd=chroot_in)
 
 def do_upgrade(chroottar, slavebin):
     chroot_upgrade = slavebin + "/update-debian-chroot chroot-tool"
-    proccess(chroottar, slavebin, cmd=chroot_upgrade)
+    process(chroottar, slavebin, cmd=chroot_upgrade)
 
 def main():
     oparser = OptionParser()
