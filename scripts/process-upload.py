@@ -57,6 +57,10 @@ def main():
     parser.add_option("-L", "--loop", action="store_true", default=False,
                       help="Wait for more uploads rather than exiting.")
 
+    parser.add_option("-J", "--just-leaf", action="store", dest="leafname",
+                      default=None, help="A specific leaf dir to limit to.",
+                      metavar = "LEAF")
+
     global options
     (options, args) = parser.parse_args()
 
@@ -124,6 +128,10 @@ def main():
             fsroot_lock.release()
 
             for entry in entries:
+                if options.leafname is not None:
+                    if entry != options.leafname:
+                        log.debug("Skipping %s -- does not match %s" % (
+                            entry, options.leafname))
                 do_one_entry(ztm, entry, fsroot, lock)
 
             if not options.loop:
