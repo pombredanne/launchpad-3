@@ -310,9 +310,11 @@ def do_one_entry(ztm, entry, fsroot, lock):
 
 if __name__ == '__main__':
     try:
-        sys.exit(main())
+        ret_code = main()
     except:
         log.debug("Error during processing of main()", exc_info=True)
-        sys.exit(1)
+        ret_code = 1
+
+    sys.exit(ret_code)
 
 
