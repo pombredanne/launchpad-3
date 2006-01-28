@@ -51,7 +51,9 @@ class SourcePackage:
         self.sourcepackagename = sourcepackagename
         self.distrorelease = distrorelease
 
-        package = SourcePackagePublishing.selectOne("""
+        # XXX: jamesh, please check this.
+        #      from stevea, 2006-01-28
+        package = SourcePackagePublishing.selectFirst("""
             SourcePackagePublishing.sourcepackagerelease = 
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
@@ -59,7 +61,6 @@ class SourcePackage:
             """ % sqlvalues(self.sourcepackagename.id,
                             self.distrorelease.id),
             orderBy='datepublished',
-            limit=1,
             clauseTables=['SourcePackageRelease'])
         if package is None:
             self.currentrelease = None
@@ -75,7 +76,7 @@ class SourcePackage:
         # Is the orderBy clause here correct, or just to avoid the warning?
         # I've changed this to selectOne() with a limit to avoid the
         # len() usage.
-        pkg = SourcePackagePublishing.selectOne("""
+        pkg = SourcePackagePublishing.selectFirst("""
             SourcePackagePublishing.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.version = %s AND
@@ -84,7 +85,6 @@ class SourcePackage:
             """ % sqlvalues(version, self.sourcepackagename.id,
                             self.distrorelease.id),
             orderBy='id',
-            limit=1,
             clauseTables=['SourcePackageRelease'])
         if pkg is None:
             return None
