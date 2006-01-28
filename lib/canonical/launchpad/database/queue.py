@@ -412,14 +412,17 @@ class DistroReleaseQueueCustom(SQLBase):
             process_debian_installer)
         from canonical.archivepublisher.config import Config as ArchiveConfig
 
-        temp_file_fd, temp_file_name = tempfile.mkstemp()
-        temp_file = os.fdopen(temp_file_fd, "wb")
+        temp_dir = tempfile.mkdtemp()
+        temp_file_name = os.path.join(temp_dir, self.libraryfilealias.filename)
+
+        temp_file = file(temp_file_name, "wb")
         # Pump the file from the librarian...
         self.libraryfilealias.open()
         for chunk in filechunks(self.libraryfilealias):
             temp_file.write(chunk)
         temp_file.close()
         self.libraryfilealias.close()
+
         # Find the archive root...
         dr = self.distroreleasequeue.distrorelease
         config = ArchiveConfig(dr.distribution, dr.distribution.releases)
@@ -429,6 +432,7 @@ class DistroReleaseQueueCustom(SQLBase):
                                      dr.name)
         finally:
             os.remove(temp_file_name)
+            os.rmdir(temp_dir)
 
     def publish_ROSETTA_TRANSLATIONS(self, logger=None):
         """See IDistroReleaseQueueCustom."""
