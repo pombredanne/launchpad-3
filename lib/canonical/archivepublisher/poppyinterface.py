@@ -20,13 +20,14 @@ class PoppyInterface:
     clients = {}
 
     def __init__(self, targetpath, logger, allow_user, cmd=None,
-                 targetstart=0):
+                 targetstart=0, perms=None):
         self.tm = initZopeless(dbuser='ro')
         self.targetpath = targetpath
         self.logger = logging.getLogger("%s.PoppyInterface" % logger.name)
         self.cmd = cmd
         self.allow_user = allow_user
         self.targetcount = targetstart
+        self.perms = perms
         self.lock = GlobalLock(os.path.join(self.targetpath, ".lock"))
 
     def new_client_hook(self, fsroot, host, port):
@@ -82,6 +83,9 @@ class PoppyInterface:
         distro_file = open(distro_filename, "w")
         distro_file.write(client["distro"])
         distro_file.close()
+
+        if self.perms is not None:
+            os.system("chmod %s %s" % (self.perms, target_fsroot))
 
         self.lock.release()
 

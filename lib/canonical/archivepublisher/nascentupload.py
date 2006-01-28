@@ -1689,9 +1689,7 @@ class NascentUpload:
             manifest=arg_manifest
             ))
 
-        for uploaded_file in self.files:
-            if not uploaded_file.is_source:
-                continue
+        for uploaded_file in self.dsc_files:
             library_file = self.librarian.create(
                 uploaded_file.filename,
                 uploaded_file.size,

@@ -276,7 +276,7 @@ class BuilderGroup:
         distroreleasename = dar.distrorelease.name
         archname = dar.architecturetag
 
-        logfilename = ('%s-%s-%s.%s_%s.log'
+        logfilename = ('buildlog_%s-%s-%s.%s_%s.txt'
                        % (distroname, distroreleasename,
                           archname, sourcename, version))
 
@@ -498,9 +498,8 @@ class BuilderGroup:
                               % incoming)
             os.mkdir(incoming)
         # create a single directory to store build result files
-        upload_dir = os.path.join(incoming, "%s-%s" % (
-                                  time.strftime("%Y%m%d-%H%M%S"),
-                                  buildid))
+        upload_leaf = "%s-%s" % (time.strftime("%Y%m%d-%H%M%S"), buildid)
+        upload_dir = os.path.join(incoming, upload_leaf)
         os.mkdir(upload_dir)
         self.logger.debug("Storing build result at '%s'" % upload_dir)
 
@@ -526,6 +525,7 @@ class BuilderGroup:
             "-d", "%s" % queueItem.build.distribution.name,
             "-r", "%s" % queueItem.build.distrorelease.name,
             "-b", "%s" % queueItem.build.id,
+            "-J", "%s" % upload_leaf,
             "%s" % root,
             ]
 
@@ -535,6 +535,12 @@ class BuilderGroup:
         uploader_process = subprocess.Popen(uploader_argv,
                                             stdout=subprocess.PIPE)
         result_code = uploader_process.wait()
+
+        if os.path.exists(upload_dir):
+            self.logger.debug("The upload directory did not get moved.")
+            os.rename(upload_dir, os.path.join(upload_dir, "..",
+                                               "failed-to-move",
+                                               upload_leaf))
 
         self.logger.debug("Uploader returned %d" % result_code)
 

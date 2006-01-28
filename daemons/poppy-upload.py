@@ -21,6 +21,11 @@ def main():
                       default='ubuntu',
                       help="Username allowed to log in.")
 
+    parser.add_option("--permissions", action="store", metavar="PERMS",
+                      default='g+rwxs',
+                      help="Permissions to chmod the targetfsroot with "
+                      "before letting go of the directory.")
+
     options, args = parser.parse_args()
 
     log = logger(options, "poppy-upload")
@@ -35,7 +40,8 @@ def main():
     numthreads = 4
 
     iface = PoppyInterface(root, log, allow_user=options.allow_user,
-                           cmd=options.cmd)
+                           cmd=options.cmd,
+                           perms=options.permissions)
 
     run_server(host, int(port), ident, numthreads,
                iface.new_client_hook, iface.client_done_hook,
