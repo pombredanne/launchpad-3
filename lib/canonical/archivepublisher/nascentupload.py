@@ -1468,6 +1468,8 @@ class NascentUpload:
                     uploaded_file.package)
                 possible = self.distrorelease.getPublishedReleases(
                     spn, self.policy.pocket)
+                self.logger.debug("getPublishedReleases() returned %d "
+                                  "possible source(s)" % len(possible))
                 if possible:
                     self.logger.debug("%s: (source) exists" % (
                         uploaded_file.package))
@@ -1493,8 +1495,12 @@ class NascentUpload:
                 if archtag == "all":
                     archtag = self.changes_filename_archtag
                 try:
+                    self.logger.debug("Checking against %s for %s" %(
+                        archtag, uploaded_file.package))
                     dar = self.distrorelease[archtag]
                     possible = dar.getReleasedPackages(bpn, self.policy.pocket)
+                    self.logger.debug("getReleasedPackages() returned %d "
+                                      "possibilit{y,ies}" % len(possible))
                     if possible:
                         self.logger.debug("%s: (binary) exists" % (
                             uploaded_file.package))
