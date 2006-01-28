@@ -211,6 +211,9 @@ def process_upload(ztm, upload, entry_path):
             log.info("Committing the transaction and any mails associated "
                      "with this upload.")
             ztm.commit()
+    except:
+        log.warn("Exception during processing made it out of the main loop.",
+                 exc_info = True)
     finally:
         ztm.abort()
 
