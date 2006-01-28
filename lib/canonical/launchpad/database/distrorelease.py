@@ -377,6 +377,52 @@ class DistroRelease(SQLBase, BugTargetBase):
         return SourcePackagePublishing.selectBy(distroreleaseID=self.id,
                                                 status=status)
 
+    def getBinaryPackagePublishing(self, name=None, version=None, archtag=None,
+                                   sourcename=None, orderBy=None):
+        """See IDistroRelease."""
+
+        clauseTables = ['BinaryPackagePublishing', 'DistroArchRelease',
+                        'BinaryPackageRelease', 'BinaryPackageName', 'Build',
+                        'SourcePackageRelease', 'SourcePackageName' ]
+
+        query = ['''BinaryPackagePublishing.binarypackagerelease =
+                        BinaryPackageRelease.id AND
+                    BinaryPackagePublishing.distroarchrelease =
+                        DistroArchRelease.id AND
+                    BinaryPackageRelease.binarypackagename = 
+                        BinaryPackageName.id AND
+                    BinaryPackageRelease.build =
+                        Build.id AND
+                    Build.sourcepackagerelease =
+                        SourcePackageRelease.id AND
+                    SourcePackageRelease.sourcepackagename =
+                        SourcePackageName.id AND
+                    DistroArchRelease.distrorelease = %s AND
+                    BinaryPackagePublishing.status = %s'''
+            % sqlvalues(self.id, PackagePublishingStatus.PUBLISHED)]
+
+        if name:
+            query.append('BinaryPackageName.name = %s' % sqlvalues(name))
+
+        if version:
+            query.append('BinaryPackageRelease.version = %s'
+                      % sqlvalues(version))
+
+        if archtag:
+            query.append('DistroArchRelease.architecturetag = %s'
+                      % sqlvalues(archtag))
+
+        if sourcename:
+            query.append('SourcePackageName.name = %s' % sqlvalues(sourcename))
+
+        query = " AND ".join(query)
+
+        result = BinaryPackagePublishing.select(query, distinct=False,
+                                                clauseTables=clauseTables,
+                                                orderBy=orderBy)
+
+        return result
+
     def publishedBinaryPackages(self, component=None):
         """See IDistroRelease."""
         # XXX sabdfl 04/07/05 this can become a utility when that works

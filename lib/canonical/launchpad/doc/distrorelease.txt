@@ -76,6 +76,28 @@ DistroRelease.getPublishedReleases:
     >>> print prs[0].sourcepackagerelease.sourcepackagename.name
     mozilla-firefox
 
+DistroRelease.getBinaryPackagePublishing will return
+BinaryPackagePublishing objects for the DistroRelease:
+
+    >>> from canonical.launchpad.database import DistroRelease
+    >>> warty = DistroRelease.get(1)
+    >>> bpp = warty.getBinaryPackagePublishing()
+    >>> print len(bpp)
+    1
+    >>> print list(bpp)[0].binarypackagerelease.binarypackagename.name
+    mozilla-firefox
+    >>> bpp = warty.getBinaryPackagePublishing(name="nosuchpackage")
+    >>> print len(bpp)
+    0
+    >>> bpp = warty.getBinaryPackagePublishing(version="nosuchversion")
+    >>> print len(bpp)
+    0
+    >>> bpp = warty.getBinaryPackagePublishing(archtag="nosucharch")
+    >>> print len(bpp)
+    0
+    >>> bpp = warty.getBinaryPackagePublishing(sourcename="nosuchsource")
+    >>> print len(bpp)
+    0
 
 CVE BugTasks on a Distro Release
 --------------------------------
