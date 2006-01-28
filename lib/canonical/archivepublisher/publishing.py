@@ -681,15 +681,15 @@ Architecture: %s
                  "w")
         f.write("""Origin: %s
 Label: %s
-Version: %s
 Suite: %s
 Codename: %s
+Version: %s
 Date: %s
 Architectures: %s
 Components: %s
 Description: %s
 """ % (distribution.displayname, distribution.displayname,
-       distribution.version, full_name, full_name,
+       full_name, full_name, distrorelease.version,
        datetime.utcnow().strftime("%a, %d %b %Y %k:%M:%S UTC"),
        " ".join(all_architectures), " ".join(all_components),
        distrorelease.summary))
