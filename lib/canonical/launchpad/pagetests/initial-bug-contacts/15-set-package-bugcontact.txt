@@ -24,4 +24,4 @@ The bug contacts are now sabdfl and the Launchpad admin team.
   >>> ubuntu_mozilla_firefox = ubuntu.getSourcePackage("mozilla-firefox")
   >>> sorted([pkg_bug_contact.bugcontact.name for pkg_bug_contact in
   ...         ubuntu_mozilla_firefox.bugcontacts])
-  [u'admins', u'sabdfl']
+  [u'admins', u'name16', u'sabdfl']

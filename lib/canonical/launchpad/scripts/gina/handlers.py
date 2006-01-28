@@ -749,7 +749,7 @@ class BinaryPackageHandler:
 
         componentID = self.distro_handler.getComponentByName(bin.component).id
         sectionID = self.distro_handler.ensureSection(bin.section).id
-        architecturespecific = (bin.architecture == "all")
+        architecturespecific = (bin.architecture != "all")
 
         bin_name = getUtility(IBinaryPackageNameSet).ensure(bin.package)
         build = self.ensureBuild(bin, srcpkg, distroarchinfo, archtag)
