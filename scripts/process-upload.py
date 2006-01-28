@@ -182,9 +182,12 @@ def process_upload(ztm, upload, entry_path):
         except UploadPolicyError, e:
             upload.reject("UploadPolicyError made it out to the main loop: "
                           "%s " % e)
+            log.debug("UploadPolicyError made it out of .process()",
+                      exc_info=True)
             destination = "failed"
         except UploadError, e:
             upload.reject("UploadError made it out to the main loop: %s" % e)
+            log.debug("UploadError made it out of .process()", exc_info=True)
             destination = "failed"
         if upload.rejected:
             mails = upload.do_reject()
@@ -306,5 +309,10 @@ def do_one_entry(ztm, entry, fsroot, lock):
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except:
+        log.debug("Error during processing of main()", exc_info=True)
+        sys.exit(1)
+
 
