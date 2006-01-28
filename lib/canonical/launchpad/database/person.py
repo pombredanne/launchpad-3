@@ -952,11 +952,10 @@ class PersonSet:
         """See IPersonSet."""
         if orderBy is None:
             orderBy = self._defaultOrder
-        query = AND(Person.q.teamownerID==None,
-                    Person.q.mergedID==None,
-                    EmailAddress.q.personID==Person.q.id,
-                    EmailAddress.q.status==EmailAddressStatus.PREFERRED)
-        return Person.select(query, orderBy=orderBy)
+        return Person.select(
+            "Person.id = ValidPersonOrTeamCache.id AND teamowner IS NULL",
+            clauseTables=["ValidPersonOrTeamCache"], orderBy=orderBy
+            )
 
     def teamsCount(self):
         """See IPersonSet."""
@@ -1106,6 +1105,8 @@ class PersonSet:
             # in a given poll. -- GuilhermeSalgado 2005-07-07
             ('votecast', 'person'),
             ('vote', 'person'),
+            # This table is handled entirely by triggers
+            ('validpersonorteamcache', 'id'),
             ]
 
         # Sanity check. If we have an indirect reference, it must

@@ -3,14 +3,12 @@
 __metaclass__ = type
 __all__ = ['Build', 'BuildSet']
 
-from urllib2 import URLError
 
 from zope.interface import implements
-from zope.component import getUtility
 
 # SQLObject/SQLBase
 from sqlobject import (
-    StringCol, ForeignKey, IntervalCol, MultipleJoin)
+    StringCol, ForeignKey, IntervalCol)
 from sqlobject.sqlbuilder import AND, IN
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -24,11 +22,7 @@ from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.builder import BuildQueue
 
-from canonical.librarian.interfaces import ILibrarianClient
-
-
 from canonical.lp.dbschema import EnumCol, BuildStatus
-
 
 class Build(SQLBase):
     implements(IBuild)
@@ -101,6 +95,10 @@ class Build(SQLBase):
     @property
     def distributionsourcepackagerelease(self):
         """See IBuild."""
+        from canonical.launchpad.database.distributionsourcepackagerelease \
+             import (
+            DistributionSourcePackageRelease)
+
         return DistributionSourcePackageRelease(
             distribution=self.distroarchrelease.distrorelease.distribution,
             sourcepackagerelease=self.sourcepackagerelease)
@@ -227,8 +225,14 @@ class BuildSet:
             condition_clauses = [('distroarchrelease IN %s'
                                   % sqlvalues(arch_ids))]
 
+        # exclude gina-generated builds
+        # buildstate == FULLYBUILT && datebuilt == null
+        condition_clauses.append(
+            "NOT (Build.buildstate = %s AND Build.datebuilt is NULL)"
+            % sqlvalues(BuildStatus.FULLYBUILT))
+
         # attempt to given status
-        if status:
+        if status is not None:
             condition_clauses.append('buildstate=%s' % sqlvalues(status))
 
         return Build.select(' AND '.join(condition_clauses),

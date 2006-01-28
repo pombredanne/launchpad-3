@@ -14,7 +14,7 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, DuplicateBugContactError, DeleteBugContactError)
-
+from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
@@ -34,7 +34,7 @@ from canonical.launchpad.helpers import shortlist
 
 _arg_not_provided = object()
 
-class DistributionSourcePackage:
+class DistributionSourcePackage(BugTargetBase):
     """This is a "Magic Distribution Source Package". It is not an
     SQLObject, but instead it represents a source package with a particular
     name in a particular distribution. You can then ask it all sorts of
