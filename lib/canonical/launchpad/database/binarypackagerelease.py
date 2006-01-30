@@ -198,7 +198,7 @@ class BinaryPackageReleaseSet:
         clauseTables = ['BinaryPackagePublishing', 'DistroArchRelease',
                         'BinaryPackageRelease', 'BinaryPackageName']
 
-        query = ['''BinaryPackagePublishing.binarypackagerelease =
+        queries = ['''BinaryPackagePublishing.binarypackagerelease =
                         BinaryPackageRelease.id AND
                     BinaryPackagePublishing.distroarchrelease =
                         DistroArchRelease.id AND
@@ -209,21 +209,21 @@ class BinaryPackageReleaseSet:
             
 
         if fti:
-            query.append("""
+            queries.append("""
                 (
                 BinaryPackageName.name
                     LIKE lower('%%' || %s || '%%')
                 OR BinaryPackageRelease.fti @@ ftq(%s))
                 """ % (quote_like(pattern), quote(pattern)))
         else:
-            query.append('BinaryPackageName.name ILIKE %s'
+            queries.append('BinaryPackageName.name ILIKE %s'
                          % sqlvalues('%%' + pattern + '%%'))
 
         if archtag:
-            query.append('DistroArchRelease.architecturetag=%s'
+            queries.append('DistroArchRelease.architecturetag=%s'
                          % sqlvalues(archtag))
 
-        query = " AND ".join(query)
+        query = " AND ".join(queries)
 
         return BinaryPackageRelease.select(query, clauseTables=clauseTables,
                                            orderBy='BinaryPackageName.name')
@@ -238,7 +238,7 @@ class BinaryPackageReleaseSet:
         # XXX: identical query to findByNameInDistroRelease; merge or
         # nuke one.
         #   -- kiko, 2005-09-23
-        query = ['''BinaryPackagePublishing.binarypackagerelease =
+        queries = ['''BinaryPackagePublishing.binarypackagerelease =
                         BinaryPackageRelease.id AND
                     BinaryPackagePublishing.distroarchrelease =
                         DistroArchRelease.id AND
@@ -249,22 +249,22 @@ class BinaryPackageReleaseSet:
 
 
         if name:
-            query.append('BinaryPackageName.name = %s' % sqlvalues(name))
+            queries.append('BinaryPackageName.name = %s' % sqlvalues(name))
 
         # Look for a specific binarypackage version or if version == None
         # return the current one
         if version:
-            query.append('BinaryPackageRelease.version = %s'
+            queries.append('BinaryPackageRelease.version = %s'
                          % sqlvalues(version))
         else:
-            query.append('BinaryPackagePublishing.status = %s'
+            queries.append('BinaryPackagePublishing.status = %s'
                          % sqlvalues(dbschema.PackagePublishingStatus.PUBLISHED))
 
         if archtag:
-            query.append('DistroArchRelease.architecturetag = %s'
+            queries.append('DistroArchRelease.architecturetag = %s'
                          % sqlvalues(archtag))
 
-        query = " AND ".join(query)
+        query = " AND ".join(queries)
 
         return BinaryPackageRelease.select(query, distinct=True,
                                            clauseTables=clauseTables,
