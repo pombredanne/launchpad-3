@@ -253,6 +253,9 @@ def setup(con, configuration=DEFAULT_CONFIG):
         query = re.sub(r"\bnot\b", "!", query)
         ## plpy.debug('3 query is %s' % repr(query))
 
+        # Remove spurious brackets
+        query = re.sub(r"\(([^\&\|]*)\)", " \\1 ", query)
+
         # Insert & between tokens without an existing boolean operator
         # Whitespace not proceded by (|&! not followed by &|
         query = re.sub(r"(?<![\(\|\&\!\s])\s+(?![\&\|\s])", "&", query)
