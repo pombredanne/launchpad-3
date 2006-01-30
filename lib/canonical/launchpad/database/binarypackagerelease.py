@@ -198,37 +198,32 @@ class BinaryPackageReleaseSet:
         clauseTables = ['BinaryPackagePublishing', 'DistroArchRelease',
                         'BinaryPackageRelease', 'BinaryPackageName']
 
-        query = ('''BinaryPackagePublishing.binarypackagerelease =
+        query = ['''BinaryPackagePublishing.binarypackagerelease =
                         BinaryPackageRelease.id AND
                     BinaryPackagePublishing.distroarchrelease =
                         DistroArchRelease.id AND
                     DistroArchRelease.distrorelease = %d AND
                     BinaryPackageRelease.binarypackagename = 
                         BinaryPackageName.id'''
-            % distroreleaseID
-            )
-
-        # XXX: Rewrite this code to use "AND".join(); I'm hacking on an
-        # extra space here to make this work.
-        #   -- kiko, 2005-09-23
-        query += " "
+            % distroreleaseID]
+            
 
         if fti:
-            query += """
-                AND
+            query.append("""
                 (
                 BinaryPackageName.name
                     LIKE lower('%%' || %s || '%%')
                 OR BinaryPackageRelease.fti @@ ftq(%s))
-                """ % (quote_like(pattern), quote(pattern))
+                """ % (quote_like(pattern), quote(pattern)))
         else:
-            query += ('AND BinaryPackageName.name ILIKE %s '
-                      % sqlvalues('%%' + pattern + '%%')
-                      )
+            query.append('BinaryPackageName.name ILIKE %s'
+                         % sqlvalues('%%' + pattern + '%%'))
 
         if archtag:
-            query += ('AND DistroArchRelease.architecturetag=%s'
-                      % sqlvalues(archtag))
+            query.append('DistroArchRelease.architecturetag=%s'
+                         % sqlvalues(archtag))
+
+        query = " AND ".join(query)
 
         return BinaryPackageRelease.select(query, clauseTables=clauseTables,
                                            orderBy='BinaryPackageName.name')
