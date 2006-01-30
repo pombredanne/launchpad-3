@@ -9,10 +9,6 @@ from canonical.lp.z3batching import Batch
 from canonical.lp.batching import BatchNavigator
 from canonical.launchpad.vocabularies import IHugeVocabulary
 
-import logging
-
-from canonical.launchpad import _
-
 
 class ISinglePopupWidget(ISimpleInputWidget):
     # I chose to use onKeyPress because onChange only fires when focus
@@ -121,20 +117,29 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
 
 class ISinglePopupView(Interface):
 
+    batch = Attribute('The BatchNavigator of the current results to display')
+
     def title():
-        'Title to use on the popup page'
+        """Title to use on the popup page"""
 
     def vocabulary():
-        'Return the IHugeVocabulary to display in the popup window'
+        """Return the IHugeVocabulary to display in the popup window"""
 
-    def batch():
-        'Return the BatchNavigator of the current results to display'
+    def search():
+        """Return the BatchNavigator of the current results to display"""
+
+    def hasMoreThanOnePage(self):
+        """Return True if there's more than one page with results."""
+
+    def currentTokenizedBatch(self):
+        """Return the ITokenizedTerms for the current batch."""
 
 
 class SinglePopupView(object):
     implements(ISinglePopupView)
 
-    batchsize = 15
+    _batchsize = 15
+    batch = None
 
     def title(self):
         """See ISinglePopupView"""
@@ -149,12 +154,22 @@ class SinglePopupView(object):
             'Invalid vocabulary %s' % self.request.form['vocabulary'])
         return vocabulary
 
-    def batch(self):
+    def search(self):
         """See ISinglePopupView"""
         start = int(self.request.get('batch_start', 0))
         search_text = self.request.get('search', None)
         batch = Batch(
-            list=list(self.vocabulary().search(search_text)),
-            start=start, size=self.batchsize)
-        return BatchNavigator(batch=batch, request=self.request)
+            list=self.vocabulary().search(search_text),
+            start=start, size=self._batchsize)
+        self.batch = BatchNavigator(batch=batch, request=self.request)
+        return self.batch
+
+    def hasMoreThanOnePage(self):
+        """See ISinglePopupView"""
+        return len(self.batch.batchPageURLs()) > 1
+
+    def currentTokenizedBatch(self):
+        """See ISinglePopupView"""
+        vocabulary = self.vocabulary()
+        return [vocabulary.toTerm(item) for item in self.batch.currentBatch()]
 

@@ -107,7 +107,7 @@ class SQLObjectVocabularyBase:
     def __init__(self, context=None):
         self.context = context
 
-    def _toTerm(self, obj):
+    def toTerm(self, obj):
         return SimpleTerm(obj, obj.id, obj.title)
 
     def __iter__(self):
@@ -115,7 +115,7 @@ class SQLObjectVocabularyBase:
         if self._orderBy:
             params['orderBy'] = self._orderBy
         for obj in self._table.select(**params):
-            yield self._toTerm(obj)
+            yield self.toTerm(obj)
 
     def __len__(self):
         return len(list(iter(self)))
@@ -138,7 +138,7 @@ class SQLObjectVocabularyBase:
         # Short circuit. There is probably a design problem here since we
         # sometimes get the id and sometimes an SQLBase instance.
         if zisinstance(value, SQLBase):
-            return self._toTerm(value)
+            return self.toTerm(value)
 
         try:
             value = int(value)
@@ -153,7 +153,7 @@ class SQLObjectVocabularyBase:
         if obj is None:
             raise LookupError(value)
 
-        return self._toTerm(obj)
+        return self.toTerm(obj)
 
     def getTermByToken(self, token):
         return self.getTerm(token)
@@ -167,29 +167,27 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
     doesn't actually specify this interface since it may not actually
     be huge and require the custom widgets.
 
-    May still want to override _toTerm to provide a nicer title and
+    May still want to override toTerm to provide a nicer title and
     search to search on titles or descriptions.
     """
     _orderBy = 'name'
 
-    def _toTerm(self, obj):
+    def toTerm(self, obj):
         return SimpleTerm(obj.id, obj.name, obj.name)
 
     def getTermByToken(self, token):
         objs = list(self._table.selectBy(name=token))
         if not objs:
             raise LookupError(token)
-        return self._toTerm(objs[0])
+        return self.toTerm(objs[0])
 
     def search(self, query):
         """Return terms where query is a subtring of the name"""
         if query:
-            objs = self._table.select(
+            return self._table.select(
                 CONTAINSSTRING(self._table.q.name, query),
                 orderBy=self._orderBy
                 )
-            for o in objs:
-                yield self._toTerm(o)
 
 
 class NamedSQLObjectHugeVocabulary(NamedSQLObjectVocabulary):
@@ -209,7 +207,7 @@ class BasePersonVocabulary:
     """This is a base class to be used by all different Person Vocabularies."""
     _table = Person
 
-    def _toTerm(self, obj):
+    def toTerm(self, obj):
         """Return the term for this object.
 
         Preference is given to email-based terms, falling back on
@@ -232,14 +230,14 @@ class BasePersonVocabulary:
             email = getUtility(IEmailAddressSet).getByEmail(token)
             if email is None:
                 raise LookupError(token)
-            return self._toTerm(email.person)
+            return self.toTerm(email.person)
         else:
             # This doesn't look like an email, so let's simply treat
             # it like a name.
             person = getUtility(IPersonSet).getByName(token)
             if person is None:
                 raise LookupError(token)
-            return self._toTerm(person)
+            return self.toTerm(person)
 
 
 class CountryNameVocabulary(SQLObjectVocabularyBase):
@@ -248,7 +246,7 @@ class CountryNameVocabulary(SQLObjectVocabularyBase):
     _table = Country
     _orderBy = 'name'
 
-    def _toTerm(self, obj):
+    def toTerm(self, obj):
         return SimpleTerm(obj, obj.id, obj.name)
 
 
@@ -277,7 +275,7 @@ class BinaryAndSourcePackageNameVocabulary(SQLObjectVocabularyBase):
 
     def getTermByToken(self, token):
         # Try to retrieve the binary package name.
-        return self._toTerm(token)
+        return self.toTerm(token)
 
     def search(self, query=None):
         """Find matching source and binary package names."""
@@ -307,10 +305,9 @@ class BinaryAndSourcePackageNameVocabulary(SQLObjectVocabularyBase):
 
         package_name_rows = cur.fetchall()
 
-        for package_name_row in package_name_rows:
-            yield self._toTerm(package_name_row[0])
+        return [package_name_row[0] for package_name_row in package_name_rows]
 
-    def _toTerm(self, name):
+    def toTerm(self, name):
         return SimpleTerm(name, name, name)
 
 
@@ -344,7 +341,7 @@ class LanguageVocabulary(SQLObjectVocabularyBase):
     _table = Language
     _orderBy = 'englishname'
 
-    def _toTerm(self, obj):
+    def toTerm(self, obj):
         return SimpleTerm(obj, obj.id, obj.displayname)
 
 
@@ -366,7 +363,7 @@ class ProductVocabulary(SQLObjectVocabularyBase):
         if self._orderBy:
             params['orderBy'] = self._orderBy
         for obj in self._table.select("active = 't'", **params):
-            yield self._toTerm(obj)
+            yield self.toTerm(obj)
 
     def __contains__(self, obj):
         # Sometimes this method is called with an SQLBase instance, but
@@ -380,14 +377,14 @@ class ProductVocabulary(SQLObjectVocabularyBase):
             product = self._table.selectOne(where % int(obj))
             return product is not None
 
-    def _toTerm(self, obj):
+    def toTerm(self, obj):
         return SimpleTerm(obj, obj.name, obj.title)
 
     def getTermByToken(self, token):
         product = self._table.selectOneBy(name=token, active=True)
         if product is None:
             raise LookupError(token)
-        return self._toTerm(product)
+        return self.toTerm(product)
 
     def search(self, query):
         """Returns products where the product name, displayname, title,
@@ -401,8 +398,7 @@ class ProductVocabulary(SQLObjectVocabularyBase):
             sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
                     like_query, fti_query
                     )
-            return [self._toTerm(r)
-                for r in self._table.select(sql, orderBy=self._orderBy)]
+            return self._table.select(sql, orderBy=self._orderBy)
 
         return []
 
@@ -419,7 +415,7 @@ class ProjectVocabulary(SQLObjectVocabularyBase):
         if self._orderBy:
             params['orderBy'] = self._orderBy
         for obj in self._table.select("active = 't'", **params):
-            yield self._toTerm(obj)
+            yield self.toTerm(obj)
 
     def __contains__(self, obj):
         where = "active='t' and id=%d"
@@ -430,14 +426,14 @@ class ProjectVocabulary(SQLObjectVocabularyBase):
             project = self._table.selectOne(where % int(obj))
             return project is not None
 
-    def _toTerm(self, obj):
+    def toTerm(self, obj):
         return SimpleTerm(obj, obj.name, obj.title)
 
     def getTermByToken(self, token):
         project = self._table.selectOneBy(name=token, active=True)
         if project is None:
             raise LookupError(token)
-        return self._toTerm(project)
+        return self.toTerm(project)
 
     def search(self, query):
         """Returns projects where the project name, displayname, title,
@@ -451,7 +447,7 @@ class ProjectVocabulary(SQLObjectVocabularyBase):
             sql = "active = 't' AND (name LIKE %s OR fti @@ ftq(%s))" % (
                     like_query, fti_query
                     )
-            return [self._toTerm(r) for r in self._table.select(sql)]
+            return self._table.select(sql)
         return []
 
 
@@ -459,7 +455,7 @@ class TranslationGroupVocabulary(NamedSQLObjectVocabulary):
 
     _table = TranslationGroup
 
-    def _toTerm(self, obj):
+    def toTerm(self, obj):
         return SimpleTerm(obj, obj.name, obj.title)
 
 
@@ -477,7 +473,7 @@ class PersonAccountToMergeVocabulary(
 
     def __iter__(self):
         for obj in self._select():
-            yield self._toTerm(obj)
+            yield self.toTerm(obj)
 
     def __contains__(self, obj):
         return obj in self._select()
@@ -491,7 +487,7 @@ class PersonAccountToMergeVocabulary(
             return []
 
         text = text.lower()
-        return [self._toTerm(obj) for obj in self._select(text)]
+        return self._select(text)
 
 
 class ValidPersonOrTeamVocabulary(
@@ -519,7 +515,7 @@ class ValidPersonOrTeamVocabulary(
 
     def __iter__(self):
         for person in self._doSearch():
-            yield self._toTerm(person)
+            yield self.toTerm(person)
 
     def _doSearch(self, text=""):
         """Return the people/teams whose fti or email address match :text:"""
@@ -565,8 +561,7 @@ class ValidPersonOrTeamVocabulary(
             return
 
         text = text.lower()
-        for result in self._doSearch(text=text):
-            yield self._toTerm(result)
+        return self._doSearch(text=text)
 
 
 class ValidTeamMemberVocabulary(ValidPersonOrTeamVocabulary):
@@ -636,9 +631,9 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
             orderBy=self._orderBy,
             clauseTables=self._clauseTables,
             ):
-            yield self._toTerm(obj)
+            yield self.toTerm(obj)
 
-    def _toTerm(self, obj):
+    def toTerm(self, obj):
         productrelease = obj
         productseries = productrelease.productseries
         product = productseries.product
@@ -667,7 +662,7 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
                 )
             )
         try:
-            return self._toTerm(obj)
+            return self.toTerm(obj)
         except IndexError:
             raise LookupError(token)
 
@@ -688,8 +683,7 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
                 orderBy=self._orderBy
                 )
 
-            for o in objs:
-                yield self._toTerm(o)
+            return objs
 
 
 class ProductSeriesVocabulary(SQLObjectVocabularyBase):
@@ -706,9 +700,9 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
                 orderBy=self._orderBy,
                 clauseTables=self._clauseTables,
                 ):
-            yield self._toTerm(obj)
+            yield self.toTerm(obj)
 
-    def _toTerm(self, obj):
+    def toTerm(self, obj):
         # NB: We use '/' as the seperator because '-' is valid in
         # a product.name or productseries.name
         token = '%s/%s' % (obj.product.name, obj.name)
@@ -728,7 +722,7 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
                     ''' % sqlvalues(productname, productseriesname),
                     clauseTables=['Product'])
         if result is not None:
-            return self._toTerm(result)
+            return self.toTerm(result)
         raise LookupError(token)
 
     def search(self, query):
@@ -745,8 +739,7 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
                         ),
                     orderBy=self._orderBy
                     )
-            for o in objs:
-                yield self._toTerm(o)
+            return objs
 
 
 class FilteredDistroReleaseVocabulary(SQLObjectVocabularyBase):
@@ -754,7 +747,7 @@ class FilteredDistroReleaseVocabulary(SQLObjectVocabularyBase):
     _table = DistroRelease
     _orderBy = 'version'
 
-    def _toTerm(self, obj):
+    def toTerm(self, obj):
         return SimpleTerm(
             obj, obj.id, '%s %s' % (obj.distribution.name, obj.name))
 
@@ -767,7 +760,7 @@ class FilteredDistroReleaseVocabulary(SQLObjectVocabularyBase):
             distribution = launchbag.distribution
             for distrorelease in self._table.selectBy(
                 distributionID=distribution.id, **kw):
-                yield self._toTerm(distrorelease)
+                yield self.toTerm(distrorelease)
 
 
 class FilteredDistroArchReleaseVocabulary(SQLObjectVocabularyBase):
@@ -777,7 +770,7 @@ class FilteredDistroArchReleaseVocabulary(SQLObjectVocabularyBase):
     _orderBy = ['DistroRelease.version', 'architecturetag', 'id']
     _clauseTables = ['DistroRelease']
 
-    def _toTerm(self, obj):
+    def toTerm(self, obj):
         name = "%s %s (%s)" % (obj.distrorelease.distribution.name,
                                obj.distrorelease.name, obj.architecturetag)
         return SimpleTerm(obj, obj.id, name)
@@ -792,7 +785,7 @@ class FilteredDistroArchReleaseVocabulary(SQLObjectVocabularyBase):
             results = self._table.select(
                 query, orderBy=self._orderBy, clauseTables=self._clauseTables)
             for distroarchrelease in results:
-                yield self._toTerm(distroarchrelease)
+                yield self.toTerm(distroarchrelease)
 
 
 class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
@@ -800,7 +793,7 @@ class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
     _table = ProductSeries
     _orderBy = ['product', 'name']
 
-    def _toTerm(self, obj):
+    def toTerm(self, obj):
         return SimpleTerm(
             obj, obj.id, '%s %s' % (obj.product.name, obj.name))
 
@@ -808,14 +801,14 @@ class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
         launchbag = getUtility(ILaunchBag)
         if launchbag.product is not None:
             for series in launchbag.product.serieslist:
-                yield self._toTerm(series)
+                yield self.toTerm(series)
 
 
 class MilestoneVocabulary(SQLObjectVocabularyBase):
     _table = Milestone
     _orderBy = 'name'
 
-    def _toTerm(self, obj):
+    def toTerm(self, obj):
         return SimpleTerm(obj, obj.id, obj.name)
 
     def __iter__(self):
@@ -830,7 +823,7 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
 
         if target is not None:
             for ms in target.milestones:
-                yield self._toTerm(ms)
+                yield self.toTerm(ms)
 
 
 class SpecificationVocabulary(NamedSQLObjectVocabulary):
@@ -841,7 +834,7 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
     _table = Specification
     _orderBy = 'title'
 
-    def _toTerm(self, obj):
+    def toTerm(self, obj):
         return SimpleTerm(obj, obj.name, obj.name)
 
     def __iter__(self):
@@ -876,7 +869,7 @@ class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
     _table = Specification
     _orderBy = 'title'
 
-    def _toTerm(self, obj):
+    def toTerm(self, obj):
         return SimpleTerm(obj, obj.name, obj.title)
 
     def __iter__(self):
@@ -891,7 +884,7 @@ class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
 class SprintVocabulary(NamedSQLObjectVocabulary):
     _table = Sprint
 
-    def _toTerm(self, obj):
+    def toTerm(self, obj):
         return SimpleTerm(obj, obj.name, obj.title)
 
 
@@ -904,14 +897,14 @@ class BugWatchVocabulary(SQLObjectVocabularyBase):
             raise ValueError('Unknown bug context for Watch list.')
 
         for watch in bug.watches:
-            yield self._toTerm(watch)
+            yield self.toTerm(watch)
 
 
 class PackageReleaseVocabulary(SQLObjectVocabularyBase):
     _table = SourcePackageRelease
     _orderBy = 'id'
 
-    def _toTerm(self, obj):
+    def toTerm(self, obj):
         return SimpleTerm(
             obj, obj.id, obj.name + " " + obj.version)
 
@@ -922,7 +915,7 @@ class SourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
     _table = SourcePackageName
     _orderBy = 'name'
 
-    def _toTerm(self, obj):
+    def toTerm(self, obj):
         return SimpleTerm(obj, obj.name, obj.name)
 
     def search(self, query):
@@ -933,12 +926,9 @@ class SourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
         if not query:
             return []
         query = query.lower()
-        t = self._table
-        objs = [self._toTerm(r)
-                   for r in t.select("""
-                       sourcepackagename.name like '%%' || %s || '%%'
-                       """ % quote_like(query))]
-        return objs
+        return self._table.select(
+            "sourcepackagename.name LIKE '%%' || %s || '%%'"
+            % quote_like(query))
 
 
 class DistributionVocabulary(NamedSQLObjectHugeVocabulary):
@@ -947,7 +937,7 @@ class DistributionVocabulary(NamedSQLObjectHugeVocabulary):
     _table = Distribution
     _orderBy = 'name'
 
-    def _toTerm(self, obj):
+    def toTerm(self, obj):
         return SimpleTerm(obj, obj.name, obj.title)
 
     def getTermByToken(self, token):
@@ -955,7 +945,7 @@ class DistributionVocabulary(NamedSQLObjectHugeVocabulary):
         if obj is None:
             raise LookupError(token)
         else:
-            return self._toTerm(obj)
+            return self.toTerm(obj)
 
     def search(self, query):
         """Return terms where query is a substring of the name"""
@@ -966,8 +956,7 @@ class DistributionVocabulary(NamedSQLObjectHugeVocabulary):
             kw = {}
             if self._orderBy:
                 kw['orderBy'] = self._orderBy
-            objs = self._table.select("name LIKE %s" % like_query, **kw)
-            return [self._toTerm(obj) for obj in objs]
+            return self._table.select("name LIKE %s" % like_query, **kw)
 
         return []
 
@@ -985,9 +974,9 @@ class DistroReleaseVocabulary(NamedSQLObjectHugeVocabulary):
                 orderBy=self._orderBy,
                 clauseTables=self._clauseTables,
                 ):
-            yield self._toTerm(obj)
+            yield self.toTerm(obj)
 
-    def _toTerm(self, obj):
+    def toTerm(self, obj):
         # NB: We use '/' as the separator because '-' is valid in
         # a distribution.name
         token = '%s/%s' % (obj.distribution.name, obj.name)
@@ -1004,7 +993,7 @@ class DistroReleaseVocabulary(NamedSQLObjectHugeVocabulary):
         if obj is None:
             raise LookupError(token)
         else:
-            return self._toTerm(obj)
+            return self.toTerm(obj)
 
     def search(self, query):
         """Return terms where query is a substring of the name."""
@@ -1020,8 +1009,7 @@ class DistroReleaseVocabulary(NamedSQLObjectHugeVocabulary):
                         ),
                     orderBy=self._orderBy
                     )
-            for o in objs:
-                yield self._toTerm(o)
+            return objs
 
 
 class POTemplateNameVocabulary(NamedSQLObjectHugeVocabulary):
@@ -1030,7 +1018,7 @@ class POTemplateNameVocabulary(NamedSQLObjectHugeVocabulary):
     _table = POTemplateName
     _orderBy = 'name'
 
-    def _toTerm(self, obj):
+    def toTerm(self, obj):
         return SimpleTerm(obj, obj.name, obj.translationdomain)
 
 
@@ -1048,15 +1036,14 @@ class ProcessorVocabulary(NamedSQLObjectHugeVocabulary):
                 CONTAINSSTRING(Processor.q.name, query),
                 orderBy=self._orderBy
                 )
-            for processor in processors:
-                yield self._toTerm(processor)
+            return processors
 
 
 class ProcessorFamilyVocabulary(NamedSQLObjectVocabulary):
     _table = ProcessorFamily
     _orderBy = 'name'
 
-    def _toTerm(self, obj):
+    def toTerm(self, obj):
         return SimpleTerm(obj, obj.name, obj.title)
 
 
