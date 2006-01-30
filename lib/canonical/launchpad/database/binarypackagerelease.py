@@ -205,7 +205,7 @@ class BinaryPackageReleaseSet:
                     DistroArchRelease.distrorelease = %d AND
                     BinaryPackageRelease.binarypackagename = 
                         BinaryPackageName.id'''
-            % distroreleaseID]
+                 % distroreleaseID]
             
 
         if fti:
@@ -245,7 +245,7 @@ class BinaryPackageReleaseSet:
                     DistroArchRelease.distrorelease = %d AND
                     BinaryPackageRelease.binarypackagename = 
                         BinaryPackageName.id'''
-            % distroreleaseID]
+                 % distroreleaseID]
 
 
         if name:
@@ -255,14 +255,14 @@ class BinaryPackageReleaseSet:
         # return the current one
         if version:
             query.append('BinaryPackageRelease.version = %s'
-                      % sqlvalues(version))
+                         % sqlvalues(version))
         else:
             query.append('BinaryPackagePublishing.status = %s'
-                      % sqlvalues(dbschema.PackagePublishingStatus.PUBLISHED))
+                         % sqlvalues(dbschema.PackagePublishingStatus.PUBLISHED))
 
         if archtag:
             query.append('DistroArchRelease.architecturetag = %s'
-                      % sqlvalues(archtag))
+                         % sqlvalues(archtag))
 
         query = " AND ".join(query)
 
