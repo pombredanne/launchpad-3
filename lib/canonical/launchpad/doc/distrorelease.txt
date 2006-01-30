@@ -75,6 +75,10 @@ DistroRelease.getPublishedReleases:
     1
     >>> print prs[0].sourcepackagerelease.sourcepackagename.name
     mozilla-firefox
+    >>> print len(warty2.getPublishedReleases('mozilla-firefox'))
+    1
+    >>> print len(warty2.getPublishedReleases('nosuchpackage'))
+    0
 
 DistroRelease.getBinaryPackagePublishing will return
 BinaryPackagePublishing objects for the DistroRelease:

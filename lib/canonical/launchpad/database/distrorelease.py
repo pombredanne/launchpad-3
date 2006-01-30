@@ -25,9 +25,9 @@ from canonical.lp.dbschema import (
     DistroReleaseQueueStatus, PackagePublishingPocket, SpecificationSort)
 
 from canonical.launchpad.interfaces import (
-    IDistroRelease, IDistroReleaseSet, ISourcePackageName,
-    IPublishedPackageSet, IHasBuildRecords, NotFoundError,
-    IBinaryPackageName, IBuildSet, UNRESOLVED_BUGTASK_STATUSES,
+    IDistroRelease, IDistroReleaseSet, ISourcePackage, ISourcePackageName,
+    ISourcePackageNameSet, IPublishedPackageSet, IHasBuildRecords,
+    NotFoundError, IBinaryPackageName, IBuildSet, UNRESOLVED_BUGTASK_STATUSES,
     RESOLVED_BUGTASK_STATUSES)
 
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -351,10 +351,17 @@ class DistroRelease(SQLBase):
 
     def getPublishedReleases(self, sourcepackage_or_name, pocket=None):
         """See IDistroRelease."""
-        if ISourcePackageName.providedBy(sourcepackage_or_name):
-            sourcepackage = sourcepackage_or_name
+        # XXX: what is this providedBy crap?! change this to use multiple
+        # argument formats
+        if ISourcePackage.providedBy(sourcepackage_or_name):
+            spn = sourcepackage_or_name.name
+        elif ISourcePackageName.providedBy(sourcepackage_or_name):
+            spn = sourcepackage_or_name
         else:
-            sourcepackage = sourcepackage_or_name.name
+            spns = getUtility(ISourcePackageNameSet)
+            spn = spns.queryByName(sourcepackage_or_name)
+            if spn is None:
+                return []
         pocketclause = ""
         if pocket is not None:
             pocketclause = "AND pocket=%s" % sqlvalues(pocket.value)
@@ -366,7 +373,7 @@ class DistroRelease(SQLBase):
             sourcepackagerelease.sourcepackagename = %s
             """ % sqlvalues(self.id,
                             PackagePublishingStatus.PUBLISHED,
-                            sourcepackage.id))+pocketclause,
+                            spn.id))+pocketclause,
             clauseTables = ['SourcePackageRelease'])
         return shortlist(published)
 
