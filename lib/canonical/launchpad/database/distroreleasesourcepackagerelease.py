@@ -63,7 +63,7 @@ class DistroReleaseSourcePackageRelease:
         this release is or was published.
         """
         pub_hist = self.publishing_history
-        if len(pub_hist) == 0:
+        if pub_hist.count() == 0:
             return None
         return pub_hist[0]
 

@@ -9,7 +9,7 @@ PO Export Request Browser Views
 Check there are no requests in the database to start with.
 
   >>> from canonical.launchpad.database import POExportRequest
-  >>> len(POExportRequest.select())
+  >>> POExportRequest.select().count()
   0
 
 Here's our user who's going to request some PO files.
@@ -70,7 +70,7 @@ Now forget that that request happened.
 
 See, no requests!
 
-  >>> len(POExportRequest.select())
+  >>> POExportRequest.select().count()
   0
 
 Let's request a PO file instead this time.
@@ -100,7 +100,7 @@ Here's that request getting processed.
 
 And there it is.
 
-  >>> len(POExportRequest.select())
+  >>> POExportRequest.select().count()
   1
 
   >>> LaunchpadFunctionalTestSetup().tearDown()
