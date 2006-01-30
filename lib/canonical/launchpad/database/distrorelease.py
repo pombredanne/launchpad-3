@@ -30,6 +30,7 @@ from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
     IPublishedPackageSet, IHasBuildRecords, NotFoundError,
     IBinaryPackageName, ILibraryFileAliasSet, IBuildSet,
+    ISourcePackage, ISourcePackageNameSet,
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.components.bugtarget import BugTargetBase
@@ -43,8 +44,8 @@ from canonical.launchpad.database.distroreleasesourcepackagerelease import (
 from canonical.launchpad.database.distroreleasepackagecache import (
     DistroReleasePackageCache)
 from canonical.launchpad.database.publishing import (
-    SourcePackagePublishing, BinaryPackagePublishingHistory,
-    SourcePackagePublishingHistory)
+    SourcePackagePublishing, BinaryPackagePublishing,
+    BinaryPackagePublishingHistory, SourcePackagePublishingHistory)
 from canonical.launchpad.database.distroarchrelease import DistroArchRelease
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.language import Language
@@ -353,10 +354,17 @@ class DistroRelease(SQLBase, BugTargetBase):
 
     def getPublishedReleases(self, sourcepackage_or_name, pocket=None):
         """See IDistroRelease."""
-        if ISourcePackageName.providedBy(sourcepackage_or_name):
-            sourcepackage = sourcepackage_or_name
+        # XXX: what is this providedBy crap?! change this to use multiple
+        # argument formats
+        if ISourcePackage.providedBy(sourcepackage_or_name):
+            spn = sourcepackage_or_name.name
+        elif ISourcePackageName.providedBy(sourcepackage_or_name):
+            spn = sourcepackage_or_name
         else:
-            sourcepackage = sourcepackage_or_name.name
+            spns = getUtility(ISourcePackageNameSet)
+            spn = spns.queryByName(sourcepackage_or_name)
+            if spn is None:
+                return []
         pocketclause = ""
         if pocket is not None:
             pocketclause = "AND pocket=%s" % sqlvalues(pocket.value)
@@ -368,7 +376,7 @@ class DistroRelease(SQLBase, BugTargetBase):
             sourcepackagerelease.sourcepackagename = %s
             """ % sqlvalues(self.id,
                             PackagePublishingStatus.PUBLISHED,
-                            sourcepackage.id))+pocketclause,
+                            spn.id))+pocketclause,
             clauseTables = ['SourcePackageRelease'])
         return shortlist(published)
 
