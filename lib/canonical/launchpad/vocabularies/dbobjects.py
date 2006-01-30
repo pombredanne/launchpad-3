@@ -12,6 +12,7 @@ __all__ = [
     'IHugeVocabulary',
     'SQLObjectVocabularyBase',
     'NamedSQLObjectVocabulary',
+    'NamedSQLObjectHugeVocabulary',
     'BinaryAndSourcePackageNameVocabulary',
     'BinaryPackageNameVocabulary',
     'BountyVocabulary',
@@ -169,14 +170,7 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
     May still want to override _toTerm to provide a nicer title and
     search to search on titles or descriptions.
     """
-    implements(IHugeVocabulary)
     _orderBy = 'name'
-    displayname = None
-
-    def __init__(self, context=None):
-        SQLObjectVocabularyBase.__init__(self, context)
-        if self.displayname is None:
-            self.displayname = 'Select %s' % self.__class__.__name__
 
     def _toTerm(self, obj):
         return SimpleTerm(obj.id, obj.name, obj.name)
@@ -196,6 +190,19 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
                 )
             for o in objs:
                 yield self._toTerm(o)
+
+
+class NamedSQLObjectHugeVocabulary(NamedSQLObjectVocabulary):
+    """A NamedSQLObjectVocabulary that implements IHugeVocabulary."""
+
+    implements(IHugeVocabulary)
+    _orderBy = 'name'
+    displayname = None
+
+    def __init__(self, context=None):
+        NamedSQLObjectVocabulary.__init__(self, context)
+        if self.displayname is None:
+            self.displayname = 'Select %s' % self.__class__.__name__
 
 
 class BasePersonVocabulary:
@@ -238,10 +245,8 @@ class BasePersonVocabulary:
 class CountryNameVocabulary(SQLObjectVocabularyBase):
     """A vocabulary for country names."""
 
-    implements(IHugeVocabulary)
     _table = Country
     _orderBy = 'name'
-    displayname = 'Select a Country'
 
     def _toTerm(self, obj):
         return SimpleTerm(obj, obj.id, obj.name)
@@ -309,8 +314,7 @@ class BinaryAndSourcePackageNameVocabulary(SQLObjectVocabularyBase):
         return SimpleTerm(name, name, name)
 
 
-class BinaryPackageNameVocabulary(NamedSQLObjectVocabulary):
-    implements(IHugeVocabulary)
+class BinaryPackageNameVocabulary(NamedSQLObjectHugeVocabulary):
 
     _table = BinaryPackageName
     _orderBy = 'name'
@@ -318,46 +322,36 @@ class BinaryPackageNameVocabulary(NamedSQLObjectVocabulary):
 
 
 class BugVocabulary(SQLObjectVocabularyBase):
-    implements(IHugeVocabulary)
 
     _table = Bug
     _orderBy = 'id'
-    displayname = 'Select a Bug'
 
 
 class BountyVocabulary(SQLObjectVocabularyBase):
-    implements(IHugeVocabulary)
 
     _table = Bounty
-    displayname = 'Select a Bounty'
 
 
 class BugTrackerVocabulary(SQLObjectVocabularyBase):
-    implements(IHugeVocabulary)
     # XXX: 2004/10/06 Brad Bollenbach -- may be broken, but there's
     # no test data for me to check yet. This'll be fixed by the end
     # of the week (2004/10/08) as we get Malone into usable shape.
     _table = BugTracker
-    displayname = 'Select a Bug Tracker'
 
 
 class LanguageVocabulary(SQLObjectVocabularyBase):
-    implements(IHugeVocabulary)
 
     _table = Language
     _orderBy = 'englishname'
-    displayname = 'Select a Language'
 
     def _toTerm(self, obj):
         return SimpleTerm(obj, obj.id, obj.displayname)
 
 
 class KarmaCategoryVocabulary(NamedSQLObjectVocabulary):
-    implements(IHugeVocabulary)
 
     _table = KarmaCategory
     _orderBy = 'name'
-    displayname = 'Select a Karma Category'
 
 
 class ProductVocabulary(SQLObjectVocabularyBase):
@@ -462,10 +456,8 @@ class ProjectVocabulary(SQLObjectVocabularyBase):
 
 
 class TranslationGroupVocabulary(NamedSQLObjectVocabulary):
-    implements(IHugeVocabulary)
 
     _table = TranslationGroup
-    displayname = 'Select a Translation Group'
 
     def _toTerm(self, obj):
         return SimpleTerm(obj, obj.name, obj.title)
@@ -529,15 +521,9 @@ class ValidPersonOrTeamVocabulary(
         for person in self._doSearch():
             yield self._toTerm(person)
 
-    def _doSearch(self, extra_clause=None, text=""):
-        """Return the people/teams whose name or email address match the given
-        text, restricting restricting the results with any given extra_clause.
-
-        If extra_clause is None, then self.extra_clause is used.
-        """
-        if extra_clause is not None:
-            extra_clause = " AND %s" % extra_clause
-        elif self.extra_clause:
+    def _doSearch(self, text=""):
+        """Return the people/teams whose fti or email address match :text:"""
+        if self.extra_clause:
             extra_clause = " AND %s" % self.extra_clause
         else:
             extra_clause = ""
@@ -567,7 +553,11 @@ class ValidPersonOrTeamVocabulary(
             email_match_query, 
             clauseTables=['ValidPersonOrTeamCache', 'EmailAddress'])
 
-        return name_matches.union(email_matches)
+        # XXX: We have to explicitly provide an orderBy here as a workaround
+        # for https://launchpad.net/products/launchpad/+bug/30053
+        # -- Guilherme Salgado, 2006-01-30
+        return name_matches.union(
+            email_matches, orderBy=['displayname', 'name'])
 
     def search(self, text):
         """Return people/teams whose fti or email address match :text."""
@@ -822,9 +812,6 @@ class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
 
 
 class MilestoneVocabulary(SQLObjectVocabularyBase):
-    implements(IHugeVocabulary)
-
-    displayname = 'Select a Milestone'
     _table = Milestone
     _orderBy = 'name'
 
@@ -850,9 +837,7 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
     """List specifications for the current product or distribution in
     ILaunchBag, EXCEPT for the current spec in LaunchBag if one exists.
     """
-    implements(IHugeVocabulary)
 
-    displayname = 'Select a Specification'
     _table = Specification
     _orderBy = 'title'
 
@@ -887,9 +872,7 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
 
 class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
     """List specifications on which the current specification depends."""
-    implements(IHugeVocabulary)
 
-    displayname = 'Select a Specification'
     _table = Specification
     _orderBy = 'title'
 
@@ -906,9 +889,6 @@ class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
 
 
 class SprintVocabulary(NamedSQLObjectVocabulary):
-    implements(IHugeVocabulary)
-
-    displayname = 'Select a Sprint'
     _table = Sprint
 
     def _toTerm(self, obj):
@@ -916,9 +896,6 @@ class SprintVocabulary(NamedSQLObjectVocabulary):
 
 
 class BugWatchVocabulary(SQLObjectVocabularyBase):
-    implements(IHugeVocabulary)
-
-    displayname = 'Select a Bug Watch'
     _table = BugWatch
 
     def __iter__(self):
@@ -931,9 +908,6 @@ class BugWatchVocabulary(SQLObjectVocabularyBase):
 
 
 class PackageReleaseVocabulary(SQLObjectVocabularyBase):
-    implements(IHugeVocabulary)
-
-    displayname = 'Select a Package Release'
     _table = SourcePackageRelease
     _orderBy = 'id'
 
@@ -942,8 +916,7 @@ class PackageReleaseVocabulary(SQLObjectVocabularyBase):
             obj, obj.id, obj.name + " " + obj.version)
 
 
-class SourcePackageNameVocabulary(NamedSQLObjectVocabulary):
-    implements(IHugeVocabulary)
+class SourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
 
     displayname = 'Select a Source Package'
     _table = SourcePackageName
@@ -968,8 +941,7 @@ class SourcePackageNameVocabulary(NamedSQLObjectVocabulary):
         return objs
 
 
-class DistributionVocabulary(NamedSQLObjectVocabulary):
-    implements(IHugeVocabulary)
+class DistributionVocabulary(NamedSQLObjectHugeVocabulary):
 
     displayname = 'Select a Distribution'
     _table = Distribution
@@ -1000,8 +972,7 @@ class DistributionVocabulary(NamedSQLObjectVocabulary):
         return []
 
 
-class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
-    implements(IHugeVocabulary)
+class DistroReleaseVocabulary(NamedSQLObjectHugeVocabulary):
 
     displayname = 'Select a Distribution Release'
     _table = DistroRelease
@@ -1053,8 +1024,7 @@ class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
                 yield self._toTerm(o)
 
 
-class POTemplateNameVocabulary(NamedSQLObjectVocabulary):
-    implements(IHugeVocabulary)
+class POTemplateNameVocabulary(NamedSQLObjectHugeVocabulary):
 
     displayname = 'Select a POTemplate'
     _table = POTemplateName
@@ -1064,8 +1034,7 @@ class POTemplateNameVocabulary(NamedSQLObjectVocabulary):
         return SimpleTerm(obj, obj.name, obj.translationdomain)
 
 
-class ProcessorVocabulary(NamedSQLObjectVocabulary):
-    implements(IHugeVocabulary)
+class ProcessorVocabulary(NamedSQLObjectHugeVocabulary):
 
     displayname = 'Select a Processor'
     _table = Processor
@@ -1084,9 +1053,6 @@ class ProcessorVocabulary(NamedSQLObjectVocabulary):
 
 
 class ProcessorFamilyVocabulary(NamedSQLObjectVocabulary):
-    implements(IHugeVocabulary)
-
-    displayname = 'Select a Processor Family'
     _table = ProcessorFamily
     _orderBy = 'name'
 
@@ -1094,9 +1060,8 @@ class ProcessorFamilyVocabulary(NamedSQLObjectVocabulary):
         return SimpleTerm(obj, obj.name, obj.title)
 
 
-class SchemaVocabulary(NamedSQLObjectVocabulary):
+class SchemaVocabulary(NamedSQLObjectHugeVocabulary):
     """See NamedSQLObjectVocabulary."""
-    implements(IHugeVocabulary)
 
     displayname = 'Select a Schema'
     _table = Schema

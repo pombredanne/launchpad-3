@@ -375,12 +375,6 @@ class PersonCodeMenu(ApplicationMenu):
 class CommonMenuLinks:
 
     @enabled_with_permission('launchpad.Edit')
-    def common_edit(self):
-        target = '+edit'
-        text = 'Edit Personal Details'
-        return Link(target, text, icon='edit')
-
-    @enabled_with_permission('launchpad.Edit')
     def common_edithomepage(self):
         target = '+edithomepage'
         text = 'Edit Home Page'
@@ -397,11 +391,16 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = IPerson
     facet = 'overview'
-    links = ['karma', 'common_edit', 'common_edithomepage',
-             'editemailaddresses', 'editwikinames', 'editircnicknames',
-             'editjabberids', 'editpassword', 'edithackergotchi',
-             'editsshkeys', 'editgpgkeys', 'codesofconduct', 'administer',
-             'common_packages']
+    links = ['karma', 'edit', 'common_edithomepage', 'editemailaddresses',
+             'editwikinames', 'editircnicknames', 'editjabberids',
+             'editpassword', 'edithackergotchi', 'editsshkeys', 'editgpgkeys',
+             'codesofconduct', 'administer', 'common_packages']
+
+    @enabled_with_permission('launchpad.Edit')
+    def edit(self):
+        target = '+edit'
+        text = 'Edit Personal Details'
+        return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
     def editemailaddresses(self):
@@ -482,9 +481,14 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     usedfor = ITeam
     facet = 'overview'
-    links = ['common_edit', 'common_edithomepage', 'editemblem',
-             'members', 'editemail', 'polls', 'joinleave', 'reassign',
-             'common_packages']
+    links = ['edit', 'common_edithomepage', 'editemblem', 'members',
+             'editemail', 'polls', 'joinleave', 'reassign', 'common_packages']
+
+    @enabled_with_permission('launchpad.Edit')
+    def edit(self):
+        target = '+edit'
+        text = 'Change Team Details'
+        return Link(target, text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def reassign(self):

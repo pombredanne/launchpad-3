@@ -670,6 +670,13 @@ class IEmailAddress(Interface):
     def destroySelf():
         """Delete this email from the database."""
 
+    def syncUpdate():
+        """Write updates made on this object to the database.
+
+        This should be used when you can't wait until the transaction is
+        committed to have some updates actually written to the database.
+        """
+
 
 class IEmailAddressSet(Interface):
     """The set of EmailAddresses."""
