@@ -643,6 +643,14 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                 self.debug("Writing Release file for %s/%s/%s" % (
                     full_name, component, architecture))
                 if architecture != "source":
+                    # Set up the debian-installer paths, which are nested
+                    # inside the component
+                    di_path = os.path.join(component, "debian-installer",
+                                           architecture)
+                    di_file_stub = os.path.join(di_path, file_stub)
+                    for suffix in ('', '.gz', '.bz2'):
+                        all_files.add(di_file_stub + suffix)
+
                     # Strip "binary-" off the front of the architecture before
                     # noting it in all_architectures
                     clean_architecture = architecture[7:]
@@ -652,20 +660,18 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                     file_stub = "Sources"
                     clean_architecture = architecture
 
+                # Now, grab the actual (non-di) files inside each of
+                # the suite's architectures
                 file_stub = os.path.join(component, architecture, file_stub)
-                all_files.add(file_stub)
-                all_files.add(file_stub + ".gz")
-                all_files.add(file_stub + ".bz2")
-                all_files.add(os.path.join(component, architecture, "Release"))
-                di_file_stub = os.path.join(component, "debian-installer",
-                                            architecture, file_stub)
-
+                
                 for suffix in ('', '.gz', '.bz2'):
-                    if os.path.exists(di_file_stub+suffix):
-                        all_files.add(di_file_stub+suffix)
+                    all_files.add(file_stub + suffix)
+
+                all_files.add(os.path.join(component, architecture, "Release"))
 
                 f = open(os.path.join(self._config.distsroot, full_name,
                                       component, architecture, "Release"), "w")
+
                 contents = """Archive: %s
 Version: %s
 Component: %s
@@ -682,21 +688,22 @@ Architecture: %s
         f.write("""Origin: %s
 Label: %s
 Suite: %s
-Codename: %s
 Version: %s
+Codename: %s
 Date: %s
 Architectures: %s
 Components: %s
 Description: %s
 """ % (distribution.displayname, distribution.displayname,
-       full_name, full_name, distrorelease.version,
+       full_name, distrorelease.version, distrorelease.name,
        datetime.utcnow().strftime("%a, %d %b %Y %k:%M:%S UTC"),
        " ".join(all_architectures), " ".join(all_components),
        distrorelease.summary))
-        f.write("MD5Sum:\n");
+        f.write("MD5Sum:\n")
+        all_files = sorted(list(all_files), key=os.path.dirname)
         for file_name in all_files:
             self._writeSumLine(full_name, f, file_name, md5)
-        f.write("SHA1:\n");
+        f.write("SHA1:\n")
         for file_name in all_files:
             self._writeSumLine(full_name, f, file_name, sha)
         f.close()
@@ -714,7 +721,9 @@ Description: %s
                     # pocket and the distrorelease is now 'stable' so we
                     # should skip writing out a Release file for it.
                     continue
+
                 full_distrorelease_name = distrorelease.name + suffix
+
                 if full_distrorelease_name in self._release_files_needed:
                     self._writeDistroRelease(self.distro,
                                              distrorelease,
@@ -732,14 +741,21 @@ Description: %s
             for suffix in pockets:
                 full_distrorelease_name = distrorelease.name + suffix
                 for comp in components:
-                    # organize distrorelease and component pair as
-                    # debian-installer -> distrorelease_component internal map.
-                    self._di_release_components.setdefault(
-                        full_distrorelease_name, set()).add(comp)
+                    if suffix == "":
+                        # organize distrorelease and component pair as
+                        # debian-installer -> distrorelease_component
+                        # internal map. Only the main pocket actually
+                        # needs these, though.
+                        self._di_release_components.setdefault(
+                            full_distrorelease_name, set()).add(comp)
+
+                        f_touch(self._config.overrideroot,
+                                ".".join(["override",
+                                          full_distrorelease_name,
+                                          comp,
+                                          "debian-installer"]))
+
                     # Touch the source file lists and override files
-                    f_touch(self._config.overrideroot,
-                            "_".join([full_distrorelease_name,
-                                      comp, "source"]))
                     f_touch(self._config.overrideroot,
                             ".".join(["override",
                                       full_distrorelease_name, comp]))
@@ -749,16 +765,15 @@ Description: %s
                     f_touch(self._config.overrideroot,
                             ".".join(["override",
                                       full_distrorelease_name, comp, "src"]))
-                    f_touch(self._config.overrideroot,
-                            ".".join(["override",
-                                      full_distrorelease_name,
-                                      comp,
-                                      "debian-installer"]))
 
                     self._release_files_needed.setdefault(
                         full_distrorelease_name, {})
 
-                    self._release_files_needed.setdefault(comp, set()).add("source")
+                    f_touch(self._config.overrideroot,
+                            "_".join([full_distrorelease_name,
+                                      comp, "source"]))
+                    self._release_files_needed.setdefault(comp,
+                                                          set()).add("source")
 
                     for arch in arch_tags:
                         # organize dr/comp/arch into temporary binary
