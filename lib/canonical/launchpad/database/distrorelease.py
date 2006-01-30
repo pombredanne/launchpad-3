@@ -9,6 +9,8 @@ __all__ = [
     'DistroReleaseSet',
     ]
 
+from cStringIO import StringIO
+
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -26,12 +28,12 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackage, ISourcePackageName,
-    ISourcePackageNameSet, IPublishedPackageSet, IHasBuildRecords,
-    NotFoundError, IBinaryPackageName, IBuildSet, UNRESOLVED_BUGTASK_STATUSES,
-    RESOLVED_BUGTASK_STATUSES)
+    ISourcePackageNameSet, IPublishedPackageSet, IHasBuildRecords, NotFoundError,
+    ILibraryFileAliasSet, IBinaryPackageName, IBuildSet,
+    UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
+from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.database.constants import DEFAULT, UTC_NOW
-
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
 from canonical.launchpad.database.distroreleasebinarypackage import (
@@ -63,7 +65,7 @@ from canonical.launchpad.database.queue import DistroReleaseQueue
 from canonical.launchpad.helpers import shortlist
 
 
-class DistroRelease(SQLBase):
+class DistroRelease(SQLBase, BugTargetBase):
     """A particular release of a distribution."""
     implements(IDistroRelease, IHasBuildRecords)
 
@@ -604,13 +606,24 @@ class DistroRelease(SQLBase):
             distrorelease=self, owner=owner)
         return dar
 
-    def createQueueEntry(self, pocket,
-                         status=DistroReleaseQueueStatus.ACCEPTED):
+    def createQueueEntry(self, pocket, changesfilename, changesfilecontent):
         """See IDistroRelease."""
-
+        # We store the changes file in the librarian to avoid having to
+        # deal with broken encodings in these files; this will allow us
+        # to regenerate these files as necessary.
+        #
+        # The use of StringIO here should be safe: we do no encoding of
+        # the content in the changes file (as doing so would be guessing
+        # at best, causing unpredictable corruption), and simply pass it
+        # off to the librarian.
+        file_alias_set = getUtility(ILibraryFileAliasSet)
+        changes_file = file_alias_set.create(changesfilename,
+            len(changesfilecontent), StringIO(changesfilecontent),
+            'text/plain')
         return DistroReleaseQueue(distrorelease=self.id,
+                                  status=DistroReleaseQueueStatus.NEW,
                                   pocket=pocket,
-                                  status=status)
+                                  changesfile=changes_file.id)
 
     def getQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED):
         """See IDistroRelease."""
