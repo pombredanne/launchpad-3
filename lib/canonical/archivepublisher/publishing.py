@@ -643,6 +643,12 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                 self.debug("Writing Release file for %s/%s/%s" % (
                     full_name, component, architecture))
                 if architecture != "source":
+                    # Strip "binary-" off the front of the architecture before
+                    # noting it in all_architectures
+                    clean_architecture = architecture[7:]
+                    all_architectures.add(clean_architecture)
+                    file_stub = "Packages"
+
                     # Set up the debian-installer paths, which are nested
                     # inside the component
                     di_path = os.path.join(component, "debian-installer",
@@ -650,12 +656,6 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                     di_file_stub = os.path.join(di_path, file_stub)
                     for suffix in ('', '.gz', '.bz2'):
                         all_files.add(di_file_stub + suffix)
-
-                    # Strip "binary-" off the front of the architecture before
-                    # noting it in all_architectures
-                    clean_architecture = architecture[7:]
-                    all_architectures.add(clean_architecture)
-                    file_stub = "Packages"
                 else:
                     file_stub = "Sources"
                     clean_architecture = architecture
