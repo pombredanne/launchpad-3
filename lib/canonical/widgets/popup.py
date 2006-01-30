@@ -29,7 +29,6 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
     """Window popup widget for single item choices from a huge vocabulary.
 
     The huge vocabulary must be registered by name in the vocabulary registry.
-
     """
     implements(ISinglePopupWidget)
 
@@ -55,7 +54,7 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
         return super(SinglePopupWidget, self)._getFormValue()
 
     def _getFormInput(self):
-        '''See zope.app.form.browser.widget.SimpleWidget'''
+        """See zope.app.form.browser.widget.SimpleWidget"""
         matches = self.matches()
         if len(matches) == 1:
             return matches[0].token
@@ -64,10 +63,9 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
 
     _matches = None
     def matches(self):
-        '''Return a list of matches (as ITokenizedTerm) to whatever the
-           user currently has entered in the form.
-
-        '''
+        """Return a list of matches (as ITokenizedTerm) to whatever the
+        user currently has entered in the form.
+        """
         # Use a cached version if we have it to avoid repeating expensive
         # searches
         if self._matches is not None:
@@ -78,14 +76,15 @@ class SinglePopupWidget(SingleDataHelper, ItemsWidgetBase):
         if not formValue:
             return []
 
+        vocab = self.vocabulary
         # Special case - if the entered value is valid, it is an object
         # rather than a string (I think this is a bug somewhere)
         if not isinstance(formValue, basestring):
-            self._matches = [self.vocabulary.getTerm(formValue)]
+            self._matches = [vocab.getTerm(formValue)]
             return self._matches
 
         # Cache and return the search
-        self._matches = list(self.vocabulary.search(formValue))
+        self._matches = [vocab.toTerm(item) for item in vocab.search(formValue)]
         return self._matches
 
     def formToken(self):

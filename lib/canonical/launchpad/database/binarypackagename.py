@@ -1,7 +1,8 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['BinaryPackageName', 'BinaryPackageNameSet']
+__all__ = ['BinaryPackageName', 'BinaryPackageNameSet',
+           'BinaryAndSourcePackageName']
 
 # Zope imports
 from zope.interface import implements
@@ -76,3 +77,17 @@ class BinaryPackageNameSet:
             return BinaryPackageName.byName(name)
         except SQLObjectNotFound:
             return BinaryPackageName(name=name)
+
+
+class BinaryAndSourcePackageName(SQLBase):
+
+    implements(IBinaryPackageName)
+
+    _table = 'BinaryAndSourcePackageNameView'
+    _idName = 'name'
+    _idType = str
+    _defaultOrder = 'name'
+
+    name = StringCol(dbName='name', notNull=True, unique=True,
+                     alternateID=True)
+

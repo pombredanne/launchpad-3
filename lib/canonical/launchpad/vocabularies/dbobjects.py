@@ -57,14 +57,14 @@ from zope.security.proxy import isinstance as zisinstance
 from sqlobject import AND, OR, CONTAINSSTRING
 
 from canonical.lp.dbschema import EmailAddressStatus
-from canonical.database.sqlbase import (
-    SQLBase, quote_like, quote, sqlvalues, cursor)
+from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.database import (
     Distribution, DistroRelease, Person, SourcePackageRelease,
     SourcePackageName, BugWatch, Sprint, DistroArchRelease, KarmaCategory,
     BinaryPackageName, Language, Milestone, Product, Project, ProductRelease,
     ProductSeries, TranslationGroup, BugTracker, POTemplateName, Schema,
-    Bounty, Country, Specification, Bug, Processor, ProcessorFamily)
+    Bounty, Country, Specification, Bug, Processor, ProcessorFamily,
+    BinaryAndSourcePackageName)
 from canonical.launchpad.interfaces import (
     ILaunchBag, ITeam, IPersonSet, IEmailAddressSet)
 
@@ -78,9 +78,13 @@ class IHugeVocabulary(IVocabulary):
     displayname = Attribute(
         'A name for this vocabulary, to be displayed in the popup window.')
 
+    def toTerm(obj):
+        """Convert the given object into an ITokenizedTerm to be rendered in
+        the UI.
+        """
+
     def search(query=None):
-        """Return an iterable of ITokenizedTerm that match the
-        search string.
+        """Return an iterable of objects that match the search string.
 
         Note that what is searched and how the match is the choice of the
         IHugeVocabulary implementation.
@@ -111,6 +115,7 @@ class SQLObjectVocabularyBase:
         return SimpleTerm(obj, obj.id, obj.title)
 
     def __iter__(self):
+        """Return an iterator which provides the terms from the vocabulary."""
         params = {}
         if self._orderBy:
             params['orderBy'] = self._orderBy
@@ -158,6 +163,15 @@ class SQLObjectVocabularyBase:
     def getTermByToken(self, token):
         return self.getTerm(token)
 
+    def emptySelectResults(self):
+        """Return a SelectResults object without any elements.
+        
+        This is to be used when no search string is given to the search()
+        method of subclasses, in order to be consistent and always return
+        a SelectResults object.
+        """
+        return self._table.select('1 = 2')
+
 
 class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
     """A SQLObjectVocabulary base for database tables that have a unique
@@ -188,6 +202,7 @@ class NamedSQLObjectVocabulary(SQLObjectVocabularyBase):
                 CONTAINSSTRING(self._table.q.name, query),
                 orderBy=self._orderBy
                 )
+        return self.emptySelectResults()
 
 
 class NamedSQLObjectHugeVocabulary(NamedSQLObjectVocabulary):
@@ -240,6 +255,8 @@ class BasePersonVocabulary:
             return self.toTerm(person)
 
 
+# Country.name may have non-ASCII characters, so we can't use
+# NamedSQLObjectVocabulary here.
 class CountryNameVocabulary(SQLObjectVocabularyBase):
     """A vocabulary for country names."""
 
@@ -266,49 +283,24 @@ class BinaryAndSourcePackageNameVocabulary(SQLObjectVocabularyBase):
 
     def __contains__(self, name):
         # Is this a source or binary package name?
-        return (
-            SourcePackageName.selectOneBy(name=name) or
-            BinaryPackageName.selectOneBy(name=name))
-
-    def __iter__(self):
-        return self.search(query="")
+        return BinaryAndSourcePackageName.selectOneBy(name=name)
 
     def getTermByToken(self, token):
-        # Try to retrieve the binary package name.
-        return self.toTerm(token)
+        name = BinaryAndSourcePackageName.selectOneBy(name=token)
+        if name is None:
+            raise LookupError(token)
+        return self.toTerm(name)
 
-    def search(self, query=None):
+    def search(self, query):
         """Find matching source and binary package names."""
-        if query is None:
-            return
+        if not query:
+            return self.emptySelectResults()
 
-        cur = cursor()
+        query = "name ILIKE '%%' || %s || '%%'" % quote_like(query)
+        return BinaryAndSourcePackageName.select(query)
 
-        # Search for matching binary and source package names.
-        #
-        # When a binary package has the same name as a source package, the
-        # binary package name will be returned in the result set, and the
-        # source package name will not. This allows the user to select the
-        # most specific package name possible, without them having to care
-        # about whether that means "source package" or "binary package".
-        quoted_package_name = quote_like(query)
-
-        cur.execute((
-            "SELECT name "
-            "FROM BinaryPackageName "
-            "WHERE name ILIKE '%%' || %s || '%%' "
-            "UNION "
-            "SELECT name FROM SourcePackageName "
-            "WHERE name ILIKE '%%' || %s || '%%' "
-            "ORDER BY name;") % (
-            quoted_package_name, quoted_package_name))
-
-        package_name_rows = cur.fetchall()
-
-        return [package_name_row[0] for package_name_row in package_name_rows]
-
-    def toTerm(self, name):
-        return SimpleTerm(name, name, name)
+    def toTerm(self, obj):
+        return SimpleTerm(obj.name, obj.name, obj.name)
 
 
 class BinaryPackageNameVocabulary(NamedSQLObjectHugeVocabulary):
@@ -358,13 +350,6 @@ class ProductVocabulary(SQLObjectVocabularyBase):
     _orderBy = 'displayname'
     displayname = 'Select a Product'
 
-    def __iter__(self):
-        params = {}
-        if self._orderBy:
-            params['orderBy'] = self._orderBy
-        for obj in self._table.select("active = 't'", **params):
-            yield self.toTerm(obj)
-
     def __contains__(self, obj):
         # Sometimes this method is called with an SQLBase instance, but
         # z3 form machinery sends through integer ids. This might be due
@@ -399,8 +384,7 @@ class ProductVocabulary(SQLObjectVocabularyBase):
                     like_query, fti_query
                     )
             return self._table.select(sql, orderBy=self._orderBy)
-
-        return []
+        return self.emptySelectResults()
 
 
 class ProjectVocabulary(SQLObjectVocabularyBase):
@@ -409,13 +393,6 @@ class ProjectVocabulary(SQLObjectVocabularyBase):
     _table = Project
     _orderBy = 'displayname'
     displayname = 'Select a Project'
-
-    def __iter__(self):
-        params = {}
-        if self._orderBy:
-            params['orderBy'] = self._orderBy
-        for obj in self._table.select("active = 't'", **params):
-            yield self.toTerm(obj)
 
     def __contains__(self, obj):
         where = "active='t' and id=%d"
@@ -448,7 +425,7 @@ class ProjectVocabulary(SQLObjectVocabularyBase):
                     like_query, fti_query
                     )
             return self._table.select(sql)
-        return []
+        return self.emptySelectResults()
 
 
 class TranslationGroupVocabulary(NamedSQLObjectVocabulary):
@@ -471,10 +448,6 @@ class PersonAccountToMergeVocabulary(
     _orderBy = ['displayname']
     displayname = 'Select a Person to Merge'
 
-    def __iter__(self):
-        for obj in self._select():
-            yield self.toTerm(obj)
-
     def __contains__(self, obj):
         return obj in self._select()
 
@@ -484,7 +457,7 @@ class PersonAccountToMergeVocabulary(
     def search(self, text):
         """Return people whose fti or email address match :text."""
         if not text:
-            return []
+            return self.emptySelectResults()
 
         text = text.lower()
         return self._select(text)
@@ -512,10 +485,6 @@ class ValidPersonOrTeamVocabulary(
 
     def __contains__(self, obj):
         return obj in self._doSearch()
-
-    def __iter__(self):
-        for person in self._doSearch():
-            yield self.toTerm(person)
 
     def _doSearch(self, text=""):
         """Return the people/teams whose fti or email address match :text:"""
@@ -558,7 +527,7 @@ class ValidPersonOrTeamVocabulary(
     def search(self, text):
         """Return people/teams whose fti or email address match :text."""
         if not text:
-            return
+            return self.emptySelectResults()
 
         text = text.lower()
         return self._doSearch(text=text)
@@ -623,16 +592,6 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
                 ProductRelease.q.version]
     _clauseTables = ['Product', 'ProductSeries']
 
-    def __iter__(self):
-        for obj in self._table.select(
-            AND (ProductRelease.q.productseriesID == ProductSeries.q.id,
-                 ProductSeries.q.productID == Product.q.id
-                ),
-            orderBy=self._orderBy,
-            clauseTables=self._clauseTables,
-            ):
-            yield self.toTerm(obj)
-
     def toTerm(self, obj):
         productrelease = obj
         productseries = productrelease.productseries
@@ -668,22 +627,24 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
 
     def search(self, query):
         """Return terms where query is a substring of the version or name"""
-        if query:
-            query = query.lower()
-            objs = self._table.select(
-                AND(
-                    ProductSeries.q.id == ProductRelease.q.productseriesID,
-                    Product.q.id == ProductSeries.q.productID,
-                    OR(
-                        CONTAINSSTRING(Product.q.name, query),
-                        CONTAINSSTRING(ProductSeries.q.name, query),
-                        CONTAINSSTRING(ProductRelease.q.version, query)
-                        )
-                    ),
-                orderBy=self._orderBy
-                )
+        if not query:
+            return self.emptySelectResults()
 
-            return objs
+        query = query.lower()
+        objs = self._table.select(
+            AND(
+                ProductSeries.q.id == ProductRelease.q.productseriesID,
+                Product.q.id == ProductSeries.q.productID,
+                OR(
+                    CONTAINSSTRING(Product.q.name, query),
+                    CONTAINSSTRING(ProductSeries.q.name, query),
+                    CONTAINSSTRING(ProductRelease.q.version, query)
+                    )
+                ),
+            orderBy=self._orderBy
+            )
+
+        return objs
 
 
 class ProductSeriesVocabulary(SQLObjectVocabularyBase):
@@ -693,14 +654,6 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
     _table = ProductSeries
     _orderBy = [Product.q.name, ProductSeries.q.name]
     _clauseTables = ['Product']
-
-    def __iter__(self):
-        for obj in self._table.select(
-                ProductSeries.q.productID == Product.q.id,
-                orderBy=self._orderBy,
-                clauseTables=self._clauseTables,
-                ):
-            yield self.toTerm(obj)
 
     def toTerm(self, obj):
         # NB: We use '/' as the seperator because '-' is valid in
@@ -727,19 +680,21 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
 
     def search(self, query):
         """Return terms where query is a substring of the name"""
-        if query:
-            query = query.lower()
-            objs = self._table.select(
-                    AND(
-                        Product.q.id == ProductSeries.q.productID,
-                        OR(
-                            CONTAINSSTRING(Product.q.name, query),
-                            CONTAINSSTRING(ProductSeries.q.name, query)
-                            )
-                        ),
-                    orderBy=self._orderBy
-                    )
-            return objs
+        if not query:
+            return self.emptySelectResults()
+
+        query = query.lower()
+        objs = self._table.select(
+                AND(
+                    Product.q.id == ProductSeries.q.productID,
+                    OR(
+                        CONTAINSSTRING(Product.q.name, query),
+                        CONTAINSSTRING(ProductSeries.q.name, query)
+                        )
+                    ),
+                orderBy=self._orderBy
+                )
+        return objs
 
 
 class FilteredDistroReleaseVocabulary(SQLObjectVocabularyBase):
@@ -924,16 +879,16 @@ class SourcePackageNameVocabulary(NamedSQLObjectHugeVocabulary):
 
         """
         if not query:
-            return []
+            return self.emptySelectResults()
+
         query = query.lower()
         return self._table.select(
             "sourcepackagename.name LIKE '%%' || %s || '%%'"
             % quote_like(query))
 
 
-class DistributionVocabulary(NamedSQLObjectHugeVocabulary):
+class DistributionVocabulary(NamedSQLObjectVocabulary):
 
-    displayname = 'Select a Distribution'
     _table = Distribution
     _orderBy = 'name'
 
@@ -949,32 +904,30 @@ class DistributionVocabulary(NamedSQLObjectHugeVocabulary):
 
     def search(self, query):
         """Return terms where query is a substring of the name"""
-        if query:
-            query = query.lower()
-            like_query = "'%%' || %s || '%%'" % quote_like(query)
-            fti_query = quote(query)
-            kw = {}
-            if self._orderBy:
-                kw['orderBy'] = self._orderBy
-            return self._table.select("name LIKE %s" % like_query, **kw)
+        if not query:
+            return self.emptySelectResults()
 
-        return []
+        query = query.lower()
+        like_query = "'%%' || %s || '%%'" % quote_like(query)
+        fti_query = quote(query)
+        kw = {}
+        if self._orderBy:
+            kw['orderBy'] = self._orderBy
+        return self._table.select("name LIKE %s" % like_query, **kw)
 
 
-class DistroReleaseVocabulary(NamedSQLObjectHugeVocabulary):
+class DistroReleaseVocabulary(NamedSQLObjectVocabulary):
 
-    displayname = 'Select a Distribution Release'
     _table = DistroRelease
     _orderBy = [Distribution.q.name, DistroRelease.q.name]
     _clauseTables = ['Distribution']
 
     def __iter__(self):
-        for obj in self._table.select(
-                DistroRelease.q.distributionID == Distribution.q.id,
-                orderBy=self._orderBy,
-                clauseTables=self._clauseTables,
-                ):
-            yield self.toTerm(obj)
+        releases = self._table.select(
+            DistroRelease.q.distributionID==Distribution.q.id,
+            orderBy=self._orderBy, clauseTables=self._clauseTables)
+        for release in releases:
+            yield self.toTerm(release)
 
     def toTerm(self, obj):
         # NB: We use '/' as the separator because '-' is valid in
@@ -997,19 +950,21 @@ class DistroReleaseVocabulary(NamedSQLObjectHugeVocabulary):
 
     def search(self, query):
         """Return terms where query is a substring of the name."""
-        if query:
-            query = query.lower()
-            objs = self._table.select(
-                    AND(
-                        Distribution.q.id == DistroRelease.q.distributionID,
-                        OR(
-                            CONTAINSSTRING(Distribution.q.name, query),
-                            CONTAINSSTRING(DistroRelease.q.name, query)
-                            )
-                        ),
-                    orderBy=self._orderBy
-                    )
-            return objs
+        if not query:
+            return self.emptySelectResults()
+
+        query = query.lower()
+        objs = self._table.select(
+                AND(
+                    Distribution.q.id == DistroRelease.q.distributionID,
+                    OR(
+                        CONTAINSSTRING(Distribution.q.name, query),
+                        CONTAINSSTRING(DistroRelease.q.name, query)
+                        )
+                    ),
+                orderBy=self._orderBy
+                )
+        return objs
 
 
 class POTemplateNameVocabulary(NamedSQLObjectHugeVocabulary):
@@ -1030,13 +985,15 @@ class ProcessorVocabulary(NamedSQLObjectHugeVocabulary):
 
     def search(self, query):
         """Return terms where query is a substring of the name"""
-        if query:
-            query = query.lower()
-            processors = self._table.select(
-                CONTAINSSTRING(Processor.q.name, query),
-                orderBy=self._orderBy
-                )
-            return processors
+        if not query:
+            return self.emptySelectResults()
+
+        query = query.lower()
+        processors = self._table.select(
+            CONTAINSSTRING(Processor.q.name, query),
+            orderBy=self._orderBy
+            )
+        return processors
 
 
 class ProcessorFamilyVocabulary(NamedSQLObjectVocabulary):

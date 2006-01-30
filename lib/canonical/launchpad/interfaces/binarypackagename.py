@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'IBinaryPackageName',
+    'IBinaryAndSourcePackageName',
     'IBinaryPackageNameSet',
     ]
 
@@ -60,3 +61,10 @@ class IBinaryPackageNameSet(Interface):
 
         Returns the BinaryPackageName
         """
+
+
+class IBinaryAndSourcePackageName(Interface):
+
+    name = TextLine(title=_('Binary or Source package name'),
+                    required=True, constraint=name_validator)
+

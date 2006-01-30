@@ -67,8 +67,6 @@ o DistroReleaseVocabulary - reflects the available distribution releases.
 
     >>> distrorelease_vocabulary = vocabulary_registry.get(
     ...     None,"DistroRelease")
-    >>> distrorelease_vocabulary.displayname
-    'Select a Distribution Release'
     >>> for term in distrorelease_vocabulary:
     ...     print "%s %20s %s" % (term.value, term.token, term.title)
     7 debian/sarge         Sarge
@@ -82,13 +80,21 @@ o DistroReleaseVocabulary - reflects the available distribution releases.
     1 ubuntu/warty         The Warty Warthog Release
     >>> distrorelease_vocabulary.getTermByToken('ubuntu/hoary').value
     3
-    >>> [term.token for term in distrorelease_vocabulary.search('woody')]
+    >>> def getTerms(vocab, search_text):
+    ...     [vocab.toTerm(item) for item in vocab.search(search_text)]
+
+    >>> getTerms(distrorelease_vocabulary, 'woody')
+    >>> getTerms(distrorelease_vocabulary, 'debian')
+    >>> getTerms(distrorelease_vocabulary, 'invalid')
+    >>> getTerms(distrorelease_vocabulary, '')
+
+    >> [term.token for term in distrorelease_vocabulary.search('woody')]
     ['debian/woody']
-    >>> [term.token for term in distrorelease_vocabulary.search('debian')]
+    >> [term.token for term in distrorelease_vocabulary.search('debian')]
     ['debian/sarge', 'debian/sid', 'debian/woody']
-    >>> [term.token for term in distrorelease_vocabulary.search('invalid')]
+    >> [term.token for term in distrorelease_vocabulary.search('invalid')]
     []
-    >>> [term.token for term in distrorelease_vocabulary.search('')]
+    >> [term.token for term in distrorelease_vocabulary.search('')]
     []
 
 Non-Enumerable Vocabularies
@@ -117,28 +123,27 @@ both a source and binary package of that name.
     >>> from canonical.launchpad.interfaces import (
     ...     ISourcePackageName, IBinaryPackageName)
 
-    >>> package_name_terms = list(
-    ...     package_name_vocabulary.search("mozilla-firefox"))
-    >>> len(package_name_terms)
+    >>> package_name_terms = package_name_vocabulary.search("mozilla-firefox")
+    >>> package_name_terms.count()
     1
-    >>> package_name_terms[0].title
+    >>> package_name_terms[0].name
     u'mozilla-firefox'
 
 Searching for "mozilla" should return the binary package name above, and
 the source package named "mozilla".
 
-    >>> package_name_terms = list(package_name_vocabulary.search("mozilla"))
-    >>> len(package_name_terms)
+    >>> package_name_terms = package_name_vocabulary.search("mozilla")
+    >>> package_name_terms.count()
     2
-    >>> [package_name_term.title for package_name_term in package_name_terms]
+    >>> [package_name_term.name for package_name_term in package_name_terms]
     [u'mozilla', u'mozilla-firefox']
 
 The search does a case-insensitive, substring match.
 
-    >>> package_name_terms = list(package_name_vocabulary.search("mOzIl"))
-    >>> len(package_name_terms)
+    >>> package_name_terms = package_name_vocabulary.search("mOzIl")
+    >>> package_name_terms.count()
     2
-    >>> [package_name_term.title for package_name_term in package_name_terms]
+    >>> [package_name_term.name for package_name_term in package_name_terms]
     [u'mozilla', u'mozilla-firefox']
 
 o ProjectVocabulary - the list of selectable projects. The results are
@@ -180,7 +185,7 @@ o ProductVocabulary - the list of selectable products. Results are
     >>> product_vocabulary.displayname
     'Select a Product'
 
-    >>> product_vocabulary.search(None)
+    >>> list(product_vocabulary.search(None))
     []
     >>> gnome_products = product_vocabulary.search("gnome")
     >>> l = [product_term.title for product_term in gnome_products]
@@ -237,51 +242,45 @@ o PersonAccountToMergeVocabulary - all non-merged people. This vocabulary
     'Select a Person to Merge'
 
     Searching for None returns an empty list.
-    >>> vocab.search(None)
+    >>> list(vocab.search(None))
     []
 
     Searching for 'team' will return an empty list, because teams are not part
     of this vocabulary.
-    >>> vocab.search('team')
+    >>> list(vocab.search('team'))
     []
 
     A search using part of the email address of a team will also return an 
     empty list.
-    >>> [t.token for t in vocab.search('support')]
+    >>> list(vocab.search('support'))
     []
 
     Searching for a person without a preferred email will return that person's
     name.
-    >>> [t.token for t in vocab.search('salgado')]
-    ['salgado']
+    >>> [person.name for person in vocab.search('salgado')]
+    [u'salgado']
 
     A search using the beginning of a person's preferred email will return 
-    that person's preferred email.
-    >>> [t.token for t in vocab.search('foo.bar')]
-    ['foo.bar@canonical.com']
+    that person that owns that email.
+    >>> [(person.name, person.preferredemail.email) 
+    ...  for person in vocab.search('foo.bar')]
+    [(u'name16', u'foo.bar@canonical.com')]
 
     A search using part of the host of an email address will not return
     anything, as we only match against the beginning of an email address.
-    >>> [t.token for t in vocab.search('canonical')]
+    >>> list(vocab.search('canonical'))
     []
 
-    Any person without a single email address is not part of the vocabulary.
+    A person with a single and unvalidated email address can be merged.
     >>> fooperson, email = getUtility(IPersonSet).createPersonAndEmail(
     ...     'foobaz@bar.com', name='foobaz', displayname='foo baz')
+    >>> fooperson in vocab
+    True
+
+    But any person without a single email address can't.
     >>> email.destroySelf()
     >>> fooperson in vocab
     False
-    >>> [t.token for t in vocab.search('foobaz')]
-    []
-
-    Adding an email address to this person will make him part of the
-    vocabulary.
-    >>> email = getUtility(IEmailAddressSet).new('foo@bar.com', fooperson.id)
-    >>> flush_database_updates()
-    >>> fooperson in vocab
-    True
-    >>> [t.token for t in vocab.search('foobaz')]
-    ['foobaz']
 
     Any person that's already merged is not part of this vocabulary:
     # XXX: Here we cheat because IPerson.merged is a readonly attribute.
@@ -304,22 +303,22 @@ o ValidPersonOrTeam - all 'valid' persons or teams. This is currently defined
 
     Almost all teams have the word 'team' as part of their names, so a search
     for 'team' should give us some of them.
-    >>> sorted([t.token for t in vocab.search('team')])
-    ['name18', 'name19', 'name20', 'name21', 'support@ubuntu.com', 'testing-spanish-team']
+    >>> sorted([person.name for person in vocab.search('team')])
+    [u'name17', u'name18', u'name19', u'name20', u'name21', u'testing-spanish-team']
 
     A search for 'support' will give us only the persons which have support
     as part of their name/displayname/givenname/familyname or the beginning of
     one of its email addresses.
-    >>> [t.token for t in vocab.search('support')]
-    ['support@ubuntu.com']
+    >>> sorted([person.name for person in vocab.search('support')])
+    [u'name17']
 
     Dave hasn't validated his email address; he's not a valid Person.
-    >>> [t.token for t in vocab.search('dave.miller')]
+    >>> sorted([person.name for person in vocab.search('dave.miller')])
     []
 
     'foo.bar@canonical.com' is a valid Person.
-    >>> [t.token for t in vocab.search('foo.bar')]
-    ['foo.bar@canonical.com']
+    >>> [person.name for person in vocab.search('foo.bar')]
+    [u'name16']
 
 o ValidOwner - all valid persons and teams are also valid owners.
 
@@ -332,8 +331,8 @@ o ValidOwner - all valid persons and teams are also valid owners.
 
     Almost all teams have the word 'team' as part of their names, so a search
     for 'team' should give us some of them.
-    >>> sorted([t.token for t in vocab.search('team')])
-    ['name18', 'name19', 'name20', 'name21', 'support@ubuntu.com', 'testing-spanish-team']
+    >>> sorted([person.name for person in vocab.search('team')])
+    [u'name17', u'name18', u'name19', u'name20', u'name21', u'testing-spanish-team']
 
 o ValidTeamMember - With the exception of all teams that have this team as a
   member and the team itself, all valid persons and teams are valid
@@ -362,20 +361,20 @@ o ValidTeamMember - With the exception of all teams that have this team as a
 
     >>> person in vocab
     True
-    >>> [t.token for t in vocab.search('foo.bar')]
-    ['foo.bar@canonical.com']
+    >>> [person.name for person in vocab.search('foo.bar')]
+    [u'name16']
 
     'name17' is not a valid member for itself
     >>> team in vocab
     False
-    >>> [t.token for t in vocab.search('name17')]
+    >>> [person.name for person in vocab.search('name17')]
     []
 
     'name17' is a member of 'guadamen', so 'guadamen' can't be a member of
     'name17'.
     >>> team2 in vocab
     False
-    >>> [t.token for t in vocab.search('guadamen')]
+    >>> [person.name for person in vocab.search('guadamen')]
     []
 
 o ValidTeamOwner - With the exception of the team itself and all teams owned
@@ -401,14 +400,14 @@ o ValidTeamOwner - With the exception of the team itself and all teams owned
 
     >>> team in vocab
     False
-    >>> [t.token for t in vocab.search('name17')]
+    >>> [person.name for person in vocab.search('name17')]
     []
 
     'name16' is a valid owner for 'name17'.
     >>> person in vocab
     True
-    >>> [t.token for t in vocab.search('foo.bar')]
-    ['foo.bar@canonical.com']
+    >>> [person.name for person in vocab.search('foo.bar')]
+    [u'name16']
 
 o Processor - all processors type available in Launchpad.
 
@@ -416,9 +415,8 @@ o Processor - all processors type available in Launchpad.
     >>> vocab.displayname
     'Select a Processor'
 
-    >>> stuff = vocab.search('386')
-    >>> [t.token for t in stuff]
-    ['386']
+    >>> [processor.name for processor in vocab.search('386')]
+    [u'386']
 
 o SchemaVocabulary - launchpad Schema Vocabulary..
 
@@ -428,9 +426,7 @@ o SchemaVocabulary - launchpad Schema Vocabulary..
 
     >>> list(vocabulary.search(None))
     []
-    >>> schemas_vocabulary = vocabulary.search("m")
-    >>> schemas = [schema.title for schema in schemas_vocabulary]
-    >>> schemas
+    >>> [schema.name for schema in vocabulary.search("m")]
     [u'enema', u'mark', u'schema', u'trema']
 
 XXX: document more vocabularies here, particularly when they break!
