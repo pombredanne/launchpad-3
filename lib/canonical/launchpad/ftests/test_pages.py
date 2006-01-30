@@ -84,8 +84,11 @@ def tearDown(test):
         LaunchpadFunctionalTestSetup().tearDown()
 
 
-class TestStory(unittest.TestCase):
-    """A test case that represents a story of doctests.
+class PageTest(unittest.TestCase):
+    """A test case that represents a pagetest
+    
+    This can be either a story of pagetests, or a single 
+    'standalone' pagetest.
 
     This is achieved by holding a testsuite for the story, and
     delegating responsiblity for most methods to it.
@@ -95,38 +98,64 @@ class TestStory(unittest.TestCase):
     select individual tests - but stories cannot be split up.
     """
 
-    def __init__(self, storydir):
+    def __init__(self, storydir_or_single_test, package=None):
+        """Create a PageTest for storydir_or_single_test.
+
+        storydir_or_single_test should be an package relative file path.
+        package is the python package the page test is found under, it
+        defaults to canonical.launchpad
+        """
         # we do not run the super __init__ because we are not using any of
         # the base classes functionality, and we'd just have to give it a
         # meaningless method.
-        self._storydir = storydir
+        self._description = storydir_or_single_test
         self._suite = unittest.makeSuite(StartStory)
-        filenames = [filename
-                    for filename in os.listdir(self._storydir)
-                    if filename.lower().endswith('.txt')
-                    ]
-        filenames = sets.Set(filenames)
-        numberedfilenames = [filename for filename in filenames
-                            if len(filename) > 4
-                            and filename[:2].isdigit()
-                            and filename[2] == '-']
-        numberedfilenames = sets.Set(numberedfilenames)
-        unnumberedfilenames = filenames - numberedfilenames
+        if package is None:
+            self._package = 'canonical.launchpad'
+        else:
+            self._package = package
+        if not os.path.isdir(storydir_or_single_test):
+            test_scripts = [os.path.basename(storydir_or_single_test)]
+            storydir_or_single_test = os.path.dirname(storydir_or_single_test)
+        else:
+            filenames = [filename
+                        for filename in os.listdir(storydir_or_single_test)
+                        if filename.lower().endswith('.txt')
+                        ]
+            filenames = sets.Set(filenames)
+            numberedfilenames = [filename for filename in filenames
+                                if len(filename) > 4
+                                and filename[:2].isdigit()
+                                and filename[2] == '-']
+            numberedfilenames = sets.Set(numberedfilenames)
+            unnumberedfilenames = filenames - numberedfilenames
+        
+            # A predictable order is important, even if it remains officially
+            # undefined for un-numbered filenames.
+            numberedfilenames = list(numberedfilenames)
+            numberedfilenames.sort()
+            unnumberedfilenames = list(unnumberedfilenames)
+            unnumberedfilenames.sort()
+            test_scripts = unnumberedfilenames + numberedfilenames
     
-        # A predictable order is important, even if it remains officially
-        # undefined for un-numbered filenames.
-        numberedfilenames = list(numberedfilenames)
-        numberedfilenames.sort()
-        unnumberedfilenames = list(unnumberedfilenames)
-        unnumberedfilenames.sort()
-    
-        for filename in unnumberedfilenames + numberedfilenames:
-            story = os.path.basename(self._storydir)
-            filename = os.path.join(
-                    os.pardir, 'pagetests', story, filename
-                    )
+        modules = self._package.split('.')
+        if len(modules) == 0:
+            raise RuntimeError('Invalid package.')
+        segments = storydir_or_single_test.split('/')
+        # either modules is in segments somewhere, or its not a valid package
+        # for the filename. 
+        # TODO ? split this into a method or make it a helper/part of the 
+        # FunctionalDocFileSuite facility.
+        while len(segments) > 0 and segments[:len(modules)] != modules:
+            segments.pop(0)
+        if not len(segments):
+            raise RuntimeError('Test script dir %s not in packages %s' % 
+                               (storydir_or_single_test, self._package))
+        relative_dir = '/'.join(segments[len(modules):])
+        for leaf_filename in test_scripts:
+            filename = os.path.join(relative_dir, leaf_filename)
             self._suite.addTest(FunctionalDocFileSuite(
-                filename, setUp=setUp, tearDown=tearDown
+                filename, setUp=setUp, tearDown=tearDown, package=self._package
                 ))
         self._suite.addTest(unittest.makeSuite(EndStory))
 
@@ -134,7 +163,7 @@ class TestStory(unittest.TestCase):
         return self._suite.countTestCases()
 
     def shortDescription(self):
-        return "Story: %s" % self._storydir
+        return "pagetest: %s" % self._description
 
     def id(self):
         return self.shortDescription()
@@ -144,7 +173,7 @@ class TestStory(unittest.TestCase):
 
     def __repr__(self):
         return "<%s storydir=%s>" % \
-               (_strclass(self.__class__), self._storydir)
+               (_strclass(self.__class__), self._description)
 
     def run(self, result=None):
         if result is None: result = self.defaultTestResult()
@@ -171,7 +200,17 @@ def test_suite():
     stories.sort()
 
     for storydir in stories:
-        suite.addTest(TestStory(storydir))
+        if storydir != 'standalone':
+            suite.addTest(PageTest(os.path.join('pagetests', storydir)))
+        else:
+            filenames = [filename
+                        for filename in os.listdir(storydir)
+                        if filename.lower().endswith('.txt')
+                        ]
+            for filename in filenames:
+                suite.addTest(PageTest(os.path.join('pagetests',
+                                                    'standalone', filename)))
+
     return suite
 
 if __name__ == '__main__':
