@@ -110,7 +110,7 @@ And the entire body of the email was added as a comment:
     >>> comment = bug.messages[0]
     >>> print comment.title
     A bug in Firefox
-    >>> print comment.contents
+    >>> print comment.text_contents
     There is a bug in Firefox.
     <BLANKLINE>
      affects /products/firefox

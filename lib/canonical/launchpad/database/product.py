@@ -21,7 +21,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, BugTaskSeverity, BugTaskStatus,
     SpecificationSort)
-
+from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productbounty import ProductBounty
@@ -38,7 +38,7 @@ from canonical.launchpad.interfaces import (
     )
 
 
-class Product(SQLBase):
+class Product(SQLBase, BugTargetBase):
     """A Product."""
 
     implements(IProduct, ICalendarOwner)
