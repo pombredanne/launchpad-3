@@ -75,6 +75,10 @@ DistroRelease.getPublishedReleases:
     1
     >>> print prs[0].sourcepackagerelease.sourcepackagename.name
     mozilla-firefox
+    >>> print len(warty2.getPublishedReleases('mozilla-firefox'))
+    1
+    >>> print len(warty2.getPublishedReleases('nosuchpackage'))
+    0
 
 DistroRelease.getBinaryPackagePublishing will return
 BinaryPackagePublishing objects for the DistroRelease:
@@ -116,7 +120,7 @@ about Debian:
 There should be NO resolved CVE tasks:
 
     >>> tasks = woody.resolved_cve_bugtasks
-    >>> print len(tasks)
+    >>> print tasks.count()
     0
 
 DistroReleases have components and sections
