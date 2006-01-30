@@ -391,24 +391,24 @@ class Publisher(object):
         cnf.write("""
 Dir
 {
-  ArchiveDir "%s";
-  OverrideDir "%s";
-  CacheDir "%s";
+    ArchiveDir "%s";
+    OverrideDir "%s";
+    CacheDir "%s";
 };
 
 Default
 {
-  Packages::Compress ". gzip bzip2";
-  Sources::Compress ". gzip bzip2";
-  Contents::Compress "gzip";
-  DeLinkLimit 0;
-  MaxContentsChange 12000;
-  FileMode 0644;
+    Packages::Compress ". gzip bzip2";
+    Sources::Compress ". gzip bzip2";
+    Contents::Compress "gzip";
+    DeLinkLimit 0;
+    MaxContentsChange 12000;
+    FileMode 0644;
 }
 
 TreeDefault
 {
-   Contents::Header "%s/contents.header";
+    Contents::Header "%s/contents.header";
 };
 
 
@@ -422,16 +422,16 @@ TreeDefault
         stanza_template = """
 tree "dists/%(DISTRORELEASEONDISK)s"
 {
-  FileList "%(LISTPATH)s/%(DISTRORELEASEBYFILE)s_$(SECTION)_binary-$(ARCH)";
-  SourceFileList "%(LISTPATH)s/%(DISTRORELEASE)s_$(SECTION)_source";
-  Sections "%(SECTIONS)s";
-  Architectures "%(ARCHITECTURES)s";
-  BinOverride "override.%(DISTRORELEASE)s.$(SECTION)";
-  SrcOverride "override.%(DISTRORELEASE)s.$(SECTION).src";
-  %(HIDEEXTRA)sExtraOverride "override.%(DISTRORELEASE)s.extra.$(SECTION)";
-  Packages::Extensions "%(EXTENSIONS)s";
-  BinCacheDB "packages-%(CACHEINSERT)s$(ARCH).db";
-  Contents " ";
+    FileList "%(LISTPATH)s/%(DISTRORELEASEBYFILE)s_$(SECTION)_binary-$(ARCH)";
+    SourceFileList "%(LISTPATH)s/%(DISTRORELEASE)s_$(SECTION)_source";
+    Sections "%(SECTIONS)s";
+    Architectures "%(ARCHITECTURES)s";
+    BinOverride "override.%(DISTRORELEASE)s.$(SECTION)";
+    SrcOverride "override.%(DISTRORELEASE)s.$(SECTION).src";
+    %(HIDEEXTRA)sExtraOverride "override.%(DISTRORELEASE)s.extra.$(SECTION)";
+    Packages::Extensions "%(EXTENSIONS)s";
+    BinCacheDB "packages-%(CACHEINSERT)s$(ARCH).db";
+    Contents " ";
 }
 
 """
@@ -663,7 +663,7 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                 # Now, grab the actual (non-di) files inside each of
                 # the suite's architectures
                 file_stub = os.path.join(component, architecture, file_stub)
-                
+
                 for suffix in ('', '.gz', '.bz2'):
                     all_files.add(file_stub + suffix)
 
