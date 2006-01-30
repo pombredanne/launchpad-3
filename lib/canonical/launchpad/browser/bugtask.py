@@ -485,7 +485,7 @@ class BugListing:
 
         self.displayname = displayname
         self.url = canonical_url(target) + '/' + name
-        self.count = listing_view.taskCount
+        self.count = listing_view.unfilteredTaskCount
         self.require_login = require_login
 
 
@@ -582,7 +582,7 @@ class BugTaskSearchListingView(LaunchpadView):
                      initial=self.initial_values)
 
     @property
-    def taskCount(self):
+    def unfilteredTaskCount(self):
         """The number of tasks an empty search will return."""
         # We need to pass in batch_start, so it doesn't use a value from
         # the request.
@@ -891,12 +891,20 @@ class AssignedBugTasksView(RedirectToAdvancedBugTasksView):
 class OpenBugTasksView(RedirectToAdvancedBugTasksView):
     """All open bugs."""
 
+    @property
+    def unfilteredTaskCount(self):
+        return self.context.open_bugtasks.count()
+
     def getExtraSearchParams(self):
         return {'status': any(*UNRESOLVED_BUGTASK_STATUSES)}
 
 
 class CriticalBugTasksView(RedirectToAdvancedBugTasksView):
     """All open critical bugs."""
+
+    @property
+    def unfilteredTaskCount(self):
+        return self.context.critical_bugtasks.count()
 
     def getExtraSearchParams(self):
         return {'status': any(*UNRESOLVED_BUGTASK_STATUSES),
@@ -915,6 +923,10 @@ class UntriagedBugTasksView(RedirectToAdvancedBugTasksView):
 
 class UnassignedBugTasksView(RedirectToAdvancedBugTasksView):
     """All open bugs that don't have an assignee."""
+
+    @property
+    def unfilteredTaskCount(self):
+        return self.context.unassigned_bugtasks.count()
 
     def getExtraSearchParams(self):
         return {'status': any(*UNRESOLVED_BUGTASK_STATUSES), 'assignee': NULL}

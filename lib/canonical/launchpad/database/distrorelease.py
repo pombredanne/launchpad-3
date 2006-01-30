@@ -32,8 +32,8 @@ from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IBinaryPackageName, IBuildSet,
     UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
+from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.database.constants import DEFAULT, UTC_NOW
-
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
 from canonical.launchpad.database.distroreleasebinarypackage import (
@@ -65,7 +65,7 @@ from canonical.launchpad.database.queue import DistroReleaseQueue
 from canonical.launchpad.helpers import shortlist
 
 
-class DistroRelease(SQLBase):
+class DistroRelease(SQLBase, BugTargetBase):
     """A particular release of a distribution."""
     implements(IDistroRelease, IHasBuildRecords)
 
@@ -376,6 +376,52 @@ class DistroRelease(SQLBase):
         """See IDistroRelease."""
         return SourcePackagePublishing.selectBy(distroreleaseID=self.id,
                                                 status=status)
+
+    def getBinaryPackagePublishing(self, name=None, version=None, archtag=None,
+                                   sourcename=None, orderBy=None):
+        """See IDistroRelease."""
+
+        clauseTables = ['BinaryPackagePublishing', 'DistroArchRelease',
+                        'BinaryPackageRelease', 'BinaryPackageName', 'Build',
+                        'SourcePackageRelease', 'SourcePackageName' ]
+
+        query = ['''BinaryPackagePublishing.binarypackagerelease =
+                        BinaryPackageRelease.id AND
+                    BinaryPackagePublishing.distroarchrelease =
+                        DistroArchRelease.id AND
+                    BinaryPackageRelease.binarypackagename = 
+                        BinaryPackageName.id AND
+                    BinaryPackageRelease.build =
+                        Build.id AND
+                    Build.sourcepackagerelease =
+                        SourcePackageRelease.id AND
+                    SourcePackageRelease.sourcepackagename =
+                        SourcePackageName.id AND
+                    DistroArchRelease.distrorelease = %s AND
+                    BinaryPackagePublishing.status = %s'''
+            % sqlvalues(self.id, PackagePublishingStatus.PUBLISHED)]
+
+        if name:
+            query.append('BinaryPackageName.name = %s' % sqlvalues(name))
+
+        if version:
+            query.append('BinaryPackageRelease.version = %s'
+                      % sqlvalues(version))
+
+        if archtag:
+            query.append('DistroArchRelease.architecturetag = %s'
+                      % sqlvalues(archtag))
+
+        if sourcename:
+            query.append('SourcePackageName.name = %s' % sqlvalues(sourcename))
+
+        query = " AND ".join(query)
+
+        result = BinaryPackagePublishing.select(query, distinct=False,
+                                                clauseTables=clauseTables,
+                                                orderBy=orderBy)
+
+        return result
 
     def publishedBinaryPackages(self, component=None):
         """See IDistroRelease."""

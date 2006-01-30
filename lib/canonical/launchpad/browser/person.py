@@ -770,7 +770,7 @@ class PersonView:
     def hasCurrentPolls(self):
         """Return True if this team has any non-closed polls."""
         assert self.context.isTeam()
-        return bool(len(self.openpolls) or len(self.notyetopenedpolls))
+        return bool(self.openpolls) or bool(self.notyetopenedpolls)
 
     def sourcepackagerelease_open_bugs_count(self, sourcepackagerelease):
         """Return the number of open bugs targeted to the sourcepackagename
@@ -918,7 +918,7 @@ class PersonView:
         return len(self.context.sshkeys)
 
     def gpgkeysCount(self):
-        return len(self.context.gpgkeys)
+        return self.context.gpgkeys.count()
 
     def signedcocsCount(self):
         return len(self.context.signedcocs)
@@ -1386,6 +1386,7 @@ class TeamJoinView(PersonView):
             return
 
         user = getUtility(ILaunchBag).user
+
         if self.request.form.get('join') and self.userCanRequestToJoin():
             user.join(self.context)
             appurl = self.request.getApplicationURL()
@@ -1596,11 +1597,10 @@ class PersonEditEmailsView:
         emailset = getUtility(IEmailAddressSet)
         emailaddress = emailset.getByEmail(email)
         assert emailaddress.person.id == self.context.id, \
-                "differing ids in emailaddress.person.id(%r,%s,%d) == " \
-                "self.context.id(%r,%s,%d)" % \
-                (emailaddress.person, id(emailaddress.person),
-                 emailaddress.person.id, self.context, id(self.context),
-                 self.context.id)
+                "differing ids in emailaddress.person.id(%s,%d) == " \
+                "self.context.id(%s,%d) (%s)" % \
+                (emailaddress.person.name, emailaddress.person.id,
+                 self.context.name, self.context.id, emailaddress.email)
 
         assert emailaddress.status == EmailAddressStatus.VALIDATED
         self.context.preferredemail = emailaddress
@@ -1637,7 +1637,7 @@ class RequestPeopleMergeView(AddView):
             # Please, don't try to merge you into yourself.
             return
 
-        emails = getUtility(IEmailAddressSet).getByPerson(dupeaccount)
+        emails = list(getUtility(IEmailAddressSet).getByPerson(dupeaccount))
         if len(emails) > 1:
             # The dupe account have more than one email address. Must redirect
             # the user to another page to ask which of those emails (s)he
