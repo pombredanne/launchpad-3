@@ -608,7 +608,7 @@ class BugTaskSearchListingView(LaunchpadView):
         """
         return {}
 
-    def search(self, searchtext=None, batch_start=None):
+    def search(self, searchtext=None, batch_start=None, context=None):
         """Return an IBatchNavigator for the GETed search criteria.
 
         If :searchtext: is None, the searchtext will be gotten from the
@@ -639,7 +639,11 @@ class BugTaskSearchListingView(LaunchpadView):
         for param_name in extra_params:
             setattr(search_params, param_name, extra_params[param_name])
 
-        tasks = self.context.searchTasks(search_params)
+        # Base classes can provide an explicit search context.
+        if not context:
+            context = self.context
+
+        tasks = context.searchTasks(search_params)
         if self.showBatchedListing():
             if batch_start is None:
                 batch_start = int(self.request.get('batch_start', 0))

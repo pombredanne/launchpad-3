@@ -349,16 +349,5 @@ bug contacts.
 IPerson.getBugContactPackages returns this list of packages, sorted
 alphabetically (A to Z) by package name.
 
-!!! XXX REMOVE THIS !!!
-
->>> from canonical.launchpad.interfaces import IDistributionSet
->>> ubuntu = getUtility(IDistributionSet).get(1)
->>> umf = ubuntu.getSourcePackage("mozilla-firefox")
->>> pmount = ubuntu.getSourcePackage("pmount")
->>> umf.addBugContact(foobar)
->>> pmount.addBugContact(foobar)
-
-!!!!!!!!!!!!!!!!!!!!!!!
-
 >>> [package.name for package in foobar.getBugContactPackages()]
 [u'mozilla-firefox', u'pmount']

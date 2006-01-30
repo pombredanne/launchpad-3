@@ -54,7 +54,6 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility, getView
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.searchbuilder import any
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
@@ -69,7 +68,7 @@ from canonical.launchpad.interfaces import (
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
     IAdminRequestPeopleMerge, BugTaskSearchParams, NotFoundError,
-    UNRESOLVED_BUGTASK_STATUSES)
+    UNRESOLVED_BUGTASK_STATUSES, IDistributionSet)
 
 from canonical.launchpad.browser.bugtask import (
     BugTaskSearchListingView, AdvancedBugTaskSearchView)
@@ -706,24 +705,29 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
     """All bugs reported on software maintained by someone."""
 
     def search(self, searchtext=None, batch_start=None):
-        # Overwrite the search() method from BugTaskSearchListingView because
-        # to get the list of bugs on software maintained by someone we need to
-        # use the maintainedBugTasks method of BugTask, which is not used in
-        # the original search() method.
-        orderBy = ('-dateassigned', '-priority', '-severity')
-        tasks = getUtility(IBugTaskSet).maintainedBugTasks(
-            self.context, orderBy=orderBy, user=self.user)
-        if batch_start is None:
-            batch_start = int(self.request.get('batch_start', 0))
-        batch = Batch(tasks, batch_start)
-        return BatchNavigator(batch=batch, request=self.request)
+        distrosourcepackage = self.getPackage()
+        return BugTaskSearchListingView.search(
+            self, searchtext=searchtext, batch_start=batch_start,
+            context=distrosourcepackage)
+
+    def getBugContactPackageSearchURL(self, distributionsourcepackage):
+        person_url = canonical_url(self.context)
+        package_search_url = person_url + (
+            '/+packagebugs-search?field.distribution=%s&'
+            'field.sourcepackagename=%s&search=Search') % (
+                cgi.escape(distributionsourcepackage.distribution.name),
+                distributionsourcepackage.name)
+
+        return package_search_url
 
     def getPackage(self):
         """Get the package whose bugs are currently being searched."""
         form = self.request.form
-        distribution = Distribution.byName(form.get("distribution"))
+        distribution = getUtility(IDistributionSet).getByName(
+            form.get("field.distribution"))
 
-        return distribution.getPackage(form.get("sourcepackagename"))
+        return distribution.getSourcePackage(
+            form.get("field.sourcepackagename"))
 
     def shouldShowSearchWidgets(self):
         # XXX: It's not possible to search amongst the bugs on maintained

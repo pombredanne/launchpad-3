@@ -39,17 +39,29 @@
     <br /><br />
     <table class="results">
       <tr>
-        <th>Package</th>
-        <th>Open</th>
-        <th>Critical</th>
-        <th>Unassigned</th>
-        <th>In Progress</th>
+        <th width="40%">Package</th>
+        <th width="14%">Open</th>
+        <th width="14%">Critical</th>
+        <th width="14%">Unassigned</th>
+        <th width="18%">In Progress</th>
       </tr>
       <tr tal:repeat="package context/getBugContactPackages">
         <td>
           <a href="#"
              tal:content="package/displayname"
              tal:attributes="href string:${context/fmt:url}/+packagebugs-search?search=Search&distribution=${package/distribution/name}&sourcepackagename=${package/name}">mozilla-firefox (Ubuntu)</a>
+        </td>
+        <td style="text-align: center">
+          <a href="#" tal:content="package/open_bugtasks/count">2</a>
+        </td>
+        <td style="text-align: center">
+          <a href="#" tal:content="package/critical_bugtasks/count">2</a>
+        </td>
+        <td style="text-align: center">
+          <a href="#" tal:content="package/unassigned_bugtasks/count">2</a>
+        </td>
+        <td style="text-align: center">
+          <a href="#" tal:content="package/inprogress_bugtasks/count">2</a>
         </td>
       </tr>
     </table>

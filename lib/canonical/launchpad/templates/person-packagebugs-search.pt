@@ -29,29 +29,63 @@
     <div style="margin-bottom: 2px;">
       <b>
         <small>
-          <span tal:content="view/getPackage/displayname">
+          <span tal:content="python:view.getPackage().displayname">
             mozilla-firefox (Ubuntu)
           </span>
           bugs
         </small>
       </b>
-    </div>
-      <input type="text" size="40" /> <input type="submit" value="Search" />
-      <br />
+    <div tal:define="batch_navigator view/search;
+                     prev_page_url batch_navigator/prevBatchURL;
+                     next_page_url batch_navigator/nextBatchURL;
+                     total batch_navigator/batch/total;
+                     start_number batch_navigator/batch/startNumber;
+                     end_number batch_navigator/batch/endNumber">
+      <form method="GET" name="search" action="">
+        <input type="hidden" value="#"
+               name="distribution"
+               tal:attributes="value request/form/distribution" />
+        <input type="hidden" value="#"
+               name="sourcepackagename"
+               tal:attributes="value request/form/sourcepackagename" />
+        <input type="text" name="searchtext" size="40" />
+        <input type="submit" name="search" value="Search" />
+      </form>
+      <script>
+        <!--
+          document.forms['search'].searchtext.focus()
+          -->
+      </script>
       <br />
       <div>
-      <small>Results <b>1 - 50</b> of <b>64</b> bugs matching <a href="">mozilla-firefox (Ubuntu)</a>, <a href="">"foobar"</a>, <a href="">targeted for ubuntu-6.04</a></small>
+      <small>Results
+        <strong tal:content="start_number">1</strong>
+        -
+        <strong tal:content="end_number">50</strong>
+        of
+        <strong tal:content="total">64</strong>
+        <!--
+        bugs matching <a href="">mozilla-firefox (Ubuntu)</a>, <a href="">"foobar"</a>, <a href="">targeted for ubuntu-6.04</a>
+        -->
+      </small>
       </div>
     <table class="results">
       <tr>
         <th>ID</th><th>Summary</th><th>Importance</th><th>Status</th>
       </tr>
-      <tr>
-        <td>42</td>
-        <td><a href="">drop-down list in search bar disappears when using blah blah blah</a></td>
-        <td><i style="color: red">Critical</i></td>
-        <td>Confirmed</td>
+      <tr tal:repeat="bugtask batch_navigator/batch">
+        <td tal:content="bugtask/bug/id">42</td>
+        <td>
+          <a href="#"
+             tal:content="bugtask/bug/title"
+             tal:attributes="href bugtask/fmt:url">
+            drop-down list in search bar disappears when using blah blah blah
+          </a>
+        </td>
+        <td tal:content="bugtask/severity/title">Critical</td>
+        <td tal:content="bugtask/status/title">Confirmed</td>
       </tr>
+<!--
       <tr>
         <td style="background-color: white">78</td>
         <td style="background-color: white"><a href="">Moziall-firefox fails to print via cups, possible due to whatever</a></td>
@@ -70,19 +104,48 @@
         <td style="background-color: white">Normal</td>
         <td style="background-color: white">Confirmed</td>
       </tr>
+-->
     </table>
     <div style="margin-bottom: 5px">
-      <small>Results <b>1 - 50</b> of <b>64</small>
+      <small>Results
+        <strong tal:content="start_number">1</strong>
+        -
+        <strong tal:content="end_number">50</strong>
+        of
+        <strong tal:content="total">64</strong>
+      </small>
+
       <span style="float: right">
       <small>
-        <span class="unavailable">&laquo; Previous</span>
+        <tal:previous condition="prev_page_url">
+          <a tal:attributes="href prev_page_url" rel="previous"
+          >&laquo; Previous</a>
+        </tal:previous>
+        <span
+          tal:condition="not:prev_page_url"
+          class="unavailable"
+        >&laquo; Previous</span>
+        <tal:intermediaries repeat="page_url batch_navigator/batchPageURLs">
+          <a
+            tal:condition="python:len(page_url) > 1"
+            tal:content="python:page_url.keys()[0]"
+            tal:attributes="href python:page_url.values()[0]"
+          >[1]</a>
+        </tal:intermediaries>
+        <tal:next condition="next_page_url">
           &mdash;
-          <a rel="next"
-             href="">Next &raquo;</a>
+          <a tal:attributes="href next_page_url" rel="next"
+          >Next &raquo;</a>
+        </tal:next>
+        <span
+          tal:condition="not:next_page_url"
+          class="unavailable"
+        >&mdash; Next &raquo;</span>
       </small>
       </span>
     </div>
-
+    </div>
+    </div>
   </div>
 </body>
 </html>

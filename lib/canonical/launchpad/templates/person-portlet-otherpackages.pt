@@ -1,9 +1,27 @@
 <div class="portlet">
-  <h4>Sample Person's other packages</h4>
-  <div class="portletBody portletContent">
-    <a href="">evolution (Ubuntu)</a><br />
-    <a href="">pmount (Ubuntu)</a>
-    <br /><br />
-    <a href="">Package bugs overview</a>
+  <h4 tal:condition="python:view.user == context">
+    My other packages
+  </h4>
+  <h4 tal:condition="python:not view.user == context"
+      tal:content="string: ${context/displayname}'s other packages">
+    Sample Person's other packages
+  </h4>
+  <div class="portletBody portletContent"
+       tal:define="package_being_shown view/getPackage">
+    <ul style="list-style: none; display: inline"
+        tal:repeat="bug_contact_package context/getBugContactPackages">
+      <li tal:condition="python:bug_contact_package != package_being_shown">
+        <a href="#"
+           tal:content="bug_contact_package/displayname"
+           tal:attributes="href python:view.getBugContactPackageSearchURL(bug_contact_package)">
+        mozilla-firefox (Ubuntu)
+        </a>
+      </li>
+    </ul>
+    <br />
+    <a href="#"
+       tal:attributes="href string:${context/fmt:url}/+packagebugs">
+      Package bugs overview
+    </a>
   </div>
 </div>

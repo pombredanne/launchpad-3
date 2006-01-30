@@ -146,10 +146,6 @@
           template="../templates/person-portlet-emails.pt"
           lp:url="/people/$Person.name/+portlet-emails" />
       <browser:page
-          name="+portlet-otherpackages"
-          template="../templates/person-portlet-otherpackages.pt"
-          lp:url="/people/$Person.name/+portlet-otherpackages" />
-      <browser:page
           name="+portlet-team-assignedbugs"
           template="../templates/person-portlet-team-assignedbugs.pt"
           lp:url="/people/$Person.name/+portlet-team-assignedbugs" />
@@ -163,6 +159,14 @@
         name="+teamlist"
         template="../templates/team-listing.pt" />
   </browser:pages>
+
+  <browser:page
+     for="canonical.launchpad.interfaces.IPerson"
+     name="+portlet-otherpackages"
+     permission="zope.Public"
+     class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
+     template="../templates/person-portlet-otherpackages.pt"
+     lp:url="/people/$Person.name/+portlet-otherpackages" />
 
   <browser:page
       for="canonical.launchpad.interfaces.IPerson"
