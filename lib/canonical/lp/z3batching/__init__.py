@@ -20,6 +20,8 @@ $Id$
 from zope.interface import implements
 from interfaces import IBatch
 
+from sqlos.interfaces import ISelectResults
+
 class Batch(object):
     implements(IBatch)
 
@@ -28,13 +30,17 @@ class Batch(object):
             list = []
         self.list = list
         self.start = start
-        # We only check the length of the list once, because if the list is a
-        # SelectResults from SQLObject, len(list) hits the database each time.
-        # Ideally SQLObject would be smart enough to cache it for us, but for
-        # now we take the easy route.
+        # We only check the length of the list once, because if the
+        # list is a SelectResults from SQLObject, list.count() hits
+        # the database each time.  Ideally SQLObject would be smart
+        # enough to cache it for us, but for now we take the easy
+        # route.
         #   -- Andrew Bennetts, 2005-06-22
         if _listlength is None:
-            listlength = len(list)
+            if ISelectResults.providedBy(list):
+                listlength = list.count()
+            else:
+                listlength = len(list)
         else:
             listlength = _listlength
         self.listlength = listlength

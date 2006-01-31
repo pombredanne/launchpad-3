@@ -12,7 +12,8 @@
                   distro by_distroreleases subscribers currentrelease
                   releases publishing_history binary_package_names
                   bugcontacts __getitem__ getVersion bugtasks __eq__ __ne__
-                  tickets getTicket searchTasks isBugContact" />
+                  tickets getTicket searchTasks isBugContact open_bugtasks
+                  critical_bugtasks inprogress_bugtasks unassigned_bugtasks" />
     <require
       permission="launchpad.AnyPerson"
       attributes="addBugContact removeBugContact newTicket subscribe

@@ -52,6 +52,8 @@ class Builder(SQLBase):
     implements(IBuilder, IHasBuildRecords)
     _table = 'Builder'
 
+    _defaultOrder = ['name']
+    
     processor = ForeignKey(dbName='processor', foreignKey='Processor',
                            notNull=True)
     url = StringCol(dbName='url', notNull=True)
