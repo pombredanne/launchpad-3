@@ -616,6 +616,7 @@ class SourcePackagePublisher:
         if source_publishinghistory:
             log.info('SourcePackageRelease already published as %s' %
                       source_publishinghistory.status.title)
+            # XXXkiko: override here
             return
 
         component = self.distro_handler.getComponentByName(spdata.component)
@@ -863,6 +864,7 @@ class BinaryPackagePublisher:
         if binpkg_publishinghistory:
             log.info('Binarypackage already published as %s' % (
                 binpkg_publishinghistory.status.title))
+            # XXXkiko: override here
             return
 
         # These need to be pulled from the binary package data, not the
