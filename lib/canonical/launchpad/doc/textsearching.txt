@@ -129,10 +129,15 @@ any syntax error exceptions being generated.
 The following examples show the text version of the query using
 `_ftq(text)`, and the compiled version returned by `ftq(text)`
 
+    >>> from canonical.database.sqlbase import SQLBase
     >>> def ftq(query):
     ...     cur = cursor()
-    ...     cur.execute("SELECT _ftq(%s), ftq(%s)", (query, query))
-    ...     uncompiled, compiled = cur.fetchone()
+    ...     try:
+    ...         cur.execute("SELECT _ftq(%s), ftq(%s)", (query, query))
+    ...         uncompiled, compiled = cur.fetchone()
+    ...     except:
+    ...         SQLBase._connection._connection.rollback()
+    ...         raise
     ...     if uncompiled is not None:
     ...         uncompiled = uncompiled.replace(' ','')
     ...     print '%s <=> %s' % (uncompiled, compiled)
@@ -155,6 +160,14 @@ Brackets are allowed to specify precidence
     >>> ftq('(HI OR HELLO) and mom')
     (hi|hello)&mom <=> ( 'hi' | 'hello' ) & 'mom'
 
+    >>> ftq('Hi(Mom)')
+    hi&mom <=> 'hi' & 'mom'
+
+    >>> ftq('(Hi)Mom')
+    hi&mom <=> 'hi' & 'mom'
+
+    >>> ftq('Hi(Big)Momma')
+    hi&big&momma <=> 'hi' & 'big' & 'momma'
 
 Implicit boolean operation is AND
 
@@ -198,6 +211,10 @@ let the tsearch2 internals deal with it appropriatly.
 
     >>> ftq("shouldn't") # NB. This gets stemmed, see below
     shouldn't <=> 'shouldn'
+
+    # Bug #29227
+    #>>> ftq('/dev/pmu')
+    #/dev/pmu <=> 'dev' & 'pmu'
 
 
 Stop words (words deemed too common in English to search on) are removed
@@ -259,7 +276,7 @@ or invalid leading operators
     (hi|hello)&mom <=> ( 'hi' | 'hello' ) & 'mom'
 
     >>> ftq('() hi mom ( ) ((! |((&)))) :-)')
-    (hi&mom&-) <=> 'hi' & 'mom'
+    hi&mom&- <=> 'hi' & 'mom'
 
     >>> ftq("(hi mom")
     (hi&mom) <=> 'hi' & 'mom'
