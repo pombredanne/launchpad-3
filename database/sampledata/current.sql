@@ -790,6 +790,7 @@ INSERT INTO bugsubscription (id, person, bug) VALUES (4, 12, 1);
 INSERT INTO bugsubscription (id, person, bug) VALUES (5, 11, 2);
 INSERT INTO bugsubscription (id, person, bug) VALUES (6, 16, 7);
 INSERT INTO bugsubscription (id, person, bug) VALUES (7, 12, 8);
+INSERT INTO bugsubscription (id, person, bug) VALUES (8, 12, 4);
 
 
 UPDATE pg_catalog.pg_class SET reltriggers = (SELECT pg_catalog.count(*) FROM pg_catalog.pg_trigger where pg_class.oid = tgrelid) WHERE oid = 'bugsubscription'::pg_catalog.regclass;
