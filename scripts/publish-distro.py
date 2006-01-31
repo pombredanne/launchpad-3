@@ -182,7 +182,8 @@ try:
             is_release_pocket = pocket == PackagePublishingPocket.RELEASE
             if (is_careful_domination or is_in_development or
                 not is_release_pocket):
-                debug("Domination for %s (%s)" % (distrorelease.name, pocket))
+                debug("Domination for %s (%s)" % (
+                    distrorelease.name, pocket.name))
                 judgejudy.judgeAndDominate(distrorelease, pocket, pubconf)
                 debug("Flushing caches.")
                 clear_cache()
