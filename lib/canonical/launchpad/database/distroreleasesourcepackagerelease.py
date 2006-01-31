@@ -177,3 +177,51 @@ class DistroReleaseSourcePackageRelease:
     def sourcepackagename(self):
         """See ISourcePackageRelease."""
         return self.sourcepackagerelease.sourcepackagename
+
+    def changeOverride(self, new_component=None, new_section=None):
+        """See IDistroReleaseSourcePackageRelease."""
+
+        # Check we have been asked to do something
+        if new_component is None and new_section is None:
+            raise AssertionError("changeOverride must be passed either a"
+                                 " new component or new section.")
+
+        # Retrieve current publishing info
+        current = self.publishing_history[-1]
+
+        # Check there is a change to make
+        if new_component is None:
+            new_component = current.component
+        if new_section is None:
+            new_section = current.section
+
+        if (new_component == current.component and
+            new_section == current.section):
+            return
+
+        SecureSourcePackagePublishingHistory(
+            distrorelease=current.distrorelease,
+            sourcepackagerelease=current.sourcepackagerelease,
+            component=new_component,
+            section=new_section,
+            status=PackagePublishingStatus.PENDING,
+            datecreated=UTC_NOW,
+            pocket=current.pocket,
+            embargo=False,
+        )
+
+    def supersede(self):
+        """See IDistroReleaseSourcePackageRelease."""
+
+        current = self.publishing_history[-1]
+        SecureSourcePackagePublishingHistory(
+            distrorelease=current.distrorelease,
+            sourcepackagerelease=current.sourcepackagerelease,
+            component=current.component,
+            section=current.section,
+            status=PackagePublishingStatus.SUPERSEDED,
+            datecreated=UTC_NOW,
+            pocket=current.pocket,
+            embargo=False,
+            )
+

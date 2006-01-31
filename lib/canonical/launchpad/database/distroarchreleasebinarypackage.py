@@ -15,13 +15,14 @@ from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.launchpad.interfaces import IDistroArchReleaseBinaryPackage
 
+from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
 
 from canonical.launchpad.database.distroarchreleasebinarypackagerelease import \
     DistroArchReleaseBinaryPackageRelease
 from distroreleasepackagecache import DistroReleasePackageCache
-from canonical.launchpad.database.publishing import \
-    BinaryPackagePublishingHistory
+from canonical.launchpad.database.publishing import (BinaryPackagePublishingHistory,
+                                                     SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.database.binarypackagerelease import \
     BinaryPackageRelease
 
@@ -175,4 +176,57 @@ class DistroArchReleaseBinaryPackage:
             clauseTables=['BinaryPackageRelease'],
             orderBy='-datecreated')
 
+    def changeOverride(self, new_component=None, new_section=None,
+                       new_priority=None):
+        """See IDistroArchReleaseBinaryPackage."""
 
+        # Check we have been asked to do something
+        if (new_component is None and new_section is None 
+            and new_priority is None):
+            return AssertionError("changeOverride must be passed a new"
+                                  "component, section or priority.")
+
+        # Retrieve current publishing info
+        current = self.publishing_history[-1]
+
+        # Check there is a change to make
+        if new_component is None:
+            new_component = current.component
+        if new_section is None:
+            new_section = current.section
+        if new_priority is None:
+            new_priority = current.priorty
+
+        if (new_component == current.component and
+            new_section == current.section and
+            new_priority == current.priority):
+            return
+
+        # Append the modified package publishing entry
+        SecureBinaryPackagePublishingHistory(
+            binarypackagerelease=current.binarypackagerelease,
+            distroarchrelease=current.distroarchrelease,
+            component=new_component,
+            section=new_section,
+            priority=new_priority,
+            status=PackagePublishingStatus.PENDING,
+            datecreated=UTC_NOW,
+            pocket=current.pocket,
+            embargo=False,
+            )
+        
+    def supersede(self):
+        """See IDistroArchReleaseBinaryPackage."""
+
+        current = self.publishing_history[-1]
+        SecureBinaryPackagePublishingHistory(
+            binarypackagerelease=current.binarypackagerelease,
+            distroarchrelease=current.distroarchrelease,
+            component=current.component,
+            section=current.section,
+            priority=current.priority,
+            status=PackagePublishingStatus.SUPERSEDED,
+            datecreated=UTC_NOW,
+            pocket=current.pocket,
+            embargo=False,
+            )
