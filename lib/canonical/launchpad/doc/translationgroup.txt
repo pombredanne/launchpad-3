@@ -32,10 +32,10 @@ Heres various sets of things that we'll need.
     >>> potemplate_set = getUtility(IPOTemplateSet)
 
 Here are Carlos and Foo. Carlos manages the translation group for Evolution,
-and Foo is a translator.
+and No Privileges Person is a translator.
 
     >>> carlos = person_set.getByName('carlos')
-    >>> foo = person_set.getByName('name16')
+    >>> no_priv = person_set.getByName('no-priv')
 
 Here's our translation group.
 
@@ -61,21 +61,21 @@ Foo isn't allowed to translate into Welsh.
    >>> subset = potemplate_set.getSubset(productseries=series)
    >>> potemplate = subset['evolution-2.2']
    >>> pofile = potemplate.getOrCreatePOFile('cy')
-   >>> pofile.canEditTranslations(foo)
+   >>> pofile.canEditTranslations(no_priv)
    False
 
 Let's add him to the group.
 
     >>> welsh = language_set['cy']
 
-    >>> foo_translator = translator_set.new(
+    >>> no_priv_translator = translator_set.new(
     ...     translationgroup=group,
     ...     language=welsh,
-    ...     translator=foo)
+    ...     translator=no_priv)
 
 Foo *is* allowed to translate into Welsh.
 
-    >>> pofile.canEditTranslations(foo)
+    >>> pofile.canEditTranslations(no_priv)
     True
 
     >>> LaunchpadFunctionalTestSetup().tearDown()
