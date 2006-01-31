@@ -172,13 +172,17 @@ except:
 
 judgejudy = Dominator(logging.getLogger("Dominator"))
 
+is_careful_domination = options.careful or options.careful_domination
 try:
     debug("Attempting to perform domination.")
     for distrorelease in drs:
-        if ((distrorelease.releasestatus in non_careful_domination_states) or
-            options.careful or options.careful_domination):
-            debug("Domination for " + distrorelease.name)
-            for pocket in PackagePublishingPocket.items:
+        for pocket in PackagePublishingPocket.items:
+            is_in_development = (distrorelease.releasestatus in
+                                non_careful_domination_states)
+            is_release_pocket = pocket == PackagePublishingPocket.RELEASE
+            if (is_careful_domination or is_in_development or
+                not is_release_pocket):
+                debug("Domination for %s (%s)" % (distrorelease.name, pocket))
                 judgejudy.judgeAndDominate(distrorelease, pocket, pubconf)
                 debug("Flushing caches.")
                 clear_cache()
