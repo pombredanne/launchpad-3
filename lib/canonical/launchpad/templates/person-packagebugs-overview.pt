@@ -49,19 +49,27 @@
         <td>
           <a href="#"
              tal:content="package/displayname"
-             tal:attributes="href string:${context/fmt:url}/+packagebugs-search?search=Search&distribution=${package/distribution/name}&sourcepackagename=${package/name}">mozilla-firefox (Ubuntu)</a>
+             tal:attributes="href string:${context/fmt:url}/+packagebugs-search?search=Search&field.distribution=${package/distribution/name}&field.sourcepackagename=${package/name}">mozilla-firefox (Ubuntu)</a>
         </td>
         <td style="text-align: center">
-          <a href="#" tal:content="package/open_bugtasks/count">2</a>
+          <a href="#"
+             tal:attributes="href python:view.getOpenBugsURL(package)"
+             tal:content="package/open_bugtasks/count">2</a>
         </td>
         <td style="text-align: center">
-          <a href="#" tal:content="package/critical_bugtasks/count">2</a>
+          <a href="#"
+             tal:attributes="href python:view.getCriticalBugsURL(package)"
+             tal:content="package/critical_bugtasks/count">2</a>
         </td>
         <td style="text-align: center">
-          <a href="#" tal:content="package/unassigned_bugtasks/count">2</a>
+          <a href="#"
+             tal:attributes="href python:view.getUnassignedBugsURL(package)"
+             tal:content="package/unassigned_bugtasks/count">2</a>
         </td>
         <td style="text-align: center">
-          <a href="#" tal:content="package/inprogress_bugtasks/count">2</a>
+          <a href="#"
+             tal:attributes="href python:view.getInProgressBugsURL(package)"
+             tal:content="package/inprogress_bugtasks/count">2</a>
         </td>
       </tr>
     </table>

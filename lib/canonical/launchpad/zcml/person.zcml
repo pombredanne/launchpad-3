@@ -211,6 +211,7 @@
       name="+packagebugs-overview"
       for="canonical.launchpad.interfaces.IPerson"
       facet="bugs"
+      class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
       permission="zope.Public"
       template="../templates/person-packagebugs-overview.pt" />
 

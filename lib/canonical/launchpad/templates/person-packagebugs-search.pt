@@ -1,3 +1,4 @@
+<tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
@@ -18,15 +19,29 @@
         border: 1px solid #cfcfcf;
         background-color: #ededed
       }
+
+      #content {
+      display: inline; /* avoid MSIE Double Float Margin bug */
+      float: left;
+      width: 74%;
+      }
+
+      #sidebar {
+      display: inline;
+      float: left;
+      margin-left: 2%; /* whitespace */
+      width: 24%; /* = 25% - 1% whitespace */
+      }
+
     </style>
   </metal:block>
 
-  <metal:rightcolumn fill-slot="portlets_two">
-    <tal:block content="structure context/@@+portlet-otherpackages" />
-  </metal:rightcolumn>
-
   <div metal:fill-slot="main">
-    <div style="margin-bottom: 2px;">
+    <div id="content" style="margin-bottom: 2px;">
+      <h2 class="lpcontext"
+          tal:content="string:${context/displayname}'s Package Bug Reports">
+        Sample Person Package Bug Reports
+      </h2>
       <b>
         <small>
           <span tal:content="python:view.getPackage().displayname">
@@ -35,76 +50,59 @@
           bugs
         </small>
       </b>
-    <div tal:define="batch_navigator view/search;
-                     prev_page_url batch_navigator/prevBatchURL;
-                     next_page_url batch_navigator/nextBatchURL;
-                     total batch_navigator/batch/total;
-                     start_number batch_navigator/batch/startNumber;
-                     end_number batch_navigator/batch/endNumber">
-      <form method="GET" name="search" action="">
-        <input type="hidden" value="#"
-               name="distribution"
-               tal:attributes="value request/form/distribution" />
-        <input type="hidden" value="#"
-               name="sourcepackagename"
-               tal:attributes="value request/form/sourcepackagename" />
-        <input type="text" name="searchtext" size="40" />
-        <input type="submit" name="search" value="Search" />
-      </form>
-      <script>
-        <!--
-          document.forms['search'].searchtext.focus()
-          -->
-      </script>
-      <br />
-      <div>
-      <small>Results
-        <strong tal:content="start_number">1</strong>
-        -
-        <strong tal:content="end_number">50</strong>
-        of
-        <strong tal:content="total">64</strong>
-        <!--
-        bugs matching <a href="">mozilla-firefox (Ubuntu)</a>, <a href="">"foobar"</a>, <a href="">targeted for ubuntu-6.04</a>
-        -->
-      </small>
-      </div>
-    <table class="results">
-      <tr>
-        <th>ID</th><th>Summary</th><th>Importance</th><th>Status</th>
-      </tr>
-      <tr tal:repeat="bugtask batch_navigator/batch">
-        <td tal:content="bugtask/bug/id">42</td>
-        <td>
-          <a href="#"
-             tal:content="bugtask/bug/title"
-             tal:attributes="href bugtask/fmt:url">
-            drop-down list in search bar disappears when using blah blah blah
-          </a>
-        </td>
-        <td tal:content="bugtask/severity/title">Critical</td>
-        <td tal:content="bugtask/status/title">Confirmed</td>
-      </tr>
-<!--
-      <tr>
-        <td style="background-color: white">78</td>
-        <td style="background-color: white"><a href="">Moziall-firefox fails to print via cups, possible due to whatever</a></td>
-        <td style="background-color: white">Normal</td>
-        <td style="background-color: white">Confirmed</td>
-      </tr>
-      <tr>
-        <td>110</td>
-        <td><a href="">hangs with 100% cpu loading a page with 'mindterm' applet on JRE.blah</a></td>
-        <td><i style="color: orange">Major</i></td>
-        <td>Confirmed</td>
-      </tr>
-      <tr>
-        <td style="background-color: white">150</td>
-        <td style="background-color: white"><a href="">FTBFS: Not using -fPIC to make shared lib.</a></td>
-        <td style="background-color: white">Normal</td>
-        <td style="background-color: white">Confirmed</td>
-      </tr>
--->
+      <div tal:define="batch_navigator view/search;
+                       prev_page_url batch_navigator/prevBatchURL;
+                       next_page_url batch_navigator/nextBatchURL;
+                       total batch_navigator/batch/total;
+                       start_number batch_navigator/batch/startNumber;
+                       end_number batch_navigator/batch/endNumber">
+        <form method="GET" name="search" action="">
+          <input type="hidden" value="#"
+                 name="distribution"
+                 tal:attributes="value python:request.form.get('field.distribution')" />
+          <input type="hidden" value="#"
+                 name="sourcepackagename"
+                 tal:attributes="value python:request.form.get('field.sourcepackagename')" />
+          <input type="text" name="searchtext" size="40" />
+          <input type="submit" name="search" value="Search" />
+        </form>
+        <script>
+          <!--
+              document.forms['search'].searchtext.focus()
+            -->
+        </script>
+        <br />
+        <div>
+          <small>Results
+            <strong tal:content="start_number">1</strong>
+            -
+            <strong tal:content="end_number">50</strong>
+            of
+            <strong tal:content="total">64</strong>
+            <!--
+                bugs matching <a href="">mozilla-firefox (Ubuntu)</a>, <a href="">"foobar"</a>, <a href="">targeted for ubuntu-6.04</a>
+              -->
+          </small>
+        </div>
+        <table class="results">
+          <tr>
+            <th width="8%">ID</th>
+            <th width="60%">Summary</th>
+            <th widtrh="16%">Importance</th>
+            <th width="16%">Status</th>
+          </tr>
+          <tr tal:repeat="bugtask batch_navigator/batch">
+            <td tal:content="bugtask/bug/id">42</td>
+            <td>
+              <a href="#"
+                 tal:content="bugtask/bug/title"
+                 tal:attributes="href bugtask/fmt:url">
+                drop-down list in search bar disappears when using blah blah blah
+              </a>
+            </td>
+            <td tal:content="bugtask/severity/title">Critical</td>
+            <td tal:content="bugtask/status/title">Confirmed</td>
+          </tr>
     </table>
     <div style="margin-bottom: 5px">
       <small>Results
@@ -116,36 +114,87 @@
       </small>
 
       <span style="float: right">
-      <small>
-        <tal:previous condition="prev_page_url">
-          <a tal:attributes="href prev_page_url" rel="previous"
-          >&laquo; Previous</a>
-        </tal:previous>
-        <span
-          tal:condition="not:prev_page_url"
-          class="unavailable"
-        >&laquo; Previous</span>
-        <tal:intermediaries repeat="page_url batch_navigator/batchPageURLs">
-          <a
-            tal:condition="python:len(page_url) > 1"
-            tal:content="python:page_url.keys()[0]"
-            tal:attributes="href python:page_url.values()[0]"
-          >[1]</a>
-        </tal:intermediaries>
-        <tal:next condition="next_page_url">
-          &mdash;
-          <a tal:attributes="href next_page_url" rel="next"
-          >Next &raquo;</a>
-        </tal:next>
-        <span
-          tal:condition="not:next_page_url"
-          class="unavailable"
-        >&mdash; Next &raquo;</span>
-      </small>
+        <small>
+          <tal:previous condition="prev_page_url">
+            <a tal:attributes="href prev_page_url" rel="previous"
+               >&laquo; Previous</a>
+          </tal:previous>
+          <span
+             tal:condition="not:prev_page_url"
+             class="unavailable"
+             >&laquo; Previous</span>
+          <tal:intermediaries repeat="page_url batch_navigator/batchPageURLs">
+            <a
+               tal:condition="python:len(page_url) > 1"
+               tal:content="python:page_url.keys()[0]"
+               tal:attributes="href python:page_url.values()[0]"
+               >[1]</a>
+          </tal:intermediaries>
+          <tal:next condition="next_page_url">
+            &mdash;
+            <a tal:attributes="href next_page_url" rel="next"
+               >Next &raquo;</a>
+          </tal:next>
+          <span
+             tal:condition="not:next_page_url"
+             class="unavailable"
+             >&mdash; Next &raquo;</span>
+        </small>
       </span>
     </div>
+      </div>
     </div>
+    <div id="sidebar">
+      <tal:notlogin condition="python: '+login' not in request.getURL()">
+        <ul
+          tal:define="facetmenu CONTEXTS/menu:facet"
+          tal:condition="facetmenu"
+          class="facets"
+        >
+          <tal:facet repeat="link facetmenu">
+            <tal:available condition="link/enabled">
+              <li
+                tal:condition="link/selected"
+                tal:attributes="title link/summary"
+                class="current"
+              >
+                <a tal:condition="link/linked"
+                  tal:attributes="href link/url"
+                  tal:content="structure link/escapedtext"
+                >abc</a>
+                <span
+                  tal:condition="not: link/linked"
+                  tal:replace="structure link/escapedtext"
+                >def</span>
+                <tal:menu
+                  condition="not:exists:body"
+                  replace="structure CONTEXTS/@@+menubox"
+                />
+              </li>
+              <li
+                tal:condition="not: link/selected"
+                tal:attributes="title link/summary"
+              ><a
+                  tal:attributes="href link/url"
+                  tal:content="structure link/escapedtext"
+                >ghi</a><span
+                  class="disabled"
+                  tal:condition="not: link/linked"
+                  tal:content="structure link/escapedtext"
+                >jkl</span></li>
+            </tal:available>
+            <li
+              tal:condition="not: link/enabled"
+              tal:attributes="title link/summary"
+              tal:content="structure link/escapedtext"
+              class="unavailable"
+            />
+          </tal:facet>
+        </ul>
+      </tal:notlogin>
+      <div tal:content="structure context/@@+portlet-otherpackages" />
     </div>
   </div>
 </body>
 </html>
+</tal:layout>

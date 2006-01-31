@@ -147,7 +147,7 @@ Searching for all open bugs on Debian mozilla-firefox:
     ...     'search': "Search",
     ...     'field.distribution': "debian",
     ...     'field.sourcepackagename': "mozilla-firefox",
-    ...     'field.status': UNRESOLVED_BUGTASK_STATUSES}
+    ...     'field.status': [s.title for s in UNRESOLVED_BUGTASK_STATUSES]}
 
     >>> request = TestRequest(form=form)
     >>> packagebugs_search_view = create_view(
@@ -158,8 +158,6 @@ Searching for all open bugs on Debian mozilla-firefox:
     [1, 2, 3]
 
 Searching for all unassigned bugs on Debian mozilla-firefox:
-
-    >>> from canonical.launchpad.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
 
     >>> form = {
     ...     'search': "Search",
@@ -175,13 +173,56 @@ Searching for all unassigned bugs on Debian mozilla-firefox:
     >>> [bugtask.bug.id for bugtask in bugtask_batch_navigator.batch]
     [1, 3]
 
-A helper method is used to calculate package bug search URL for the "My
-other packages" portlet:
+There are helper methods to calculate links to the Open, Critical,
+Unassigned, and In Progress bug lists.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import IDistributionSet
 
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> ubuntu_mozilla_firefox = ubuntu.getSourcePackage("mozilla-firefox")
+
+    >>> packagebugs_search_view.getOpenBugsURL(ubuntu_mozilla_firefox)
+    u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&search=Search'
+
+    >>> packagebugs_search_view.getCriticalBugsURL(ubuntu_mozilla_firefox)
+    u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.severity=Critical&search=Search'
+
+    >>> packagebugs_search_view.getUnassignedBugsURL(ubuntu_mozilla_firefox)
+    u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.unassigned=on&search=Search'
+
+    >>> packagebugs_search_view.getInProgressBugsURL(ubuntu_mozilla_firefox)
+    u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=In+Progress&search=Search'
+
+A helper method is used to calculate package bug search URL for the "My
+other packages" portlet:
+
     >>> packagebugs_search_view.getBugContactPackageSearchURL(ubuntu_mozilla_firefox)
     u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&search=Search'
+
+Search Filter Links
+-------------------
+
+The package bug report displays the current search filter, with each
+part of the filter being links to that specific filter. For example, if
+you search for mozilla-firefox (Ubuntu) bugs, that are unassigned, and
+targeted for dapper, you are presented with links like:
+
+1 - 40 of 40 bugs matching _mozilla-firefox (Ubuntu)_, _unassigned_,
+_targeted for dapper_.
+
+Use the getSearchFilterLinks method to get a dict of these links.
+
+    >>> form = {
+    ...     'search': "Search",
+    ...     'field.distribution': "debian",
+    ...     'field.sourcepackagename': "mozilla-firefox",
+    ...     'field.unassigned': True}
+
+    >>> request = TestRequest(form=form)
+    >>> packagebugs_search_view = create_view(
+    ...     name12, name="+packagebugs-search", request=request)
+
+    >>> packagebugs_search_view.getSearchFilterLinks()
+    {'mozilla-firefox (Debian)': u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.unassigned=on&search=Search',
+     'unassigned': u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.unassigned=on&search=Search'}

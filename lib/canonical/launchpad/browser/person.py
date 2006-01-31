@@ -40,6 +40,7 @@ __all__ = [
     ]
 
 import cgi
+import urllib
 import itertools
 import sets
 from StringIO import StringIO
@@ -54,7 +55,7 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility, getView
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.searchbuilder import any
+from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
     TeamSubscriptionPolicy)
@@ -274,22 +275,22 @@ class PersonBugsMenu(ApplicationMenu):
 
     facet = 'bugs'
 
-    links = ['assignedbugs', 'softwarebugs', 'reportedbugs', 'subscribedbugs']
+    links = ['assignedbugs', 'reportedbugs', 'subscribedbugs', 'softwarebugs']
 
     def assignedbugs(self):
-        text = 'Bugs Assigned'
+        text = 'Assigned'
         return Link('+assignedbugs', text, icon='bugs')
 
     def softwarebugs(self):
-        text = 'Bugs on Maintained Software'
+        text = 'Package Reports'
         return Link('+packagebugs', text, icon='bugs')
 
     def reportedbugs(self):
-        text = 'Bugs Reported'
+        text = 'Reported'
         return Link('+reportedbugs', text, icon='bugs')
 
     def subscribedbugs(self):
-        text = 'Bugs Subscribed'
+        text = 'Subscribed'
         return Link('+subscribedbugs', text, icon='bugs')
 
 
@@ -710,12 +711,23 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
             self, searchtext=searchtext, batch_start=batch_start,
             context=distrosourcepackage)
 
+    def getExtraSearchParams(self):
+        """Overridden from BugTaskSearchListingView, to filter the search."""
+        search_params = {}
+
+        if self.status_widget.hasInput():
+            search_params['status'] = any(*self.status_widget.getInputValue())
+        if self.unassigned_widget.hasInput():
+            search_params['assignee'] = NULL
+
+        return search_params
+
     def getBugContactPackageSearchURL(self, distributionsourcepackage):
         person_url = canonical_url(self.context)
         package_search_url = person_url + (
             '/+packagebugs-search?field.distribution=%s&'
             'field.sourcepackagename=%s&search=Search') % (
-                cgi.escape(distributionsourcepackage.distribution.name),
+                urllib.quote_plus(distributionsourcepackage.distribution.name),
                 distributionsourcepackage.name)
 
         return package_search_url
@@ -728,6 +740,73 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
 
         return distribution.getSourcePackage(
             form.get("field.sourcepackagename"))
+
+    def getOpenBugsURL(self, distributionsourcepackage):
+        person_url = canonical_url(self.context)
+        status_params = ""
+
+        for status in UNRESOLVED_BUGTASK_STATUSES:
+            if status_params:
+                status_params += "&"
+            status_params += "field.status=%s" % urllib.quote_plus(status.title)
+
+        open_bugs_url = person_url + (
+            '/+packagebugs-search?field.distribution=%s&'
+            'field.sourcepackagename=%s&%s&search=Search') % (
+                cgi.escape(distributionsourcepackage.distribution.name),
+                distributionsourcepackage.name, status_params)
+
+        return open_bugs_url
+
+    def getCriticalBugsURL(self, distributionsourcepackage):
+        person_url = canonical_url(self.context)
+        status_params = ""
+
+        for status in UNRESOLVED_BUGTASK_STATUSES:
+            if status_params:
+                status_params += "&"
+            status_params += "field.status=%s" % urllib.quote_plus(status.title)
+
+        critical_bugs_url = person_url + (
+            '/+packagebugs-search?field.distribution=%s&'
+            'field.sourcepackagename=%s&%s&field.severity=Critical&'
+            'search=Search') % (
+                cgi.escape(distributionsourcepackage.distribution.name),
+                distributionsourcepackage.name, status_params)
+
+        return critical_bugs_url
+
+    def getUnassignedBugsURL(self, distributionsourcepackage):
+        person_url = canonical_url(self.context)
+        status_params = ""
+
+        for status in UNRESOLVED_BUGTASK_STATUSES:
+            if status_params:
+                status_params += "&"
+            status_params += "field.status=%s" % urllib.quote_plus(status.title)
+
+        unassigned_bugs_url = person_url + (
+            '/+packagebugs-search?field.distribution=%s&'
+            'field.sourcepackagename=%s&%s&field.unassigned=on&'
+            'search=Search') % (
+                cgi.escape(distributionsourcepackage.distribution.name),
+                distributionsourcepackage.name, status_params)
+
+        return unassigned_bugs_url
+
+    def getInProgressBugsURL(self, distributionsourcepackage):
+        person_url = canonical_url(self.context)
+        status_params = ""
+
+        inprogress_bugs_url = person_url + (
+            '/+packagebugs-search?field.distribution=%s&'
+            'field.sourcepackagename=%s&field.status=In+Progress&'
+            'search=Search') % (
+                cgi.escape(distributionsourcepackage.distribution.name),
+                distributionsourcepackage.name)
+
+        return inprogress_bugs_url
+
 
     def shouldShowSearchWidgets(self):
         # XXX: It's not possible to search amongst the bugs on maintained
