@@ -9,6 +9,8 @@ POOL_DEBIAN = object()
 
 from sets import Set
 import os
+import tempfile
+
 
 class Poolifier(object):
     """The Poolifier takes a (source name, component) tuple and tells you
@@ -78,6 +80,37 @@ def relative_symlink(src_path, dst_path):
         forward_elems = src_path_elems[len(common_prefix):]
         src_path = path_sep.join(backward_elems + forward_elems)
     os.symlink(src_path, dst_path)
+
+class _diskpool_atomicfile:
+    """Simple file-like object used by the pool to atomically move into place
+    a file after downloading from the librarian.
+
+    This class is designed to solve a very specific problem encountered in
+    the publisher. Namely that should the publisher crash during the process
+    of publishing a file to the pool, an empty or incomplete file would be
+    present in the pool. Its mere presence would fool the publisher into
+    believing it had already downloaded that file to the pool, resulting
+    in failures in the apt-ftparchive stage.
+
+    By performing a rename() when the file is guaranteed to have been
+    fully written to disk (after the fd.close()) we can be sure that if
+    the filename is present in the pool, it is definitely complete.
+    """
+
+    def __init__(self, targetfilename, mode, rootpath="/tmp"):
+        if mode == "w":
+            mode = "wb"
+        assert mode == "wb"
+        self.targetfilename = targetfilename
+        fd, name = tempfile.mkstemp(prefix=".temp-download.", dir=rootpath)
+        self.fd = os.fdopen(fd, mode)
+        self.tempname = name
+        self.write = self.fd.write
+
+    def close(self):
+        """Make the atomic move into place having closed the temp file."""
+        self.fd.close()
+        os.rename(self.tempname, self.targetfilename)
 
 
 class AlreadyInPool:
@@ -183,7 +216,7 @@ class DiskPool:
         self.components[component][leafname] = False
         self.files[leafname] = DiskPoolEntry(sourcename)
         self.files[leafname].defcomp = component
-        return file(targetpath,"w")
+        return _diskpool_atomicfile(targetpath, "wb", rootpath=self.rootpath)
     
     def removeFile(self, component, sourcename, leafname):
         """Remove a file from a given component.

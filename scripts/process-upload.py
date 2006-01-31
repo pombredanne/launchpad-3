@@ -29,6 +29,9 @@ from canonical.archivepublisher.nascentupload import NascentUpload, UploadError
 from canonical.archivepublisher.uploadpolicy import (
     findPolicyByOptions, policy_options, UploadPolicyError)
 
+from zope.component import getUtility
+from canonical.launchpad.interfaces import IGPGHandler
+
 
 # Globals set in main()
 log = None
@@ -182,9 +185,12 @@ def process_upload(ztm, upload, entry_path):
         except UploadPolicyError, e:
             upload.reject("UploadPolicyError made it out to the main loop: "
                           "%s " % e)
+            log.debug("UploadPolicyError made it out of .process()",
+                      exc_info=True)
             destination = "failed"
         except UploadError, e:
             upload.reject("UploadError made it out to the main loop: %s" % e)
+            log.debug("UploadError made it out of .process()", exc_info=True)
             destination = "failed"
         if upload.rejected:
             mails = upload.do_reject()
@@ -208,8 +214,16 @@ def process_upload(ztm, upload, entry_path):
             log.info("Committing the transaction and any mails associated "
                      "with this upload.")
             ztm.commit()
-    finally:
-        ztm.abort()
+
+        log.info("Cleaning out the GPG handlers")
+        getUtility(IGPGHandler).resetLocalState()
+    except:
+        log.warn("Exception during processing made it out of the main loop.",
+                 exc_info=True)
+        destination = "failed"
+
+
+    ztm.abort()
 
     if destination is None:
         destination = "failed"
@@ -306,5 +320,12 @@ def do_one_entry(ztm, entry, fsroot, lock):
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    try:
+        ret_code = main()
+    except:
+        log.debug("Error during processing of main()", exc_info=True)
+        ret_code = 1
+
+    sys.exit(ret_code)
+
 

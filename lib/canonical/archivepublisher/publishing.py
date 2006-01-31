@@ -257,7 +257,7 @@ class Publisher(object):
                     for line in eef:
                         line = line.strip()
                         if line:
-                            (package, header, value) = line.split("\t", 2)
+                            (package, header, value) = line.split(None, 2)
                             pkg_extras = extras.setdefault(package, {})
                             header_values = pkg_extras.setdefault(header, [])
                             header_values.append(value)
@@ -643,19 +643,19 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                 self.debug("Writing Release file for %s/%s/%s" % (
                     full_name, component, architecture))
                 if architecture != "source":
-                    # Set up the debian-installer paths, which are nested
-                    # inside the component
-                    di_path = os.path.join(component, "debian-installer",
-                                           architecture)
-                    di_file_stub = os.path.join(di_path, file_stub)
-                    for suffix in ('', '.gz', '.bz2'):
-                        all_files.add(di_file_stub + suffix)
-
                     # Strip "binary-" off the front of the architecture before
                     # noting it in all_architectures
                     clean_architecture = architecture[7:]
                     all_architectures.add(clean_architecture)
                     file_stub = "Packages"
+
+                    # Set up the debian-installer paths, which are nested
+                    # inside the component
+                    di_path = os.path.join(component, "debian-installer",
+                                           architecture)
+                    di_file_stub = os.path.join(di_path, file_stub)
+                    for suffix in ('.gz', '.bz2'):
+                        all_files.add(di_file_stub + suffix)
                 else:
                     file_stub = "Sources"
                     clean_architecture = architecture
@@ -766,14 +766,13 @@ Description: %s
                             ".".join(["override",
                                       full_distrorelease_name, comp, "src"]))
 
-                    self._release_files_needed.setdefault(
+                    dr_comps = self._release_files_needed.setdefault(
                         full_distrorelease_name, {})
 
                     f_touch(self._config.overrideroot,
                             "_".join([full_distrorelease_name,
                                       comp, "source"]))
-                    self._release_files_needed.setdefault(comp,
-                                                          set()).add("source")
+                    dr_comps.setdefault(comp, set()).add("source")
 
                     for arch in arch_tags:
                         # organize dr/comp/arch into temporary binary

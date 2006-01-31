@@ -19,7 +19,8 @@ import sys, os
 from canonical.launchpad.database import (
     Distribution, DistroRelease, SourcePackagePublishingView,
     BinaryPackagePublishingView, SourcePackageFilePublishing,
-    BinaryPackageFilePublishing)
+    BinaryPackageFilePublishing, SecureSourcePackagePublishingHistory,
+    SecureBinaryPackagePublishingHistory)
 
 from sqlobject import AND
 
@@ -172,13 +173,18 @@ except:
 
 judgejudy = Dominator(logging.getLogger("Dominator"))
 
+is_careful_domination = options.careful or options.careful_domination
 try:
     debug("Attempting to perform domination.")
     for distrorelease in drs:
-        if ((distrorelease.releasestatus in non_careful_domination_states) or
-            options.careful or options.careful_domination):
-            debug("Domination for " + distrorelease.name)
-            for pocket in PackagePublishingPocket.items:
+        for pocket in PackagePublishingPocket.items:
+            is_in_development = (distrorelease.releasestatus in
+                                non_careful_domination_states)
+            is_release_pocket = pocket == PackagePublishingPocket.RELEASE
+            if (is_careful_domination or is_in_development or
+                not is_release_pocket):
+                debug("Domination for %s (%s)" % (
+                    distrorelease.name, pocket.name))
                 judgejudy.judgeAndDominate(distrorelease, pocket, pubconf)
                 debug("Flushing caches.")
                 clear_cache()
@@ -297,6 +303,28 @@ try:
     
     pub.unpublishDeathRow(consrc, conbin, livesrc, livebin)
 
+    # Now that the os.remove() calls have been made, simply let every
+    # now out-of-date record be marked as removed.
+
+    debug("Marking condemned sources as removed.")
+    consrc = SecureSourcePackagePublishingHistory.select(
+        "status = %s AND scheduleddeletiondate <= %s" % sqlvalues(
+        PackagePublishingStatus.PENDINGREMOVAL, UTC_NOW))
+    for pubrec in consrc:
+        pubrec.status = PackagePublishingStatus.REMOVED
+        pubrec.dateremoved = UTC_NOW
+        
+    debug("Marking condemned binaries as removed.")
+    conbin = SecureBinaryPackagePublishingHistory.select(
+        "status = %s AND scheduleddeletiondate <= %s" % sqlvalues(
+        PackagePublishingStatus.PENDINGREMOVAL, UTC_NOW))
+    for pubrec in conbin:
+        pubrec.status = PackagePublishingStatus.REMOVED
+        pubrec.dateremoved = UTC_NOW
+
+    debug("Committing")
+    txn.commit()
+
 except:
     logging.getLogger().exception("Bad muju while doing death-row unpublish")
     txn.abort()
@@ -309,7 +337,7 @@ except:
     logging.getLogger().exception("Bad muju while sanitising links.")
     sys.exit(1)
 
-debug("All done, committing before bed.")
+debug("All done, committing anything left over before bed.")
 
 txn.commit()
 
