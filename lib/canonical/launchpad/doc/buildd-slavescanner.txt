@@ -241,7 +241,8 @@ slave has the requested file in cache.
 
   Stub classes to emulate Build and BuildQueue
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> from canonical.launchpad.interfaces import IBuildSet
+
   >>> class MockBuild:
   ...     def __init__(self, id):
   ...         self.id = id
@@ -250,8 +251,11 @@ slave has the requested file in cache.
   ...         self.datebuilt = None
   ...         self.buildduration = None
   ...         self.buildlog = None
-  ...         self.distribution = getUtility(IDistributionSet)['ubuntu']
-  ...         self.distrorelease = self.distribution['hoary']
+  ...         tmp_build = getUtility(IBuildSet).getByBuildID(7)
+  ...         self.distribution = tmp_build.distribution
+  ...         self.distrorelease = tmp_build.distrorelease
+  ...         self.distroarchrelease = tmp_build.distroarchrelease
+  ...         self.sourcepackagerelease = tmp_build.sourcepackagerelease
 
   >>> import datetime, pytz
   >>> UTC = pytz.timezone('UTC')
@@ -400,14 +404,14 @@ The buildlog is collected and compressed locally using gzip algorithm,
 let's see how this method works:
 
   >>> logfile_alias = buildergroup.getLogFromSlave(builder10.slave,
-  ...                                              "1-1", librarian)
+  ...                                              bqItem10, librarian)
 
   >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
 
   >>> logfile = getUtility(ILibraryFileAliasSet)[logfile_alias]
 
   >>> logfile.filename, logfile.mimetype
-  (u'log-for-1-1.txt.gz', u'application/octet-stream')
+  (u'buildlog_ubuntu-hoary-i386.pmount_0.1-1.txt.gz', u'application/octet-stream')
 
   Force Librarian to write down the stuff
   XXX cprov 20051010: is this a bug on librarian_client API ?
