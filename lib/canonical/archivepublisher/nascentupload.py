@@ -608,6 +608,7 @@ class NascentUpload:
         policy do this.
         """
         if self.policy.unsigned_changes_ok:
+            self.logger.debug("Changes file can be unsigned, storing None")
             self.signer = None
             self.signingkey = None
         else:
@@ -1437,6 +1438,7 @@ class NascentUpload:
 
         # If we have no signer, there's no ACL we can apply
         if self.signer is None:
+            self.debug("No signer, therefore ACL not processed")
             return
 
         possible_components = self._components_valid_for(self.signer)
@@ -1527,6 +1529,8 @@ class NascentUpload:
         by the provided signer.
         """
         if self.signer is None:
+            self.logger.debug("No signer, therefore no point verifying signer "
+                              "against ACL")
             return
 
         for uploaded_file in self.files:
@@ -1592,6 +1596,7 @@ class NascentUpload:
     def build_recipients(self):
         """Build self.recipients up to include every address we trust."""
         recipients = []
+        self.logger.debug("Building recipients list.")
         if self.signer:
             recipients.append(self.signer_address['rfc2047'])
 
@@ -1602,11 +1607,15 @@ class NascentUpload:
 
             if (maintainer != self.signer and
                 self.is_person_in_keyring(maintainer)):
+                self.logger.debug("Adding maintainer to recipients")
                 recipients.append(maintainer_email)
 
             if (changer != self.signer and changer != maintainer
                 and self.is_person_in_keyring(changer)):
+                self.logger.debug("Adding changed-by to recipients")
                 recipients.append(changer_email)
+        else:
+            self.logger.debug("Changes file is unsigned, skipping mails")
 
         recipients = self.policy.filterRecipients(self, recipients)
         for r in recipients:
@@ -1617,6 +1626,10 @@ class NascentUpload:
             person = getUtility(IPersonSet).getByEmail(r)
             if person is not None and person.preferredemail is not None:
                 self.recipients.append(r)
+            else:
+                self.logger.debug("Could not find a person for <%s> or that "
+                                  "person has no preferred email address set "
+                                  "in launchpad" % r)
 
     def do_reject(self, template=rejection_template):
         """Reject the current upload given the reason provided."""
