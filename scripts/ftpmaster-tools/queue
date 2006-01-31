@@ -11,10 +11,12 @@ import _pythonpath
 
 import os
 import sys
+from email import message_from_string
 
 from optparse import OptionParser
 from zope.component import getUtility
 
+from canonical.encoding import guess
 from canonical.lp import initZopeless
 from canonical.config import config
 from canonical.launchpad.scripts import (
@@ -28,6 +30,11 @@ from canonical.lp.dbschema import (
     DistroReleaseQueueStatus, PackagePublishingPriority)
 
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
+from canonical.launchpad.mail import sendmail
+
+from canonical.encoding import ascii_smash
+
+from canonical.archivepublisher.template_messages import announce_template
 
 name_queue_map = {
     "new": DistroReleaseQueueStatus.NEW,
@@ -88,12 +95,17 @@ class QueueAction:
     """
 
     def __init__(self, distro, distrorelease, queue, args,
-                 exact_match=False):
+                 announcelist, no_mail=True, exact_match=False):
         """Initialises passed variables. """
         self.args = args
+        self.no_mail = no_mail
         self.exact_match = exact_match
         self.distro = distro
         self.distrorelease = distrorelease
+        if not announcelist:
+            self.announcelist = announcelist
+        else:
+            self.announcelist = self.distrorelease.changeslist
         self.queue = queue
         self.queue_size = getUtility(IDistroReleaseQueueSet).count(
             status=self.queue, distrorelease=self.distrorelease)
@@ -211,6 +223,24 @@ class QueueAction:
                           queue_build.build.distroarchrelease.architecturetag,
                           bpr.component.name, bpr.section.name,
                           bpr.priority.name))
+    def printMessage(self, message):
+        """ """
+        print "Would be sending a mail:"
+        print "   Subject: %s" % message['Subject']
+        print "   Recipients: %s" % message['To']
+        print "   Body:"
+        for line in message.get_payload().split("\n"):
+            print line
+
+    def send_email(self, message):
+        """Send the mails provided using the launchpad mail infrastructure."""
+        mail_message = message_from_string(ascii_smash(message))
+        mail_message['To'] = self.announcelist
+        mail_message['X-Katie'] = "Launchpad actually"
+        if not self.no_mail:
+            sendmail(mail_message)
+            return
+        self.printMessage(mail_message)
 
 
 class QueueActionList(QueueAction):
@@ -260,7 +290,7 @@ class QueueActionFetch(QueueAction):
         self.printRule()
         for queue_item in self.items:
             print "Constructing %s" % queue_item.changesfilename
-            changes_file_alias = queue_item.changesfilealias
+            changes_file_alias = queue_item.changesfile
             changes_file_alias.open()
             changes_file = open(queue_item.changesfilename, "w")
             changes_file.write(changes_file_alias.read())
@@ -330,6 +360,36 @@ class QueueActionAccept(QueueAction):
             except QueueInconsistentStateError, info:
                 print ('** %s could not be accepted due %s'
                        % (queue_item.sourcepackagename.name, info))
+            else:
+                for source in queue_item.sources:
+                    src_rel = source.sourcepackagerelease
+                    recipients = [src_rel.maintainer.preferredemail.email,
+                                  self.announcelist]
+                    summary = ('%s_%s was ACCEPTED as %s/%s'
+                               % (src_rel.name, src_rel.version,
+                                  src_rel.component.name,
+                                  src_rel.section.name))
+
+                    queue_item.changesfile.open()
+                    changescontent = queue_item.changesfile.read()
+                    queue_item.changesfile.close()
+
+                    replacements = {
+                        "TO": ", ".join(recipients),
+                        "ANNOUNCE": self.announcelist,
+                        "MAINTAINERFROM": src_rel.maintainer.displayname,
+                        "CHANGES": queue_item.changesfilename,
+                        "SUMMARY": summary,
+                        "CHANGESFILE": changescontent,
+                        "SOURCE": src_rel.name,
+                        "VERSION": src_rel.version,
+                        "ARCH": 'source',
+                        }
+
+                    # append an email describing this action.
+                    message = announce_template % replacements
+                    self.send_email(message.decode('ascii'))
+
         self.printRule()
         self.printBottom()
 
@@ -375,7 +435,7 @@ class QueueActionOverride(QueueAction):
                             % override_stanza)
             return
 
-        getattr(self, '_override_' + override_stanza)()
+        return getattr(self, '_override_' + override_stanza)()
 
     def _override_source(self):
         """Overrides sourcepackagereleases selected.
@@ -408,8 +468,8 @@ class QueueActionOverride(QueueAction):
             # a single SourcePackageRelease, it's paired to
             # a Changesfile. So the "for" is fluff.
             for source in queue_item.sources:
-                source.sourcepackagerelease.override(
-                    component=component, section=section)
+                source.sourcepackagerelease.override(component=component,
+                                                     section=section)
                 self.printInfo(queue_item)
 
     def _override_binary(self):
@@ -458,10 +518,10 @@ class QueueActionOverride(QueueAction):
                         # break loop, just in case
                         break
 
-                if not overridden:
-                    self.printUsage('No matches for "%s".' % self.term)
+        if not overridden:
+            self.printUsage('No matches for "%s".' % self.term)
 
-                self.printInfo(queue_item, only=overridden)
+        self.printInfo(queue_item, only=overridden)
 
 queue_actions = {
     'list': QueueActionList,
@@ -493,6 +553,10 @@ def main():
     parser.add_option("-N", "--dry-run", action="store_true",
                       dest="dryrun", metavar="DRY_RUN", default=False,
                       help="Whether to treat this as a dry-run or not.")
+
+    parser.add_option("-M", "--no-mail", action="store_true",
+                      dest="nomail", metavar="NO_MAIL", default=False,
+                      help="Whether to send announce email or not.")
 
     parser.add_option("-e", "--exact-match", action="store_true",
                       dest="exact_match", metavar="EXACTMATCH",
@@ -545,9 +609,12 @@ def main():
     print ("Initialising connection to queue %s/%s %s"
            % (options.distro, options.distrorelease, options.queue))
 
+    no_mail = options.dryrun or options.nomail
+    email_to = options.announcelist
+
     for single_args in args_list:
         if runCommand(queue, distro_name, distrorelease_name, exact_match,
-                      single_args):
+                      single_args, email_to, no_mail):
             # XXX cprov 20060120: dangerous option
             if options.ignore_errors:
                 print "Ignoring error, aborting transaction ..."
@@ -580,7 +647,8 @@ def showReport(distro_name, distrorelease_name):
 
     return 0
 
-def runCommand(queue, distro_name, distrorelease_name, exact_match, args):
+def runCommand(queue, distro_name, distrorelease_name, exact_match, args,
+               announcelist, no_mail=True):
     """Run a single command iteration.
 
     Return True if something gets wrong during the operation,
@@ -601,8 +669,8 @@ def runCommand(queue, distro_name, distrorelease_name, exact_match, args):
         print 'Wrong Action: %s' % action
     else:
         try:
-            queue_action(distro,distrorelease, queue, arguments,
-                         exact_match=exact_match).run()
+            queue_action(distro, distrorelease, queue, arguments,
+                         announcelist, no_mail, exact_match=exact_match).run()
         except QueueActionError, info:
             print info
         else:

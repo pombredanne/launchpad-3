@@ -120,7 +120,9 @@ Iterating over IDistroReleaseQueues via iDistroReleaseQueueSet:
   ...     item.id
   1
   2
-  3L
+  3
+  4
+  5L
 
 Retrieving an IDistroReleaseQueue by its id:
 
@@ -133,7 +135,7 @@ Retrieving an IDistroReleaseQueue by its id:
 Counter, optionally by status (informally named "queue") and or distrorelease:
 
   >>> qset.count()
-  3
+  5
 
   >>> qset.count(DistroReleaseQueueStatus.ACCEPTED)
   1
@@ -149,7 +151,7 @@ Retrieve some data from DB to play more with counter.
   >>> breezy_autotest = distro['breezy-autotest']
 
   >>> qset.count(distrorelease=breezy_autotest)
-  2
+  4
 
   >>> qset.count(status=DistroReleaseQueueStatus.ACCEPTED,
   ...            distrorelease=breezy_autotest)
@@ -163,8 +165,8 @@ Retrieve some data from DB to play more with counter.
 Check the behaviour of @cachedproperty  attributes:
   >>> qitem = qset.get(1)
 
-  >>> qitem.datecreated.isoformat()
-  '2004-09-27T11:57:13+00:00'
+  >>> qitem.datecreated
+  datetime.datetime(...)
 
   >>> qitem.age
   datetime.timedelta(...)
@@ -186,14 +188,16 @@ of IDistroReleaseQueue entries.
   >>> new_items = breezy_autotest.getFancyQueueItems(
   ...    DistroReleaseQueueStatus.NEW)
   >>> new_items.count()
-  2
+  4
 
-Ensure they are build queue entries
+Invetigate the queue entries type:
 
   >>> for n in new_items:
   ...     len(n.builds), len(n.sources)
   (1, 0)
   (1, 0)
+  (0, 1)
+  (0, 1)
 
 Exercises build side of getFancyQueueItems, Retrieve queue entry for a
 name like 'moz':
@@ -276,7 +280,8 @@ Performing full acceptance:
   ...          print item.sourcepackagename.name, 'ACCEPTED'
   mozilla-firefox ACCEPTED
   pmount ACCEPTED
-
+  netapplet ACCEPTED
+  alsa-utils ACCEPTED
 
 Move the DistroReleaseQueue items back to NEW
 
@@ -349,7 +354,7 @@ Construct a new upload for universe/misc and a lot of errors ;)
   >>> for msg in msgs:
   ...    print msg
   From: Root <root@localhost>
-  To: Root <root@localhost>
+  To: Root <root@localhost>, Sample Person <test@canonical.com>
   Precedence: bulk
   Subject: usplash_0.1-22_powerpc.changes REJECTED
   <BLANKLINE>

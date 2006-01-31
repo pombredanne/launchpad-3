@@ -234,7 +234,10 @@ Finally we can ask the upload to process itself.
   DEBUG: Done
   DEBUG: Verifying timestamps in ed_0.2-20_i386.deb
   DEBUG: Finding and applying overrides.
+  DEBUG: getPublishedReleases() returned 0 possible source(s)
   DEBUG: ed: (source) NEW
+  DEBUG: Checking against i386 for ed
+  DEBUG: getReleasedPackages() returned 0 possibilit{y,ies}
   DEBUG: ed: (binary) NEW
   DEBUG: Finished checking upload.
   >>> print ed_upload.rejection_message+"\nEND"
@@ -242,6 +245,7 @@ Finally we can ask the upload to process itself.
   >>> ed_upload.rejected
   False
   >>> success, msgs = ed_upload.do_accept()
+  DEBUG: Building recipients list.
   DEBUG: Attempting to decide if James Troup is in the keyring.
   DEBUG: Decision: False
   DEBUG: Creating a New queue entry
@@ -250,7 +254,7 @@ Finally we can ask the upload to process itself.
   >>> for msg in msgs:
   ...     print msg, "END"
   From: Root <root@localhost>
-  To: Root <root@localhost>
+  To: Root <root@localhost>, Daniel Silverstone <daniel.silverstone@canonical.com>
   Precedence: bulk
   Subject: ed_0.2-20_i386.changes is NEW
   <BLANKLINE>
