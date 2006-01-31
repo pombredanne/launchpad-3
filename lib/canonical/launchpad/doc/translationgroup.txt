@@ -31,8 +31,8 @@ Heres various sets of things that we'll need.
     >>> from canonical.launchpad.interfaces import IPOTemplateSet
     >>> potemplate_set = getUtility(IPOTemplateSet)
 
-Here are Carlos and Foo. Carlos manages the translation group for Evolution,
-and No Privileges Person is a translator.
+Here are Carlos and No Privileges Person. Carlos manages the translation group
+for Evolution, and No Privileges Person is a translator.
 
     >>> carlos = person_set.getByName('carlos')
     >>> no_priv = person_set.getByName('no-priv')
@@ -55,7 +55,7 @@ Let's only allow translators from that group to translate.
     >>> from canonical.lp.dbschema import TranslationPermission
     >>> evolution.translationpermission = TranslationPermission.CLOSED
 
-Foo isn't allowed to translate into Welsh.
+No Privileges Person isn't allowed to translate into Welsh.
 
    >>> series = evolution.getSeries('main')
    >>> subset = potemplate_set.getSubset(productseries=series)
@@ -73,7 +73,7 @@ Let's add him to the group.
     ...     language=welsh,
     ...     translator=no_priv)
 
-Foo *is* allowed to translate into Welsh.
+No Privileges Person *is* allowed to translate into Welsh.
 
     >>> pofile.canEditTranslations(no_priv)
     True
