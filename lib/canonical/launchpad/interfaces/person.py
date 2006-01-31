@@ -20,7 +20,7 @@ __all__ = [
 
 
 from zope.schema import (
-    Choice, Datetime, Int, Text, TextLine, Password, Bytes)
+    Choice, Datetime, Int, Text, TextLine, Password, Bytes, Bool)
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
@@ -145,6 +145,9 @@ class IPerson(IHasSpecifications):
             )
     languages = Attribute(_('List of languages known by this person'))
 
+    hide_email_addresses = Bool(
+        title=_("Hide my email addresses from other Launchpad users"),
+        required=False, default=False)
     # this is not a date of birth, it is the date the person record was
     # created in this db
     datecreated = Datetime(
