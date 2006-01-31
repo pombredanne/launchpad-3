@@ -257,7 +257,7 @@ class Publisher(object):
                     for line in eef:
                         line = line.strip()
                         if line:
-                            (package, header, value) = line.split("\t", 2)
+                            (package, header, value) = line.split(None, 2)
                             pkg_extras = extras.setdefault(package, {})
                             header_values = pkg_extras.setdefault(header, [])
                             header_values.append(value)
