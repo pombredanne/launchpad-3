@@ -766,14 +766,13 @@ Description: %s
                             ".".join(["override",
                                       full_distrorelease_name, comp, "src"]))
 
-                    self._release_files_needed.setdefault(
+                    dr_comps = self._release_files_needed.setdefault(
                         full_distrorelease_name, {})
 
                     f_touch(self._config.overrideroot,
                             "_".join([full_distrorelease_name,
                                       comp, "source"]))
-                    self._release_files_needed.setdefault(comp,
-                                                          set()).add("source")
+                    dr_comps.setdefault(comp, set()).add("source")
 
                     for arch in arch_tags:
                         # organize dr/comp/arch into temporary binary
