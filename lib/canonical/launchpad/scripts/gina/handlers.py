@@ -98,13 +98,6 @@ class LibrarianHasFileError(MultiplePackageReleaseError):
     """
 
 
-class MultiplePublishingEntryError(MultiplePackageReleaseError):
-    """
-    Raised when there are more than one publishing entries for this
-    package.
-    """
-
-
 class MultipleBuildError(MultiplePackageReleaseError):
     """Raised when we have multiple builds for the same package"""
 
@@ -509,33 +502,28 @@ class SourcePackageHandler:
         # think that's a bit flawed. We should have a way of saying "my
         # distrorelease overlays the version namespace of that
         # distrorelease" and use that to decide on whether we've seen
-        # this package before or not. The publishing tables are wrong,
-        # for instance, in the context of proper derivation.
+        # this package before or not. The publishing tables may be
+        # wrong, for instance, in the context of proper derivation.
+        #   -- kiko, 2005-XX-XX
+
+        # Check here to see if this release has ever been published in
+        # the distribution, no matter what status.
         query = """
                 sourcepackagerelease.sourcepackagename = %s AND
                 sourcepackagerelease.version = %s AND
-                sourcepackagepublishing.sourcepackagerelease = 
+                sourcepackagepublishinghistory.sourcepackagerelease =
                     sourcepackagerelease.id AND
-                sourcepackagepublishing.distrorelease = distrorelease.id AND
+                sourcepackagepublishinghistory.distrorelease = 
+                    distrorelease.id AND
                 distrorelease.distribution = %s
-                """ % (sourcepackagename.id, quote(version), 
+                """ % (sourcepackagename.id, quote(version),
                        distrorelease.distribution.id)
-        # XXX: this should really be a select DISTINCT. What we want to
-        # know here is the set of source packages with this version that
-        # was ever published into this archive.
-        releases = set()
-        for spr in SourcePackageRelease.select(query,
-            clauseTables=['SourcePackagePublishing', 'DistroRelease']):
-            releases.add(spr.id)
-        if not releases:
+        ret = SourcePackageRelease.select(query,
+            clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
+            orderBy=["-SourcePackagePublishingHistory.datecreated"])
+        if not ret:
             return None
-        if len(releases) != 1:
-            # XXX: untested
-            raise MultiplePackageReleaseError("Found more than one "
-                    "entry for %s (%s) published into %s" %
-                    (sourcepackagename.name, version,
-                     distrorelease.distribution.name))
-        return spr
+        return ret[0]
 
     def createSourcePackageRelease(self, src, distrorelease):
         """Create a SourcePackagerelease and db dependencies if needed.
@@ -611,16 +599,21 @@ class SourcePackagePublisher:
         """Create the publishing entry on db if does not exist."""
         # Check if the sprelease is already published and if so, just
         # report it.
-        source_publishinghistory = self._checkPublishing(
-            sourcepackagerelease, self.distrorelease)
-        if source_publishinghistory:
-            log.info('SourcePackageRelease already published as %s' %
-                      source_publishinghistory.status.title)
-            # XXXkiko: override here
-            return
 
         component = self.distro_handler.getComponentByName(spdata.component)
         section = self.distro_handler.ensureSection(spdata.section)
+
+        source_publishinghistory = self._checkPublishing(sourcepackagerelease)
+        if source_publishinghistory:
+            if ((source_publishinghistory.section,
+                 source_publishinghistory.component) ==
+                (section, component)):
+                # If nothing has changed in terms of publication
+                # (overrides) we are free to let this one go
+                log.info('SourcePackageRelease already published with no '
+                         'changes as %s' % 
+                         source_publishinghistory.status.title)
+                return
 
         # Create the Publishing entry with status PENDING so that we can
         # republish this later into a Soyuz archive.
@@ -638,18 +631,20 @@ class SourcePackagePublisher:
             entry.sourcepackagerelease.sourcepackagename.name,
             entry.sourcepackagerelease.version))
 
-    def _checkPublishing(self, sourcepackagerelease, distrorelease):
+    def _checkPublishing(self, sourcepackagerelease):
         """Query for the publishing entry"""
-        try:
-            return SecureSourcePackagePublishingHistory.selectOneBy(
-                sourcepackagereleaseID=sourcepackagerelease.id,
-                distroreleaseID=distrorelease.id)
-        except SQLObjectMoreThanOneResultError:
-            # XXX: untested
-            name = sourcepackagerelease.sourcepackagename.name
-            raise MultiplePublishingEntryError("Source package %s (%s) has "
-                "more than one publishing record for %s" %
-                (name, sourcepackagerelease.version, distrorelease.name))
+        ret = SecureSourcePackagePublishingHistory.select(
+                """sourcepackagerelease = %s
+                   AND distrorelease = %s
+                   AND status in (%s, %s)""" %
+                (sourcepackagerelease.id, self.distrorelease.id,
+                 PackagePublishingStatus.PUBLISHED,
+                 PackagePublishingStatus.PENDING),
+                orderBy=["-datecreated"])
+        ret = list(ret)
+        if ret:
+            return ret[0]
+        return None
 
 
 class BinaryPackageHandler:
@@ -857,16 +852,6 @@ class BinaryPackagePublisher:
 
     def publish(self, binarypackage, bpdata):
         """Create the publishing entry on db if does not exist."""
-        # Check if the binarypackage is already published and if yes,
-        # just report it.
-        binpkg_publishinghistory = self._checkPublishing(
-            binarypackage, self.distroarchrelease)
-        if binpkg_publishinghistory:
-            log.info('Binarypackage already published as %s' % (
-                binpkg_publishinghistory.status.title))
-            # XXXkiko: override here
-            return
-
         # These need to be pulled from the binary package data, not the
         # binary package release: the data represents data from /this
         # specific distrorelease/, whereas the package represents data
@@ -874,6 +859,22 @@ class BinaryPackagePublisher:
         component = self.distro_handler.getComponentByName(bpdata.component)
         section = self.distro_handler.ensureSection(bpdata.section)
         priority = prioritymap[bpdata.priority]
+
+        # Check if the binarypackage is already published and if yes,
+        # just report it.
+        binpkg_publishinghistory = self._checkPublishing(binarypackage)
+        if binpkg_publishinghistory:
+            if ((binpkg_publishinghistory.section,
+                 binpkg_publishinghistory.priority,
+                 binpkg_publishinghistory.component) ==
+                (section, priority, component)):
+                # If nothing has changed in terms of publication
+                # (overrides) we are free to let this one go
+                log.info('BinaryPackageRelease already published with no '
+                         'changes as %s' % 
+                         binpkg_publishinghistory.status.title)
+                return
+
 
         # Create the Publishing entry with status PENDING.
         SecureBinaryPackagePublishingHistory(
@@ -896,20 +897,21 @@ class BinaryPackagePublisher:
             binarypackage.binarypackagename.name, binarypackage.version,
             self.distroarchrelease.architecturetag))
 
-
-    def _checkPublishing(self, binarypackage, distroarchrelease):
+    def _checkPublishing(self, binarypackage):
         """Query for the publishing entry"""
-        try:
-            return SecureBinaryPackagePublishingHistory.selectOneBy(
-                binarypackagereleaseID=binarypackage.id,
-                distroarchreleaseID=distroarchrelease.id)
-        except SQLObjectMoreThanOneResultError:
-            # XXX: untested
-            name = binarypackage.binarypackagename.name
-            raise MultiplePublishingEntryError("Binary package %s (%s) has "
-                "more than one publishing record for %s" %
-                (name, binarypackage.version,
-                 distroarchrelease.distrorelease.name))
+        ret = SecureBinaryPackagePublishingHistory.select(
+                """binarypackagerelease = %s
+                   AND distroarchrelease = %s
+                   AND status in (%s, %s)""" %
+                (binarypackage.id, self.distroarchrelease.id,
+                 PackagePublishingStatus.PUBLISHED,
+                 PackagePublishingStatus.PENDING),
+                orderBy=["-datecreated"])
+        ret = list(ret)
+        if ret:
+            return ret[0]
+        return None
+
 
 
 class PersonHandler:
