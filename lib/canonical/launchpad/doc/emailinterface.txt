@@ -635,6 +635,11 @@ If we specify a non-existant user, an error message will be sent:
     There's no such person with the specified name or email: non_existant
     ...
 
+Let's subscribe Sample Person to the bug again, so that it has at least
+one subscriber:
+
+    >>> submit_commands(bug_four, 'subscribe test@canonical.com')
+
 
 affects $path [assignee $name|$email]
               [status $status]
@@ -650,6 +655,7 @@ the following form:
 If there is no task with the specified $path target, a new task is
 created:
 
+    >>> stub.test_emails = []
     >>> len(bug_four.bugtasks)
     1
     >>> 'debian' in [bugtask.target.name for bugtask in bug_four.bugtasks]
@@ -659,6 +665,25 @@ created:
     2
     >>> 'debian' in [bugtask.target.name for bugtask in bug_four.bugtasks]
     True
+
+A notification was sent to all the bug's subscribers, and to dilys:
+
+    >>> len(stub.test_emails)
+    2
+    >>> dilys_msg, sample_person_msg = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    >>> dilys_msg['To']
+    'dilys@muse.19inch.net'
+    >>> sample_person_msg['To']
+    'test@canonical.com'
+    >>> print sample_person_msg.get_payload()
+    Public bug report changed:
+    ...
+    Also affects: Debian
+    ...
+
 
 Submitting the same thing again doesn't do anything, since the task
 already exists:
