@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
 # General purpose package removal tool for ftpmaster
-# Copyright (C) 2000, 2001, 2002, 2003, 2004, 2005  James Troup <james@nocrew.org>
 # Copyright (C) 2006  James Troup <james.troup@canonical.com>
+# Copyright (C) 2000, 2001, 2002, 2003, 2004, 2005  James Troup <james@nocrew.org>
 
 ################################################################################
 
@@ -42,14 +42,6 @@ Options = None
 Lock = None
 Log = None
 ztm = None
-
-################################################################################
-
-def game_over():
-    answer = dak_utils.our_raw_input("Continue (y/N)? ").lower()
-    if answer != "y":
-        print "Aborted."
-        sys.exit(1)
 
 ################################################################################
 
@@ -181,7 +173,7 @@ def game_over():
 #     if dep_problem:
 #         print "Dependency problem found."
 #         if Options.action:
-#             game_over()
+#             dak_utils.game_over()
 #     else:
 #         print "No dependency problem found."
 #     print
@@ -432,7 +424,7 @@ def main ():
         sys.exit(0)
 
     print "Going to remove the packages now."
-    game_over()
+    dak_utils.game_over()
 
     whoami = dak_utils.whoami()
     date = commands.getoutput('date -R')

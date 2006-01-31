@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # Utility functions from the dak suite
+# Copyright (C) 2006  James Troup <james.troup@canonical.com>
 # Copyright (C) 2000, 2001, 2002, 2003, 2004, 2005, 2006  James Troup <james@nocrew.org>
 
 ################################################################################
@@ -32,6 +33,7 @@ import tempfile
 re_single_line_field = re.compile(r"^(\S*)\s*:\s*(.*)")
 re_multi_line_field = re.compile(r"^\s(.*)")
 re_no_epoch = re.compile(r"^\d+\:")
+re_extract_src_version = re.compile (r"(\S+)\s*\((.*)\)")
 
 changes_parse_error_exc = "Can't parse line in .changes file"
 invalid_dsc_format_exc = "Invalid .dsc file"
@@ -325,5 +327,13 @@ def arch_compare_sw (a, b):
         return 1;
 
     return cmp (a, b);
+
+################################################################################
+
+def game_over():
+    answer = our_raw_input("Continue (y/N)? ").lower()
+    if answer != "y":
+        print "Aborted."
+        sys.exit(1)
 
 ################################################################################
