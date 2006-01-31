@@ -1,7 +1,7 @@
 
 First, let's make sure the sample user (name12) can't view the page to
 add a milestone to the Ubuntu distribution, which is owned by the Ubuntu
-Team (name17).
+Team (ubuntu-team).
 
   >>> print http(r"""
   ... GET /distros/ubuntu/+addmilestone HTTP/1.1
@@ -185,7 +185,7 @@ xx-reassign-distribution.
   ... POST /distros/ubuntu/+reassign HTTP/1.1
   ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
   ...
-  ... field.owner=name17&existing=existing&CHANGE_OWNER=Change+Owner""")
+  ... field.owner=ubuNtu-team&existing=existing&CHANGE_OWNER=Change+Owner""")
   HTTP/1.1 303 See Other
   Content-Length: ...
   Content-Type: text/html;charset=utf-8

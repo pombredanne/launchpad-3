@@ -1,3 +1,57 @@
+launchpad-buildd (23) unstable; urgency=low
+
+  * And make apply-ogre-model use $SUDO, yay
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Fri, 27 Jan 2006 13:59:10 +0000
+
+launchpad-buildd (22) unstable; urgency=low
+
+  * Fix typo in apply-ogre-model (missing space)
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Fri, 27 Jan 2006 13:55:12 +0000
+
+launchpad-buildd (21) unstable; urgency=low
+
+  * Fix the .extend call for the --comp argument to pass it as one argument
+    instead of as - - c o m p = m a i n (which kinda doesn't work)
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Fri, 27 Jan 2006 13:45:34 +0000
+
+launchpad-buildd (20) unstable; urgency=low
+
+  * Update sbuild to the latest sbuild from adam.
+  * Make sure we pass --archive=ubuntu
+  * Make sure we pass --comp=<the component we're building for>
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Thu, 26 Jan 2006 17:20:49 +0000
+
+launchpad-buildd (19) unstable; urgency=low
+
+  * Add ogre support to the slave chroot tool
+  * Make sure the chroot tool ensures localhost in /etc/hosts in the chroot
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Wed, 25 Jan 2006 12:29:04 +0000
+
+launchpad-buildd (18) unstable; urgency=low
+
+  * Remove sbuildrc.tmp dangleberry in postinst
+  * Add linux32 to set of depends so that hppa, sparc and powerpc can build
+  * Make hppa, sparc, powerpc use linux32 to invoke the sbuild binary
+  * Add --resolve-deps to debootstrap invocation
+  * Make chroot tool use /bin/su - rather than /bin/sh for chrooting. shiny
+    (apparently)
+  * Add a bunch of deps infinity spotted.
+  * Make sure we chown the chroot tarball to the calling user after packing
+    it up.
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Wed,  9 Nov 2005 17:37:37 -0500
+
+launchpad-buildd (17) unstable; urgency=low
+
+  * Changed default UID/GID to match the ldap buildd UID/GID
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Wed,  9 Nov 2005 17:13:22 -0500
+
 launchpad-buildd (16) unstable; urgency=low
 
   * Change the XMLRPC method 'ensure' to be 'ensurepresent'

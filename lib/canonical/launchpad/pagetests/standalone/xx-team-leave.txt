@@ -1,8 +1,8 @@
 
-  Logged in as 'name16', go to the team named 'name17' home page.
+  Logged in as 'name16', go to the team named 'ubuntu-team' home page.
 
   >>> print http(r"""
-  ... GET /people/name17 HTTP/1.1
+  ... GET /people/ubuntu-team HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -16,7 +16,7 @@
   Click on the "Leave" link, to leave the team.
 
   >>> print http(r"""
-  ... GET /people/name17/+leave HTTP/1.1
+  ... GET /people/ubuntu-team/+leave HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
@@ -30,7 +30,7 @@
   Confirm that wants to leave the team.
 
   >>> print http(r"""
-  ... POST /people/name17/+leave HTTP/1.1
+  ... POST /people/ubuntu-team/+leave HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded
@@ -45,7 +45,7 @@
   Got redirected to team's home page and see that now he can join.
 
   >>> print http(r"""
-  ... GET /people/name17/ HTTP/1.1
+  ... GET /people/ubuntu-team/ HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

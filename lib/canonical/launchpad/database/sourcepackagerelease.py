@@ -6,6 +6,8 @@ __all__ = ['SourcePackageRelease']
 import sets
 import tarfile
 from StringIO import StringIO
+import datetime
+import pytz
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -152,7 +154,7 @@ class SourcePackageRelease(SQLBase):
 
     @property
     def meta_binaries(self):
-        """See ISourcePackageRelease."""        
+        """See ISourcePackageRelease."""
         return [binary.build.distroarchrelease.distrorelease.getBinaryPackage(
                                     binary.binarypackagename)
                 for binary in self.binaries]
@@ -209,15 +211,48 @@ class SourcePackageRelease(SQLBase):
             # We guess at the first processor in the family
             processor = shortlist(pf.processors)[0]
 
+        # force the current timestamp instead of the default
+        # UTC_NOW for the transaction, avoid several row with
+        # same datecreated.
+        datecreated = datetime.datetime.now(pytz.timezone('UTC'))
+
         return Build(distroarchrelease=distroarchrelease.id,
                      sourcepackagerelease=self.id,
-                     processor=processor.id, buildstate=status)
-
+                     processor=processor.id,
+                     buildstate=status,
+                     datecreated=datecreated)
 
     def getBuildByArch(self, distroarchrelease):
         """See ISourcePackageRelease."""
-        return Build.selectOneBy(sourcepackagereleaseID=self.id,
-                                 distroarchreleaseID=distroarchrelease.id)
+        query = """
+        build.id = binarypackagerelease.build AND
+        binarypackagerelease.id =
+            binarypackagepublishing.binarypackagerelease AND
+        binarypackagepublishing.distroarchrelease = %d AND
+        build.sourcepackagerelease = %d AND
+        binarypackagerelease.architecturespecific = true
+        """  % (distroarchrelease.id, self.id)
+
+        tables = ['binarypackagerelease', 'binarypackagepublishing']
+
+        builds = Build.select(query, clauseTables=tables)
+
+        if builds.count() == 0:
+            builds = Build.selectBy(distroarchreleaseID=distroarchrelease.id,
+                                    sourcepackagereleaseID=self.id)
+            if builds.count() == 0:
+                return None
+
+        return shortlist(builds)[0]
+
+    def override(self, component=None, section=None, urgency=None):
+        """See ISourcePackageRelease."""
+        if component:
+            self.component = component
+        if section:
+            self.section = section
+        if urgency:
+            self.urgency = urgency
 
     def attachTranslationFiles(self, tarball_alias, is_published,
         importer=None):
@@ -253,5 +288,3 @@ class SourcePackageRelease(SQLBase):
                 filename, content, is_published, importer,
                 sourcepackagename=self.sourcepackagename,
                 distrorelease=self.uploaddistrorelease)
-
-

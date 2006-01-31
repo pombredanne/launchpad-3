@@ -3,7 +3,7 @@
 (First some setup. We need a librarian for this test.)
 
   >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
-  >>> LibrarianTestSetup().setUp()  
+  >>> LibrarianTestSetup().setUp()
 
 We also need to set up the OpenPGP key used to sign things so that we can
 identify the upload signer later on.
@@ -51,7 +51,7 @@ the changes file specified exists, raising FileNotFound if it does not.
   Traceback (most recent call last):
   ...
   FileNotFound: DOES-NOT-EXIST
-  >>> ed_upload = NascentUpload(findPolicyByName('insecure'), 
+  >>> ed_upload = NascentUpload(findPolicyByName('insecure'),
   ...     datadir(''), "ed_0.2-20_i386.changes", MockLogger())
   >>> ed_upload.changes_filename == datadir("ed_0.2-20_i386.changes")
   True
@@ -120,7 +120,7 @@ The nascent upload can tell us if it is sourceful or not, (ditto binaryful)
   True
 
   >>> ed_source_upload = NascentUpload(buildd_policy,
-  ...     datadir(''), "ed_0.2-20_i386.source-only-unsigned-changes", 
+  ...     datadir(''), "ed_0.2-20_i386.source-only-unsigned-changes",
   ...     MockLogger)
   >>> ed_source_upload.sourceful
   True
@@ -148,7 +148,7 @@ If the Architecture line does not match then we get an exception.
   >>> ed_mismatched_upload.sourceful
   True
   >>> ed_mismatched_upload.rejection_message
-  'Mismatch in binaryfulness. (arch) False != (files) True'
+  'Mismatch in binaryfulness. (arch) False != (files) True\nOne or more files uploaded with specific architecture but changes file does not list it.'
 
 We can distinguish between the arch-indep and arch-dep binary uploads.
 
@@ -221,7 +221,6 @@ Finally we can ask the upload to process itself.
   DEBUG: Beginning processing.
   DEBUG: Checking signature on changes file.
   DEBUG: Verifying signature on ed_0.2-20_i386.changes
-  DEBUG: Daniel Silverstone (26) is in main's uploaders.
   DEBUG: Verifying the changes file.
   DEBUG: Verifying files in upload.
   DEBUG: Verifying source file ed_0.2-20.dsc
@@ -245,12 +244,13 @@ Finally we can ask the upload to process itself.
   >>> success, msgs = ed_upload.do_accept()
   DEBUG: Attempting to decide if James Troup is in the keyring.
   DEBUG: Decision: False
+  DEBUG: Creating a New queue entry
   >>> print success
   True
   >>> for msg in msgs:
   ...     print msg, "END"
   From: Root <root@localhost>
-  To: Root <root@localhost>, Daniel Silverstone <daniel.silverstone@canonical.com>
+  To: Root <root@localhost>
   Precedence: bulk
   Subject: ed_0.2-20_i386.changes is NEW
   <BLANKLINE>
@@ -258,12 +258,74 @@ Finally we can ask the upload to process itself.
    OK: ed_0.2-20.diff.gz
   NEW: ed_0.2-20_i386.deb
   <BLANKLINE>
+  -----BEGIN PGP SIGNED MESSAGE-----
+  Hash: SHA1
+  <BLANKLINE>
+  Format: 1.7
+  Date: Wed,  2 Apr 2003 17:19:47 +0100
+  Source: ed
+  Binary: ed
+  Architecture: source i386
+  Version: 0.2-20
+  Distribution: unstable
+  Urgency: low
+  Maintainer: James Troup <james@nocrew.org>
+  Changed-By: James Troup <james@nocrew.org>
+  Description:
+   ed         - The classic unix line editor
+  Closes: 122517 130327 179957
+  Changes:
+   ed (0.2-20) unstable; urgency=low
+   .
+     * Move to dpatch; existing non-debian/ changes split into
+       01_buf.c-tmpfile, 02_-Wall-cleanup, 03_ed.1-cleanup and
+       04_Makfile.in-no-libed.
+     * debian/rules: include /usr/share/dpatch/dpatch.make.
+     * debian/rules (build): depend on patch-stamp.
+     * debian/rules (clean): depend on unpatch.  Remove debian/patched.
+     * debian/rules (.PHONY): add 'patch' and 'unpatch'.
+     * debian/control (Build-Depends): add dpatch.
+   .
+     * debian/rules: update copyright.
+     * debian/copyright: likewise and update upstream URL.
+     * debian/changelog: remove local-variables stuff.
+   .
+     * debian/rules: use install_foo convenience variables.
+     * debian/rules (clean): remove *~ in any subdirectory.
+   .
+     * debian/control (Standards-Version): bump to 3.5.8.0.
+     * debian/postinst, debian/prerm: no longer do /usr/doc symlinks.
+   .
+     * config, test/*: unused aegis cruft; removed.
+     * Undo s/%/$/ change in RCS keywords.
+   .
+     * debian/postinst: provide editor.1.gz alternative; thanks to Ben Harris
+       <bjh21@cam.ac.uk> for the suggestion.  Closes: #122517
+     * 05_ed.1-warning-fix.dpatch: new patch to avoid groff warnings.  Thanks
+       to Colin Watson <cjwatson@debian.org>.  Closes: #179957
+     * 06_testsuite-Makefile.dpatch: new patch to ensure the test suite bombs
+       out on errors.  Thanks to Joel Baker <fenton@debian.org>.
+       Closes: #130327
+  Files:
+   22beb6b9d1fe984cd3a20571a4e958ac 522 editors important ed_0.2-20.dsc
+   f9e1e5f13725f581919e9bfd62272a05 8506 editors important ed_0.2-20.diff.gz
+   0c466ce6a160c62fa558fbbb46a4ea45 44718 editors important ed_0.2-20_i386.deb
+  <BLANKLINE>
+  -----BEGIN PGP SIGNATURE-----
+  Version: GnuPG v1.4.1 (GNU/Linux)
+  <BLANKLINE>
+  iD8DBQFDTWC+K8hAFiBoeJURAnA7AJ9i9ZjWjtqUQ+nFJfPnsjOmfUq6DQCffPZZ
+  nwN7DFh8fuhURm3VCzcwIGc=
+  =jANz
+  -----END PGP SIGNATURE-----
+  <BLANKLINE>
+  <BLANKLINE>
   Your package contains new components which requires manual editing of
   the override file.  It is ok otherwise, so please be patient.  New
   packages are usually added to the overrides about once a week.
   <BLANKLINE>
-  You may have gotten the distrorelease wrong.  You'll may get warnings
-  above if files already exist in other distrorelease.
+  You may have gotten the distrorelease wrong.  If so, you may get warnings
+  above if files already exist in other distroreleases.
   END
 
 (and some tear down)

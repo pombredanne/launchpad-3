@@ -242,10 +242,22 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
     def newArch(architecturetag, processorfamily, official, owner):
         """Create a new port or DistroArchRelease for this DistroRelease."""
 
-    def getQueueItems(status=DistroReleaseQueueStatus):
+    def getQueueItems(status=DistroReleaseQueueStatus.ACCEPTED):
         """Get the queue items for this distrorelease that are in the given
         queue state. If status is not supplied, default to the ACCEPTED items
         in the queue.
+        """
+
+    def getFancyQueueItems(status=DistroReleaseQueueStatus.ACCEPTED,
+                            name=None, version=None, exact_match=False):
+        """Get the union of build and source queue items for this distrorelease
+
+        Returns build and source queue items in a given state, matching
+        a give name and version terms. If 'status' is not supplied,
+        default to the ACCEPTED items in the queue. if 'name' and 'version'
+        are supplied return only items which the sourcepackage name and
+        binarypackage name match (SQL LIKE). 'name' doesn't require 'version'.
+        Use 'exact_match' argument for precise results.
         """
 
     def initialiseFromParent():

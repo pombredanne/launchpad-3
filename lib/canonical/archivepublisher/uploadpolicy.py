@@ -7,7 +7,8 @@ __metaclass__ = type
 __all__ = ["findPolicyByName", "findPolicyByOptions"]
 
 from zope.component import getUtility
-from canonical.launchpad.interfaces import IDistributionSet
+from canonical.launchpad.interfaces import (
+    IDistributionSet, IComponentSet)
 
 # Number of seconds in an hour (used later)
 HOURS = 3600
@@ -117,7 +118,6 @@ class AbstractUploadPolicy:
                 max = 2
             if len(upload.archs) > max:
                 upload.reject("Policy permits only one build per upload.")
-                
 
     def filterRecipients(self, upload, recipients):
         """Filter any recipients we feel we need to.
@@ -178,6 +178,11 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         self.can_upload_binaries = False
         self.can_upload_mixed = False
 
+    def getDefaultPermittedComponents(self):
+        """Return the set of components this distrorelease permits."""
+        return set(
+            component.name for component in getUtility(IComponentSet))
+
 # Register this as the 'insecure' policy
 AbstractUploadPolicy._registerPolicy(InsecureUploadPolicy)
 
@@ -207,7 +212,7 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
     def getDefaultPermittedComponents(self):
         """Return the set of components this distrorelease permits."""
         return set(
-            component.name for component in self.distrorelease.components)
+            component.name for component in getUtility(IComponentSet))
 
 # Register this as the 'buildd' policy
 AbstractUploadPolicy._registerPolicy(BuildDaemonUploadPolicy)
@@ -226,6 +231,11 @@ class AutoSyncUploadPolicy(AbstractUploadPolicy):
         self.can_upload_mixed = False
         self.can_upload_binaries = False
 
+    def getDefaultPermittedComponents(self):
+        """Return the set of components this distrorelease permits."""
+        return set(
+            component.name for component in getUtility(IComponentSet))
+
 AbstractUploadPolicy._registerPolicy(AutoSyncUploadPolicy)
 
 class AnythingGoesUploadPolicy(AbstractUploadPolicy):
@@ -241,5 +251,34 @@ class AnythingGoesUploadPolicy(AbstractUploadPolicy):
         # We require the changes to be signed but not the dsc
         self.unsigned_dsc_ok = True
 
+    def getDefaultPermittedComponents(self):
+        """Return the set of components this distrorelease permits."""
+        return set(
+            component.name for component in getUtility(IComponentSet))
+
 AbstractUploadPolicy._registerPolicy(AnythingGoesUploadPolicy)
+
+class SecurityUploadPolicy(AbstractUploadPolicy):
+    """The security-upload policy allows binary uploads and doesn't mail
+    anyone when we use it.
+    """
+
+    def __init__(self):
+        AbstractUploadPolicy.__init__(self)
+        self.name = "security"
+        self.unsigned_dsc_ok = True
+        self.unsigned_changes_ok = True
+        self.can_upload_mixed = False
+        self.can_upload_binaries = True
+
+    def filterRecipients(self, upload, recipients):
+        """Do not mail *ANYONE* on security uploads."""
+        return []
+
+    def getDefaultPermittedComponents(self):
+        """Return the set of components this distrorelease permits."""
+        return set(
+            component.name for component in getUtility(IComponentSet))
+
+AbstractUploadPolicy._registerPolicy(SecurityUploadPolicy)
 

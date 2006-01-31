@@ -1,17 +1,26 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['DistroReleaseQueue', 'DistroReleaseQueueBuild',
-           'DistroReleaseQueueSource', 'DistroReleaseQueueCustom']
+__all__ = [
+    'DistroReleaseQueue',
+    'DistroReleaseQueueBuild',
+    'DistroReleaseQueueSource',
+    'DistroReleaseQueueCustom',
+    'DistroReleaseQueueSet',
+    'filechunks',
+    ]
 
 import os
 import tempfile
+import pytz
+from datetime import datetime
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, MultipleJoin
+from sqlobject import (
+    ForeignKey, MultipleJoin, SQLObjectNotFound)
 
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 
 from canonical.lp.dbschema import (
@@ -20,13 +29,19 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IDistroReleaseQueue, IDistroReleaseQueueBuild, IDistroReleaseQueueSource,
-    IDistroReleaseQueueCustom, NotFoundError)
+    IDistroReleaseQueueCustom, NotFoundError, QueueStateWriteProtectedError,
+    QueueInconsistentStateError, QueueSourceAcceptError,
+    QueueBuildAcceptError, IDistroReleaseQueueSet)
 
 from canonical.librarian.interfaces import DownloadFailed
+
 
 from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
+
+
+from canonical.cachedproperty import cachedproperty
 
 # There are imports below in DistroReleaseQueueCustom for various bits
 # of the archivepublisher which cause circular import errors if they
@@ -50,7 +65,10 @@ class DistroReleaseQueue(SQLBase):
     """A Queue item for Lucille."""
     implements(IDistroReleaseQueue)
 
-    status = EnumCol(dbName='status', unique=False, default=None, notNull=True,
+    _defaultOrder = ['id']
+
+    status = EnumCol(dbName='status', unique=False, notNull=True,
+                     default=DistroReleaseQueueStatus.NEW,
                      schema=DistroReleaseQueueStatus)
 
     distrorelease = ForeignKey(dbName="distrorelease",
@@ -66,12 +84,132 @@ class DistroReleaseQueue(SQLBase):
     # Join this table to the DistroReleaseQueueBuild and the
     # DistroReleaseQueueSource objects which are related.
     sources = MultipleJoin('DistroReleaseQueueSource',
-                           joinColumn='distroreleasequeue')
+                           joinColumn='distroreleasequeue',
+                           orderBy='distroreleasequeuesource.id')
+
     builds = MultipleJoin('DistroReleaseQueueBuild',
-                          joinColumn='distroreleasequeue')
+                          joinColumn='distroreleasequeue',
+                          orderBy='distroreleasequeuebuild.id')
+
     # Also the custom files associated with the build.
     customfiles = MultipleJoin('DistroReleaseQueueCustom',
-                               joinColumn='distroreleasequeue')
+                               joinColumn='distroreleasequeue',
+                               orderBy='distroreleasequeuecustom.id')
+
+    def _set_status(self, value):
+        """Directly write on 'status' is forbidden.
+
+        Force user to use the provided machine-state methods.
+        Raises QueueStateWriteProtectedError.
+        """
+        # XXX: bug #29663: this is a bit evil, but does the job. Andrew
+        # has suggested using immutable=True in the column definition.
+        #   -- kiko, 2006-01-25
+        # allow 'status' write only in creation process.
+        if self._SO_creating:
+            self._SO_set_status(value)
+            return
+        # been facist
+        raise QueueStateWriteProtectedError(
+            'Directly write on queue status is forbidden use the '
+            'provided methods to set it.')
+
+    def set_new(self):
+        """See IDistroReleaseQueue."""
+        self._SO_set_status(DistroReleaseQueueStatus.NEW)
+
+    def set_unapproved(self):
+        """See IDistroReleaseQueue."""
+        self._SO_set_status(DistroReleaseQueueStatus.UNAPPROVED)
+
+    def set_accepted(self):
+        """See IDistroReleaseQueue."""
+        for source in self.sources:
+            # if something goes wrong we will raise an exception
+            # (QueueSourceAcceptError) before setting any value.
+            # Mask the error with state-machine default exception
+            try:
+                source.checkComponentAndSection()
+            except QueueSourceAcceptError, info:
+                raise QueueInconsistentStateError(info)
+
+        for build in self.builds:
+            # as before, but for QueueBuildAcceptError
+            try:
+                build.checkComponentAndSection()
+            except QueueBuildAcceptError, info:
+                raise QueueInconsistentStateError(info)
+
+        # if the previous checks applied and pass we do set the value
+        self._SO_set_status(DistroReleaseQueueStatus.ACCEPTED)
+
+    def set_done(self):
+        """See IDistroReleaseQueue."""
+        self._SO_set_status(DistroReleaseQueueStatus.DONE)
+
+    def set_rejected(self):
+        """See IDistroReleaseQueue."""
+        self._SO_set_status(DistroReleaseQueueStatus.REJECTED)
+
+    @cachedproperty
+    def changesfilename(self):
+        """A changes filename to accurately represent this upload."""
+        filename = self.sourcepackagename.name + "_" + self.sourceversion + "_"
+        arch_tags = []
+        if len(self.sources):
+            arch_tags.append("source")
+        for queue_build in self.builds:
+            tag = queue_build.build.distroarchrelease.architecturetag
+            arch_tags.append(tag)
+        filename += "+".join(arch_tags) + ".changes"
+        return filename
+
+    @cachedproperty
+    def datecreated(self):
+        """The date on which this queue item was created.
+
+        We look through the sources/builds of this queue item to find out
+        when we created it. This is heuristic for now but may be made into
+        a column at a later date.
+        """
+        assert self.sources or self.builds
+        for queue_source in self.sources:
+            return queue_source.sourcepackagerelease.dateuploaded
+        for queue_build in self.builds:
+            return queue_build.build.binarypackages[0].datecreated
+
+    @property
+    def age(self):
+        """See IDistroReleaseQueue"""
+        UTC = pytz.timezone('UTC')
+        now = datetime.now(UTC)
+        return now - self.datecreated
+
+
+    @cachedproperty
+    def sourcepackagename(self):
+        """The source package name related to this queue item.
+
+        We look through sources/builds to find it. This is heuristic for now
+        but may be made into a column at a later date.
+        """
+        assert self.sources or self.builds
+        for queue_source in self.sources:
+            return queue_source.sourcepackagerelease.sourcepackagename
+        for queue_build in self.builds:
+            return queue_build.build.sourcepackagerelease.sourcepackagename
+
+    @cachedproperty
+    def sourceversion(self):
+        """The source package version related to this queue item.
+
+        This is currently heuristic but may be more easily calculated later.
+        """
+        assert self.sources or self.builds
+        for queue_source in self.sources:
+            return queue_source.sourcepackagerelease.version
+        for queue_build in self.builds:
+            return queue_build.build.sourcepackagerelease.version
 
     def realiseUpload(self, logger=None):
         """See IDistroReleaseQueue."""
@@ -80,14 +218,14 @@ class DistroReleaseQueue(SQLBase):
         # In realising an upload we first load all the sources into
         # the publishing tables, then the binaries, then we attempt
         # to publish the custom objects.
-        for source in self.sources:
-            source.publish(logger)
-        for build in self.builds:
-            build.publish(logger)
+        for queue_source in self.sources:
+            queue_source.publish(logger)
+        for queue_build in self.builds:
+            queue_build.publish(logger)
         for customfile in self.customfiles:
             customfile.publish(logger)
 
-        self.status = DistroReleaseQueueStatus.DONE
+        self.set_done()
 
     def addSource(self, spr):
         """See IDistroReleaseQueue."""
@@ -110,12 +248,27 @@ class DistroReleaseQueueBuild(SQLBase):
     """A Queue item's related builds (for Lucille)."""
     implements(IDistroReleaseQueueBuild)
 
+    _defaultOrder = ['id']
+
     distroreleasequeue = ForeignKey(
         dbName='distroreleasequeue',
         foreignKey='DistroReleaseQueue'
         )
 
     build = ForeignKey(dbName='build', foreignKey='Build')
+
+    def checkComponentAndSection(self):
+        """See IDistroReleaseQueueBuild."""
+        distrorelease = self.distroreleasequeue.distrorelease
+        for binary in self.build.binarypackages:
+            if (binary.component not in distrorelease.components):
+                raise QueueBuildAcceptError(
+                    'Component "%s" is not allowed in %s'
+                    % (binary.component.name, distrorelease.name))
+            if (binary.section not in distrorelease.sections):
+                raise QueueBuildAcceptError(
+                    'Section "%s" is not allowed in %s' % (binary.section.name,
+                                                           distrorelease.name))
 
     def publish(self, logger=None):
         """See IDistroReleaseQueueBuild."""
@@ -136,7 +289,7 @@ class DistroReleaseQueueBuild(SQLBase):
         for binary in self.build.binarypackages:
             target_dars = set([target_dar])
             if not binary.architecturespecific:
-                target_dars = target_dars or other_dars
+                target_dars = target_dars.union(other_dars)
                 debug(logger, "... %s/%s (Arch Independent)" % (
                     binary.binarypackagename.name,
                     binary.version))
@@ -165,6 +318,8 @@ class DistroReleaseQueueSource(SQLBase):
     """A Queue item's related sourcepackagereleases (for Lucille)."""
     implements(IDistroReleaseQueueSource)
 
+    _defaultOrder = ['id']
+
     distroreleasequeue = ForeignKey(
         dbName='distroreleasequeue',
         foreignKey='DistroReleaseQueue'
@@ -174,6 +329,22 @@ class DistroReleaseQueueSource(SQLBase):
         dbName='sourcepackagerelease',
         foreignKey='SourcePackageRelease'
         )
+
+    def checkComponentAndSection(self):
+        """See IDistroReleaseQueueSource."""
+        distrorelease = self.distroreleasequeue.distrorelease
+        component = self.sourcepackagerelease.component
+        section = self.sourcepackagerelease.section
+
+        if (component not in distrorelease.components):
+            raise QueueSourceAcceptError(
+                'Component "%s" is not allowed in %s' % (component.name,
+                                                         distrorelease.name))
+
+        if (section not in distrorelease.sections):
+            raise QueueSourceAcceptError(
+                'Section "%s" is not allowed in %s' % (section.name,
+                                                       distrorelease.name))
 
     def publish(self, logger=None):
         """See IDistroReleaseQueueSource."""
@@ -273,3 +444,41 @@ class DistroReleaseQueueCustom(SQLBase):
             if logger is not None:
                 debug(logger, "Unable to fetch %s to import it into Rosetta" %
                     self.libraryfilealias.url)
+
+
+class DistroReleaseQueueSet:
+    """See IDistroReleaseQueueSet"""
+    implements(IDistroReleaseQueueSet)
+
+    def __iter__(self):
+        """See IDistroReleaseQueueSet."""
+        return iter(DistroReleaseQueue.select())
+
+    def __getitem__(self, queue_id):
+        """See IDistroReleaseQueueSet."""
+        try:
+            return DistroReleaseQueue.get(queue_id)
+        except SQLObjectNotFound:
+            raise NotFoundError(queue_id)
+
+    def get(self, queue_id):
+        """See IDistroReleaseQueueSet."""
+        try:
+            return DistroReleaseQueue.get(queue_id)
+        except SQLObjectNotFound:
+            raise NotFoundError(queue_id)
+
+    def count(self, status=None, distrorelease=None):
+        """See IDistroReleaseQueueSet."""
+        clauses = []
+        if status:
+            clauses.append("status=%s" % sqlvalues(status))
+
+        if distrorelease:
+            clauses.append("distrorelease=%s" % sqlvalues(distrorelease.id))
+
+        query = " AND ".join(clauses)
+        # XXX: bug #29647, select("") issues an empty where so I use
+        # this or None crap -- kiko, 2006-01-25
+        return DistroReleaseQueue.select(query or None).count()
+

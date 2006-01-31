@@ -1,0 +1,64 @@
+#!/bin/sh
+
+set -x
+set -e
+
+# Launchpad cron.daily (currently just for Ubuntu)
+
+# Informational -- this *MUST* match the database
+ARCHIVEROOT=/srv/launchpad.net/ubuntu-archive/ubuntu
+DISTSROOT=$ARCHIVEROOT/dists
+OVERRIDEROOT=$ARCHIVEROOT/../ubuntu-overrides
+INDICES=$ARCHIVEROOT/indices
+
+# Configuration options
+LPCONFIG=staging
+LAUNCHPADROOT=/srv/launchpad.net/codelines/current
+LOCKFILE=/srv/launchpad.net/ubuntu-archive/cron.daily.lock
+DISTRONAME=ubuntu
+GNUPGHOME=/srv/launchpad.net/ubuntu-archive/gnupg-home
+TOUCHLIST=$ARCHIVEROOT/project/trace/$(hostname --fqdn)
+
+# Manipulate the environment
+export LPCONFIG
+export GNUPGHOME
+PATH=$PATH:$LAUNCHPADROOT/scripts:$LAUNCHPADROOT/cronscripts
+
+# claim the lock
+
+if ! lockfile -r1 $LOCKFILE; then
+  echo "Could not claim lock file."
+  exit 1
+fi
+
+cleanup () {
+  echo "Cleaning up lockfile."
+  rm -f $LOCKFILE
+}
+
+trap cleanup 0
+
+# Lock claimed.
+
+# Process the accepted queue into the publishing records.
+process-accepted.py $DISTRONAME
+
+# Publish the results.
+publish-distro.py -v -v -d $DISTRONAME
+
+# Find all the Release files for which the Release.GPG is missing/too-old
+for RELEASEFILE in $(find $DISTSROOT -name Release); do
+  #  [ Release.gpg missing   ] or [ Release is newer than Release.gpg ]
+  if [ ! -f $RELEASEFILE.gpg ] || [ $RELEASEFILE -nt $RELEASEFILE.gpg ]; then
+    gpg --yes --detach-sign --armor -o $RELEASEFILE.gpg --sign $RELEASEFILE
+  fi
+done
+
+# Copy in the indices
+rm -f $INDICES/*
+cp $OVERRIDEROOT/override.* $INDICES
+
+# Touch everything you asked us to do
+for FILE in $TOUCHLIST; do
+  touch "$FILE"
+done

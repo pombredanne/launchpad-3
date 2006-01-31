@@ -1,7 +1,7 @@
 Note: This test does not guarantee full coverage, it is only testing if an
 admin is able to create/edit milestones with duplicate names.
 
-We will test these features as "name17" who owns Ubuntu and is the registrant
+We will test these features as "ubuntu-team" who owns Ubuntu and is the registrant
 of alsa-utils.
 
 First we test the +addmilestone page.  

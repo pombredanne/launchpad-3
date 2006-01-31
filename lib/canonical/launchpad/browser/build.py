@@ -77,7 +77,7 @@ class BuildView(LaunchpadView):
         # invoke context method to reset the build record
         self.context.reset()
         return '<p>Build Record reset.</p>'
-        
+
 
 class BuildRecordsView(LaunchpadView):
     """Base class used to present objects that contains build records.

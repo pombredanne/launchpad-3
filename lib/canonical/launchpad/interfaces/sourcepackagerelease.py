@@ -92,7 +92,19 @@ class ISourcePackageRelease(Interface):
     def getBuildByArch(distroarchrelease):
         """Return build for the given distroarchrelease.
 
+        This will look only for published architecture-specific binary
+        package releases in the given distroarchrelease. It uses the publishing
+        tables to return a build, even if the build is from another
+        distroarchrelease, so long as the binaries are published in the
+        distroarchrelease given.
+
         Return None if not found.
+        """
+
+    def override(component=None, section=None, urgency=None):
+        """Uniform method to override sourcepackagerelease attribute.
+
+        All arguments are optional and can be set individually.
         """
 
     def attachTranslationFiles(tarball_alias, is_published, importer=None):

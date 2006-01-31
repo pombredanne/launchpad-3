@@ -62,17 +62,38 @@ class Poolifier(object):
                 return p[0], p[2], p[3]
             return p[0], p[2], None
 
+
+def relative_symlink(src_path, dst_path):
+    """os.symlink replacement that creates relative symbolic links."""
+    path_sep = os.path.sep
+    src_path = os.path.normpath(src_path)
+    dst_path = os.path.normpath(dst_path)
+    src_path_elems = src_path.split(path_sep)
+    dst_path_elems = dst_path.split(path_sep)
+    if os.path.isabs(src_path):
+        if not os.path.isabs(dst_path):
+            dst_path = os.path.abspath(dst_path)
+        common_prefix = os.path.commonprefix([src_path_elems, dst_path_elems])
+        backward_elems = ['..'] * (len(dst_path_elems)-len(common_prefix)-1)
+        forward_elems = src_path_elems[len(common_prefix):]
+        src_path = path_sep.join(backward_elems + forward_elems)
+    os.symlink(src_path, dst_path)
+
+
 class AlreadyInPool:
     """Raised when an attempt is made to add a file already in the pool."""
 
+
 class NotInPool:
     """Raised when an attempt is made to remove a non-existent file."""
+
 
 class DiskPoolEntry:
     def __init__(self, source=''):
         self.defcomp = ''
         self.comps = Set()
         self.source = source
+
 
 class DiskPool:
     """Scan a pool on the filesystem and record information about it."""
@@ -149,7 +170,7 @@ class DiskPool:
                                            sourcename, leafname)
                 if not os.path.exists(os.path.dirname(targetpath)):
                     os.makedirs(os.path.dirname(targetpath))
-                os.symlink(sourcepath, targetpath)
+                relative_symlink(sourcepath, targetpath)
                 self.files[leafname].comps.add(component)
                 self.components[component][leafname] = True
             raise AlreadyInPool()
@@ -234,7 +255,7 @@ class DiskPool:
             except OSError:
                 # Do nothing because it's almost certainly a not found
                 pass
-            os.symlink(targetpath, newpath)
+            relative_symlink(targetpath, newpath)
 
     def sanitiseLinks(self, preferredcomponents):
         """Go through the files and ensure that wherever a file is in more
