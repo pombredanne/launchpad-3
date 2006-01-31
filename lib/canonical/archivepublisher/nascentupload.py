@@ -1623,7 +1623,11 @@ class NascentUpload:
             # registered Launchpad user with preferred email;
             # this is a sanity check to avoid spamming the innocent.
             # Not that we do that sort of thing.
-            person = getUtility(IPersonSet).getByEmail(r)
+            try:
+                parsed_address = self.parse_address(r)
+                person = parsed_address['person']
+            except UploadError:
+                person = None
             if person is not None and person.preferredemail is not None:
                 self.recipients.append(r)
             else:
