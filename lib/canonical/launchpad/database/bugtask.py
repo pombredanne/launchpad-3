@@ -500,7 +500,7 @@ class BugTaskSet:
                     for pkg_bugcontact in package.bugcontacts:
                         bug.subscribe(pkg_bugcontact.bugcontact)
         else:
-            raise AssertionError('Got no bugtask target.')
+            assert distrorelease is not None, 'Got no bugtask target.'
 
         return BugTask(
             bug=bug,
