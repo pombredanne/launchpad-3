@@ -79,7 +79,7 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IBugTarget"
-        class="canonical.launchpad.browser.BugTaskTextView"
+        class="canonical.launchpad.browser.BugTargetTextView"
         permission="zope.Public"
         name="+bugs-text"
         attribute="__call__" />

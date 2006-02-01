@@ -1028,7 +1028,9 @@ class BugTargetView:
         return tasklist[:quantity]
 
 
-class BugTaskTextView:
+class BugTargetTextView:
+    """View for simple text page showing bugs filed against a bug target."""
+
     def __call__(self):
         params = BugTaskSearchParams(getUtility(ILaunchBag).user)
         tasks = self.context.searchTasks(params)

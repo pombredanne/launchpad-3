@@ -34,6 +34,11 @@ class BugSetNavigation(Navigation):
 
     usedfor = IBugSet
 
+    # XXX
+    # This should be a browser:page, but that doesn't work, as the traversal
+    # gets processed before the ZCML page declarations.
+    # -- Daf 2006/02/01
+
     @stepthrough('+text')
     def text(self, name):
         try:
@@ -321,6 +326,8 @@ class DeprecatedAssignedBugsView:
 
 
 class BugTextView:
+    """View for simple text page displaying information for a bug."""
+
     def person_text(self, person):
         return '%s (%s)' % (person.displayname, person.name)
 
