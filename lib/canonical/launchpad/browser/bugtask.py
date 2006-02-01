@@ -951,7 +951,12 @@ class AdvancedBugTaskSearchView(BugTaskSearchListingView):
         pages and still use this method to get the extra params of the
         submitted simple form.
         """
-        form_params = getWidgetsData(self, self.search_form_schema)
+        # Even though we pass self.initial_values to setUpWidgets(), that
+        # method won't add anything to the request (obviously), and that's
+        # where getWidgetsData() will get the values from. For this reason we
+        # update self.initial_values with the return of getWidgetsData().
+        form_params = self.initial_values
+        form_params.update(getWidgetsData(self, self.search_form_schema))
 
         search_params = {}
         search_params['statusexplanation'] = form_params.get(
