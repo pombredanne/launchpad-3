@@ -41,6 +41,7 @@ from canonical import encoding
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.helpers import filenameToContentType
+from canonical.launchpad.scripts import log
 
 from canonical.buildd.slave import BuilderStatus
 from canonical.buildd.utils import notes
@@ -50,6 +51,88 @@ KBYTE = 1024
 def file_chunks(from_file, chunk_size=256*KBYTE):
     """Using the special two-arg form of iter() iterate a file's chunks."""
     return iter(lambda: from_file.read(chunk_size), '')
+
+class BuildDaemonPackagesArchSpecific:
+    """Parse and implement "PackagesArchSpecific"."""
+
+    def __init__(self, pas_dir, distrorelease):
+        self.pas_file = os.path.join(pas_dir, "Packages-arch-specific")
+        self.distrorelease = distrorelease
+        self.permit = {}
+        self._parsePAS()
+
+    def _parsePAS(self):
+        """Parse self.pas_file and construct the permissible arch lists."""
+        try:
+            fd = open(self.pas_file, "r")
+        except IOError:
+            return
+        
+        all_archs = set([a.architecturetag for a in
+                         self.distrorelease.architectures])
+        for line in fd:
+            if "#" in line:
+                line = line[:line.find("#")]
+            line = line.strip()
+            if line == "":
+                continue
+            log.debug("PAS:in: " + line)
+            is_source = False
+            if line.startswith("%"):
+                is_source = True
+                line = line[1:]
+
+            if not is_source:
+                # XXX: dsilvers: 20060201: This is here because otherwise
+                # we have too many false positives for now. In time we need
+                # to change the section below to use the binary line from
+                # the dsc instead of the publishing records. But this is
+                # currently not in the database. Bug#30264
+                continue
+            pkgname, archs = line.split(":", 1)
+            is_exclude = False
+            if "!" in archs:
+                is_exclude = True
+                archs = archs.replace("!", "")
+            line_archs = archs.strip().split()
+            archs = set()
+            for arch in line_archs:
+                if arch in all_archs:
+                    archs.add(arch)
+            if is_exclude:
+                archs = all_archs - archs
+            if not archs:
+                # None of the architectures listed affect us.
+                if is_source:
+                    # But if it's a src pkg then we can still use the
+                    # information
+                    log.debug("PAS: %s no archs" % pkgname)
+                    self.permit[pkgname] = set()
+                continue
+            
+            if not is_source:
+                # We need to find a sourcepackagename
+                # If the sourcepackagename changes across arch then
+                # we'll have problems. We assume this'll never happen
+                arch = archs.pop()
+                archs.add(arch)
+                distroarchrelease = self.distrorelease[arch]
+                try:
+                    pkgs = distroarchrelease.getReleasedPackages(pkgname)
+                except SQLObjectNotFound:
+                    # Can't find it at all...
+                    continue
+                if not pkgs:
+                    # Can't find it, so give up
+                    continue
+                pkg = pkgs[0].binarypackagerelease
+                src_pkg = pkg.build.sourcepackagerelease
+                pkgname = src_pkg.sourcepackagename.name
+            log.debug("PAS: %s %s" % (pkgname, " ".join(archs)))
+            self.permit[pkgname] = archs
+
+        fd.close()
+                
 
 # XXX cprov 20050628
 # I couldn't found something similar in hct.utils, but probably there is.
@@ -773,6 +856,10 @@ class BuilddMaster:
         """Iterate over published package and ensure we have a proper
         build entry for it.
         """
+
+        pas_verify = BuildDaemonPackagesArchSpecific(config.builddmaster.root,
+                                                     distrorelease)
+
         # 1. get all sourcepackagereleases published or pending in this
         # distrorelease
         spp = distrorelease.getAllReleasesByStatus(
@@ -854,9 +941,17 @@ class BuilddMaster:
                 # if the sourcepackagerelease doesn't build in ANY
                 # architecture and the current architecture is not
                 # mentioned in the list, continues
-                supported = hintlist.split()
-                if arch.architecturetag not in supported:
-                    self._logger.debug(header + "NOT SUPPORTED %s" %
+                supported = True
+                if release.name in pas_verify.permit:
+                    if (arch.architecturetag not in
+                        pas_verify.permit[release.name]):
+                        supported = False
+                if not supported:
+                    supported_list = hintlist.split()
+                    if arch.architecturetag in supported_list:
+                        supported = True
+                if not supported:
+                    self._logger.debug(header + "NOT SUPPORTED/WANTED %s" %
                                        arch.architecturetag)
                     continue
 
