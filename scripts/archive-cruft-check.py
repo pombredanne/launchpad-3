@@ -23,7 +23,7 @@ from zope.component import getUtility
 from canonical.launchpad.database import DistroArchReleaseBinaryPackage
 from canonical.launchpad.interfaces import (IBinaryPackageNameSet,
                                             IBinaryPackageReleaseSet,
-                                            IDistributionSet)
+                                            IDistributionSet, NotFoundError)
 from canonical.launchpad.scripts import (execute_zcml_for_scripts,
                                          logger, logger_options)
 from canonical.lp import initZopeless
@@ -226,10 +226,14 @@ def do_removals(nbs_to_remove):
         for distroarchrelease in Options.distrorelease.architectures:
             binarypackagename = getUtility(IBinaryPackageNameSet)[package]
             darbp = DistroArchReleaseBinaryPackage(distroarchrelease, binarypackagename)
-            print package
-            darbp.supersede()
-            Ztm.commit()
-            sys.exit(0)
+            try:
+                darbp.supersede()
+            # We're blindly removing for all arches, if it's not there
+            # for some, that's fine ...
+            except NotFoundError:
+                pass
+            print "Removed %s from %s/%s ... " % (package, Options.distrorelease.name,
+                                                  distroarchrelease.architecturetag)
     Ztm.commit()
 
 ################################################################################
