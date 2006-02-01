@@ -184,8 +184,8 @@ class DistroArchReleaseBinaryPackage:
         # Check we have been asked to do something
         if (new_component is None and new_section is None 
             and new_priority is None):
-            return AssertionError("changeOverride must be passed a new"
-                                  "component, section or priority.")
+            raise AssertionError("changeOverride must be passed a new"
+                                 "component, section or priority.")
 
         # Retrieve current publishing info
         current = self.publishing_history[-1]
