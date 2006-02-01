@@ -58,10 +58,10 @@
                        end_number batch_navigator/batch/endNumber">
         <form method="GET" name="search" action="">
           <input type="hidden" value="#"
-                 name="distribution"
+                 name="field.distribution"
                  tal:attributes="value python:request.form.get('field.distribution')" />
           <input type="hidden" value="#"
-                 name="sourcepackagename"
+                 name="field.sourcepackagename"
                  tal:attributes="value python:request.form.get('field.sourcepackagename')" />
           <input type="text" name="searchtext" size="40" />
           <input type="submit" name="search" value="Search" />
@@ -79,9 +79,14 @@
             <strong tal:content="end_number">50</strong>
             of
             <strong tal:content="total">64</strong>
-            <!--
-                bugs matching <a href="">mozilla-firefox (Ubuntu)</a>, <a href="">"foobar"</a>, <a href="">targeted for ubuntu-6.04</a>
-              -->
+            bugs matching
+            <span tal:repeat="search_link view/getSearchFilterLinks">
+              <a href="#"
+                 tal:content="python:search_link[0]"
+                 tal:attributes="href python:search_link[1]">
+                mozilla-firefox (Ubuntu)
+              </a><span tal:condition="not:repeat/search_link/end">,</span>
+            </span>
           </small>
         </div>
         <table class="results">

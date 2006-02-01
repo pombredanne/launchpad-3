@@ -807,6 +807,41 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
 
         return inprogress_bugs_url
 
+    def getSearchFilterLinks(self):
+        """Return a dict of links to various parts of the current filter."""
+        search_filter_links = []
+        form = self.request.form
+
+        # First, a link to all the bugs for the current package.
+        current_package = self.getPackage()
+        search_filter_links.append(
+            (str(current_package.displayname),
+             self.getBugContactPackageSearchURL(current_package)))
+
+        # Add a link to the "unassigned" filter, if applicable.
+        if form.get("field.unassigned") == "on":
+            unassigned_bugs_url = canonical_url(self.context) + (
+                '/+packagebugs-search?field.distribution=%s&'
+                'field.sourcepackagename=%s&field.unassigned=on&'
+                'search=Search') % (
+                    cgi.escape(current_package.distribution.name),
+                    current_package.name)
+
+            search_filter_links.append(("unassigned", unassigned_bugs_url))
+
+        # Add a link to the search keywords, if applicable.
+        searchtext = form.get("searchtext")
+        if searchtext:
+            searchtext_bugs_url = canonical_url(self.context) + (
+                '/+packagebugs-search?field.distribution=%s&'
+                'field.sourcepackagename=%s&searchtext=%s&'
+                'search=Search') % (
+                    cgi.escape(current_package.distribution.name),
+                    current_package.name, searchtext)
+
+            search_filter_links.append((searchtext, searchtext_bugs_url))
+
+        return search_filter_links
 
     def shouldShowSearchWidgets(self):
         # XXX: It's not possible to search amongst the bugs on maintained

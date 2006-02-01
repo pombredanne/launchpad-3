@@ -204,9 +204,9 @@ Search Filter Links
 -------------------
 
 The package bug report displays the current search filter, with each
-part of the filter being links to that specific filter. For example, if
-you search for mozilla-firefox (Ubuntu) bugs, that are unassigned, and
-targeted for dapper, you are presented with links like:
+part of the filter being links to that specific part of the filter. For
+example, if you search for mozilla-firefox (Ubuntu) bugs, that are
+unassigned, and targeted for dapper, you are presented with links like:
 
 1 - 40 of 40 bugs matching _mozilla-firefox (Ubuntu)_, _unassigned_,
 _targeted for dapper_.
@@ -217,12 +217,26 @@ Use the getSearchFilterLinks method to get a dict of these links.
     ...     'search': "Search",
     ...     'field.distribution': "debian",
     ...     'field.sourcepackagename': "mozilla-firefox",
-    ...     'field.unassigned': True}
+    ...     'searchtext': "foo",
+    ...     'field.unassigned': 'on'}
 
     >>> request = TestRequest(form=form)
     >>> packagebugs_search_view = create_view(
     ...     name12, name="+packagebugs-search", request=request)
 
-    >>> packagebugs_search_view.getSearchFilterLinks()
-    {'mozilla-firefox (Debian)': u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.unassigned=on&search=Search',
-     'unassigned': u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.unassigned=on&search=Search'}
+    >>> filter_links = packagebugs_search_view.getSearchFilterLinks()
+    >>> len(filter_links)
+    3
+
+    >>> filter_links[0]
+    ('mozilla-firefox in debian',
+    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&search=Search')
+
+    >>> filter_links[1]
+    ('unassigned',
+    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&field.unassigned=on&search=Search')
+
+    >>> filter_links[2]
+    ('foo',
+    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&searchtext=foo&search=Search')
+
