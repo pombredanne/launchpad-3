@@ -169,7 +169,7 @@ class GPGHandler:
         # keyserver and use the master key fingerprint.
         result, key = self.retrieveKey(signature.fpr)
         if not result:
-            raise GPGVerificationError("Unable to map subkey")
+            raise GPGVerificationError("Unable to map subkey: %s" % key)
         
         plain.seek(0, 0)
         plain_data = plain.read()

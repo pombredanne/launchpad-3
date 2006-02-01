@@ -16,7 +16,7 @@ from zope.interface import directlyProvides, directlyProvidedBy
 from canonical.uuid import generate_uuid
 from canonical.launchpad.interfaces import (
     IGPGHandler, ILibraryFileAliasSet, IMailHandler, IMailBox, IPerson,
-    IWeaklyAuthenticatedPrincipal)
+    IWeaklyAuthenticatedPrincipal, GPGVerificationError)
 from canonical.launchpad.helpers import setupInteraction
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.mail.signedmessage import signed_message_from_string
@@ -77,11 +77,12 @@ def authenticateEmail(mail):
 
     person = IPerson(principal)
     gpghandler = getUtility(IGPGHandler)
-    sig = gpghandler.verifySignature(
-        canonicalise_line_endings(signed_content), signature)
-    if sig is None:
+    try:
+        sig = gpghandler.getVerifiedSignature(
+            canonicalise_line_endings(signed_content), signature)
+    except GPGVerificationError, e:
         # verifySignature failed to verify the signature.
-        raise InvalidSignature("Signature couldn't be verified.")
+        raise InvalidSignature("Signature couldn't be verified: %s" % str(e))
 
     for gpgkey in person.gpgkeys:
         if gpgkey.fingerprint == sig.fingerprint:
