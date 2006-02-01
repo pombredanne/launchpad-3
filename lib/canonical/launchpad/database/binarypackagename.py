@@ -17,7 +17,8 @@ from canonical.database.sqlbase import SQLBase
 
 # interfaces and database 
 from canonical.launchpad.interfaces import (
-    IBinaryPackageName, IBinaryPackageNameSet, NotFoundError)
+    IBinaryPackageName, IBinaryPackageNameSet, NotFoundError,
+    IBinaryAndSourcePackageName)
 
 
 class BinaryPackageName(SQLBase):
@@ -80,8 +81,9 @@ class BinaryPackageNameSet:
 
 
 class BinaryAndSourcePackageName(SQLBase):
+    """See IBinaryAndSourcePackageName"""
 
-    implements(IBinaryPackageName)
+    implements(IBinaryAndSourcePackageName)
 
     _table = 'BinaryAndSourcePackageNameView'
     _idName = 'name'
