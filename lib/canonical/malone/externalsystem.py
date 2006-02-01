@@ -2,10 +2,11 @@
 
 import urllib
 import urllib2
+import urlparse
 import xml.parsers.expat
 from xml.dom import minidom
 
-from canonical.lp.dbschema import BugTrackerType
+from canonical.lp.dbschema import BugTrackerType, BugTaskStatus
 from canonical.launchpad.scripts import log
 
 # The user agent we send in our requests
@@ -64,22 +65,7 @@ class ExternalSystem(object):
 
 
 class Bugzilla(ExternalSystem):
-    """
-    A class that deals with communications with a remote Bugzilla system
-
-    >>> watch = Bugzilla("http://bugzilla.mozilla.org")
-    >>> watch.baseurl
-    'http://bugzilla.mozilla.org'
-    >>> watch = Bugzilla("http://bugzilla.mozilla.org/")
-    >>> watch.baseurl
-    'http://bugzilla.mozilla.org'
-    >>> watch = Bugzilla("https://bugzilla.mozilla.org/")
-    >>> watch.baseurl
-    'https://bugzilla.mozilla.org'
-    >>> watch = Bugzilla("http://bugs.kde.org/")
-    >>> watch.version
-    u'2.16.10'
-    """
+    """A class that deals with communications with a remote Bugzilla system."""
 
     def __init__(self, baseurl, version=None):
         if baseurl[-1] == "/":
@@ -92,20 +78,36 @@ class Bugzilla(ExternalSystem):
         if not self.version or self.version < '2.16':
             raise NotImplementedError("Unsupported version %r for %s" 
                                       % (self.version, baseurl))
-
-    def _probe_version(self):
+    def _getPage(self, page):
+        """GET the specified page on the remote HTTP server."""
         # For some reason, bugs.kde.org doesn't allow the regular urllib
         # user-agent string (Python-urllib/2.x) to access their
         # bugzilla, so we send our own instead.
-        request = urllib2.Request("%s/xml.cgi?id=1" % self.baseurl,
+        request = urllib2.Request("%s/%s" % (self.baseurl, page),
                                   headers={'User-agent': LP_USER_AGENT})
         try:
             url = urllib2.urlopen(request)
         except (urllib2.HTTPError, urllib2.URLError), val:
             raise BugTrackerConnectError(self.baseurl, val)
-        ret = url.read()
+        page_contents = url.read()
+        return page_contents
+
+    def _postPage(self, page, form):
+        """POST to the specified page.
+
+        :form: is a dict of form variables being POSTed.
+        """
+        url = urlparse.urljoin(self.baseurl, page)
+        post_data = urllib.urlencode(form)
+        request = urllib2.Request(url, headers={'User-agent': LP_USER_AGENT})
+        url = urllib2.urlopen(request, data=post_data)
+        page_contents = url.read()
+        return page_contents
+
+    def _probe_version(self):
+        version_xml = self._getPage('xml.cgi?id=1')
         try:
-            document = minidom.parseString(ret)
+            document = minidom.parseString(version_xml)
         except xml.parsers.expat.ExpatError, e:
             raise BugTrackerConnectError(self.baseurl, "Failed to parse output "
                                          "when probing for version: %s" % e)
@@ -116,17 +118,9 @@ class Bugzilla(ExternalSystem):
         return version
 
     def get_bug_status(self, bug_id):
-        """
-        Retrieve the bug status from a bug in a remote Bugzilla system.
-        Returns None if it cannot be determined.
+        """Retrieve the bug status from a bug in a remote Bugzilla system.
 
-        >>> watch = Bugzilla("https://bugzilla.mozilla.org")
-        >>> watch.get_bug_status(11901)
-        u'RESOLVED FIXED'
-        >>> watch.get_bug_status(251003)
-        u'RESOLVED DUPLICATE'
-        >>> watch.get_bug_status(12345)
-        u'VERIFIED FIXED'
+        Returns None if it cannot be determined.
         """
 
         data = {'form_name'   : 'buglist.cgi',
@@ -143,9 +137,7 @@ class Bugzilla(ExternalSystem):
         #data.update({'Bugzilla_login'    : login,
         #             'Bugzilla_password' : password,
         #             'GoAheadAndLogIn'   : 1})
-        getdata = urllib.urlencode(data)
-        url = urllib2.urlopen("%s/buglist.cgi?%s" % (self.baseurl, getdata))
-        ret = url.read()
+        ret = self._postPage('buglist.cgi', data)
         try:
             document = minidom.parseString(ret)
         except xml.parsers.expat.ExpatError, e:
@@ -173,45 +165,33 @@ class Bugzilla(ExternalSystem):
         return result
 
     def malonify_status(self, status):
-        """
-        translate statuses from this system to the equivalent Malone status
+        """Translate a status from this system to the equivalent Malone status.
 
-        >>> watch = Bugzilla("https://bugzilla.mozilla.org/")
-        >>> watch.malonify_status('RESOLVED FIXED')
-        'closed'
-        >>> watch.malonify_status('ASSIGNED')
-        'open'
-        >>> watch.malonify_status('UNCONFIRMED')
-        'new'
-        >>> watch.malonify_status('NEW')
-        'new'
-        >>> watch.malonify_status('VERIFIED WONTFIX')
-        'closed'
-        >>> watch.malonify_status('CLOSED INVALID')
-        'closed'
-
+        Bugzilla status consist of two parts separated by space, where
+        the last part is the resolution. The resolution is optional.
         """
-        resolution = ""
-        if " " in status:
-            separated = status.split(" ")
-            status = separated[0]
-            resolution = separated[1]
-        if status in ('UNCONFIRMED','NEW'):
-            return 'new'
-        elif status in ('ASSIGNED','REOPENED'):
-            return 'open'
-        elif status in ('RESOLVED','VERIFIED','CLOSED'):
-            return 'closed'
+        if ' ' in status:
+            status, resolution = status.split(' ')
         else:
-            raise NotImplementedError("Unsupported status %s at %s" 
-                                      % (status, self.baseurl))
+            resolution = ''
 
+        if status == 'ASSIGNED':
+           malone_status = BugTaskStatus.CONFIRMED
+        elif status == 'NEEDINFO':
+            malone_status = BugTaskStatus.NEEDSINFO
+        elif status == 'PENDINGUPLOAD':
+            malone_status = BugTaskStatus.FIXCOMMITTED
+        elif status in ['RESOLVED', 'VERIFIED', 'CLOSED']:
+            # depends on the resolution:
+            if resolution == 'FIXED':
+                malone_status = BugTaskStatus.FIXRELEASED
+            else:
+                #XXX: Which are the valid resolutions? Fail if we don't
+                # know the resolution.
+                malone_status = BugTaskStatus.REJECTED
+        elif status in ['UNCONFIRMED', 'REOPENED', 'NEW']:
+            malone_status = BugTaskStatus.UNCONFIRMED
+        else:
+            raise AssertionError('Unknown Bugzilla status: %s' % status)
 
-def _test():
-    import doctest, externalsystem
-    return doctest.testmod(externalsystem)
-
-
-if __name__ == "__main__":
-    _test()
-
+        return malone_status.title

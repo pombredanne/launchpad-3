@@ -1,0 +1,56 @@
+External Systems
+================
+
+An ExternalSystem is used to talk to remote bug trackers and update bug
+watches. This document describes how they work. Since we don't want to
+depend on a working network connection, we use a slightly modified
+implementation.
+
+    >>> from canonical.launchpad.ftests.externalsystem import TestBugzilla
+    >>> from canonical.malone.externalsystem import ExternalSystem
+    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> gnome_bugzilla = getUtility(IBugTrackerSet).getByName('gnome-bugzilla')
+    >>> test_remote_bugzilla = TestBugzilla(gnome_bugzilla.baseurl)
+    >>> version = test_remote_bugzilla._probe_version()
+    >>> version
+    u'2.20+'
+    >>> external_bugzilla = ExternalSystem(gnome_bugzilla, version)
+    >>> external_bugzilla.remotesystem = test_remote_bugzilla
+
+It contains a function for converting one of its own status to a Malone
+status. Bugzilla statuses consist of two parts, the status, and the
+resolution, separated by a space character. The resolution only exists
+if the bug is closed:
+
+    >>> external_bugzilla.malonify_status('UNCONFIRMED')
+    'Unconfirmed'
+    >>> external_bugzilla.malonify_status('NEW')
+    'Unconfirmed'
+    >>> external_bugzilla.malonify_status('ASSIGNED')
+    'Confirmed'
+    >>> external_bugzilla.malonify_status('REOPENED')
+    'Unconfirmed'
+    >>> external_bugzilla.malonify_status('NEEDINFO')
+    'Needs Info'
+    >>> external_bugzilla.malonify_status('UPSTREAM')
+    'Unconfirmed'
+    >>> external_bugzilla.malonify_status('PENDINGUPLOAD')
+    'Fix Committed'
+    >>> external_bugzilla.malonify_status('RESOLVED FIXED')
+    'Fix Released'
+    >>> external_bugzilla.malonify_status('VERIFIED WONTFIX')
+    'Rejected'
+    >>> external_bugzilla.malonify_status('CLOSED INVALID')
+    'Rejected'
+
+
+We can get the status of a bug in the remote Bugzilla tracker:
+
+    >>> external_bugzilla.get_bug_status(328430)
+    u'UNCONFIRMED'
+
+If the status can't be determined, for example if the bug isn't found,
+None is returned:
+
+    >>> external_bugzilla.get_bug_status(1000) is None
+    True
