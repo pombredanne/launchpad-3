@@ -1,0 +1,10 @@
+#!/bin/sh
+
+## Change into the test home directory
+#cd $HOME
+
+# Execute ssh as requested, except that we explicitly set the identity file
+exec /usr/bin/ssh -oIdentityFile=$HOME/.ssh/id_dsa $*
+
+#exec strace -fo /tmp/ssh.strace /usr/bin/ssh -oIdentityFile=/home/andrew/warthogs/supermirrorsftp/devel/supermirrorsftp/tests/id_dsa $*
+
