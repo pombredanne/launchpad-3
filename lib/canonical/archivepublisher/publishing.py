@@ -244,13 +244,15 @@ class Publisher(object):
                 # bug 3900
                 extra_extra_overrides = os.path.join(
                     self._config.miscroot,
-                    "more-extra.override.%s.main" % (distrorelease))
+                    "more-extra.override.%s.%s" % (distrorelease,
+                                                   component))
                 if not os.path.exists(extra_extra_overrides):
                     unpocketed_release = "-".join(
                         distrorelease.split('-')[:-1])
                     extra_extra_overrides = os.path.join(
                         self._config.miscroot,
-                        "more-extra.override.%s.main" % (unpocketed_release))
+                        "more-extra.override.%s.%s" % (unpocketed_release,
+                                                       component))
                 if os.path.exists(extra_extra_overrides):
                     eef = open(extra_extra_overrides, "r")
                     extras = {}
