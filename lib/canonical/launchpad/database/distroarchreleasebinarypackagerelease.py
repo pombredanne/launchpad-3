@@ -18,7 +18,6 @@ from canonical.database.sqlbase import sqlvalues
 
 from canonical.lp.dbschema import PackagePublishingStatus
 
-from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.publishing import (
@@ -82,7 +81,7 @@ class DistroArchReleaseBinaryPackageRelease:
         record = self._latest_publishing_record(status=status)
         return record
 
-    def _latest_publishing_record(status=None):
+    def _latest_publishing_record(self, status=None):
         query = ("binarypackagerelease = %s AND distroarchrelease = %s"
                  % sqlvalues(self.binarypackagerelease.id,
                              self.distroarchrelease.id))
