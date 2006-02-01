@@ -57,11 +57,13 @@ for RELEASEFILE in $(find $DISTSROOT -name Release); do
     echo "Not re-signing $RELEASEFILE"
   fi
 done
-set -x
 
 # Copy in the indices
+echo Copying the indices into place.
 rm -f $INDICES/*
 cp $OVERRIDEROOT/override.* $INDICES
+
+set -x 
 
 # Touch everything you asked us to do
 for FILE in $TOUCHLIST; do
