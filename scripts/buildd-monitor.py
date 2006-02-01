@@ -6,11 +6,13 @@
 Buildd-Slave monitor, support multiple slaves and requires LPDB access.
 """
 import urlparse
+import _pythonpath
 
 from string import join
 from sqlobject import SQLObjectNotFound
 
 from canonical.lp import initZopeless
+from canonical.config import config
 from canonical.launchpad.database import Builder
 
 from twisted.internet import stdio
@@ -152,5 +154,5 @@ def main(tm):
 if __name__ == '__main__':
     # for main, the only think to setup is the initZopeless
     # environment and the application wrapper.
-    tm = initZopeless()
+    tm = initZopeless(dbuser=config.builddmaster.dbuser)
     main(tm)
