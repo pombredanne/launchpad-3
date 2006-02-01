@@ -46,6 +46,7 @@ import sets
 from StringIO import StringIO
 
 from zope.event import notify
+from zope.security.proxy import isinstance as zope_isinstance
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.content_types import guess_content_type
@@ -829,19 +830,59 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
 
             search_filter_links.append(("unassigned", unassigned_bugs_url))
 
-        # Add a link to the search keywords, if applicable.
-        searchtext = form.get("searchtext")
+        return search_filter_links
+
+    def getStatusFilterLinks(self):
+        """Return links to filter on each status shown in the listing.
+
+        This is a separate method because status filter links are displayed
+        differently from other filter links, to communicate that they're an "OR"
+        match.
+        """
+        status_filter_links = []
+        form = self.request.form
+
+        current_package = self.getPackage()
+        package_bugs_status_search_url_template =  (
+            canonical_url(self.context) + (
+                '/+packagebugs-search?field.distribution=%s&'
+                'field.sourcepackagename=%s&field.status=%%s&'
+                'search=Search') % (
+                cgi.escape(current_package.distribution.name),
+                current_package.name))
+
+        # If no status are provided in the URL, default to our unresolved
+        # statuses.
+        filter_statuses = form.get(
+            "field.status",
+            [s.title for s in UNRESOLVED_BUGTASK_STATUSES])
+        if not zope_isinstance(filter_statuses, (list, tuple)):
+            filter_statuses = [filter_statuses]
+
+        for status_name in filter_statuses:
+            status_filter_links.append((
+                status_name.lower(),
+                package_bugs_status_search_url_template % status_name))
+
+        return status_filter_links
+
+    def getSearchTextFilterLink(self):
+        form = self.request.form
+        current_package = self.getPackage()
+        searchtext_filter_link = []
+
+        searchtext = form.get("field.searchtext")
         if searchtext:
             searchtext_bugs_url = canonical_url(self.context) + (
                 '/+packagebugs-search?field.distribution=%s&'
-                'field.sourcepackagename=%s&searchtext=%s&'
+                'field.sourcepackagename=%s&field.searchtext=%s&'
                 'search=Search') % (
                     cgi.escape(current_package.distribution.name),
-                    current_package.name, searchtext)
+                    current_package.name, cgi.escape(searchtext))
 
-            search_filter_links.append((searchtext, searchtext_bugs_url))
+            searchtext_filter_link = (searchtext, searchtext_bugs_url)
 
-        return search_filter_links
+        return searchtext_filter_link
 
     def shouldShowSearchWidgets(self):
         # XXX: It's not possible to search amongst the bugs on maintained

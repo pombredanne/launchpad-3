@@ -33,6 +33,19 @@
       width: 24%; /* = 25% - 1% whitespace */
       }
 
+      #filter {
+          list-style: none;
+          margin-left: 3px;
+          padding-left: 3px;
+      }
+
+      #filter li {
+          margin-bottom: 2px;
+      }
+
+      #filter li:before {
+          content: "\00BB \0020";
+      }
     </style>
   </metal:block>
 
@@ -42,14 +55,11 @@
           tal:content="string:${context/displayname}'s Package Bug Reports">
         Sample Person Package Bug Reports
       </h2>
-      <b>
-        <small>
-          <span tal:content="python:view.getPackage().displayname">
-            mozilla-firefox (Ubuntu)
-          </span>
-          bugs
+      <strong>
+        <small tal:content="python:view.getPackage().displayname">
+          mozilla-firefox (Ubuntu)
         </small>
-      </b>
+      </strong>
       <div tal:define="batch_navigator view/search;
                        prev_page_url batch_navigator/prevBatchURL;
                        next_page_url batch_navigator/nextBatchURL;
@@ -63,14 +73,68 @@
           <input type="hidden" value="#"
                  name="field.sourcepackagename"
                  tal:attributes="value python:request.form.get('field.sourcepackagename')" />
-          <input type="text" name="searchtext" size="40" />
+          <input type="text" name="field.searchtext" size="40" />
           <input type="submit" name="search" value="Search" />
+          <span style="color: #A8A8A8"><small>(Advanced search coming soon)</small></span>
         </form>
         <script>
           <!--
               document.forms['search'].searchtext.focus()
             -->
         </script>
+        <br />
+        <table style="width: 55%; margin-left: 0;">
+          <tr>
+            <td style="border-color: #DEDEDE; border-style: solid;
+                       border-width: 1px 1px 0px 1px;
+                       padding: 3px 0px 3px 0px;
+                       text-align: center"
+                width="15%">
+              <small><strong>Filter</strong></small>
+            </td>
+            <td style="border-color: #DEDEDE; border-style: solid; border-width: 0px 0px 1px 0px;">
+              &nbsp;
+            </td>
+          </tr>
+          <tr>
+            <td style="border-color: #DEDEDE; border-style: solid; border-width: 0px 1px 1px 1px; padding: 5px; width: 5em"
+                colspan="2">
+              <small>
+              <ul id="filter">
+            <li tal:repeat="search_link view/getSearchFilterLinks">
+              <a href="#"
+                 tal:content="python:search_link[0]"
+                 tal:attributes="href python:search_link[1]">
+                mozilla-firefox (Ubuntu)</a><span tal:condition="not:repeat/search_link/end"></span>
+            </li>
+            <li>
+              <span tal:repeat="status_filter_link view/getStatusFilterLinks">
+                <span tal:condition="repeat/status_filter_link/end">
+                  <span tal:condition="python:repeat['status_filter_link'].length() > 1">
+                    or
+                  </span>
+                </span>
+                <a href="#"
+                   tal:content="python:status_filter_link[0]"
+                   tal:attributes="href python:status_filter_link[1]">
+                  in progress
+                </a><span tal:condition="not:repeat/status_filter_link/end">,</span></span>
+            </li>
+            <li tal:condition="view/getSearchTextFilterLink">contains
+            <span tal:define="searchtext_filter_link view/getSearchTextFilterLink">
+            <a href="#"
+               tal:content="python:searchtext_filter_link[0]"
+               tal:attributes="href python:searchtext_filter_link[1]">
+              foobar
+            </a>
+            </span>
+            in the title or description
+              </li>
+</ul>
+              </small>
+            </td>
+          </tr>
+        </table>
         <br />
         <div>
           <small>Results
@@ -79,14 +143,6 @@
             <strong tal:content="end_number">50</strong>
             of
             <strong tal:content="total">64</strong>
-            bugs matching
-            <span tal:repeat="search_link view/getSearchFilterLinks">
-              <a href="#"
-                 tal:content="python:search_link[0]"
-                 tal:attributes="href python:search_link[1]">
-                mozilla-firefox (Ubuntu)
-              </a><span tal:condition="not:repeat/search_link/end">,</span>
-            </span>
           </small>
         </div>
         <table class="results">
