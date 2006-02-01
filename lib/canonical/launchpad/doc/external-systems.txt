@@ -54,3 +54,16 @@ None is returned:
 
     >>> external_bugzilla.get_bug_status(1000) is None
     True
+
+The main use of ExternalSystem is to update bug watches. This is done
+through updateBugWatches(), which expects a list of bug watches to
+update:
+
+    >>> for bug_watch in gnome_bugzilla.watches:
+    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
+    3224:
+    >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
+    >>> for bug_watch in gnome_bugzilla.watches:
+    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
+    3224: RESOLVED FIXED
+

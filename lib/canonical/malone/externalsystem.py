@@ -6,6 +6,7 @@ import urlparse
 import xml.parsers.expat
 from xml.dom import minidom
 
+from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import BugTrackerType, BugTaskStatus
 from canonical.launchpad.scripts import log
 
@@ -62,6 +63,10 @@ class ExternalSystem(object):
 
     def malonify_status(self, status):
         return self.remotesystem.malonify_status(status)
+
+    def updateBugWatches(self, bug_watches):
+        """Update the given bug watches."""
+        return self.remotesystem.updateBugWatches(bug_watches)
 
 
 class Bugzilla(ExternalSystem):
@@ -189,9 +194,77 @@ class Bugzilla(ExternalSystem):
                 #XXX: Which are the valid resolutions? Fail if we don't
                 # know the resolution.
                 malone_status = BugTaskStatus.REJECTED
-        elif status in ['UNCONFIRMED', 'REOPENED', 'NEW']:
+        elif status in ['UNCONFIRMED', 'REOPENED', 'NEW', 'UPSTREAM']:
             malone_status = BugTaskStatus.UNCONFIRMED
         else:
             raise AssertionError('Unknown Bugzilla status: %s' % status)
 
         return malone_status.title
+
+    def updateBugWatches(self, bug_watches):
+        """Update the given bug watches."""
+        bug_watches_by_remote_bug = {}
+        for bug_watch in bug_watches:
+            bug_watches_by_remote_bug[bug_watch.remotebug] = bug_watch
+        bug_ids_to_update = set(bug_watches_by_remote_bug.keys())
+
+        data = {'form_name'   : 'buglist.cgi',
+                'bug_id_type' : 'include',
+                'bug_id'      : ','.join(bug_ids_to_update),
+                }
+        if self.version < '2.17.1':
+            data.update({'format' : 'rdf'})
+            status_tag = "bz:status"
+        else:
+            data.update({'ctype'  : 'rdf'})
+            status_tag = "bz:bug_status"
+        # Eventually attach authentication information here if we need it
+        #data.update({'Bugzilla_login'    : login,
+        #             'Bugzilla_password' : password,
+        #             'GoAheadAndLogIn'   : 1})
+        buglist_xml = self._postPage('buglist.cgi', data)
+        try:
+            document = minidom.parseString(buglist_xml)
+        except xml.parsers.expat.ExpatError, e:
+            log.error('Failed to parse XML description for %s bugs %s: %s' %
+                      (self.baseurl, bug_ids, e))
+            return None
+        result = None
+        bug_nodes = document.getElementsByTagName('bz:bug')
+        found_bug_ids = set()
+        for bug_node in bug_nodes:
+            bug_id_nodes = document.getElementsByTagName("bz:id")
+            assert len(bug_id_nodes) == 1
+            bug_id_node = bug_id_nodes[0]
+            assert len(bug_id_node.childNodes) == 1
+            bug_id = str(bug_id_node.childNodes[0].data)
+            found_bug_ids.add(bug_id)
+            status_nodes = bug_node.getElementsByTagName(status_tag)
+            assert len(status_nodes) == 1, "Should be only one status node."
+            bug_status_node = status_nodes[0]
+            assert len(bug_status_node.childNodes) == 1
+            status = bug_status_node.childNodes[0].data
+            resolution_nodes = bug_node.getElementsByTagName('bz:resolution')
+            assert len(resolution_nodes) <= 1
+            if resolution_nodes:
+                assert len(resolution_nodes[0].childNodes) == 1
+                resolution = resolution_nodes[0].childNodes[0].data
+                status += ' %s' % resolution
+
+            bug_watch = bug_watches_by_remote_bug[bug_id]
+            if bug_watch.remotestatus != status:
+                log.debug('Updating status for remote bug #%s' % bug_id)
+                bug_watch.remotestatus = status
+
+            bug_watch.lastchanged = UTC_NOW
+
+        not_found_bugs = bug_ids_to_update.difference(found_bug_ids)
+        for not_found_id in not_found_bugs:
+            log.warn(
+                "Didn't find bug #%s on %s." % (not_found_id, self.baseurl))
+            bug_watch = bug_watches_by_remote_bug[bug_id]
+            bug_watch.remotestatus = 'UNKNOWN'
+            bug_watch.lastchanged = UTC_NOW
+
+        return result
+

@@ -29,6 +29,7 @@ class TestBugzilla(Bugzilla):
 
     # A dict all bugs in the form of $bug_id: ($status, $resolution)
     bugzilla_bugs = {
+        3224: ('RESOLVED', 'FIXED'),
         328430: ('UNCONFIRMED', ''),
     }
 
