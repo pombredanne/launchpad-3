@@ -199,6 +199,7 @@
       </tal:notlogin>
       <div tal:content="structure context/@@+portlet-otherpackages" />
     </div>
+    <div class="visualClear">&nbsp;</div>
   </div>
 </body>
 </html>
