@@ -16,7 +16,7 @@ from canonical.database.sqlbase import sqlvalues
 
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.publishing import (
-    SourcePackagePublishingHistory)
+    SecureSourcePackagePublishingHistory, SourcePackagePublishingHistory)
 
 
 class DistroReleaseSourcePackageRelease:
@@ -214,14 +214,6 @@ class DistroReleaseSourcePackageRelease:
         """See IDistroReleaseSourcePackageRelease."""
 
         current = self.publishing_history[-1]
-        SecureSourcePackagePublishingHistory(
-            distrorelease=current.distrorelease,
-            sourcepackagerelease=current.sourcepackagerelease,
-            component=current.component,
-            section=current.section,
-            status=PackagePublishingStatus.SUPERSEDED,
-            datecreated=UTC_NOW,
-            pocket=current.pocket,
-            embargo=False,
-            )
-
+        current = SecureSourcePackagePublishingHistory.get(current.id)
+        current.status = PackagePublishingStatus.SUPERSEDED
+        current.datesuperseded = UTC_NOW

@@ -225,16 +225,8 @@ class DistroArchReleaseBinaryPackage:
                                 % (self.binarypackagename.name,
                                    self.distroarchrelease.distrorelease.name,
                                    self.distroarchrelease.architecturetag))
-        current = self.publishing_history[-1]
 
-        SecureBinaryPackagePublishingHistory(
-            binarypackagerelease=current.binarypackagerelease,
-            distroarchrelease=current.distroarchrelease,
-            component=current.component,
-            section=current.section,
-            priority=current.priority,
-            status=PackagePublishingStatus.SUPERSEDED,
-            datecreated=UTC_NOW,
-            pocket=current.pocket,
-            embargo=False,
-            )
+        current = self.publishing_history[-1]
+        current = SecureBinaryPackagePublishingHistory.get(current.id)
+        current.status = PackagePublishingStatus.SUPERSEDED
+        current.datesuperseded = UTC_NOW

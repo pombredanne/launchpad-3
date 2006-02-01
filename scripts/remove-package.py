@@ -359,34 +359,6 @@ def what_to_remove(packages):
 
 ################################################################################
 
-def do_removal(removal):
-    current = removal["publishing"]
-    if removal["type"] == "binary":
-        SecureBinaryPackagePublishingHistory(
-            binarypackagerelease=current.binarypackagerelease,
-            distroarchrelease=current.distroarchrelease,
-            component=current.component,
-            section=current.section,
-            priority=current.priority,
-            status=PackagePublishingStatus.SUPERSEDED,
-            datecreated=UTC_NOW,
-            pocket=current.pocket,
-            embargo=False,
-            )
-    else:
-        SecureSourcePackagePublishingHistory(
-            distrorelease=current.distrorelease,
-            sourcepackagerelease=current.sourcepackagerelease,
-            component=current.component,
-            section=current.section,
-            status=PackagePublishingStatus.SUPERSEDED,
-            datecreated=UTC_NOW,
-            pocket=current.pocket,
-            embargo=False,
-            )
-
-################################################################################
-
 def main ():
     packages = init()
 
@@ -447,7 +419,13 @@ def main ():
     print "Deleting...",
     ztm.begin()
     for removal in to_remove:
-        do_removal(removal)
+        current = removal["publishing"]
+        if removal["type"] == "binary":
+            current = SecureBinaryPackagePublishingHistory.get(current.id)
+        else:
+            current = SecureSourcePackagePublishingHistory.get(current.id)
+        current.status = PackagePublishingStatus.SUPERSEDED
+        current.datesuperseded = UTC_NOW
     print "done."
     ztm.commit()
 
