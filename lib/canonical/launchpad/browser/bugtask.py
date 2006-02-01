@@ -24,7 +24,7 @@ __all__ = [
     'BugTaskView',
     'BugTaskReleaseTargetingView',
     'get_sortorder_from_request',
-    'BugTaskTextView']
+    'BugTargetTextView']
 
 import urllib
 
@@ -1028,19 +1028,19 @@ class BugTargetView:
         return tasklist[:quantity]
 
 
-class BugTargetTextView:
+class BugTargetTextView(LaunchpadView):
     """View for simple text page showing bugs filed against a bug target."""
 
-    def __call__(self):
+    def render(self):
         params = BugTaskSearchParams(getUtility(ILaunchBag).user)
         tasks = self.context.searchTasks(params)
         texts = []
         self.request.response.setHeader('Content-type', 'text/plain')
-        view = BugTextView()
+        view = BugTextView(self.context, self.request)
 
         for task in tasks:
             texts.append(view.bug_text(task.bug))
             texts.append(view.bugtask_text(task))
 
-        return '\n'.join(texts)
+        return u'\n'.join(texts)
 

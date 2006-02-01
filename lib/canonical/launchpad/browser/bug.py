@@ -20,7 +20,7 @@ from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, structured, Navigation)
+    canonical_url, ContextMenu, Link, structured, Navigation, LaunchpadView)
 from canonical.launchpad.interfaces import (
     IBug, ILaunchBag, IBugSet, IBugTaskSet, IBugLinkTarget,
     IDistroBugTask, IDistroReleaseBugTask, NotFoundError)
@@ -325,7 +325,7 @@ class DeprecatedAssignedBugsView:
             "/+assignedbugs")
 
 
-class BugTextView:
+class BugTextView(LaunchpadView):
     """View for simple text page displaying information for a bug."""
 
     def person_text(self, person):
@@ -368,10 +368,10 @@ class BugTextView:
 
         return ''.join(line + '\n' for line in text)
 
-    def __call__(self):
+    def render(self):
         self.request.response.setHeader('Content-type', 'text/plain')
         texts = (
             [self.bug_text(self.context)] +
             [self.bugtask_text(task) for task in self.context.bugtasks])
-        return '\n'.join(texts)
+        return u'\n'.join(texts)
 
