@@ -35,8 +35,9 @@ class BugSetNavigation(Navigation):
     usedfor = IBugSet
 
     # XXX
-    # This should be a browser:page, but that doesn't work, as the traversal
-    # gets processed before the ZCML page declarations.
+    # The browser:page declaration should be sufficient, but the traversal
+    # takes priority. This is a workaround.
+    # https://launchpad.net/products/launchpad/+bug/30238
     # -- Daf 2006/02/01
 
     @stepthrough('+text')

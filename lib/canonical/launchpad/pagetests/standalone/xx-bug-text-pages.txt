@@ -14,6 +14,7 @@ Get text page for a single bug.
   subscribers: 
    Steve Alexander (stevea)
    Sample Person (name12)
+   Mark Shuttleworth (sabdfl)
   <BLANKLINE>
   task: firefox (upstream)
   status: Unconfirmed
@@ -55,6 +56,7 @@ Get bug text page for a product.
   subscribers: 
    Steve Alexander (stevea)
    Sample Person (name12)
+   Mark Shuttleworth (sabdfl)
   <BLANKLINE>
   task: firefox (upstream)
   status: Unconfirmed
@@ -68,6 +70,7 @@ Get bug text page for a product.
   title: Reflow problems with complex page layouts
   reporter: Sample Person (name12)
   subscribers: 
+   Sample Person (name12)
   <BLANKLINE>
   task: firefox (upstream)
   status: Unconfirmed
