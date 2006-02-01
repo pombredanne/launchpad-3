@@ -201,6 +201,16 @@ class IDistroRelease(IHasOwner, IBugTarget, ISpecificationTarget):
         list for this distrorelease.
         """
 
+    def getBinaryPackagePublishing(name, version, archtag, sourcename, orderBy):
+        """Get BinaryPackagePublishings in a DistroRelease.
+
+        Can optionally restrict the results by name, version and/or
+        architecturetag.
+
+        If sourcename is non-empty, only packages that are built from
+        source packages by that name will be returned.
+        """
+
     def removeOldCacheItems():
         """Delete any records that are no longer applicable."""
 

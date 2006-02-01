@@ -10,7 +10,7 @@ from sqlobject import (
     RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey, MultipleJoin)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
-
+from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
@@ -53,7 +53,7 @@ from sourcerer.deb.version import Version
 from canonical.launchpad.validators.name import valid_name
 
 
-class Distribution(SQLBase):
+class Distribution(SQLBase, BugTargetBase):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(IDistribution, IHasBuildRecords)
 
