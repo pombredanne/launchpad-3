@@ -13,7 +13,8 @@ from zope.interface import implements
 
 from canonical.lp.dbschema import PackagePublishingStatus
 
-from canonical.launchpad.interfaces import IDistroArchReleaseBinaryPackage
+from canonical.launchpad.interfaces import (IDistroArchReleaseBinaryPackage,
+                                            NotFoundError)
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
@@ -218,7 +219,14 @@ class DistroArchReleaseBinaryPackage:
     def supersede(self):
         """See IDistroArchReleaseBinaryPackage."""
 
+        # Find the current publishing record
+        if not self.publishing_history:
+            raise NotFoundError("Binary package %s not published in %s/%s"
+                                % (self.binarypackagename.name,
+                                   self.distroarchrelease.distrorelease.name,
+                                   self.distroarchrelease.architecturetag))
         current = self.publishing_history[-1]
+
         SecureBinaryPackagePublishingHistory(
             binarypackagerelease=current.binarypackagerelease,
             distroarchrelease=current.distroarchrelease,
