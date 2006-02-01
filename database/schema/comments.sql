@@ -672,6 +672,8 @@ COMMENT ON COLUMN Person.homepage_content IS 'A home page for this person in the
 COMMENT ON COLUMN Person.emblem IS 'The library file alias to a small image (16x16 max, it\'s a tiny little thing) to be used as an emblem or icon whenever we are referring to that person.';
 COMMENT ON COLUMN Person.hackergotchi IS 'The library file alias of a hackergotchi image to display as the "face" of a person, on their home page.';
 
+COMMENT ON TABLE ValidPersonOrTeamCache IS 'A materialized view listing the Person.ids of all valid people and teams.';
+
 -- PersonLanguage
 COMMENT ON TABLE PersonLanguage IS 'PersonLanguage: This table stores the preferred languages that a Person has, it''s used in Rosetta to select the languages that should be showed to be translated.';
 COMMENT ON COLUMN PersonLanguage.person IS 'This field is a reference to a Person object that has this preference.';
@@ -695,19 +697,6 @@ COMMENT ON TABLE ProductBounty IS 'This table records a simple link between a bo
 COMMENT ON TABLE DistributionBounty IS 'This table records a simple link between a bounty and a distribution. This bounty will be listed on the distribution web page, and the distribution will be mentioned on the bounty web page.';
 
 COMMENT ON TABLE ProjectBounty IS 'This table records a simple link between a bounty and a project. This bounty will be listed on the project web page, and the project will be mentioned on the bounty web page.';
-
--- Maintainership
-
-COMMENT ON TABLE Maintainership IS 'Stores the maintainer information for a
-sourcepackage in a particular distribution. Note that this does not store
-the information per-distrorelease, but for the overall "distribution", which
-generally refers to the current development release of the distro.';
-
-COMMENT ON COLUMN Maintainership.maintainer IS 'Refers to the person
-responsible for this sourcepackage inside this distribution. Note that the
-"maintainer" for a package varies over time, so the person who was
-responsible in a previous distrorelease may no longer be listed as
-a maintainer.';
 
 -- Messaging subsytem
 COMMENT ON TABLE BugMessage IS 'This table maps a message to a bug. In other words, it shows that a particular message is associated with a particular bug.';

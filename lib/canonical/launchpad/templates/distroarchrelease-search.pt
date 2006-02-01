@@ -16,7 +16,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Binary Package Search</h1>
+  <h1>Binary package search</h1>
 
     <form name="search" method="GET">
 

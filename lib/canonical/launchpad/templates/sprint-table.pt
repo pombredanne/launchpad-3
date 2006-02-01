@@ -14,7 +14,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Table of Specs</h1>
+  <h1>Table of specifications</h1>
 
   <p class="portalMessage" tal:condition="not: view/specs">
     No specifications to display.

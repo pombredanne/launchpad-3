@@ -20,13 +20,14 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, MultipleJoin, RelatedJoin,
     SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND
+from sqlobject.sqlbuilder import AND, OR
 from canonical.database.sqlbase import (
     SQLBase, quote, quote_like, cursor, sqlvalues, flush_database_updates,
     flush_database_caches)
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database import postgresql
+from canonical.launchpad.helpers import shortlist
 
 from canonical.launchpad.interfaces import (
     IPerson, ITeam, IPersonSet, IEmailAddress, IWikiName, IIrcID, IJabberID,
@@ -44,6 +45,11 @@ from canonical.launchpad.database.karma import (
 from canonical.launchpad.database.shipit import ShippingRequest
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
+from canonical.launchpad.database.specification import Specification
+from canonical.launchpad.database.specificationfeedback import (
+    SpecificationFeedback)
+from canonical.launchpad.database.specificationsubscription import (
+    SpecificationSubscription)
 from canonical.launchpad.database.teammembership import (
     TeamMembership, TeamParticipation)
 
@@ -66,7 +72,6 @@ class Person(SQLBase):
     _defaultOrder = sortingColumns
 
     name = StringCol(dbName='name', alternateID=True, notNull=True)
-    karma = IntCol(dbName='karma', notNull=True, default=0)
     password = StringCol(dbName='password', default=None)
     givenname = StringCol(dbName='givenname', default=None)
     familyname = StringCol(dbName='familyname', default=None)
@@ -91,6 +96,8 @@ class Person(SQLBase):
                            default=None)
 
     sshkeys = MultipleJoin('SSHKey', joinColumn='person')
+
+    karma_total_cache = MultipleJoin('KarmaTotalCache', joinColumn='person')
 
     subscriptionpolicy = EnumCol(
         dbName='subscriptionpolicy',
@@ -131,22 +138,41 @@ class Person(SQLBase):
     jabberids = MultipleJoin('JabberID', joinColumn='person')
 
     # specification-related joins
-    approver_specs = MultipleJoin('Specification', joinColumn='approver',
-        orderBy=['-datecreated'])
-    assigned_specs = MultipleJoin('Specification', joinColumn='assignee',
-        orderBy=['-datecreated'])
-    created_specs = MultipleJoin('Specification', joinColumn='owner',
-        orderBy=['-datecreated'])
-    drafted_specs = MultipleJoin('Specification', joinColumn='drafter',
-        orderBy=['-datecreated'])
-    feedback_specs = RelatedJoin('Specification', joinColumn='reviewer',
-        otherColumn='specification',
-        intermediateTable='SpecificationFeedback',
-        orderBy=['-datecreated'])
-    subscribed_specs = RelatedJoin('Specification', joinColumn='person',
-        otherColumn='specification',
-        intermediateTable='SpecificationSubscription',
-        orderBy=['-datecreated'])
+    @property
+    def approver_specs(self):
+        return Specification.selectBy(approverID=self.id,
+                                      orderBy=['-datecreated'])
+
+    @property
+    def assigned_specs(self):
+        return Specification.selectBy(assigneeID=self.id,
+                                      orderBy=['-datecreated'])
+
+    @property
+    def created_specs(self):
+        return Specification.selectBy(ownerID=self.id,
+                                      orderBy=['-datecreated'])
+
+    @property
+    def drafted_specs(self):
+        return Specification.selectBy(drafterID=self.id,
+                                      orderBy=['-datecreated'])
+
+    @property
+    def feedback_specs(self):
+        return Specification.select(
+            AND(Specification.q.id == SpecificationFeedback.q.specificationID,
+                SpecificationFeedback.q.reviewerID == self.id),
+            clauseTables=['SpecificationFeedback'],
+            orderBy=['-datecreated'])
+
+    @property
+    def subscribed_specs(self):
+        return Specification.select(
+            AND(Specification.q.id == SpecificationSubscription.q.specificationID,
+                SpecificationSubscription.q.personID == self.id),
+            clauseTables=['SpecificationSubscription'],
+            orderBy=['-datecreated'])
 
     # ticket related joins
     answered_tickets = MultipleJoin('Ticket', joinColumn='answerer',
@@ -260,22 +286,26 @@ class Person(SQLBase):
             return self.name
 
     def specifications(self, quantity=None, sort=None):
-        ret = set(self.created_specs)
-        ret = ret.union(self.approver_specs)
-        ret = ret.union(self.assigned_specs)
-        ret = ret.union(self.drafted_specs)
-        ret = ret.union(self.feedback_specs)
-        ret = ret.union(self.subscribed_specs)
+        query = OR(
+            Specification.q.ownerID == self.id,
+            Specification.q.approverID == self.id,
+            Specification.q.assigneeID == self.id,
+            Specification.q.drafterID == self.id,
+            AND(Specification.q.id == SpecificationFeedback.q.specificationID,
+                SpecificationFeedback.q.reviewerID == self.id),
+            AND(Specification.q.id == SpecificationSubscription.q.specificationID,
+                SpecificationSubscription.q.personID == self.id))
         if sort is None or sort == SpecificationSort.DATE:
-            sortkey = lambda a: a.datecreated
-            reverse = True
+            order = ['-datecreated', 'id']
         elif sort == SpecificationSort.PRIORITY:
-            sortkey = lambda a: a.priority
-            reverse = False
+            order = ['-priority', 'status', 'name']
         else:
             raise AssertionError('Unknown sort %s' % sort)
-        ret = sorted(ret, reverse=reverse, key=sortkey)
-        return ret[:quantity]
+
+        return Specification.select(query, orderBy=order,
+                                    clauseTables=['SpecificationFeedback',
+                                                  'SpecificationSubscription'],
+                                    distinct=True, limit=quantity)
 
     def tickets(self, quantity=None):
         ret = set(self.created_tickets)
@@ -355,6 +385,14 @@ class Person(SQLBase):
         """See IPerson."""
         return getUtility(IBugTaskSet).search(search_params)
 
+    @property
+    def karma(self):
+        """See IPerson."""
+        try:
+            return self.karma_total_cache[0].karma_total
+        except IndexError:
+            return 0
+
     def assignKarma(self, action_name):
         """See IPerson."""
         try:
@@ -363,21 +401,6 @@ class Person(SQLBase):
             raise ValueError(
                 "No KarmaAction found with name '%s'." % action_name)
         return Karma(person=self, action=action)
-
-    def updateKarmaCache(self):
-        """See IPerson."""
-        cacheset = getUtility(IKarmaCacheSet)
-        karmaset = getUtility(IKarmaSet)
-        totalkarma = 0
-        for cat in KarmaCategory.select():
-            karmavalue = karmaset.getSumByPersonAndCategory(self, cat)
-            totalkarma += karmavalue
-            cache = cacheset.getByPersonAndCategory(self, cat)
-            if cache is None:
-                cache = cacheset.new(self, cat, karmavalue)
-            else:
-                cache.karmavalue = karmavalue
-        self.karma = totalkarma
 
     def latestKarma(self, quantity=25):
         """See IPerson."""
@@ -541,6 +564,8 @@ class Person(SQLBase):
         tm.reviewer = reviewer
         tm.reviewercomment = comment
 
+        tm.syncUpdate()
+
         if ((status == approved and tm.status != admin) or
             (status == admin and tm.status != approved)):
             _fillTeamParticipation(person, self)
@@ -591,7 +616,7 @@ class Person(SQLBase):
     @property
     def all_member_count(self):
         """See IPerson."""
-        return len(self.allmembers)
+        return self.allmembers.count()
 
     @property
     def deactivatedmembers(self):
@@ -631,7 +656,7 @@ class Person(SQLBase):
     @property
     def active_member_count(self):
         """See IPerson."""
-        return len(self.activemembers)
+        return self.activemembers.count()
 
     @property
     def inactivemembers(self):
@@ -728,7 +753,11 @@ class Person(SQLBase):
             # SQLObject will issue the changes and we can't set the new
             # address to PREFERRED until the old one has been set to VALIDATED
             preferredemail.syncUpdate()
+        # get the non-proxied EmailAddress object, so we can call
+        # syncUpdate() on it:
+        email = EmailAddress.get(email.id)
         email.status = EmailAddressStatus.PREFERRED
+        email.syncUpdate()
 
     def _getPreferredemail(self):
         """See IPerson."""
@@ -823,7 +852,7 @@ class Person(SQLBase):
             clauseTables=['SourcePackageName'])
 
     @property
-    def is_ubuntite(self):
+    def is_ubuntero(self):
         """See IPerson."""
         sigset = getUtility(ISignedCodeOfConductSet)
         lastdate = sigset.getLastAcceptedDate()
@@ -854,31 +883,22 @@ class PersonSet:
     _defaultOrder = Person.sortingColumns
 
     def __init__(self):
-        self.title = 'Launchpad People'
+        self.title = 'People registered with Launchpad'
 
     def topPeople(self):
         """See IPersonSet."""
         # The odd ordering here is to ensure we hit the PostgreSQL
-        # indexes. Ideally we want to order by karma DESC, name but
-        # that will not use the indexes (at least under PostgreSQL 7.4)
-        # and be really slow.
-
-        # This is a simpler implementation, but is triggering Bug 4818
-        # return self.getAllValidPersons(orderBy=['-karma', '-id'])[:5]
-
+        # indexes. It will not make any real difference outside of tests.
         query = """
             id in (
-                SELECT Person.id
-                FROM Person, EmailAddress
-                WHERE Person.id = EmailAddress.person
-                    AND teamowner IS NULL
-                    AND merged IS NULL
-                    AND EmailAddress.status = %d
-                ORDER BY Person.karma DESC, Person.id DESC
+                SELECT person FROM KarmaTotalCache
+                ORDER BY karma_total DESC, person DESC
                 LIMIT 5
                 )
-            """ % (EmailAddressStatus.PREFERRED.value,)
-        return Person.select(query, orderBy=['-karma', '-id'])
+            """
+        top_people = shortlist(Person.select(query))
+        top_people.sort(key=lambda obj: (obj.karma, obj.id), reverse=True)
+        return top_people
 
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
@@ -966,11 +986,10 @@ class PersonSet:
         """See IPersonSet."""
         if orderBy is None:
             orderBy = self._defaultOrder
-        query = AND(Person.q.teamownerID==None,
-                    Person.q.mergedID==None,
-                    EmailAddress.q.personID==Person.q.id,
-                    EmailAddress.q.status==EmailAddressStatus.PREFERRED)
-        return Person.select(query, orderBy=orderBy)
+        return Person.select(
+            "Person.id = ValidPersonOrTeamCache.id AND teamowner IS NULL",
+            clauseTables=["ValidPersonOrTeamCache"], orderBy=orderBy
+            )
 
     def teamsCount(self):
         """See IPersonSet."""
@@ -1056,7 +1075,7 @@ class PersonSet:
             return default
         return emailaddress.person
 
-    def getUbuntites(self, orderBy=None):
+    def getUbunteros(self, orderBy=None):
         """See IPersonSet."""
         if orderBy is None:
             orderBy = self._defaultOrder
@@ -1092,7 +1111,7 @@ class PersonSet:
         # changes have been flushed to the database
         flush_database_updates()
 
-        if len(getUtility(IEmailAddressSet).getByPerson(from_person)) > 0:
+        if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
             raise ValueError('from_person still has email addresses.')
 
         # Get a database cursor.
@@ -1111,6 +1130,7 @@ class PersonSet:
             ('person', 'merged'),
             ('emailaddress', 'person'),
             ('karmacache', 'person'),
+            ('karmatotalcache', 'person'),
             # We don't merge teams, so the poll table can be ignored
             ('poll', 'team'),
             # I don't think we need to worry about the votecast and vote
@@ -1119,6 +1139,8 @@ class PersonSet:
             # in a given poll. -- GuilhermeSalgado 2005-07-07
             ('votecast', 'person'),
             ('vote', 'person'),
+            # This table is handled entirely by triggers
+            ('validpersonorteamcache', 'id'),
             ]
 
         # Sanity check. If we have an indirect reference, it must
@@ -1436,10 +1458,6 @@ class PersonSet:
         # Since we've updated the database behind SQLObject's back,
         # flush its caches.
         flush_database_caches()
-
-        # And now update the karma cache for both accounts.
-        from_person.updateKarmaCache()
-        to_person.updateKarmaCache()
 
 
 class EmailAddress(SQLBase):

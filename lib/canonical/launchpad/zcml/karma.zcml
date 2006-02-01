@@ -32,9 +32,6 @@
     <!-- KarmaCache -->
     <content class="canonical.launchpad.database.KarmaCache">
         <allow interface="canonical.launchpad.interfaces.IKarmaCache" />
-        <require 
-            permission="zope.Public"
-            set_schema="canonical.launchpad.interfaces.IKarmaCache" />
     </content>
 
     <!-- KarmaCacheSet -->
@@ -43,6 +40,11 @@
         provides="canonical.launchpad.interfaces.IKarmaCacheSet">
         <allow interface="canonical.launchpad.interfaces.IKarmaCacheSet" />
     </securedutility>
+
+    <!-- KarmaTotalCache -->
+    <content class="canonical.launchpad.database.KarmaTotalCache">
+        <allow interface="canonical.launchpad.interfaces.IKarmaTotalCache" />
+    </content>
 
     <!-- KarmaCategory -->
     <content class="canonical.launchpad.database.KarmaCategory">
@@ -76,7 +78,7 @@
         class="canonical.launchpad.browser.editview.SQLObjectEditView"
         schema="canonical.launchpad.interfaces.IKarmaAction"
         fields="name category points title summary"
-        label="Edit KarmaAction Information"
+        label="Edit karma action information"
         permission="launchpad.Admin"
         template="../templates/karmaaction-edit.pt"
         lp:url="karmaaction/$action/+index">

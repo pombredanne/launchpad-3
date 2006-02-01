@@ -16,7 +16,8 @@ from canonical.database.sqlbase import (
 from canonical.database.constants import UTC_NOW
 
 from canonical.lp.dbschema import (
-    BugTaskStatus, BugTaskSeverity, PackagingType, PackagePublishingPocket)
+    BugTaskStatus, BugTaskSeverity, PackagingType, PackagePublishingPocket,
+    BuildStatus)
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
@@ -52,26 +53,32 @@ class SourcePackage:
         self.sourcepackagename = sourcepackagename
         self.distrorelease = distrorelease
 
-        packages = SourcePackagePublishing.select("""
+        # XXX: jamesh, please check this.
+        #      from stevea, 2006-01-28
+        package = SourcePackagePublishing.selectFirst("""
             SourcePackagePublishing.sourcepackagerelease = 
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishing.distrorelease = %s
             """ % sqlvalues(self.sourcepackagename.id,
                             self.distrorelease.id),
-            clauseTables=['SourcePackageRelease'],
-            orderBy='datepublished')
-        if len(packages) == 0:
+            orderBy='datepublished',
+            clauseTables=['SourcePackageRelease'])
+        if package is None:
             self.currentrelease = None
         else:
             self.currentrelease = DistroReleaseSourcePackageRelease(
                 distrorelease=self.distrorelease,
                 sourcepackagerelease=SourcePackageRelease.get(
-                    packages[0].sourcepackagerelease.id))
+                    package.sourcepackagerelease.id))
 
     def __getitem__(self, version):
         """See ISourcePackage."""
-        pkgs = SourcePackagePublishing.select("""
+        # XXX: 20051219 jamesh
+        # Is the orderBy clause here correct, or just to avoid the warning?
+        # I've changed this to selectOne() with a limit to avoid the
+        # len() usage.
+        pkg = SourcePackagePublishing.selectFirst("""
             SourcePackagePublishing.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.version = %s AND
@@ -81,10 +88,10 @@ class SourcePackage:
                             self.distrorelease.id),
             orderBy='id',
             clauseTables=['SourcePackageRelease'])
-        if len(pkgs) == 0:
+        if pkg is None:
             return None
         return DistroReleaseSourcePackageRelease(
-            self.distrorelease, pkgs[0].sourcepackagerelease)
+            self.distrorelease, pkg.sourcepackagerelease)
 
     def _get_ubuntu(self):
         """This is a temporary measure while
@@ -155,17 +162,6 @@ class SourcePackage:
         if not self.currentrelease:
             return None
         return self.currentrelease.manifest
-
-    @property
-    def maintainer(self):
-        # For backwards compatibility purposes only, since "Maintainership" is
-        # gone. See https://launchpad.net/malone/bugs/5485.
-        warn("SourcePackage.maintainer was deprecated with the "
-             "InitialBugContacts implementation. Please talk to "
-             "bradb about removing this property in the UI and code.",
-             DeprecationWarning)
-
-        return None
 
     @property
     def releases(self):
@@ -450,19 +446,23 @@ class SourcePackage:
 
     def getBuildRecords(self, status=None):
         """See IHasBuildRecords"""
-        status_clause = ''
-        if status:
-            status_clause = "AND Build.buildstate=%s" % sqlvalues(status)
-
-        querytxt = """
+        query = """
             Build.sourcepackagerelease = SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishingHistory.distrorelease = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id 
+                SourcePackageRelease.id
             """ % sqlvalues(self.sourcepackagename.id, self.distrorelease.id)
-        querytxt += status_clause
-        return Build.select(querytxt,
-            clauseTables=['SourcePackageRelease',
-                          'SourcePackagePublishingHistory'],
+
+        # exclude gina-generated builds
+        # buildstate == FULLYBUILT && datebuilt == null
+        query += (" AND NOT (Build.buildstate=%s AND Build.datebuilt is NULL)"
+                  % sqlvalues(BuildStatus.FULLYBUILT))
+
+        if status is not None:
+            query += "AND Build.buildstate=%s" % sqlvalues(status)
+
+        return Build.select(
+            query, clauseTables=['SourcePackageRelease',
+                                 'SourcePackagePublishingHistory'],
             orderBy="-datebuilt")

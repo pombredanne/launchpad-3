@@ -77,7 +77,7 @@ class IBugTask(IHasDateCreated):
         title=_('Severity'), vocabulary='BugTaskSeverity',
         default=dbschema.BugTaskSeverity.NORMAL)
     assignee = Choice(
-        title=_('Assigned to:'), required=False, vocabulary='ValidAssignee')
+        title=_('Assigned to'), required=False, vocabulary='ValidAssignee')
     binarypackagename = Choice(
         title=_('Binary PackageName'), required=False,
         vocabulary='BinaryPackageName')
@@ -100,10 +100,6 @@ class IBugTask(IHasDateCreated):
             "The age of this task, expressed as the length of time between "
             "datecreated and now."))
     owner = Int()
-    maintainer = TextLine(
-        title=_("Maintainer"), required=True, readonly=True)
-    maintainer_displayname = TextLine(
-        title=_("Maintainer"), required=True, readonly=True)
     target = Attribute("The software in which this bug should be fixed")
     targetname = Attribute("The short, descriptive name of the target")
     title = Attribute("The title of the bug related to this bugtask")
@@ -453,6 +449,9 @@ class IBugTaskSet(Interface):
                    priority=None, severity=None, assignee=None, owner=None,
                    milestone=None):
         """Create a bug task on a bug and return it.
+
+        If the bug is public, bug contacts will be automatically
+        subscribed.
 
         Exactly one of product, distribution or distrorelease must be provided.
         """

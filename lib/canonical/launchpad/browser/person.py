@@ -17,7 +17,7 @@ __all__ = [
     'BaseListView',
     'PeopleListView',
     'TeamListView',
-    'UbuntiteListView',
+    'UbunteroListView',
     'FOAFSearchView',
     'PersonEditView',
     'PersonEmblemView',
@@ -32,6 +32,7 @@ __all__ = [
     'TeamLeaveView',
     'PersonEditEmailsView',
     'RequestPeopleMergeView',
+    'AdminRequestPeopleMergeView',
     'FinishedPeopleMergeRequestView',
     'RequestPeopleMergeMultipleEmailsView',
     'ObjectReassignmentView',
@@ -65,8 +66,9 @@ from canonical.launchpad.interfaces import (
     IJabberIDSet, IIrcIDSet, ILaunchBag, ILoginTokenSet, IPasswordEncryptor,
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
-    IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet, 
-    BugTaskSearchParams, NotFoundError, UNRESOLVED_BUGTASK_STATUSES)
+    IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
+    IAdminRequestPeopleMerge, BugTaskSearchParams, NotFoundError, 
+    UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.browser.bugtask import (
     BugTaskSearchListingView, AdvancedBugTaskSearchView)
@@ -78,13 +80,13 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 from canonical.launchpad.mail.sendmail import simple_sendmail
 from canonical.launchpad.event.team import JoinTeamRequestEvent
+from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
     enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
     redirection, GeneralFormView)
 
-from zope.i18nmessageid import MessageIDFactory
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
 
 
 class BranchTraversalMixin:
@@ -168,7 +170,8 @@ class PeopleContextMenu(ContextMenu):
 
     usedfor = IPersonSet
 
-    links = ['peoplelist', 'teamlist', 'ubuntitelist', 'newteam']
+    links = ['peoplelist', 'teamlist', 'ubunterolist', 'newteam',
+             'adminrequestmerge']
 
     def peoplelist(self):
         text = 'All People'
@@ -178,13 +181,18 @@ class PeopleContextMenu(ContextMenu):
         text = 'All Teams'
         return Link('+teamlist', text, icon='people')
 
-    def ubuntitelist(self):
-        text = 'All Ubuntites'
-        return Link('+ubuntitelist', text, icon='people')
+    def ubunterolist(self):
+        text = 'All Ubunteros'
+        return Link('+ubunterolist', text, icon='people')
 
     def newteam(self):
-        text = 'Create New Team'
+        text = 'Register a Team'
         return Link('+newteam', text, icon='add')
+
+    @enabled_with_permission('launchpad.Admin')
+    def adminrequestmerge(self):
+        text = 'Admin Merge Accounts'
+        return Link('+adminrequestmerge', text, icon='edit')
 
 
 class PersonFacets(StandardLaunchpadFacets):
@@ -203,7 +211,6 @@ class PersonFacets(StandardLaunchpadFacets):
         return Link('', text, summary)
 
     def bugs(self):
-        target = '+assignedbugs'
         text = 'Bugs'
         summary = (
             'Bug reports that %s is involved with' % self.context.browsername)
@@ -278,6 +285,13 @@ class PersonBugsMenu(ApplicationMenu):
         return Link('+subscribedbugs', text, icon='bugs')
 
 
+class TeamBugsMenu(PersonBugsMenu):
+
+    usedfor = ITeam
+    facet = 'bugs'
+    links = ['assignedbugs', 'softwarebugs', 'subscribedbugs']
+ 
+
 class PersonSpecsMenu(ApplicationMenu):
 
     usedfor = IPerson
@@ -288,27 +302,27 @@ class PersonSpecsMenu(ApplicationMenu):
              'subscribed']
 
     def created(self):
-        text = 'Show Specs Created'
+        text = 'Specifications Created'
         return Link('+createdspecs', text, icon='spec')
 
     def approver(self):
-        text = 'Show Specs for Approval'
+        text = 'Specifications for Approval'
         return Link('+approverspecs', text, icon='spec')
 
     def assigned(self):
-        text = 'Show Assigned Specs'
+        text = 'Specifications Assigned'
         return Link('+assignedspecs', text, icon='spec')
 
     def drafted(self):
-        text = 'Show Drafted Specs'
+        text = 'Specifications Drafted'
         return Link('+draftedspecs', text, icon='spec')
 
     def review(self):
-        text = 'Show Feedback Requests'
+        text = 'Feedback Requests'
         return Link('+reviewspecs', text, icon='spec')
 
     def subscribed(self):
-        text = 'Show Subscribed Specs'
+        text = 'Specifications Subscribed'
         return Link('+subscribedspecs', text, icon='spec')
 
 
@@ -319,19 +333,19 @@ class PersonSupportMenu(ApplicationMenu):
     links = ['created', 'assigned', 'answered', 'subscribed']
 
     def created(self):
-        text = 'Tickets Created'
+        text = 'Requests Made'
         return Link('+createdtickets', text, icon='ticket')
 
     def assigned(self):
-        text = 'Tickets Assigned'
+        text = 'Requests Assigned'
         return Link('+assignedtickets', text, icon='ticket')
 
     def answered(self):
-        text = 'Tickets Answered'
+        text = 'Requests Answered'
         return Link('+answeredtickets', text, icon='ticket')
 
     def subscribed(self):
-        text = 'Tickets Subscribed'
+        text = 'Requests Subscribed'
         return Link('+subscribedtickets', text, icon='ticket')
 
 
@@ -342,15 +356,15 @@ class PersonCodeMenu(ApplicationMenu):
     links = ['authored', 'registered', 'subscribed', 'add']
 
     def authored(self):
-        text = 'Show Authored Branches'
+        text = 'Branches Authored'
         return Link('+authoredbranches', text, icon='branch')
 
     def registered(self):
-        text = 'Show Registered Branches'
+        text = 'Branches Registered'
         return Link('+registeredbranches', text, icon='branch')
 
     def subscribed(self):
-        text = 'Show Subscribed Branches'
+        text = 'Branches Subscribed'
         return Link('+subscribedbranches', text, icon='branch')
 
     def add(self):
@@ -360,11 +374,13 @@ class PersonCodeMenu(ApplicationMenu):
 
 class CommonMenuLinks:
 
+    @enabled_with_permission('launchpad.Edit')
     def common_edit(self):
         target = '+edit'
         text = 'Edit Personal Details'
         return Link(target, text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def common_edithomepage(self):
         target = '+edithomepage'
         text = 'Edit Home Page'
@@ -387,26 +403,31 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editsshkeys', 'editgpgkeys', 'codesofconduct', 'administer',
              'common_packages']
 
+    @enabled_with_permission('launchpad.Edit')
     def editemailaddresses(self):
         target = '+editemails'
         text = 'Edit Email Addresses'
         return Link(target, text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def editwikinames(self):
         target = '+editwikinames'
         text = 'Edit Wiki Names'
         return Link(target, text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def editircnicknames(self):
         target = '+editircnicknames'
         text = 'Edit IRC Nicknames'
         return Link(target, text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def editjabberids(self):
         target = '+editjabberids'
         text = 'Edit Jabber IDs'
         return Link(target, text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def editpassword(self):
         target = '+changepassword'
         text = 'Change Password'
@@ -420,6 +441,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
             u'in Launchpad' % self.context.browsername)
         return Link(target, text, summary, icon='info')
 
+    @enabled_with_permission('launchpad.Edit')
     def editsshkeys(self):
         target = '+editsshkeys'
         text = 'Edit SSH Keys'
@@ -428,17 +450,20 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
             self.context.browsername)
         return Link(target, text, summary, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def editgpgkeys(self):
         target = '+editgpgkeys'
-        text = 'Edit GPG Keys'
+        text = 'Edit OpenPGP Keys'
         summary = 'Used for the Supermirror, and when maintaining packages'
         return Link(target, text, summary, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def edithackergotchi(self):
         target = '+edithackergotchi'
         text = 'Edit Hackergotchi'
         return Link(target, text, icon='edit')
 
+    @enabled_with_permission('launchpad.Edit')
     def codesofconduct(self):
         target = '+codesofconduct'
         text = 'Codes of Conduct'
@@ -481,7 +506,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
     def polls(self):
         target = '+polls'
-        text = 'Show Polls'
+        text = 'Polls'
         return Link(target, text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
@@ -496,11 +521,11 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     def joinleave(self):
         if userIsActiveTeamMember(self.context):
             target = '+leave'
-            text = 'Leave the team' # &#8230;
+            text = 'Leave the Team' # &#8230;
             icon = 'remove'
         else:
             target = '+join'
-            text = 'Join the team' # &#8230;
+            text = 'Join the Team' # &#8230;
             icon = 'add'
         return Link(target, text, icon=icon)
 
@@ -531,8 +556,8 @@ class BaseListView:
         results = getUtility(IPersonSet).getAllPersons()
         return self._getBatchNavigator(results)
 
-    def getUbuntitesList(self):
-        results = getUtility(IPersonSet).getUbuntites()
+    def getUbunterosList(self):
+        results = getUtility(IPersonSet).getUbunteros()
         return self._getBatchNavigator(results)
 
 
@@ -552,12 +577,12 @@ class TeamListView(BaseListView):
         return self.getTeamsList()
 
 
-class UbuntiteListView(BaseListView):
+class UbunteroListView(BaseListView):
 
-    header = "Ubuntite List"
+    header = "Ubuntero List"
 
     def getList(self):
-        return self.getUbuntitesList()
+        return self.getUbunterosList()
 
 
 class FOAFSearchView:
@@ -643,7 +668,6 @@ class BasePersonBugTaskSearchListingView(AdvancedBugTaskSearchView):
     class. Instead, you should derive from it and use the derived class.
     """
 
-    has_advanced_form = True
     context_parameter = None
 
     def getExtraSearchParams(self):
@@ -652,11 +676,13 @@ class BasePersonBugTaskSearchListingView(AdvancedBugTaskSearchView):
         params[self.context_parameter] = self.context
         return params
 
-    def show_advanced_form(self):
+    def hasSimpleMode(self):
+        return True
+
+    def shouldShowAdvancedSearchWidgets(self):
         """Return True if this view's advanced form should be shown."""
-        request = self.request
-        if ((request.get('advanced') or request.form.get('advanced')) and
-            not request.form.get('simple')):
+        form = self.request.form
+        if form.get('advanced') and not form.get('simple'):
             return True
         return False
 
@@ -696,9 +722,9 @@ class PersonAssignedBugTaskSearchListingView(
 
     context_parameter = 'assignee'
 
-    def doNotShowAssignee(self):
-        """Should we not show the assignee in the list of results?"""
-        return True
+    def shouldShowAssignee(self):
+        """Should we show the assignee in the list of results?"""
+        return False
 
 
 class SubscribedBugTaskSearchListingView(BasePersonBugTaskSearchListingView):
@@ -728,7 +754,7 @@ class PersonView:
     def hasCurrentPolls(self):
         """Return True if this team has any non-closed polls."""
         assert self.context.isTeam()
-        return bool(len(self.openpolls) or len(self.notyetopenedpolls))
+        return bool(self.openpolls) or bool(self.notyetopenedpolls)
 
     def sourcepackagerelease_open_bugs_count(self, sourcepackagerelease):
         """Return the number of open bugs targeted to the sourcepackagename
@@ -876,7 +902,7 @@ class PersonView:
         return len(self.context.sshkeys)
 
     def gpgkeysCount(self):
-        return len(self.context.gpgkeys)
+        return self.context.gpgkeys.count()
 
     def signedcocsCount(self):
         return len(self.context.signedcocs)
@@ -1077,7 +1103,7 @@ class PersonView:
         gpgkeyset = getUtility(IGPGKeySet)
 
         if gpgkeyset.getByFingerprint(fingerprint):
-            return 'GPG key <code>%s</code> already imported' % fingerprint
+            return 'OpenPGP key <code>%s</code> already imported' % fingerprint
 
         # import the key to the local keyring
         gpghandler = getUtility(IGPGHandler)
@@ -1087,7 +1113,7 @@ class PersonView:
             # use the content of 'key' for debug proposes; place it in a
             # blockquote because it often comes out empty.
             return (
-                """Launchpad could not import your GPG key.
+                """Launchpad could not import your OpenPGP key.
                 <ul>
                   <li>Did you enter your complete fingerprint correctly,
                   as produced by <kbd>gpg --fingerprint</kdb>?</li>
@@ -1344,11 +1370,18 @@ class TeamJoinView(PersonView):
             return
 
         user = getUtility(ILaunchBag).user
+
         if self.request.form.get('join') and self.userCanRequestToJoin():
             user.join(self.context)
             appurl = self.request.getApplicationURL()
             notify(JoinTeamRequestEvent(user, self.context, appurl))
-
+            if (self.context.subscriptionpolicy ==
+                TeamSubscriptionPolicy.MODERATED):
+                self.request.response.addInfoNotification(
+                    _('Subscription request pending approval.'))
+            else:
+                self.request.response.addInfoNotification(_(
+                    'Successfully joined %s.' % self.context.displayname))
         self.request.response.redirect('./')
 
 
@@ -1548,11 +1581,10 @@ class PersonEditEmailsView:
         emailset = getUtility(IEmailAddressSet)
         emailaddress = emailset.getByEmail(email)
         assert emailaddress.person.id == self.context.id, \
-                "differing ids in emailaddress.person.id(%r,%s,%d) == " \
-                "self.context.id(%r,%s,%d)" % \
-                (emailaddress.person, id(emailaddress.person),
-                 emailaddress.person.id, self.context, id(self.context),
-                 self.context.id)
+                "differing ids in emailaddress.person.id(%s,%d) == " \
+                "self.context.id(%s,%d) (%s)" % \
+                (emailaddress.person.name, emailaddress.person.id,
+                 self.context.name, self.context.id, emailaddress.email)
 
         assert emailaddress.status == EmailAddressStatus.VALIDATED
         self.context.preferredemail = emailaddress
@@ -1589,7 +1621,7 @@ class RequestPeopleMergeView(AddView):
             # Please, don't try to merge you into yourself.
             return
 
-        emails = getUtility(IEmailAddressSet).getByPerson(dupeaccount)
+        emails = list(getUtility(IEmailAddressSet).getByPerson(dupeaccount))
         if len(emails) > 1:
             # The dupe account have more than one email address. Must redirect
             # the user to another page to ask which of those emails (s)he
@@ -1607,6 +1639,73 @@ class RequestPeopleMergeView(AddView):
         sendMergeRequestEmail(
             token, dupename, self.request.getApplicationURL())
         self._nextURL = './+mergerequest-sent?dupe=%d' % dupeaccount.id
+
+
+class AdminRequestPeopleMergeView(LaunchpadView):
+    """The view for the page where an admin can merge two accounts."""
+
+    def initialize(self):
+        self.errormessages = [] 
+        self.shouldShowConfirmationPage = False
+        setUpWidgets(self, IAdminRequestPeopleMerge, IInputWidget)
+
+    def processForm(self):
+        form = self.request.form
+        if 'continue' in form:
+            # get data from the form
+            self.dupe_account = self._getInputValue(self.dupe_account_widget)
+            self.target_account = self._getInputValue(
+                self.target_account_widget)
+            if self.errormessages:
+                return
+
+            if self.dupe_account == self.target_account:
+                self.errormessages.append(_(
+                    "You can't merge %s into itself." 
+                    % self.dupe_account.name))
+                return
+
+            emailset = getUtility(IEmailAddressSet) 
+            self.emails = emailset.getByPerson(self.dupe_account)
+            # display dupe_account email addresses and confirmation page
+            self.shouldShowConfirmationPage = True
+
+        elif 'merge' in form:
+            self._performMerge()
+            self.request.response.addInfoNotification(_(
+                'Merge completed successfully.'))
+            self.request.response.redirect(canonical_url(self.target_account))
+
+    def _getInputValue(self, widget):
+        name = self.request.get(widget.name)
+        try:
+            account = widget.getInputValue()
+        except WidgetInputError:
+            self.errormessages.append(_("You must choose an account.")) 
+            return
+        except ConversionError:
+            self.errormessages.append(_("%s is an invalid account." % name)) 
+            return
+        return account
+
+    def _performMerge(self):
+        personset = getUtility(IPersonSet)
+        emailset = getUtility(IEmailAddressSet)
+
+        dupe_name = self.request.form.get('dupe_name')
+        target_name = self.request.form.get('target_name')
+
+        self.dupe_account = personset.getByName(dupe_name)
+        self.target_account = personset.getByName(target_name) 
+
+        emails = emailset.getByPerson(self.dupe_account)
+        if emails:
+            for email in emails:
+                # transfer all emails from dupe to targe account
+                email.person = self.target_account
+                email.status = EmailAddressStatus.NEW
+
+        getUtility(IPersonSet).merge(self.dupe_account, self.target_account)
 
 
 class FinishedPeopleMergeRequestView:

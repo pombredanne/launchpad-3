@@ -32,7 +32,7 @@
   <div tal:condition="context/activesignatures">
     <form name="coc" action="" method="POST">
 
-    <h2>Active Signatures</h2>
+    <h2>Active signatures</h2>
 
     <div>
 
@@ -56,7 +56,7 @@
     <p>Once <dfn>Inactive</dfn>, a signature can only be reactivated by a
        member of <a href="/people/admins">Launchpad Administrator Team<a>.</p>
 
-    <h2>Inactive Signatures</h2>
+    <h2>Inactive signatures</h2>
 
     <div>
       <ul> 

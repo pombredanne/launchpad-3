@@ -18,7 +18,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1 i18n:translate="">Translation Status</h1>
+  <h1 i18n:translate="">Translation status</h1>
 
   <p class="documentDescription">This is the translation status of
     <span tal:replace="context/distribution/displayname">Ubuntu</span>

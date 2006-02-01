@@ -11,6 +11,7 @@ __all__ = [
     'IEmailAddress',
     'IEmailAddressSet',
     'IRequestPeopleMerge',
+    'IAdminRequestPeopleMerge',
     'IObjectReassignment',
     'ITeamReassignment',
     'ITeamCreation',
@@ -165,13 +166,13 @@ class IPerson(IHasSpecifications):
     # Properties of the Person object.
     karma_category_caches = Attribute('The caches of karma scores, by '
         'karma category.')
-    is_ubuntite = Attribute("Ubuntite Flag")
+    is_ubuntero = Attribute("Ubuntero Flag")
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
     signedcocs = Attribute("List of Signed Code Of Conduct")
-    gpgkeys = Attribute("List of valid GPGkeys ordered by ID")
-    pendinggpgkeys = Attribute("Set of GPG fingerprints pending validation")
-    inactivegpgkeys = Attribute("List of inactive GPG keys in LP Context, "
+    gpgkeys = Attribute("List of valid OpenPGP keys ordered by ID")
+    pendinggpgkeys = Attribute("Set of fingerprints pending confirmation")
+    inactivegpgkeys = Attribute("List of inactive OpenPGP keys in LP Context, "
                                 "ordered by ID")
     ubuntuwiki = Attribute("The Ubuntu WikiName of this Person.")
     otherwikis = Attribute(
@@ -323,11 +324,6 @@ class IPerson(IHasSpecifications):
 
     def assignKarma(action_name):
         """Assign karma for the action named <action_name> to this person."""
-
-    def updateKarmaCache():
-        """Update this person's karma attribute and all entries in the
-        KarmaCache table for this person.
-        """
 
     def latestKarma(quantity=25):
         """Return the latest karma actions for this person, up to the number
@@ -646,8 +642,8 @@ class IPersonSet(Interface):
         address.
         """
 
-    def getUbuntites(orderBy=None):
-        """Return a set of person with valid Ubuntite flag.
+    def getUbunteros(orderBy=None):
+        """Return a set of person with valid Ubuntero flag.
         
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
@@ -701,11 +697,25 @@ class IEmailAddressSet(Interface):
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want a very specific vocabulary."""
 
-    dupeaccount = Choice(title=_('Duplicated Account'), required=True,
-                         vocabulary='PersonAccountToMerge',
-                         description=_("The duplicated account you found in "
-                                       "Launchpad"))
+    dupeaccount = Choice(
+        title=_('Duplicated Account'), required=True,
+        vocabulary='PersonAccountToMerge',
+        description=_("The duplicated account you found in Launchpad"))
 
+
+class IAdminRequestPeopleMerge(Interface):
+    """The schema used by admin merge accounts page."""
+
+    dupe_account = Choice(
+        title=_('Duplicated Account'), required=True,
+        vocabulary='PersonAccountToMerge',
+        description=_("The duplicated account found in Launchpad"))
+
+    target_account = Choice(
+        title=_('Account'), required=True,
+        vocabulary='PersonAccountToMerge',
+        description=_("The account to be merged on"))
+                        
 
 class IObjectReassignment(Interface):
     """The schema used by the object reassignment page."""
