@@ -71,20 +71,27 @@ class DistroArchReleaseBinaryPackageRelease:
             self.distribution,
             self.build.sourcepackagerelease)
 
+    # XXX: I'd like to rename this to
+    # current_published_publishing_record, because that's what it
+    # returns, but I don't want to do that right now.
+    #   -- kiko, 2006-02-01
     @property
     def current_publishing_record(self):
         """See IDistroArchReleaseBinaryPackageRelease."""
-        bpps = BinaryPackagePublishing.select("""
-            binarypackagerelease = %s AND
-            distroarchrelease = %s AND
-            status = %s
-            """ % sqlvalues(self.binarypackagerelease.id,
-                            self.distroarchrelease.id,
-                            PackagePublishingStatus.PUBLISHED),
-            orderBy='-datecreated')
+        status = PackagePublishingStatus.PUBLISHED
+        record = self._latest_publishing_record(status=status)
+        return record
+
+    def _latest_publishing_record(status=None):
+        query = ("binarypackagerelease = %s AND distroarchrelease = %s"
+                 % sqlvalues(self.binarypackagerelease.id,
+                             self.distroarchrelease.id))
+        if status is not None:
+            query += " AND status = %s" % sqlvalues(status)
+
+        bpps = BinaryPackagePublishing.select(query, orderBy='-datecreated')
         if len(bpps) == 0:
             return None
-        assert len(bpps) < 2, '%s multiple publishing records' % self.title
         return bpps[0]
 
     @property
@@ -100,7 +107,7 @@ class DistroArchReleaseBinaryPackageRelease:
     @property
     def pocket(self):
         """See IDistroArchReleaseBinaryPackageRelease."""
-        pub = self.current_publishing_record
+        pub = self._latest_publishing_record()
         if pub is None:
             return None
         return pub.pocket
@@ -108,7 +115,7 @@ class DistroArchReleaseBinaryPackageRelease:
     @property
     def status(self):
         """See IDistroArchReleaseBinaryPackageRelease."""
-        pub = self.current_publishing_record
+        pub = self._latest_publishing_record()
         if pub is None:
             return None
         return pub.status
@@ -116,7 +123,7 @@ class DistroArchReleaseBinaryPackageRelease:
     @property
     def section(self):
         """See IDistroArchReleaseBinaryPackageRelease."""
-        pub = self.current_publishing_record
+        pub = self._latest_publishing_record()
         if pub is None:
             return None
         return pub.section
@@ -124,7 +131,7 @@ class DistroArchReleaseBinaryPackageRelease:
     @property
     def component(self):
         """See IDistroArchReleaseBinaryPackageRelease."""
-        pub = self.current_publishing_record
+        pub = self._latest_publishing_record()
         if pub is None:
             return None
         return pub.component
@@ -132,7 +139,7 @@ class DistroArchReleaseBinaryPackageRelease:
     @property
     def priority(self):
         """See IDistroArchReleaseBinaryPackageRelease."""
-        pub = self.current_publishing_record
+        pub = self._latest_publishing_record()
         if pub is None:
             return None
         return pub.priority
