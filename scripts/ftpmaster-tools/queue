@@ -498,7 +498,7 @@ class QueueActionOverride(QueueAction):
         except (NotFoundError, KeyError), info:
             raise QueueActionError('Not Found: %s' % info)
 
-        overriden = None
+        overridden = None
         for queue_item in self.items:
             for build in queue_item.builds:
                 # Different than DistroReleaseQueueSources
@@ -547,8 +547,9 @@ def main():
 
     parser.add_option("-R", "--distrorelease",
                       dest="distrorelease", metavar="DISTRORELEASE",
-                      default="breezy-autotest",
-                      help="Which distrorelease to look in")
+                      default=None,
+                      help=("Which distrorelease to look in, defaults "
+                            "to distribution 'currentrelease'."))
 
     parser.add_option("-N", "--dry-run", action="store_true",
                       dest="dryrun", metavar="DRY_RUN", default=False,
@@ -575,7 +576,8 @@ def main():
     parser.add_option("-A", "--announcelist",
                       dest="announcelist", metavar="ANNOUNCELIST",
                       default=None,
-                      help="Overrides the announcement list for accepts.")
+                      help=("Overrides the announcement list for accepts, "
+                            "defaults to the distribution 'changeslist'"))
 
     parser.add_option("-f", "--file", metavar="FILE", default=None,
                       help="file containing a sequence of command lines.")
@@ -655,28 +657,45 @@ def runCommand(queue, distro_name, distrorelease_name, exact_match, args,
     False otherwise.
     """
     print 'Running: "%s"' % " ".join(args)
+
+    # defaults to 'ubuntu', won't fail.
+    distro = getUtility(IDistributionSet).getByName(distro_name)
+
+    # detaults to distro.currentrelease if passed distrorelease is
+    # misapplied or not found.
     try:
-        distro = getUtility(IDistributionSet).getByName(distro_name)
         distrorelease = distro[distrorelease_name]
-        action = args[0]
-        arguments = args[1:]
-        queue_action = queue_actions[action]
     except NotFoundError, info:
         print 'Unable to find: %s' % info
-    except IndexError:
-        print 'No <action> <filter> provided.'
-    except KeyError:
-        print 'Wrong Action: %s' % action
-    else:
-        try:
-            queue_action(distro, distrorelease, queue, arguments,
-                         announcelist, no_mail, exact_match=exact_match).run()
-        except QueueActionError, info:
-            print info
-        else:
-            return False
+        distrorelease = distro.currentrelease
+        print 'Using default: %s' % distrorelease.name
 
-    return True
+    # check syntax, abort process if anything gets wrong
+    try:
+        action = args[0]
+        arguments = args[1:]
+    except IndexError:
+        print 'Syntax error: %s ' % args
+        print 'Provide a valid sentence as "<action> <filter>"'
+        return True
+
+    # check action availability,
+    try:
+        queue_action = queue_actions[action]
+    except KeyError:
+        print 'Unknown Action: %s' % action
+        return True
+
+    # perform the required action on queue.
+    try:
+        queue_action(distro, distrorelease, queue, arguments,
+                     announcelist, no_mail, exact_match=exact_match).run()
+    except QueueActionError, info:
+        print info
+        return True
+
+    # everything was normal
+    return False
 
 if __name__ == '__main__':
     sys.exit(main())
