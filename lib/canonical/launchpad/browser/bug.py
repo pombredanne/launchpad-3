@@ -13,7 +13,8 @@ __all__ = [
     'BugAlsoReportInView',
     'BugContextMenu',
     'BugWithoutContextView',
-    'DeprecatedAssignedBugsView']
+    'DeprecatedAssignedBugsView',
+    'BugTextView']
 
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -25,13 +26,20 @@ from canonical.launchpad.interfaces import (
     IDistroBugTask, IDistroReleaseBugTask, NotFoundError)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.webapp import GeneralFormView
+from canonical.launchpad.webapp import GeneralFormView, stepthrough
 from canonical.launchpad.helpers import check_permission
 
 
 class BugSetNavigation(Navigation):
 
     usedfor = IBugSet
+
+    @stepthrough('+text')
+    def text(self, name):
+        try:
+            return getUtility(IBugSet).getByNameOrID(name)
+        except (NotFoundError, ValueError):
+            return None
 
     def traverse(self, name):
         try:
@@ -310,3 +318,53 @@ class DeprecatedAssignedBugsView:
         self.request.response.redirect(
             canonical_url(getUtility(ILaunchBag).user) +
             "/+assignedbugs")
+
+
+class BugTextView:
+    def person_text(self, person):
+        return '%s (%s)' % (person.displayname, person.name)
+
+    def bug_text(self, bug):
+        text = []
+        text.append('bug: %d' % bug.id)
+        text.append('title: %s' % bug.title)
+        text.append('reporter: %s' % self.person_text(bug.owner))
+        text.append('subscribers: ')
+
+        for subscription in bug.subscriptions:
+            text.append(' %s' % self.person_text(subscription.person))
+
+        return ''.join(line + '\n' for line in text)
+
+    def bugtask_text(self, task):
+        text = []
+        text.append('task: %s' % task.targetname)
+        text.append('status: %s' % task.status.title)
+        text.append('reporter: %s' % self.person_text(task.owner))
+
+        if task.priority:
+            text.append('priority: %s' % task.priority.title)
+        else:
+            text.append('priority: ')
+
+        text.append('severity: %s' % task.severity.title)
+
+        if task.assignee:
+            text.append('assignee: %s' % self.person_text(task.assignee))
+        else:
+            text.append('assignee: ')
+
+        if task.milestone:
+            text.append('milestone: %s' % task.milestone.name)
+        else:
+            text.append('milestone: ')
+
+        return ''.join(line + '\n' for line in text)
+
+    def __call__(self):
+        self.request.response.setHeader('Content-type', 'text/plain')
+        texts = (
+            [self.bug_text(self.context)] +
+            [self.bugtask_text(task) for task in self.context.bugtasks])
+        return '\n'.join(texts)
+
