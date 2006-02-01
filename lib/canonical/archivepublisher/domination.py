@@ -5,9 +5,6 @@
 # related to the domination of old source and binary releases inside
 # the publishing tables.
 
-from sourcerer.deb.version import (
-    Version as DebianVersion, BadUpstreamError)
-
 from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.database.constants import UTC_NOW
@@ -20,6 +17,7 @@ from canonical.database.sqlbase import (
     sqlvalues, flush_database_updates, _clearCache)
 
 import gc
+import apt_pkg
 
 def clear_cache():
     """Flush SQLObject updates and clear the cache."""
@@ -37,46 +35,32 @@ PENDINGREMOVAL = PackagePublishingStatus.PENDINGREMOVAL
 # For stayofexecution processing in judgeSuperseded
 from datetime import timedelta
 
+# Ugly, but works
+apt_pkg.InitSystem()
+
 def _compare_source_packages_by_version_and_date(p1, p2):
     """Compare packages p1 and p2 by their version; using Debian rules.
     
-    If we're unable to parse the version number as a debian version (E.g.
-    if it does not comply with policy but we had to import it anyway,
-    then we compare it directly as strings.
-
     If the comparison is the same sourcepackagerelease, compare by datecreated
     instead. So later records beat earlier ones.
     """
     if p1.sourcepackagerelease.id == p2.sourcepackagerelease.id:
         return cmp(p1.datecreated, p2.datecreated)
     
-    try:
-        v1 = DebianVersion(p1.sourcepackagerelease.version)
-        v2 = DebianVersion(p2.sourcepackagerelease.version)
-        return cmp(v1, v2)
-    except BadUpstreamError:
-        return cmp(p1, p2)
-    
+    return apt_pkg.VersionCompare(p1.sourcepackagerelease.version,
+                                  p2.sourcepackagerelease.version)
+
 def _compare_binary_packages_by_version_and_date(p1, p2):
     """Compare packages p1 and p2 by their version; using Debian rules
     
-    If we're unable to parse the version number as a debian version (E.g.
-    if it does not comply with policy but we had to import it anyway,
-    then we compare it directly as strings.
-
     If the comparison is the same binarypackagerelease, compare by datecreated
     instead. So later records beat earlier ones.
     """
     if p1.binarypackagerelease.id == p2.binarypackagerelease.id:
         return cmp(p1.datecreated, p2.datecreated)
-    
-    try:
-        v1 = DebianVersion(p1.binarypackagerelease.version)
-        v2 = DebianVersion(p2.binarypackagerelease.version)
-        return cmp(v1, v2)
-    except BadUpstreamError:
-        return cmp(p1, p2)
 
+    return apt_pkg.VersionCompare(p1.binarypackagerelease.version,
+                                  p2.binarypackagerelease.version)
 
 class Dominator(object):
     """
