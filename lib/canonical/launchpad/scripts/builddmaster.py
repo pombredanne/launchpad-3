@@ -919,7 +919,7 @@ class BuilddMaster:
             if hintlist == 'all':
                 # it's already there, skip to next package
                 if release.builds:
-                    self._logger.debug(header + "SKIPPING ALL")
+                    # self._logger.debug(header + "SKIPPING ALL")
                     continue
 
                 # packages with an architecture hint of "all" or "any" are
@@ -951,8 +951,8 @@ class BuilddMaster:
                     if arch.architecturetag in supported_list:
                         supported = True
                 if not supported:
-                    self._logger.debug(header + "NOT SUPPORTED/WANTED %s" %
-                                       arch.architecturetag)
+                    # self._logger.debug(header + "NOT SUPPORTED/WANTED %s" %
+                    #                    arch.architecturetag)
                     continue
 
                 # verify is isn't already present for this distroarchrelease
@@ -967,9 +967,9 @@ class BuilddMaster:
                                         processor=arch.default_processor)
                     self._logger.debug(header + "CREATING %s" %
                                        arch.architecturetag)
-                else:
-                    self._logger.debug(header + "SKIPPING %s" %
-                                       arch.architecturetag)
+                #else:
+                #    self._logger.debug(header + "SKIPPING %s" %
+                #                       arch.architecturetag)
         self.commit()
 
     def addMissingBuildQueueEntries(self):
