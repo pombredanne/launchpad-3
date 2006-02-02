@@ -110,6 +110,9 @@ class _diskpool_atomicfile:
     def close(self):
         """Make the atomic move into place having closed the temp file."""
         self.fd.close()
+        # XXX: dsilvers: 20060102: for some reason this file is 0600 a lot of
+        # the time. So this chmod forces 0644 which is our friend.
+        os.chmod(self.tempname, 0644)
         os.rename(self.tempname, self.targetfilename)
 
 
