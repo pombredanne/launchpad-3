@@ -23,7 +23,8 @@ __all__ = [
     'BugTargetView',
     'BugTaskView',
     'BugTaskReleaseTargetingView',
-    'get_sortorder_from_request']
+    'get_sortorder_from_request',
+    'BugTargetTextView']
 
 import urllib
 
@@ -52,7 +53,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
-from canonical.launchpad.browser.bug import BugContextMenu
+from canonical.launchpad.browser.bug import BugContextMenu, BugTextView
 from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
 from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp.generalform import GeneralFormView
@@ -1025,4 +1026,21 @@ class BugTargetView:
 
         tasklist = self.context.searchTasks(params)
         return tasklist[:quantity]
+
+
+class BugTargetTextView(LaunchpadView):
+    """View for simple text page showing bugs filed against a bug target."""
+
+    def render(self):
+        params = BugTaskSearchParams(getUtility(ILaunchBag).user)
+        tasks = self.context.searchTasks(params)
+        texts = []
+        self.request.response.setHeader('Content-type', 'text/plain')
+        view = BugTextView(self.context, self.request)
+
+        for task in tasks:
+            texts.append(view.bug_text(task.bug))
+            texts.append(view.bugtask_text(task))
+
+        return u'\n'.join(texts)
 

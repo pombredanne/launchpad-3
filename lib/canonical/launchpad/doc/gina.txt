@@ -446,8 +446,8 @@ overrides):
 
     - Binary package ed changed priority from 30 to 10 (extra) in i386
     - Source package x11proto-damage changed section from "x11" to "net"
-    - XXX component moving should be tested, but is harder because we
-      only have one component in this test. -- kiko, 2006-01-31
+    - Source package archive-copier has been moved from component "main"
+      to "universe".
 
 Link to the "later" archive:
 
@@ -523,7 +523,7 @@ But the overrides do generate extra publishing entries:
     >>> SBPPH.select().count() - orig_sbpph_count
     47
     >>> print SSPPH.select().count() - orig_sspph_count
-    20
+    21
 
 Check that the overrides we did were correctly issued. We can't use selectOneBy
 because, of course, there may be multiple rows published for that package --
@@ -548,6 +548,18 @@ that's what overrides actually do.
     ...                          orderBy=["-datecreated"])[0]
     >>> print ed_pub.priority
     10
+    >>> n = SourcePackageName.selectOneBy(name="archive-copier")
+    >>> ac = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
+    ...         version="0.3.6")
+    >>> ac_pub = SSPPH.select("""sourcepackagerelease = %s
+    ...                          AND distrorelease = %s
+    ...                          AND status in (%s, %s)""" %
+    ...                        (ac.id, breezy.id,
+    ...                         PackagePublishingStatus.PUBLISHED,
+    ...                         PackagePublishingStatus.PENDING),
+    ...                         orderBy=["-datecreated"])[0]
+    >>> print ac_pub.component.name
+    universe
 
 === Other tests ===
 
