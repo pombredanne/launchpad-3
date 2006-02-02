@@ -50,7 +50,7 @@ RESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.FIXRELEASED,
     dbschema.BugTaskStatus.REJECTED)
 
-BUGTASK_BATCH_SIZE = 50
+BUGTASK_BATCH_SIZE = 20
 
 class IBugTask(IHasDateCreated):
     """A description of a bug needing fixing in a particular product
