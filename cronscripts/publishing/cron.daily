@@ -35,6 +35,7 @@ fi
 cleanup () {
   echo "Cleaning up lockfile."
   rm -f $LOCKFILE
+  rm -rf ${DISTSROOT}.old
 }
 
 trap cleanup 0
@@ -73,7 +74,6 @@ find ${DISTSROOT}.new -name "Packages" -o -name "Sources" -exec rm "{}" \;
 # As close to atomically as possible, put the new dists into place
 mv $DISTSROOT ${DISTSROOT}.old
 mv ${DISTSROOT}.new $DISTSROOT
-rm -rf ${DISTSROOT}.old
 
 # Copy in the indices
 echo Copying the indices into place.
