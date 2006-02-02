@@ -233,7 +233,7 @@ class Bugzilla(ExternalSystem):
         bug_nodes = document.getElementsByTagName('bz:bug')
         found_bug_ids = set()
         for bug_node in bug_nodes:
-            bug_id_nodes = document.getElementsByTagName("bz:id")
+            bug_id_nodes = bug_node.getElementsByTagName("bz:id")
             assert len(bug_id_nodes) == 1
             bug_id_node = bug_id_nodes[0]
             assert len(bug_id_node.childNodes) == 1
@@ -247,9 +247,10 @@ class Bugzilla(ExternalSystem):
             resolution_nodes = bug_node.getElementsByTagName('bz:resolution')
             assert len(resolution_nodes) <= 1
             if resolution_nodes:
-                assert len(resolution_nodes[0].childNodes) == 1
-                resolution = resolution_nodes[0].childNodes[0].data
-                status += ' %s' % resolution
+                assert len(resolution_nodes[0].childNodes) <= 1
+                if resolution_nodes[0].childNodes:
+                    resolution = resolution_nodes[0].childNodes[0].data
+                    status += ' %s' % resolution
 
             bug_watch = bug_watches_by_remote_bug[bug_id]
             if bug_watch.remotestatus != status:
