@@ -1,4 +1,6 @@
-<tal:layout define="columns1 default">
+<!-- XXX Brad Bollenbach, 2006-02-01: This is my prototype, that will be
+implemented in the next iteration of the bug contact reports.
+
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
@@ -103,3 +105,4 @@
 </body>
 </html>
 </tal:layout>
+-->

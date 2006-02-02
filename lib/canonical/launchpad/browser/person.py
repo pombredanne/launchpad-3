@@ -723,15 +723,20 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
 
         return search_params
 
-    def getBugContactPackageSearchURL(self, distributionsourcepackage):
-        person_url = canonical_url(self.context)
-        package_search_url = person_url + (
-            '/+packagebugs-search?field.distribution=%s&'
-            'field.sourcepackagename=%s&search=Search') % (
-                urllib.quote_plus(distributionsourcepackage.distribution.name),
-                distributionsourcepackage.name)
+    def getBugContactPackageSearchURL(self, distributionsourcepackage, extra_params=None):
+        params = {
+            "field.distribution": distributionsourcepackage.distribution.name,
+            "field.sourcepackagename": distributionsourcepackage.name,
+            "search": "Search"}
 
-        return package_search_url
+        if extra_params is not None:
+            params.update(extra_params)
+
+        person_url = canonical_url(self.context)
+        query_string = urllib.urlencode(sorted(params.items()), doseq=True)
+        html_safe_query_string = cgi.escape(urllib.unquote(query_string))
+
+        return person_url + '/+packagebugs-search?%s' % html_safe_query_string
 
     def getPackage(self):
         """Get the package whose bugs are currently being searched."""
