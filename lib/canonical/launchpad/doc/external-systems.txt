@@ -84,9 +84,18 @@ Let's add a few more watches:
     ...     external_bugzilla.remotesystem.bugzilla_bugs[remote_bug_id] = (
     ...         'ASSIGNED', '')
     ...     expected_remote_statuses[remote_bug_id] = 'ASSIGNED'
+
+Instead of issuing one request per bug watch, like was done before,
+updateBugWatches() issues only one request to update all watches:
+
+    >>> external_bugzilla.remotesystem.trace_calls = True
     >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
+    CALLED _postPage()
+
     >>> remote_statuses = dict(
     ...     [(int(bug_watch.remotebug), bug_watch.remotestatus)
     ...      for bug_watch in gnome_bugzilla.watches])
     >>> remote_statuses == expected_remote_statuses
     True
+
+    >>> external_bugzilla.remotesystem.trace_calls = False

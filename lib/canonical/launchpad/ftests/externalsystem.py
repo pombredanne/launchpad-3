@@ -27,6 +27,8 @@ class TestBugzilla(Bugzilla):
     instance isn't needed.
     """
 
+    trace_calls = False
+
     # A dict all bugs in the form of $bug_id: ($status, $resolution)
     bugzilla_bugs = {
         3224: ('RESOLVED', 'FIXED'),
@@ -38,6 +40,8 @@ class TestBugzilla(Bugzilla):
 
         Only handles xml.cgi?id=1 so far.
         """
+        if self.trace_calls:
+            print "CALLED _getPage()"
         if page == 'xml.cgi?id=1':
             return read_test_file('gnome_bugzilla_version.xml')
         else:
@@ -50,6 +54,8 @@ class TestBugzilla(Bugzilla):
 
         Only handles buglist.cgi so far.
         """
+        if self.trace_calls:
+            print "CALLED _postPage()"
         if page == 'buglist.cgi':
             buglist_xml = read_test_file('gnome_buglist.xml')
             bug_ids = str(form['bug_id']).split(',')
