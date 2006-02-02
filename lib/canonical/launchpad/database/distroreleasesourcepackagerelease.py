@@ -182,6 +182,24 @@ class DistroReleaseSourcePackageRelease:
         """See ISourcePackageRelease."""
         return self.sourcepackagerelease.sourcepackagename
 
+    @property
+    def current_published(self):
+        """See IDistroArchReleaseSourcePackage."""
+
+        # Retrieve current publishing info
+        current = None
+        for publishing in self.publishing_history:
+            if publishing.status == PackagePublishingStatus.PUBLISHED:
+                current = publishing
+                break
+
+        if not current:
+            raise NotFoundError("Source package %s not published in %s/%s"
+                                % (self.sourcepackagename.name,
+                                   self.distrorelease.name))
+
+        return current
+
     def changeOverride(self, new_component=None, new_section=None):
         """See IDistroReleaseSourcePackageRelease."""
 
