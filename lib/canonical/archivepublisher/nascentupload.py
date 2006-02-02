@@ -1438,7 +1438,7 @@ class NascentUpload:
 
         # If we have no signer, there's no ACL we can apply
         if self.signer is None:
-            self.debug("No signer, therefore ACL not processed")
+            self.logger.debug("No signer, therefore ACL not processed")
             return
 
         possible_components = self._components_valid_for(self.signer)
