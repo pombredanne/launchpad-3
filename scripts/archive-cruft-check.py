@@ -227,13 +227,17 @@ def do_removals(nbs_to_remove):
             binarypackagename = getUtility(IBinaryPackageNameSet)[package]
             darbp = DistroArchReleaseBinaryPackage(distroarchrelease, binarypackagename)
             try:
-                darbp.supersede()
+                sbpph = darbp.supersede()
             # We're blindly removing for all arches, if it's not there
             # for some, that's fine ...
             except NotFoundError:
                 pass
-            print "Removed %s from %s/%s ... " % (package, Options.distrorelease.name,
-                                                  distroarchrelease.architecturetag)
+            else:
+                version = sbpph.binarypackagerelease.version
+                print "Removed %s_%s from %s/%s ... " % (package,
+                                                         version,
+                                                         Options.distrorelease.name,
+                                                         distroarchrelease.architecturetag)
     Ztm.commit()
 
 ################################################################################
