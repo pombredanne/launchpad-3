@@ -62,6 +62,28 @@ class Element(object):
     def __repr__(self):
         return '<Element %r>' % (self.tag,)
 
+    def childelement(self, index, tag=None):
+        node = self.content[index]
+        if not isinstance(node, Element):
+            return False
+        elif tag is None:
+            return True
+        elif node.tag != tag:
+            return False
+        else:
+            return True
+
+    def indexrange(self):
+        return xrange(len(self.content))
+
+    def find(self, tag):
+        for index in range(len(self.content)):
+            if self.childelement(index):
+                return self.content[index]
+        else:
+            raise IndexError
+
+
 def parse(input):
     handler = ContentHandler()
     xml.sax.parse(input, handler)
@@ -71,7 +93,6 @@ def parse(input):
 class Node(object):
 
     labels = None
-    children = None
 
     def __init__(self, element):
         assert not isinstance(labels, basestring)
@@ -81,16 +102,43 @@ class Node(object):
         self._parse_children()
 
     def _parse_children(self):
-        for child in self.element.getchildren():
-            if child.tag not in self.children:
-                raise ValueError
+        raise NotImplementedError
 
 
-class Texmacs(object):
+class Document(object):
 
     labels = ['TeXmacs']
 
-    def __init__(self, element):
-        pass
+    def _parse_children(self):
+        body = self.element.find('body')
+        for index in body.indexrange():
+            if not node.childelement(index):
+                continue
+            assert node.tag == u'tm-par'
+            self._append_paragraph(node.content)
+
+    def _trim_whitespace(self, content):
+        content = list(content)
+        if content[0].isspace():
+            del content[0]
+        if content[-1].isspace():
+            del content[-1]
+        return content
+
+    def _append_paragraph(self, content):
+        # leading and trailing whitespace of paragraph are noise
+        content = self._trim_whitespace(content)        
+        if len(content) == 0:
+            continue
+        if len(content) == 1 and content[0].iselement():
+            element = content[0]
+            if element.tag == 'doc-data':
+                if not (len(element.content) == 1 and element[0].iselement
+            
+            mixed = mixed_data(content[0])
+
+def mixed_data(node):
+    
+                
 
 t = parse('bzr-launchpad.tmml')

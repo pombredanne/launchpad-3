@@ -239,7 +239,17 @@
   database with the given owner, product and name and with no title or
   description.
 
-  <paragraph|Relation:>SFTP creates Branch records in Launchpad.\ 
+  <paragraph|Relation:>SFTP creates Branch records in Launchpad.
+
+  <\with|color|dark red>
+    <\note>
+      Andrew Bennetts remarked that SFTP Server does not talk to Launchpad
+      directly. Instead it goes through the AuthServer, which is becoming the
+      all-purposes internal XMLRPC server. Andrew, please amend this document
+      and the sftp-server picture to accurately represent the relations the
+      SFTP Server participates to.
+    </note>
+  </with>
 
   <subsection|Branch Puller>
 
@@ -345,6 +355,9 @@
   <paragraph|Relation:>RCS Importer publish imported branches on the
   Supermirror.
 
+  <paragraph|Relation:>RCS Importer retrieves published branch from the
+  Supermirror for rollback.
+
   Historically, the role of the Branch Syncher was performed in the RCS
   Importer, by a component called Taxi. When the Launchpad database schema
   was updated to model Bazaar branch instead of Arch branches, Taxi was
@@ -371,17 +384,19 @@
   often have a long history and an overloaded server, leading to initial
   imports taking up to several weeks.
 
-  <subsubsection|Buildbot and CSCVS>
+  <subsubsection|Buildbot, Importd, and CSCVS>
 
-  The components of the RCS Importer Buildbot, Importd and CSCVS.
+  The components of the RCS Importer Buildbot, Importd, and CSCVS.
 
-  Buildbot's is used as an abstract build control system. Its roles are:
+  Buildbot's is used as an abstract build control system. It implements a
+  master/slave architecture wher a single master process (run on macquarie)
+  sends tasks to several slave systems. Its roles are:
 
   <\itemize>
     <item>Control conversion tasks, and automatically run periodic
     conversions.
 
-    <item>Spread tasks on multiple systems.
+    <item>Spread tasks on multiple slave systems.
 
     <item>Provide a web-accessible control panel, to manually start
     conversions and report historical conversion status and logs.
@@ -405,18 +420,99 @@
   roles are:
 
   <\itemize>
-    <item>
+    <item>Create initial Bazaar branches recording all the history of an
+    upstream RCS.
+
+    <item>Update import branches for new commits in the upstream RCS.
+
+    <item>Check that imported source is consistent with source stored in the
+    upstream RCS.
   </itemize>
+
+  <subsubsection|ProductSeries and Branches>
+
+  The upstream RCS details required for an import are stored in the
+  ProductSeries table. This table also stores details about the status of an
+  import.
+
+  <paragraph|Arch legacy:>The ProductSeries targetarchsomething fields are
+  used to record the Arch name of the import branch.
+
+  When an the initial import of a RCS has succeeded and the branch is
+  published, a corresponding Branch record must be created and linked from
+  the branch field of the ProductSeries.
+
+  <paragraph|Opinion:>David Allouche thinks the coupling of RCS imports with
+  ProductSeries is unecessary. Most of the time, users that want to get a RCS
+  import do not care about ProductSeries and their baggage. Instead, RCS
+  import details should be recorded in a separate table, and it should be
+  possible associate a Branch and ProductSeries manually. This would require
+  a specification.
 
   <subsubsection|Import Status>
 
-  \;
+  RCS imports have historically followed a workflow recorded by the
+  <verbatim|importstatus> field and a number of timestamps in the
+  ProductSeries table. The state machine of <verbatim|importstatus> is
+  documented on <hlink|SourceSourceRefactoring|https://wiki.launchpad.canonical.com/SourceSourceRefactoring>.
 
-  <subsubsection|Sanity Checking and Rollback>
+  <big-figure|<postscript|importstatus.png|*5/8|*5/8||||>|ProductSeries.importstatus>
 
-  When an import is attempted again after a failure, the base for the second
-  attempt is the published branch. Data produced during the previous failed
-  import is discarded.
+  The critical transition is the <em|manual review> between
+  <verbatim|AUTOTESTED> and <verbatim|PROCESSING>. This manual review is
+  needed for a few reasons:
+
+  <\itemize>
+    <item>As policy, the RCS import service is only provided for products for
+    which a reasonably good product description was created. It is the
+    reponsibility of the Launchpad administrator to communicate with the user
+    to get a better description if needed and mark the product as reviewed.
+
+    <item>To perform an import that can published, we need to allocate a Arch
+    namespace. To help keep the namespace used for imports vaguely organised,
+    and prevent conflicts, namespace allocation was done by Buttsource
+    administrators.
+  </itemize>
+
+  <paragraph|Arch legacy:>The second point is no longer relevant with Bazaar.
+  Blatantly misnamed branches with useless data can be published, renamed and
+  removed without problem.
+
+  <subsubsection|Roomba and Hoover>
+
+  <em|Roomba> and <em|Hoover> are two Importd instances that use separate
+  slave systems. That separation was required so large numbers of lengthy
+  test imports could be run without blocking daily updates of syncing im
+  ports. Buildbot scheduling is not flexible enough to meet this goal with a
+  single instance.
+
+  <paragraph|Arch legacy:>This separation was useful for privilege
+  separation: the Roomba slaves do not (should not?) have the SFTP key to
+  publish branches or the privileges for Taxi to write revision information
+  to the database. The only information coming out of test imports is status
+  changes in ProductSeries effected by the Buildbot master. That helped
+  guarantee that no branch would leak out before being validated by a
+  Buttsource administrator.
+
+  <big-figure|<postscript|importd-deployment.png|*5/8|*5/8||||>|Importd
+  deployment>
+
+  The elements in gray in the Importd deployment diagram represent the way
+  branches were historically published: they were uploaded to
+  <verbatim|bazaar.ubuntu.com>, where the Arch Supermirror automatically
+  registered and published them.
+
+  Communication with the Launchpad database are not displayed on this
+  diagram. Only macquarie, galapagos and neumayer accessed the database.
+  Macquarie so the Botmasters could load jobs and update import status in
+  ProductSeries. Galapagos and Neumayer so Taxi could create Branch and
+  Revision records.
+
+  The Roomba and Hoover botmaster each exposed a web user interface to
+  monitor import progress, examine past logs, initiate manual builds, and
+  reload the job list.
+
+  <subsubsection|Import Validation>
 
   Before publishing an imported branch, the source contents of the latest
   imported revision are compared to the source retrieved from the Upstream
@@ -424,28 +520,197 @@
   tolerated as it is impossible to retrieve past full tree revision from CVS
   in the general case.
 
-  <paragraph|Open Issue:>Better sanity checking could be performed. On CVS,
+  <paragraph|Open issue:>Better sanity checking could be performed. On CVS,
   comparison of annotated source could be reliably implemented. On Subversion
   it is generally possible to retrieve past full tree revisions.
 
-  <subsubsection|RCS Imports in Arch>
+  <subsubsection|Import Workflow>
 
-  The RCS Importer was designed, implemented and maintained for a long time
-  with the assumption that the output format was Arch branches. In particular
-  a lot of work was done to avoid Arch namespace collisions. The histor
+  The workflow of an import starts by a user setting up RCS details in
+  Launchpad, and ends by the registration and publication of the import
+  branch. The following diagram illustrate the simplest set of interaction in
+  that workflow, in the case where no failure occur.
 
-  Historically, RCS import branches were published on
-  <verbatim|bazaar.ubuntu.com>. Then they were treated as remote branches and
-  pulled by the Supermirror. This worked well because branches had an easy
-  unique and persistent identifier: their Arch namespace. With
-  <verbatim|bzr>, there is no such thing anymore. The only thing that
-  persistently identify a branch in Launchpad is its id in the database. But
-  if we publish the branch on <verbatim|bazaar.ubuntu.com>, and treat it as a
-  pull branch, we must choose a name that is meaningful to humans because it
-  will appear in the Launchpad web UI and the <verbatim|bazaar.ubuntu.com>
-  private space.
+  <big-figure|<postscript|import-workflow.png|*5/8|*5/8||||>|Import workflow>
 
-  <with|color|red|TODO>
+  First the User sets up RCS details in Launchpad. That sets the
+  <verbatim|importstatus> of the ProductSeries to <verbatim|TESTING>. Then
+  nothing happens until Roomba is ``reloaded''.
+
+  The operator must ``reload'' Roomba by posting a form in the Buildbot web
+  UI. This will update the job list from the database. Only ProductSeries
+  that are <verbatim|TESTING> or <verbatim|TESTFAILED> create Roomba jobs.
+  Jobs in <verbatim|TESTING> state are started automatically shortly after
+  reloading. When the Roomba job succeeds, the ProductSeries is set to
+  <verbatim|AUTOTESTED> and awaits human review.
+
+  <paragraph|Arch legacy:>If a ProductSeries does not specify the
+  <verbatim|targetarchsomething> fields, the branch name was automatically
+  generated. The automatic branch name generation sometimes produced invalid
+  names, causing autotest jobs to never succeed unless debugged, but that is
+  now longer a problem with Bazaar.
+
+  The operator must also periodically review ProductSeries that have passed
+  autotest. Launchpad provides a user interface in
+  <verbatim|https://launchpad.net/bazaar/series> to easily view all the
+  ProductSeries with a given <verbatim|importstatus> value. After a number of
+  click, the occasional editorial work, sometimes chatting with the User to
+  ask for clarifications or improvements in the product description, the
+  Product is marked as ``reviewed'' in the <verbatim|$product/+review> form
+  and the ProductSeries is set to <verbatim|PROCESSING> in the
+  <verbatim|$series/+sourceadmin> form.
+
+  <paragraph|Arch legacy:>This review step was the point where a Buttsource
+  administrator was required to attribute Canonical branch name to the import
+  branch.
+
+  Then the operator must ~reload Hoover to create the job for the newly
+  approved import. When the initial import completes, the
+  <verbatim|importstatus> is set to <verbatim|SYNCING> and an entirely
+  distasteful hack is used to update the job in place without having to wait
+  for a manual reload, and to immediately start the initial sync job. At the
+  end of the sync job, the Branch record is created in Launchpad and the
+  import branch is published.
+
+  <paragraph|Arch legacy:>The initial import starts from scratch, so a branch
+  had to be fully imported twice before being published: once in Roomba and
+  once on Hoover. That was necessary with Arch since the branch name
+  generally changed during the review step.
+
+  That could obviously use some streamlining, and I have not even mentioned
+  the work required when one of the jobs fails.
+
+  <paragraph|Open issue:>A Launchpag bug exists related to the support of the
+  <verbatim|importstatus> workflow in the Launchpad user interface:
+  <hlink|bug 378|https://launchpad.net/products/launchpad/+bug/378>. It was
+  partially and incorrectly implemented: it is currently entirely impossible
+  (even for a Buttsource member) to update the RCS import details for a
+  ProductSeries whose status is <verbatim|SYNCING>. However it is possible to
+  update those details by direct database manipulation as the
+  <verbatim|importd> user.
+
+  <subsubsection|Importd Rollback>
+
+  When an import fails, the Upstream RCS checkout and the partially converted
+  branch are left in place to allow diagnosing the failure.
+
+  Some conversion errors are detected only after committing an incorrect
+  revision: for example a later revision attempts to patch an non-existing
+  file, or the error is is only detected at validation time. After CSCVS is
+  fixed to correct the error, Importd needs ``rollback'': revert the branch
+  to a previous known-good state. There are three different cases of
+  rollback:
+
+  <\description-long>
+    <item*|Import>An import starts from scratch, the branch where the
+    conversion will be published must not exist yet.
+
+    <item*|Sync>A sync starts from the currently published branch. The branch
+    must already be published.
+
+    <item*|Initial sync>Since branches are published on sync, the initial
+    sync cannot rollback. Instead, it will update the branch produced by the
+    import step. The initial sync is not allowed to fail, if it does, the
+    <verbatim|importstatus> must be manually reverted to
+    <verbatim|PROCESSING> and the import must be restarted.
+  </description-long>
+
+  <paragraph|Open issue:>An import branch is only published after the initial
+  sync. If the initial sync fails, the subsequent sync has no published
+  branch data to rollback to, and all subsequent syncs will fail, or worse,
+  the branch will eventually be published with known bad data. Branch should
+  be published after Import.
+
+  <subsubsection|Persistent CSCVS data>
+
+  Running a CSCVS sync on a system without local data involves a few steps:
+
+  <\itemize>
+    <item>Get a copy of the target Bazaar branch from the publication site.
+
+    <item>Checkout the Upstream RCS branch.
+
+    <item>Build the CSCVS cache. That is the part where CSCVS does dark magic
+    to conjure changesets out of a CVS log.
+
+    <item>Commit the missing changesets to the Bazaar branch.
+
+    <item>Validate the import by comparing the final Bazaar branch to the
+    Upstream RCS checkout.
+  </itemize>
+
+  The Upstream RCS checkout and, in particular, the CSCVS cache build are
+  expensive tasks whose cost is independent of the amount of new changes, but
+  dependent on the tree size and history size.
+
+  They are optimized by updating the Upstream RCS checkout (for example with
+  <verbatim|cvs up>) and the cache (with the appropriate <verbatim|cscvs>
+  invokation) when they are available.
+
+  <subsubsection|The Split Changeset Bug>
+
+  Preserving the CSCVS cache is not just an optimisation, it is also required
+  to work around a CSCVS bug.
+
+  CSCVS identifies CVS changesets with a sequential id and creates them by
+  grouping related commits from the same user, with the same message, and
+  occuring within a short time period. When a sync occurs concurrently to a
+  group of related CVS commits, the part of the commit group that is
+  completed at the time of the sync is interpreted as a changeset, and the
+  rest of group is interpreted as a separate changeset on the next sync. I
+  will call this situation a ``split changeset''.
+
+  If the cache is generated from scratch at a later date, the changeset get
+  properly grouped in the cache. But since the split changeset was imported
+  in two commits by the previous syncs, all subsequent changesets do not have
+  matching ids in the branch an in the cache. If the was one split commit,
+  the first new changeset to import has, in the cache, the id of the last
+  committed changeset in the branch, so the first new changeset is not
+  imported.
+
+  In principle it should be possible to ignore recent commits that may be
+  grouped with future commits, but David Allouche looked at the problem in
+  the past and was unable to understand how changesets where generated.
+
+  Regardless, it is almost certain that several import branches now contain
+  such split changesets. So being able to delete the CSCVS cache would
+  require a way to deal with existing split changesets, just preventing the
+  creation of new ones would not be sufficient.
+
+  Publishing split changesets is not a big problem in itself, so this fixing
+  this bug needs not be a high priority.
+
+  <subsubsection|The Renaming Bug>
+
+  Importd spreads jobs on slaves by hashing the job name, which is of the
+  form <verbatim|[<with|font-shape|italic|project>-]<with|font-shape|italic|product>-<with|font-shape|italic|series>>.
+  Since projects, products and series can be renamed, and their associations
+  can change, the slave assigned to a RCS import job can change.
+
+  Because of the Split Changest Bug, we need to transport the CSCVS cache
+  when migrating a job between slaves. Since we do not know what was the
+  previous name of a job, we do not know which slave to download and remove
+  this data from. In the current situation, supporting job migration would
+  require maintaining a central repository of CSCVS caches and updating it
+  with <verbatim|rsync> after each import or sync. Ensuring Arch namespace
+  consisency also required that the local master archive also be migrated.
+  This functionality is not implemented, therefore job migration require
+  careful manual operation.
+
+  Since job migration would currently require manual operation some
+  ``undocumented features'' in Importd, related to Arch archive registration,
+  have not been fixed since they effectively provide early failure in the
+  cases where a manual job migration need to be done.
+
+  This the reason why renaming or reassociating ProductSeries associated to a
+  RCS import are strongly discouraged. They generally break the RCS import.
+
+  <subsection|RCS Importer Transition to Bazaar>
+
+  <\with|color|dark red>
+    <paragraph|Todo:>Document tools that have been implemented for the bzr
+    transition so far.
+  </with>
 
   <section|Future Plans and Open Issues>
 
@@ -595,7 +860,17 @@
 
   <subsection|RCS Importer's Future>
 
-  <with|color|red|TODO>
+  <\with|color|dark red>
+    <paragraph|Todo:>Flesh out this section.
+  </with>
+
+  <paragraph|Open Issue:>Number of sync failures.
+
+  <paragraph|Open Issue:>Failure triage.
+
+  <paragraph|Open Issue:>Workflow of new imports, removing review step?
+
+  <paragraph|Open Issue:>Restarting imports.
 </body>
 
 <\initial>
@@ -646,28 +921,54 @@
     <associate|auto-40|<tuple|3.5.0.6|7>>
     <associate|auto-41|<tuple|3.5.0.7|7>>
     <associate|auto-42|<tuple|3.5.0.8|8>>
-    <associate|auto-43|<tuple|3.5.1|8>>
-    <associate|auto-44|<tuple|3.5.2|8>>
-    <associate|auto-45|<tuple|3.5.3|8>>
-    <associate|auto-46|<tuple|3.5.3.1|9>>
-    <associate|auto-47|<tuple|3.5.4|9>>
-    <associate|auto-48|<tuple|4|9>>
-    <associate|auto-49|<tuple|4.1|9>>
+    <associate|auto-43|<tuple|3.5.0.9|8>>
+    <associate|auto-44|<tuple|3.5.1|8>>
+    <associate|auto-45|<tuple|3.5.2|8>>
+    <associate|auto-46|<tuple|3.5.2.1|9>>
+    <associate|auto-47|<tuple|3.5.2.2|9>>
+    <associate|auto-48|<tuple|3.5.3|9>>
+    <associate|auto-49|<tuple|11|9>>
     <associate|auto-5|<tuple|2|2>>
-    <associate|auto-50|<tuple|4.1.0.1|9>>
-    <associate|auto-51|<tuple|4.1.1|?>>
-    <associate|auto-52|<tuple|4.1.1.1|?>>
-    <associate|auto-53|<tuple|4.1.2|?>>
-    <associate|auto-54|<tuple|4.1.3|?>>
-    <associate|auto-55|<tuple|4.1.4|?>>
-    <associate|auto-56|<tuple|4.2|?>>
-    <associate|auto-57|<tuple|4.2.1|?>>
-    <associate|auto-58|<tuple|4.2.2|?>>
-    <associate|auto-59|<tuple|4.2.3|?>>
+    <associate|auto-50|<tuple|3.5.3.1|9>>
+    <associate|auto-51|<tuple|3.5.4|?>>
+    <associate|auto-52|<tuple|3.5.4.1|?>>
+    <associate|auto-53|<tuple|12|?>>
+    <associate|auto-54|<tuple|3.5.5|?>>
+    <associate|auto-55|<tuple|3.5.5.1|?>>
+    <associate|auto-56|<tuple|3.5.6|?>>
+    <associate|auto-57|<tuple|13|?>>
+    <associate|auto-58|<tuple|3.5.6.1|?>>
+    <associate|auto-59|<tuple|3.5.6.2|?>>
     <associate|auto-6|<tuple|2.2|2>>
-    <associate|auto-60|<tuple|4.3|?>>
+    <associate|auto-60|<tuple|3.5.6.3|?>>
+    <associate|auto-61|<tuple|3.5.6.4|?>>
+    <associate|auto-62|<tuple|3.5.7|?>>
+    <associate|auto-63|<tuple|3.5.7.1|?>>
+    <associate|auto-64|<tuple|3.5.8|?>>
+    <associate|auto-65|<tuple|3.5.9|?>>
+    <associate|auto-66|<tuple|3.5.10|?>>
+    <associate|auto-67|<tuple|3.6|?>>
+    <associate|auto-68|<tuple|3.6.0.1|?>>
+    <associate|auto-69|<tuple|4|?>>
     <associate|auto-7|<tuple|3|2>>
+    <associate|auto-70|<tuple|4.1|?>>
+    <associate|auto-71|<tuple|4.1.0.2|?>>
+    <associate|auto-72|<tuple|4.1.1|?>>
+    <associate|auto-73|<tuple|4.1.1.1|?>>
+    <associate|auto-74|<tuple|4.1.2|?>>
+    <associate|auto-75|<tuple|4.1.3|?>>
+    <associate|auto-76|<tuple|4.1.4|?>>
+    <associate|auto-77|<tuple|4.2|?>>
+    <associate|auto-78|<tuple|4.2.1|?>>
+    <associate|auto-79|<tuple|4.2.2|?>>
     <associate|auto-8|<tuple|2.3|3>>
+    <associate|auto-80|<tuple|4.2.3|?>>
+    <associate|auto-81|<tuple|4.3|?>>
+    <associate|auto-82|<tuple|4.3.0.1|?>>
+    <associate|auto-83|<tuple|4.3.0.2|?>>
+    <associate|auto-84|<tuple|4.3.0.3|?>>
+    <associate|auto-85|<tuple|4.3.0.4|?>>
+    <associate|auto-86|<tuple|4.3.0.5|?>>
     <associate|auto-9|<tuple|4|3>>
   </collection>
 </references>
@@ -692,6 +993,14 @@
       <tuple|normal|Branch Puller|<pageref|auto-26>>
 
       <tuple|normal|Branch Syncher|<pageref|auto-33>>
+
+      <tuple|normal|RCS Importer|<pageref|auto-38>>
+
+      <tuple|normal|ProductSeries.importstatus|<pageref|auto-49>>
+
+      <tuple|normal|Importd deployment|<pageref|auto-53>>
+
+      <tuple|normal|Import workflow|<pageref|auto-57>>
     </associate>
     <\associate|toc>
       <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|Bazaar
@@ -806,57 +1115,177 @@
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-37>>
 
-      <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|Future
-      Plans and Open Issues> <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-38><vspace|0.5fn>
-
-      <with|par-left|<quote|1.5fn>|Branch Puller's Future
+      <with|par-left|<quote|6fn>|Relation:
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-39>>
+      <no-break><pageref|auto-39><vspace|0.15fn>>
 
-      <with|par-left|<quote|6fn>|Open issue:
+      <with|par-left|<quote|6fn>|Relation:
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-40><vspace|0.15fn>>
 
-      <with|par-left|<quote|3fn>|Future plan: Launchpad reporting
+      <with|par-left|<quote|6fn>|Relation:
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-41>>
+      <no-break><pageref|auto-41><vspace|0.15fn>>
 
       <with|par-left|<quote|6fn>|Relation:
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-42><vspace|0.15fn>>
 
-      <with|par-left|<quote|3fn>|Future plan: Ignore expected failures
+      <with|par-left|<quote|6fn>|Relation:
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-43>>
+      <no-break><pageref|auto-43><vspace|0.15fn>>
 
-      <with|par-left|<quote|3fn>|Future plan: Pull now
+      <with|par-left|<quote|3fn>|Buildbot, Importd, and CSCVS
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-44>>
 
-      <with|par-left|<quote|3fn>|Future plan: Concurrent tasks
+      <with|par-left|<quote|3fn>|ProductSeries and Branches
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-45>>
 
-      <with|par-left|<quote|1.5fn>|Branch Syncher's Future
+      <with|par-left|<quote|6fn>|Arch legacy:
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-46>>
+      <no-break><pageref|auto-46><vspace|0.15fn>>
 
-      <with|par-left|<quote|3fn>|Future plan: Launchpad reporting
+      <with|par-left|<quote|6fn>|Opinion:
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-47>>
+      <no-break><pageref|auto-47><vspace|0.15fn>>
 
-      <with|par-left|<quote|3fn>|Future plan: Sync now
+      <with|par-left|<quote|3fn>|Import Status
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-48>>
 
+      <with|par-left|<quote|6fn>|Arch legacy:
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-50><vspace|0.15fn>>
+
+      <with|par-left|<quote|3fn>|Roomba and Hoover
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-51>>
+
+      <with|par-left|<quote|6fn>|Arch legacy:
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-52><vspace|0.15fn>>
+
+      <with|par-left|<quote|3fn>|Import Validation
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-54>>
+
+      <with|par-left|<quote|6fn>|Open issue:
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-55><vspace|0.15fn>>
+
+      <with|par-left|<quote|3fn>|Import Workflow
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-56>>
+
+      <with|par-left|<quote|6fn>|Arch legacy:
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-58><vspace|0.15fn>>
+
+      <with|par-left|<quote|6fn>|Arch legacy:
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-59><vspace|0.15fn>>
+
+      <with|par-left|<quote|6fn>|Arch legacy:
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-60><vspace|0.15fn>>
+
+      <with|par-left|<quote|6fn>|Open issue:
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-61><vspace|0.15fn>>
+
+      <with|par-left|<quote|3fn>|Importd Rollback
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-62>>
+
+      <with|par-left|<quote|6fn>|Open issue:
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-63><vspace|0.15fn>>
+
+      <with|par-left|<quote|3fn>|Persistent CSCVS data
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-64>>
+
+      <with|par-left|<quote|3fn>|The Split Changeset Bug
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-65>>
+
+      <with|par-left|<quote|3fn>|The Renaming Bug
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-66>>
+
+      <with|par-left|<quote|1.5fn>|RCS Importer Transition to Bazaar
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-67>>
+
+      <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|Future
+      Plans and Open Issues> <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-68><vspace|0.5fn>
+
+      <with|par-left|<quote|1.5fn>|Branch Puller's Future
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-69>>
+
+      <with|par-left|<quote|6fn>|Open issue:
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-70><vspace|0.15fn>>
+
+      <with|par-left|<quote|3fn>|Future plan: Launchpad reporting
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-71>>
+
+      <with|par-left|<quote|6fn>|Relation:
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-72><vspace|0.15fn>>
+
+      <with|par-left|<quote|3fn>|Future plan: Ignore expected failures
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-73>>
+
+      <with|par-left|<quote|3fn>|Future plan: Pull now
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-74>>
+
       <with|par-left|<quote|3fn>|Future plan: Concurrent tasks
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-49>>
+      <no-break><pageref|auto-75>>
+
+      <with|par-left|<quote|1.5fn>|Branch Syncher's Future
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-76>>
+
+      <with|par-left|<quote|3fn>|Future plan: Launchpad reporting
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-77>>
+
+      <with|par-left|<quote|3fn>|Future plan: Sync now
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-78>>
+
+      <with|par-left|<quote|3fn>|Future plan: Concurrent tasks
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-79>>
 
       <with|par-left|<quote|1.5fn>|RCS Importer's Future
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-50>>
+      <no-break><pageref|auto-80>>
+
+      <with|par-left|<quote|6fn>|Open Issue:
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-81><vspace|0.15fn>>
+
+      <with|par-left|<quote|6fn>|Open Issue:
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-82><vspace|0.15fn>>
+
+      <with|par-left|<quote|6fn>|Open Issue:
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-83><vspace|0.15fn>>
+
+      <with|par-left|<quote|6fn>|Open Issue:
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-84><vspace|0.15fn>>
     </associate>
   </collection>
 </auxiliary>
