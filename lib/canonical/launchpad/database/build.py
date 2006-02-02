@@ -87,8 +87,8 @@ class Build(SQLBase):
 
         icon_map = {
             BuildStatus.NEEDSBUILD: "/@@/build-needed",
-            BuildStatus.FULLYBUILT: "/++resource++build-success",
-            BuildStatus.FAILEDTOBUILD: "/++resource++build-failure",
+            BuildStatus.FULLYBUILT: "/@@/build-success",
+            BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
             BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
             BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
             }
