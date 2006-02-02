@@ -250,7 +250,7 @@ class IPerson(IHasSpecifications):
     preferredemail = TextLine(
             title=_("Preferred Email Address"), description=_(
                 "The preferred email address for this person. The one "
-                "we'll use to communicate with them."), readonly=False)
+                "we'll use to communicate with them."), readonly=True)
 
     preferredemail_sha1 = TextLine(title=_("SHA-1 Hash of Preferred Email"),
             description=_("The SHA-1 hash of the preferred email address as "
@@ -312,6 +312,9 @@ class IPerson(IHasSpecifications):
 
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
+
+    def setPreferredEmail(email):
+        """Set the given email address as this person's preferred one."""
 
     def getBranch(product_name, branch_name):
         """The branch associated to this person and product with this name.
@@ -666,6 +669,13 @@ class IEmailAddress(Interface):
 
     def destroySelf():
         """Delete this email from the database."""
+
+    def syncUpdate():
+        """Write updates made on this object to the database.
+
+        This should be used when you can't wait until the transaction is
+        committed to have some updates actually written to the database.
+        """
 
 
 class IEmailAddressSet(Interface):
