@@ -1,4 +1,5 @@
-<!-- XXX Brad Bollenbach, 2006-02-01: This is my prototype, that will be
+<!-- XXX Brad Bollenbach, 2006-02-01: NOTE TO CODE REVIEWER: Please don't review
+this file yet. This is my prototype, not yet exposed in the app, but will be
 implemented in the next iteration of the bug contact reports.
 
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"

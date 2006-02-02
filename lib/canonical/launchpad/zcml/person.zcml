@@ -202,7 +202,7 @@
       template="../templates/person-packagebugs-search.pt" />
 
   <browser:page
-      name="+packagebugs-overview"
+      name="+packagebugs"
       for="canonical.launchpad.interfaces.IPerson"
       facet="bugs"
       class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"

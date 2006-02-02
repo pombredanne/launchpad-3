@@ -7,6 +7,7 @@
 <body>
 
   <metal:block fill-slot="head_epilogue">
+    <!-- CSS rules local to this page -->
     <style>
       .results th {
         color: #828282;
@@ -20,37 +21,29 @@
         background-color: #ededed
       }
 
-      #content {
-      display: inline; /* avoid MSIE Double Float Margin bug */
-      float: left;
-      width: 74%;
-      }
-
-      #sidebar {
-      display: inline;
-      float: left;
-      margin-left: 2%; /* whitespace */
-      width: 24%; /* = 25% - 1% whitespace */
+      #portal-column-content {
+        margin-left: 0;
+        width: 74%;
       }
 
       #filter {
-          list-style: none;
-          margin-left: 3px;
-          padding-left: 3px;
+        list-style: none;
+        margin-left: 3px;
+        padding-left: 3px;
       }
 
       #filter li {
-          margin-bottom: 2px;
+        margin-bottom: 2px;
       }
 
       #filter li:before {
-          content: "\00BB \0020";
+        content: "\00BB \0020";
       }
     </style>
   </metal:block>
 
   <div metal:fill-slot="main">
-    <div id="content" style="margin-bottom: 2px;">
+    <div id="portal-column-content">
       <h2 class="lpcontext"
           tal:content="string:${context/displayname}'s Package Bug Reports">
         Sample Person Package Bug Reports
@@ -205,7 +198,7 @@
     </div>
       </div>
     </div>
-    <div id="sidebar">
+    <div id="portal-column-two">
       <tal:notlogin condition="python: '+login' not in request.getURL()">
         <ul
           tal:define="facetmenu CONTEXTS/menu:facet"

@@ -6,12 +6,17 @@
 <body>
 
   <metal:block fill-slot="head_epilogue">
+    <!-- CSS rules local to this page -->
     <style>
       .results th {
         color: #828282;
         border: 1px solid #cfcfcf;
         background-color: #E0E0E0;
         text-align: left;
+      }
+
+      .bugcount {
+        text-align: center;
       }
 
       .results td {
@@ -51,22 +56,22 @@
              tal:content="package/displayname"
              tal:attributes="href string:${context/fmt:url}/+packagebugs-search?search=Search&field.distribution=${package/distribution/name}&field.sourcepackagename=${package/name}">mozilla-firefox (Ubuntu)</a>
         </td>
-        <td style="text-align: center">
+        <td class="bugcount">
           <a href="#"
              tal:attributes="href python:view.getOpenBugsURL(package)"
              tal:content="package/open_bugtasks/count">2</a>
         </td>
-        <td style="text-align: center">
+        <td class="bugcount">
           <a href="#"
              tal:attributes="href python:view.getCriticalBugsURL(package)"
              tal:content="package/critical_bugtasks/count">2</a>
         </td>
-        <td style="text-align: center">
+        <td class="bugcount">
           <a href="#"
              tal:attributes="href python:view.getUnassignedBugsURL(package)"
              tal:content="package/unassigned_bugtasks/count">2</a>
         </td>
-        <td style="text-align: center">
+        <td class="bugcount">
           <a href="#"
              tal:attributes="href python:view.getInProgressBugsURL(package)"
              tal:content="package/inprogress_bugtasks/count">2</a>

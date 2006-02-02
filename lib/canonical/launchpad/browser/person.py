@@ -126,14 +126,6 @@ class PersonNavigation(Navigation, CalendarTraversalMixin,
 
     redirection("+bugs", "+assignedbugs")
 
-    @stepthrough("+packagebugs")
-    def traverse_packagebugs(self, name):
-        raise AssertionError, "got here"
-
-    def traverse(self, name):
-        if name == "+packagebugs":
-            return getView(self.context, "+packagebugs-overview", self.request)
-
     def breadcrumb(self):
         return self.context.displayname
 
