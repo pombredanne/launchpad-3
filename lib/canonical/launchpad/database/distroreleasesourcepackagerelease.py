@@ -209,7 +209,7 @@ class DistroReleaseSourcePackageRelease:
                                  " new component or new section.")
 
         # Retrieve current publishing info
-        current = self.publishing_history[-1]
+        current = self.current_published
 
         # Check there is a change to make
         if new_component is None:
@@ -235,7 +235,7 @@ class DistroReleaseSourcePackageRelease:
     def supersede(self):
         """See IDistroReleaseSourcePackageRelease."""
 
-        current = self.publishing_history[-1]
+        current = self.current_published
         current = SecureSourcePackagePublishingHistory.get(current.id)
         current.status = PackagePublishingStatus.SUPERSEDED
         current.datesuperseded = UTC_NOW
