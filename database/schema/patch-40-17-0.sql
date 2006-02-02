@@ -7,5 +7,5 @@ UPDATE Person SET hide_email_addresses = FALSE;
 
 ALTER TABLE Person ALTER COLUMN hide_email_addresses SET NOT NULL;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (40, 66, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (40, 17, 0);
 
