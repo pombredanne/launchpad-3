@@ -207,7 +207,7 @@ class DistroArchReleaseBinaryPackage:
                                  "component, section or priority.")
 
         # Retrieve current publishing info
-        current = self.publishing_history[-1]
+        current = self.current_published
 
         # Check there is a change to make
         if new_component is None:
@@ -238,14 +238,11 @@ class DistroArchReleaseBinaryPackage:
     def supersede(self):
         """See IDistroArchReleaseBinaryPackage."""
 
-        # Find the current publishing record
-        if not self.publishing_history:
-            raise NotFoundError("Binary package %s not published in %s/%s"
-                                % (self.binarypackagename.name,
-                                   self.distroarchrelease.distrorelease.name,
-                                   self.distroarchrelease.architecturetag))
+        # Retrieve current publishing info
+        current = self.current_published
 
-        current = self.publishing_history[-1]
         current = SecureBinaryPackagePublishingHistory.get(current.id)
         current.status = PackagePublishingStatus.SUPERSEDED
         current.datesuperseded = UTC_NOW
+
+        return current
