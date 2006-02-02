@@ -561,8 +561,11 @@ class BugTaskSearchListingView(LaunchpadView):
     search.
     """
 
-    # The initial values to be used when setting up the widgets of this page.
-    initial_values = {}
+    def __init__(self, context, request):
+        LaunchpadView.__init__(self, context, request)
+        # The initial values to be used when setting up the widgets of this 
+        # page.
+        self.initial_values = {}
 
     def initialize(self):
         #XXX: The base class should have a simple schema containing only
