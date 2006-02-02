@@ -111,6 +111,7 @@ class Person(SQLBase):
     merged = ForeignKey(dbName='merged', foreignKey='Person', default=None)
 
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    hide_email_addresses = BoolCol(notNull=True, default=False)
 
     # RelatedJoin gives us also an addLanguage and removeLanguage for free
     languages = RelatedJoin('Language', joinColumn='person',
