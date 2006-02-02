@@ -727,7 +727,11 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
 
         return search_params
 
-    def getBugContactPackageSearchURL(self, distributionsourcepackage, extra_params=None):
+    def getBugContactPackageSearchURL(self, distributionsourcepackage=None,
+                                      extra_params=None):
+        if distributionsourcepackage is None:
+            distributionsourcepackage = self.getPackage()
+
         params = {
             "field.distribution": distributionsourcepackage.distribution.name,
             "field.sourcepackagename": distributionsourcepackage.name,
@@ -738,7 +742,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
 
         person_url = canonical_url(self.context)
         query_string = urllib.urlencode(sorted(params.items()), doseq=True)
-        html_safe_query_string = cgi.escape(urllib.unquote(query_string))
+        html_safe_query_string = cgi.escape(query_string)
 
         return person_url + '/+packagebugs-search?%s' % html_safe_query_string
 
@@ -752,70 +756,47 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
             form.get("field.sourcepackagename"))
 
     def getOpenBugsURL(self, distributionsourcepackage):
-        person_url = canonical_url(self.context)
-        status_params = ""
+        """Return the URL for open bugs on distributionsourcepackage."""
+        status_params = {'field.status': []}
 
         for status in UNRESOLVED_BUGTASK_STATUSES:
-            if status_params:
-                status_params += "&"
-            status_params += "field.status=%s" % urllib.quote_plus(status.title)
+            status_params['field.status'].append(status.title)
 
-        open_bugs_url = person_url + (
-            '/+packagebugs-search?field.distribution=%s&'
-            'field.sourcepackagename=%s&%s&search=Search') % (
-                cgi.escape(distributionsourcepackage.distribution.name),
-                distributionsourcepackage.name, status_params)
-
-        return open_bugs_url
+        return self.getBugContactPackageSearchURL(
+            distributionsourcepackage=distributionsourcepackage,
+            extra_params=status_params)
 
     def getCriticalBugsURL(self, distributionsourcepackage):
-        person_url = canonical_url(self.context)
-        status_params = ""
+        """Return the URL for critical bugs on distributionsourcepackage."""
+        critical_bugs_params = {
+            'field.status': [], 'field.severity': "Critical"}
 
         for status in UNRESOLVED_BUGTASK_STATUSES:
-            if status_params:
-                status_params += "&"
-            status_params += "field.status=%s" % urllib.quote_plus(status.title)
+            critical_bugs_params["field.status"].append(status.title)
 
-        critical_bugs_url = person_url + (
-            '/+packagebugs-search?field.distribution=%s&'
-            'field.sourcepackagename=%s&%s&field.severity=Critical&'
-            'search=Search') % (
-                cgi.escape(distributionsourcepackage.distribution.name),
-                distributionsourcepackage.name, status_params)
-
-        return critical_bugs_url
+        return self.getBugContactPackageSearchURL(
+            distributionsourcepackage=distributionsourcepackage,
+            extra_params=critical_bugs_params)
 
     def getUnassignedBugsURL(self, distributionsourcepackage):
-        person_url = canonical_url(self.context)
-        status_params = ""
+        """Return the URL for unassigned bugs on distributionsourcepackage."""
+        unassigned_bugs_params = {
+            "field.status": [], "field.unassigned": "on"}
 
         for status in UNRESOLVED_BUGTASK_STATUSES:
-            if status_params:
-                status_params += "&"
-            status_params += "field.status=%s" % urllib.quote_plus(status.title)
+            unassigned_bugs_params["field.status"].append(status.title)
 
-        unassigned_bugs_url = person_url + (
-            '/+packagebugs-search?field.distribution=%s&'
-            'field.sourcepackagename=%s&%s&field.unassigned=on&'
-            'search=Search') % (
-                cgi.escape(distributionsourcepackage.distribution.name),
-                distributionsourcepackage.name, status_params)
-
-        return unassigned_bugs_url
+        return self.getBugContactPackageSearchURL(
+            distributionsourcepackage=distributionsourcepackage,
+            extra_params=unassigned_bugs_params)
 
     def getInProgressBugsURL(self, distributionsourcepackage):
-        person_url = canonical_url(self.context)
-        status_params = ""
+        """Return the URL for unassigned bugs on distributionsourcepackage."""
+        inprogress_bugs_params = {"field.status": "In Progress"}
 
-        inprogress_bugs_url = person_url + (
-            '/+packagebugs-search?field.distribution=%s&'
-            'field.sourcepackagename=%s&field.status=In+Progress&'
-            'search=Search') % (
-                cgi.escape(distributionsourcepackage.distribution.name),
-                distributionsourcepackage.name)
-
-        return inprogress_bugs_url
+        return self.getBugContactPackageSearchURL(
+            distributionsourcepackage=distributionsourcepackage,
+            extra_params=inprogress_bugs_params)
 
     def getSearchFilterLinks(self):
         """Return a dict of links to various parts of the current filter."""
@@ -830,14 +811,8 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
 
         # Add a link to the "unassigned" filter, if applicable.
         if form.get("field.unassigned") == "on":
-            unassigned_bugs_url = canonical_url(self.context) + (
-                '/+packagebugs-search?field.distribution=%s&'
-                'field.sourcepackagename=%s&field.unassigned=on&'
-                'search=Search') % (
-                    cgi.escape(current_package.distribution.name),
-                    current_package.name)
-
-            search_filter_links.append(("unassigned", unassigned_bugs_url))
+            search_filter_links.append(
+                ("unassigned", self.getUnassignedBugsURL(current_package)))
 
         return search_filter_links
 
@@ -851,45 +826,30 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         status_filter_links = []
         form = self.request.form
 
-        current_package = self.getPackage()
-        package_bugs_status_search_url_template =  (
-            canonical_url(self.context) + (
-                '/+packagebugs-search?field.distribution=%s&'
-                'field.sourcepackagename=%s&field.status=%%s&'
-                'search=Search') % (
-                cgi.escape(current_package.distribution.name),
-                current_package.name))
-
-        # If no status are provided in the URL, default to our unresolved
+        # If no statuses are provided in the URL, default to unresolved
         # statuses.
         filter_statuses = form.get(
             "field.status",
             [s.title for s in UNRESOLVED_BUGTASK_STATUSES])
-        if not zope_isinstance(filter_statuses, (list, tuple)):
-            filter_statuses = [filter_statuses]
 
         for status_name in filter_statuses:
             status_filter_links.append((
                 status_name.lower(),
-                package_bugs_status_search_url_template % status_name))
+                self.getBugContactPackageSearchURL(
+                    extra_params={"field.status": status_name})))
 
         return status_filter_links
 
     def getSearchTextFilterLink(self):
         form = self.request.form
-        current_package = self.getPackage()
         searchtext_filter_link = []
 
         searchtext = form.get("field.searchtext")
         if searchtext:
-            searchtext_bugs_url = canonical_url(self.context) + (
-                '/+packagebugs-search?field.distribution=%s&'
-                'field.sourcepackagename=%s&field.searchtext=%s&'
-                'search=Search') % (
-                    cgi.escape(current_package.distribution.name),
-                    current_package.name, cgi.escape(searchtext))
-
-            searchtext_filter_link = (searchtext, searchtext_bugs_url)
+            searchtext_filter_link = (
+                searchtext,
+                self.getBugContactPackageSearchURL(
+                    extra_params={"field.searchtext": searchtext}))
 
         return searchtext_filter_link
 

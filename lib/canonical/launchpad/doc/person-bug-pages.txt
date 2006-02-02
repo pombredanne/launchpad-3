@@ -182,16 +182,16 @@ Unassigned, and In Progress bug lists.
     >>> ubuntu_mozilla_firefox = ubuntu.getSourcePackage("mozilla-firefox")
 
     >>> packagebugs_search_view.getOpenBugsURL(ubuntu_mozilla_firefox)
-    u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&search=Search'
+    u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&amp;field.sourcepackagename=mozilla-firefox&amp;field.status=Unconfirmed&amp;field.status=Confirmed&amp;field.status=In+Progress&amp;search=Search'
 
     >>> packagebugs_search_view.getCriticalBugsURL(ubuntu_mozilla_firefox)
-    u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.severity=Critical&search=Search'
+    u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&amp;field.severity=Critical&amp;field.sourcepackagename=mozilla-firefox&amp;field.status=Unconfirmed&amp;field.status=Confirmed&amp;field.status=In+Progress&amp;search=Search'
 
     >>> packagebugs_search_view.getUnassignedBugsURL(ubuntu_mozilla_firefox)
-    u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.unassigned=on&search=Search'
+    u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&amp;field.sourcepackagename=mozilla-firefox&amp;field.status=Unconfirmed&amp;field.status=Confirmed&amp;field.status=In+Progress&amp;field.unassigned=on&amp;search=Search'
 
     >>> packagebugs_search_view.getInProgressBugsURL(ubuntu_mozilla_firefox)
-    u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=In+Progress&search=Search'
+    u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&amp;field.sourcepackagename=mozilla-firefox&amp;field.status=In+Progress&amp;search=Search'
 
 A helper method is used to calculate package bug search URL for the "My
 other packages" portlet:
@@ -233,7 +233,7 @@ Use the getSearchFilterLinks method to get a dict of these links.
 
     >>> filter_links[1]
     ('unassigned',
-    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&field.unassigned=on&search=Search')
+    u'.../people/name12/+packagebugs-search?field.distribution=debian&amp;field.sourcepackagename=mozilla-firefox&amp;field.status=Unconfirmed&amp;field.status=Confirmed&amp;field.status=In+Progress&amp;field.unassigned=on&amp;search=Search')
 
 There is a separate method for status filter links, because they are
 displayed slightly differently than other filter links, to communicate
@@ -249,13 +249,13 @@ BugTaskStatus vocabulary for more.)
     3
     >>> status_filter_links[0]
     ('unconfirmed',
-    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&search=Search')
+    u'.../people/name12/+packagebugs-search?field.distribution=debian&amp;field.sourcepackagename=mozilla-firefox&amp;field.status=Unconfirmed&amp;search=Search')
     >>> status_filter_links[1]
     ('confirmed',
-    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&field.status=Confirmed&search=Search')
+    u'.../people/name12/+packagebugs-search?field.distribution=debian&amp;field.sourcepackagename=mozilla-firefox&amp;field.status=Confirmed&amp;search=Search')
     >>> status_filter_links[2]
     ('in progress',
-    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&field.status=In Progress&search=Search')
+    u'.../people/name12/+packagebugs-search?field.distribution=debian&amp;field.sourcepackagename=mozilla-firefox&amp;field.status=In+Progress&amp;search=Search')
 
 There is also a separate method for the search text link, because that's
 displayed slightly differently too, so that the user knows what fields
@@ -263,4 +263,4 @@ it searches:
 
     >>> packagebugs_search_view.getSearchTextFilterLink()
     ('foo',
-    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&field.searchtext=foo&search=Search')
+    u'.../people/name12/+packagebugs-search?field.distribution=debian&amp;field.searchtext=foo&amp;field.sourcepackagename=mozilla-firefox&amp;search=Search')
