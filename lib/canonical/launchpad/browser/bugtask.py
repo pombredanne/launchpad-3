@@ -562,8 +562,11 @@ class BugTaskSearchListingView(LaunchpadView):
     search.
     """
 
-    # The initial values to be used when setting up the widgets of this page.
-    initial_values = {}
+    def __init__(self, context, request):
+        LaunchpadView.__init__(self, context, request)
+        # The initial values to be used when setting up the widgets of this 
+        # page.
+        self.initial_values = {}
 
     def initialize(self):
         #XXX: The base class should have a simple schema containing only
@@ -952,7 +955,12 @@ class AdvancedBugTaskSearchView(BugTaskSearchListingView):
         pages and still use this method to get the extra params of the
         submitted simple form.
         """
-        form_params = getWidgetsData(self, self.search_form_schema)
+        # Even though we pass self.initial_values to setUpWidgets(), that
+        # method won't add anything to the request (obviously), and that's
+        # where getWidgetsData() will get the values from. For this reason we
+        # update self.initial_values with the return of getWidgetsData().
+        form_params = self.initial_values
+        form_params.update(getWidgetsData(self, self.search_form_schema))
 
         search_params = {}
         search_params['statusexplanation'] = form_params.get(
