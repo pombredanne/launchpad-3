@@ -1255,7 +1255,7 @@ class NascentUpload:
         for pub_record in releases:
             pub_version = pub_record.sourcepackagerelease.version
             if apt_pkg.VersionCompare(version, pub_version) <= 0:
-                self.reject("%s: Version younger than that in the archive."
+                self.reject("%s: Version older than that in the archive."
                             % (dsc_file.filename))
 
         # For any file mentioned in the upload which does not exist in the
