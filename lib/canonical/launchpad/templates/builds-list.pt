@@ -2,7 +2,7 @@
 
      <table>
        <tr>
-         <th><label>Build State:</label></th>
+         <th><label>Build state:</label></th>
          <td>
           <form name="build_records_state" action="" method="GET">
 
