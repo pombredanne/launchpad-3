@@ -15,6 +15,15 @@ from canonical.launchpad.database import LibraryFileAlias
 from canonical.config import config
 from canonical.database.sqlbase import commit
 
+
+class InstrumentedLibrarianClient(LibrarianClient):
+    sentDatabaseName = False
+    def _sendHeader(self, name, value):
+        if name == 'Database-Name':
+            self.sentDatabaseName = True
+        return LibrarianClient._sendHeader(self, name, value)
+
+
 class LibrarianWebTestCase(unittest.TestCase):
     """Test the librarian's web interface."""
 
@@ -156,6 +165,27 @@ class LibrarianWebTestCase(unittest.TestCase):
             config.librarian.download_host, config.librarian.download_port)
         f = urlopen(url)
         self.failUnless('Disallow: /' in f.read())
+
+    def test_addFileSendsDatabaseName(self):
+        # addFile should send the Database-Name header.
+        client = InstrumentedLibrarianClient()
+        filename = 'sample.txt'
+        id1 = client.addFile(filename, 6, StringIO('sample'), 'text/plain')
+        self.failUnless(client.sentDatabaseName,
+            "Database-Name header not sent by addFile")
+
+    def test_remoteAddFileDoesntSendDatabaseName(self):
+        # remoteAddFile shouldn't send the Database-Name header.
+        client = InstrumentedLibrarianClient()
+        filename = 'sample.txt'
+        id1 = client.remoteAddFile(filename, 6, StringIO('sample'), 'text/plain')
+        self.failIf(client.sentDatabaseName, 
+            "Database-Name header was sent by remoteAddFile")
+
+    def test_clientWrongDatabase(self):
+        # If the client is using the wrong database, the server should refuse
+        # the upload
+        client = LibrarianClient()
         
         
 

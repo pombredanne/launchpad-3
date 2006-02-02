@@ -82,9 +82,15 @@ class FileUploadClient:
 
         self._connect()
         try:
+            # Get the name of the database the client is using, so that the
+            # server can check that the client is using the same database as the
+            # server.
+            cur = cursor()
+            cur.execute("SELECT current_database();")
+            databaseName = cur.fetchone()[0]
+            
             # Generate new content and alias IDs.
             # (we'll create rows with these IDs later, but not yet)
-            cur = cursor()
             cur.execute("SELECT nextval('libraryfilecontent_id_seq')")
             contentID = cur.fetchone()[0]
             cur.execute("SELECT nextval('libraryfilealias_id_seq')")
@@ -94,6 +100,7 @@ class FileUploadClient:
             self._sendLine('STORE %d %s' % (size, name))
 
             # Send headers
+            self._sendHeader('Database-Name', databaseName)
             self._sendHeader('File-Content-ID', contentID)
             self._sendHeader('File-Alias-ID', aliasID)
 
