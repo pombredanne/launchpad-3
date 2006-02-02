@@ -30,7 +30,6 @@ _robot_pat = re.compile(r'''
   W3C-checklink/\d+           |
   Accoona-AI-Agent/\d+        |
   CE-Preload                  |
-  Wget/\d+                    |
   FAST\sEnterprise\sCrawler   |
   Sensis\sWeb\sCrawler        |
   ia_archiver                 | # web.archive.org
@@ -50,7 +49,6 @@ _robot_pat = re.compile(r'''
   www.yacy.net                | # some P2P web index
   penthesila/\d+              |
   asterias/\d+                |
-  Python-urllib/\d+           |
   OpenIntelligenceData/d+     |
   Omnipelagos.com             |
   LinkChecker/d+              |
