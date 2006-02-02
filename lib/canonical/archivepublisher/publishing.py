@@ -422,7 +422,7 @@ TreeDefault
         ))
 
         stanza_template = """
-tree "dists/%(DISTRORELEASEONDISK)s"
+tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
 {
     FileList "%(LISTPATH)s/%(DISTRORELEASEBYFILE)s_$(SECTION)_binary-$(ARCH)";
     SourceFileList "%(LISTPATH)s/%(DISTRORELEASE)s_$(SECTION)_source";
@@ -505,6 +505,7 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                     "SECTIONS": " ".join(comps),
                     "EXTENSIONS": ".deb",
                     "CACHEINSERT": "",
+                    "DISTS": os.path.basename(self._config.distsroot),
                     "HIDEEXTRA": ""
                     })
                 dr_full_name = dr + pocketsuffix[pocket]
@@ -526,6 +527,7 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                             "SECTIONS": "debian-installer",
                             "EXTENSIONS": ".udeb",
                             "CACHEINSERT": "debian-installer-",
+                            "DISTS": os.path.basename(self._config.distsroot),
                             "HIDEEXTRA": "// "
                             })
 
