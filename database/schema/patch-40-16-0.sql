@@ -8,5 +8,5 @@ CREATE VIEW BinaryAndSourcePackageNameView AS
     SELECT name FROM SourcePackageName
 ;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (40, 55, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (40, 16, 0);
 
