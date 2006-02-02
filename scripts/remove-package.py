@@ -331,16 +331,21 @@ def what_to_remove(packages):
             for bpp in bpp_list:
                     package=bpp.binarypackagerelease.binarypackagename.name
                     version=bpp.binarypackagerelease.version
-                    architecture=bpp.distroarchrelease.architecturetag
-                    if Options.architecture and \
-                           architecture not in Options.architecture:
-                        continue
+                    distroarch=bpp.distroarchrelease.architecturetag
+                    archall = not bpp.binarypackagerelease.architecturespecific
+                    if Options.architecture:
+                        if archall:
+                            if 'all' not in Options.architecture:
+                                continue
+                        else:
+                            if distroarch not in Options.architecture:
+                                continue
                     if Options.component and \
                            bpp.component.name not in Options.component:
                         continue
                     d = dak_utils.Dict(type="binary",publishing=bpp,
                                        package=package, version=version,
-                                       architecture=architecture)
+                                       architecture=distroarch)
                     to_remove.append(d)
 
             if not Options.binaryonly:
