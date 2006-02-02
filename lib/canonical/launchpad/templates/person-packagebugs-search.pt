@@ -33,7 +33,29 @@
         width: 74%;
       }
 
+      #filter-label {
+        border-color: #DEDEDE;
+        border-style: solid;
+        border-width: 1px 1px 0px 1px;
+        padding: 3px 0px 3px 0px;
+        text-align: center;
+      }
+
+      #filter-gap {
+        border-color: #DEDEDE;
+        border-style: solid;
+        border-width: 0px 0px 1px 0px;
+      }
+
       #filter {
+        border-color: #DEDEDE;
+        border-style: solid;
+        border-width: 0px 1px 1px 1px;
+        padding: 5px;
+        width: 5em;
+      }
+
+      #filter ul {
         list-style: none;
         margin-left: 3px;
         padding-left: 3px;
@@ -52,11 +74,11 @@
   <div metal:fill-slot="main">
     <div id="portal-column-content">
       <h2 class="lpcontext"
-          tal:content="string:${context/displayname}'s Package Bug Reports">
-        Sample Person Package Bug Reports
+          tal:content="string:${context/displayname}'s package bug reports">
+        Sample Person package bug reports
       </h2>
       <strong>
-        <small tal:content="python:view.getPackage().displayname">
+        <small tal:content="view/current_package/displayname">
           mozilla-firefox (Ubuntu)
         </small>
       </strong>
@@ -67,44 +89,33 @@
                        start_number batch_navigator/batch/startNumber;
                        end_number batch_navigator/batch/endNumber">
         <form method="GET" name="search" action="">
-          <input type="hidden" value="#"
-                 name="field.distribution"
-                 tal:attributes="value python:request.form.get('field.distribution')" />
-          <input type="hidden" value="#"
-                 name="field.sourcepackagename"
-                 tal:attributes="value python:request.form.get('field.sourcepackagename')" />
+          <tal:widget content="structure view/distribution_widget/hidden" />
+          <tal:widget content="structure view/sourcepackagename_widget/hidden" />
           <input type="text" name="field.searchtext" size="40" />
           <input type="submit" name="search" value="Search" />
           <span style="color: #A8A8A8"><small>(Advanced search coming soon)</small></span>
         </form>
         <script>
           <!--
-              document.forms['search'].searchtext.focus()
+              document.forms["search"].elements['field.searchtext'].focus();
             -->
         </script>
         <br />
         <table style="width: 55%; margin-left: 0;">
           <tr>
-            <td style="border-color: #DEDEDE; border-style: solid;
-                       border-width: 1px 1px 0px 1px;
-                       padding: 3px 0px 3px 0px;
-                       text-align: center"
-                width="15%">
+            <td id="filter-label" width="15%">
               <small><strong>Filter</strong></small>
             </td>
-            <td style="border-color: #DEDEDE; border-style: solid; border-width: 0px 0px 1px 0px;">
-              &nbsp;
-            </td>
+            <td id="filter-gap">&nbsp;</td>
           </tr>
           <tr>
-            <td style="border-color: #DEDEDE; border-style: solid; border-width: 0px 1px 1px 1px; padding: 5px; width: 5em"
-                colspan="2">
+            <td id="filter" colspan="2">
               <small>
-              <ul id="filter">
+              <ul>
             <li tal:repeat="search_link view/getSearchFilterLinks">
               <a href="#"
-                 tal:content="python:search_link[0]"
-                 tal:attributes="href python:search_link[1]">
+                 tal:content="search_link/title"
+                 tal:attributes="href search_link/url">
                 mozilla-firefox (Ubuntu)</a><span tal:condition="not:repeat/search_link/end"></span>
             </li>
             <li tal:condition="view/getStatusFilterLinks">
@@ -115,16 +126,16 @@
                   </span>
                 </span>
                 <a href="#"
-                   tal:content="python:status_filter_link[0]"
-                   tal:attributes="href python:status_filter_link[1]">
+                   tal:content="status_filter_link/title"
+                   tal:attributes="href status_filter_link/url">
                   in progress
                 </a><span tal:condition="not:repeat/status_filter_link/end">,</span></span>
             </li>
             <li tal:condition="view/getSearchTextFilterLink">contains
             <span tal:define="searchtext_filter_link view/getSearchTextFilterLink">
             <a href="#"
-               tal:content="python:searchtext_filter_link[0]"
-               tal:attributes="href python:searchtext_filter_link[1]">
+               tal:content="searchtext_filter_link/title"
+               tal:attributes="href searchtext_filter_link/url">
               foobar
             </a>
             </span>
@@ -137,13 +148,7 @@
         </table>
         <br />
         <div>
-          <small>Results
-            <strong tal:content="start_number">1</strong>
-            -
-            <strong tal:content="end_number">50</strong>
-            of
-            <strong tal:content="total">64</strong>
-          </small>
+          <small tal:content="structure batch_navigator/@@+navigation-links" />
         </div>
         <table class="results">
           <tr>
@@ -167,93 +172,12 @@
           </tr>
     </table>
     <div style="margin-bottom: 5px">
-      <small>Results
-        <strong tal:content="start_number">1</strong>
-        -
-        <strong tal:content="end_number">50</strong>
-        of
-        <strong tal:content="total">64</strong>
-      </small>
-
-      <span style="float: right">
-        <small>
-          <tal:previous condition="prev_page_url">
-            <a tal:attributes="href prev_page_url" rel="previous"
-               >&laquo; Previous</a>
-          </tal:previous>
-          <span
-             tal:condition="not:prev_page_url"
-             class="unavailable"
-             >&laquo; Previous</span>
-          <tal:intermediaries repeat="page_url batch_navigator/batchPageURLs">
-            <a
-               tal:condition="python:len(page_url) > 1"
-               tal:content="python:page_url.keys()[0]"
-               tal:attributes="href python:page_url.values()[0]"
-               >[1]</a>
-          </tal:intermediaries>
-          <tal:next condition="next_page_url">
-            &mdash;
-            <a tal:attributes="href next_page_url" rel="next"
-               >Next &raquo;</a>
-          </tal:next>
-          <span
-             tal:condition="not:next_page_url"
-             class="unavailable"
-             >&mdash; Next &raquo;</span>
-        </small>
-      </span>
+      <small tal:content="structure batch_navigator/@@+navigation-links" />
     </div>
       </div>
     </div>
     <div id="portal-column-two">
-      <tal:notlogin condition="python: '+login' not in request.getURL()">
-        <ul
-          tal:define="facetmenu CONTEXTS/menu:facet"
-          tal:condition="facetmenu"
-          class="facets"
-        >
-          <tal:facet repeat="link facetmenu">
-            <tal:available condition="link/enabled">
-              <li
-                tal:condition="link/selected"
-                tal:attributes="title link/summary"
-                class="current"
-              >
-                <a tal:condition="link/linked"
-                  tal:attributes="href link/url"
-                  tal:content="structure link/escapedtext"
-                >abc</a>
-                <span
-                  tal:condition="not: link/linked"
-                  tal:replace="structure link/escapedtext"
-                >def</span>
-                <tal:menu
-                  condition="not:exists:body"
-                  replace="structure CONTEXTS/@@+menubox"
-                />
-              </li>
-              <li
-                tal:condition="not: link/selected"
-                tal:attributes="title link/summary"
-              ><a
-                  tal:attributes="href link/url"
-                  tal:content="structure link/escapedtext"
-                >ghi</a><span
-                  class="disabled"
-                  tal:condition="not: link/linked"
-                  tal:content="structure link/escapedtext"
-                >jkl</span></li>
-            </tal:available>
-            <li
-              tal:condition="not: link/enabled"
-              tal:attributes="title link/summary"
-              tal:content="structure link/escapedtext"
-              class="unavailable"
-            />
-          </tal:facet>
-        </ul>
-      </tal:notlogin>
+      <metal:macro use-macro="context/@@main_template/action-menu" />
       <div tal:content="structure context/@@+portlet-otherpackages" />
     </div>
     <div class="visualClear">&nbsp;</div>

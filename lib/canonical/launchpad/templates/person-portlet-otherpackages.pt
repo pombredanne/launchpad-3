@@ -7,13 +7,13 @@
     Sample Person's other packages
   </h4>
   <div class="portletBody portletContent"
-       tal:define="package_being_shown view/getPackage">
+       tal:define="package_being_shown view/current_package">
     <ul style="list-style: none; display: inline"
-        tal:repeat="bug_contact_package context/getBugContactPackages">
-      <li tal:condition="python:bug_contact_package != package_being_shown">
+        tal:repeat="bug_contact_package_link view/getOtherBugContactPackageLinks">
+      <li>
         <a href="#"
-           tal:content="bug_contact_package/displayname"
-           tal:attributes="href python:view.getBugContactPackageSearchURL(bug_contact_package)">
+           tal:content="bug_contact_package_link/title"
+           tal:attributes="href bug_contact_package_link/url">
         mozilla-firefox (Ubuntu)
         </a>
       </li>

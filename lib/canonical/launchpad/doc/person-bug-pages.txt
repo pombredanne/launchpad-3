@@ -101,10 +101,10 @@ Normal, Major and Critical.
 Bugs for Bug Contact
 --------------------
 
-Overview and searchable bug listings for bugs reported on packages that
-the person is getting bugmail from. The Person context is used only to
-get a list of packages that the user has chosen to subscribe to, but any
-package could be searched from these reports, simply by hacking the URL.
+Malone can generate bug reports for packages on which a user is a bug
+contact. The Person context is used only to get a list of packages that
+the user has chosen to subscribe to, but any package could be searched
+from these reports, simply by hacking the URL.
 
     >>> form = {
     ...     'search': "Search", 'field.distribution': "debian",
@@ -116,7 +116,7 @@ package could be searched from these reports, simply by hacking the URL.
 
 Let's look at some example searches:
 
-No search criteria:
+No search criteria (ordered by priority, then severity):
 
     >>> bugtask_batch_navigator = packagebugs_search_view.search()
     >>> [bugtask.bug.id for bugtask in bugtask_batch_navigator.batch]
@@ -140,7 +140,8 @@ Simple keyword searching:
 
 Searching for all open bugs on Debian mozilla-firefox:
 
-    >>> from canonical.launchpad.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
+    >>> from canonical.launchpad.interfaces.bugtask import (
+    ...     UNRESOLVED_BUGTASK_STATUSES)
 
     >>> form = {
     ...     'search': "Search",
@@ -196,7 +197,8 @@ Unassigned, and In Progress bug lists.
 A helper method is used to calculate package bug search URL for the "My
 other packages" portlet:
 
-    >>> packagebugs_search_view.getBugContactPackageSearchURL(ubuntu_mozilla_firefox)
+    >>> packagebugs_search_view.getBugContactPackageSearchURL(
+    ...     ubuntu_mozilla_firefox)
     u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&search=Search'
 
 Search Filter Links
@@ -227,40 +229,58 @@ Use the getSearchFilterLinks method to get a dict of these links.
     >>> len(filter_links)
     2
 
-    >>> filter_links[0]
-    ('mozilla-firefox in debian',
-    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&search=Search')
+    >>> filter_links[0]['title']
+    'mozilla-firefox in debian'
 
-    >>> filter_links[1]
-    ('unassigned',
-    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.unassigned=on&search=Search')
+    >>> filter_links[0]['url']
+    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&search=Search'
+
+    >>> filter_links[1]['title']
+    'unassigned'
+
+    >>> filter_links[1]['url']
+    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.unassigned=on&search=Search'
 
 There is a separate method for status filter links, because they are
 displayed slightly differently than other filter links, to communicate
 that the status is an "OR" match.
 
-When no statuses are explicitly specified, the default is
-canonical.launchpad.interfaces.bugtask.UNRESOLVED_BUGTASK_STATUSES. The
-links are sorted by numerical values of the statuses. (See the
-BugTaskStatus vocabulary for more.)
+    >>> form = {
+    ...     'search': "Search",
+    ...     'field.distribution': "debian",
+    ...     'field.sourcepackagename': "mozilla-firefox",
+    ...     'field.searchtext': "foo",
+    ...     'field.status': ['Unconfirmed', 'Confirmed', 'In Progress']}
+
+    >>> request = TestRequest(form=form)
+    >>> packagebugs_search_view = create_view(
+    ...     name12, name="+packagebugs-search", request=request)
 
     >>> status_filter_links = packagebugs_search_view.getStatusFilterLinks()
     >>> len(status_filter_links)
     3
-    >>> status_filter_links[0]
-    ('unconfirmed',
-    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&search=Search')
-    >>> status_filter_links[1]
-    ('confirmed',
-    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&field.status=Confirmed&search=Search')
-    >>> status_filter_links[2]
-    ('in progress',
-    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&field.status=In+Progress&search=Search')
+
+    >>> status_filter_links[0]['title']
+    'unconfirmed'
+    >>> status_filter_links[0]['url']
+    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&search=Search'
+
+    >>> status_filter_links[1]['title']
+    'confirmed'
+    >>> status_filter_links[1]['url']
+    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&field.status=Confirmed&search=Search'
+
+    >>> status_filter_links[2]['title']
+    'in progress'
+    >>> status_filter_links[2]['url']
+    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&field.status=In+Progress&search=Search'
 
 There is also a separate method for the search text link, because that's
 displayed slightly differently too, so that the user knows what fields
 it searches:
 
-    >>> packagebugs_search_view.getSearchTextFilterLink()
-    ('foo',
-    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.searchtext=foo&field.sourcepackagename=mozilla-firefox&search=Search')
+    >>> searchtext_filter_link = packagebugs_search_view.getSearchTextFilterLink()
+    >>> searchtext_filter_link['title']
+    u'foo'
+    >>> searchtext_filter_link['url']
+    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.searchtext=foo&field.sourcepackagename=mozilla-firefox&search=Search'

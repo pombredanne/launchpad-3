@@ -26,20 +26,11 @@
     </style>
   </metal:block>
 
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-  </metal:leftportlets>
-
   <div metal:fill-slot="main">
-    <tal:searchresults condition="request/search|nothing">
-      some search results
-    </tal:searchresults>
     <a href="#"
        tal:content="context/displayname"
        tal:attributes="href context/fmt:url">Sample Person</a>
-    <tal:overview condition="not:request/search|nothing">
-    is receiving bugmail from these packages:
-    </tal:overview>
+    is a bug contact for these packages:
 
     <br /><br />
     <table class="results">

@@ -341,11 +341,10 @@ class Person(SQLBase):
             PackageBugContact.selectBy(bugcontactID=self.id),
             longest_expected=25)
 
-        packages_for_bug_contact = []
-        for package_bug_contact in package_bug_contacts:
-            packages_for_bug_contact.append(
-                package_bug_contact.distribution.getSourcePackage(
-                    package_bug_contact.sourcepackagename))
+        packages_for_bug_contact = [
+            package_bug_contact.distribution.getSourcePackage(
+                package_bug_contact.sourcepackagename)
+            for package_bug_contact in package_bug_contacts]
 
         packages_for_bug_contact.sort(key=lambda x: x.name)
 

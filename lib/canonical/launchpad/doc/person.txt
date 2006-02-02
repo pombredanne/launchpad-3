@@ -1,9 +1,9 @@
 Person
 ======
 
-The Person class is overloaded to represent both people and teams. Let's log in
-as Robert Collins to ensure we have the privileges to do what we're going to
-demonstrate.
+The Person class is overloaded to represent both people and teams. Let's
+log in as Robert Collins to ensure we have the privileges to do what
+we're going to demonstrate.
 
 >>> from zope.component import getUtility
 >>> from zope.interface.verify import verifyObject

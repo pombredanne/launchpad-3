@@ -700,13 +700,39 @@ class ReportedBugTaskSearchListingView(BasePersonBugTaskSearchListingView):
 
 
 class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
-    """All bugs reported on software maintained by someone."""
+    """Bugs reported on packages for a bug contact."""
+
+    @property
+    def current_package(self):
+        """Get the package whose bugs are currently being searched."""
+        distribution = self.distribution_widget.getInputValue()
+        return distribution.getSourcePackage(
+            self.sourcepackagename_widget.getInputValue())
 
     def search(self, searchtext=None, batch_start=None):
-        distrosourcepackage = self.getPackage()
+        distrosourcepackage = self.current_package
         return BugTaskSearchListingView.search(
             self, searchtext=searchtext, batch_start=batch_start,
             context=distrosourcepackage)
+
+    def getOtherBugContactPackageLinks(self):
+        """Return a list of the other packages for a bug contact.
+
+        This excludes the current package.
+        """
+        current_package = self.current_package
+
+        other_packages = [
+            package for package in self.context.getBugContactPackages()
+            if package != current_package]
+
+        package_links = []
+        for other_package in other_packages:
+            package_links.append({
+                'title': other_package.displayname,
+                'url': self.getBugContactPackageSearchURL(other_package)})
+
+        return package_links
 
     def getExtraSearchParams(self):
         """Overridden from BugTaskSearchListingView, to filter the search."""
@@ -721,8 +747,13 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
 
     def getBugContactPackageSearchURL(self, distributionsourcepackage=None,
                                       extra_params=None):
+        """Construct a default search URL for a distributionsourcepackage.
+
+        Optional filter parameters can be specified as a dict with the
+        extra_params argument.
+        """
         if distributionsourcepackage is None:
-            distributionsourcepackage = self.getPackage()
+            distributionsourcepackage = self.current_package
 
         params = {
             "field.distribution": distributionsourcepackage.distribution.name,
@@ -736,15 +767,6 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         query_string = urllib.urlencode(sorted(params.items()), doseq=True)
 
         return person_url + '/+packagebugs-search?%s' % query_string
-
-    def getPackage(self):
-        """Get the package whose bugs are currently being searched."""
-        form = self.request.form
-        distribution = getUtility(IDistributionSet).getByName(
-            form.get("field.distribution"))
-
-        return distribution.getSourcePackage(
-            form.get("field.sourcepackagename"))
 
     def getOpenBugsURL(self, distributionsourcepackage):
         """Return the URL for open bugs on distributionsourcepackage."""
@@ -792,18 +814,19 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
     def getSearchFilterLinks(self):
         """Return a dict of links to various parts of the current filter."""
         search_filter_links = []
-        form = self.request.form
 
         # First, a link to all the bugs for the current package.
-        current_package = self.getPackage()
-        search_filter_links.append(
-            (str(current_package.displayname),
-             self.getBugContactPackageSearchURL(current_package)))
+        current_package = self.current_package
+        search_filter_links.append({
+            'title': str(current_package.displayname),
+            'url': self.getBugContactPackageSearchURL(current_package)})
 
         # Add a link to the "unassigned" filter, if applicable.
-        if form.get("field.unassigned") == "on":
-            search_filter_links.append(
-                ("unassigned", self.getUnassignedBugsURL(current_package)))
+        if (self.unassigned_widget.hasInput() and
+            self.unassigned_widget.getInputValue()):
+            search_filter_links.append({
+                'title': "unassigned",
+                'url': self.getUnassignedBugsURL(current_package)})
 
         return search_filter_links
 
@@ -814,34 +837,30 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         differently from other filter links, to communicate that they're an "OR"
         match.
         """
-        form = self.request.form
-        filter_statuses = form.get("field.status", [])
-
-        if not filter_statuses:
+        if not self.status_widget.hasInput():
             return []
 
-        if not zope_isinstance(filter_statuses, (list, tuple)):
-            filter_statuses = [filter_statuses]
+        filter_statuses = self.status_widget.getInputValue()
 
         status_filter_links = []
         for status_name in filter_statuses:
-            status_filter_links.append((
-                status_name.lower(),
-                self.getBugContactPackageSearchURL(
-                    extra_params={"field.status": status_name})))
+            status_filter_links.append({
+                'title': status_name.title.lower(),
+                'url': self.getBugContactPackageSearchURL(
+                    extra_params={"field.status": status_name.title})})
 
         return status_filter_links
 
     def getSearchTextFilterLink(self):
-        form = self.request.form
-        searchtext_filter_link = []
+        if not self.searchtext_widget.hasInput():
+            return None
 
-        searchtext = form.get("field.searchtext")
+        searchtext = self.searchtext_widget.getInputValue()
         if searchtext:
-            searchtext_filter_link = (
-                searchtext,
-                self.getBugContactPackageSearchURL(
-                    extra_params={"field.searchtext": searchtext}))
+            searchtext_filter_link = {
+                'title': searchtext,
+                'url': self.getBugContactPackageSearchURL(
+                    extra_params={"field.searchtext": searchtext})}
 
         return searchtext_filter_link
 

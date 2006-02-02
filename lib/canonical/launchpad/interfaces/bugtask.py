@@ -210,6 +210,13 @@ class IDistroBugTaskSearch(IBugTaskSearch):
 
 class IPersonBugTaskSearch(IBugTaskSearch):
     """The schema used by the bug task search form of a person."""
+    sourcepackagename = Choice(
+        title=_("Source Package Name"), required=False,
+        description=_("The source package in which the bug occurs. "
+        "Leave blank if you are not sure."),
+        vocabulary='SourcePackageName')
+    distribution = Choice(
+        title=_("Distribution"), required=False, vocabulary='Distribution')
 
 
 class IBugTaskDelta(Interface):
