@@ -400,8 +400,8 @@ Dir
 
 Default
 {
-    Packages::Compress "gzip bzip2";
-    Sources::Compress "gzip bzip2";
+    Packages::Compress ". gzip bzip2";
+    Sources::Compress ". gzip bzip2";
     Contents::Compress "gzip";
     DeLinkLimit 0;
     MaxContentsChange 12000;
