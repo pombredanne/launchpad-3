@@ -177,6 +177,25 @@ class DistroArchReleaseBinaryPackage:
             clauseTables=['BinaryPackageRelease'],
             orderBy='-datecreated')
 
+    @property
+    def current_published(self):
+        """See IDistroArchReleaseBinaryPackage."""
+
+        # Retrieve current publishing info
+        current = None
+        for publishing in self.publishing_history:
+            if publishing.status == PackagePublishingStatus.PUBLISHED:
+                current = publishing
+                break
+
+        if not current:
+            raise NotFoundError("Binary package %s not published in %s/%s"
+                                % (self.binarypackagename.name,
+                                   self.distroarchrelease.distrorelease.name,
+                                   self.distroarchrelease.architecturetag))
+
+        return current
+
     def changeOverride(self, new_component=None, new_section=None,
                        new_priority=None):
         """See IDistroArchReleaseBinaryPackage."""
