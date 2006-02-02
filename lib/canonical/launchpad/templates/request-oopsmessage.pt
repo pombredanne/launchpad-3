@@ -1,0 +1,5 @@
+<p tal:condition="context/oopsid">
+  The reference for this error is
+  <tt class="oopsid" tal:content="context/oopsid">OOPS-42A1234</tt>.
+  Please include it in your bug report or email.
+</p>

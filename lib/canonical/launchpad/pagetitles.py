@@ -677,6 +677,8 @@ shipit_exports = 'ShipIt exports'
 
 shipit_myrequest = "Your ShipIt order"
 
+shipit_oops = 'Error: Oops'
+
 shipit_reports = 'ShipIt reports'
 
 shipitrequests_index = 'ShipIt requests'
@@ -686,8 +688,6 @@ shipitrequests_search = 'Search ShipIt requests'
 shipitrequest_edit = 'Edit ShipIt request'
 
 shipit_notfound = 'Error: Page not found'
-
-shipit_default_error = 'Error: Oops'
 
 signedcodeofconduct_index = ContextDisplayName('%s')
 

@@ -11,7 +11,7 @@ from optparse import OptionParser
 
 from zope.component import getUtility
 
-from canonical.lp import initZopeless
+from canonical.lp import initZopeless, READ_COMMITTED_ISOLATION
 from canonical.launchpad.interfaces import (
     IDistributionSet, IRosettaApplication)
 from canonical.launchpad.scripts import (
@@ -56,7 +56,10 @@ def main(argv):
     try:
         # Setup zcml machinery to be able to use getUtility
         execute_zcml_for_scripts()
-        ztm = initZopeless(dbuser=config.statistician.dbuser)
+        ztm = initZopeless(
+                dbuser=config.statistician.dbuser,
+                isolation=READ_COMMITTED_ISOLATION
+                )
 
         # Do the stats update
         logger_object.debug('Starting the stats update')

@@ -88,7 +88,7 @@ By default we'll get bug tasks with any severity.
     >>> sorted([(bugtask.bug.id, bugtask.status.name, bugtask.severity.name)
     ...         for bugtask in subscribed_bugtasks])
     [(1, 'CONFIRMED', 'MINOR'), (1, 'UNCONFIRMED', 'MINOR'),
-     (1, 'UNCONFIRMED', 'NORMAL')]
+     (1, 'UNCONFIRMED', 'NORMAL'), (4, 'UNCONFIRMED', 'NORMAL')]
 
 But the advanced search allows us to query only the bug tasks with severity
 Normal, Major and Critical.
@@ -100,4 +100,4 @@ Normal, Major and Critical.
     >>> subscribed_bugtasks = list(subscribed_bugtaks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name, bugtask.severity.name)
     ...         for bugtask in subscribed_bugtasks])
-    [(1, 'UNCONFIRMED', 'NORMAL')]
+    [(1, 'UNCONFIRMED', 'NORMAL'), (4, 'UNCONFIRMED', 'NORMAL')]

@@ -6,11 +6,6 @@
     />
 
   <vocabulary
-    name="BinaryPackage"
-    factory="canonical.launchpad.vocabularies.BinaryPackageVocabulary"
-    />
-
-  <vocabulary
     name="BinaryPackageName"
     factory="canonical.launchpad.vocabularies.BinaryPackageNameVocabulary"
     />
