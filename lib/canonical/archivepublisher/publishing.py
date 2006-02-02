@@ -667,7 +667,7 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                 # the suite's architectures
                 file_stub = os.path.join(component, architecture, file_stub)
 
-                for suffix in ('', '.gz', '.bz2'):
+                for suffix in ('.gz', '.bz2'):
                     all_files.add(file_stub + suffix)
 
                 all_files.add(os.path.join(component, architecture, "Release"))
