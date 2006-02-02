@@ -25,6 +25,7 @@ from canonical.launchpad.database.publishing import \
 from canonical.launchpad.database.binarypackagerelease import \
     BinaryPackageRelease
 
+from canonical.lp.dbschema import PackagePublishingStatus
 
 class DistroArchReleaseBinaryPackage:
     """A Binary Package in the context of a Distro Arch Release. 
@@ -98,17 +99,23 @@ class DistroArchReleaseBinaryPackage:
 
     def __getitem__(self, version):
         """See IDistroArchReleaseBinaryPackage."""
-        bpph = BinaryPackagePublishingHistory.selectOne("""
-            BinaryPackagePublishingHistory.distroarchrelease = %s AND
-            BinaryPackagePublishingHistory.binarypackagerelease = 
-                BinaryPackageRelease.id AND
-            BinaryPackageRelease.version = %s AND
-            BinaryPackageRelease.binarypackagename = %s
-            """ % sqlvalues(self.distroarchrelease.id, version, 
-                            self.binarypackagename.id),
-            clauseTables=['binarypackagerelease'])
+        query = """
+        BinaryPackagePublishingHistory.distroarchrelease = %s AND
+        BinaryPackagePublishingHistory.status = %s AND
+        BinaryPackagePublishingHistory.binarypackagerelease =
+            BinaryPackageRelease.id AND
+        BinaryPackageRelease.version = %s AND
+        BinaryPackageRelease.binarypackagename = %s
+        """ % sqlvalues(self.distroarchrelease.id,
+                        PackagePublishingStatus.PUBLISHED,
+                        version, self.binarypackagename.id)
+
+        bpph = BinaryPackagePublishingHistory.selectOne(
+            query, clauseTables=['binarypackagerelease'])
+
         if bpph is None:
             return None
+
         return DistroArchReleaseBinaryPackageRelease(
             distroarchrelease=self.distroarchrelease,
             binarypackagerelease=bpph.binarypackagerelease)

@@ -164,6 +164,21 @@ Test the Changelog concatenation process:
     >>> sp.changelog
     u'This is a placeholder changelog for pmount 0.1-2 \n\nThis is a placeholder changelog for pmount 0.1-1 \n\n'
 
+Checking handy Sourcepackage properties:
+
+XXX cprov 20060125: it's still very primitive test but it's better
+than nothing ... bug # 29659
+
+    >>> sp.manifest.uuid
+    u'e0451064-b405-4f52-b387-ebfc1a7ee297'
+
+    >>> len(sp.releases)
+    2
+
+    >>> len(sp.releasehistory)
+    2
+
+
 Comparing Sourcepackages
 ------------------------
 
