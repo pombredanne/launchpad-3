@@ -1479,6 +1479,12 @@ class NascentUpload:
                     # the set will be the most useful since it should be
                     # the most recently uploaded. We therefore use this one.
                     override = possible[0]
+                    if apt_pkg.VersionCompare(
+                        uploaded_file.version,
+                        override.sourcepackagerelease.version) <= 0:
+                        self.reject("%s: Version older than that in the archive."
+                                    % (uploaded_file.filename))
+                    
                     uploaded_file.component = override.component.name
                     uploaded_file.section = override.section.name
                     uploaded_file.new = False
@@ -1511,6 +1517,12 @@ class NascentUpload:
                         # since it should be the most recently
                         # uploaded. We therefore use this one.
                         override=possible[0]
+                        if apt_pkg.VersionCompare(
+                            uploaded_file.version,
+                            override.binarypackagerelease.version) <= 0:
+                            self.reject("%s: Version older than that in the "
+                                        "archive."
+                                        % (uploaded_file.filename))
                         uploaded_file.component = override.component.name
                         uploaded_file.section = override.section.name
                         uploaded_file.priority = override.priority
