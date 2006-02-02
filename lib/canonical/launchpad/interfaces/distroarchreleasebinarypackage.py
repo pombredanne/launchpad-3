@@ -48,3 +48,13 @@ class IDistroArchReleaseBinaryPackage(Interface):
         version, in this architecture release.
         """
 
+    def current_published():
+        """Returns the last BinaryPackagePublishing record that is in
+        PUBLISHED status."""
+
+    def changeOverride(new_component, new_section, new_priority):
+        """Change the component, section and/or priority of a
+        DistroArchReleaseBinaryPackageRelease."""
+        
+    def supersede():
+        """Supersede a DistroArchReleaseBinaryPackageRelease."""
