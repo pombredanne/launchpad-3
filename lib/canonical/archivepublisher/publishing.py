@@ -686,8 +686,8 @@ Architecture: %s
                 f.write(contents)
                 f.close()
 
-        drsummary = "%s %s" % (distribution.displayname,
-                               distrorelease.displayname)
+        drsummary = "%s %s " % (distribution.displayname,
+                                distrorelease.displayname)
 
         if pocket == PackagePublishingPocket.RELEASE:
             drsummary += distrorelease.version
