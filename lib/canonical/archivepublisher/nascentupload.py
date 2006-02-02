@@ -1480,7 +1480,7 @@ class NascentUpload:
                     # the most recently uploaded. We therefore use this one.
                     override = possible[0]
                     if apt_pkg.VersionCompare(
-                        uploaded_file.version,
+                        self.changes['version'],
                         override.sourcepackagerelease.version) <= 0:
                         self.reject("%s: Version older than that in the archive."
                                     % (uploaded_file.filename))
@@ -1518,7 +1518,7 @@ class NascentUpload:
                         # uploaded. We therefore use this one.
                         override=possible[0]
                         if apt_pkg.VersionCompare(
-                            uploaded_file.version,
+                            self.changes['version'],
                             override.binarypackagerelease.version) <= 0:
                             self.reject("%s: Version older than that in the "
                                         "archive."
