@@ -76,13 +76,16 @@ def init():
 
 ################################################################################
 
-def find_nbs(distrorelease):
+def cruft_check(distrorelease):
     global source_binaries, source_versions
     
     nbs = {}
+    asba = {}
+
     bin_pkgs = {}
     source_binaries = {}
-    source_versions = {}    
+    source_versions = {}
+    arch_any = {}
     
     architectures = dict([(a.architecturetag,a) for a in distrorelease.architectures])
     components = dict([(c.name,c) for c in distrorelease.components])
@@ -140,6 +143,7 @@ def find_nbs(distrorelease):
                 package = Packages.Section.Find('Package')
                 source = Packages.Section.Find('Source', "")
                 version = Packages.Section.Find('Version')
+                architecture = Packages.Section.Find('Architecture')
                 if source == "":
                     source = package
                 if source.find("(") != -1:
@@ -150,11 +154,50 @@ def find_nbs(distrorelease):
                     nbs.setdefault(source,{})
                     nbs[source].setdefault(package, {})
                     nbs[source][package][version] = ""
-
+                if architecture != "all":
+                    arch_any.setdefault(package, "0")
+                    if apt_pkg.VersionCompare(version, arch_any[package]) < 1:
+                        arch_any[package] = version
             packages.close()
             os.unlink(temp_filename)
 
-    return nbs
+    # Checks based on the Packages files
+    for component in components_and_di:
+        for architecture in architectures:
+            # XXX de-hardcode me harder
+            filename = "/srv/launchpad.net/ubuntu-archive/ubuntu" + \
+                       "/dists/%s/%s/binary-%s/Packages.gz" \
+                       % (distrorelease.name, component, architecture)
+            # apt_pkg.ParseTagFile needs a real file handle
+            temp_filename = dak_utils.temp_filename()
+            (result, output) = commands.getstatusoutput("gunzip -c %s > %s" % (filename, temp_filename))
+            if (result != 0):
+                sys.stderr.write("Gunzip invocation failed!\n%s\n" % (output))
+                sys.exit(result)
+            packages = open(temp_filename)
+            Packages = apt_pkg.ParseTagFile(packages)
+            while Packages.Step():
+                package = Packages.Section.Find('Package')
+                source = Packages.Section.Find('Source', "")
+                version = Packages.Section.Find('Version')
+                architecture = Packages.Section.Find('Architecture')
+                if source == "":
+                    source = package
+                if source.find("(") != -1:
+                    m = dak_utils.re_extract_src_version.match(source)
+                    source = m.group(1)
+                    version = m.group(2)
+                if architecture == "all":
+                    if arch_any.has_key(package) and \
+                           apt_pkg.VersionCompare(version, arch_any[package]) > -1:
+                        asba.setdefault(source,{})
+                        asba[source].setdefault(package, {})
+                        asba[source][package].setdefault(version, {})
+                        asba[source][package][version][architecture] = ""
+            packages.close()
+            os.unlink(temp_filename)
+
+    return (nbs, asba)
 
 ################################################################################
 
@@ -253,7 +296,13 @@ def main():
         Options.distrorelease = Options.distro.currentrelease.name
     Options.distrorelease = Options.distro.getRelease(Options.distrorelease)
 
-    nbs = find_nbs(Options.distrorelease)
+    (nbs, asba) = cruft_check(Options.distrorelease)
+
+    # XXX do something useful with asba
+    for src in asba:
+        for pkg in asba[src]:
+            print "ASBA: %s" % pkg
+
     (real_nbs, _) = refine_nbs(nbs)
     nbs_to_remove = output_nbs(real_nbs)
 
