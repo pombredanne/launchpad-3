@@ -105,7 +105,6 @@ class QueueAction:
         self.distribution_name = distribution_name
         self.distrorelease_name = distrorelease_name
         self.announcelist = announcelist
-        self.setDefaultContext()
 
     @cachedproperty
     def queue_size(self):
@@ -140,6 +139,8 @@ class QueueAction:
 
     def initialize(self):
         """Builds a list of affected records based on the filter argument."""
+        self.setDefaultContext()
+
         try:
             term = self.terms[0]
         except IndexError:
@@ -279,7 +280,7 @@ class QueueActionHelp:
         self.kargs['no_mail'] = True
         self.actions = kargs['terms']
 
-    def iniatialize(self):
+    def initialize(self):
         """Mock initialization """
         pass
 
@@ -304,7 +305,7 @@ class QueueActionReport(QueueAction):
     """Present a report about the size of available queues"""
     def initialize(self):
         """Mock initialization """
-        pass
+        self.setDefaultContext()
 
     def run(self):
         """Display the queues size."""
@@ -620,6 +621,56 @@ queue_actions = {
     }
 
 
+class CommandRunnerError(Exception):
+    """Command Runner Failure"""
+
+class CommandRunner:
+    """ """
+    def __init__(self, queue, distribution_name, distrorelease_name,
+                 announcelist, no_mail):
+        self.queue = queue
+        self.distribution_name = distribution_name
+        self.distrorelease_name = distrorelease_name
+        self.announcelist = announcelist
+        self.no_mail = no_mail
+
+    def execute(self, terms, exact_match=False):
+        """Execute a single command iteration.
+
+        Return True if something gets wrong during the operation,
+        False otherwise.
+        """
+        print 'Running: "%s"' % " ".join(terms)
+
+        # check syntax, abort process if anything gets wrong
+        try:
+            action = terms[0]
+            arguments = terms[1:]
+        except IndexError:
+            raise CommandRunnerError('Invalid sentence, use help.')
+
+        # check action availability,
+        try:
+            queue_action = queue_actions[action]
+        except KeyError:
+            raise CommandRunnerError('Unknown Action: %s' % action)
+
+        # perform the required action on queue.
+        try:
+            # be sure to send every args via kargs
+            wrapper = queue_action(distribution_name=self.distribution_name,
+                                   distrorelease_name=self.distrorelease_name,
+                                   announcelist=self.announcelist,
+                                   queue=self.queue,
+                                   no_mail=self.no_mail,
+                                   terms=arguments,
+                                   exact_match=exact_match)
+            wrapper.initialize()
+            wrapper.run()
+        except QueueActionError, info:
+            raise CommandRunnerError(info)
+
+
 def main():
     parser = OptionParser()
 
@@ -666,18 +717,20 @@ def main():
 
     options, args = parser.parse_args()
 
-    exact_match = options.exact_match
-
     if options.queue not in name_queue_map:
         print "Unable to map queue name %s" % options.queue
-        return
+        return 1
 
-    queue = name_queue_map[options.queue]
     distribution_name = options.distribution
     distrorelease_name = options.distrorelease
+    exact_match = options.exact_match
+    dryrun = options.dryrun
+    announcelist = options.announcelist
+    ign_errors = options.ignore_errors
 
-    ztm = initZopeless(dbuser=config.uploadqueue.dbuser)
-    execute_zcml_for_scripts()
+
+    no_mail = options.dryrun or options.nomail
+    queue = name_queue_map[options.queue]
 
     if options.file:
         args_list = [args.strip().split() for args in
@@ -685,70 +738,31 @@ def main():
     else:
         args_list = [args]
 
-    print ("Initialising connection to queue %s" % options.queue)
+    cmd_runner = CommandRunner(queue, distribution_name, distrorelease_name,
+                               announcelist, no_mail)
 
-    no_mail = options.dryrun or options.nomail
-    email_to = options.announcelist
+    print ("Initialising connection to queue %s" % options.queue)
+    ztm = initZopeless(dbuser=config.uploadqueue.dbuser)
+    execute_zcml_for_scripts()
 
     for single_args in args_list:
-        if runCommand(queue, distribution_name, distrorelease_name,
-                      exact_match, single_args, email_to, no_mail):
-            # XXX cprov 20060120: dangerous option, ny other solution ?!
-            if options.ignore_errors:
-                print "Ignoring error, aborting transaction ..."
-                ztm.abort()
+        try:
+            cmd_runner.execute(single_args, exact_match)
+        except CommandRunnerError, info:
+            print (info)
+            if ign_errors:
                 continue
+            ztm.abort()
+            print 'Aborting current transaction'
             return 1
-
-        if not options.dryrun:
-            ztm.commit()
         else:
-            print "DRY RUN requested, not committing."
+            if not options.dryrun:
+                ztm.commit()
+            else:
+                print "DRY RUN requested, not committing."
 
     return 0
 
-
-def runCommand(queue, distribution_name, distrorelease_name, exact_match,
-               terms, announcelist, no_mail=True):
-    """Run a single command iteration.
-
-    Return True if something gets wrong during the operation,
-    False otherwise.
-    """
-    print 'Running: "%s"' % " ".join(terms)
-
-    # check syntax, abort process if anything gets wrong
-    try:
-        action = terms[0]
-        arguments = terms[1:]
-    except IndexError:
-        print 'Provide a valid sentence as "<action> <filter>"'
-        print 'Use action "help" for list of commands'
-        return True
-
-    # check action availability,
-    try:
-        queue_action = queue_actions[action]
-    except KeyError:
-        print 'Unknown Action: %s' % action
-        return True
-
-    # perform the required action on queue.
-    try:
-        # be sure to send every args via kargs
-        wrapper = queue_action(distribution_name=distribution_name,
-                               distrorelease_name=distrorelease_name,
-                               queue=queue, terms=arguments,
-                               announcelist=announcelist,
-                               no_mail=no_mail, exact_match=exact_match)
-        wrapper.initialize()
-        wrapper.run()
-    except QueueActionError, info:
-        print info
-        return True
-
-    # everything was normal
-    return False
 
 if __name__ == '__main__':
     sys.exit(main())
