@@ -86,8 +86,7 @@ class FileUploadClient:
             # server can check that the client is using the same database as the
             # server.
             cur = cursor()
-            cur.execute("SELECT current_database();")
-            databaseName = cur.fetchone()[0]
+            databaseName = self._getDatabaseName(cur)
             
             # Generate new content and alias IDs.
             # (we'll create rows with these IDs later, but not yet)
@@ -140,6 +139,11 @@ class FileUploadClient:
             return aliasID
         finally:
             self._close()
+
+    def _getDatabaseName(self, cur):
+        cur.execute("SELECT current_database();")
+        databaseName = cur.fetchone()[0]
+        return databaseName
 
     def remoteAddFile(self, name, size, file, contentType, expires=None):
         """See canonical.librarian.interfaces.ILibrarianUploadClient"""
