@@ -18,7 +18,14 @@
 
       .results td {
         border: 1px solid #cfcfcf;
-        background-color: #ededed
+      }
+
+      .odd {
+        background-color: #ededed;
+      }
+
+      .even {
+        background-color: #ffffff;
       }
 
       #portal-column-content {
@@ -145,7 +152,8 @@
             <th widtrh="16%">Importance</th>
             <th width="16%">Status</th>
           </tr>
-          <tr tal:repeat="bugtask batch_navigator/batch">
+          <tr tal:repeat="bugtask batch_navigator/batch"
+              tal:attributes="class python:(repeat['bugtask'].odd() and 'odd') or 'even'">
             <td tal:content="bugtask/bug/id">42</td>
             <td>
               <a href="#"
