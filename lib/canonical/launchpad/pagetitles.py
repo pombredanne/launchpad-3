@@ -360,6 +360,8 @@ errorservice_index = 'Error log report'
 
 errorservice_tbentry = 'Traceback entry'
 
+foaf_adminrequestmerge = 'Merge Launchpad accounts'
+
 foaf_mergerequest_sent = 'Merge request sent'
 
 foaf_newteam = 'Register a new team in Launchpad'
@@ -408,6 +410,8 @@ launchpad_notfound = 'Error: Page not found'
 launchpad_oops = 'Error: Oops'
 
 launchpad_requestexpired = 'Error: Timeout'
+
+launchpad_faq = 'Launchpad Frequently Asked Questions'
 
 # launchpad_widget_macros doesn't need a title.
 
@@ -673,6 +677,8 @@ shipit_exports = 'ShipIt exports'
 
 shipit_myrequest = "Your ShipIt order"
 
+shipit_oops = 'Error: Oops'
+
 shipit_reports = 'ShipIt reports'
 
 shipitrequests_index = 'ShipIt requests'
@@ -682,8 +688,6 @@ shipitrequests_search = 'Search ShipIt requests'
 shipitrequest_edit = 'Edit ShipIt request'
 
 shipit_notfound = 'Error: Page not found'
-
-shipit_default_error = 'Error: Oops'
 
 signedcodeofconduct_index = ContextDisplayName('%s')
 

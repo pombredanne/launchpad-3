@@ -450,6 +450,9 @@ class IBugTaskSet(Interface):
                    milestone=None):
         """Create a bug task on a bug and return it.
 
+        If the bug is public, bug contacts will be automatically
+        subscribed.
+
         Exactly one of product, distribution or distrorelease must be provided.
         """
 

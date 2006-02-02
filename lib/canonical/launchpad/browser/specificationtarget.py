@@ -69,7 +69,7 @@ class SpecificationTargetView:
                 specs = self.context.specifications()
         self._specs = specs
         # update listing style
-        self._count = len(specs)
+        self._count = specs.count()
         if self._count > 5:
             self.listing_detailed = False
             self.listing_compact = True

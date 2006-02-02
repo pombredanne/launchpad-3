@@ -136,11 +136,11 @@ class PackagesMap:
     ArchComponentItems instance and create maps for sources
     and binary packages.  These are stored in the src_map and bin_map
     attributes.
-    
+
     The sources map is a dict where the sourcepackage name is the key and a
     dict with some other package information (Version, Maintainer, etc) is
     the value.
-    
+
     The binary is also a dict but has the architecturetag as the keys, and
     the values are a dict that holds the same information as on source map.
     """
@@ -166,13 +166,8 @@ class PackagesMap:
             while binaries.Step():
                 try:
                     bin_tmp = dict(binaries.Section)
-                except KeyError:
-                    log.exception("Invalid Releases stanza in %s" % 
-                                  info_set.binaries_tagfile)
-                    continue
-                # The component isn't listed in the tagfile
-                bin_tmp['Component'] = info_set.component
-                try:
+                    # The component isn't listed in the tagfile
+                    bin_tmp['Component'] = info_set.component
                     bin_name = bin_tmp['Package']
                 except KeyError:
                     log.exception("Invalid Releases stanza in %s" %
@@ -183,12 +178,12 @@ class PackagesMap:
             # Run over the D-I stanzas and store info in tmp_bin_map.
             dibinaries = apt_pkg.ParseTagFile(info_set.difile)
             while dibinaries.Step():
-                dibin_tmp = dict(dibinaries.Section)
-                dibin_tmp['Component'] = info_set.component
                 try:
+                    dibin_tmp = dict(dibinaries.Section)
+                    dibin_tmp['Component'] = info_set.component
                     dibin_name = dibin_tmp['Package']
                 except KeyError:
-                    log.exception("Invalid Releases stanza in %s" %
+                    log.exception("Invalid D-I Releases stanza in %s" %
                                   info_set.difile)
                     continue
                 tmpbin_map[dibin_name] = dibin_tmp
@@ -202,12 +197,7 @@ class PackagesMap:
             while sources.Step():
                 try:
                     src_tmp = dict(sources.Section)
-                except KeyError:
-                    log.exception("Invalid Sources stanza in %s" %
-                                  info_set.sources_tagfile)
-                    continue
-                src_tmp['Component'] = info_set.component
-                try:
+                    src_tmp['Component'] = info_set.component
                     src_name = src_tmp['Package']
                 except KeyError:
                     log.exception("Invalid Sources stanza in %s" %
