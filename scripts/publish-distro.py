@@ -75,7 +75,7 @@ parser.add_option("-d", "--distribution",
                   help="The distribution to publish.")
 
 parser.add_option("-R", "--distsroot",
-                  dest="distsroot" metavar="SUFFIX", default=None,
+                  dest="distsroot", metavar="SUFFIX", default=None,
                   help="Override the dists path for generation")
 
 (options, args) = parser.parse_args()
