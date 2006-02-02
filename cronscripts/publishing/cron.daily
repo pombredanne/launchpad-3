@@ -69,7 +69,7 @@ done
 # mirrors, so we remove them now that the uncompressed MD5SUMS are in the
 # Release files.
 echo Removing uncompressed Packages and Sources files
-find ${DISTSROOT}.new -name "Packages" -o -name "Sources" -exec rm "{}" \;
+find ${DISTSROOT}.new \( -name "Packages" -o -name "Sources" \) -exec rm "{}" \;
 
 # Copy in the indices
 echo Copying the indices into place.
