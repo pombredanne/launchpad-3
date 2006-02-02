@@ -13,7 +13,7 @@ import time
 import datetime
 import urllib
 
-COUNT = 15
+COUNT = 20
 
 # This pattern is intended to match the majority of search engines I
 # built up this list by checking what was accessing
@@ -158,7 +158,7 @@ class ErrorSummary:
                      'SoftRequestTimeout']:
             self.addOops(self.expired, etype, evalue, url, oopsid,
                          local_referer, is_bot)
-        elif etype == 'NotFound':
+        elif etype in ['NotFound', 'NotFoundError']:
             self.addOops(self.notfound, etype, evalue, url, oopsid,
                          local_referer, is_bot)
         else:
@@ -171,15 +171,18 @@ class ErrorSummary:
             if os.path.isfile(path):
                 self.processOops(path)
 
-    def printTable(self, source, title):
-        print '=== Top %d %s ===' % (COUNT, title)
+    def printTable(self, source, title, count=COUNT):
+        if count >= 0:
+            print '=== Top %d %s ===' % (count, title)
+        else:
+            print '=== All %s ===' % title
         print
 
         errors = sorted(source.itervalues(),
                         key=lambda data: data.count,
                         reverse=True)
 
-        for data in errors[:COUNT]:
+        for data in errors[:count]:
             print '%4d %s: %s' % (data.count, data.etype, data.evalue)
             print '    %d%% from search bots, %d%% referred from local sites' \
                   % (int(100.0 * data.bots / data.count),
@@ -198,8 +201,8 @@ class ErrorSummary:
             
     def printReport(self):
         self.printTable(self.expired, 'Time Out Pages')
-        self.printTable(self.notfound, '404 Pages')
-        self.printTable(self.exceptions, 'Exceptions')
+        self.printTable(self.notfound, 'Not Found Errors', count=-1)
+        self.printTable(self.exceptions, 'Exceptions', count=-1)
 
         period = self.end - self.start
         days = period.days + period.seconds / 86400.0
