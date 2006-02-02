@@ -20,7 +20,7 @@ __all__ = [
 
 
 from zope.schema import (
-    Choice, Datetime, Int, Text, TextLine, Password, Bytes)
+    Choice, Datetime, Int, Text, TextLine, Password, Bytes, Bool)
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
@@ -145,6 +145,9 @@ class IPerson(IHasSpecifications):
             )
     languages = Attribute(_('List of languages known by this person'))
 
+    hide_email_addresses = Bool(
+        title=_("Hide my email addresses from other Launchpad users"),
+        required=False, default=False)
     # this is not a date of birth, it is the date the person record was
     # created in this db
     datecreated = Datetime(
@@ -250,7 +253,7 @@ class IPerson(IHasSpecifications):
     preferredemail = TextLine(
             title=_("Preferred Email Address"), description=_(
                 "The preferred email address for this person. The one "
-                "we'll use to communicate with them."), readonly=False)
+                "we'll use to communicate with them."), readonly=True)
 
     preferredemail_sha1 = TextLine(title=_("SHA-1 Hash of Preferred Email"),
             description=_("The SHA-1 hash of the preferred email address as "
@@ -312,6 +315,9 @@ class IPerson(IHasSpecifications):
 
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
+
+    def setPreferredEmail(email):
+        """Set the given email address as this person's preferred one."""
 
     def getBranch(product_name, branch_name):
         """The branch associated to this person and product with this name.
@@ -666,6 +672,13 @@ class IEmailAddress(Interface):
 
     def destroySelf():
         """Delete this email from the database."""
+
+    def syncUpdate():
+        """Write updates made on this object to the database.
+
+        This should be used when you can't wait until the transaction is
+        committed to have some updates actually written to the database.
+        """
 
 
 class IEmailAddressSet(Interface):

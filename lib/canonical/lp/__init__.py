@@ -22,8 +22,8 @@ from psycopgda import adapter
 from canonical.launchpad import _
 
 __all__ = [
-    'DEFAULT_ISOLATION', 'AUTOOMMIT_ISOLATION',
-    'READ_COMMITED_ISOLATION', 'SERIALIZED_ISOLATION',
+    'DEFAULT_ISOLATION', 'AUTOCOMMIT_ISOLATION',
+    'READ_COMMITTED_ISOLATION', 'SERIALIZED_ISOLATION',
     'dbname', 'dbhost', 'dbuser', 'isZopeless', 'initZopeless',
     'decorates', 'Passthrough'
     ]
