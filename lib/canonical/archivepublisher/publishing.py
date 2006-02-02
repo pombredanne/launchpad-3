@@ -633,7 +633,8 @@ tree "dists/%(DISTRORELEASEONDISK)s"
         checksum = sum_form(contents).hexdigest()
         out_file.write(" %s % 16d %s\n" % (checksum, length, file_name))
 
-    def _writeDistroRelease(self, distribution, distrorelease, full_name):
+    def _writeDistroRelease(self, distribution, distrorelease,
+                            full_name, pocket):
         """Write out the Release files for the provided distrorelease."""
         all_components = set()
         all_architectures = set()
@@ -685,6 +686,14 @@ Architecture: %s
                 f.write(contents)
                 f.close()
 
+        drsummary = "%s %s" % (distribution.displayname,
+                               distrorelease.displayname)
+
+        if pocket == PackagePublishingPocket.RELEASE:
+            drsummary += distrorelease.version
+        else:
+            drsummary += pocket.name.capitalize()
+                
         f = open(os.path.join(self._config.distsroot, full_name, "Release"),
                  "w")
         f.write("""Origin: %s
@@ -700,7 +709,7 @@ Description: %s
        full_name, distrorelease.version, distrorelease.name,
        datetime.utcnow().strftime("%a, %d %b %Y %k:%M:%S UTC"),
        " ".join(all_architectures), " ".join(all_components),
-       distrorelease.summary))
+       drsummary))
         f.write("MD5Sum:\n")
         all_files = sorted(list(all_files), key=os.path.dirname)
         for file_name in all_files:
@@ -729,7 +738,8 @@ Description: %s
                 if full_distrorelease_name in self._release_files_needed:
                     self._writeDistroRelease(self.distro,
                                              distrorelease,
-                                             full_distrorelease_name)
+                                             full_distrorelease_name,
+                                             pocket)
 
     def createEmptyPocketRequests(self):
         """Write out empty file lists etc for pockets we want to have
