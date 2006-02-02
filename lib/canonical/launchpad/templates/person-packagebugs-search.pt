@@ -100,7 +100,7 @@
                  tal:attributes="href python:search_link[1]">
                 mozilla-firefox (Ubuntu)</a><span tal:condition="not:repeat/search_link/end"></span>
             </li>
-            <li>
+            <li tal:condition="view/getStatusFilterLinks">
               <span tal:repeat="status_filter_link view/getStatusFilterLinks">
                 <span tal:condition="repeat/status_filter_link/end">
                   <span tal:condition="python:repeat['status_filter_link'].length() > 1">

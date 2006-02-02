@@ -734,9 +734,8 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
 
         person_url = canonical_url(self.context)
         query_string = urllib.urlencode(sorted(params.items()), doseq=True)
-        html_safe_query_string = cgi.escape(query_string)
 
-        return person_url + '/+packagebugs-search?%s' % html_safe_query_string
+        return person_url + '/+packagebugs-search?%s' % query_string
 
     def getPackage(self):
         """Get the package whose bugs are currently being searched."""
@@ -815,15 +814,16 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         differently from other filter links, to communicate that they're an "OR"
         match.
         """
-        status_filter_links = []
         form = self.request.form
+        filter_statuses = form.get("field.status", [])
 
-        # If no statuses are provided in the URL, default to unresolved
-        # statuses.
-        filter_statuses = form.get(
-            "field.status",
-            [s.title for s in UNRESOLVED_BUGTASK_STATUSES])
+        if not filter_statuses:
+            return []
 
+        if not zope_isinstance(filter_statuses, (list, tuple)):
+            filter_statuses = [filter_statuses]
+
+        status_filter_links = []
         for status_name in filter_statuses:
             status_filter_links.append((
                 status_name.lower(),
