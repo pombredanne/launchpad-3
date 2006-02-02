@@ -71,16 +71,16 @@ done
 echo Removing uncompressed Packages and Sources files
 find ${DISTSROOT}.new -name "Packages" -o -name "Sources" -exec rm "{}" \;
 
-# As close to atomically as possible, put the new dists into place
-mv $DISTSROOT ${DISTSROOT}.old
-mv ${DISTSROOT}.new $DISTSROOT
-
 # Copy in the indices
 echo Copying the indices into place.
 rm -f $INDICES/*
 cp $OVERRIDEROOT/override.* $INDICES
 
 set -x 
+
+# As close to atomically as possible, put the new dists into place
+mv $DISTSROOT ${DISTSROOT}.old
+mv ${DISTSROOT}.new $DISTSROOT
 
 # Touch everything you asked us to do
 for FILE in $TOUCHLIST; do
