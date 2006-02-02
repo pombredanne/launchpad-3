@@ -40,8 +40,29 @@
           replace="structure view/batchnav/@@+navigation-links"
           tal:condition="view/batch"/>
 
-     <table class="listing" tal:condition="view/batch">
-        <tr class="thead">
+  <table class="listing" tal:condition="view/batch">
+    <tbody>
+      <tr tal:repeat="build view/batch">
+        <td class="left icon">
+          <img tal:attributes="
+            alt build/buildstate/name;
+            src build/build_icon
+          " />
+        </td>
+        <td>
+          <a tal:attributes="href build/fmt:url">
+            <span tal:replace="build/title">NAME</span>
+          </a>
+        </td>
+
+        
+      </tr>
+    </tbody>
+  </table>
+
+  <table class="listing" tal:condition="view/batch">
+    <thead>
+      <tr>
             <th>Build</th>
             <th>Requested</th>
             <th>Built</th>
@@ -49,7 +70,9 @@
             <th>State</th>
             <th>Build log</th>
             <th>Duration</th>
-        </tr>
+      </tr>
+    </thead>
+    <tbody>
         <tr tal:repeat="build view/batch">
             <td>
               <a tal:attributes="href build/fmt:url">
@@ -95,7 +118,8 @@
             </td>
             </tal:was_built>
         </tr>
-      </table>
+    </tbody>
+  </table>
 
       <div tal:condition="not: view/batch">
         <img src="/++resource++alert" />
