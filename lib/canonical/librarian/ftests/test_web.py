@@ -15,6 +15,7 @@ from canonical.launchpad.database import LibraryFileAlias
 from canonical.config import config
 from canonical.database.sqlbase import commit
 
+
 class LibrarianWebTestCase(unittest.TestCase):
     """Test the librarian's web interface."""
 
@@ -156,7 +157,6 @@ class LibrarianWebTestCase(unittest.TestCase):
             config.librarian.download_host, config.librarian.download_port)
         f = urlopen(url)
         self.failUnless('Disallow: /' in f.read())
-        
         
 
 class LibrarianZopelessWebTestCase(LibrarianWebTestCase):

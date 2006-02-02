@@ -62,6 +62,7 @@ from canonical.lp.dbschema import (
     SpecificationSort)
 
 from canonical.foaf import nickname
+from canonical.cachedproperty import cachedproperty
 
 
 class Person(SQLBase):
@@ -111,6 +112,7 @@ class Person(SQLBase):
     merged = ForeignKey(dbName='merged', foreignKey='Person', default=None)
 
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    hide_email_addresses = BoolCol(notNull=True, default=False)
 
     # RelatedJoin gives us also an addLanguage and removeLanguage for free
     languages = RelatedJoin('Language', joinColumn='person',
@@ -752,11 +754,11 @@ class Person(SQLBase):
             # This branch will be executed only in the first time a person
             # uses Launchpad. Either when creating a new account or when
             # resetting the password of an automatically created one.
-            self.preferredemail = email
+            self.setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
 
-    def _setPreferredemail(self, email):
+    def setPreferredEmail(self, email):
         """See IPerson."""
         if not IEmailAddress.providedBy(email):
             raise TypeError, (
@@ -775,8 +777,11 @@ class Person(SQLBase):
         email = EmailAddress.get(email.id)
         email.status = EmailAddressStatus.PREFERRED
         email.syncUpdate()
+        # Now we update our cache of the preferredemail
+        setattr(self, '_preferredemail_cached', email)
 
-    def _getPreferredemail(self):
+    @cachedproperty('_preferredemail_cached')
+    def preferredemail(self):
         """See IPerson."""
         emails = self._getEmailsByStatus(EmailAddressStatus.PREFERRED)
         # There can be only one preferred email for a given person at a
@@ -789,7 +794,6 @@ class Person(SQLBase):
             return emails[0]
         else:
             return None
-    preferredemail = property(_getPreferredemail, _setPreferredemail)
 
     @property
     def preferredemail_sha1(self):

@@ -60,7 +60,8 @@
       schema="canonical.launchpad.interfaces.IPerson"
       class="canonical.launchpad.browser.PersonEditView"
       label="Edit personal details"
-      fields="name displayname givenname familyname timezone"
+      fields="name displayname givenname familyname hide_email_addresses
+              timezone"
       permission="launchpad.Edit"
       template="../templates/person-edit.pt"
       lp:url="/people/$person.id/+edit">
