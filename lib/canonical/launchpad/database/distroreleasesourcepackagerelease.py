@@ -183,6 +183,11 @@ class DistroReleaseSourcePackageRelease:
         return self.sourcepackagerelease.sourcepackagename
 
     @property
+    def manifest(self):
+        """See ISourcePackageRelease."""
+        return self.sourcepackagerelease.manifest
+
+    @property
     def current_published(self):
         """See IDistroArchReleaseSourcePackage."""
 
