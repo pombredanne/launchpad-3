@@ -1168,12 +1168,12 @@ def do_diff(Sources, Suite, origin, arguments, current_binaries):
         else:
             if dest_version.find("ubuntu") != -1:
                 stat_uptodate_modified += 1;    
-                if Options.verbose:
+                if Options.moreverbose:
                     print "[Nothing to update (Modified)] %s_%s (vs %s)" \
                           % (pkg, dest_version, source_version)
             else:
                 stat_uptodate += 1
-                if Options.verbose:
+                if Options.moreverbose:
                     print "[Nothing to update] %s (%s [ubuntu] >= %s [debian])" \
                           % (pkg, dest_version, source_version)
 
@@ -1215,6 +1215,10 @@ def options_setup():
     parser.add_option("-n", "--noaction", dest="action",
                       default=True, action="store_false",
                       help="don't do anything")
+    # XXX FIXME: why the heck doesn't -v provide by logger provide Options.verbose?
+    parser.add_option("-V", "--moreverbose", dest="moreverbose",
+                      default=False, action="store_true",
+                      help="be even more verbose")
 
     # Options controlling where to sync packages to:
 
