@@ -1245,8 +1245,9 @@ def options_setup():
     if not Options.todistro:
         Options.todistro = "ubuntu"
 
+    # XXX FIXME: use distro.currentrelease
     if not Options.tosuite:
-        Options.tosuite = "breezy"
+        Options.tosuite = "dapper"
 
     if not Options.fromdistro:
         Options.fromdistro = "debian"
