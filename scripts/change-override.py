@@ -180,10 +180,11 @@ def main():
     for package in arguments:
         if Options.sourceonly or Options.binaryandsource or Options.sourceandchildren:
             process_source_change(Options.distrorelease, package)
+
         if Options.sourceandchildren:
             for child in binaries_of_source(Options.distrorelease, package):
                 process_binary_change(Options.distrorelease, child)
-        else:
+        elif not Options.sourceonly:
             process_binary_change(Options.distrorelease, package)
 
     Lock.release()
