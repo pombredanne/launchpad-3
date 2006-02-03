@@ -162,22 +162,38 @@ And we can find builds for a given distribution by type.
   >>> ubuntu.getBuildRecords().count()
   4
 
-  >>> L = list(ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT))
-  >>> len(L)
-  2
-  >>> L[0].buildstate
-  <Item FULLYBUILT (1) from <class 'canonical.lp.dbschema.BuildStatus'>>
-  >>> L[1].buildstate
-  <Item FULLYBUILT (1) from <class 'canonical.lp.dbschema.BuildStatus'>>
+  >>> L = ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT)
+  >>> for l in L:
+  ...     l.datecreated, l.id, l.buildstate.value
+  (datetime.datetime(2005, 3, 24, 0, 0, tzinfo=<UTC>), 7, 1)
+  (datetime.datetime(2004, 9, 27, 11, 57, 13, tzinfo=<UTC>), 2, 1)
 
+
+Note, by ordering the build by BuildQueue.lastscore, it doesn't notice
+the existence of builds missing buildqueue.
 
   >>> ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD).count()
-  1
+  0
+
+  >>> pending_build = Build.selectFirst('buildstate=%s'
+  ...                                   % BuildStatus.NEEDSBUILD,
+  ...                                   orderBy=['-id'])
+  >>> pending_build.createBuildQueueEntry().lastscore = 10
+  >>> pending_build.id
+  8
+
+  >>> firefox_build.id
+  2
 
   >>> firefox_build.buildstate = BuildStatus.NEEDSBUILD
   >>> firefox_build.syncUpdate()
   >>> L = list(ubuntu.getBuildRecords(status=BuildStatus.NEEDSBUILD))
   >>> len(L)
   2
-  >>> L[0].buildstate
-  <Item NEEDSBUILD (0) from <class 'canonical.lp.dbschema.BuildStatus'>>
+
+  >>> for l in L:
+  ...     l.id, l.buildstate.value, l.buildqueue_record.lastscore
+  (8, 0, 10)
+  (2, 0, 1)
+
+
