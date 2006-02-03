@@ -1,0 +1,327 @@
+Person Pages
+============
+
+In every person page, the 'Bugs' facet has a series of bug listings for
+that person. These pages provide simple and advanced search forms.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> name16 = getUtility(IPersonSet).get(16)
+
+Let's define a helper function to make it easier to construct a view.
+
+    >>> from zope.component import getView
+    >>> from zope.publisher.browser import TestRequest
+    >>> def create_view(context, name, form=None):
+    ...     view = getView(context, name, TestRequest(form=form))
+    ...     view.initialize()
+    ...     return view
+
+Assigned bugs
+-------------
+
+All bug tasks assigned to this person.
+
+By default, only bugtasks with any of the statuses listed in
+canonical.launchpad.interfaces.UNRESOLVED_BUGTASK_STATUSES are included:
+
+    >>> assigned_bugtaks_view = create_view(name16, '+assignedbugs')
+    >>> assigned_bugtasks = list(assigned_bugtaks_view.search().batch)
+    >>> sorted([(bugtask.bug.id, bugtask.status.name)
+    ...         for bugtask in assigned_bugtasks])
+    [(7, 'UNCONFIRMED')]
+
+The advanced search allows us to change this behaviour. Let's search for
+bug tasks with status UNCONFIRMED and FIXCOMMITTED.
+
+    >>> form = {
+    ...     'orderby': u'-priority',
+    ...     'field.status': [u'Unconfirmed', u'Fix Released'],
+    ...     'field.status-empty-marker': u'1', 'search': u'Search'}
+    >>> assigned_bugtaks_view = create_view(name16, '+assignedbugs', form)
+    >>> assigned_bugtasks = list(assigned_bugtaks_view.search().batch)
+    >>> sorted([(bugtask.bug.id, bugtask.status.name)
+    ...         for bugtask in assigned_bugtasks])
+    [(7, 'UNCONFIRMED'), (8, 'FIXRELEASED')]
+
+
+Reported bugs
+-------------
+
+All bug tasks reported by someone. By default we'll get assigned and
+unassigned bug tasks.
+
+    >>> reported_bugtaks_view = create_view(name16, '+reportedbugs')
+    >>> reported_bugtasks = list(reported_bugtaks_view.search().batch)
+    >>> sorted([(bugtask.bug.id, bugtask.status.name,
+    ...          getattr(bugtask.assignee, 'name', None))
+    ...         for bugtask in reported_bugtasks])
+    [(1, 'UNCONFIRMED', None), (3, 'UNCONFIRMED', None), (7, 'UNCONFIRMED', u'name16')]
+
+But the advanced search allows us to query only the bug tasks that aren't
+assigned.
+
+    >>> form = {'orderby': u'-priority', 'field.unassigned': u'on'}
+    >>> reported_bugtaks_view = create_view(name16, '+reportedbugs', form)
+    >>> reported_bugtasks = list(reported_bugtaks_view.search().batch)
+    >>> sorted([(bugtask.bug.id, bugtask.status.name,
+    ...          getattr(bugtask.assignee, 'name', None))
+    ...         for bugtask in reported_bugtasks])
+    [(1, 'UNCONFIRMED', None), (3, 'UNCONFIRMED', None)]
+
+
+Subscribed bugs
+---------------
+
+All bug tasks someone is subscribed to. By default we'll get bug tasks
+with any severity.
+
+    >>> name12 = getUtility(IPersonSet).get(12)
+    >>> subscribed_bugtaks_view = create_view(name12, '+subscribedbugs')
+    >>> subscribed_bugtasks = list(subscribed_bugtaks_view.search().batch)
+    >>> sorted([(bugtask.bug.id, bugtask.status.name, bugtask.severity.name)
+    ...         for bugtask in subscribed_bugtasks])
+    [(1, 'CONFIRMED', 'MINOR'), (1, 'UNCONFIRMED', 'MINOR'),
+     (1, 'UNCONFIRMED', 'NORMAL'), (4, 'UNCONFIRMED', 'NORMAL')]
+
+The advanced search allows us to query only the bug tasks with severity
+Normal, Major and Critical.
+
+    >>> form = {'orderby': u'-priority',
+    ...         u'field.severity': [u'Normal', u'Major', u'Critical']}
+    >>> subscribed_bugtaks_view = create_view(name12, '+subscribedbugs', form)
+    >>> subscribed_bugtasks = list(subscribed_bugtaks_view.search().batch)
+    >>> sorted([(bugtask.bug.id, bugtask.status.name, bugtask.severity.name)
+    ...         for bugtask in subscribed_bugtasks])
+    [(1, 'UNCONFIRMED', 'NORMAL'), (4, 'UNCONFIRMED', 'NORMAL')]
+
+Bugs for Bug Contact
+--------------------
+
+Malone can generate bug reports for packages on which a user is a bug
+contact. The Person context is used only to get a list of packages that
+the user has chosen to subscribe to, but any package could be searched
+from these reports, simply by hacking the URL.
+
+    >>> form = {
+    ...     'search': "Search", 'field.distribution': "debian",
+    ...     'field.sourcepackagename': "mozilla-firefox"}
+
+    >>> packagebugs_search_view = create_view(
+    ...     name12, name="+packagebugs-search", form=form)
+
+Let's look at some example searches:
+
+No search criteria (ordered by priority, then severity):
+
+    >>> bugtask_batch_navigator = packagebugs_search_view.search()
+    >>> [bugtask.bug.id for bugtask in bugtask_batch_navigator.batch]
+    [8, 1, 2, 3]
+
+Simple keyword searching:
+
+    >>> form = {
+    ...     'search': "Search",
+    ...     'field.distribution': "debian",
+    ...     'field.sourcepackagename': "mozilla-firefox",
+    ...     'field.searchtext': "trash"}
+
+    >>> packagebugs_search_view = create_view(
+    ...     name12, name="+packagebugs-search", form=form)
+
+    >>> bugtask_batch_navigator = packagebugs_search_view.search()
+    >>> [bugtask.bug.id for bugtask in bugtask_batch_navigator.batch]
+    [2]
+
+Searching for all open bugs on Debian mozilla-firefox:
+
+    >>> from canonical.launchpad.interfaces.bugtask import (
+    ...     UNRESOLVED_BUGTASK_STATUSES)
+
+    >>> form = {
+    ...     'search': "Search",
+    ...     'field.distribution': "debian",
+    ...     'field.sourcepackagename': "mozilla-firefox",
+    ...     'field.status': [s.title for s in UNRESOLVED_BUGTASK_STATUSES]}
+
+    >>> packagebugs_search_view = create_view(
+    ...     name12, name="+packagebugs-search", form=form)
+
+    >>> bugtask_batch_navigator = packagebugs_search_view.search()
+    >>> [bugtask.bug.id for bugtask in bugtask_batch_navigator.batch]
+    [1, 2, 3]
+
+Searching for all unassigned bugs on Debian mozilla-firefox:
+
+    >>> form = {
+    ...     'search': "Search",
+    ...     'field.distribution': "debian",
+    ...     'field.sourcepackagename': "mozilla-firefox",
+    ...     'field.unassigned': True}
+
+    >>> packagebugs_search_view = create_view(
+    ...     name12, name="+packagebugs-search", form=form)
+
+    >>> bugtask_batch_navigator = packagebugs_search_view.search()
+    >>> [bugtask.bug.id for bugtask in bugtask_batch_navigator.batch]
+    [1, 3]
+
+There are helper methods to calculate links to the Open, Critical,
+Unassigned, and In Progress bug lists.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> ubuntu_mozilla_firefox = ubuntu.getSourcePackage("mozilla-firefox")
+
+    >>> packagebugs_search_view.getOpenBugsURL(ubuntu_mozilla_firefox)
+    u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&search=Search'
+
+    >>> packagebugs_search_view.getCriticalBugsURL(ubuntu_mozilla_firefox)
+    u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.severity=Critical&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&search=Search'
+
+    >>> packagebugs_search_view.getUnassignedBugsURL(ubuntu_mozilla_firefox)
+    u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.unassigned=on&search=Search'
+
+    >>> packagebugs_search_view.getInProgressBugsURL(ubuntu_mozilla_firefox)
+    u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=In+Progress&search=Search'
+
+A helper method is used to calculate package bug search URL for the "My
+other packages" portlet:
+
+    >>> packagebugs_search_view.getBugContactPackageSearchURL(
+    ...     ubuntu_mozilla_firefox)
+    u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&search=Search'
+
+Finally, there is a helper method that returns a list of dicts used to
+render the overview report.
+
+    >>> packagebugs_search_view = create_view(
+    ...     name16, name="+packagebugs", form=form)
+
+    >>> package_bug_counts = packagebugs_search_view.getPackageBugCounts()
+    >>> len(package_bug_counts)
+    2
+    >>> ubuntu_firefox_bugcounts = package_bug_counts[0]
+
+    >>> ubuntu_firefox_bugcounts['package_name']
+    u'mozilla-firefox in ubuntu'
+    >>> ubuntu_firefox_bugcounts['package_search_url']
+    u'.../people/name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&search=Search'
+
+    >>> ubuntu_firefox_bugcounts['open_bugs_count']
+    1
+    >>> ubuntu_firefox_bugcounts['critical_bugs_count']
+    0
+    >>> ubuntu_firefox_bugcounts['unassigned_bugs_count']
+    1
+    >>> ubuntu_firefox_bugcounts['inprogress_bugs_count']
+    0
+
+    >>> ubuntu_firefox_bugcounts['open_bugs_url']
+    u'.../people/name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&search=Search'
+    >>> ubuntu_firefox_bugcounts['critical_bugs_url']
+    u'.../people/name16/+packagebugs-search?field.distribution=ubuntu&field.severity=Critical&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&search=Search'
+    >>> ubuntu_firefox_bugcounts['unassigned_bugs_url']
+    u'.../people/name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.unassigned=on&search=Search'
+    >>> ubuntu_firefox_bugcounts['inprogress_bugs_url']
+    u'.../people/name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=In+Progress&search=Search'
+
+Search Filter Links
+-------------------
+
+The package bug report displays the current search filter, with each
+part of the filter being links to that specific part of the filter. For
+example, if you search for mozilla-firefox (Ubuntu) bugs, that are
+unassigned, and targeted for dapper, you are presented with links like:
+
+1 - 40 of 40 bugs matching _mozilla-firefox (Ubuntu)_, _unassigned_,
+_targeted for dapper_.
+
+Use the getSearchFilterLinks method to get a dict of these links.
+
+    >>> form = {
+    ...     'search': "Search",
+    ...     'field.distribution': "debian",
+    ...     'field.sourcepackagename': "mozilla-firefox",
+    ...     'field.searchtext': "foo",
+    ...     'field.unassigned': 'on'}
+
+    >>> packagebugs_search_view = create_view(
+    ...     name12, name="+packagebugs-search", form=form)
+
+    >>> filter_links = packagebugs_search_view.getSearchFilterLinks()
+    >>> len(filter_links)
+    2
+
+    >>> filter_links[0]['title']
+    'mozilla-firefox in debian'
+
+    >>> filter_links[0]['url']
+    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&search=Search'
+
+    >>> filter_links[1]['title']
+    'unassigned'
+
+    >>> filter_links[1]['url']
+    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.unassigned=on&search=Search'
+
+There is a separate method for status filter links, because they are
+displayed slightly differently than other filter links, to communicate
+that the status is an "OR" match.
+
+    >>> form = {
+    ...     'search': "Search",
+    ...     'field.distribution': "debian",
+    ...     'field.sourcepackagename': "mozilla-firefox",
+    ...     'field.searchtext': "foo",
+    ...     'field.status': ['Unconfirmed', 'Confirmed', 'In Progress']}
+
+    >>> packagebugs_search_view = create_view(
+    ...     name12, name="+packagebugs-search", form=form)
+
+    >>> status_filter_links = packagebugs_search_view.getStatusFilterLinks()
+    >>> len(status_filter_links)
+    3
+
+    >>> status_filter_links[0]['title']
+    'unconfirmed'
+    >>> status_filter_links[0]['url']
+    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&search=Search'
+
+    >>> status_filter_links[1]['title']
+    'confirmed'
+    >>> status_filter_links[1]['url']
+    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&field.status=Confirmed&search=Search'
+
+    >>> status_filter_links[2]['title']
+    'in progress'
+    >>> status_filter_links[2]['url']
+    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&field.status=In+Progress&search=Search'
+
+There is also a separate method for the search text link, because that's
+displayed slightly differently too, so that the user knows what fields
+it searches:
+
+    >>> searchtext_filter_link = packagebugs_search_view.getSearchTextFilterLink()
+    >>> searchtext_filter_link['title']
+    u'foo'
+    >>> searchtext_filter_link['url']
+    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.searchtext=foo&field.sourcepackagename=mozilla-firefox&search=Search'
+
+Now again, this time with a unicode string as the search text:
+
+    >>> form = {
+    ...     'search': "Search",
+    ...     'field.distribution': "debian",
+    ...     'field.sourcepackagename': "mozilla-firefox",
+    ...     'field.searchtext': u'\u2122'}
+
+    >>> packagebugs_search_view = create_view(
+    ...     name12, name="+packagebugs-search", form=form)
+
+    >>> searchtext_filter_link = packagebugs_search_view.getSearchTextFilterLink()
+    >>> searchtext_filter_link['title']
+    u'\u2122'
+    >>> searchtext_filter_link['url']
+    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.searchtext=%E2%84%A2&field.sourcepackagename=mozilla-firefox&search=Search'

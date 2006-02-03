@@ -319,6 +319,13 @@ class IPerson(IHasSpecifications):
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
 
+    def getBugContactPackages():
+        """Return a list of packages for which this person is a bug contact.
+
+        Returns a list of IDistributionSourcePackage's, ordered alphabetically
+        (A to Z) by name.
+        """
+
     def setPreferredEmail(email):
         """Set the given email address as this person's preferred one."""
 

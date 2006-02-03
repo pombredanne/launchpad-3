@@ -77,54 +77,55 @@
       id="portal-column-two"
       metal:define-slot="column_two"
     >
-      <tal:notlogin condition="python: '+login' not in request.getURL()">
-        <ul
-          tal:define="facetmenu CONTEXTS/menu:facet"
-          tal:condition="facetmenu"
-          class="facets"
-        >
-          <tal:facet repeat="link facetmenu">
-            <tal:available condition="link/enabled">
+      <metal:macro define-macro="action-menu">
+        <tal:notlogin condition="python: '+login' not in request.getURL()">
+          <ul
+             tal:define="facetmenu CONTEXTS/menu:facet"
+             tal:condition="facetmenu"
+             class="facets"
+             >
+            <tal:facet repeat="link facetmenu">
+              <tal:available condition="link/enabled">
+                <li
+                   tal:condition="link/selected"
+                   tal:attributes="title link/summary"
+                   class="current"
+                   >
+                  <a tal:condition="link/linked"
+                     tal:attributes="href link/url"
+                     tal:content="structure link/escapedtext"
+                     >abc</a>
+                  <span
+                     tal:condition="not: link/linked"
+                     tal:replace="structure link/escapedtext"
+                     >def</span>
+                  <tal:menu
+                     condition="not:exists:body"
+                     replace="structure CONTEXTS/@@+menubox"
+                     />
+                </li>
+                <li
+                   tal:condition="not: link/selected"
+                   tal:attributes="title link/summary"
+                   ><a
+                       tal:attributes="href link/url"
+                       tal:content="structure link/escapedtext"
+                       >ghi</a><span
+                                  class="disabled"
+                                  tal:condition="not: link/linked"
+                                  tal:content="structure link/escapedtext"
+                                  >jkl</span></li>
+              </tal:available>
               <li
-                tal:condition="link/selected"
-                tal:attributes="title link/summary"
-                class="current"
-              >
-                <a tal:condition="link/linked"
-                  tal:attributes="href link/url"
-                  tal:content="structure link/escapedtext"
-                >abc</a>
-                <span
-                  tal:condition="not: link/linked"
-                  tal:replace="structure link/escapedtext"
-                >def</span>
-                <tal:menu
-                  condition="not:exists:body"
-                  replace="structure CONTEXTS/@@+menubox"
-                />
-              </li>
-              <li
-                tal:condition="not: link/selected"
-                tal:attributes="title link/summary"
-              ><a
-                  tal:attributes="href link/url"
-                  tal:content="structure link/escapedtext"
-                >ghi</a><span
-                  class="disabled"
-                  tal:condition="not: link/linked"
-                  tal:content="structure link/escapedtext"
-                >jkl</span></li>
-            </tal:available>
-            <li
-              tal:condition="not: link/enabled"
-              tal:attributes="title link/summary"
-              tal:content="structure link/escapedtext"
-              class="unavailable"
-            />
-          </tal:facet>
-        </ul>
-      </tal:notlogin>
-
+                 tal:condition="not: link/enabled"
+                 tal:attributes="title link/summary"
+                 tal:content="structure link/escapedtext"
+                 class="unavailable"
+                 />
+            </tal:facet>
+          </ul>
+        </tal:notlogin>
+      </metal:macro>
       <metal:portlets define-slot="portlets_two">
       </metal:portlets>
     </div>
