@@ -308,3 +308,20 @@ it searches:
     u'foo'
     >>> searchtext_filter_link['url']
     u'.../people/name12/+packagebugs-search?field.distribution=debian&field.searchtext=foo&field.sourcepackagename=mozilla-firefox&search=Search'
+
+Now again, this time with a unicode string as the search text:
+
+    >>> form = {
+    ...     'search': "Search",
+    ...     'field.distribution': "debian",
+    ...     'field.sourcepackagename': "mozilla-firefox",
+    ...     'field.searchtext': u'\u2122'}
+
+    >>> packagebugs_search_view = create_view(
+    ...     name12, name="+packagebugs-search", form=form)
+
+    >>> searchtext_filter_link = packagebugs_search_view.getSearchTextFilterLink()
+    >>> searchtext_filter_link['title']
+    u'\u2122'
+    >>> searchtext_filter_link['url']
+    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.searchtext=%E2%84%A2&field.sourcepackagename=mozilla-firefox&search=Search'
