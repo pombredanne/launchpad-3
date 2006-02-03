@@ -476,7 +476,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         pofile = self.context
         potemplate = pofile.potemplate
         for key in self.form:
-            match = re.match('set_(\d+)_msgid$', key)
+            match = re.match('msgset_(\d+)$', key)
 
             if not match:
                 # The form's key is not one that we are looking for.

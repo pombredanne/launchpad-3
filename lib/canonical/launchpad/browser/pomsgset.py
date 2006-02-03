@@ -14,23 +14,25 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import LaunchpadView
 
 
-
-
 class POMsgSetView(LaunchpadView):
-    """Holds all data needed to show an IPOMsgSet."""
+    """Holds all data needed to show an IPOMsgSet.
+
+    This view class could be used directly or as part of the POFileView class
+    in which case, we would have up to 100 instances of this class using the
+    same information at self.form.
+    """
 
     __used_for__ = IPOMsgSet
 
     def initialize(self):
         self.form = self.request.form
         self.potmsgset = self.context.potmsgset
-        self.id = self.potmsgset.id
         self.pofile = self.context.pofile
         self.translations = None
 
         # By default the submitted values are None
-        self.web_translations = None
-        self.web_needs_review = None
+        self.form_posted_translations = None
+        self.form_posted_needsreview = None
         self.error = None
 
         # At this point, we don't know the alternative language selected.
@@ -135,8 +137,8 @@ class POMsgSetView(LaunchpadView):
     @property
     def is_fuzzy(self):
         """Return whether this pomsgset is set as fuzzy."""
-        if self.web_needs_review is not None:
-            return self.web_needs_review
+        if self.form_posted_needsreview is not None:
+            return self.form_posted_needsreview
         else:
             return self.context.isfuzzy
 
@@ -146,16 +148,16 @@ class POMsgSetView(LaunchpadView):
             # We have already the translations prepared.
             return
 
-        if self.web_translations is None:
-            self.web_translations = {}
+        if self.form_posted_translations is None:
+            self.form_posted_translations = {}
 
         # Fill the list of translations based on the input the user
         # submitted.
-        web_translations_keys = self.web_translations.keys()
-        web_translations_keys.sort()
+        form_posted_translations_keys = self.form_posted_translations.keys()
+        form_posted_translations_keys.sort()
         self.translations = [
-            self.web_translations[web_translations_key]
-            for web_translations_key in web_translations_keys]
+            self.form_posted_translations[form_posted_translations_key]
+            for form_posted_translations_key in form_posted_translations_keys]
 
         if not self.translations:
             # We didn't get any translation from the website.
@@ -291,46 +293,63 @@ class POMsgSetView(LaunchpadView):
         key, method = dispatch_to[0]
         method()
 
-    def _extract_translations_from_form(self):
+    def _extract_form_posted_translations(self):
         """Parse the form submitted to the translation widget looking for
         translations.
 
-        Store the new translations at self.web_translations and its status at
-        self.web_needs_review.
+        Store the new translations at self.form_posted_translations and its
+        status at self.form_posted_needsreview.
+
+        In this method, we look for various keys in the form, and use them as
+        follows:
+
+        - 'msgset_ID' to know if self is part of the submitted form. If it
+          isn't found, we stop parsing the form and return.
+        - 'msgset_ID_LANGCODE_translation_PLURALFORM': Those will be the
+          submitted translations and we will have as many entries as plural
+          forms the language self.context.language has.
+        - 'msgset_ID_LANGCODE_needsreview': If present, will note that the
+          'needs review' flag has been set for the given translations.
+
+        In all those form keys, 'ID' is self.potmsgset.id.
         """
-        # Reset any old values we could have
-        self.web_translations = None
-        self.web_needs_review = None
-        self.error = None
+        msgset_ID = 'msgset_%d' % self.potmsgset.id
+        msgset_ID_LANGCODE_needsreview = 'msgset_%d_%s_needsreview' % (
+            self.potmsgset.id, self.pofile.language.code)
 
-        # Initialize the entry if we find it in the form submission.
-        for key in self.form:
-            if key == ('set_%d_msgid' % self.id):
-                self.web_translations = {}
-                self.web_needs_review = False
+        # We will add the plural form number later.
+        msgset_ID_LANGCODE_translation_ = 'msgset_%d_%s_translation_' % (
+            self.potmsgset.id, self.pofile.language.code)
 
-        # Extract translations.
-        pluralform = 0
-        while True:
-            key = 'set_%d_translation_%s_%d' % (
-                self.id, self.pofile.language.code, pluralform)
-            value = self.form.get(key)
-            if value is None:
-                # There aren't more translations for self.id.
+        # If this form does not have data about the msgset id, then do nothing
+        # at all.
+        if msgset_ID not in self.form:
+            return
+
+        self.form_posted_translations = {}
+
+        self.form_posted_needsreview = (
+            msgset_ID_LANGCODE_needsreview in self.form)
+
+        # Extract the translations from the form, and store them in
+        # self.form_posted_translations .
+
+        # There will never be 100 plural forms.  Usually, we'll be iterating
+        # over just two or three.
+        # We try plural forms in turn, starting at 0, and leave the loop as
+        # soon as we don't find a translation for a plural form.
+        for pluralform in xrange(100):
+            msgset_ID_LANGCODE_translation_PLURALFORM = '%s%s' % (
+                msgset_ID_LANGCODE_translation_, pluralform)
+            if msgset_ID_LANGCODE_translation_PLURALFORM not in self.form:
                 break
-            # Store the translation for the given plural form.
+            value = self.form[msgset_ID_LANGCODE_translation_PLURALFORM]
             translation_normalized = (
                 helpers.normalize_newlines(value))
-            self.web_translations[pluralform] = (
+            self.form_posted_translations[pluralform] = (
                 helpers.contract_rosetta_tabs(translation_normalized))
-            pluralform += 1
-
-        # Extract 'needs review' statuses.
-        value = self.form.get('set_%d_needs_review_%s' % (
-            self.id, self.pofile.language.code))
-        if value is not None:
-            self.web_needs_review = True
-
+        else:
+            raise AssertionError("There were more than 100 plural forms!")
 
     def _submit_translations(self):
         """Handle a form submission for the translation form.
@@ -341,21 +360,21 @@ class POMsgSetView(LaunchpadView):
         submitted message sets, where each message set will have information
         on any validation errors it has.
         """
-        # Extract the values from the form and set self.web_translations and
-        # self.web_needs_review.
-        self._extract_translations_from_form()
+        # Extract the values from the form and set self.form_posted_translations
+        # and self.form_posted_needsreview.
+        self._extract_form_posted_translations()
 
-        if self.web_translations is None:
+        if self.form_posted_translations is None:
             # There are not translations interesting for us.
             return
 
         has_translations = False
-        for web_translation_key in self.web_translations.keys():
-            if self.web_translations[web_translation_key] != '':
+        for form_posted_translation_key in self.form_posted_translations.keys():
+            if self.form_posted_translations[form_posted_translation_key] != '':
                 has_translations = True
                 break
 
-        if has_translations and not self.web_needs_review:
+        if has_translations and not self.form_posted_needsreview:
             # The submit has translations to validate and are not set as
             # needs review.
 
@@ -366,7 +385,7 @@ class POMsgSetView(LaunchpadView):
             # to know if gettext is happy with the input.
             try:
                 helpers.validate_translation(msgids_text,
-                                             self.web_translations,
+                                             self.form_posted_translations,
                                              self.potmsgset.flags())
             except gettextpo.error, e:
                 # Save the error message gettext gave us to show it to the
@@ -378,8 +397,8 @@ class POMsgSetView(LaunchpadView):
         try:
             self.context.updateTranslationSet(
                 person=self.user,
-                new_translations=self.web_translations,
-                fuzzy=self.web_needs_review,
+                new_translations=self.form_posted_translations,
+                fuzzy=self.form_posted_needsreview,
                 published=False)
         except gettextpo.error, e:
             # Save the error message gettext gave us to show it to the

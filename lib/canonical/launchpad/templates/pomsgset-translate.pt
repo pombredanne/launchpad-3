@@ -66,7 +66,7 @@
       <input
         type="hidden"
         tal:attributes="
-        name string:set_${pomsgset_view/id}_msgid"
+        name string:msgset_${pomsgset_view/potmsgset/id}"
         />
     </td>
     <th style="border-style: dotted; border-width: 1px 0 0;">
@@ -118,9 +118,20 @@
       </span>
     </td>
   </tr>
-  <tal:block
-    tal:define="language_code pomsgset_view/pofile/language/code"
-    repeat="index pomsgset_view/translation_range">
+  <tr class="error" tal:condition="pomsgset_view/error">
+    <td />
+    <th>
+          <strong>Error in Translation:</strong>
+    </th>
+    <td colspan="3">
+      <div>
+          <span tal:replace="pomsgset_view/error" />
+        </div>
+    </td>
+  </tr>
+  <tal:language-code
+    define="language_code pomsgset_view/pofile/language/code">
+  <tal:plural-forms repeat="index pomsgset_view/translation_range">
     <tr class="secondary">
       <th colspan="2">
         <label class="language-code">
@@ -133,10 +144,6 @@
         <!-- will eventually contain copy buttons -->
       </td>
       <td>
-        <div tal:condition="pomsgset_view/error" class="error">
-          <strong>Error in Translation:</strong>
-          <span tal:replace="pomsgset_view/error" />
-        </div>
         <tal:comment tal:replace="nothing">
           XXX: Carlos Perello Marin 2005-05-05
           This 'python:' expression should be fixed by SteveA.
@@ -146,7 +153,7 @@
           type="text"
           tal:condition="not:pomsgset_view/is_multi_line"
           tal:attributes="
-            name string:set_${pomsgset_view/id}_translation_${language_code}_${index};
+            name string:msgset_${pomsgset_view/potmsgset/id}_${language_code}_translation_${index};
             value python:pomsgset_view.getTranslation(index);
             tabindex view/tab_index;
             lang pomsgset_view/pofile/language/dashedcode;
@@ -167,7 +174,7 @@
             <textarea
               style="width: 100%;"
               tal:attributes="
-                name string:set_${pomsgset_view/id}_translation_${language_code}_${index};
+                name string:msgset_${pomsgset_view/potmsgset/id}_${language_code}_translation_${index};
                 rows pomsgset_view/max_lines_count;
                 tabindex view/tab_index;
                 lang pomsgset_view/pofile/language/dashedcode;
@@ -188,7 +195,7 @@
             <textarea
               style="width: 100%;"
               tal:attributes="
-                name string:set_${pomsgset_view/id}_translation_${language_code}_${index};
+                name string:msgset_${pomsgset_view/potmsgset/id}_${language_code}_translation_${index};
                 rows pomsgset_view/max_lines_count;
                 tabindex view/tab_index;
                 lang pomsgset_view/pofile/language/dashedcode;
@@ -196,29 +203,6 @@
                 "></textarea>
           </tal:without-content>
         </tal:block>
-      </td>
-    </tr>
-    <tr class="secondary">
-      <td colspan="3" />
-      <td>
-        <div>
-          <label class="fuzzy-checkbox">
-            <input
-              type="checkbox"
-              value="fuzzy"
-              tal:attributes="
-                checked pomsgset_view/is_fuzzy;
-                name string:set_${pomsgset_view/id}_fuzzy_${language_code};
-                tabindex view/tab_index
-                " />
-            <tal:block condition="not:pomsgset_view/is_plural">
-              Someone should review this translation
-            </tal:block>
-            <tal:block condition="pomsgset_view/is_plural">
-              Someone should review these translations
-            </tal:block>
-          </label>
-        </div>
       </td>
     </tr>
     <tal:block
@@ -268,7 +252,31 @@
           /> (Alternate Language)</tal:block></metal:fill>
       </metal:submissions>
     </tal:block>
-  </tal:block>
+    </tal:plural-forms>
+    <tr class="secondary">
+      <td colspan="3" />
+      <td>
+        <div>
+          <label class="fuzzy-checkbox">
+            <input
+              type="checkbox"
+              value="fuzzy"
+              tal:attributes="
+                checked pomsgset_view/is_fuzzy;
+                name string:msgset_${pomsgset_view/potmsgset/id}_${language_code}_needsreview;
+                tabindex view/tab_index
+                " />
+            <tal:block condition="not:pomsgset_view/is_plural">
+              Someone should review this translation
+            </tal:block>
+            <tal:block condition="pomsgset_view/is_plural">
+              Someone should review these translations
+            </tal:block>
+          </label>
+        </div>
+      </td>
+    </tr>
+    </tal:language-code>
   <tr tal:condition="pomsgset_view/comment" class="secondary">
     <th colspan="2"><label>Translator note:</label></th>
     <td />
