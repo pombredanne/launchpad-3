@@ -256,8 +256,9 @@ class Bugzilla(ExternalSystem):
             if bug_watch.remotestatus != status:
                 log.debug('Updating status for remote bug #%s' % bug_id)
                 bug_watch.remotestatus = status
+                bug_watch.lastchanged = UTC_NOW
 
-            bug_watch.lastchanged = UTC_NOW
+            bug_watch.lastchecked = UTC_NOW
 
         not_found_bugs = bug_ids_to_update.difference(found_bug_ids)
         for not_found_id in not_found_bugs:
@@ -266,6 +267,7 @@ class Bugzilla(ExternalSystem):
             bug_watch = bug_watches_by_remote_bug[not_found_id]
             bug_watch.remotestatus = 'UNKNOWN'
             bug_watch.lastchanged = UTC_NOW
+            bug_watch.lastchecked = UTC_NOW
 
         return result
 
