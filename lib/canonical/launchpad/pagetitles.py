@@ -504,7 +504,11 @@ person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 
 person_packages = ContextDisplayName('Packages maintained by %s')
 
-person_packagebugs = ContextDisplayName('Bugs on software %s maintains')
+person_packagebugs = ContextDisplayName("%s's package bug reports")
+
+person_packagebugs_overview = person_packagebugs
+
+person_packagebugs_search = person_packagebugs
 
 person_reportedbugs = ContextDisplayName('Bugs %s reported')
 

@@ -24,7 +24,7 @@ __all__ = [
     'PersonHackergotchiView',
     'PersonAssignedBugTaskSearchListingView',
     'ReportedBugTaskSearchListingView',
-    'BugTasksOnMaintainedSoftwareSearchListingView',
+    'BugContactPackageBugsSearchListingView',
     'SubscribedBugTaskSearchListingView',
     'PersonRdfView',
     'PersonView',
@@ -40,21 +40,23 @@ __all__ = [
     ]
 
 import cgi
+import urllib
 import itertools
 import sets
 from StringIO import StringIO
 
 from zope.event import notify
+from zope.security.proxy import isinstance as zope_isinstance
 from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.content_types import guess_content_type
 from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
-from zope.component import getUtility
+from zope.component import getUtility, getView
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.searchbuilder import any
+from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
     TeamSubscriptionPolicy)
@@ -67,8 +69,8 @@ from canonical.launchpad.interfaces import (
     ISignedCodeOfConductSet, IGPGKeySet, IGPGHandler, UBUNTU_WIKI_URL,
     ITeamMembershipSet, IObjectReassignment, ITeamReassignment, IPollSubset,
     IPerson, ICalendarOwner, ITeam, ILibraryFileAliasSet, IPollSet,
-    IAdminRequestPeopleMerge, BugTaskSearchParams, NotFoundError, 
-    UNRESOLVED_BUGTASK_STATUSES)
+    IAdminRequestPeopleMerge, BugTaskSearchParams, NotFoundError,
+    UNRESOLVED_BUGTASK_STATUSES, IDistributionSet)
 
 from canonical.launchpad.browser.bugtask import (
     BugTaskSearchListingView, AdvancedBugTaskSearchView)
@@ -266,22 +268,22 @@ class PersonBugsMenu(ApplicationMenu):
 
     facet = 'bugs'
 
-    links = ['assignedbugs', 'softwarebugs', 'reportedbugs', 'subscribedbugs']
+    links = ['assignedbugs', 'reportedbugs', 'subscribedbugs', 'softwarebugs']
 
     def assignedbugs(self):
-        text = 'Bugs Assigned'
+        text = 'Assigned'
         return Link('+assignedbugs', text, icon='bugs')
 
     def softwarebugs(self):
-        text = 'Bugs on Maintained Software'
+        text = 'Package Reports'
         return Link('+packagebugs', text, icon='bugs')
 
     def reportedbugs(self):
-        text = 'Bugs Reported'
+        text = 'Reported'
         return Link('+reportedbugs', text, icon='bugs')
 
     def subscribedbugs(self):
-        text = 'Bugs Subscribed'
+        text = 'Subscribed'
         return Link('+subscribedbugs', text, icon='bugs')
 
 
@@ -697,21 +699,193 @@ class ReportedBugTaskSearchListingView(BasePersonBugTaskSearchListingView):
     context_parameter = 'owner'
 
 
-class BugTasksOnMaintainedSoftwareSearchListingView(BugTaskSearchListingView):
-    """All bugs reported on software maintained by someone."""
+class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
+    """Bugs reported on packages for a bug contact."""
+
+    @property
+    def current_package(self):
+        """Get the package whose bugs are currently being searched."""
+        distribution = self.distribution_widget.getInputValue()
+        return distribution.getSourcePackage(
+            self.sourcepackagename_widget.getInputValue())
 
     def search(self, searchtext=None, batch_start=None):
-        # Overwrite the search() method from BugTaskSearchListingView because
-        # to get the list of bugs on software maintained by someone we need to
-        # use the maintainedBugTasks method of BugTask, which is not used in
-        # the original search() method.
-        orderBy = ('-dateassigned', '-priority', '-severity')
-        tasks = getUtility(IBugTaskSet).maintainedBugTasks(
-            self.context, orderBy=orderBy, user=self.user)
-        if batch_start is None:
-            batch_start = int(self.request.get('batch_start', 0))
-        batch = Batch(tasks, batch_start)
-        return BatchNavigator(batch=batch, request=self.request)
+        distrosourcepackage = self.current_package
+        return BugTaskSearchListingView.search(
+            self, searchtext=searchtext, batch_start=batch_start,
+            context=distrosourcepackage)
+
+    def getPackageBugCounts(self):
+        """Return a list of dicts used for rendering the package bug counts."""
+        package_bug_counts = []
+
+        for package in self.context.getBugContactPackages():
+            package_bug_counts.append({
+                'package_name': package.displayname,
+                'package_search_url':
+                    self.getBugContactPackageSearchURL(package),
+                'open_bugs_count': package.open_bugtasks.count(),
+                'open_bugs_url': self.getOpenBugsURL(package),
+                'critical_bugs_count': package.critical_bugtasks.count(),
+                'critical_bugs_url': self.getCriticalBugsURL(package),
+                'unassigned_bugs_count': package.unassigned_bugtasks.count(),
+                'unassigned_bugs_url': self.getUnassignedBugsURL(package),
+                'inprogress_bugs_count': package.inprogress_bugtasks.count(),
+                'inprogress_bugs_url': self.getInProgressBugsURL(package)
+            })
+
+        return package_bug_counts
+
+    def getOtherBugContactPackageLinks(self):
+        """Return a list of the other packages for a bug contact.
+
+        This excludes the current package.
+        """
+        current_package = self.current_package
+
+        other_packages = [
+            package for package in self.context.getBugContactPackages()
+            if package != current_package]
+
+        package_links = []
+        for other_package in other_packages:
+            package_links.append({
+                'title': other_package.displayname,
+                'url': self.getBugContactPackageSearchURL(other_package)})
+
+        return package_links
+
+    def getExtraSearchParams(self):
+        """Overridden from BugTaskSearchListingView, to filter the search."""
+        search_params = {}
+
+        if self.status_widget.hasInput():
+            search_params['status'] = any(*self.status_widget.getInputValue())
+        if self.unassigned_widget.hasInput():
+            search_params['assignee'] = NULL
+
+        return search_params
+
+    def getBugContactPackageSearchURL(self, distributionsourcepackage=None,
+                                      extra_params=None):
+        """Construct a default search URL for a distributionsourcepackage.
+
+        Optional filter parameters can be specified as a dict with the
+        extra_params argument.
+        """
+        if distributionsourcepackage is None:
+            distributionsourcepackage = self.current_package
+
+        params = {
+            "field.distribution": distributionsourcepackage.distribution.name,
+            "field.sourcepackagename": distributionsourcepackage.name,
+            "search": "Search"}
+
+        if extra_params is not None:
+            params.update(extra_params)
+
+        person_url = canonical_url(self.context)
+        query_string = urllib.urlencode(sorted(params.items()), doseq=True)
+
+        return person_url + '/+packagebugs-search?%s' % query_string
+
+    def getOpenBugsURL(self, distributionsourcepackage):
+        """Return the URL for open bugs on distributionsourcepackage."""
+        status_params = {'field.status': []}
+
+        for status in UNRESOLVED_BUGTASK_STATUSES:
+            status_params['field.status'].append(status.title)
+
+        return self.getBugContactPackageSearchURL(
+            distributionsourcepackage=distributionsourcepackage,
+            extra_params=status_params)
+
+    def getCriticalBugsURL(self, distributionsourcepackage):
+        """Return the URL for critical bugs on distributionsourcepackage."""
+        critical_bugs_params = {
+            'field.status': [], 'field.severity': "Critical"}
+
+        for status in UNRESOLVED_BUGTASK_STATUSES:
+            critical_bugs_params["field.status"].append(status.title)
+
+        return self.getBugContactPackageSearchURL(
+            distributionsourcepackage=distributionsourcepackage,
+            extra_params=critical_bugs_params)
+
+    def getUnassignedBugsURL(self, distributionsourcepackage):
+        """Return the URL for unassigned bugs on distributionsourcepackage."""
+        unassigned_bugs_params = {
+            "field.status": [], "field.unassigned": "on"}
+
+        for status in UNRESOLVED_BUGTASK_STATUSES:
+            unassigned_bugs_params["field.status"].append(status.title)
+
+        return self.getBugContactPackageSearchURL(
+            distributionsourcepackage=distributionsourcepackage,
+            extra_params=unassigned_bugs_params)
+
+    def getInProgressBugsURL(self, distributionsourcepackage):
+        """Return the URL for unassigned bugs on distributionsourcepackage."""
+        inprogress_bugs_params = {"field.status": "In Progress"}
+
+        return self.getBugContactPackageSearchURL(
+            distributionsourcepackage=distributionsourcepackage,
+            extra_params=inprogress_bugs_params)
+
+    def getSearchFilterLinks(self):
+        """Return a dict of links to various parts of the current filter."""
+        search_filter_links = []
+
+        # First, a link to all the bugs for the current package.
+        current_package = self.current_package
+        search_filter_links.append({
+            'title': str(current_package.displayname),
+            'url': self.getBugContactPackageSearchURL(current_package)})
+
+        # Add a link to the "unassigned" filter, if applicable.
+        if (self.unassigned_widget.hasInput() and
+            self.unassigned_widget.getInputValue()):
+            search_filter_links.append({
+                'title': "unassigned",
+                'url': self.getUnassignedBugsURL(current_package)})
+
+        return search_filter_links
+
+    def getStatusFilterLinks(self):
+        """Return links to filter on each status shown in the listing.
+
+        This is a separate method because status filter links are displayed
+        differently from other filter links, to communicate that they're an "OR"
+        match.
+        """
+        if not self.status_widget.hasInput():
+            return []
+
+        filter_statuses = self.status_widget.getInputValue()
+
+        status_filter_links = []
+        for status_name in filter_statuses:
+            status_filter_links.append({
+                'title': status_name.title.lower(),
+                'url': self.getBugContactPackageSearchURL(
+                    extra_params={"field.status": status_name.title})})
+
+        return status_filter_links
+
+    def getSearchTextFilterLink(self):
+        if not self.searchtext_widget.hasInput():
+            return None
+
+        searchtext_filter_link = {}
+
+        searchtext = self.searchtext_widget.getInputValue()
+        if searchtext:
+            searchtext_filter_link = {
+                'title': searchtext,
+                'url': self.getBugContactPackageSearchURL(
+                    extra_params={"field.searchtext": searchtext})}
+
+        return searchtext_filter_link
 
     def shouldShowSearchWidgets(self):
         # XXX: It's not possible to search amongst the bugs on maintained
