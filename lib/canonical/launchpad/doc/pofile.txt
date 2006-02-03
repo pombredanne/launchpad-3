@@ -179,7 +179,6 @@ First, we need some imports.
     >>> from zope.interface import implements
     >>> from zope.publisher.interfaces.browser import IBrowserRequest
     >>> from zope.component import getUtility
-    >>> from zope.app.tests import ztapi
     >>> from canonical.launchpad.interfaces import (
     ...     ILanguageSet, IPersonSet, ILaunchBag)
     >>> from canonical.launchpad.browser import POFileView
@@ -211,19 +210,9 @@ Also, we need some fake classes to simulate the submit.
     ...     def getURL(self):
     ...         return "http://this.is.a/fake/url"
 
-    >>> class DummyLaunchBag:
-    ...     implements(ILaunchBag)
-    ...
-    ...     def __init__(self, login=None, user=None):
-    ...         self.login = login
-    ...         self.user = user
-
-
 All the tests will be submitted as comming from the Foo Bar person.
 
-    >>> foo_person = getUtility(IPersonSet).getByName('name16')
-    >>> ztapi.provideUtility(ILaunchBag, DummyLaunchBag(
-    ...     'foo.bar@canonical.com', foo_person))
+    >>> login('foo.bar@canonical.com')
 
 Now it's time to test the initialisation of the view class.
 
