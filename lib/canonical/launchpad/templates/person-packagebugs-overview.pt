@@ -41,31 +41,33 @@
         <th width="14%">Unassigned</th>
         <th width="18%">In Progress</th>
       </tr>
-      <tr tal:repeat="package context/getBugContactPackages">
+      <tr tal:repeat="package_bug_counts view/getPackageBugCounts">
         <td>
           <a href="#"
-             tal:content="package/displayname"
-             tal:attributes="href string:${context/fmt:url}/+packagebugs-search?search=Search&field.distribution=${package/distribution/name}&field.sourcepackagename=${package/name}">mozilla-firefox (Ubuntu)</a>
+             tal:content="package_bug_counts/package_name"
+             tal:attributes="href package_bug_counts/package_search_url">
+            mozilla-firefox (Ubuntu)
+          </a>
         </td>
         <td class="bugcount">
           <a href="#"
-             tal:attributes="href python:view.getOpenBugsURL(package)"
-             tal:content="package/open_bugtasks/count">2</a>
+             tal:attributes="href package_bug_counts/open_bugs_url"
+             tal:content="package_bug_counts/open_bugs_count">2</a>
         </td>
         <td class="bugcount">
           <a href="#"
-             tal:attributes="href python:view.getCriticalBugsURL(package)"
-             tal:content="package/critical_bugtasks/count">2</a>
+             tal:attributes="href package_bug_counts/critical_bugs_url"
+             tal:content="package_bug_counts/critical_bugs_count">2</a>
         </td>
         <td class="bugcount">
           <a href="#"
-             tal:attributes="href python:view.getUnassignedBugsURL(package)"
-             tal:content="package/unassigned_bugtasks/count">2</a>
+             tal:attributes="href package_bug_counts/unassigned_bugs_url"
+             tal:content="package_bug_counts/unassigned_bugs_count">2</a>
         </td>
         <td class="bugcount">
           <a href="#"
-             tal:attributes="href python:view.getInProgressBugsURL(package)"
-             tal:content="package/inprogress_bugtasks/count">2</a>
+             tal:attributes="href package_bug_counts/inprogress_bugs_url"
+             tal:content="package_bug_counts/inprogress_bugs_count">2</a>
         </td>
       </tr>
     </table>

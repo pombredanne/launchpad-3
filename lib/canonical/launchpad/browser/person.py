@@ -715,6 +715,27 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
             self, searchtext=searchtext, batch_start=batch_start,
             context=distrosourcepackage)
 
+    def getPackageBugCounts(self):
+        """Return a list of dicts used for rendering the package bug counts."""
+        package_bug_counts = []
+
+        for package in self.context.getBugContactPackages():
+            package_bug_counts.append({
+                'package_name': package.displayname,
+                'package_search_url':
+                    self.getBugContactPackageSearchURL(package),
+                'open_bugs_count': package.open_bugtasks.count(),
+                'open_bugs_url': self.getOpenBugsURL(package),
+                'critical_bugs_count': package.critical_bugtasks.count(),
+                'critical_bugs_url': self.getCriticalBugsURL(package),
+                'unassigned_bugs_count': package.unassigned_bugtasks.count(),
+                'unassigned_bugs_url': self.getUnassignedBugsURL(package),
+                'inprogress_bugs_count': package.inprogress_bugtasks.count(),
+                'inprogress_bugs_url': self.getInProgressBugsURL(package)
+            })
+
+        return package_bug_counts
+
     def getOtherBugContactPackageLinks(self):
         """Return a list of the other packages for a bug contact.
 
@@ -852,8 +873,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         return status_filter_links
 
     def getSearchTextFilterLink(self):
-        if not self.searchtext_widget.hasInput():
-            return None
+        searchtext_filter_link = {}
 
         searchtext = self.searchtext_widget.getInputValue()
         if searchtext:

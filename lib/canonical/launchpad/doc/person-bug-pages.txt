@@ -106,9 +106,8 @@ from these reports, simply by hacking the URL.
     ...     'search': "Search", 'field.distribution': "debian",
     ...     'field.sourcepackagename': "mozilla-firefox"}
 
-    >>> request = TestRequest(form=form)
     >>> packagebugs_search_view = create_view(
-    ...     name12, name="+packagebugs-search", request=request)
+    ...     name12, name="+packagebugs-search", form=form)
 
 Let's look at some example searches:
 
@@ -126,9 +125,8 @@ Simple keyword searching:
     ...     'field.sourcepackagename': "mozilla-firefox",
     ...     'field.searchtext': "trash"}
 
-    >>> request = TestRequest(form=form)
     >>> packagebugs_search_view = create_view(
-    ...     name12, name="+packagebugs-search", request=request)
+    ...     name12, name="+packagebugs-search", form=form)
 
     >>> bugtask_batch_navigator = packagebugs_search_view.search()
     >>> [bugtask.bug.id for bugtask in bugtask_batch_navigator.batch]
@@ -145,9 +143,8 @@ Searching for all open bugs on Debian mozilla-firefox:
     ...     'field.sourcepackagename': "mozilla-firefox",
     ...     'field.status': [s.title for s in UNRESOLVED_BUGTASK_STATUSES]}
 
-    >>> request = TestRequest(form=form)
     >>> packagebugs_search_view = create_view(
-    ...     name12, name="+packagebugs-search", request=request)
+    ...     name12, name="+packagebugs-search", form=form)
 
     >>> bugtask_batch_navigator = packagebugs_search_view.search()
     >>> [bugtask.bug.id for bugtask in bugtask_batch_navigator.batch]
@@ -161,9 +158,8 @@ Searching for all unassigned bugs on Debian mozilla-firefox:
     ...     'field.sourcepackagename': "mozilla-firefox",
     ...     'field.unassigned': True}
 
-    >>> request = TestRequest(form=form)
     >>> packagebugs_search_view = create_view(
-    ...     name12, name="+packagebugs-search", request=request)
+    ...     name12, name="+packagebugs-search", form=form)
 
     >>> bugtask_batch_navigator = packagebugs_search_view.search()
     >>> [bugtask.bug.id for bugtask in bugtask_batch_navigator.batch]
@@ -197,6 +193,40 @@ other packages" portlet:
     ...     ubuntu_mozilla_firefox)
     u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&search=Search'
 
+Finally, there is a helper method that returns a list of dicts used to
+render the overview report.
+
+    >>> packagebugs_search_view = create_view(
+    ...     name16, name="+packagebugs", form=form)
+
+    >>> package_bug_counts = packagebugs_search_view.getPackageBugCounts()
+    >>> len(package_bug_counts)
+    2
+    >>> ubuntu_firefox_bugcounts = package_bug_counts[0]
+
+    >>> ubuntu_firefox_bugcounts['package_name']
+    u'mozilla-firefox in ubuntu'
+    >>> ubuntu_firefox_bugcounts['package_search_url']
+    u'.../people/name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&search=Search'
+
+    >>> ubuntu_firefox_bugcounts['open_bugs_count']
+    1
+    >>> ubuntu_firefox_bugcounts['critical_bugs_count']
+    0
+    >>> ubuntu_firefox_bugcounts['unassigned_bugs_count']
+    1
+    >>> ubuntu_firefox_bugcounts['inprogress_bugs_count']
+    0
+
+    >>> ubuntu_firefox_bugcounts['open_bugs_url']
+    u'.../people/name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&search=Search'
+    >>> ubuntu_firefox_bugcounts['critical_bugs_url']
+    u'.../people/name16/+packagebugs-search?field.distribution=ubuntu&field.severity=Critical&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&search=Search'
+    >>> ubuntu_firefox_bugcounts['unassigned_bugs_url']
+    u'.../people/name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.unassigned=on&search=Search'
+    >>> ubuntu_firefox_bugcounts['inprogress_bugs_url']
+    u'.../people/name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=In+Progress&search=Search'
+
 Search Filter Links
 -------------------
 
@@ -217,9 +247,8 @@ Use the getSearchFilterLinks method to get a dict of these links.
     ...     'field.searchtext': "foo",
     ...     'field.unassigned': 'on'}
 
-    >>> request = TestRequest(form=form)
     >>> packagebugs_search_view = create_view(
-    ...     name12, name="+packagebugs-search", request=request)
+    ...     name12, name="+packagebugs-search", form=form)
 
     >>> filter_links = packagebugs_search_view.getSearchFilterLinks()
     >>> len(filter_links)
@@ -248,9 +277,8 @@ that the status is an "OR" match.
     ...     'field.searchtext': "foo",
     ...     'field.status': ['Unconfirmed', 'Confirmed', 'In Progress']}
 
-    >>> request = TestRequest(form=form)
     >>> packagebugs_search_view = create_view(
-    ...     name12, name="+packagebugs-search", request=request)
+    ...     name12, name="+packagebugs-search", form=form)
 
     >>> status_filter_links = packagebugs_search_view.getStatusFilterLinks()
     >>> len(status_filter_links)
