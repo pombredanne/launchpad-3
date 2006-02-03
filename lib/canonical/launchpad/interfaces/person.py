@@ -198,6 +198,9 @@ class IPerson(IHasSpecifications):
     activememberships = Attribute(
         "List of TeamMembership objects for people who are active members "
         "in this team.")
+    teams_participated_in = Attribute(
+            "Iterable of all Teams that this person is active in, recursive"
+            )
     guessedemails = Attribute("List of emails with status NEW. These email "
         "addresses probably came from a gina or POFileImporter run.")
     validatedemails = Attribute("Emails with status VALIDATED")
@@ -604,11 +607,18 @@ class IPersonSet(Interface):
         default ordering specified in Person._defaultOrder.
         """
 
+    def updateStatistics(ztm):
+        """Update statistics caches and commit."""
+
     def peopleCount():
-        """Return the number of non-merged persons in the database."""
+        """Return the number of non-merged persons in the database as
+           of the last statistics update.
+        """
 
     def teamsCount():
-        """Return the number of teams in the database."""
+        """Return the number of teams in the database as of the last
+           statistics update.
+        """
 
     def find(text, orderBy=None):
         """Return all non-merged Persons and Teams whose name, displayname,

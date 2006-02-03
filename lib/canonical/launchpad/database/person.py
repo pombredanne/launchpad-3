@@ -34,7 +34,8 @@ from canonical.launchpad.interfaces import (
     IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet, ISSHKey,
     IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
     UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet, IKarmaSet,
-    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, IKarmaCacheSet)
+    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, IKarmaCacheSet,
+    ILaunchpadStatisticSet)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -289,15 +290,22 @@ class Person(SQLBase):
             return self.name
 
     def specifications(self, quantity=None, sort=None):
-        query = OR(
-            Specification.q.ownerID == self.id,
-            Specification.q.approverID == self.id,
-            Specification.q.assigneeID == self.id,
-            Specification.q.drafterID == self.id,
-            AND(Specification.q.id == SpecificationFeedback.q.specificationID,
-                SpecificationFeedback.q.reviewerID == self.id),
-            AND(Specification.q.id == SpecificationSubscription.q.specificationID,
-                SpecificationSubscription.q.personID == self.id))
+        query = """
+            Specification.owner = %(my_id)d
+            OR Specification.approver = %(my_id)d
+            OR Specification.assignee = %(my_id)d
+            OR Specification.drafter = %(my_id)d
+            OR Specification.id IN (
+                SELECT SpecificationFeedback.id
+                FROM SpecificationFeedback
+                WHERE SpecificationFeedback.reviewer = %(my_id)s
+                UNION
+                SELECT SpecificationSubscription.id
+                FROM SpecificationSubscription
+                WHERE SpecificationSubscription.person = %(my_id)d
+                )
+            """ % {'my_id': self.id}
+                    
         if sort is None or sort == SpecificationSort.DATE:
             order = ['-datecreated', 'id']
         elif sort == SpecificationSort.PRIORITY:
@@ -305,10 +313,7 @@ class Person(SQLBase):
         else:
             raise AssertionError('Unknown sort %s' % sort)
 
-        return Specification.select(query, orderBy=order,
-                                    clauseTables=['SpecificationFeedback',
-                                                  'SpecificationSubscription'],
-                                    distinct=True, limit=quantity)
+        return Specification.select(query, orderBy=order, limit=quantity)
 
     def tickets(self, quantity=None):
         ret = set(self.created_tickets)
@@ -708,6 +713,17 @@ class Person(SQLBase):
             orderBy=['Person.displayname'])
 
     @property
+    def teams_participated_in(self):
+        """See IPerson."""
+        return Person.select("""
+            Person.id = TeamParticipation.team
+            AND TeamParticipation.person = %s
+            AND Person.teamowner IS NOT NULL
+            """ % sqlvalues(self.id), clauseTables=['TeamParticipation'],
+            orderBy=['Person.name']
+            )
+
+    @property
     def defaultexpirationdate(self):
         """See IPerson."""
         days = self.defaultmembershipperiod
@@ -991,9 +1007,17 @@ class PersonSet:
             return default
         return person
 
+    def updateStatistics(self, ztm):
+        """See IPersonSet."""
+        stats = getUtility(ILaunchpadStatisticSet)
+        stats.update('people_count', self.getAllPersons().count())
+        ztm.commit()
+        stats.update('teams_count', self.getAllTeams().count())
+        ztm.commit()
+
     def peopleCount(self):
         """See IPersonSet."""
-        return self.getAllPersons().count()
+        return getUtility(ILaunchpadStatisticSet).value('people_count')
 
     def getAllPersons(self, orderBy=None):
         """See IPersonSet."""
@@ -1013,7 +1037,7 @@ class PersonSet:
 
     def teamsCount(self):
         """See IPersonSet."""
-        return self.getAllTeams().count()
+        return getUtility(ILaunchpadStatisticSet).value('teams_count')
 
     def getAllTeams(self, orderBy=None):
         """See IPersonSet."""
