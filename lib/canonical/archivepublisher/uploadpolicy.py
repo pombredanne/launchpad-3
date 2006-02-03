@@ -217,15 +217,16 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
 # Register this as the 'buildd' policy
 AbstractUploadPolicy._registerPolicy(BuildDaemonUploadPolicy)
 
-class AutoSyncUploadPolicy(AbstractUploadPolicy):
-    """The auto-sync upload policy is invoked when processing uploads from
+class SyncUploadPolicy(AbstractUploadPolicy):
+    """The sync upload policy is invoked when processing uploads from
     the sync process.
     """
 
     def __init__(self):
         AbstractUploadPolicy.__init__(self)
-        self.name = "autosync"
-        # We require the changes to be signed but not the dsc
+        self.name = "sync"
+        # We don't require changes or dsc to be signed for syncs
+        self.unsigned_changes_ok = True
         self.unsigned_dsc_ok = True
         # We don't want binaries in a sync
         self.can_upload_mixed = False
@@ -236,7 +237,7 @@ class AutoSyncUploadPolicy(AbstractUploadPolicy):
         return set(
             component.name for component in getUtility(IComponentSet))
 
-AbstractUploadPolicy._registerPolicy(AutoSyncUploadPolicy)
+AbstractUploadPolicy._registerPolicy(SyncUploadPolicy)
 
 class AnythingGoesUploadPolicy(AbstractUploadPolicy):
     """The anything goes upload policy is invoked when processing uploads
