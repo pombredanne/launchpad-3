@@ -6,7 +6,7 @@
 <body>
 
 <div metal:fill-slot="main">
-  <h1>External Reference</h1>
+  <h1>External reference</h1>
   <table class="listing">
     <tr>
       <th>Type</th>

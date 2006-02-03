@@ -13,12 +13,12 @@
 <div metal:fill-slot="main"
      tal:define="listing_columns view/listing_columns">
 
-  <h1>Bug Listing</h1>
+  <h1>Bug listing</h1>
 
   <form name="bugtask_search" action="" method="GET">
     <p>
       <label tal:content="view/searchtext_widget/label">
-        Bug id or text:
+        Bug ID or text:
       </label>
       <tal:searchtext content="structure view/searchtext_widget" />
       <input type="submit" name="search" value="Search" />
@@ -30,7 +30,7 @@
   //-->
   </script>
 
-  <table id="sourcepackagebugs">
+  <table id="sourcepackagebugs" tal:define="should_show_assignee default">
     <tr>
       <td colspan="3">
         <h2 tal:condition="not: view/unresolved_release_bugs"
@@ -68,6 +68,7 @@
     <tr tal:repeat="task view/general_unresolved_bugs">
       <metal:taskrow use-macro="task/@@+bugtask-macros-listview/item" />
     </tr>
+  </table>
 </div>
 
 </body>

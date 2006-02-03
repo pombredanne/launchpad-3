@@ -65,7 +65,7 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IBugTarget"
-        class="canonical.launchpad.browser.BugTaskSearchListingView"
+        class="canonical.launchpad.browser.AllBugTasksView"
         permission="zope.Public"
         name="+bugs-all"
         template="../templates/buglisting-default.pt" />
@@ -75,13 +75,20 @@
         class="canonical.launchpad.browser.AdvancedBugTaskSearchView"
         permission="zope.Public"
         name="+bugs-advanced"
-        template="../templates/buglisting-advanced.pt" />
+        template="../templates/buglisting-default.pt" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IBugTarget"
+        class="canonical.launchpad.browser.BugTargetTextView"
+        permission="zope.Public"
+        name="+bugs-text"
+        attribute="__call__" />
 
     <!-- +bugs uses AdvancedBugTaskSearchView in order to keep old
          bookmarks working. -->
     <browser:page
         for="canonical.launchpad.interfaces.IBugTarget"
-        class="canonical.launchpad.browser.AdvancedBugTaskSearchView"
+        class="canonical.launchpad.browser.BugTasksOldView"
         permission="zope.Public"
         name="+bugs"
         template="../templates/buglisting-default.pt" />

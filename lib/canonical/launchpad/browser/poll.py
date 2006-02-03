@@ -8,6 +8,7 @@ __all__ = ['PollContextMenu',
            'PollView',
            'PollVoteView',
            'PollAddView',
+           'PollEditView',
            'PollOptionAddView',
            'PollOptionEditView',
            ]
@@ -29,7 +30,7 @@ from canonical.lp.dbschema import PollAlgorithm, PollSecrecy
 class PollContextMenu(ContextMenu):
 
     usedfor = IPoll
-    links = ['showall', 'addnew']
+    links = ['showall', 'addnew', 'edit']
 
     def showall(self):
         text = 'Show Option Details'
@@ -38,6 +39,10 @@ class PollContextMenu(ContextMenu):
     def addnew(self):
         text = 'Add New Option'
         return Link('+newoption', text, icon='add')
+
+    def edit(self):
+        text = 'Edit this Poll'
+        return Link('+edit', text, icon='edit')
 
 
 class PollNavigation(Navigation):
@@ -185,6 +190,10 @@ class PollView(BasePollView):
         pairwise_matrix.insert(0, headers)
         return pairwise_matrix
 
+class PollEditView(SQLObjectEditView):
+
+    def changed(self):
+        self.request.response.redirect(canonical_url(self.context))
 
 class PollVoteView(BasePollView):
     """A view class to where the user can vote on a poll.
@@ -254,7 +263,7 @@ class PollVoteView(BasePollView):
         """Process the condorcet-voting form to change a user's vote or 
         register a new one."""
         form = self.request.form
-        activeoptions = self.context.getActiveOptions()
+        activeoptions = list(self.context.getActiveOptions())
         newvotes = {}
         for option in activeoptions:
             try:

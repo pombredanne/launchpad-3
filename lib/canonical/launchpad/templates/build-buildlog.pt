@@ -11,14 +11,16 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Build Log</h1>
+  <h1>Build log</h1>
 
-  <div class="dummy">
-    XXX: Daniel Debonzi 2004-10-05
-    To finish this page we need to know information about the
-    filesystem, because the table entry for it points to a file
-    that should contain de buildlog.
-  </div>
+     <tal:block condition="context/buildlog">
+        <a tal:attributes="href context/buildlog/url"
+           tal:content="context/buildlog/filename">BUILDLOG</a>
+     </tal:block>
+
+     <tal:block condition="not: context/buildlog">
+        <p> No buildlog for <span tal:replace="context/title">BUILD</span></p>
+     </tal:block>
 
 </div>
 </body>

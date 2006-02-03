@@ -22,7 +22,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1><span tal:replace="context/title"/> Build Log</h1>
+  <h1><span tal:replace="context/title"/> build log</h1>
 
   <p class="documentDescription">This page shows the build logs list for 
   all source package release uploaded in 

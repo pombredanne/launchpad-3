@@ -3,14 +3,12 @@
 __metaclass__ = type
 __all__ = ['Build', 'BuildSet']
 
-from urllib2 import URLError
 
 from zope.interface import implements
-from zope.component import getUtility
 
 # SQLObject/SQLBase
 from sqlobject import (
-    StringCol, ForeignKey, IntervalCol, MultipleJoin)
+    StringCol, ForeignKey, IntervalCol)
 from sqlobject.sqlbuilder import AND, IN
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -26,20 +24,16 @@ from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.builder import BuildQueue
 
-from canonical.librarian.interfaces import ILibrarianClient
-
-
 from canonical.lp.dbschema import EnumCol, BuildStatus
-
 
 class Build(SQLBase):
     implements(IBuild)
     _table = 'Build'
 
     datecreated = UtcDateTimeCol(dbName='datecreated', default=UTC_NOW)
-    processor = ForeignKey(dbName='processor', foreignKey='Processor', 
+    processor = ForeignKey(dbName='processor', foreignKey='Processor',
         notNull=True)
-    distroarchrelease = ForeignKey(dbName='distroarchrelease', 
+    distroarchrelease = ForeignKey(dbName='distroarchrelease',
         foreignKey='DistroArchRelease', notNull=True)
     buildstate = EnumCol(dbName='buildstate', notNull=True, schema=BuildStatus)
     sourcepackagerelease = ForeignKey(dbName='sourcepackagerelease',
@@ -75,29 +69,38 @@ class Build(SQLBase):
     @property
     def title(self):
         """See IBuild"""
-        return '%s build of %s %s in %s %s (%s)' % (
+        return '%s build of %s %s in %s %s' % (
             self.distroarchrelease.architecturetag,
             self.sourcepackagerelease.name,
             self.sourcepackagerelease.version,
             self.distroarchrelease.distrorelease.distribution.name,
-            self.distroarchrelease.distrorelease.name,
-            self.datecreated.strftime('%Y-%m-%d'))
+            self.distroarchrelease.distrorelease.name)
+
+    @property
+    def was_built(self):
+        """See IBuild"""
+        return self.buildstate is not BuildStatus.NEEDSBUILD
 
     @property
     def build_icon(self):
         """See IBuild"""
+
         icon_map = {
-            BuildStatus.NEEDSBUILD: "/++resource++build-success",
+            BuildStatus.NEEDSBUILD: "",
             BuildStatus.FULLYBUILT: "/++resource++build-success",
             BuildStatus.FAILEDTOBUILD: "/++resource++build-failure",
-            BuildStatus.MANUALDEPWAIT: "/++resource++build-failure",
-            BuildStatus.CHROOTWAIT: "/++resource++build-failure",
+            BuildStatus.MANUALDEPWAIT: "",
+            BuildStatus.CHROOTWAIT: "",
             }
         return icon_map[self.buildstate]
 
     @property
     def distributionsourcepackagerelease(self):
         """See IBuild."""
+        from canonical.launchpad.database.distributionsourcepackagerelease \
+             import (
+            DistributionSourcePackageRelease)
+
         return DistributionSourcePackageRelease(
             distribution=self.distroarchrelease.distrorelease.distribution,
             sourcepackagerelease=self.sourcepackagerelease)
@@ -124,7 +127,6 @@ class Build(SQLBase):
         self.gpgsigningkey = None
         self.changes = None
         self.buildlog = None
-        
 
     def __getitem__(self, name):
         return self.getBinaryPackageRelease(name)
@@ -136,7 +138,6 @@ class Build(SQLBase):
                 return binpkg
         raise IndexError, 'No binary package "%s" in build' % name
 
-
     def createBinaryPackageRelease(self, binarypackagename, version,
                                    summary, description,
                                    binpackageformat, component,
@@ -146,9 +147,9 @@ class Build(SQLBase):
                                    essential, installedsize,
                                    copyright, licence,
                                    architecturespecific):
-        
+
         """See IBuild."""
-        
+
         return BinaryPackageRelease(buildID=self.id,
                                     binarypackagenameID=binarypackagename,
                                     version=version,
@@ -201,9 +202,52 @@ class BuildSet:
         return Build.select(
             AND(Build.q.buildstate==BuildStatus.NEEDSBUILD,
                 IN(Build.q.distroarchreleaseID, archrelease_ids))
-            )                                  
+            )
 
-    def getBuildsForBuilder(self, builder, limit=10):
-        """See IBuildSet"""
-        return Build.select("builder=%s" % sqlvalues(builder.id), limit=limit,
-                            orderBy="-datebuilt")
+    def getBuildsForBuilder(self, builder_id, status=None):
+        """See IBuildSet."""
+        status_clause = ''
+        if status:
+            status_clause = "AND buildstate=%s" % sqlvalues(status)
+
+        return Build.select(
+            "builder=%s %s" % (builder_id, status_clause),
+            orderBy="-datebuilt")
+
+    def getBuildsByArchIds(self, arch_ids, status=None):
+        """See IBuildSet."""
+        # If not distroarchrelease was found return None.
+        if not arch_ids:
+            return None
+
+        clauseTables = []
+        orderBy="-datebuilt"
+
+        # format clause according single/multiple architecture(s) form
+        if len(arch_ids) == 1:
+            condition_clauses = [('distroarchrelease=%s'
+                                  % sqlvalues(arch_ids[0]))]
+        else:
+            condition_clauses = [('distroarchrelease IN %s'
+                                  % sqlvalues(arch_ids))]
+
+        # exclude gina-generated builds
+        # buildstate == FULLYBUILT && datebuilt == null
+        condition_clauses.append(
+            "NOT (Build.buildstate = %s AND Build.datebuilt is NULL)"
+            % sqlvalues(BuildStatus.FULLYBUILT))
+
+        # attempt to given status
+        if status is not None:
+            condition_clauses.append('buildstate=%s' % sqlvalues(status))
+
+        # Order NEEDSBUILD by lastscore, it should present the build
+        # in a more natural order.
+        if status == BuildStatus.NEEDSBUILD:
+            orderBy = "BuildQueue.lastscore"
+            clauseTables.append('BuildQueue')
+            condition_clauses.append('BuildQueue.build = Build.id')
+
+        return Build.select(' AND '.join(condition_clauses),
+                            clauseTables=clauseTables,
+                            orderBy=orderBy)

@@ -128,6 +128,11 @@ spider -- StuartBishop 20050822
 >>> check("/distros/ubuntu/+addspec", auth=True)
 >>> check("/distros/ubuntu/+source/evolution/+bugs")
 
+>>> check("/distros/kubuntu/+bugs")
+>>> check("/distros/kubuntu/+specs")
+>>> check("/distros/kubuntu/+cve")
+>>> check("/distros/kubuntu/+builds")
+
 >>> check("/distros/ubuntu/hoary")
 >>> check("/distros/ubuntu/hoary/+edit", auth=True)
 >>> check("/distros/ubuntu/hoary/+specs")
@@ -196,6 +201,16 @@ been reported.
 >>> check_not_found("/products/netapplet/+bug/1/+viewstatus")
 >>> check_not_found("/products/netapplet/+bug/1/+editstatus")
 
+Check a bug is traversable by nickname:
+
+>>> check_redirect("/malone/bugs/blackhole")
+>>> check("/products/ubuntu/+bug/blackhole")
+
+Check a bug is traversable by nickname:
+
+>>> check_redirect("/malone/bugs/blackhole")
+>>> check("/products/ubuntu/+bug/blackhole")
+
 Viewing a bug in the context of a distribution where the bug has not
 yet been reported.
 
@@ -257,7 +272,7 @@ Test /people traversals.
 >>> check("/people/")
 >>> check("/people/+peoplelist")
 >>> check("/people/+teamlist")
->>> check("/people/+ubuntitelist")
+>>> check("/people/+ubunterolist")
 >>> check("/people/+requestmerge", auth=True)
 >>> check("/people/+portlet-about")
 

@@ -16,7 +16,8 @@ A common way to fetch a distribution source package is to start with the
 distribution object:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IDistributionSourcePackage)
 
     >>> debian = getUtility(IDistributionSet).getByName("debian")
 
@@ -25,6 +26,69 @@ Call IDistribution.getSourcePackage to get a specific package by name:
     >>> debian_firefox = debian.getSourcePackage("mozilla-firefox")
     >>> debian_firefox.name
     u'mozilla-firefox'
+
+Test more advanced features of IDistributionSourcePackage:
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> dsp = ubuntu.getSourcePackage("pmount")
+    >>> IDistributionSourcePackage.providedBy(dsp)
+    True
+
+Useful properties:
+
+    >>> dsp.displayname
+    u'pmount in ubuntu'
+
+List of current 'pmount in Ubuntu' as ISourcePackage:
+
+    >>> [(sp.name, sp.distrorelease.name) for sp in dsp.by_distroreleases]
+    [(u'pmount', u'hoary')]
+
+Publishing history of 'pmount in Ubuntu':
+
+    >>> dsp.publishing_history.count()
+    2
+
+Releases of 'pmount in Ubuntu':
+
+    >>> [release.version for release in dsp.releases]
+    [u'0.1-2', u'0.1-1']
+
+Binary packages of 'pmount in Ubuntu':
+
+    >>> dsp.binary_package_names
+    u'pmount'
+
+Current release of 'pmount in Ubuntu':
+
+    >>> dsp.currentrelease.version
+    u'0.1-2'
+
+Check if 'currentrelease' works with version containing letters
+(bug # 6040):
+
+    >>> dsp2 = ubuntu.getSourcePackage("alsa-utils")
+    >>> dsp2.currentrelease.version
+    u'1.0.9a-4ubuntu1'
+
+    >>> dsp3 = ubuntu.getSourcePackage("cnews")
+    >>> dsp3.currentrelease.version
+    u'cr.g7-37'
+
+Useful methods:
+
+    >>> dsp.bugtasks().count()
+    0
+
+Retrieve a version of 'pmount in Ubuntu' as a
+IDistributionSourcePackageRelease or None if not found:
+
+    >>> dsp.getVersion('1.0') is None
+    True
+
+    >>> dsp.getVersion('0.1-1').title
+    u'pmount 0.1-1 (source) in Ubuntu'
+
 
 Package Bug Contact
 ===================

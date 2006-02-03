@@ -10,18 +10,17 @@
 <div metal:fill-slot="main">
 
     <div tal:condition="not: view/successfullyProcessed">
-      <h1>Merge User Accounts</h1>
+      <h1>Merge accounts</h1>
 
       <div tal:condition="view/errormessage">
         <p class="portalMessage" tal:content="view/errormessage"></p>
       </div>
 
-      <p>You're trying to merge the user account named
-      <em><strong tal:content="view/dupe/name" /></em> into the
-      account named <em><strong tal:content="context/requester/name" /></em>. 
-      To complete the merge, simply enter the Launchpad password of the
-      <strong tal:content="context/requester/name" /> account on the
-      form below and submit it.</p>
+      <p>You&#8217;re trying to merge the Launchpad account named
+      <code tal:content="view/dupe/name">foo</code> into the
+      account named <code tal:content="context/requester/name">bar</code>.
+      To complete the merge, enter the Launchpad password of the
+      <code tal:content="context/requester/name">bar</code> account.</p>
 
       <form autocomplete="off" name="merge" method="POST">
         <div class="field">

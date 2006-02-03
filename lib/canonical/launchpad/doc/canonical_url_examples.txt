@@ -264,6 +264,31 @@ An IBugExternalRefSet.
     xxx canonical_url(bug_one_extrefs)
     u'http://localhost:8086/malone/bugs/1/references'
 
+
+== Remote Bug Trackers and Remote Bugs ==
+
+    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> from canonical.launchpad.browser.bugtracker import RemoteBug
+
+An IBugTrackerSet.
+
+    >>> canonical_url(getUtility(IBugTrackerSet))
+    u'http://localhost:8086/malone/bugtrackers'
+
+A remote bug tracker.
+
+    >>> mozilla_bugtracker = getUtility(IBugTrackerSet)['mozilla.org']
+    >>> canonical_url(mozilla_bugtracker)
+    u'http://localhost:8086/malone/bugtrackers/mozilla.org'
+
+A bug from a remote bug tracker.
+
+    >>> remote_bug = RemoteBug(mozilla_bugtracker, '42',
+    ...                        mozilla_bugtracker.getBugsWatching('42'))
+    >>> canonical_url(remote_bug)
+    u'http://localhost:8086/malone/bugtrackers/mozilla.org/42'
+
+
 == POTemplates and so on ==
 
     >>> from canonical.launchpad.interfaces import (
