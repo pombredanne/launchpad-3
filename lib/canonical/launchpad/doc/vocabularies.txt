@@ -390,6 +390,8 @@ o ValidTeamOwner - With the exception of the team itself and all teams owned
     AssertionError: ...
 
     ValidTeamOwner's context must be a team.
+
+    >>> person = getUtility(IPersonSet).getByName('name16')
     >>> vocab = vocabulary_registry.get(person, "ValidTeamOwner")
     Traceback (most recent call last):
     ...
