@@ -14,8 +14,8 @@ from sqlobject.sqlbuilder import AND
 
 from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import EnumCol, BugTrackerType
-from canonical.database.sqlbase import (SQLBase, flush_database_updates,
-    quote)
+from canonical.database.sqlbase import (
+    SQLBase, flush_database_updates, quote, sqlvalues)
 from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.interfaces import (
@@ -63,6 +63,13 @@ class BugTracker(SQLBase):
                                         BugWatch.q.remotebug == remotebug),
                                     distinct=True,
                                     orderBy=['datecreated']))
+
+    def getBugWatchesNeedingUpdate(self):
+        return BugWatch.select(
+            """bugtracker = %s AND
+               (lastchecked < (now() at time zone 'UTC' - interval '23 hours') 
+                OR lastchecked IS NULL)""" % sqlvalues(self.id),
+            orderBy="remotebug")
 
 
 class BugTrackerSet:

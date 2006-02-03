@@ -6,6 +6,31 @@ document discusses the API of external bug trackers. To learn more about
 bug watches, the object that represents the link between a Malone bug
 and an external bug, see bugwatch.txt.
 
+We can get a list of all the bug tracker's bug needing to be updated.
+The current criteria for needing a update is that it hasn't been
+updated in the last 23 hours.
+
+    >>> import pytz
+    >>> from datetime import datetime, timedelta
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> bugtracker_set = getUtility(IBugTrackerSet)
+    >>> mozilla_bugzilla = bugtracker_set.getByName('mozilla.org')
+    >>> now = datetime.now(pytz.timezone('UTC'))
+
+    >>> bug_watches = mozilla_bugzilla.watches
+    >>> bug_watches[0].lastchecked = None
+    >>> bug_watches[1].lastchecked = now
+    >>> bug_watches[2].lastchecked = now - timedelta(hours=12)
+    >>> bug_watches[3].lastchecked = now - timedelta(days=1)
+    >>> flush_database_updates()
+
+    >>> for bug_watch in mozilla_bugzilla.getBugWatchesNeedingUpdate():
+    ...     print bug_watch.remotebug
+    123543
+    42
+
+
 Top Bug Trackers
 ================
 
@@ -13,10 +38,6 @@ The Malone front page shows a list of the top Malone bug trackers, as
 ordered by the number of bugs being monitored by Malone in each of
 them. Use IBugTrackerSet.getMostActiveBugTrackers to get this list.
 
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBugTrackerSet
-
-    >>> bugtrackerset = getUtility(IBugTrackerSet)
-    >>> top_trackers = bugtrackerset.getMostActiveBugTrackers(limit=3)
+    >>> top_trackers = bugtracker_set.getMostActiveBugTrackers(limit=3)
     >>> [(tracker.name, tracker.watches.count()) for tracker in top_trackers]
     [(u'mozilla.org', 4), (u'gnome-bugzilla', 1), (u'debbugs', 0)]
