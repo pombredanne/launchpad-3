@@ -242,13 +242,11 @@
   <paragraph|Relation:>SFTP creates Branch records in Launchpad.
 
   <\with|color|dark red>
-    <\note>
-      Andrew Bennetts remarked that SFTP Server does not talk to Launchpad
-      directly. Instead it goes through the AuthServer, which is becoming the
-      all-purposes internal XMLRPC server. Andrew, please amend this document
-      and the sftp-server picture to accurately represent the relations the
-      SFTP Server participates to.
-    </note>
+    <paragraph|Note.>Andrew Bennetts remarked that SFTP Server does not talk
+    to Launchpad directly. Instead it goes through the AuthServer, which is
+    becoming the all-purposes internal XMLRPC server. Andrew, please amend
+    this document and the sftp-server picture to accurately represent the
+    relations the SFTP Server participates to.
   </with>
 
   <subsection|Branch Puller>
@@ -901,74 +899,75 @@
     <associate|auto-22|<tuple|6|5>>
     <associate|auto-23|<tuple|7|5>>
     <associate|auto-24|<tuple|8|5>>
-    <associate|auto-25|<tuple|3.3|5>>
-    <associate|auto-26|<tuple|8|5>>
-    <associate|auto-27|<tuple|3.3.1|6>>
-    <associate|auto-28|<tuple|3.3.1.1|6>>
-    <associate|auto-29|<tuple|3.3.1.2|6>>
+    <associate|auto-25|<tuple|9|5>>
+    <associate|auto-26|<tuple|3.3|5>>
+    <associate|auto-27|<tuple|8|6>>
+    <associate|auto-28|<tuple|3.3.1|6>>
+    <associate|auto-29|<tuple|3.3.1.1|6>>
     <associate|auto-3|<tuple|2|2>>
-    <associate|auto-30|<tuple|3.3.2|6>>
-    <associate|auto-31|<tuple|3.3.2.1|6>>
-    <associate|auto-32|<tuple|3.4|6>>
-    <associate|auto-33|<tuple|9|6>>
-    <associate|auto-34|<tuple|3.4.0.2|6>>
-    <associate|auto-35|<tuple|3.4.0.3|6>>
-    <associate|auto-36|<tuple|3.4.0.4|6>>
-    <associate|auto-37|<tuple|3.5|7>>
-    <associate|auto-38|<tuple|10|7>>
-    <associate|auto-39|<tuple|3.5.0.5|7>>
+    <associate|auto-30|<tuple|3.3.1.2|6>>
+    <associate|auto-31|<tuple|3.3.2|6>>
+    <associate|auto-32|<tuple|3.3.2.1|6>>
+    <associate|auto-33|<tuple|3.4|6>>
+    <associate|auto-34|<tuple|9|6>>
+    <associate|auto-35|<tuple|3.4.0.2|6>>
+    <associate|auto-36|<tuple|3.4.0.3|6>>
+    <associate|auto-37|<tuple|3.4.0.4|7>>
+    <associate|auto-38|<tuple|3.5|7>>
+    <associate|auto-39|<tuple|10|7>>
     <associate|auto-4|<tuple|2.1|2>>
-    <associate|auto-40|<tuple|3.5.0.6|7>>
-    <associate|auto-41|<tuple|3.5.0.7|7>>
-    <associate|auto-42|<tuple|3.5.0.8|8>>
-    <associate|auto-43|<tuple|3.5.0.9|8>>
-    <associate|auto-44|<tuple|3.5.1|8>>
-    <associate|auto-45|<tuple|3.5.2|8>>
-    <associate|auto-46|<tuple|3.5.2.1|9>>
-    <associate|auto-47|<tuple|3.5.2.2|9>>
-    <associate|auto-48|<tuple|3.5.3|9>>
-    <associate|auto-49|<tuple|11|9>>
+    <associate|auto-40|<tuple|3.5.0.5|7>>
+    <associate|auto-41|<tuple|3.5.0.6|7>>
+    <associate|auto-42|<tuple|3.5.0.7|8>>
+    <associate|auto-43|<tuple|3.5.0.8|8>>
+    <associate|auto-44|<tuple|3.5.0.9|8>>
+    <associate|auto-45|<tuple|3.5.1|8>>
+    <associate|auto-46|<tuple|3.5.2|9>>
+    <associate|auto-47|<tuple|3.5.2.1|9>>
+    <associate|auto-48|<tuple|3.5.2.2|9>>
+    <associate|auto-49|<tuple|3.5.3|9>>
     <associate|auto-5|<tuple|2|2>>
-    <associate|auto-50|<tuple|3.5.3.1|9>>
-    <associate|auto-51|<tuple|3.5.4|?>>
-    <associate|auto-52|<tuple|3.5.4.1|?>>
-    <associate|auto-53|<tuple|12|?>>
-    <associate|auto-54|<tuple|3.5.5|?>>
-    <associate|auto-55|<tuple|3.5.5.1|?>>
-    <associate|auto-56|<tuple|3.5.6|?>>
-    <associate|auto-57|<tuple|13|?>>
-    <associate|auto-58|<tuple|3.5.6.1|?>>
-    <associate|auto-59|<tuple|3.5.6.2|?>>
+    <associate|auto-50|<tuple|11|9>>
+    <associate|auto-51|<tuple|3.5.3.1|?>>
+    <associate|auto-52|<tuple|3.5.4|?>>
+    <associate|auto-53|<tuple|3.5.4.1|?>>
+    <associate|auto-54|<tuple|12|?>>
+    <associate|auto-55|<tuple|3.5.5|?>>
+    <associate|auto-56|<tuple|3.5.5.1|?>>
+    <associate|auto-57|<tuple|3.5.6|?>>
+    <associate|auto-58|<tuple|13|?>>
+    <associate|auto-59|<tuple|3.5.6.1|?>>
     <associate|auto-6|<tuple|2.2|2>>
-    <associate|auto-60|<tuple|3.5.6.3|?>>
-    <associate|auto-61|<tuple|3.5.6.4|?>>
-    <associate|auto-62|<tuple|3.5.7|?>>
-    <associate|auto-63|<tuple|3.5.7.1|?>>
-    <associate|auto-64|<tuple|3.5.8|?>>
-    <associate|auto-65|<tuple|3.5.9|?>>
-    <associate|auto-66|<tuple|3.5.10|?>>
-    <associate|auto-67|<tuple|3.6|?>>
-    <associate|auto-68|<tuple|3.6.0.1|?>>
-    <associate|auto-69|<tuple|4|?>>
+    <associate|auto-60|<tuple|3.5.6.2|?>>
+    <associate|auto-61|<tuple|3.5.6.3|?>>
+    <associate|auto-62|<tuple|3.5.6.4|?>>
+    <associate|auto-63|<tuple|3.5.7|?>>
+    <associate|auto-64|<tuple|3.5.7.1|?>>
+    <associate|auto-65|<tuple|3.5.8|?>>
+    <associate|auto-66|<tuple|3.5.9|?>>
+    <associate|auto-67|<tuple|3.5.10|?>>
+    <associate|auto-68|<tuple|3.6|?>>
+    <associate|auto-69|<tuple|3.6.0.1|?>>
     <associate|auto-7|<tuple|3|2>>
-    <associate|auto-70|<tuple|4.1|?>>
-    <associate|auto-71|<tuple|4.1.0.2|?>>
-    <associate|auto-72|<tuple|4.1.1|?>>
-    <associate|auto-73|<tuple|4.1.1.1|?>>
-    <associate|auto-74|<tuple|4.1.2|?>>
-    <associate|auto-75|<tuple|4.1.3|?>>
-    <associate|auto-76|<tuple|4.1.4|?>>
-    <associate|auto-77|<tuple|4.2|?>>
-    <associate|auto-78|<tuple|4.2.1|?>>
-    <associate|auto-79|<tuple|4.2.2|?>>
+    <associate|auto-70|<tuple|4|?>>
+    <associate|auto-71|<tuple|4.1|?>>
+    <associate|auto-72|<tuple|4.1.0.2|?>>
+    <associate|auto-73|<tuple|4.1.1|?>>
+    <associate|auto-74|<tuple|4.1.1.1|?>>
+    <associate|auto-75|<tuple|4.1.2|?>>
+    <associate|auto-76|<tuple|4.1.3|?>>
+    <associate|auto-77|<tuple|4.1.4|?>>
+    <associate|auto-78|<tuple|4.2|?>>
+    <associate|auto-79|<tuple|4.2.1|?>>
     <associate|auto-8|<tuple|2.3|3>>
-    <associate|auto-80|<tuple|4.2.3|?>>
-    <associate|auto-81|<tuple|4.3|?>>
-    <associate|auto-82|<tuple|4.3.0.1|?>>
-    <associate|auto-83|<tuple|4.3.0.2|?>>
-    <associate|auto-84|<tuple|4.3.0.3|?>>
-    <associate|auto-85|<tuple|4.3.0.4|?>>
-    <associate|auto-86|<tuple|4.3.0.5|?>>
+    <associate|auto-80|<tuple|4.2.2|?>>
+    <associate|auto-81|<tuple|4.2.3|?>>
+    <associate|auto-82|<tuple|4.3|?>>
+    <associate|auto-83|<tuple|4.3.0.1|?>>
+    <associate|auto-84|<tuple|4.3.0.2|?>>
+    <associate|auto-85|<tuple|4.3.0.3|?>>
+    <associate|auto-86|<tuple|4.3.0.4|?>>
+    <associate|auto-87|<tuple|4.3.0.5|?>>
     <associate|auto-9|<tuple|4|3>>
   </collection>
 </references>
@@ -1219,64 +1218,62 @@
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-67>>
 
+      <with|par-left|<quote|6fn>|Todo: <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-68><vspace|0.15fn>>
+
       <vspace*|1fn><with|font-series|<quote|bold>|math-font-series|<quote|bold>|Future
       Plans and Open Issues> <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-68><vspace|0.5fn>
+      <no-break><pageref|auto-69><vspace|0.5fn>
 
       <with|par-left|<quote|1.5fn>|Branch Puller's Future
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-69>>
+      <no-break><pageref|auto-70>>
 
       <with|par-left|<quote|6fn>|Open issue:
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-70><vspace|0.15fn>>
+      <no-break><pageref|auto-71><vspace|0.15fn>>
 
       <with|par-left|<quote|3fn>|Future plan: Launchpad reporting
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-71>>
+      <no-break><pageref|auto-72>>
 
       <with|par-left|<quote|6fn>|Relation:
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-72><vspace|0.15fn>>
+      <no-break><pageref|auto-73><vspace|0.15fn>>
 
       <with|par-left|<quote|3fn>|Future plan: Ignore expected failures
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-73>>
+      <no-break><pageref|auto-74>>
 
       <with|par-left|<quote|3fn>|Future plan: Pull now
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-74>>
-
-      <with|par-left|<quote|3fn>|Future plan: Concurrent tasks
-      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-75>>
 
-      <with|par-left|<quote|1.5fn>|Branch Syncher's Future
+      <with|par-left|<quote|3fn>|Future plan: Concurrent tasks
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-76>>
 
-      <with|par-left|<quote|3fn>|Future plan: Launchpad reporting
+      <with|par-left|<quote|1.5fn>|Branch Syncher's Future
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-77>>
 
-      <with|par-left|<quote|3fn>|Future plan: Sync now
+      <with|par-left|<quote|3fn>|Future plan: Launchpad reporting
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-78>>
 
-      <with|par-left|<quote|3fn>|Future plan: Concurrent tasks
+      <with|par-left|<quote|3fn>|Future plan: Sync now
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-79>>
 
-      <with|par-left|<quote|1.5fn>|RCS Importer's Future
+      <with|par-left|<quote|3fn>|Future plan: Concurrent tasks
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-80>>
 
-      <with|par-left|<quote|6fn>|Open Issue:
+      <with|par-left|<quote|1.5fn>|RCS Importer's Future
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
-      <no-break><pageref|auto-81><vspace|0.15fn>>
+      <no-break><pageref|auto-81>>
 
-      <with|par-left|<quote|6fn>|Open Issue:
-      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <with|par-left|<quote|6fn>|Todo: <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-82><vspace|0.15fn>>
 
       <with|par-left|<quote|6fn>|Open Issue:
@@ -1286,6 +1283,14 @@
       <with|par-left|<quote|6fn>|Open Issue:
       <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
       <no-break><pageref|auto-84><vspace|0.15fn>>
+
+      <with|par-left|<quote|6fn>|Open Issue:
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-85><vspace|0.15fn>>
+
+      <with|par-left|<quote|6fn>|Open Issue:
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-86><vspace|0.15fn>>
     </associate>
   </collection>
 </auxiliary>
