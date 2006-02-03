@@ -19,7 +19,7 @@ from canonical.launchpad.scripts import (execute_zcml_for_scripts,
 from canonical.launchpad.database import (DistroArchReleaseBinaryPackage,
                                           DistroReleaseSourcePackageRelease)
 from canonical.launchpad.interfaces import (IBinaryPackageNameSet,
-                                            IDistributionSet)
+                                            IDistributionSet, NotFoundError)
 
 from contrib.glock import GlobalLock
 
@@ -70,7 +70,11 @@ def process_binary_change(distrorelease, package):
     for distroarchrelease in distrorelease.architectures:
         binarypackagename = getUtility(IBinaryPackageNameSet)[package]
         darbp = DistroArchReleaseBinaryPackage(distroarchrelease, binarypackagename)
-        darbp.changeOverride(new_component=new_component)
+        try:
+            darbp.changeOverride(new_component=new_component, new_priority=new_priority,
+                                 new_section=new_section)
+        except NotFoundError:
+            pass
     Ztm.commit()
 
 ################################################################################
