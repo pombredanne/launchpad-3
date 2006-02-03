@@ -175,13 +175,13 @@ Unassigned, and In Progress bug lists.
     >>> ubuntu_mozilla_firefox = ubuntu.getSourcePackage("mozilla-firefox")
 
     >>> packagebugs_search_view.getOpenBugsURL(ubuntu_mozilla_firefox)
-    u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&search=Search'
+    u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&search=Search'
 
     >>> packagebugs_search_view.getCriticalBugsURL(ubuntu_mozilla_firefox)
-    u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.severity=Critical&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&search=Search'
+    u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.severity=Critical&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&search=Search'
 
     >>> packagebugs_search_view.getUnassignedBugsURL(ubuntu_mozilla_firefox)
-    u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.unassigned=on&search=Search'
+    u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.unassigned=on&search=Search'
 
     >>> packagebugs_search_view.getInProgressBugsURL(ubuntu_mozilla_firefox)
     u'.../people/name12/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=In+Progress&search=Search'
@@ -219,11 +219,11 @@ render the overview report.
     0
 
     >>> ubuntu_firefox_bugcounts['open_bugs_url']
-    u'.../people/name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&search=Search'
+    u'.../people/name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&search=Search'
     >>> ubuntu_firefox_bugcounts['critical_bugs_url']
-    u'.../people/name16/+packagebugs-search?field.distribution=ubuntu&field.severity=Critical&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&search=Search'
+    u'.../people/name16/+packagebugs-search?field.distribution=ubuntu&field.severity=Critical&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&search=Search'
     >>> ubuntu_firefox_bugcounts['unassigned_bugs_url']
-    u'.../people/name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.unassigned=on&search=Search'
+    u'.../people/name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.unassigned=on&search=Search'
     >>> ubuntu_firefox_bugcounts['inprogress_bugs_url']
     u'.../people/name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=In+Progress&search=Search'
 
@@ -264,7 +264,7 @@ Use the getSearchFilterLinks method to get a dict of these links.
     'unassigned'
 
     >>> filter_links[1]['url']
-    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.unassigned=on&search=Search'
+    u'.../people/name12/+packagebugs-search?field.distribution=debian&field.sourcepackagename=mozilla-firefox&field.status=Unconfirmed&field.status=Confirmed&field.status=In+Progress&field.status=Needs+Info&field.unassigned=on&search=Search'
 
 There is a separate method for status filter links, because they are
 displayed slightly differently than other filter links, to communicate
