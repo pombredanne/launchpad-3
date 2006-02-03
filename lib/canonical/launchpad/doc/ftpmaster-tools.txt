@@ -45,13 +45,13 @@ INFO
   Running: "info *"
   Listing ubuntu/breezy-autotest (NEW) 4/4
   ---------|----|----------------------|----------------------|---------------
-         1 | -B | mozilla-firefox      | 0.9                  | 15 weeks
+         1 | -B | mozilla-firefox      | 0.9                  | ...
            | mozilla-firefox/0.9/i386 Component: main Section: base Priority: EXTRA
-         2 | -B | pmount               | 0.1-1                | 15 weeks
+         2 | -B | pmount               | 0.1-1                | ...
            | pmount/0.1-1/i386 Component: main Section: base Priority: IMPORTANT
-         3 | S- | netapplet            | 0.99.6-1             | 46 weeks
+         3 | S- | netapplet            | 0.99.6-1             | ...
            | netapplet/0.99.6-1 Component: main Section: web
-         4 | S- | alsa-utils           | 1.0.9a-4ubuntu1      | 26 weeks
+         4 | S- | alsa-utils           | 1.0.9a-4ubuntu1      | ...
            | alsa-utils/1.0.9a-4ubuntu1 Component: main Section: base
   ---------|----|----------------------|----------------------|---------------
                                                                4/4

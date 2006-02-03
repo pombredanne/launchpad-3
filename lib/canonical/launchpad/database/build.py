@@ -217,6 +217,9 @@ class BuildSet:
         if not arch_ids:
             return None
 
+        clauseTables = []
+        orderBy="-datebuilt"
+
         # format clause according single/multiple architecture(s) form
         if len(arch_ids) == 1:
             condition_clauses = [('distroarchrelease=%s'
@@ -235,5 +238,13 @@ class BuildSet:
         if status is not None:
             condition_clauses.append('buildstate=%s' % sqlvalues(status))
 
+        # Order NEEDSBUILD by lastscore, it should present the build
+        # in a more natural order.
+        if status == BuildStatus.NEEDSBUILD:
+            orderBy = "BuildQueue.lastscore"
+            clauseTables.append('BuildQueue')
+            condition_clauses.append('BuildQueue.build = Build.id')
+
         return Build.select(' AND '.join(condition_clauses),
-                            orderBy="-datebuilt")
+                            clauseTables=clauseTables,
+                            orderBy=orderBy)

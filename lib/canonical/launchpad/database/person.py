@@ -34,7 +34,8 @@ from canonical.launchpad.interfaces import (
     IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet, ISSHKey,
     IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
     UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet, IKarmaSet,
-    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, IKarmaCacheSet)
+    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, IKarmaCacheSet,
+    ILaunchpadStatisticSet)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -61,6 +62,7 @@ from canonical.lp.dbschema import (
     SpecificationSort)
 
 from canonical.foaf import nickname
+from canonical.cachedproperty import cachedproperty
 
 
 class Person(SQLBase):
@@ -110,6 +112,7 @@ class Person(SQLBase):
     merged = ForeignKey(dbName='merged', foreignKey='Person', default=None)
 
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+    hide_email_addresses = BoolCol(notNull=True, default=False)
 
     # RelatedJoin gives us also an addLanguage and removeLanguage for free
     languages = RelatedJoin('Language', joinColumn='person',
@@ -286,15 +289,22 @@ class Person(SQLBase):
             return self.name
 
     def specifications(self, quantity=None, sort=None):
-        query = OR(
-            Specification.q.ownerID == self.id,
-            Specification.q.approverID == self.id,
-            Specification.q.assigneeID == self.id,
-            Specification.q.drafterID == self.id,
-            AND(Specification.q.id == SpecificationFeedback.q.specificationID,
-                SpecificationFeedback.q.reviewerID == self.id),
-            AND(Specification.q.id == SpecificationSubscription.q.specificationID,
-                SpecificationSubscription.q.personID == self.id))
+        query = """
+            Specification.owner = %(my_id)d
+            OR Specification.approver = %(my_id)d
+            OR Specification.assignee = %(my_id)d
+            OR Specification.drafter = %(my_id)d
+            OR Specification.id IN (
+                SELECT SpecificationFeedback.id
+                FROM SpecificationFeedback
+                WHERE SpecificationFeedback.reviewer = %(my_id)s
+                UNION
+                SELECT SpecificationSubscription.id
+                FROM SpecificationSubscription
+                WHERE SpecificationSubscription.person = %(my_id)d
+                )
+            """ % {'my_id': self.id}
+                    
         if sort is None or sort == SpecificationSort.DATE:
             order = ['-datecreated', 'id']
         elif sort == SpecificationSort.PRIORITY:
@@ -302,10 +312,7 @@ class Person(SQLBase):
         else:
             raise AssertionError('Unknown sort %s' % sort)
 
-        return Specification.select(query, orderBy=order,
-                                    clauseTables=['SpecificationFeedback',
-                                                  'SpecificationSubscription'],
-                                    distinct=True, limit=quantity)
+        return Specification.select(query, orderBy=order, limit=quantity)
 
     def tickets(self, quantity=None):
         ret = set(self.created_tickets)
@@ -690,6 +697,17 @@ class Person(SQLBase):
             orderBy=['Person.displayname'])
 
     @property
+    def teams_participated_in(self):
+        """See IPerson."""
+        return Person.select("""
+            Person.id = TeamParticipation.team
+            AND TeamParticipation.person = %s
+            AND Person.teamowner IS NOT NULL
+            """ % sqlvalues(self.id), clauseTables=['TeamParticipation'],
+            orderBy=['Person.name']
+            )
+
+    @property
     def defaultexpirationdate(self):
         """See IPerson."""
         days = self.defaultmembershipperiod
@@ -735,11 +753,11 @@ class Person(SQLBase):
             # This branch will be executed only in the first time a person
             # uses Launchpad. Either when creating a new account or when
             # resetting the password of an automatically created one.
-            self.preferredemail = email
+            self.setPreferredEmail(email)
         else:
             email.status = EmailAddressStatus.VALIDATED
 
-    def _setPreferredemail(self, email):
+    def setPreferredEmail(self, email):
         """See IPerson."""
         if not IEmailAddress.providedBy(email):
             raise TypeError, (
@@ -758,8 +776,11 @@ class Person(SQLBase):
         email = EmailAddress.get(email.id)
         email.status = EmailAddressStatus.PREFERRED
         email.syncUpdate()
+        # Now we update our cache of the preferredemail
+        setattr(self, '_preferredemail_cached', email)
 
-    def _getPreferredemail(self):
+    @cachedproperty('_preferredemail_cached')
+    def preferredemail(self):
         """See IPerson."""
         emails = self._getEmailsByStatus(EmailAddressStatus.PREFERRED)
         # There can be only one preferred email for a given person at a
@@ -772,7 +793,6 @@ class Person(SQLBase):
             return emails[0]
         else:
             return None
-    preferredemail = property(_getPreferredemail, _setPreferredemail)
 
     @property
     def preferredemail_sha1(self):
@@ -971,9 +991,17 @@ class PersonSet:
             return default
         return person
 
+    def updateStatistics(self, ztm):
+        """See IPersonSet."""
+        stats = getUtility(ILaunchpadStatisticSet)
+        stats.update('people_count', self.getAllPersons().count())
+        ztm.commit()
+        stats.update('teams_count', self.getAllTeams().count())
+        ztm.commit()
+
     def peopleCount(self):
         """See IPersonSet."""
-        return self.getAllPersons().count()
+        return getUtility(ILaunchpadStatisticSet).value('people_count')
 
     def getAllPersons(self, orderBy=None):
         """See IPersonSet."""
@@ -993,7 +1021,7 @@ class PersonSet:
 
     def teamsCount(self):
         """See IPersonSet."""
-        return self.getAllTeams().count()
+        return getUtility(ILaunchpadStatisticSet).value('teams_count')
 
     def getAllTeams(self, orderBy=None):
         """See IPersonSet."""

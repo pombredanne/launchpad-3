@@ -292,7 +292,7 @@ class DistroRelease(SQLBase, BugTargetBase):
         """See IDistroRelease."""
         # first find the set of all languages for which we have pofiles in
         # the distribution
-        langidset = set([
+        langidset = set(
             language.id for language in Language.select('''
                 Language.id = POFile.language AND
                 POFile.potemplate = POTemplate.id AND
@@ -301,7 +301,7 @@ class DistroRelease(SQLBase, BugTargetBase):
                 orderBy=['code'],
                 distinct=True,
                 clauseTables=['POFile', 'POTemplate'])
-            ])
+            )
         # now run through the existing DistroReleaseLanguages for the
         # distrorelease, and update their stats, and remove them from the
         # list of languages we need to have stats for
