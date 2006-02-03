@@ -11,6 +11,7 @@ import _pythonpath
 
 import os
 import sys
+import tempfile
 from email import message_from_string
 
 from optparse import OptionParser
@@ -23,7 +24,8 @@ from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 from canonical.launchpad.interfaces import (
     NotFoundError, IDistributionSet, IDistroReleaseQueueSet,
-    IComponentSet, ISectionSet, QueueInconsistentStateError)
+    IComponentSet, ISectionSet, QueueInconsistentStateError,
+    IPerson)
 
 from canonical.lp.dbschema import (
     DistroReleaseQueueStatus, PackagePublishingPriority)
@@ -36,6 +38,12 @@ from canonical.encoding import ascii_smash
 from canonical.archivepublisher.template_messages import announce_template
 
 from canonical.cachedproperty import cachedproperty
+
+from canonical.archivepublisher.utils import (
+    fix_maintainer, ParseMaintError)
+
+from canonical.archivepublisher.tagfiles import (
+    parse_tagfile, TagFileParseError)
 
 name_queue_map = {
     "new": DistroReleaseQueueStatus.NEW,
@@ -272,6 +280,71 @@ class QueueAction:
             return
         self.printMessage(mail_message)
 
+    # XXX: dsilvers: 20050203: This code is essentially cargo-culted from
+    # nascentupload.py and ideally should be migrated into a database
+    # method.
+    def _components_valid_for(self, person):
+        """Return the set of components this person could upload to."""
+
+        possible_components = set()
+        for acl in self.distribution.uploaders:
+            if person in acl:
+                possible_components.add(acl.component.name)
+
+        return possible_components
+
+    def is_person_in_keyring(self, person):
+        """Return whether or not the specified person is in the keyring."""
+        in_keyring = len(self._components_valid_for(person)) > 0
+        return in_keyring
+
+    # The above were stolen for this code to be useful.
+    def filter_addresses(self, addresslist):
+        """Filter the list of addresses provided based on the distribution's
+        permitted uploaders.
+        """
+        okay = []
+        person_util = getUtility(IPerson)
+        for address in addresslist:
+            p = person_util.getByEmail(address)
+            if p is not None:
+                if self.is_person_in_keyring(p):
+                    okay.append(address)
+        return okay
+
+    def find_recipients_from(self, changesfile):
+        """Given a libraryfilealias which is a changes file, find a
+        set of permitted recipients for the current distrorelease.
+        """
+        full_set = set()
+
+        temp_fd, temp_name = tempfile.mkstemp()
+        temp_fd = os.fdopen(temp_fd, "w")
+
+        changesfile.open()
+        temp_fd.write(changesfile.read())
+        temp_fd.close()
+        changesfile.close()
+
+        try:
+            changes = parse_tagfile(temp_name, allow_unsigned=True)
+        except TagFileParseError, e:
+            # remove tmp file and return empty list to satisfy callsite
+            # requirements.
+            os.remove(temp_name)
+            return []
+
+        os.remove(temp_name)
+
+        for field in ['maintainer', 'changed-by']:
+            email = None
+            (rfc822, rfc2047, name, email) = fix_maintainer(
+                ascii_smash(addr), fieldname)
+            full_set.add(email)
+
+        # Finally, filter the set of recipients based on the whitelist
+        return self.filter_addresses(full_set)
+
 
 class QueueActionHelp:
     """Present provided actions summary"""
@@ -397,13 +470,17 @@ class QueueActionReject(QueueAction):
                        % (queue_item.sourcepackagename.name, info))
             else:
                 for source in queue_item.sources:
+                    # XXX: dsilvers: 20060203: This needs to be able to
+                    # be given a reason for the rejection, otherwise it's
+                    # not desperately useful.
                     src_rel = source.sourcepackagerelease
-                    recipients = [src_rel.maintainer.preferredemail.email,
-                                  self.announcelist]
                     summary = ('%s_%s was REJECTED as %s/%s'
                                % (src_rel.name, src_rel.version,
                                   src_rel.component.name,
                                   src_rel.section.name))
+                    recipients = self.find_recipients_from(
+                        queue_item.changesfile)
+                    # We don't send REJECT to the announce list.
 
                     queue_item.changesfile.open()
                     changescontent = queue_item.changesfile.read()
@@ -450,12 +527,15 @@ class QueueActionAccept(QueueAction):
             else:
                 for source in queue_item.sources:
                     src_rel = source.sourcepackagerelease
-                    recipients = [src_rel.maintainer.preferredemail.email,
-                                  self.announcelist]
                     summary = ('%s_%s was ACCEPTED as %s/%s'
                                % (src_rel.name, src_rel.version,
                                   src_rel.component.name,
                                   src_rel.section.name))
+
+                    recipients = self.find_recipients_from(
+                        queue_item.changesfile)
+                    if self.announcelist is not None:
+                        recipients.append(self.announcelist)
 
                     queue_item.changesfile.open()
                     changescontent = queue_item.changesfile.read()
