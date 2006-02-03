@@ -263,7 +263,7 @@ class Bugzilla(ExternalSystem):
         for not_found_id in not_found_bugs:
             log.warn(
                 "Didn't find bug #%s on %s." % (not_found_id, self.baseurl))
-            bug_watch = bug_watches_by_remote_bug[bug_id]
+            bug_watch = bug_watches_by_remote_bug[not_found_id]
             bug_watch.remotestatus = 'UNKNOWN'
             bug_watch.lastchanged = UTC_NOW
 
