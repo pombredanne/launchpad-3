@@ -37,7 +37,7 @@ DONEPUB=no
 cleanup () {
   echo "Cleaning up lockfile."
   rm -f $LOCKFILE
-  if [ "x$DONEPUB" = "xyes" ];
+  if [ "x$DONEPUB" = "xyes" ]; then
       rm -rf ${DISTSROOT}.old
   else
       rm -rf ${DISTSROOT}.new
