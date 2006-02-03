@@ -13,7 +13,7 @@ OVERRIDEROOT=$ARCHIVEROOT/../ubuntu-overrides
 INDICES=$ARCHIVEROOT/indices
 
 # Configuration options
-LPCONFIG=staging
+LPCONFIG=ftpmaster
 LAUNCHPADROOT=/srv/launchpad.net/codelines/current
 LOCKFILE=/srv/launchpad.net/ubuntu-archive/cron.daily.lock
 DISTRONAME=ubuntu
