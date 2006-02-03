@@ -215,7 +215,7 @@ class DistroArchReleaseBinaryPackage:
         if new_section is None:
             new_section = current.section
         if new_priority is None:
-            new_priority = current.priorty
+            new_priority = current.priority
 
         if (new_component == current.component and
             new_section == current.section and
