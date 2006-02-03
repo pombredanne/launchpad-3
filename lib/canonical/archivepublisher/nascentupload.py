@@ -37,7 +37,7 @@ from canonical.archivepublisher.utils import (
 from canonical.lp.dbschema import (
     SourcePackageUrgency, PackagePublishingPriority,
     DistroReleaseQueueCustomFormat, BinaryPackageFormat,
-    BuildStatus)
+    BuildStatus, PackagePublishingPocket)
 
 from canonical.launchpad.interfaces import (
     IGPGHandler, GPGVerificationError, IGPGKeySet, IPersonSet,
@@ -631,6 +631,13 @@ class NascentUpload:
         the address, the person's name, email address and person record within
         the launchpad database.
         """
+
+        if type(addr) != unicode:
+            # XXX: dsilvers: 20060203: For some reason, we don't always get
+            # given a unicode object, so if we don't, we turn it into one
+            # so that ascii_smash will do the right thing.
+            addr = guess_encoding(addr)
+        
         try:
             (rfc822, rfc2047, name, email) = fix_maintainer(
                 ascii_smash(addr), fieldname)
@@ -1471,6 +1478,10 @@ class NascentUpload:
                     uploaded_file.package)
                 possible = self.distrorelease.getPublishedReleases(
                     spn, self.policy.pocket)
+                if not possible:
+                    # Try the RELEASE pocket too, just in case
+                    possible = self.distrorelease.getPublishedReleases(
+                        spn, PackagePublishingPocket.RELEASE)
                 self.logger.debug("getPublishedReleases() returned %d "
                                   "possible source(s)" % len(possible))
                 if possible:
@@ -1511,6 +1522,22 @@ class NascentUpload:
                         archtag, uploaded_file.package))
                     dar = self.distrorelease[archtag]
                     possible = dar.getReleasedPackages(bpn, self.policy.pocket)
+                    if not possible:
+                        # Try the RELEASE pocket
+                        possible = dar.getReleasedPackages(
+                            bpn, PackagePublishingPocket.RELEASE)
+                    if not possible:
+                        # Try the other architectures...
+                        for dar in dr.architectures:
+                            possible = dar.getReleasedPackages(
+                                bpn, self.policy.pocket)
+                            if not possible:
+                                # and in the RELEASE pocket?
+                                possible = dar.getReleasedPackages(
+                                    bpn, PackagePublishingPocket.RELEASE)
+                            if possible:
+                                break
+                            
                     self.logger.debug("getReleasedPackages() returned %d "
                                       "possibilit{y,ies}" % len(possible))
                     if possible:
