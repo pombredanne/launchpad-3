@@ -10,6 +10,7 @@
 
 import sys
 import os
+import _pythonpath
 
 from optparse import OptionParser
 
@@ -77,7 +78,7 @@ if __name__ == '__main__':
         parser.print_usage(file=sys.stderr)
         sys.exit(1)
 
-    tm = initZopeless()
+    tm = initZopeless(dbuser="fiera")
     execute_zcml_for_scripts()
 
     command = args.pop(0).lower()
