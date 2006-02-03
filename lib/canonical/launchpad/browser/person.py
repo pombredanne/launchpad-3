@@ -782,6 +782,12 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
             "search": "Search"}
 
         if extra_params is not None:
+            # We must UTF-8 encode searchtext to play nicely with
+            # urllib.urlencode, because it may contain non-ASCII characters.
+            if extra_params.has_key("field.searchtext"):
+                extra_params["field.searchtext"] = \
+                    extra_params["field.searchtext"].encode("utf8")
+
             params.update(extra_params)
 
         person_url = canonical_url(self.context)
