@@ -67,6 +67,8 @@ To create a bugwatch, use IBugWatchSet.createBugWatch:
     ...     remotebug='1234')
     >>> bugwatch.url
     u'https://bugzilla.mozilla.org//show_bug.cgi?id=1234'
+    >>> bugwatch.lastchecked is None
+    True
 
 
 Creating a SF.net Bugtracker
