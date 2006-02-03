@@ -10,6 +10,9 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IDistributionSet, IComponentSet)
 
+from canonical.lp.dbschema import (
+    PackagePublishingPocket, DistributionReleaseStatus)
+
 # Number of seconds in an hour (used later)
 HOURS = 3600
 
@@ -182,6 +185,19 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         """Return the set of components this distrorelease permits."""
         return set(
             component.name for component in getUtility(IComponentSet))
+
+    def policySpecificChecks(self, upload):
+        """The insecure policy does not allow uploads to pockets or
+        closed distroreleases."""
+        AbstractUploadPolicy.policySpecificChecks(self, upload)
+        if self.pocket != PackagePublishingPocket.RELEASE:
+            upload.reject("Not permitted to upload to non RELEASE pocket")
+        if self.distrorelease.releasestatus not in (
+            DistributionReleaseStatus.EXPERIMENTAL,
+            DistributionReleaseStatus.DEVELOPMENT,
+            DistributionReleaseStatus.FROZEN):
+            upload.reject("Not permitted to upload to a release in %s state" %
+                          self.distrorelease.releasestatus.name)
 
 # Register this as the 'insecure' policy
 AbstractUploadPolicy._registerPolicy(InsecureUploadPolicy)
