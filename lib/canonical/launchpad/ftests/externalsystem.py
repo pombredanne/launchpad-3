@@ -1,4 +1,4 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2006 Canonical Ltd.  All rights reserved.
 
 """Helper classes for testing ExternalSystem."""
 

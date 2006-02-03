@@ -2,7 +2,6 @@
 
 import urllib
 import urllib2
-import urlparse
 import xml.parsers.expat
 from xml.dom import minidom
 
@@ -102,7 +101,7 @@ class Bugzilla(ExternalSystem):
 
         :form: is a dict of form variables being POSTed.
         """
-        url = urlparse.urljoin(self.baseurl, page)
+        url = "%s/%s" % (self.baseurl, page)
         post_data = urllib.urlencode(form)
         request = urllib2.Request(url, headers={'User-agent': LP_USER_AGENT})
         url = urllib2.urlopen(request, data=post_data)
