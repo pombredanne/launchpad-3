@@ -192,3 +192,10 @@ Lastly, note that sourcepackages know how to compare to each other:
     True
     >>> hoary_firefox_one != warty_firefox
     True
+
+releasehistory
+--------------
+
+    >>> print len(hoary_firefox_one.releasehistory)
+    1
+
