@@ -13,9 +13,8 @@ First we define a helper function to make it easier to construct a view.
 
     >>> from zope.component import getView
     >>> from zope.publisher.browser import TestRequest
-    >>> def create_view(context, name, request=None):
-    ...     request = request or TestRequest()
-    ...     view = getView(context, name, request)
+    >>> def create_view(context, name, form=None):
+    ...     view = getView(context, name, TestRequest(form=form))
     ...     view.initialize()
     ...     return view
 
@@ -40,8 +39,7 @@ for bug tasks with status UNCONFIRMED and FIXCOMMITTED.
     ...     'orderby': u'-priority',
     ...     'field.status': [u'Unconfirmed', u'Fix Released'],
     ...     'field.status-empty-marker': u'1', 'search': u'Search'}
-    >>> request = TestRequest(form=form)
-    >>> assigned_bugtaks_view = create_view(name16, '+assignedbugs', request)
+    >>> assigned_bugtaks_view = create_view(name16, '+assignedbugs', form)
     >>> assigned_bugtasks = list(assigned_bugtaks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name)
     ...         for bugtask in assigned_bugtasks])
@@ -66,8 +64,7 @@ But the advanced search allows us to query only the bug tasks that aren't
 assigned.
 
     >>> form = {'orderby': u'-priority', 'field.unassigned': u'on'}
-    >>> request = TestRequest(form=form)
-    >>> reported_bugtaks_view = create_view(name16, '+reportedbugs', request)
+    >>> reported_bugtaks_view = create_view(name16, '+reportedbugs', form)
     >>> reported_bugtasks = list(reported_bugtaks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name,
     ...          getattr(bugtask.assignee, 'name', None))
@@ -95,8 +92,7 @@ Normal, Major and Critical.
 
     >>> form = {'orderby': u'-priority',
     ...         u'field.severity': [u'Normal', u'Major', u'Critical']}
-    >>> request = TestRequest(form=form)
-    >>> subscribed_bugtaks_view = create_view(name12, '+subscribedbugs', request)
+    >>> subscribed_bugtaks_view = create_view(name12, '+subscribedbugs', form)
     >>> subscribed_bugtasks = list(subscribed_bugtaks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name, bugtask.severity.name)
     ...         for bugtask in subscribed_bugtasks])
