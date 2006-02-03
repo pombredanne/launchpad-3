@@ -22,7 +22,7 @@ import apt_inst
 import shutil
 import time
 
-from canonical.encoding import guess as guess_encoding
+from canonical.encoding import guess as guess_encoding, ascii_smash
 from canonical.cachedproperty import cachedproperty
 
 from canonical.archivepublisher.template_messages import (
@@ -632,8 +632,8 @@ class NascentUpload:
         the launchpad database.
         """
         try:
-            (rfc822, rfc2047, name, email) = fix_maintainer(str(addr),
-                                                            fieldname)
+            (rfc822, rfc2047, name, email) = fix_maintainer(
+                ascii_smash(addr), fieldname)
         except ParseMaintError, e:
             raise UploadError(str(e))
 
