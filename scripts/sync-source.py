@@ -952,7 +952,7 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
 
 ################################################################################
 
-def read_current_source(distrorelease, valid_components=""):
+def read_current_source(distrorelease, valid_components="", arguments=None):
     """Returns a dictionary of packages in 'suite' with their version as the
     attribute.  'component' is an optional list of (comma or whitespace
     separated) components to restrict the search to.
@@ -961,8 +961,15 @@ def read_current_source(distrorelease, valid_components=""):
     S = {}
     valid_components = dak_utils.split_args(valid_components)
 
-    spp = distrorelease.getAllSourceReleasesByStatus(
-        dbschema.PackagePublishingStatus.PUBLISHED)
+    # XXX FIXME: This searches all pockets of the distrorelease which
+    #            is not what we want.
+    if Options.all:
+        spp = distrorelease.getAllSourceReleasesByStatus(
+            dbschema.PackagePublishingStatus.PUBLISHED)
+    except:
+        spp = []
+        for package in arguments:
+            spp.extend(distrorelease.getPublishedReleases(package))
 
     for sp in spp:
         component = sp.component.name
@@ -993,6 +1000,14 @@ def read_current_binaries(distrorelease):
 """
     B = {}
 
+    # XXX FIXME: This searches all pockets of the distrorelease which
+    #            is not what we want.
+
+    # XXX FIXME: this is insanely slow due to how SQLObject works.  It
+    #            can be limited, but only if we know what binaries we
+    #            want to check against, which we don't know till we
+    #            have the .dsc file and currently this function is
+    #            run well before that.
     for distroarchrelease in distrorelease.architectures:
         bpp = distroarchrelease.getAllReleasesByStatus(
             dbschema.PackagePublishingStatus.PUBLISHED)
@@ -1348,7 +1363,7 @@ def main():
     origin["component"] = Options.fromcomponent
 
     Sources = read_Sources("Sources", origin)
-    Suite = read_current_source(Options.tosuite, Options.incomponent)
+    Suite = read_current_source(Options.tosuite, Options.incomponent, arguments)
     current_binaries = read_current_binaries(Options.tosuite)
     do_diff(Sources, Suite, origin, arguments, current_binaries)
 
