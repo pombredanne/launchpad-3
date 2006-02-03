@@ -29,11 +29,14 @@ class TestBugzilla(Bugzilla):
 
     trace_calls = False
 
-    # A dict all bugs in the form of $bug_id: ($status, $resolution)
-    bugzilla_bugs = {
-        3224: ('RESOLVED', 'FIXED'),
-        328430: ('UNCONFIRMED', ''),
-    }
+    def __init__(self, baseurl, version=None):
+        Bugzilla.__init__(self, baseurl, version=version)
+
+        # A dict all bugs in the form of $bug_id: ($status, $resolution)
+        self.bugzilla_bugs = {
+            3224: ('RESOLVED', 'FIXED'),
+            328430: ('UNCONFIRMED', ''),
+        }
 
     def _getPage(self, page):
         """GET a page.

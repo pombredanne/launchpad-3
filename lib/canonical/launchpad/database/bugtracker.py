@@ -65,6 +65,7 @@ class BugTracker(SQLBase):
                                     orderBy=['datecreated']))
 
     def getBugWatchesNeedingUpdate(self):
+        """See IBugTracker."""
         return BugWatch.select(
             """bugtracker = %s AND
                (lastchecked < (now() at time zone 'UTC' - interval '23 hours') 

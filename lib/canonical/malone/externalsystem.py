@@ -191,8 +191,9 @@ class Bugzilla(ExternalSystem):
             if resolution == 'FIXED':
                 malone_status = BugTaskStatus.FIXRELEASED
             else:
-                #XXX: Which are the valid resolutions? Fail if we don't
-                # know the resolution.
+                #XXX: Which are the valid resolutions? We should fail
+                #     if we don't know of the resolution.
+                #     -- Bjorn Tillenius, 2005-02-03
                 malone_status = BugTaskStatus.REJECTED
         elif status in ['UNCONFIRMED', 'REOPENED', 'NEW', 'UPSTREAM']:
             malone_status = BugTaskStatus.UNCONFIRMED
@@ -234,20 +235,26 @@ class Bugzilla(ExternalSystem):
         found_bug_ids = set()
         for bug_node in bug_nodes:
             bug_id_nodes = bug_node.getElementsByTagName("bz:id")
-            assert len(bug_id_nodes) == 1
+            assert len(bug_id_nodes) == 1, "Should be only one id node."
             bug_id_node = bug_id_nodes[0]
-            assert len(bug_id_node.childNodes) == 1
+            assert len(bug_id_node.childNodes) == 1, (
+                "id node should contain a non-empty text string.")
             bug_id = str(bug_id_node.childNodes[0].data)
             found_bug_ids.add(bug_id)
+
             status_nodes = bug_node.getElementsByTagName(status_tag)
             assert len(status_nodes) == 1, "Should be only one status node."
             bug_status_node = status_nodes[0]
-            assert len(bug_status_node.childNodes) == 1
+            assert len(bug_status_node.childNodes) == 1, (
+                "status node should contain a non-empty text string.")
             status = bug_status_node.childNodes[0].data
+
             resolution_nodes = bug_node.getElementsByTagName('bz:resolution')
-            assert len(resolution_nodes) <= 1
+            assert len(resolution_nodes) <= 1, (
+                "Only one resolution node is allowed.")
             if resolution_nodes:
-                assert len(resolution_nodes[0].childNodes) <= 1
+                assert len(resolution_nodes[0].childNodes) <= 1, (
+                    "Resolution should contain a, possible empty, string.")
                 if resolution_nodes[0].childNodes:
                     resolution = resolution_nodes[0].childNodes[0].data
                     status += ' %s' % resolution

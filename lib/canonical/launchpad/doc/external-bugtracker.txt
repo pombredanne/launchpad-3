@@ -6,9 +6,9 @@ document discusses the API of external bug trackers. To learn more about
 bug watches, the object that represents the link between a Malone bug
 and an external bug, see bugwatch.txt.
 
-We can get a list of all the bug tracker's bug needing to be updated.
-The current criteria for needing a update is that it hasn't been
-updated in the last 23 hours.
+We can get a list of all the bug tracker's bug watches needing to be
+updated.  The current criteria for needing a update is that it hasn't
+been updated in the last 23 hours.
 
     >>> import pytz
     >>> from datetime import datetime, timedelta
