@@ -600,11 +600,18 @@ class IPersonSet(Interface):
         default ordering specified in Person._defaultOrder.
         """
 
+    def updateStatistics(ztm):
+        """Update statistics caches and commit."""
+
     def peopleCount():
-        """Return the number of non-merged persons in the database."""
+        """Return the number of non-merged persons in the database as
+           of the last statistics update.
+        """
 
     def teamsCount():
-        """Return the number of teams in the database."""
+        """Return the number of teams in the database as of the last
+           statistics update.
+        """
 
     def find(text, orderBy=None):
         """Return all non-merged Persons and Teams whose name, displayname,

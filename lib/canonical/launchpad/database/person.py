@@ -34,7 +34,8 @@ from canonical.launchpad.interfaces import (
     IIrcIDSet, ISSHKeySet, IJabberIDSet, IWikiNameSet, IGPGKeySet, ISSHKey,
     IGPGKey, IEmailAddressSet, IPasswordEncryptor, ICalendarOwner, IBugTaskSet,
     UBUNTU_WIKI_URL, ISignedCodeOfConductSet, ILoginTokenSet, IKarmaSet,
-    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, IKarmaCacheSet)
+    KEYSERVER_QUERY_URL, EmailAddressAlreadyTaken, IKarmaCacheSet,
+    ILaunchpadStatisticSet)
 
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.database.codeofconduct import SignedCodeOfConduct
@@ -990,9 +991,17 @@ class PersonSet:
             return default
         return person
 
+    def updateStatistics(self, ztm):
+        """See IPersonSet."""
+        stats = getUtility(ILaunchpadStatisticSet)
+        stats.update('people_count', self.getAllPersons().count())
+        ztm.commit()
+        stats.update('teams_count', self.getAllTeams().count())
+        ztm.commit()
+
     def peopleCount(self):
         """See IPersonSet."""
-        return self.getAllPersons().count()
+        return getUtility(ILaunchpadStatisticSet).value('people_count')
 
     def getAllPersons(self, orderBy=None):
         """See IPersonSet."""
@@ -1012,7 +1021,7 @@ class PersonSet:
 
     def teamsCount(self):
         """See IPersonSet."""
-        return self.getAllTeams().count()
+        return getUtility(ILaunchpadStatisticSet).value('teams_count')
 
     def getAllTeams(self, orderBy=None):
         """See IPersonSet."""
