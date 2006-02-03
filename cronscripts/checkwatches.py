@@ -11,7 +11,8 @@ from optparse import OptionParser
 from zope.component import getUtility
 
 from canonical.lp import initZopeless
-from canonical.launchpad.interfaces import IBugTrackerSet
+from canonical.launchpad.interfaces import (
+    IBugTrackerSet, ILaunchpadCelebrities)
 from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.malone import externalsystem
 from canonical.launchpad import scripts
@@ -34,8 +35,14 @@ def parse_options():
 def main():
     txn = initZopeless()
     scripts.execute_zcml_for_scripts()
+    ubuntu_bugzilla = getUtility(ILaunchpadCelebrities).ubuntu_bugzilla
 
     for bug_tracker in getUtility(IBugTrackerSet):
+        if bug_tracker == ubuntu_bugzilla:
+            # No need updating Ubuntu Bugzilla watches since all bugs
+            # have been imported into Malone, and thus won't change.
+            log.info("Skipping updating Ubuntu Bugzilla watches.")
+            continue
         bug_watches_to_update = bug_tracker.getBugWatchesNeedingUpdate()
 
         try:
