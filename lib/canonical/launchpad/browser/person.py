@@ -873,6 +873,9 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         return status_filter_links
 
     def getSearchTextFilterLink(self):
+        if not self.searchtext_widget.hasInput():
+            return None
+
         searchtext_filter_link = {}
 
         searchtext = self.searchtext_widget.getInputValue()
