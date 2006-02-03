@@ -941,7 +941,14 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
                                section, priority, description, have_orig_tar_gz,
                                requested_by, origin)
 
-    sign_changes(changes, dsc)
+    # XXX Soyuz wants an unsigned changes
+    #sign_changes(changes, dsc)
+    output_filename = "%s_%s_source.changes" % (dsc["source"], upstr_version)
+    filehandle = open(output_filename, 'w')
+    # XXX The additional '\n' is to work around a bug in parsing
+    #     unsigned changes with our forked copy of parse_changes
+    filehandle.write(changes+'\n')
+    filehandle.close()
 
 ################################################################################
 
