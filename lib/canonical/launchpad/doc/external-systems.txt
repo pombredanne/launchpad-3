@@ -98,6 +98,8 @@ updateBugWatches() issues only one request to update all watches:
     >>> remote_statuses == expected_remote_statuses
     True
 
+    >>> external_bugzilla.remotesystem.trace_calls = False
+
 updateBugWatches() updates the lastchecked attribute on the watches, so
 now no bug watches are in need of updating:
 
@@ -105,6 +107,3 @@ now no bug watches are in need of updating:
     >>> flush_database_updates()
     >>> len(gnome_bugzilla.getBugWatchesNeedingUpdate())
     0
-
-
-    >>> external_bugzilla.remotesystem.trace_calls = False
