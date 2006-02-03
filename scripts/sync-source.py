@@ -644,35 +644,6 @@ def md5sum_file(filename):
 
 ################################################################################
 
-def usage (exit_code=0):
-    print """Usage: josie [OPTIONS] [PACKAGE...]
-Sync source from one suite to another.
-
-General options:
-
-  -a, --all                  sync all packages
-  -b, --requested-by=UID     who the sync was requested by
-  -f, --force                force sync over the top of ubuntu changes
-  -h, --help                 show this help and exit
-  -k, --keybuk               write out list of modified+out-of-date pkgs
-  -n, --no-action            don't do anything
-  -v, --verbose              be more verbose
-
-Options controlling where to sync packages to:
-
-  -c, --in-component=CMPNT   limit syncs to packages in COMPONENT
-  -s, --to-suite=SUITE       sync to SUITE
-
-Options controlling where to sync packages from:
-
-  -C, --from-component=CMPNT sync from COMPONENT in DISTRO [default: main]
-  -D, --from-distro=DISTRO   sync from DISTRO [default: Debian]
-  -S, --from-suite=SUITE     sync from SUITE in DISTRO
-"""
-    sys.exit(exit_code)
-
-################################################################################
-
 def reject (str, prefix="Rejected: "):
     global reject_message
     if str:
