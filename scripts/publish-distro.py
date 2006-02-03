@@ -74,6 +74,10 @@ parser.add_option("-d", "--distribution",
                   dest="distribution", metavar="DISTRO", default="ubuntu",
                   help="The distribution to publish.")
 
+parser.add_option("-R", "--distsroot",
+                  dest="distsroot", metavar="SUFFIX", default=None,
+                  help="Override the dists path for generation")
+
 (options, args) = parser.parse_args()
 
 log = logger(options, "process-upload")
@@ -117,6 +121,9 @@ try:
 except LucilleConfigError, info:
     error(info)
     sys.exit(1)
+
+if options.distsroot is not None:
+    pubconf.distsroot = options.distsroot
 
 debug("Making directories as needed.")
 

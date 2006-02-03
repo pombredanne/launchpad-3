@@ -1255,7 +1255,7 @@ class NascentUpload:
         for pub_record in releases:
             pub_version = pub_record.sourcepackagerelease.version
             if apt_pkg.VersionCompare(version, pub_version) <= 0:
-                self.reject("%s: Version younger than that in the archive."
+                self.reject("%s: Version older than that in the archive."
                             % (dsc_file.filename))
 
         # For any file mentioned in the upload which does not exist in the
@@ -1438,7 +1438,7 @@ class NascentUpload:
 
         # If we have no signer, there's no ACL we can apply
         if self.signer is None:
-            self.debug("No signer, therefore ACL not processed")
+            self.logger.debug("No signer, therefore ACL not processed")
             return
 
         possible_components = self._components_valid_for(self.signer)
@@ -1479,6 +1479,12 @@ class NascentUpload:
                     # the set will be the most useful since it should be
                     # the most recently uploaded. We therefore use this one.
                     override = possible[0]
+                    if apt_pkg.VersionCompare(
+                        self.changes['version'],
+                        override.sourcepackagerelease.version) <= 0:
+                        self.reject("%s: Version older than that in the archive."
+                                    % (uploaded_file.filename))
+                    
                     uploaded_file.component = override.component.name
                     uploaded_file.section = override.section.name
                     uploaded_file.new = False
@@ -1511,6 +1517,12 @@ class NascentUpload:
                         # since it should be the most recently
                         # uploaded. We therefore use this one.
                         override=possible[0]
+                        if apt_pkg.VersionCompare(
+                            self.changes['version'],
+                            override.binarypackagerelease.version) <= 0:
+                            self.reject("%s: Version older than that in the "
+                                        "archive."
+                                        % (uploaded_file.filename))
                         uploaded_file.component = override.component.name
                         uploaded_file.section = override.section.name
                         uploaded_file.priority = override.priority

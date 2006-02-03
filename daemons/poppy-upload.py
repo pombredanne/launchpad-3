@@ -35,7 +35,7 @@ def main():
         return 1
 
     root, port = args
-    host = "0.0.0.0"
+    host = "127.0.0.1"
     ident = "lucille upload server"
     numthreads = 4
 

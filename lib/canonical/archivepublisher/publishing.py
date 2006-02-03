@@ -244,13 +244,15 @@ class Publisher(object):
                 # bug 3900
                 extra_extra_overrides = os.path.join(
                     self._config.miscroot,
-                    "more-extra.override.%s.main" % (distrorelease))
+                    "more-extra.override.%s.%s" % (distrorelease,
+                                                   component))
                 if not os.path.exists(extra_extra_overrides):
                     unpocketed_release = "-".join(
                         distrorelease.split('-')[:-1])
                     extra_extra_overrides = os.path.join(
                         self._config.miscroot,
-                        "more-extra.override.%s.main" % (unpocketed_release))
+                        "more-extra.override.%s.%s" % (unpocketed_release,
+                                                       component))
                 if os.path.exists(extra_extra_overrides):
                     eef = open(extra_extra_overrides, "r")
                     extras = {}
@@ -420,7 +422,7 @@ TreeDefault
         ))
 
         stanza_template = """
-tree "dists/%(DISTRORELEASEONDISK)s"
+tree "%(DISTS)s/%(DISTRORELEASEONDISK)s"
 {
     FileList "%(LISTPATH)s/%(DISTRORELEASEBYFILE)s_$(SECTION)_binary-$(ARCH)";
     SourceFileList "%(LISTPATH)s/%(DISTRORELEASE)s_$(SECTION)_source";
@@ -503,6 +505,7 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                     "SECTIONS": " ".join(comps),
                     "EXTENSIONS": ".deb",
                     "CACHEINSERT": "",
+                    "DISTS": os.path.basename(self._config.distsroot),
                     "HIDEEXTRA": ""
                     })
                 dr_full_name = dr + pocketsuffix[pocket]
@@ -524,6 +527,7 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                             "SECTIONS": "debian-installer",
                             "EXTENSIONS": ".udeb",
                             "CACHEINSERT": "debian-installer-",
+                            "DISTS": os.path.basename(self._config.distsroot),
                             "HIDEEXTRA": "// "
                             })
 
@@ -631,7 +635,8 @@ tree "dists/%(DISTRORELEASEONDISK)s"
         checksum = sum_form(contents).hexdigest()
         out_file.write(" %s % 16d %s\n" % (checksum, length, file_name))
 
-    def _writeDistroRelease(self, distribution, distrorelease, full_name):
+    def _writeDistroRelease(self, distribution, distrorelease,
+                            full_name, pocket):
         """Write out the Release files for the provided distrorelease."""
         all_components = set()
         all_architectures = set()
@@ -654,7 +659,7 @@ tree "dists/%(DISTRORELEASEONDISK)s"
                     di_path = os.path.join(component, "debian-installer",
                                            architecture)
                     di_file_stub = os.path.join(di_path, file_stub)
-                    for suffix in ('.gz', '.bz2'):
+                    for suffix in ('', '.gz', '.bz2'):
                         all_files.add(di_file_stub + suffix)
                 else:
                     file_stub = "Sources"
@@ -683,6 +688,14 @@ Architecture: %s
                 f.write(contents)
                 f.close()
 
+        drsummary = "%s %s " % (distribution.displayname,
+                                distrorelease.displayname)
+
+        if pocket == PackagePublishingPocket.RELEASE:
+            drsummary += distrorelease.version
+        else:
+            drsummary += pocket.name.capitalize()
+                
         f = open(os.path.join(self._config.distsroot, full_name, "Release"),
                  "w")
         f.write("""Origin: %s
@@ -698,7 +711,7 @@ Description: %s
        full_name, distrorelease.version, distrorelease.name,
        datetime.utcnow().strftime("%a, %d %b %Y %k:%M:%S UTC"),
        " ".join(all_architectures), " ".join(all_components),
-       distrorelease.summary))
+       drsummary))
         f.write("MD5Sum:\n")
         all_files = sorted(list(all_files), key=os.path.dirname)
         for file_name in all_files:
@@ -727,7 +740,8 @@ Description: %s
                 if full_distrorelease_name in self._release_files_needed:
                     self._writeDistroRelease(self.distro,
                                              distrorelease,
-                                             full_distrorelease_name)
+                                             full_distrorelease_name,
+                                             pocket)
 
     def createEmptyPocketRequests(self):
         """Write out empty file lists etc for pockets we want to have
