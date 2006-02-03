@@ -696,6 +696,17 @@ class Person(SQLBase):
             orderBy=['Person.displayname'])
 
     @property
+    def teams_participated_in(self):
+        """See IPerson."""
+        return Person.select("""
+            Person.id = TeamParticipation.team
+            AND TeamParticipation.person = %s
+            AND Person.teamowner IS NOT NULL
+            """ % sqlvalues(self.id), clauseTables=['TeamParticipation'],
+            orderBy=['Person.name']
+            )
+
+    @property
     def defaultexpirationdate(self):
         """See IPerson."""
         days = self.defaultmembershipperiod

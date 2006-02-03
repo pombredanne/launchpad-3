@@ -198,6 +198,9 @@ class IPerson(IHasSpecifications):
     activememberships = Attribute(
         "List of TeamMembership objects for people who are active members "
         "in this team.")
+    teams_participated_in = Attribute(
+            "Iterable of all Teams that this person is active in, recursive"
+            )
     guessedemails = Attribute("List of emails with status NEW. These email "
         "addresses probably came from a gina or POFileImporter run.")
     validatedemails = Attribute("Emails with status VALIDATED")
