@@ -19,7 +19,8 @@ __all__ = [
     'IBugTaskSet',
     'BugTaskSearchParams',
     'UNRESOLVED_BUGTASK_STATUSES',
-    'RESOLVED_BUGTASK_STATUSES']
+    'RESOLVED_BUGTASK_STATUSES',
+    'BUGTASK_BATCH_SIZE']
 
 from zope.interface import Interface, Attribute
 from zope.schema import (
@@ -51,6 +52,7 @@ RESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.FIXRELEASED,
     dbschema.BugTaskStatus.REJECTED)
 
+BUGTASK_BATCH_SIZE = 20
 
 class IBugTask(IHasDateCreated):
     """A description of a bug needing fixing in a particular product
@@ -210,6 +212,13 @@ class IDistroBugTaskSearch(IBugTaskSearch):
 
 class IPersonBugTaskSearch(IBugTaskSearch):
     """The schema used by the bug task search form of a person."""
+    sourcepackagename = Choice(
+        title=_("Source Package Name"), required=False,
+        description=_("The source package in which the bug occurs. "
+        "Leave blank if you are not sure."),
+        vocabulary='SourcePackageName')
+    distribution = Choice(
+        title=_("Distribution"), required=False, vocabulary='Distribution')
 
 
 class IBugTaskDelta(Interface):
