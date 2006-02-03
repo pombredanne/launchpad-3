@@ -297,5 +297,12 @@ class SecurityUploadPolicy(AbstractUploadPolicy):
         return set(
             component.name for component in getUtility(IComponentSet))
 
-AbstractUploadPolicy._registerPolicy(SecurityUploadPolicy)
+    def policySpecificChecks(self, upload):
+        """The insecure policy does not allow uploads to pockets or
+        closed distroreleases."""
+        AbstractUploadPolicy.policySpecificChecks(self, upload)
+        if self.pocket != PackagePublishingPocket.SECURITY:
+            upload.reject("Not permitted to do security upload to non "
+                          "SECURITY pocket")
 
+AbstractUploadPolicy._registerPolicy(SecurityUploadPolicy)
