@@ -24,15 +24,6 @@
             <td tal:content="context/datecreated/fmt:date" />
           </tr>
           <tr>
-            <th>Changes:</th>
-            <td tal:condition="not:context/changes">
-              <i>Not available</i>
-            </td>
-            <td tal:condition="context/changes">
-              <a href="+changes">View</a>
-            </td>
-          </tr>
-          <tr>
             <th>Processor:</th>
             <td tal:content="context/processor/title" />
           </tr>
@@ -64,10 +55,9 @@
             <th>Build log:</th>
             <td>
               <i tal:condition="not:context/buildlog">not available</i>
-              <a
-                tal:condition="context/buildlog"
-                href="+buildlog"
-              >Build log</a>
+              <a tal:condition="context/buildlog"
+                 tal:attributes="href context/buildlog/url"
+                 tal:content="context/buildlog/filename">BUILDLOG</a>
             </td>
           </tr>
           <tr>
@@ -92,6 +82,16 @@
           </tr>
         </tbody>
       </table>
+
+    <fieldset tal:condition="context/changes" class="collapsible collapsed">
+      <legend>Changes file</legend>
+      <div>
+            <div>
+	      <pre tal:content="context/changes" />
+            </div>
+     </div>
+    </fieldset>
+
     </div>
   </body>
 </html>
