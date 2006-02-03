@@ -23,7 +23,7 @@
     <browser:page
       for="*"
       name="+pomsgset-translate"
-      permission="zope.Public"
+      permission="launchpad.AnyPerson"
       template="../templates/pomsgset-translate.pt" />
 
 </configure>
