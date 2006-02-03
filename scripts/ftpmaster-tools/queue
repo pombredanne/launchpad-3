@@ -19,8 +19,7 @@ from zope.component import getUtility
 from canonical.encoding import guess
 from canonical.lp import initZopeless
 from canonical.config import config
-from canonical.launchpad.scripts import (
-    execute_zcml_for_scripts, logger, logger_options)
+from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 from canonical.launchpad.interfaces import (
     NotFoundError, IDistributionSet, IDistroReleaseQueueSet,
@@ -35,6 +34,8 @@ from canonical.launchpad.mail import sendmail
 from canonical.encoding import ascii_smash
 
 from canonical.archivepublisher.template_messages import announce_template
+
+from canonical.cachedproperty import cachedproperty
 
 name_queue_map = {
     "new": DistroReleaseQueueStatus.NEW,
@@ -94,27 +95,54 @@ class QueueAction:
     DistroReleaseQueue handling.
     """
 
-    def __init__(self, distro, distrorelease, queue, args,
+    def __init__(self, distribution_name, distrorelease_name, queue, terms,
                  announcelist, no_mail=True, exact_match=False):
         """Initialises passed variables. """
-        self.args = args
-        self.no_mail = no_mail
+        self.terms = terms
         self.exact_match = exact_match
-        self.distro = distro
-        self.distrorelease = distrorelease
-        if not announcelist:
-            self.announcelist = announcelist
-        else:
-            self.announcelist = self.distrorelease.changeslist
         self.queue = queue
-        self.queue_size = getUtility(IDistroReleaseQueueSet).count(
-            status=self.queue, distrorelease=self.distrorelease)
-        self.buildItems()
+        self.no_mail = no_mail
+        self.distribution_name = distribution_name
+        self.distrorelease_name = distrorelease_name
+        self.announcelist = announcelist
 
-    def buildItems(self):
-        """Builds a list of affected records based on the filter argument."""
+    @cachedproperty
+    def queue_size(self):
+        """ """
+        return getUtility(IDistroReleaseQueueSet).count(
+            status=self.queue, distrorelease=self.distrorelease)
+
+    def setDefaultContext(self):
+        """Set default distribuiton, distrorelease, announcelist."""
+        # if not found defaults to 'ubuntu'
+        distroset = getUtility(IDistributionSet)
         try:
-            term = self.args[0]
+            self.distribution = distroset.getByName(self.distribution_name)
+        except NotFoundError, info:
+            self.distribution = distroset.getByName('ubuntu')
+
+        if self.distrorelease_name:
+            # defaults to distro.currentrelease if passed distrorelease is
+            # misapplied or not found.
+            try:
+                self.distrorelease = self.distribution[self.distrorelease_name]
+            except NotFoundError, info:
+                raise QueueActionError('Context not found: "%s/%s"'
+                                       % (self.distribution.name,
+                                          self.distrorelease_name))
+        else:
+            self.distrorelease = self.distribution.currentrelease
+
+        if not self.announcelist:
+            self.announcelist = self.distrorelease.changeslist
+
+
+    def initialize(self):
+        """Builds a list of affected records based on the filter argument."""
+        self.setDefaultContext()
+
+        try:
+            term = self.terms[0]
         except IndexError:
             self.printUsage(MISSINGFILTERMSG)
 
@@ -150,7 +178,7 @@ class QueueAction:
     def printTitle(self, action):
         """Common title/summary presentation method."""
         print ("%s %s/%s (%s) %s/%s"
-               % (action, self.distro.name, self.distrorelease.name,
+               % (action, self.distribution.name, self.distrorelease.name,
                   self.queue.name, self.items_size, self.queue_size))
 
     def printHead(self):
@@ -210,19 +238,21 @@ class QueueAction:
         """
         for source in queue_item.sources:
             spr = source.sourcepackagerelease
-            print ("Source: %s/%s Component: %s Section: %s"
+            print ("\t | %s/%s Component: %s Section: %s"
                    % (spr.sourcepackagename.name, spr.version,
                       spr.component.name, spr.section.name))
+
         for queue_build in queue_item.builds:
             for bpr in queue_build.build.binarypackages:
                 if only and only != bpr.name:
                     continue
-                print ("Binary: %s/%s/%s Component: %s Section: %s "
+                print ("\t | %s/%s/%s Component: %s Section: %s "
                        "Priority: %s"
                        % (bpr.binarypackagename.name, bpr.version,
                           queue_build.build.distroarchrelease.architecturetag,
                           bpr.component.name, bpr.section.name,
                           bpr.priority.name))
+
     def printMessage(self, message):
         """ """
         print "Would be sending a mail:"
@@ -243,43 +273,71 @@ class QueueAction:
         self.printMessage(mail_message)
 
 
-class QueueActionList(QueueAction):
-    """Queue list:
+class QueueActionHelp:
+    """Present provided actions summary"""
+    def __init__(self, **kargs):
+        self.kargs = kargs
+        self.kargs['no_mail'] = True
+        self.actions = kargs['terms']
 
-    Lists the contents of the selected upload(s).
+    def initialize(self):
+        """Mock initialization """
+        pass
 
-    queue list <filter>
-    """
+    def run (self):
+        """Present the actions description summary"""
+        # present summary for specific or all commands
+        if not self.actions:
+            actions_help = queue_actions.items()
+        else:
+            actions_help = [(k, v) for k, v in queue_actions.items()
+                            if k in self.actions]
+        # extract summary from docstring of specified commands
+        for action, wrapper in actions_help:
+            if action is 'help':
+                continue
+            wobj = wrapper(**self.kargs)
+            summary = wobj.__doc__.splitlines()[0]
+            print '\t%s : %s ' % (action, summary)
+
+
+class QueueActionReport(QueueAction):
+    """Present a report about the size of available queues"""
+    def initialize(self):
+        """Mock initialization """
+        self.setDefaultContext()
+
     def run(self):
-        """List the filtered queue ordered by date."""
-        self.printTitle('Listing')
-        self.printHead()
-        for queue_item in self.items:
-            self.printItem(queue_item)
-        self.printHead()
-        self.printBottom()
+        """Display the queues size."""
+        print "Report for %s/%s" % (self.distribution.name,
+                                    self.distrorelease.name)
+
+        for queue in name_queue_map.values():
+            size = getUtility(IDistroReleaseQueueSet).count(
+                status=queue, distrorelease=self.distrorelease)
+            print "\t%s -> %s entries" % (queue.name, size)
 
 
 class QueueActionInfo(QueueAction):
-    """Queue info:
+    """Present the Queue item including its contents.
 
-    Displays information about content of the selected upload(s).
+    Presents the contents of the selected upload(s).
 
     queue info <filter>
     """
     def run(self):
-        """Display additional info about filtered queue."""
-        self.printTitle('Info')
-        self.printRule()
+        """Present the filtered queue ordered by date."""
+        self.printTitle('Listing')
+        self.printHead()
         for queue_item in self.items:
+            self.printItem(queue_item)
             self.printInfo(queue_item)
-
-        self.printRule()
+        self.printHead()
         self.printBottom()
 
 
 class QueueActionFetch(QueueAction):
-    """Queue fetch:
+    """Fetch the contents of a queue item.
 
     Download the contents of the selected upload(s).
 
@@ -320,7 +378,7 @@ class QueueActionFetch(QueueAction):
 
 
 class QueueActionReject(QueueAction):
-    """Queue reject:
+    """Reject the contents of a queue item.
 
     Move the selected upload(s) to the REJECTED queue.
 
@@ -337,13 +395,42 @@ class QueueActionReject(QueueAction):
             except QueueInconsistentStateError, info:
                 print ('** %s could not be rejected due %s'
                        % (queue_item.sourcepackagename.name, info))
+            else:
+                for source in queue_item.sources:
+                    src_rel = source.sourcepackagerelease
+                    recipients = [src_rel.maintainer.preferredemail.email,
+                                  self.announcelist]
+                    summary = ('%s_%s was REJECTED as %s/%s'
+                               % (src_rel.name, src_rel.version,
+                                  src_rel.component.name,
+                                  src_rel.section.name))
+
+                    queue_item.changesfile.open()
+                    changescontent = queue_item.changesfile.read()
+                    queue_item.changesfile.close()
+
+                    replacements = {
+                        "TO": ", ".join(recipients),
+                        "ANNOUNCE": self.announcelist,
+                        "MAINTAINERFROM": src_rel.maintainer.displayname,
+                        "CHANGES": queue_item.changesfilename,
+                        "SUMMARY": summary,
+                        "CHANGESFILE": changescontent,
+                        "SOURCE": src_rel.name,
+                        "VERSION": src_rel.version,
+                        "ARCH": 'source',
+                        }
+
+                    # append an email describing this action.
+                    message = announce_template % replacements
+                    self.send_email(message.decode('ascii'))
 
         self.printRule()
         self.printBottom()
 
 
 class QueueActionAccept(QueueAction):
-    """Queue accept:
+    """Accept the contents of a queue item.
 
     Move the selected upload(s) to the ACCEPTED queue.
 
@@ -395,7 +482,7 @@ class QueueActionAccept(QueueAction):
 
 
 class QueueActionOverride(QueueAction):
-    """Queue override:
+    """Override information in a queue item content.
 
     queue override <filter> [override_stanza*]
 
@@ -425,7 +512,7 @@ class QueueActionOverride(QueueAction):
         self.printRule()
 
         try:
-            override_stanza = self.args[1]
+            override_stanza = self.terms[1]
         except IndexError, info:
             self.printUsage('Missing override_stanza.')
             return
@@ -444,7 +531,7 @@ class QueueActionOverride(QueueAction):
         for queue state-machine.
         """
         try:
-            overrides = self.args[2]
+            overrides = self.terms[2]
             component_name, section_name = overrides.split('/')
         except IndexError, info:
             self.printUsage('Missing override_stanza argument')
@@ -478,7 +565,7 @@ class QueueActionOverride(QueueAction):
             self.printUsage('Cannot Override BinaryPackage retrieved by ID')
 
         try:
-            overrides = self.args[2]
+            overrides = self.terms[2]
             component_name, section_name, priority_name = overrides.split('/')
         except IndexError, info:
             self.printUsage('Missing "name override_argument" argument')
@@ -524,25 +611,75 @@ class QueueActionOverride(QueueAction):
         self.printInfo(queue_item, only=overridden)
 
 queue_actions = {
-    'list': QueueActionList,
+    'help': QueueActionHelp,
     'info': QueueActionInfo,
     'fetch': QueueActionFetch,
     'accept': QueueActionAccept,
     'reject': QueueActionReject,
     'override': QueueActionOverride,
+    'report': QueueActionReport,
     }
+
+
+class CommandRunnerError(Exception):
+    """Command Runner Failure"""
+
+class CommandRunner:
+    """ """
+    def __init__(self, queue, distribution_name, distrorelease_name,
+                 announcelist, no_mail):
+        self.queue = queue
+        self.distribution_name = distribution_name
+        self.distrorelease_name = distrorelease_name
+        self.announcelist = announcelist
+        self.no_mail = no_mail
+
+    def execute(self, terms, exact_match=False):
+        """Execute a single command iteration.
+
+        Return True if something gets wrong during the operation,
+        False otherwise.
+        """
+        print 'Running: "%s"' % " ".join(terms)
+
+        # check syntax, abort process if anything gets wrong
+        try:
+            action = terms[0]
+            arguments = terms[1:]
+        except IndexError:
+            raise CommandRunnerError('Invalid sentence, use help.')
+
+        # check action availability,
+        try:
+            queue_action = queue_actions[action]
+        except KeyError:
+            raise CommandRunnerError('Unknown Action: %s' % action)
+
+        # perform the required action on queue.
+        try:
+            # be sure to send every args via kargs
+            wrapper = queue_action(distribution_name=self.distribution_name,
+                                   distrorelease_name=self.distrorelease_name,
+                                   announcelist=self.announcelist,
+                                   queue=self.queue,
+                                   no_mail=self.no_mail,
+                                   terms=arguments,
+                                   exact_match=exact_match)
+            wrapper.initialize()
+            wrapper.run()
+        except QueueActionError, info:
+            raise CommandRunnerError(info)
 
 
 def main():
     parser = OptionParser()
-    logger_options(parser)
 
     parser.add_option("-Q", "--queue",
                       dest="queue", metavar="QUEUE", default="new",
                       help="Which queue to consider")
 
-    parser.add_option("-D", "--distro",
-                      dest="distro", metavar="DISTRO", default="ubuntu",
+    parser.add_option("-D", "--distribution",
+                      dest="distribution", metavar="DISTRO", default=None,
                       help="Which distro to look in")
 
     parser.add_option("-R", "--distrorelease",
@@ -569,10 +706,6 @@ def main():
                       default=False,
                       help="Ignore errors when performing a list of commands.")
 
-    parser.add_option("-r", "--report", action="store_true",
-                      metavar="", default=False,
-                      help="Present queue counters and exit.")
-
     parser.add_option("-A", "--announcelist",
                       dest="announcelist", metavar="ANNOUNCELIST",
                       default=None,
@@ -584,23 +717,20 @@ def main():
 
     options, args = parser.parse_args()
 
-    log = logger(options, "queue")
-
-    exact_match = options.exact_match
-
     if options.queue not in name_queue_map:
         print "Unable to map queue name %s" % options.queue
-        return
+        return 1
 
-    queue = name_queue_map[options.queue]
-    distro_name = options.distro
+    distribution_name = options.distribution
     distrorelease_name = options.distrorelease
+    exact_match = options.exact_match
+    dryrun = options.dryrun
+    announcelist = options.announcelist
+    ign_errors = options.ignore_errors
 
-    ztm = initZopeless(dbuser=config.uploadqueue.dbuser)
-    execute_zcml_for_scripts()
 
-    if options.report:
-        return showReport(distro_name, distrorelease_name)
+    no_mail = options.dryrun or options.nomail
+    queue = name_queue_map[options.queue]
 
     if options.file:
         args_list = [args.strip().split() for args in
@@ -608,94 +738,31 @@ def main():
     else:
         args_list = [args]
 
-    print ("Initialising connection to queue %s/%s %s"
-           % (options.distro, options.distrorelease, options.queue))
+    cmd_runner = CommandRunner(queue, distribution_name, distrorelease_name,
+                               announcelist, no_mail)
 
-    no_mail = options.dryrun or options.nomail
-    email_to = options.announcelist
+    print ("Initialising connection to queue %s" % options.queue)
+    ztm = initZopeless(dbuser=config.uploadqueue.dbuser)
+    execute_zcml_for_scripts()
 
     for single_args in args_list:
-        if runCommand(queue, distro_name, distrorelease_name, exact_match,
-                      single_args, email_to, no_mail):
-            # XXX cprov 20060120: dangerous option
-            if options.ignore_errors:
-                print "Ignoring error, aborting transaction ..."
-                ztm.abort()
+        try:
+            cmd_runner.execute(single_args, exact_match)
+        except CommandRunnerError, info:
+            print (info)
+            if ign_errors:
                 continue
+            ztm.abort()
+            print 'Aborting current transaction'
             return 1
-
-        if not options.dryrun:
-            ztm.commit()
         else:
-            print "DRY RUN requested, not committing."
+            if not options.dryrun:
+                ztm.commit()
+            else:
+                print "DRY RUN requested, not committing."
 
     return 0
 
-def showReport(distro_name, distrorelease_name):
-    """Presents the Queue Counters."""
-    try:
-        distro = getUtility(IDistributionSet).getByName(distro_name)
-        distrorelease = distro[distrorelease_name]
-    except NotFoundError, info:
-        print 'Unable to find: %s' % info
-        return 1
-
-    print "Report for %s/%s" % (distro.name, distrorelease.name)
-
-    for queue in name_queue_map.values():
-        size = getUtility(IDistroReleaseQueueSet).count(
-            status=queue, distrorelease=distrorelease)
-        print "\t%s -> %s entries" % (queue.name, size)
-
-    return 0
-
-def runCommand(queue, distro_name, distrorelease_name, exact_match, args,
-               announcelist, no_mail=True):
-    """Run a single command iteration.
-
-    Return True if something gets wrong during the operation,
-    False otherwise.
-    """
-    print 'Running: "%s"' % " ".join(args)
-
-    # defaults to 'ubuntu', won't fail.
-    distro = getUtility(IDistributionSet).getByName(distro_name)
-
-    # detaults to distro.currentrelease if passed distrorelease is
-    # misapplied or not found.
-    try:
-        distrorelease = distro[distrorelease_name]
-    except NotFoundError, info:
-        print 'Unable to find: %s' % info
-        distrorelease = distro.currentrelease
-        print 'Using default: %s' % distrorelease.name
-
-    # check syntax, abort process if anything gets wrong
-    try:
-        action = args[0]
-        arguments = args[1:]
-    except IndexError:
-        print 'Syntax error: %s ' % args
-        print 'Provide a valid sentence as "<action> <filter>"'
-        return True
-
-    # check action availability,
-    try:
-        queue_action = queue_actions[action]
-    except KeyError:
-        print 'Unknown Action: %s' % action
-        return True
-
-    # perform the required action on queue.
-    try:
-        queue_action(distro, distrorelease, queue, arguments,
-                     announcelist, no_mail, exact_match=exact_match).run()
-    except QueueActionError, info:
-        print info
-        return True
-
-    # everything was normal
-    return False
 
 if __name__ == '__main__':
     sys.exit(main())

@@ -47,7 +47,12 @@ from canonical.buildd.slave import BuilderStatus
 from canonical.buildd.utils import notes
 
 
+# Constants used in build scoring
+SCORE_SATISFIEDDEP = 5
+SCORE_UNSATISFIEDDEP = 10
+
 KBYTE = 1024
+
 def file_chunks(from_file, chunk_size=256*KBYTE):
     """Using the special two-arg form of iter() iterate a file's chunks."""
     return iter(lambda: from_file.read(chunk_size), '')
@@ -1071,6 +1076,9 @@ class BuilddMaster:
                 msg += "%d " % score
                 break
 
+        # apt_pkg requires InitSystem to get VersionCompare working properly
+        apt_pkg.InitSystem()
+
         # parse package builde dependencies using apt_pkg
         try:
             parsed_deps = apt_pkg.ParseDepends(job.builddependsindep)
@@ -1078,9 +1086,6 @@ class BuilddMaster:
             self._logger.warn("COULD NOT PARSE DEP: %s" %
                               job.builddependsindep)
             parsed_deps = []
-
-        # apt_pkg requires InitSystem to get VersionCompare working properly
-        apt_pkg.InitSystem()
 
         # this dict maps the package version relationship syntax in lambda
         # functions which returns bollean according the results of
@@ -1132,11 +1137,11 @@ class BuilddMaster:
                     # decrement score of 5 point for each dependency
                     # it postpones the handling of packages with huge
                     # list of dependencies.
-                    score -= 5
+                    score -= SCORE_SATISFIEDDEP
                     continue
 
             # reduce score in 10 point for each unsatisfied dependency
-            score -= 10
+            score -= SCORE_UNSATISFIEDDEP
             self._logger.warn("MISSING DEP: %r in %s %s"
                               % (token, job.archrelease.distrorelease.name,
                                  job.archrelease.architecturetag))
