@@ -1255,8 +1255,9 @@ class NascentUpload:
         for pub_record in releases:
             pub_version = pub_record.sourcepackagerelease.version
             if apt_pkg.VersionCompare(version, pub_version) <= 0:
-                self.reject("%s: Version older than that in the archive."
-                            % (dsc_file.filename))
+                self.reject("%s: Version older than that in the archive. "
+                            "%s <= %s" % (dsc_file.filename,
+                                          version, pub_version))
 
         # For any file mentioned in the upload which does not exist in the
         # upload, go ahead and find it from the database.
@@ -1479,11 +1480,14 @@ class NascentUpload:
                     # the set will be the most useful since it should be
                     # the most recently uploaded. We therefore use this one.
                     override = possible[0]
-                    if apt_pkg.VersionCompare(
-                        self.changes['version'],
-                        override.sourcepackagerelease.version) <= 0:
-                        self.reject("%s: Version older than that in the archive."
-                                    % (uploaded_file.filename))
+                    archive_version = override.sourcepackagerelease.version
+                    if apt_pkg.VersionCompare(self.changes['version'],
+                                              archive_version) <= 0:
+                        self.reject("%s: Version older than that in the "
+                                    "archive. %s <= %s"
+                                    % (uploaded_file.filename,
+                                       self.changes['version'],
+                                       archive_version))
                     
                     uploaded_file.component = override.component.name
                     uploaded_file.section = override.section.name
@@ -1517,12 +1521,14 @@ class NascentUpload:
                         # since it should be the most recently
                         # uploaded. We therefore use this one.
                         override=possible[0]
-                        if apt_pkg.VersionCompare(
-                            self.changes['version'],
-                            override.binarypackagerelease.version) <= 0:
+                        archive_version = override.binarypackagerelease.version
+                        if apt_pkg.VersionCompare(uploaded_file.version,
+                                                  archive_version) <= 0:
                             self.reject("%s: Version older than that in the "
-                                        "archive."
-                                        % (uploaded_file.filename))
+                                        "archive. %s <= %s"
+                                        % (uploaded_file.filename,
+                                           uploaded_file.version,
+                                           archive_version))
                         uploaded_file.component = override.component.name
                         uploaded_file.section = override.section.name
                         uploaded_file.priority = override.priority
