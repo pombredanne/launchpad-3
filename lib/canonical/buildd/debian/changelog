@@ -1,3 +1,9 @@
+launchpad-buildd (24) unstable; urgency=low
+
+  * Add /var/cache/apt/archives to the buildd chroots when mounting
+
+ -- Daniel Silverstone <daniel.silverstone@canonical.com>  Fri,  3 Feb 2006 00:30:07 +0000
+
 launchpad-buildd (23) unstable; urgency=low
 
   * And make apply-ogre-model use $SUDO, yay
