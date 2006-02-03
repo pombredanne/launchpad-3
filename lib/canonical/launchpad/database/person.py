@@ -288,15 +288,22 @@ class Person(SQLBase):
             return self.name
 
     def specifications(self, quantity=None, sort=None):
-        query = OR(
-            Specification.q.ownerID == self.id,
-            Specification.q.approverID == self.id,
-            Specification.q.assigneeID == self.id,
-            Specification.q.drafterID == self.id,
-            AND(Specification.q.id == SpecificationFeedback.q.specificationID,
-                SpecificationFeedback.q.reviewerID == self.id),
-            AND(Specification.q.id == SpecificationSubscription.q.specificationID,
-                SpecificationSubscription.q.personID == self.id))
+        query = """
+            Specification.owner = %(my_id)d
+            OR Specification.approver = %(my_id)d
+            OR Specification.assignee = %(my_id)d
+            OR Specification.drafter = %(my_id)d
+            OR Specification.id IN (
+                SELECT SpecificationFeedback.id
+                FROM SpecificationFeedback
+                WHERE SpecificationFeedback.reviewer = %(my_id)s
+                UNION
+                SELECT SpecificationSubscription.id
+                FROM SpecificationSubscription
+                WHERE SpecificationSubscription.person = %(my_id)d
+                )
+            """ % {'my_id': self.id}
+                    
         if sort is None or sort == SpecificationSort.DATE:
             order = ['-datecreated', 'id']
         elif sort == SpecificationSort.PRIORITY:
@@ -304,10 +311,7 @@ class Person(SQLBase):
         else:
             raise AssertionError('Unknown sort %s' % sort)
 
-        return Specification.select(query, orderBy=order,
-                                    clauseTables=['SpecificationFeedback',
-                                                  'SpecificationSubscription'],
-                                    distinct=True, limit=quantity)
+        return Specification.select(query, orderBy=order, limit=quantity)
 
     def tickets(self, quantity=None):
         ret = set(self.created_tickets)
