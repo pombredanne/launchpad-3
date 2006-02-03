@@ -77,6 +77,13 @@
         name="+bugs-advanced"
         template="../templates/buglisting-default.pt" />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IBugTarget"
+        class="canonical.launchpad.browser.BugTargetTextView"
+        permission="zope.Public"
+        name="+bugs-text"
+        attribute="__call__" />
+
     <!-- +bugs uses AdvancedBugTaskSearchView in order to keep old
          bookmarks working. -->
     <browser:page

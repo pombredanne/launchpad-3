@@ -23,7 +23,8 @@ __all__ = [
     'BugTargetView',
     'BugTaskView',
     'BugTaskReleaseTargetingView',
-    'get_sortorder_from_request']
+    'get_sortorder_from_request',
+    'BugTargetTextView']
 
 import urllib
 
@@ -48,11 +49,12 @@ from canonical.launchpad.interfaces import (
     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, IPerson,
     INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
     NotFoundError, IDistributionSourcePackage, ISourcePackage,
-    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES, IBugTaskSearch)
+    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES, IBugTaskSearch,
+    BUGTASK_BATCH_SIZE)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
-from canonical.launchpad.browser.bug import BugContextMenu
+from canonical.launchpad.browser.bug import BugContextMenu, BugTextView
 from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
 from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp.generalform import GeneralFormView
@@ -561,8 +563,11 @@ class BugTaskSearchListingView(LaunchpadView):
     search.
     """
 
-    # The initial values to be used when setting up the widgets of this page.
-    initial_values = {}
+    def __init__(self, context, request):
+        LaunchpadView.__init__(self, context, request)
+        # The initial values to be used when setting up the widgets of this 
+        # page.
+        self.initial_values = {}
 
     def initialize(self):
         #XXX: The base class should have a simple schema containing only
@@ -608,13 +613,12 @@ class BugTaskSearchListingView(LaunchpadView):
         """
         return {}
 
-    def search(self, searchtext=None, batch_start=None):
-        """Return an IBatchNavigator for the GETed search criteria.
+    def search(self, searchtext=None, batch_start=None, context=None):
+        """Return an IBatchNavigator for the GET search criteria.
 
         If :searchtext: is None, the searchtext will be gotten from the
         request.
         """
-
         form_params = getWidgetsData(self, self.search_form_schema)
         search_params = BugTaskSearchParams(user=self.user, omit_dupes=True)
         search_params.orderby = get_sortorder_from_request(self.request)
@@ -639,11 +643,15 @@ class BugTaskSearchListingView(LaunchpadView):
         for param_name in extra_params:
             setattr(search_params, param_name, extra_params[param_name])
 
-        tasks = self.context.searchTasks(search_params)
+        # Base classes can provide an explicit search context.
+        if not context:
+            context = self.context
+
+        tasks = context.searchTasks(search_params)
         if self.showBatchedListing():
             if batch_start is None:
                 batch_start = int(self.request.get('batch_start', 0))
-            batch = Batch(tasks, batch_start)
+            batch = Batch(tasks, batch_start, BUGTASK_BATCH_SIZE)
         else:
             batch = tasks
         return BatchNavigator(batch=batch, request=self.request)
@@ -951,7 +959,12 @@ class AdvancedBugTaskSearchView(BugTaskSearchListingView):
         pages and still use this method to get the extra params of the
         submitted simple form.
         """
-        form_params = getWidgetsData(self, self.search_form_schema)
+        # Even though we pass self.initial_values to setUpWidgets(), that
+        # method won't add anything to the request (obviously), and that's
+        # where getWidgetsData() will get the values from. For this reason we
+        # update self.initial_values with the return of getWidgetsData().
+        form_params = self.initial_values
+        form_params.update(getWidgetsData(self, self.search_form_schema))
 
         search_params = {}
         search_params['statusexplanation'] = form_params.get(
@@ -1025,4 +1038,21 @@ class BugTargetView:
 
         tasklist = self.context.searchTasks(params)
         return tasklist[:quantity]
+
+
+class BugTargetTextView(LaunchpadView):
+    """View for simple text page showing bugs filed against a bug target."""
+
+    def render(self):
+        params = BugTaskSearchParams(getUtility(ILaunchBag).user)
+        tasks = self.context.searchTasks(params)
+        texts = []
+        self.request.response.setHeader('Content-type', 'text/plain')
+        view = BugTextView(self.context, self.request)
+
+        for task in tasks:
+            texts.append(view.bug_text(task.bug))
+            texts.append(view.bugtask_text(task))
+
+        return u'\n'.join(texts)
 
