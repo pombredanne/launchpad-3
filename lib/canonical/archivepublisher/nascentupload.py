@@ -1707,6 +1707,11 @@ class NascentUpload:
                 summary.append("NEW: %s" % uploaded_file.filename)
             else:
                 summary.append(" OK: %s" % uploaded_file.filename)
+                summary.append("     -> %s %s %s" % (
+                    uploaded_file.component,
+                    uploaded_file.section,
+                    uploaded_file.priority))
+                
         return "\n".join(summary)
 
     def is_new(self):
