@@ -4,7 +4,12 @@ div.figure-body, div.figure-caption { text-align: center }
 
 div.figure-caption {
     font-size: small;
-    margin-top: 0.5em;    
+    margin-top: 0.5em;
+}
+
+div.big-figure {
+    margin-top: 1.3em;
+    margin-bottom: 1.3em;
 }
 
 .dark-red { color: #900 }

@@ -36,6 +36,7 @@
   </html>
 </xsl:template>
 
+
 <!-- Paragraph formating -->
 
 <xsl:template match="body/tm-par">
@@ -43,6 +44,9 @@
 </xsl:template>
 
 <xsl:template match="no-page-break|no-page-break_42_"/>
+
+<xsl:template match="new-page|new-page_42_"/>
+
 
 <!-- Sectioning -->
 
@@ -112,20 +116,30 @@
 
 <!-- Description lists -->
 
-<xsl:template match="tm-par[description-long]">
+<xsl:template match="tm-par[description-long|description-dash]">
   <xsl:apply-templates/>
 </xsl:template>
 
-<xsl:template match="description-long">
+<xsl:template match="description-long|description-dash">
   <dl><xsl:apply-templates/></dl>
 </xsl:template>
 
 <xsl:template match="description-long/tm-par[item_42_]">
+  <xsl:call-template name="description-para"/>
+</xsl:template>
+
+<xsl:template match="description-dash/tm-par[item_42_]">
+  <xsl:call-template name="description-para"/>
+</xsl:template>
+
+<xsl:template name="description-para">
   <dt><xsl:apply-templates select="item_42_/child::node()"/></dt>
   <dd><xsl:apply-templates/></dd>
 </xsl:template>
 
 <xsl:template match="description-long/tm-par/item_42_"/>
+
+<xsl:template match="description-dash/tm-par/item_42_"/>
 
  
 <!-- Figures -->
@@ -135,16 +149,18 @@
 </xsl:template>
 
 <xsl:template match="big-figure">
-  <div class="figure-body">
-    <xsl:apply-templates select="tm-arg[1]"/>
-  </div>
-  <div class="figure-caption">
-    <b>
-      <xsl:text>Figure </xsl:text>
-      <xsl:value-of select="count(preceding::big-figure) + 1"/>
-      <xsl:text>: </xsl:text>
-    </b>
-    <xsl:apply-templates select="tm-arg[2]"/>
+  <div class="big-figure">
+    <div class="figure-body">
+      <xsl:apply-templates select="tm-arg[1]"/>
+    </div>
+    <div class="figure-caption">
+      <b>
+	<xsl:text>Figure </xsl:text>
+	<xsl:value-of select="count(preceding::big-figure) + 1"/>
+	<xsl:text>: </xsl:text>
+      </b>
+      <xsl:apply-templates select="tm-arg[2]"/>
+    </div>
   </div>
 </xsl:template>
 
