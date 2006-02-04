@@ -231,7 +231,7 @@ user, since that's the email used in the Changed-By field for the
 .changes files we are going to process, and the ftpmaster@canonical.com
 GPG key, since that's the one used to sign the .changes file.
 
-We don't have to check the .dsc file, since we're using the autosync
+We don't have to check the .dsc file, since we're using the 'sync'
 policy in process-upload.py.
 
 XXX: gustavo 20051210
@@ -291,7 +291,7 @@ a different process.
 
 
 Include non-free in the database. This will be done by the
-NascentUpload in the autosync policy in the future.
+NascentUpload in the 'sync' policy in the future.
 
   >>> from canonical.launchpad.interfaces import IComponentSet
   >>> component_set = getUtility(IComponentSet)
@@ -305,7 +305,8 @@ This is done by running process-upload.py on each upload directory.
 
   >>> script = os.path.join(config.root, "scripts/process-upload.py")
   >>> process = subprocess.Popen([sys.executable, script, "--no-mails", "-q",
-  ...                             "-C", "autosync", temp_dir])
+  ...                             "-C", "sync", temp_dir])
+
   >>> process.wait()
   0
 

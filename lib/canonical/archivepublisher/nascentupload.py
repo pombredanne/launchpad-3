@@ -637,7 +637,7 @@ class NascentUpload:
             # given a unicode object, so if we don't, we turn it into one
             # so that ascii_smash will do the right thing.
             addr = guess_encoding(addr)
-        
+
         try:
             (rfc822, rfc2047, name, email) = fix_maintainer(
                 ascii_smash(addr), fieldname)
@@ -1132,7 +1132,7 @@ class NascentUpload:
             # But when testing stuff in soyuz backend we got forced to
             # accept the package linux-meta_2.6.12.16_i386.
             # Result: packages with missapplied section goes into
-            # main/misc ... 
+            # main/misc ...
             #self.reject("%s: Section %s is not valid" % (
             #    uploaded_file.filename, uploaded_file.section))
 
@@ -1220,7 +1220,7 @@ class NascentUpload:
                     # or confusing exceptions at times and is out of
                     # our control.
                     self.reject("%s: invalid %s field; cannot be parsed "
-                                "by apt." % (dsc_file.filename, 
+                                "by apt." % (dsc_file.filename,
                                              field_name.title()))
 
         # Verify the filename matches appropriately
@@ -1499,7 +1499,7 @@ class NascentUpload:
                                     % (uploaded_file.filename,
                                        self.changes['version'],
                                        archive_version))
-                    
+
                     uploaded_file.component = override.component.name
                     uploaded_file.section = override.section.name
                     uploaded_file.new = False
@@ -1528,7 +1528,7 @@ class NascentUpload:
                             bpn, PackagePublishingPocket.RELEASE)
                     if not possible:
                         # Try the other architectures...
-                        for dar in dr.architectures:
+                        for dar in self.distrorelease.architectures:
                             possible = dar.getReleasedPackages(
                                 bpn, self.policy.pocket)
                             if not possible:
@@ -1537,7 +1537,7 @@ class NascentUpload:
                                     bpn, PackagePublishingPocket.RELEASE)
                             if possible:
                                 break
-                            
+
                     self.logger.debug("getReleasedPackages() returned %d "
                                       "possibilit{y,ies}" % len(possible))
                     if possible:
