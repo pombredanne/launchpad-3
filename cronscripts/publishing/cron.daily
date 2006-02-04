@@ -63,7 +63,7 @@ cp -a $DISTSROOT ${DISTSROOT}.new
 
 for COMP in restricted universe; do
   for ARCH in i386 amd64 powerpc hppa sparc ia64; do
-    touch ${DISTSROOT}.new/dists/breezy-updates/$COMP/debian-installer/binary-$ARCH/Packages
+    touch ${DISTSROOT}.new/breezy-updates/$COMP/debian-installer/binary-$ARCH/Packages
   done
 done
 
