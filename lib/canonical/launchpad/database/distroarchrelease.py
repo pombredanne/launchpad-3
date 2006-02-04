@@ -177,6 +177,10 @@ class DistroArchRelease(SQLBase):
             packagepublishingstatus=dbschema.PackagePublishingStatus.PUBLISHED
             )
 
+    def getAllReleasesByStatus(self, status):
+        """See IDistroArchRelease."""
+        return BinaryPackagePublishing.selectBy(distroarchreleaseID=self.id,
+                                                status=status)
 
 class DistroArchReleaseSet:
     """This class is to deal with DistroArchRelease related stuff"""
