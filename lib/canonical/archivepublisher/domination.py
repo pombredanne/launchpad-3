@@ -14,7 +14,7 @@ from canonical.launchpad.database import (
      SecureBinaryPackagePublishingHistory)
 
 from canonical.database.sqlbase import (
-    sqlvalues, flush_database_updates, _clearCache)
+    sqlvalues, flush_database_updates, _clearCache, cursor)
 
 import gc
 import apt_pkg
@@ -302,16 +302,45 @@ class Dominator(object):
         for distroarchrelease in dr.architectures:
             self.debug("Performing domination across %s/%s (%s)" % (
                 dr.name, pocket.title, distroarchrelease.architecturetag))
-            
-            binaries = SecureBinaryPackagePublishingHistory.selectBy(
-                distroarchreleaseID=distroarchrelease.id,
-                pocket=pocket,
-                status=PackagePublishingStatus.PUBLISHED)
+
+            # Here we go behind SQLObject's back to generate an assitance
+            # table which will seriously improve the performance of this
+            # part of the publisher.
+            # XXX: dsilvers: 20060204: It would be nice to not have to do this.
+            # Most of this methodology is stolen from person.py
+            flush_database_updates()
+            cur = cursor()
+            cur.execute("""SELECT bpn.id AS name, count(bpn.id) AS count INTO
+                temporary table PubDomHelper FROM BinaryPackageRelease bpr,
+                BinaryPackageName bpn, SecureBinaryPackagePublishingHistory
+                sbpph WHERE bpr.binarypackagename = bpn.id AND
+                sbpph.binarypackagerelease = bpr.id AND
+                sbpph.distroarchrelease = %s AND sbpph.status = %s
+                AND sbpph.pocket = %s
+                GROUP BY bpn.id""" % sqlvalues(
+                distroarchrelease.id, PackagePublishingStatus.PUBLISHED,
+                pocket))
+
+            binaries = SecureBinaryPackagePublishingHistory.select(
+                """
+                securebinarypackagepublishinghistory.distroarchrelease = %s
+                AND securebinarypackagepublishinghistory.pocket = %s
+                AND securebinarypackagepublishinghistory.status = %s AND
+                securebinarypackagepublishinghistory.binarypackagerelease =
+                    binarypackagerelease.id
+                AND binarypackagerelease.binarypackagename IN (
+                    SELECT name FROM PubDomHelper WHERE count > 1)"""
+                % sqlvalues (distroarchrelease.id, pocket,
+                             PackagePublishingStatus.PUBLISHED),
+                clauseTables=['BinaryPackageRelease'])
             
             self._dominateBinary(self._sortPackages(binaries, False))
             if do_clear_cache:
                 self.debug("Flushing SQLObject cache.")
                 clear_cache()
+
+            flush_database_updates()
+            cur.execute("DROP TABLE PubDomHelper")
         
         sources = SecureSourcePackagePublishingHistory.selectBy(
             distroreleaseID=dr.id, pocket=pocket,
