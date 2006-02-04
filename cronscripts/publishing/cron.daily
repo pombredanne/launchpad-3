@@ -93,7 +93,7 @@ find ${DISTSROOT}.new \( -name "Packages" -o -name "Sources" \) -exec rm "{}" \;
 
 # Copy in the indices
 echo Copying the indices into place.
-rm -f $INDICES/*
+rm -f $INDICES/override.*
 cp $OVERRIDEROOT/override.* $INDICES
 
 set -x 
