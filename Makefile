@@ -63,7 +63,7 @@ lintmerge:
 
 pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) ${PYTHON} test.py test_pages
-	
+
 inplace: build
 
 build:
