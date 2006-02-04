@@ -47,3 +47,14 @@ class IDistroReleaseSourcePackageRelease(ISourcePackageRelease):
     was_uploaded = Attribute("True or False, indicating whether or not "
         "a source package of this name was ever uploaded to this "
         "distrorelease.")
+
+    def current_published():
+        """Returns the last SourcePackagePublishing record that is in
+        PUBLISHED status."""
+
+    def changeOverride(new_component, new_section):
+        """Change the component and/or section of a
+        DistroReleaseSourcePackageRelease."""
+
+    def supersede():
+        """Supersede a DistroReleaseSourcePackageRelease."""
