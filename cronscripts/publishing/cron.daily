@@ -56,6 +56,17 @@ process-accepted.py -v -v -v $DISTRONAME
 # Because this would cause buildds to explode.
 cp -a $DISTSROOT ${DISTSROOT}.new
 
+# XXX: dsilvers: 20060204: DAK created some extra d-i pockets which
+# were aren't necessarily going to create. Until we have a more
+# satisfactory correction in the publisher we just touch the Packages
+# files to ensure that the Release files get generated properly.
+
+for COMP in restricted universe; do
+  for ARCH in i386 amd64 powerpc hppa sparc ia64; do
+    touch ${DISTSROOT}.new/dists/breezy-updates/$COMP/debian-installer/binary-$ARCH/Packages
+  done
+done
+
 # Publish the results.
 publish-distro.py -v -v -d $DISTRONAME -R ${DISTSROOT}.new
 
