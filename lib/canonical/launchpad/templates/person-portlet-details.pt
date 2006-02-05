@@ -11,6 +11,7 @@
             tal:content="context/name">sabdfl</a>)<br />
 
       <tal:logged_in condition="request/lp:person">
+      <tal:visible_emails condition="not: context/hide_email_addresses">
         <b>Preferred address:</b><br />
         <img tal:condition="context/preferredemail"
              src="/++resource++email" />
@@ -21,6 +22,7 @@
           <i>None set</i>
         </tal:no_pref_mail>
         <br />
+      </tal:visible_emails>
       </tal:logged_in>
 
       <b>Timezone:</b>
