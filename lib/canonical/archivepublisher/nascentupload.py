@@ -1707,10 +1707,10 @@ class NascentUpload:
                 summary.append("NEW: %s" % uploaded_file.filename)
             else:
                 summary.append(" OK: %s" % uploaded_file.filename)
-                summary.append("     -> %s %s %s" % (
-                    uploaded_file.component,
-                    uploaded_file.section,
-                    uploaded_file.priority))
+                if uploaded_file.type == 'dsc':
+                    summary.append("     -> Component: %s Section: %s" % (
+                        uploaded_file.component,
+                        uploaded_file.section))
                 
         return "\n".join(summary)
 
