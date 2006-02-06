@@ -33,34 +33,6 @@
         width: 74%;
       }
 
-      #filter-label {
-        border-color: #DEDEDE;
-        border-style: solid;
-        border-width: 1px 1px 0px 1px;
-        padding: 3px 0px 3px 0px;
-        text-align: center;
-      }
-
-      #filter-gap {
-        border-color: #DEDEDE;
-        border-style: solid;
-        border-width: 0px 0px 1px 0px;
-      }
-
-      #filter {
-        border-color: #DEDEDE;
-        border-style: solid;
-        border-width: 0px 1px 1px 1px;
-        padding: 5px;
-        width: 5em;
-      }
-
-      #filter ul {
-        list-style: none;
-        margin-left: 3px;
-        padding-left: 3px;
-      }
-
       #filter li {
         margin-bottom: 2px;
       }
@@ -104,45 +76,61 @@
         <br />
         <table style="width: 55%; margin-left: 0;">
           <tr>
-            <td id="filter-label" width="15%">
+            <td id="filter-label" width="15%"
+                style="border-color: #DEDEDE;
+                       border-style: solid;
+                       border-width: 1px 1px 0px 1px;
+                       padding: 3px 0px 3px 0px;
+                       text-align: center;">
               <small><strong>Filter</strong></small>
             </td>
-            <td id="filter-gap">&nbsp;</td>
+            <td style="border-color: #DEDEDE;
+                       border-style: solid;
+                       border-width: 0px 0px 1px 0px;">
+              &nbsp;</td>
           </tr>
           <tr>
-            <td id="filter" colspan="2">
+            <td colspan="2"
+                style="border-color: #DEDEDE;
+                       border-style: solid;
+                       border-width: 0px 1px 1px 1px;
+                       padding: 5px;
+                       width: 5em;">
               <small>
-              <ul>
-            <li tal:repeat="search_link view/getSearchFilterLinks">
-              <a href="#"
-                 tal:content="search_link/title"
-                 tal:attributes="href search_link/url">
-                mozilla-firefox (Ubuntu)</a><span tal:condition="not:repeat/search_link/end"></span>
-            </li>
-            <li tal:condition="view/getStatusFilterLinks">
-              <span tal:repeat="status_filter_link view/getStatusFilterLinks">
-                <span tal:condition="repeat/status_filter_link/end">
-                  <span tal:condition="python:repeat['status_filter_link'].length() > 1">
-                    or
+              <ul id="filter"
+                  style="list-style: none;
+                         margin-left: 3px;
+                         padding-left: 3px;">
+                <li tal:repeat="search_link view/getSearchFilterLinks">
+                  <a href="#"
+                     tal:content="search_link/title"
+                     tal:attributes="href search_link/url">
+                    mozilla-firefox (Ubuntu)</a><span tal:condition="not:repeat/search_link/end"></span>
+                </li>
+                <li tal:condition="view/getStatusFilterLinks">
+                  <span tal:repeat="status_filter_link view/getStatusFilterLinks">
+                    <span tal:condition="repeat/status_filter_link/end">
+                      <span tal:condition="python:repeat['status_filter_link'].length() > 1">
+                        or
+                      </span>
+                    </span>
+                    <a href="#"
+                       tal:content="status_filter_link/title"
+                       tal:attributes="href status_filter_link/url">
+                      in progress
+                    </a><span tal:condition="not:repeat/status_filter_link/end">,</span></span>
+                </li>
+                <li tal:condition="view/getSearchTextFilterLink">contains
+                  <span tal:define="searchtext_filter_link view/getSearchTextFilterLink">
+                    <a href="#"
+                       tal:content="searchtext_filter_link/title"
+                       tal:attributes="href searchtext_filter_link/url">
+                      foobar
+                    </a>
                   </span>
-                </span>
-                <a href="#"
-                   tal:content="status_filter_link/title"
-                   tal:attributes="href status_filter_link/url">
-                  in progress
-                </a><span tal:condition="not:repeat/status_filter_link/end">,</span></span>
-            </li>
-            <li tal:condition="view/getSearchTextFilterLink">contains
-            <span tal:define="searchtext_filter_link view/getSearchTextFilterLink">
-            <a href="#"
-               tal:content="searchtext_filter_link/title"
-               tal:attributes="href searchtext_filter_link/url">
-              foobar
-            </a>
-            </span>
-            in the title or description
-              </li>
-</ul>
+                  in the title or description
+                </li>
+              </ul>
               </small>
             </td>
           </tr>
@@ -171,10 +159,10 @@
             <td tal:content="bugtask/severity/title">Critical</td>
             <td tal:content="bugtask/status/title">Confirmed</td>
           </tr>
-    </table>
-    <div style="margin-bottom: 5px">
-      <small tal:content="structure batch_navigator/@@+navigation-links" />
-    </div>
+        </table>
+        <div style="margin-bottom: 5px">
+          <small tal:content="structure batch_navigator/@@+navigation-links" />
+        </div>
       </div>
     </div>
     <div id="portal-column-two">

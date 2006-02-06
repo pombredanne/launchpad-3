@@ -8,9 +8,9 @@
   </h4>
   <div class="portletBody portletContent"
        tal:define="package_being_shown view/current_package">
-    <ul style="list-style: none; display: inline"
-        tal:repeat="bug_contact_package_link view/getOtherBugContactPackageLinks">
-      <li>
+    <ul style="list-style: none;">
+      <li style="margin-left: -15px;"
+          tal:repeat="bug_contact_package_link view/getOtherBugContactPackageLinks">
         <a href="#"
            tal:content="bug_contact_package_link/title"
            tal:attributes="href bug_contact_package_link/url">
