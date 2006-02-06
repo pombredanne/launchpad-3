@@ -20,16 +20,12 @@
       <table>
         <tbody>
           <tr>
-            <th>Date created:</th>
-            <td tal:content="context/datecreated/fmt:date" />
-          </tr>
-          <tr>
-            <th>Processor:</th>
-            <td tal:content="context/processor/title" />
-          </tr>
-          <tr>
             <th>Status:</th>
             <td tal:content="context/buildstate/title" />
+          </tr>
+          <tr>
+            <th>Date requested:</th>
+            <td tal:content="context/datecreated/fmt:datetime" />
           </tr>
           <tr>
             <th>Date built:</th>
@@ -38,7 +34,7 @@
             </td>
             <td
               tal:condition="context/datebuilt"
-              tal:content="context/datebuilt/fmt:date"
+              tal:content="context/datebuilt/fmt:datetime"
             />
           </tr>
           <tr>
@@ -48,7 +44,7 @@
             </td>
             <td
               tal:condition="context/buildduration"
-              tal:content="context/buildduration"
+              tal:content="context/buildduration/fmt:approximateduration"
             />
           </tr>
           <tr>
@@ -71,14 +67,8 @@
             />
           </tr>
           <tr>
-            <th>OpenPGP signing key fingerprint:</th>
-            <td tal:condition="not:context/gpgsigningkey">
-              <i>unknown</i>
-            </td>
-            <td
-              tal:condition="context/gpgsigningkey"
-              tal:content="context/gpgsigningkey/fingerprint"
-            />
+            <th>Processor:</th>
+            <td tal:content="context/processor/name" />
           </tr>
         </tbody>
       </table>
