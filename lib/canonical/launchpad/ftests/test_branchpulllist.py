@@ -94,9 +94,6 @@ class TestBranchesToPullSample(LaunchpadFunctionalTestCase):
     def test_branch_pull_render(self):
         from canonical.launchpad.database import Branch
         self.login()
-        #b = Branch(name='push-branch', productID=None, ownerID=1, title='',
-        #        summary='', home_page=None, url=None)
-        #b.sync()
         mock_request = MockRequest()
         mock_request.response = MockResponse()
         view = browser.BranchPullListing(None, mock_request)

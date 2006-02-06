@@ -1,6 +1,6 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-from twisted.conch import avatar, unix
+from twisted.conch import avatar
 from twisted.conch.ssh import session, filetransfer
 from twisted.conch.ssh import factory, userauth, connection
 from twisted.conch.checkers import SSHPublicKeyDatabase
@@ -8,7 +8,6 @@ from twisted.cred.checkers import ICredentialsChecker
 from twisted.cred.portal import IRealm
 from twisted.internet import defer
 from twisted.python import components
-from twisted.python.filepath import FilePath, InsecurePath
 from twisted.vfs.pathutils import FileSystem
 from twisted.vfs.adapters import sftp
 from canonical.supermirrorsftp.bazaarfs import SFTPServerRoot
@@ -17,28 +16,22 @@ from zope.interface import implements
 import binascii
 import os
 import os.path
-import errno
 
 
 class SubsystemOnlySession(session.SSHSession, object):
     """A session adapter that disables every request except request_subsystem"""
     def __getattribute__(self, name):
         # Get out the big hammer :)
-        # (I'm too lazy to override all the different request_ methods
-        # individually, or write an ISession adapter to give the same effect.)
+        # (This is easier than overriding all the different request_ methods
+        # individually, or writing an ISession adapter to give the same effect.)
         if name.startswith('request_') and name not in ('request_subsystem',
                                                         'request_exec'):
-            raise AttributeError, name
+            raise AttributeError(name)
         return object.__getattribute__(self, name)
 
     def closeReceived(self):
         # Without this, the client hangs when its finished transferring.
         self.loseConnection()
-
-    def request_exec(self, data):
-        from twisted.conch.ssh.common import NS, getNS
-        assert getNS(data)[0] == 'sftp'  # XXX: should be raise ConchError(..)
-        return self.request_subsystem(NS('sftp'))
 
 
 class SFTPOnlyAvatar(avatar.ConchUser):
@@ -46,13 +39,14 @@ class SFTPOnlyAvatar(avatar.ConchUser):
         # Double-check that we don't get unicode -- directory names on the file
         # system are a sequence of bytes as far as we're concerned.  We don't
         # want any tricky login names turning into a security problem.
-        # (I'm reasonably sure cred guarantees this will be str, but in the
-        # meantime let's make sure).
+        # (I'm reasonably sure twisted.cred guarantees this will be str, but in
+        # the meantime let's make sure).
         assert type(avatarId) is str
 
         # XXX: These two asserts should be raise exceptions that cause proper
         #      auth failures, not asserts.  (an assert should never be triggered
-        #      by bad user input).
+        #      by bad user input).  The asserts cause the auth to fail anyway,
+        #      but it's ugly.
         #  - Andrew Bennetts, 2005-01-21
         assert '/' not in avatarId
         assert avatarId not in ('.', '..')
@@ -94,8 +88,8 @@ class SFTPOnlyAvatar(avatar.ConchUser):
         """
         productID = self._productIDs.get(productName)
         if productID is not None:
-            # XXX: should the None result be remembered too, to ensure
-            #      repeatable reads?
+            # XXX: should the None result (i.e. not found) be remembered too, to
+            #      ensure repeatable reads?
             #  -- Andrew Bennetts, 2005-12-13
             return defer.succeed(productID)
         deferred = self._launchpad.fetchProductID(productName)
@@ -225,10 +219,10 @@ class PublicKeyFromLaunchpadChecker(SSHPublicKeyDatabase):
             >>> unmunge('foo_bar@baz')
             'foo_bar@baz'
 
-        Anything without an underscore is also not munged, and so unaffected
-        (even though they aren't valid usernames).
-        XXX: Actually, they're valid for logging into the bzr part of the
-        supermirror...
+        Anything without an underscore is also not munged, and so unaffected.
+
+        (Usernames without an underscore aren't valid for the Bazaar 1.x part of
+        the supermirror, but are for the bzr part)
 
             >>> unmunge('foo-bar')
             'foo-bar'

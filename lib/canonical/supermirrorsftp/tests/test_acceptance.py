@@ -8,6 +8,8 @@ __metaclass__ = type
 import unittest
 import tempfile
 from cStringIO import StringIO
+import os
+import shutil
 
 from bzrlib.branch import ScratchBranch
 import bzrlib.branch
@@ -17,7 +19,6 @@ from bzrlib.errors import PermissionDenied, NoSuchFile, NotBranchError
 from bzrlib.transport import get_transport
 from bzrlib.transport import sftp
 
-#from twisted.trial import unittest
 from twisted.python.util import sibpath
 
 from canonical.launchpad import database
@@ -52,6 +53,17 @@ class AuthserverTacTestSetup(TacTestSetup):
     @property
     def logfile(self):
         return os.path.join(self.root, 'authserver.log')
+
+
+class SFTPSetup(TacTestSetup):
+    root = '/tmp/sftp-test'
+    tacfile = '/home/andrew/warthogs/supermirrorsftp/devel/supermirrorsftp/tests/test.tac'
+    pidfile = root + '/twistd.pid'
+    logfile = root + '/twistd.log'
+    def setUpRoot(self):
+        if os.path.isdir(self.root):
+            shutil.rmtree(self.root)
+        os.makedirs(self.root, 0700)
 
 
 class AcceptanceTests(BzrTestCase):
@@ -113,11 +125,13 @@ class AcceptanceTests(BzrTestCase):
         sftp._ssh_vendor = 'none'
 
         # Start the SFTP server
-        self.server = TestSFTPServer()
+        self.server = SFTPSetup()
+        self.server.setUp()
+        self.server_base = 'sftp://testuser@localhost:22222/'
 
     def tearDown(self):
         # Undo setUp.
-        self.server.stop()
+        self.server.tearDown()
         os.environ['HOME'] = self.realHome
         self.authserver.tearDown()
         LaunchpadZopelessTestSetup().tearDown()
@@ -135,7 +149,7 @@ class AcceptanceTests(BzrTestCase):
         user has permission to read or write to those URLs.
         """
         
-        remote_url = self.server.base + '~testuser/+junk/test-branch'
+        remote_url = self.server_base + '~testuser/+junk/test-branch'
         self._push(remote_url)
         remote_branch = bzrlib.branch.Branch.open(remote_url)
         
@@ -181,7 +195,7 @@ class AcceptanceTests(BzrTestCase):
         # disallow, and try to have a tolerable error.
 
     def _test_missing_parent_directory(self, relpath):
-        transport = get_transport(self.server.base + relpath).clone('..')
+        transport = get_transport(self.server_base + relpath).clone('..')
         self.assertRaises(
             NoSuchFile,
             transport.mkdir, 'hello')
@@ -197,7 +211,7 @@ class AcceptanceTests(BzrTestCase):
         """
 
         # Push the local branch to the server
-        self._push(self.server.base + '~testuser/+junk/test-branch')
+        self._push(self.server_base + '~testuser/+junk/test-branch')
 
         # Rename branch in the database
         LaunchpadZopelessTestSetup().txn.begin()
@@ -206,7 +220,7 @@ class AcceptanceTests(BzrTestCase):
         branch.name = 'renamed-branch'
         LaunchpadZopelessTestSetup().txn.commit()
         remote_branch = bzrlib.branch.Branch.open(
-            self.server.base + '~testuser/+junk/renamed-branch')
+            self.server_base + '~testuser/+junk/renamed-branch')
         self.assertEqual(
             self.local_branch.last_revision(), remote_branch.last_revision())
         del remote_branch
@@ -220,9 +234,9 @@ class AcceptanceTests(BzrTestCase):
         self.assertRaises(
             NotBranchError,
             bzrlib.branch.Branch.open,
-            self.server.base + '~testuser/+junk/renamed-branch')
+            self.server_base + '~testuser/+junk/renamed-branch')
         remote_branch = bzrlib.branch.Branch.open(
-            self.server.base + '~testuser/firefox/renamed-branch')
+            self.server_base + '~testuser/firefox/renamed-branch')
         self.assertEqual(
             self.local_branch.last_revision(), remote_branch.last_revision())
         del remote_branch
@@ -233,9 +247,9 @@ class AcceptanceTests(BzrTestCase):
         branch = database.Branch.get(branch_id)
         branch.owner.name = 'renamed-user'
         LaunchpadZopelessTestSetup().txn.commit()
-        self.server.base = self.server.base.replace('testuser', 'renamed-user')
+        server_base = self.server_base.replace('testuser', 'renamed-user')
         remote_branch = bzrlib.branch.Branch.open(
-            self.server.base + '~renamed-user/firefox/renamed-branch')
+            server_base + '~renamed-user/firefox/renamed-branch')
         self.assertEqual(
             self.local_branch.last_revision(), remote_branch.last_revision())
 
@@ -261,7 +275,7 @@ class AcceptanceTests(BzrTestCase):
         # values in the database.
 
         # Push branch to sftp server
-        self._push(self.server.base + '~testuser/+junk/test-branch')
+        self._push(self.server_base + '~testuser/+junk/test-branch')
 
         # Retrieve the branch from the database.  selectOne will fail if the
         # branch does not exist (or if somehow multiple branches match!).
@@ -274,43 +288,10 @@ class AcceptanceTests(BzrTestCase):
         # database.
 
 
-from canonical.launchpad.daemons import tachandler
-import os
-import shutil
-
-class SFTPSetup(tachandler.TacTestSetup):
-    root = '/tmp/sftp-test'
-    tacfile = '/home/andrew/warthogs/supermirrorsftp/devel/supermirrorsftp/tests/test.tac'
-    pidfile = root + '/twistd.pid'
-    logfile = root + '/twistd.log'
-    def setUpRoot(self):
-        if os.path.isdir(self.root):
-            shutil.rmtree(self.root)
-        os.makedirs(self.root, 0700)
-
-class TestSFTPServer:
-    """This is the object returned by start_test_sftp_server."""
-    # XXX: stub implementation for now.
-    base = 'sftp://testuser@localhost:22222/'
-
-    def __init__(self):
-        #import os
-        #os.system('cd ..; SUPERMIRROR_PORT=22222 PYTHONPATH=%s
-        #/home/andrew/svn/Twisted/bin/twistd -oy
-        #/home/andrew/warthogs/supermirrorsftp/devel/sftp.tac' 
-        #    % os.environ.get('PYTHONPATH', ''))
-        self.sftp = SFTPSetup()
-        self.sftp.setUp()
-
-    def stop(self):
-        #import os
-        #os.kill(int(open('twistd.pid', 'r').read()))
-        self.sftp.tearDown()
-
-    last_accessed_branch_id = -1
-
-
-
+# XXX AndrewBennetts 2006-02-06: cmd_push didn't exist in rocketfuel's bzr at
+# the time these tests were written.   I should be able to replace this
+# copy-and-paste with:
+#    from bzrlib.builtins import cmd_push
 
 from bzrlib.commands import Command, Option
 from bzrlib.errors import (BzrCommandError, NotBranchError, DivergedBranches,

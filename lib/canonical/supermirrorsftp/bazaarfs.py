@@ -56,10 +56,15 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
         # avatar.branches[lpid] is a list of the form:
         #    [(product id, product name, [(branch id, branch name), ...]), ...]
         for productID, productName, branches in avatar.branches[lpid]:
-            if productID == '': productID = None
-            if productName == '': productName = '+junk'
+            if productID == '':
+                productID = None
+            if productName == '':
+                productName = '+junk'
             if productID is None:
-                assert productName == '+junk'
+                assert productName == '+junk', (
+                    "Product ID is None should mean Name is +junk, got %r"
+                    % (productName,))
+
             self.putChild(productName, 
                           SFTPServerProductDir(avatar, lpid, productID,
                                                productName, branches, self))
@@ -84,9 +89,11 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
             "creating files in user directory %r is not allowed." % self.name)
 
     def createDirectory(self, childName):
-        # XXX: this returns a Deferred, but the upstream VFS code is still
-        # synchronous.  Upstream needs fixing.
-        assert childName != '+junk'
+        # XXX AndrewBennetts 2006-02-06: this returns a Deferred, but the
+        # upstream VFS code is still synchronous.  Upstream needs fixing
+        # (http://twistedmatrix.com/bugs/issue1223).  Luckily upstream SFTP code
+        # still does the right thing despite this, but that's not guaranteed.
+        assert childName != '+junk', "+junk already exists (if it's allowed)."
         # Check that childName is a product name registered in Launchpad.
         deferred = self.avatar.fetchProductID(childName)
         def cb(productID):
@@ -135,6 +142,9 @@ class SFTPServerProductDir(adhoc.AdhocDirectory):
                                            parent))
             
     def createDirectory(self, childName):
+        # XXX AndrewBennetts 2006-02-06: Same comment as
+        # SFTPServerUserDir.createDirectory (see
+        # http://twistedmatrix.com/bugs/issue1223)
         deferred = self.avatar.createBranch(self.userID, self.productID,
                                             childName)
         def cb(branchID):
@@ -155,9 +165,12 @@ class SFTPServerBranch(osfs.OSDirectory):
     Can also be used for Bazaar 1.x branches.
     """
     def __init__(self, avatar, branchID, branchName, parent):
-        # XXX: this snippet is duplicated in a few places...
+        # XXX AndrewBennetts 2006-02-06: this snippet is duplicated in a few
+        # places, such as librarian.storage._relFileLocation and
+        # supermirror_rewritemap.split_branch_id.
         h = "%08x" % int(branchID)
         path = '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:]) 
+
         osfs.OSDirectory.__init__(self,
             os.path.join(avatar.homeDirsRoot, path), branchName, parent)
         if not os.path.exists(self.realPath):
@@ -165,5 +178,7 @@ class SFTPServerBranch(osfs.OSDirectory):
 
     @classmethod
     def childDirFactory(cls):
+        # Directories under this one are normal OSDirectory instances, they
+        # don't have any restrictions.
         return osfs.OSDirectory
 
