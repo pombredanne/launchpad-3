@@ -3,7 +3,7 @@
 """twisted.vfs backend for the supermirror filesystem -- implements the
 hierarchy described in the SupermirrorFilesystemHierarchy spec.
 
-Currently assumes twisted.vfs as of SVN revision 15835.
+Currently assumes twisted.vfs as of SVN revision 15836.
 """
 
 __metaclass__ = type

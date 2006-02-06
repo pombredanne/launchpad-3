@@ -92,13 +92,10 @@ class AcceptanceTests(BzrTestCase):
             """)
         connection.commit()
 
-        # XXX: start authserver.
+        # Start authserver.
         self.userHome = os.path.abspath(tempfile.mkdtemp())
         self.authserver = AuthserverTacTestSetup(self.userHome)
         self.authserver.setUp()
-
-        #import logging
-        #logging.basicConfig(level=logging.DEBUG)
 
         # Create a local branch with one revision
         self.local_branch = ScratchBranch(files=['foo'])
@@ -106,8 +103,6 @@ class AcceptanceTests(BzrTestCase):
         self.local_branch.working_tree().commit('Added foo')
 
         # Point $HOME at a test ssh config and key.
-        import sys
-        print >>sys.stderr, 'self.userHome:', self.userHome
         os.makedirs(os.path.join(self.userHome, '.ssh'))
         shutil.copyfile(
             sibpath(__file__, 'id_dsa'), 
@@ -137,6 +132,7 @@ class AcceptanceTests(BzrTestCase):
         LaunchpadZopelessTestSetup().tearDown()
         super(AcceptanceTests, self).tearDown()
         sftp._ssh_vendor = self.realSshVendor
+        shutil.rmtree(self.userHome)
 
     def test_1_bzr_sftp(self):
         """
@@ -286,8 +282,6 @@ class AcceptanceTests(BzrTestCase):
         self.assertEqual(None, branch.url)
         # If we get this far, the branch has been correctly inserted into the
         # database.
-
-
 
 
 def test_suite():
