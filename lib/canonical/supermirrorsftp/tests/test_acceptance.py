@@ -291,7 +291,5 @@ class AcceptanceTests(BzrTestCase):
 
 
 def test_suite():
-    loader = unittest.TestLoader()
-    result = loader.loadTestsFromName(__name__)
-    return result
+    return unittest.TestLoader().loadTestsFromName(__name__)
 
