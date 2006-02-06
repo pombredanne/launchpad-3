@@ -253,3 +253,26 @@ while the one that was inactive hasn't changed.
     >>> sp_on_ubuntu_translators.status.title
     'Deactivated'
 
+
+Querying a person for team participation
+========================================
+
+We can ask a person what teams they participate in. The
+teams_participated_in attribute works recusively, listing all teams the
+person is an active member of as well as teams those teams are an active
+member of.
+
+    >>> salgado = Person.byName('salgado')
+    >>> print '\n'.join(team.name for team in salgado.teams_participated_in)
+    admins
+    t1
+    t2
+    t3
+    t4
+
+    >>> t2.setMembershipStatus(t3, TeamMembershipStatus.DEACTIVATED)
+    >>> flush_database_updates()
+    >>> print '\n'.join(team.name for team in salgado.teams_participated_in)
+    admins
+    t3
+

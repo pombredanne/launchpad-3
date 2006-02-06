@@ -23,7 +23,8 @@ __all__ = [
     'BugTargetView',
     'BugTaskView',
     'BugTaskReleaseTargetingView',
-    'get_sortorder_from_request']
+    'get_sortorder_from_request',
+    'BugTargetTextView']
 
 import urllib
 
@@ -48,7 +49,8 @@ from canonical.launchpad.interfaces import (
     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, IPerson,
     INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
     NotFoundError, IDistributionSourcePackage, ISourcePackage,
-    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES, IBugTaskSearch)
+    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES, IBugTaskSearch,
+    BUGTASK_BATCH_SIZE)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
@@ -517,7 +519,7 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
     >>> initial = getInitialValuesFromSearchParams(
     ...     {'status': any(*UNRESOLVED_BUGTASK_STATUSES)}, IBugTaskSearch)
     >>> [status.name for status in initial['status']]
-    ['UNCONFIRMED', 'CONFIRMED', 'INPROGRESS']
+    ['UNCONFIRMED', 'CONFIRMED', 'INPROGRESS', 'NEEDSINFO']
 
     >>> initial = getInitialValuesFromSearchParams(
     ...     {'status': dbschema.BugTaskStatus.REJECTED}, IBugTaskSearch)
@@ -611,13 +613,12 @@ class BugTaskSearchListingView(LaunchpadView):
         """
         return {}
 
-    def search(self, searchtext=None, batch_start=None):
-        """Return an IBatchNavigator for the GETed search criteria.
+    def search(self, searchtext=None, batch_start=None, context=None):
+        """Return an IBatchNavigator for the GET search criteria.
 
         If :searchtext: is None, the searchtext will be gotten from the
         request.
         """
-
         form_params = getWidgetsData(self, self.search_form_schema)
         search_params = BugTaskSearchParams(user=self.user, omit_dupes=True)
         search_params.orderby = get_sortorder_from_request(self.request)
@@ -642,11 +643,15 @@ class BugTaskSearchListingView(LaunchpadView):
         for param_name in extra_params:
             setattr(search_params, param_name, extra_params[param_name])
 
-        tasks = self.context.searchTasks(search_params)
+        # Base classes can provide an explicit search context.
+        if not context:
+            context = self.context
+
+        tasks = context.searchTasks(search_params)
         if self.showBatchedListing():
             if batch_start is None:
                 batch_start = int(self.request.get('batch_start', 0))
-            batch = Batch(tasks, batch_start)
+            batch = Batch(tasks, batch_start, BUGTASK_BATCH_SIZE)
         else:
             batch = tasks
         return BatchNavigator(batch=batch, request=self.request)
@@ -1033,4 +1038,16 @@ class BugTargetView:
 
         tasklist = self.context.searchTasks(params)
         return tasklist[:quantity]
+
+
+class BugTargetTextView(LaunchpadView):
+    """View for simple text page showing bugs filed against a bug target."""
+
+    def render(self):
+        self.request.response.setHeader('Content-type', 'text/plain')
+        tasks = self.context.searchTasks(BugTaskSearchParams(self.user))
+
+        # We use task.bugID rather than task.bug.id here as the latter
+        # would require an extra query per task.
+        return u''.join('%d\n' % task.bugID for task in tasks)
 
