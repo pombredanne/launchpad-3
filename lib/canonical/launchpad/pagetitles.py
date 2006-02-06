@@ -585,6 +585,8 @@ product_distros = ContextDisplayName('%s packages: Comparison of distributions')
 
 product_edit = ContextTitle('%s in Launchpad')
 
+product_filebug = ContextTitle('Report a bug about %s')
+
 product_index = ContextTitle('%s in Launchpad')
 
 product_packages = ContextDisplayName('%s packages in Launchpad')
