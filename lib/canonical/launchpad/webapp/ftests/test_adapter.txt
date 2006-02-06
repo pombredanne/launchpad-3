@@ -44,20 +44,34 @@ the Postgres statement timeout (a value of zero means no timeout):
 
     >>> conn = da()
     >>> cursor = conn.cursor()
-    >>> cursor.execute('show statement_timeout')
+    >>> cursor.execute('SHOW statement_timeout')
     >>> print cursor.fetchone()[0]
     0
     >>> da.disconnect()
 
 
-Now we set the timeout to 5000 milliseconds:
+Using the custom sleep_for_testing() function, we can trigger the
+timeout by sleeping for 200ms with a 100ms statement timeout:
+
+    >>> config.launchpad.db_statement_timeout = 100
+    >>> conn = da()
+    >>> cursor = conn.cursor()
+    >>> cursor.execute('SELECT sleep_for_testing(0.200)')
+    Traceback (most recent call last):
+      ...
+    RequestQueryTimedOut: ('SELECT sleep_for_testing(0.200)', 'ERROR:  canceling query due to user request\n\nSELECT sleep_for_testing(0.200)')
+    >>> da.disconnect()
+
+
+Set the timeout to 5000ms for the next tests:
 
     >>> config.launchpad.db_statement_timeout = 5000
     >>> conn = da()
     >>> cursor = conn.cursor()
-    >>> cursor.execute('show statement_timeout')
+    >>> cursor.execute('SHOW statement_timeout')
     >>> print cursor.fetchone()[0]
     5000
+
 
 
 Request Timeout
@@ -94,7 +108,7 @@ another query:
     >>> cursor.execute('SELECT 1')
     Traceback (most recent call last):
     ...
-    RequestExpired: (('SELECT 1',), {})
+    RequestExpired: SELECT 1
 
 
 When a RequestExpired exception is raised, the current database
@@ -150,7 +164,7 @@ remove the timout:
     >>> cursor.execute('SELECT 1')
     Traceback (most recent call last):
     ...
-    RequestExpired: (('SELECT 1',), {})
+    RequestExpired: SELECT 1
     >>> statement_issued.set()
     >>> thread.join()
     >>> clear_request_started()
@@ -167,6 +181,40 @@ If no timeout has been set, then requests will not time out:
     >>> cursor.execute('SELECT 1')
     >>> clear_request_started()
 
+
+Statement Logging
+=================
+
+While a request is in progress, the Launchpad database adapter keeps a
+log of the statements executed.  First show that the statement log is
+not maintained outside of a request:
+
+    >>> get_request_statements()
+    []
+    >>> cursor.execute('SELECT 1')
+    >>> cursor.execute('SELECT 2')
+    >>> get_request_statements()
+    []
+
+Now begin a request, and issue a number of statements:
+
+    >>> set_request_started()
+    >>> cursor.execute('SELECT 1')
+    >>> cursor.execute('SELECT 2')
+    >>> for starttime, endtime, statement in get_request_statements():
+    ...     print statement
+    SELECT 1
+    SELECT 2
+
+After we complete the request, the statement log is cleared:
+
+    >>> clear_request_started()
+    >>> get_request_statements()
+    []
+
+
+Read Only Transactions
+======================
 
 Customizing the database adapter also lets us easily tweak the current
 connection. For example we can make it read only:
@@ -192,6 +240,10 @@ The read only status only lasts until the end of the transaction.:
     ...     INSERT INTO SourcePackageName(name) VALUES ('fnord2')
     ...     """)
     >>> transaction.abort()
+
+
+Switching Database Users
+========================
 
 We can also change the user we are connected as, which is useful in tests.
 You should only change the user at the start of a transaction, or else any

@@ -38,21 +38,21 @@ def validate_url(url, valid_schemes):
 
        None and an empty string are not valid URLs::
 
-           >>> _validate_url(None, [])
+           >>> validate_url(None, [])
            False
-           >>> _validate_url('', [])
+           >>> validate_url('', [])
            False
 
        The valid_schemes list is checked::
 
-           >>> _validate_url('http://example.com', ['http'])
+           >>> validate_url('http://example.com', ['http'])
            True
-           >>> _validate_url('http://example.com', ['https', 'ftp'])
+           >>> validate_url('http://example.com', ['https', 'ftp'])
            False
 
        A URL without a host name is not valid:
 
-           >>> _validate_url('http://', ['http'])
+           >>> validate_url('http://', ['http'])
            False
 
       """
@@ -68,7 +68,23 @@ def validate_url(url, valid_schemes):
 
 
 def valid_webref(web_ref):
-    if validate_url(web_ref, ['http', 'https', 'ftp']):
+    """Returns True if web_ref is not a valid download URL, or raises a
+    LaunchpadValidationError.
+
+    >>> valid_webref('http://example.com')
+    True
+    >>> valid_webref('https://example.com/foo/bar')
+    True
+    >>> valid_webref('ftp://example.com/~ming')
+    True
+    >>> valid_webref('sftp://example.com//absolute/path/maybe')
+    True
+    >>> valid_webref('other://example.com/moo')
+    Traceback (most recent call last):
+    ...
+    LaunchpadValidationError: ...
+    """
+    if validate_url(web_ref, ['http', 'https', 'ftp', 'sftp']):
         # Allow ftp so valid_webref can be used for download_url, and so
         # it doesn't lock out weird projects where the site or
         # screenshots are kept on ftp.

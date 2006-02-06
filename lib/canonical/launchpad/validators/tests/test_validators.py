@@ -4,12 +4,15 @@
 
 __metaclass__ = type
 
-from unittest import main
+from unittest import main, TestSuite
 from doctest import DocTestSuite
 
 def test_suite():
-    import canonical.launchpad.validators
-    return DocTestSuite(canonical.launchpad.validators)
+    suite = TestSuite()
+    import canonical.launchpad.validators.url
+    suite.addTest(DocTestSuite(canonical.launchpad.validators.url))
+    suite.addTest(DocTestSuite(canonical.launchpad.validators.version))
+    return suite
 
 if __name__ == '__main__':
     DEFAULT = test_suite()

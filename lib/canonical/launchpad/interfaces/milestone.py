@@ -9,21 +9,50 @@ __all__ = [
     'IMilestoneSet',
     ]
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import Choice, TextLine, Int, Date, Bool
+from zope.component import getUtility
 
 from canonical.launchpad.interfaces import IHasProduct
+from canonical.launchpad.interfaces.product import IProduct
+from canonical.launchpad import _ 
+from canonical.launchpad.fields import ContentNameField 
 from canonical.launchpad.validators.name import name_validator
 
-_ = MessageIDFactory('launchpad')
+
+class MilestoneNameField(ContentNameField):
+
+    @property
+    def _content_iface(self):
+        return IMilestone
+    
+    def _getByName(self, name):
+        context = self.context
+        milestoneset = getUtility(IMilestoneSet)
+        if IMilestone.providedBy(context):
+            if self.context.product is not None:
+                context = context.product
+                milestone = milestoneset.getByNameAndProduct(name, context)
+            else:
+                context = context.distribution
+                milestone = milestoneset.getByNameAndDistribution(name,
+                        context)
+        elif IProduct.providedBy(context):
+            milestone = milestoneset.getByNameAndProduct(name, context)
+        else:
+            milestone = milestoneset.getByNameAndDistribution(name, context)    
+        if milestone is not None:
+              self.errormessage = _(
+                  "The name %%s is already used by a milestone in %s."
+                  % context.displayname)  
+        return milestone
 
 class IMilestone(IHasProduct):
     """A milestone, or a targeting point for bugs and other release-related
     items that need coordination.
     """
     id = Int(title=_("Id"))
-    name = TextLine(
+    name = MilestoneNameField(
         title=_("Name"),
         description=_(
             "Only letters, numbers, and simple punctuation are allowed."),
@@ -59,6 +88,18 @@ class IMilestoneSet(Interface):
 
         If the milestone with that ID is not found, a
         zope.exceptions.NotFoundError will be raised.
+        """
+
+    def getByNameAndProduct(self, name, product, default=None):
+        """Get a milestone by its name and product.
+
+        If no milestone is found, default will be returned. 
+        """
+
+    def getByNameAndDistribution(self, name, distribution, default=None):
+        """Get a milestone by its name and distribution.
+
+        If no milestone is found, default will be returned.
         """
 
     def new(product, name, title):

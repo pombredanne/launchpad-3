@@ -193,6 +193,18 @@ class XMLRPCv2TestCase(TwistdTestCase):
         self.failUnlessEqual(result['displayname'], 'Display Name')
         self.failUnlessEqual(result['emailaddresses'], ['nobody@example.com'])
 
+    def test_getBranchesForUser(self):
+        # XXX: justs check that it doesn't error, should also check the result.
+        self.server.getBranchesForUser(12)
+
+    def test_fetchProductID(self):
+        self.assertEqual(4, self.server.fetchProductID('firefox'))
+        self.assertEqual('', self.server.fetchProductID('xxxxx'))
+
+    def test_createBranch(self):
+        # XXX: justs check that it doesn't error, should also check the result.
+        self.server.createBranch(12, 4, 'new-branch')
+
 
 def test_suite():
     suite = unittest.TestSuite()

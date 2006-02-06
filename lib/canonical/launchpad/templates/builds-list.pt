@@ -59,11 +59,13 @@
             </td>
             <td tal:content="build/datecreated/fmt:datetime">REQUESTED</td>
 
-	    <tal:pending condition="not: build/datebuilt">
-            <td colspan="5" align="center">PENDING</td>
+	    <tal:pending condition="not: build/was_built">
+            <td colspan="5" align="center">PENDING
+            (<span tal:condition="build/buildqueue_record"
+                   tal:replace="build/buildqueue_record/lastscore"/>)</td>
             </tal:pending>
 
-            <tal:built condition="build/datebuilt">
+            <tal:was_built condition="build/was_built">
             <td tal:content="build/datebuilt/fmt:datetime">BUILT</td>
             <td tal:condition="view/showBuilderInfo">
               <tal:block condition="build/builder">
@@ -93,7 +95,7 @@
               <span tal:replace="build/buildduration/fmt:approximateduration"
               >4 minutes</span>
             </td>
-            </tal:built>
+            </tal:was_built>
         </tr>
       </table>
 

@@ -53,7 +53,7 @@ class POTMsgSet(SQLBase):
                     ps2.publishedsubmission = POSubmission.id AND
                     ps2.pluralform = %s)
             WHERE
-                ps1 IS NOT NULL OR ps2 IS NOT NULL
+                ps1.id IS NOT NULL OR ps2.id IS NOT NULL
             ''' % sqlvalues(
                 language.id, self.primemsgid_ID, pluralform, pluralform))
 
@@ -104,14 +104,14 @@ class POTMsgSet(SQLBase):
         else:
             return sighting
 
-    def poMsgSet(self, language_code, variant=None):
+    def getPOMsgSet(self, language_code, variant=None):
         """See IPOTMsgSet."""
         if variant is None:
             variantspec = 'IS NULL'
         else:
             variantspec = ('= %s' % quote(variant))
 
-        pomsgset = POMsgSet.selectOne('''
+        return POMsgSet.selectOne('''
             POMsgSet.potmsgset = %d AND
             POMsgSet.pofile = POFile.id AND
             POFile.language = Language.id AND
@@ -121,10 +121,6 @@ class POTMsgSet(SQLBase):
                    variantspec,
                    quote(language_code)),
             clauseTables=['POFile', 'Language'])
-
-        if pomsgset is None:
-            raise NotFoundError(language_code, variant)
-        return pomsgset
 
     def translationsForLanguage(self, language):
         # To start with, find the number of plural forms. We either want the

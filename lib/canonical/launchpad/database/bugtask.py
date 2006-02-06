@@ -4,7 +4,6 @@ __metaclass__ = type
 __all__ = [
     'BugTask',
     'BugTaskSet',
-    'BugTaskFactory',
     'bugtask_sort_key']
 
 import urllib
@@ -32,7 +31,7 @@ from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, NotFoundError,
+    IDistroBugTask, IDistroReleaseBugTask, NotFoundError,
     ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage)
 
 
@@ -280,7 +279,7 @@ class BugTask(SQLBase, BugTaskMixin):
             # (e.g. "Unconfirmed, assigned to Foo Bar")
             assignee_html = (
                 '<img src="/++resource++user.gif" /> '
-                '<a href="/malone/assigned?name=%s">%s</a>' % (
+                '<a href="/people/%s/+assignedbugs">%s</a>' % (
                     urllib.quote_plus(assignee.name),
                     cgi.escape(assignee.browsername)))
 
@@ -373,6 +372,8 @@ class BugTaskSet:
             if arg_value is None:
                 continue
             if zope_isinstance(arg_value, any):
+                if not arg_value.query_values:
+                    continue
                 # The argument value is a list of acceptable
                 # filter values.
                 arg_values = sqlvalues(*arg_value.query_values)
@@ -414,17 +415,6 @@ class BugTaskSet:
                 " (BugTask.targetnamecache ILIKE '%%' || %s || '%%'))" % (
                 searchtext_quoted, searchtext_quoted, searchtext_like_quoted))
 
-        if params.statusexplanation:
-            # XXX: This clause relies on the fact that the Bugtask's fti is
-            # generated using only the values of the statusexplanation column,
-            # which is not true. Unfortunately, there's no way to fix this
-            # right now, and as this doesn't seem to be a big deal, we'll
-            # leave it as is for now. More info:
-            # https://launchpad.net/products/launchpad/+bug/4066
-            # -- Guilherme Salgado, 2005-11-09
-            extra_clauses.append("BugTask.fti @@ ftq(%s)" %
-                                 sqlvalues(params.statusexplanation))
-        
         if params.subscriber is not None:
             clauseTables = ['Bug', 'BugSubscription']
             extra_clauses.append("""Bug.id = BugSubscription.bug AND
@@ -485,6 +475,33 @@ class BugTaskSet:
                    severity=IBugTask['severity'].default,
                    assignee=None, milestone=None):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
+        if product:
+            assert distribution is None, (
+                "Can't pass both distribution and product.")
+            # If a product bug contact has been provided, subscribe that
+            # contact to all public bugs. Otherwise subscribe the
+            # product owner to all public bugs.
+            if not bug.private:
+                if product.bugcontact:
+                    bug.subscribe(product.bugcontact)
+                else:
+                    bug.subscribe(product.owner)
+        elif distribution:
+            # If a distribution bug contact has been provided, subscribe
+            # that contact to all public bugs.
+            if distribution.bugcontact and not bug.private:
+                bug.subscribe(distribution.bugcontact)
+
+            # Subscribe package bug contacts to public bugs, if package
+            # information was provided.
+            if sourcepackagename:
+                package = distribution.getSourcePackage(sourcepackagename)
+                if package.bugcontacts and not bug.private:
+                    for pkg_bugcontact in package.bugcontacts:
+                        bug.subscribe(pkg_bugcontact.bugcontact)
+        else:
+            assert distrorelease is not None, 'Got no bugtask target.'
+
         return BugTask(
             bug=bug,
             product=product,
@@ -553,9 +570,3 @@ class BugTaskSet:
         return BugTask.select(
             maintainedProductBugTasksQuery + filters,
             clauseTables=['Product', 'TeamParticipation', 'BugTask', 'Bug'])
-
-
-def BugTaskFactory(context, **kw):
-    # XXX kiko: WTF, context is ignored?! LaunchBag? ARGH!
-    return BugTask(bugID=getUtility(ILaunchBag).bug.id, **kw)
-
