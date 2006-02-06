@@ -12,7 +12,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Source Package Search</h1>
+  <h1>Source package search</h1>
 
   <p> You can use full or part of the source package name on this search.</p>
 

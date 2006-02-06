@@ -15,18 +15,20 @@ import urllib
 
 from zope.interface import implements
 
-from zope.app.errorservice.interfaces import (
-    IErrorReportingService, ILocalErrorReportingService)
+from zope.app.errorservice.interfaces import IErrorReportingService
 from zope.exceptions.exceptionformatter import format_exception
-
-from zope.security.checker import ProxyFactory, NamesChecker
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.webapp.interfaces import (
     IErrorReport, IErrorReportRequest)
+from canonical.launchpad.webapp.adapter import (
+    RequestExpired, get_request_statements, soft_timeout_expired)
 
 UTC = pytz.timezone('UTC')
+
+# the section of the OOPS ID before the instance identifier is the
+# days since the epoch, which is defined as the start of 2006.
+epoch = datetime.datetime(2006, 01, 01, 00, 00, 00, tzinfo=UTC)
 
 # Restrict the rate at which errors are sent to the Zope event Log
 # (this does not affect generation of error reports).
@@ -41,12 +43,40 @@ _rate_restrict_period = datetime.timedelta(seconds=60)
 # minute.
 _rate_restrict_burst = 5
 
+def _normalise_whitespace(s):
+    """Normalise the whitespace in a string to spaces"""
+    if s is None:
+        return None
+    return ' '.join(s.split())
+
+def _safestr(obj):
+    if isinstance(obj, unicode):
+        return obj.replace('\\', '\\\\').encode('ASCII',
+                                                'backslashreplace')
+    # A call to str(obj) could raise anything at all.
+    # We'll ignore these errors, and print something
+    # useful instead, but also log the error.
+    try:
+        value = str(obj)
+    except:
+        logging.getLogger('SiteError').exception(
+            'Error in ErrorReportingService while getting a str '
+            'representation of an object')
+        value = '<unprintable %s object>' % (
+            str(type(obj).__name__)
+            )
+    # encode non-ASCII characters
+    value = value.replace('\\', '\\\\')
+    value = re.sub(r'[\x80-\xff]',
+                   lambda match: '\\x%02x' % ord(match.group(0)), value)
+    return value
+
 
 class ErrorReport:
     implements(IErrorReport)
 
     def __init__(self, id, type, value, time, tb_text, username,
-                 url, req_vars):
+                 url, req_vars, db_statements):
         self.id = id
         self.type = type
         self.value = value
@@ -57,26 +87,30 @@ class ErrorReport:
         self.req_vars = []
         # hide passwords that might be present in the request variables
         for (name, value) in req_vars:
-            if (name.lower().startswith('password') or
-                name.lower().startswith('passwd')):
+            if ('password' in name.lower() or 'passwd' in name.lower()):
                 self.req_vars.append((name, '<hidden>'))
             else:
                 self.req_vars.append((name, value))
+        self.db_statements = db_statements
 
     def __repr__(self):
         return '<ErrorReport %s>' % self.id
 
     def write(self, fp):
-        fp.write('Oops-Id: %s\n' % self.id)
-        fp.write('Exception-Type: %s\n' % self.type)
-        fp.write('Exception-Value: %s\n' % self.value)
+        fp.write('Oops-Id: %s\n' % _normalise_whitespace(self.id))
+        fp.write('Exception-Type: %s\n' % _normalise_whitespace(self.type))
+        fp.write('Exception-Value: %s\n' % _normalise_whitespace(self.value))
         fp.write('Date: %s\n' % self.time.isoformat())
-        fp.write('User: %s\n' % self.username)
-        fp.write('URL: %s\n\n' % self.url)
-        safe_chars = ';/?:@&+$, ()*!'
+        fp.write('User: %s\n' % _normalise_whitespace(self.username))
+        fp.write('URL: %s\n\n' % _normalise_whitespace(self.url))
+        safe_chars = ';/\\?:@&+$, ()*!'
         for key, value in self.req_vars:
             fp.write('%s=%s\n' % (urllib.quote(key, safe_chars),
                                   urllib.quote(value, safe_chars)))
+        fp.write('\n')
+        for (start, end, statement) in self.db_statements:
+            fp.write('%05d-%05d %s\n' % (start, end,
+                                         _normalise_whitespace(statement)))
         fp.write('\n')
         fp.write(self.tb_text)
 
@@ -94,16 +128,29 @@ class ErrorReport:
         lines = msg.fp.readlines()
         for linenum, line in enumerate(lines):
             line = line.strip()
-            if not line: break
+            if not line:
+                break
             key, value = line.split('=', 1)
             req_vars.append((urllib.unquote(key), urllib.unquote(value)))
+
+        statements = []
+        lines = lines[linenum+1:]
+        for linenum, line in enumerate(lines):
+            line = line.strip()
+            if not line:
+                break
+            startend, statement = line.split(' ', 1)
+            start, end = startend.split('-')
+            statements.append((int(start), int(end), statement))
+
         tb_text = ''.join(lines[linenum+1:])
 
         return cls(id, exc_type, exc_value, date, tb_text,
-                   username, url, req_vars)
+                   username, url, req_vars, statements)
+
 
 class ErrorReportingService:
-    implements(IErrorReportingService, ILocalErrorReportingService)
+    implements(IErrorReportingService)
 
     _ignored_exceptions = set(['Unauthorized'])
     copy_to_zlog = False
@@ -114,9 +161,8 @@ class ErrorReportingService:
     def __init__(self):
         self.copy_to_zlog = config.launchpad.errorreports.copy_to_zlog
         self.lastid_lock = threading.Lock()
-        self.lastid = self._findLastOopsId()
 
-    def _findLastOopsId(self):
+    def _findLastOopsId(self, directory):
         """Find the last error number used by this Launchpad instance
 
         The purpose of this function is to not repeat sequence numbers
@@ -127,7 +173,7 @@ class ErrorReportingService:
         """
         prefix = config.launchpad.errorreports.oops_prefix
         lastid = 0
-        for filename in os.listdir(self.errordir()):
+        for filename in os.listdir(directory):
             oopsid = filename.rsplit('.', 1)[1]
             if not oopsid.startswith(prefix):
                 continue
@@ -151,7 +197,6 @@ class ErrorReportingService:
         if date != self.lasterrordate:
             self.lastid_lock.acquire()
             try:
-                self.lastid = 0
                 self.lasterrordate = date
                 # make sure the directory exists
                 try:
@@ -159,6 +204,7 @@ class ErrorReportingService:
                 except OSError, e:
                     if e.errno != errno.EEXIST:
                         raise
+                self.lastid = self._findLastOopsId(errordir)
             finally:
                 self.lastid_lock.release()
         return errordir
@@ -188,32 +234,14 @@ class ErrorReportingService:
             newid = self.lastid
         finally:
             self.lastid_lock.release()
+        day_number = (now - epoch).days + 1
         second_in_day = now.hour * 3600 + now.minute * 60 + now.second
         oops_prefix = config.launchpad.errorreports.oops_prefix
-        oops = 'OOPS-%s%d' % (oops_prefix, newid)
+        oops = 'OOPS-%d%s%d' % (day_number, oops_prefix, newid)
         filename = os.path.join(errordir, '%05d.%s%s' % (second_in_day,
                                                          oops_prefix,
                                                          newid))
         return oops, filename
-
-    def safestr(self, obj):
-        if isinstance(obj, unicode):
-            return obj.encode('ASCII', 'replace')
-        # A call to str(obj) could raise anything at all.
-        # We'll ignore these errors, and print something
-        # useful instead, but also log the error.
-        try:
-            value = str(obj)
-        except:
-            logging.getLogger('SiteError').exception(
-                'Error in ErrorReportingService while getting a str '
-                'representation of an object')
-            value = '<unprintable %s object>' % (
-                str(type(obj).__name__)
-                )
-        # replace non-ASCII characters
-        value = re.sub(r'[\x80-\xff]', '?', value)
-        return value
 
     def raising(self, info, request=None, now=None):
         """See IErrorReportingService.raising()"""
@@ -233,7 +261,7 @@ class ErrorReportingService:
                                                    **{'as_html': False}))
             else:
                 tb_text = info[2]
-            tb_text = self.safestr(tb_text)
+            tb_text = _safestr(tb_text)
 
             url = None
             username = None
@@ -250,11 +278,12 @@ class ErrorReportingService:
                         login = request.principal.getLogin()
                     else:
                         login = 'unauthenticated'
-                    username = ', '.join(map(unicode, (login,
-                                          request.principal.id,
-                                          request.principal.title,
-                                          request.principal.description
-                                         ))).encode('ascii','replace')
+                    username = _safestr(
+                        ', '.join(map(unicode, (login,
+                                                request.principal.id,
+                                                request.principal.title,
+                                                request.principal.description
+                                                ))))
                 # When there's an unauthorized access, request.principal is
                 # not set, so we get an AttributeError
                 # XXX is this right? Surely request.principal should be set!
@@ -266,16 +295,20 @@ class ErrorReportingService:
                 except AttributeError:
                     pass
 
-                req_vars = sorted((self.safestr(key), self.safestr(value))
+                req_vars = sorted((_safestr(key), _safestr(value))
                                   for (key, value) in request.items())
-            strv = self.safestr(info[1])
+            strv = _safestr(info[1])
 
-            strurl = self.safestr(url)
+            strurl = _safestr(url)
+
+            statements = sorted((start, end, _safestr(statement))
+                                for (start, end, statement)
+                                    in get_request_statements())
 
             oopsid, filename = self.newOopsId(now)
 
             entry = ErrorReport(oopsid, strtype, strv, now, tb_text,
-                                username, strurl, req_vars)
+                                username, strurl, req_vars, statements)
             entry.write(open(filename, 'wb'))
 
             if request:
@@ -303,51 +336,24 @@ class ErrorReportingService:
                 logging.getLogger('SiteError').exception(
                     '%s (%s)' % (url, oopsid))
 
-    def getProperties(self):
-        """See ILocalErrorReportingService.getProperties()"""
-        return {}
-
-    def setProperties(self, keep_entries, copy_to_zlog=0,
-                      ignored_exceptions=()):
-        """See ILocalErrorReportingService.setProperties()"""
-        raise NotImplementedError
-
-    def getLogEntries(self):
-        """See ILocalErrorReportingService.getLogEntries()"""
-        errordir = self.errordir()
-        files = os.listdir(errordir)
-        # since the file names start with a zero padded "second in day",
-        # lexical sorting leaves them in order of occurrence.
-        files.sort()
-        entries = []
-        for filename in files[-50:]:
-            filename = os.path.join(errordir, filename)
-            entries.append(ErrorReport.read(open(filename, 'rb')))
-        return entries
-
-    def getLogEntryById(self, id):
-        """See ILocalErrorReportingService.getLogEntryById"""
-        if not id.startswith('OOPS-'):
-            return None
-        suffix = '.%s' % id[5:]
-        errordir = self.errordir()
-        files = os.listdir(errordir)
-        for filename in files:
-            if filename.endswith(suffix):
-                filename = os.path.join(errordir, filename)
-                return ErrorReport.read(open(filename, 'rb'))
-        return None
-
 
 globalErrorService = ErrorReportingService()
-
-globalErrorUtility = ProxyFactory(
-    removeSecurityProxy(globalErrorService),
-    NamesChecker(ILocalErrorReportingService.names())
-    )
 
 
 class ErrorReportRequest:
     implements(IErrorReportRequest)
 
     oopsid = None
+
+
+class SoftRequestTimeout(RequestExpired):
+    """Soft request timeout expired"""
+
+
+def end_request(event):
+    # if no OOPS has been generated at the end of the request, but
+    # the soft timeout has expired, log an OOPS.
+    if event.request.oopsid is None and soft_timeout_expired():
+        globalErrorService.raising(
+            (SoftRequestTimeout, SoftRequestTimeout(event.object), None),
+            event.request)

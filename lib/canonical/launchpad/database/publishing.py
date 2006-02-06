@@ -363,3 +363,4 @@ class BinaryPackagePublishingHistory(SQLBase):
     datemadepending = UtcDateTimeCol(default=None)
     dateremoved = UtcDateTimeCol(default=None)
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
+

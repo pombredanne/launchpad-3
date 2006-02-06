@@ -206,7 +206,7 @@ in the PO template. It should not be publishedfuzzy.
 
 And should be accepted by our validator.
 
-    >>> published = messageSets[0].publishedSubmission(0)
+    >>> published = messageSets[0].getPublishedSubmission(0)
     >>> published.validationstatus == TranslationValidationStatus.OK
     True
 
@@ -233,14 +233,14 @@ be the same for the active translation.
 And this one should have the validation status with an error.
 
     >>> messageSet = pofile.getPOMsgSet(u'Foo %s')
-    >>> published = messageSet.publishedSubmission(0)
+    >>> published = messageSet.getPublishedSubmission(0)
     >>> published.validationstatus == TranslationValidationStatus.UNKNOWNERROR
     True
 
 Check that the plural form was imported correctly.
 
     >>> messageSet = pofile.getPOMsgSet(u'Singular %d')
-    >>> published = messageSet.publishedSubmission(0)
+    >>> published = messageSet.getPublishedSubmission(0)
     >>> published.validationstatus == TranslationValidationStatus.OK
     True
     >>> messageSet.published_texts
@@ -476,6 +476,104 @@ them too recently.
 Remove the cache so it doesn't confuse anything
 
     >>> os.unlink(ImportProcess.POIMPORT_RECENTLY_SEEN_PICKLE)
+
+
+It's time to test the import queue.
+
+Here, we are going to test that if a file is imported twice, both are imported
+following the order the users uploaded them.
+
+    >>> first_pofile_content = r'''
+    ... msgid ""
+    ... msgstr ""
+    ... "PO-Revision-Date: 2005-06-04 20:41+0100\n"
+    ... "Last-Translator: Foo <no-priv@canonical.com>\n"
+    ... "Content-Type: text/plain; charset=UTF-8\n"
+    ...
+    ... msgid "Foo"
+    ... msgstr "Bar"
+    ... '''
+
+    >>> second_pofile_content = r'''
+    ... msgid ""
+    ... msgstr ""
+    ... "PO-Revision-Date: 2005-06-04 21:41+0100\n"
+    ... "Last-Translator: Jordi Mallach <jordi@canonical.com>\n"
+    ... "Content-Type: text/plain; charset=UTF-8\n"
+    ...
+    ... msgid "Foo"
+    ... msgstr "Bars"
+    ... '''
+
+This is needed to use the translation import queue.
+
+    >>> from canonical.launchpad.interfaces import ITranslationImportQueue
+    >>> translation_import_queue = getUtility(ITranslationImportQueue)
+
+The queue is empty at this point.
+
+    >>> len(translation_import_queue)
+    0
+
+Set the path of the IPOFile to a not None value.
+
+    >>> pofile.path = 'po/cy.po'
+    >>> pofile.sync()
+
+Attach the first version of the file.
+
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     pofile.path, first_pofile_content, False, rosetta_experts,
+    ...     sourcepackagename=pofile.potemplate.sourcepackagename,
+    ...     distrorelease=pofile.potemplate.distrorelease,
+    ...     productseries=pofile.potemplate.productseries)
+    >>> transaction.commit()
+
+It's in the queue now.
+
+    >>> len(translation_import_queue)
+    1
+
+For the second version, we need a new importer, in this case, Jordi.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> person_set = getUtility(IPersonSet)
+    >>> jordi = person_set.getByName('jordi')
+
+Attach the second version of the file.
+
+    >>> entry = translation_import_queue.addOrUpdateEntry(
+    ...     pofile.path, second_pofile_content, False, jordi,
+    ...     sourcepackagename=pofile.potemplate.sourcepackagename,
+    ...     distrorelease=pofile.potemplate.distrorelease,
+    ...     productseries=pofile.potemplate.productseries)
+    >>> transaction.commit()
+
+It's in the queue now.
+
+    >>> len(translation_import_queue)
+    2
+
+Do the final import.
+
+    >>> process = subprocess.Popen([
+    ...     sys.executable, 'cronscripts/rosetta-poimport.py',
+    ...     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.STDOUT
+    ...     )
+    >>> (output, empty) = process.communicate()
+    >>> print output
+    INFO...
+    ...
+    INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox Milestone Releases
+    <BLANKLINE>
+    >>> transaction.commit()
+
+Only the first entry has been imported and thus, we still have one entry
+in the queue.
+
+    >>> len(translation_import_queue)
+    1
 
     >>> LibrarianTestSetup().tearDown()
     >>> LaunchpadFunctionalTestSetup().tearDown()

@@ -1,5 +1,5 @@
 <div class="portlet">
-  <h4>Specification Subscribers:</h4>
+  <h4>Specification subscribers:</h4>
 
   <div class="portletBody portletContent">
 
@@ -11,7 +11,7 @@
       </li>
     </ul>
     <p tal:condition="not: context/subscriptions">
-      No subscribers.
+      <i>No subscribers.</i>
     </p>
   </div>
 </div>

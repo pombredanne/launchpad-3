@@ -20,9 +20,8 @@ PGSQL_BASE = '/usr/share/postgresql'
 
 A, B, C, D = 'ABCD' # tsearch2 ranking constants
 
-# This data structure defines all of our bull text indexes.
-# Each tuple in the top level list creates a 'fti' column in the
-# specified table.
+# This data structure defines all of our full text indexes.  Each tuple in the
+# top level list creates a 'fti' column in the specified table.
 ALL_FTI = [
     ('bug', [
             ('name', A),
@@ -239,25 +238,48 @@ def setup(con, configuration=DEFAULT_CONFIG):
     shared_func = r'''
         import re
 
-        # Convert to Unicode and lowercase everything
-        query = args[0].decode('utf8').lower()
-        ## plpy.debug('1 query is %s' % repr(query))
+        # Convert to Unicode
+        query = args[0].decode('utf8')
+        plpy.debug('1 query is %s' % repr(query))
 
-        # Convert &, |, !, : and \ symbols to whitespace since they have
-        # special meaning to tsearch2
-        query = re.sub(r"[\&\|\!\:\\]+", " ", query)
-        ## plpy.debug('2 query is %s' % repr(query))
+        # Convert AND, OR, NOT and - to tsearch2 punctuation
+        query = re.sub(r"(?:^|\s)-([\w\(])", r" !\1", query)
+        query = re.sub(r"\bAND\b", "&", query)
+        query = re.sub(r"\bOR\b", "|", query)
+        query = re.sub(r"\bNOT\b", " !", query)
+        plpy.debug('2 query is %s' % repr(query))
 
-        # Convert AND, OR and NOT to tsearch2 punctuation
-        query = re.sub(r"\band\b", "&", query)
-        query = re.sub(r"\bor\b", "|", query)
-        query = re.sub(r"\bnot\b", "!", query)
-        ## plpy.debug('3 query is %s' % repr(query))
+        # Deal with unwanted punctuation. We convert strings of punctuation
+        # inside words to a '-' character for the hypenation handling below
+        # to deal with further. Outside of words we replace with whitespace.
+        # We don't mess with -&|! as they are handled later.
+        punctuation = re.escape(r'`~@#$%^*+=[]{}:;"<>,.?\/')
+        query = re.sub(r"(\w)[%s]+(\w)" % (punctuation,), r"\1-\2", query)
+        query = re.sub(r"[%s]+" % (punctuation,), " ", query)
+        plpy.debug('3 query is %s' % repr(query))
+
+        # Now that we have handle case sensitive booleans, convert to lowercase
+        query = query.lower()
+
+        # Convert foo-bar to ((foo&bar)|foobar) and foo-bar-baz to 
+        # ((foo&bar&baz)|foobarbaz)
+        def hyphen_repl(match):
+            bits = match.group(0).split("-")
+            return "((%s)|%s)" % ("&".join(bits), "".join(bits))
+        query = re.sub(r"\b\w+-[\w\-]+\b", hyphen_repl, query)
+        plpy.debug('3.1 query is %s' % repr(query))
+
+        # Any remaining - characters are spurious
+        query = query.replace('-','')
+
+        # Remove spurious brackets
+        query = re.sub(r"\(([^\&\|]*?)\)", r" \1 ", query)
+        plpy.debug('3.2 query is %s' % repr(query))
 
         # Insert & between tokens without an existing boolean operator
         # Whitespace not proceded by (|&! not followed by &|
         query = re.sub(r"(?<![\(\|\&\!\s])\s+(?![\&\|\s])", "&", query)
-        ## plpy.debug('4 query is %s' % repr(query))
+        plpy.debug('4 query is %s' % repr(query))
 
         # Detect and repair syntax errors - we are lenient because
         # this input is generally from users.
@@ -269,34 +291,34 @@ def setup(con, configuration=DEFAULT_CONFIG):
             query = query + " ) "*(openings-closings)
         elif closings > openings:
             query = " ( "*(closings-openings) + query
-        ## plpy.debug('5 query is %s' % repr(query))
+        plpy.debug('5 query is %s' % repr(query))
 
         # Brackets containing nothing but whitespace and booleans, recursive
         last = ""
         while last != query:
             last = query
             query = re.sub(r"\([\s\&\|\!]*\)", "", query)
-        ## plpy.debug('6 query is %s' % repr(query))
+        plpy.debug('6 query is %s' % repr(query))
 
         # An & or | following a (
         query = re.sub(r"(?<=\()[\&\|\s]+", "", query)
-        ## plpy.debug('7 query is %s' % repr(query))
+        plpy.debug('7 query is %s' % repr(query))
 
         # An &, | or ! immediatly before a )
         query = re.sub(r"[\&\|\!\s]*[\&\|\!]+(?=\))", "", query)
-        ## plpy.debug('8 query is %s' % repr(query))
+        plpy.debug('8 query is %s' % repr(query))
 
         # An &,| or ! followed by another boolean.
         query = re.sub(r"\s*([\&\|\!])\s*[\&\|]+", r"\1", query)
-        ## plpy.debug('9 query is %s' % repr(query))
+        plpy.debug('9 query is %s' % repr(query))
 
         # Leading & or |
         query = re.sub(r"^[\s\&\|]+", "", query)
-        ## plpy.debug('10 query is %s' % repr(query))
+        plpy.debug('10 query is %s' % repr(query))
 
         # Trailing &, | or !
         query = re.sub(r"[\&\|\!\s]+$", "", query)
-        ## plpy.debug('11 query is %s' % repr(query))
+        plpy.debug('11 query is %s' % repr(query))
 
         # If we have nothing but whitespace and tsearch2 operators,
         # return NULL.
@@ -305,7 +327,7 @@ def setup(con, configuration=DEFAULT_CONFIG):
 
         # Convert back to UTF-8
         query = query.encode('utf8')
-        ## plpy.debug('12 query is %s' % repr(query))
+        plpy.debug('12 query is %s' % repr(query))
         '''
     text_func = shared_func + """
         return query or None
@@ -424,6 +446,7 @@ def needs_refresh(con, table, columns):
         results=True, args=vars()
         )
     if len(existing) == 0:
+        log.debug("No fticache for %(table)s" % vars())
         execute(con, """
             INSERT INTO FtiCache (tablename, columns) VALUES (
                 %(table)s, %(current_columns)s
@@ -433,9 +456,12 @@ def needs_refresh(con, table, columns):
 
     if not options.force:
         previous_columns = existing[0][0]
-        if repr(columns) == previous_columns:
+        if current_columns == previous_columns:
+            log.debug("FtiCache for %(table)s still valid" % vars())
             return False
-
+        log.debug("Cache out of date - %s != %s" % (
+            current_columns, previous_columns
+            ))
     execute(con, """
         UPDATE FtiCache SET columns = %(current_columns)s
         WHERE tablename = %(table)s
@@ -471,6 +497,9 @@ def update_dicts(con):
     lists. This path changed with breezy. Update the paths to the
     newer relative paths.
     '''
+    if get_pgversion(con).startswith('7.4.'):
+        return
+
     execute(con, '''
         UPDATE pg_ts_dict SET dict_initoption='contrib/english.stop'
         WHERE dict_initoption like '/%/english.stop'

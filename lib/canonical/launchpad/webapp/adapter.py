@@ -23,6 +23,9 @@ __all__ = [
     'RequestExpired',
     'set_request_started',
     'clear_request_started',
+    'get_request_statements',
+    'hard_timeout_expired',
+    'soft_timeout_expired',
     ]
 
 
@@ -110,6 +113,7 @@ def set_request_started(starttime=None):
     if starttime is None:
         starttime = time.time()
     _local.request_start_time = starttime
+    _local.request_statements = []
 
 
 def clear_request_started():
@@ -120,11 +124,32 @@ def clear_request_started():
         warnings.warn('clear_request_started() called outside of a request')
 
     _local.request_start_time = None
+    _local.request_statements = []
 
 
-def _request_expired():
-    """Checks whether the current request has expired."""
-    if config.launchpad.db_statement_timeout is None:
+def get_request_statements():
+    """Get the list of executed statements in the request.
+
+    The list is composed of (starttime, endtime, statement) tuples.
+    Times are given in milliseconds since the start of the request.
+    """
+    return getattr(_local, 'request_statements', [])
+
+
+def _log_statement(starttime, endtime, statement):
+    """Log that a database statement was executed."""
+    request_starttime = getattr(_local, 'request_start_time', None)
+    if request_starttime is None:
+        return
+
+    # convert times to integer millisecond values
+    starttime = int((starttime - request_starttime) * 1000)
+    endtime = int((endtime - request_starttime) * 1000)
+    _local.request_statements.append((starttime, endtime, statement))
+
+def _check_expired(timeout):
+    """Checks whether the current request has passed the given timeout."""
+    if timeout is None:
         return False # no timeout configured
 
     starttime = getattr(_local, 'request_start_time', None)
@@ -132,7 +157,17 @@ def _request_expired():
         return False # no current request
 
     requesttime = (time.time() - starttime) * 1000
-    return requesttime > config.launchpad.db_statement_timeout
+    return requesttime > timeout
+
+
+def hard_timeout_expired():
+    """Returns True if the hard request timeout been reached."""
+    return _check_expired(config.launchpad.db_statement_timeout)
+
+
+def soft_timeout_expired():
+    """Returns True if the soft request timeout been reached."""
+    return _check_expired(config.launchpad.soft_request_timeout)
 
 
 class RequestExpired(RuntimeError):
@@ -173,7 +208,7 @@ class CursorWrapper:
     def __init__(self, cursor):
         self.__dict__['_cur'] = cursor
 
-    def execute(self, *args, **kwargs):
+    def execute(self, statement, *args, **kwargs):
         """Execute an SQL query, provided that the current request hasn't
         timed out.
 
@@ -182,22 +217,26 @@ class CursorWrapper:
         transaction completes) and the RequestExpired exception will
         be raised.
         """
-        if _request_expired():
+        if hard_timeout_expired():
             # make sure the current transaction can not be committed by
             # sending a broken SQL statement to the database
             try:
                 self._cur.execute('break this transaction')
             except psycopg.DatabaseError:
                 pass
-            raise RequestExpired(args, kwargs)
+            raise RequestExpired(statement)
         try:
-            return self._cur.execute(*args, **kwargs)
+            starttime = time.time()
+            try:
+                return self._cur.execute(statement, *args, **kwargs)
+            finally:
+                _log_statement(starttime, time.time(), statement)
         except psycopg.ProgrammingError, error:
             if len(error.args):
                 errorstr = error.args[0]
                 if errorstr.startswith(
                     'ERROR:  canceling query due to user request'):
-                    raise RequestQueryTimedOut(args, kwargs, errorstr)
+                    raise RequestQueryTimedOut(statement, errorstr)
             raise
 
     def __getattr__(self, attr):

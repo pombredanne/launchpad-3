@@ -4,7 +4,6 @@ __metaclass__ = type
 __all__ = [
     'BugTask',
     'BugTaskSet',
-    'BugTaskFactory',
     'bugtask_sort_key']
 
 import urllib
@@ -25,20 +24,20 @@ from zope.security.proxy import isinstance as zope_isinstance
 from canonical.lp.dbschema import (
     EnumCol, BugTaskPriority, BugTaskStatus, BugTaskSeverity)
 
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad.components.bugtask import BugTaskMixin, mark_task
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBugTask, IBugTaskSet, IUpstreamBugTask,
-    IDistroBugTask, IDistroReleaseBugTask, ILaunchBag, NotFoundError,
+    IDistroBugTask, IDistroReleaseBugTask, NotFoundError,
     ILaunchpadCelebrities, ISourcePackage, IDistributionSourcePackage)
 
 
-debbugsstatusmap = {'open': BugTaskStatus.NEW,
-                    'forwarded': BugTaskStatus.ACCEPTED,
-                    'done': BugTaskStatus.FIXED}
+debbugsstatusmap = {'open': BugTaskStatus.UNCONFIRMED,
+                    'forwarded': BugTaskStatus.CONFIRMED,
+                    'done': BugTaskStatus.FIXRELEASED}
 
 debbugsseveritymap = {'wishlist': BugTaskSeverity.WISHLIST,
                       'minor': BugTaskSeverity.MINOR,
@@ -105,7 +104,7 @@ class BugTask(SQLBase, BugTaskMixin):
     status = EnumCol(
         dbName='status', notNull=True,
         schema=BugTaskStatus,
-        default=BugTaskStatus.NEW)
+        default=BugTaskStatus.UNCONFIRMED)
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
     priority = EnumCol(
         dbName='priority', notNull=False, schema=BugTaskPriority, default=None)
@@ -274,26 +273,29 @@ class BugTask(SQLBase, BugTaskMixin):
         status = self.status
 
         if assignee:
-            assignee_name = urllib.quote_plus(assignee.name)
-            assignee_browsername = cgi.escape(assignee.browsername)
+            # The statuses REJECTED, FIXCOMMITTED, and CONFIRMED will
+            # display with the assignee information as well. Showing
+            # assignees with other status would just be confusing
+            # (e.g. "Unconfirmed, assigned to Foo Bar")
+            assignee_html = (
+                '<img src="/++resource++user.gif" /> '
+                '<a href="/people/%s/+assignedbugs">%s</a>' % (
+                    urllib.quote_plus(assignee.name),
+                    cgi.escape(assignee.browsername)))
 
-            if status in (BugTaskStatus.ACCEPTED, BugTaskStatus.REJECTED,
-                          BugTaskStatus.FIXED):
-                return (
-                    '%s by <img src="/++resource++user.gif" /> '
-                    '<a href="/malone/assigned?name=%s">%s</a>' % (
-                        status.title.lower(), assignee_name,
-                        assignee_browsername))
+            if status in (BugTaskStatus.REJECTED, BugTaskStatus.FIXCOMMITTED):
+                return '%s by %s' % (status.title.lower(), assignee_html)
+            elif  status == BugTaskStatus.CONFIRMED:
+                return '%s, assigned to %s' % (status.title.lower(), assignee_html)
 
-            return (
-                'assigned to <img src="/++resource++user.gif" /> '
-                '<a href="/malone/assigned?name=%s">%s</a>' % (
-                    assignee_name, assignee_browsername))
-        else:
-            if status in (BugTaskStatus.REJECTED, BugTaskStatus.FIXED):
-                return status.title.lower()
+        # The status is something other than REJECTED, FIXCOMMITTED or
+        # CONFIRMED (whether assigned to someone or not), so we'll
+        # show only the status.
+        if status in (BugTaskStatus.REJECTED, BugTaskStatus.UNCONFIRMED,
+                      BugTaskStatus.FIXRELEASED):
+            return status.title.lower()
 
-            return 'not assigned'
+        return status.title.lower() + ' (unassigned)'
 
 
 class BugTaskSet:
@@ -313,15 +315,11 @@ class BugTaskSet:
         "datecreated": "BugTask.datecreated"}
 
     def __init__(self):
-        self.title = 'A Set of Bug Tasks'
+        self.title = 'A set of bug tasks'
 
     def __getitem__(self, task_id):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
-        try:
-            task = BugTask.get(task_id)
-        except SQLObjectNotFound:
-            raise NotFoundError(task_id)
-        return task
+        return self.get(task_id)
 
     def __iter__(self):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
@@ -374,6 +372,8 @@ class BugTaskSet:
             if arg_value is None:
                 continue
             if zope_isinstance(arg_value, any):
+                if not arg_value.query_values:
+                    continue
                 # The argument value is a list of acceptable
                 # filter values.
                 arg_values = sqlvalues(*arg_value.query_values)
@@ -408,21 +408,13 @@ class BugTaskSet:
             extra_clauses.append(where_cond)
 
         if params.searchtext:
+            searchtext_quoted = sqlvalues(params.searchtext)[0]
+            searchtext_like_quoted = quote_like(params.searchtext)
             extra_clauses.append(
-                "(Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s))" %
-                sqlvalues(params.searchtext, params.searchtext))
+                "((Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s)) OR"
+                " (BugTask.targetnamecache ILIKE '%%' || %s || '%%'))" % (
+                searchtext_quoted, searchtext_quoted, searchtext_like_quoted))
 
-        if params.statusexplanation:
-            # XXX: This clause relies on the fact that the Bugtask's fti is
-            # generated using only the values of the statusexplanation column,
-            # which is not true. Unfortunately, there's no way to fix this
-            # right now, and as this doesn't seem to be a big deal, we'll
-            # leave it as is for now. More info:
-            # https://launchpad.net/products/launchpad/+bug/4066
-            # -- Guilherme Salgado, 2005-11-09
-            extra_clauses.append("BugTask.fti @@ ftq(%s)" %
-                                 sqlvalues(params.statusexplanation))
-        
         if params.subscriber is not None:
             clauseTables = ['Bug', 'BugSubscription']
             extra_clauses.append("""Bug.id = BugSubscription.bug AND
@@ -483,6 +475,33 @@ class BugTaskSet:
                    severity=IBugTask['severity'].default,
                    assignee=None, milestone=None):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
+        if product:
+            assert distribution is None, (
+                "Can't pass both distribution and product.")
+            # If a product bug contact has been provided, subscribe that
+            # contact to all public bugs. Otherwise subscribe the
+            # product owner to all public bugs.
+            if not bug.private:
+                if product.bugcontact:
+                    bug.subscribe(product.bugcontact)
+                else:
+                    bug.subscribe(product.owner)
+        elif distribution:
+            # If a distribution bug contact has been provided, subscribe
+            # that contact to all public bugs.
+            if distribution.bugcontact and not bug.private:
+                bug.subscribe(distribution.bugcontact)
+
+            # Subscribe package bug contacts to public bugs, if package
+            # information was provided.
+            if sourcepackagename:
+                package = distribution.getSourcePackage(sourcepackagename)
+                if package.bugcontacts and not bug.private:
+                    for pkg_bugcontact in package.bugcontacts:
+                        bug.subscribe(pkg_bugcontact.bugcontact)
+        else:
+            assert distrorelease is not None, 'Got no bugtask target.'
+
         return BugTask(
             bug=bug,
             product=product,
@@ -503,7 +522,8 @@ class BugTaskSet:
             showclosed = ""
         else:
             showclosed = (
-                ' AND BugTask.status < %s' % sqlvalues(BugTaskStatus.FIXED))
+                ' AND BugTask.status < %s' %
+                sqlvalues(BugTaskStatus.FIXCOMMITTED))
 
         priority_severity_filter = ""
         if minpriority is not None:
@@ -550,9 +570,3 @@ class BugTaskSet:
         return BugTask.select(
             maintainedProductBugTasksQuery + filters,
             clauseTables=['Product', 'TeamParticipation', 'BugTask', 'Bug'])
-
-
-def BugTaskFactory(context, **kw):
-    # XXX kiko: WTF, context is ignored?! LaunchBag? ARGH!
-    return BugTask(bugID=getUtility(ILaunchBag).bug.id, **kw)
-

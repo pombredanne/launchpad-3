@@ -1,0 +1,2 @@
+The email you sent included commands to edit the bug, but you didn't
+sign the email with your GPG key.

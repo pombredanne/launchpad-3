@@ -36,60 +36,41 @@ class POTMsgSet(SQLBase):
     sourcecomment = StringCol(dbName='sourcecomment', notNull=False)
     flagscomment = StringCol(dbName='flagscomment', notNull=False)
 
-    def getWikiSubmissions(self, language, pluralform):
-        """See IPOTMsgSet"""
-        results = POSubmission.select("""
-            POSubmission.pomsgset = POMsgSet.id AND
-            POSubmission.pluralform = %d AND
-            POMsgSet.pofile = POFile.id AND
-            POFile.language = %d AND
-            POMsgSet.potmsgset = POTMsgSet.id AND
-            POTMsgSet.primemsgid = %d""" % (pluralform,
-                language.id, self.primemsgid_ID),
-            clauseTables=['POMsgSet',
-                          'POFile',
-                          'POTMsgSet'],
-            orderBy=['-datecreated'],
-            distinct=True)
-        submissions = sets.Set()
-        translations = sets.Set()
-        for submission in results:
-            if submission.potranslation not in translations:
-                translations.add(submission.potranslation)
-                submissions.add(submission)
-        result = sorted(list(submissions), key=lambda x: x.datecreated)
-        result.reverse()
-        return result
-
+    def getCurrentSubmissionsIDs(self, language, pluralform):
+        """See IPOTMsgSet."""
+        return self._connection.queryAll('''
+            SELECT DISTINCT POSubmission.id
+            FROM POSubmission
+                JOIN POMsgSet ON POSubmission.pomsgset = POMsgSet.id
+                JOIN POFile ON (POMsgSet.pofile = POFile.id AND
+                                POFile.language = %s)
+                JOIN POTMsgSet ON (POMsgSet.potmsgset = POTMsgSet.id AND
+                                   POTMsgSet.primemsgid = %s)
+                LEFT OUTER JOIN POSelection AS ps1 ON (
+                    ps1.activesubmission = POSubmission.id AND
+                    ps1.pluralform = %s)
+                LEFT OUTER JOIN POSelection AS ps2 ON (
+                    ps2.publishedsubmission = POSubmission.id AND
+                    ps2.pluralform = %s)
+            WHERE
+                ps1.id IS NOT NULL OR ps2.id IS NOT NULL
+            ''' % sqlvalues(
+                language.id, self.primemsgid_ID, pluralform, pluralform))
 
     def getCurrentSubmissions(self, language, pluralform):
         """See IPOTMsgSet"""
-        selections = POSelection.select("""
-            POSelection.pomsgset = POMsgSet.id AND
-            POSelection.pluralform = %d AND
-            POMsgSet.pofile = POFile.id AND
-            POFile.language = %d AND
-            POMsgSet.potmsgset = POTMsgSet.id AND
-            POTMsgSet.primemsgid = %d""" % (pluralform,
-                language.id, self.primemsgid_ID),
-            clauseTables=['POMsgSet',
-                          'POFile',
-                          'POTMsgSet'],
-            distinct=True)
-        submissions = sets.Set()
-        translations = sets.Set()
-        for selection in selections:
-            if selection.activesubmission:
-                if selection.activesubmission.potranslation not in translations:
-                    submissions.add(selection.activesubmission)
-                    translations.add(selection.activesubmission.potranslation)
-            if selection.publishedsubmission:
-                if selection.publishedsubmission.potranslation not in translations:
-                    submissions.add(selection.publishedsubmission)
-                    translations.add(selection.publishedsubmission.potranslation)
-        result = sorted(list(submissions), key=lambda x: x.datecreated)
-        result.reverse()
-        return result
+        posubmission_ids = self.getCurrentSubmissionsIDs(language, pluralform)
+
+        if len(posubmission_ids) > 0:
+            ids = [str(L[0]) for L in posubmission_ids]
+
+            posubmissions = POSubmission.select(
+                'POSubmission.id IN (%s)' % ', '.join(ids),
+                orderBy='-datecreated')
+
+            return posubmissions
+        else:
+            return []
 
     def flags(self):
         if self.flagscomment is None:
@@ -123,14 +104,14 @@ class POTMsgSet(SQLBase):
         else:
             return sighting
 
-    def poMsgSet(self, language_code, variant=None):
+    def getPOMsgSet(self, language_code, variant=None):
         """See IPOTMsgSet."""
         if variant is None:
             variantspec = 'IS NULL'
         else:
             variantspec = ('= %s' % quote(variant))
 
-        pomsgset = POMsgSet.selectOne('''
+        return POMsgSet.selectOne('''
             POMsgSet.potmsgset = %d AND
             POMsgSet.pofile = POFile.id AND
             POFile.language = Language.id AND
@@ -140,10 +121,6 @@ class POTMsgSet(SQLBase):
                    variantspec,
                    quote(language_code)),
             clauseTables=['POFile', 'Language'])
-
-        if pomsgset is None:
-            raise NotFoundError(language_code, variant)
-        return pomsgset
 
     def translationsForLanguage(self, language):
         # To start with, find the number of plural forms. We either want the

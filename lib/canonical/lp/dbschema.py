@@ -54,6 +54,10 @@ __all__ = (
 'ManifestEntryType',
 'ManifestEntryHint',
 'MirrorFreshness',
+'MirrorContent',
+'MirrorPulseType',
+'MirrorSpeed',
+'MirrorStatus',
 'PackagePublishingPriority',
 'PackagePublishingStatus',
 'PackagePublishingPocket',
@@ -136,7 +140,7 @@ class DBSchemaValidator(validators.Validator):
         """Convert from DBSchema Item to int.
 
         >>> validator = DBSchemaValidator(schema=BugTaskStatus)
-        >>> validator.fromPython(BugTaskStatus.PENDINGUPLOAD, None)
+        >>> validator.fromPython(BugTaskStatus.FIXCOMMITTED, None)
         25
         >>> validator.fromPython(ImportTestStatus.NEW, None)
         Traceback (most recent call last):
@@ -171,7 +175,7 @@ class DBSchemaValidator(validators.Validator):
         """Convert from int to DBSchema Item.
 
         >>> validator = DBSchemaValidator(schema=BugTaskStatus)
-        >>> validator.toPython(25, None) is BugTaskStatus.PENDINGUPLOAD
+        >>> validator.toPython(25, None) is BugTaskStatus.FIXCOMMITTED
         True
 
         """
@@ -2245,52 +2249,56 @@ class BranchReviewStatus(DBSchema):
 class BugTaskStatus(DBSchema):
     """Bug Task Status
 
-    Bugs are assigned to products and to source packages in Malone. The
-    task carries a status - new, open or closed. This schema
-    documents those possible status values.
+    The various possible states for a bugfix in a specific place.
     """
 
-    NEW = Item(10, """
-        New
+    UNCONFIRMED = Item(10, """
+        Unconfirmed
 
-        This is a new bug and has not yet been accepted by the maintainer
-        of this product or source package.
+        This is a new bug and has not yet been confirmed by the maintainer of
+        this product or source package.
         """)
 
-    NEEDINFO = Item(15, """
-        NeedInfo
+    NEEDSINFO = Item(15, """
+        Needs Info
 
-        More info is required before making further progress on this
-        bug, likely from the reporter. E.g. the exact error message
-        the user saw, the URL the user was visiting when the bug
-        occurred, etc.
+        More info is required before making further progress on this bug, likely
+        from the reporter. E.g. the exact error message the user saw, the URL
+        the user was visiting when the bug occurred, etc.
         """)
 
-    ACCEPTED = Item(20, """
-        Accepted
-
-        This bug has been reviewed, perhaps verified, and accepted as
-        something needing fixing.
-        """)
-
-    PENDINGUPLOAD = Item(25, """
-        PendingUpload
-
-        The source package with the fix has been sent off to the buildds.
-        The bug will be resolved once the newly uploaded package is
-        completed.
-        """)
-
-    FIXED = Item(30, """
-        Fixed
-
-        This bug has been fixed.
-        """)
-
-    REJECTED = Item(40, """
+    REJECTED = Item(17, """
         Rejected
 
         This bug has been rejected, e.g. in cases of operator-error.
+        """)
+
+    CONFIRMED = Item(20, """
+        Confirmed
+
+        This bug has been reviewed, verified, and confirmed as something needing
+        fixing.
+        """)
+
+    INPROGRESS = Item(22, """
+        In Progress
+
+        The person assigned to fix this bug is currently working on fixing it.
+        """)
+
+    FIXCOMMITTED = Item(25, """
+        Fix Committed
+
+        This bug has been fixed in version control, but the fix has
+        not yet made it into a released version of the affected
+        software.
+        """)
+
+    FIXRELEASED = Item(30, """
+        Fix Released
+
+        The fix for this bug is available in a released version of the
+        affected software.
         """)
 
 
@@ -2657,7 +2665,7 @@ class BuildStatus(DBSchema):
         """)
 
     FULLYBUILT = Item(1, """
-        Fully built
+        Successfully built
 
         Build record is an historic account of the build. The build is complete
         and needs no further work to complete it. The build log etc are all
@@ -2674,7 +2682,7 @@ class BuildStatus(DBSchema):
         """)
 
     MANUALDEPWAIT = Item(3, """
-        Manual dependency wait
+        Dependency wait
 
         Build record represents a package whose build dependencies cannot
         currently be satisfied within the relevant DistroArchRelease. This
@@ -2683,7 +2691,7 @@ class BuildStatus(DBSchema):
         """)
 
     CHROOTWAIT = Item(4, """
-        Chroot wait
+        Chroot problem
 
         Build record represents a build which needs a chroot currently known
         to be damaged or bad in some way. The buildd maintainer will have to
@@ -2702,6 +2710,147 @@ class MirrorFreshness(DBSchema):
         Freshness Unknown
 
         The Freshness was never verified and is unknown.
+        """)
+
+
+class MirrorContent(DBSchema):
+    """The content that is mirrored."""
+
+    ARCHIVE = Item(1, """
+        Archive
+
+        This mirror contains source and binary packages for a given
+        distribution. Mainly used for APT-based system.
+        """)
+
+    RELEASE = Item(2, """
+        Release
+
+        Mirror containing released installation images for a given
+        distribution.
+        """)
+
+    CDIMAGE = Item(3, """
+        CD Image
+
+        Mirrors containing CD images other than the installation ones, relesed
+        for a given distribution.
+        """)
+
+
+class MirrorPulseType(DBSchema):
+    """The method used by a mirror to update its contents."""
+
+    PULL = Item(1, """
+        Pull
+
+        Mirror has a supported network application to "pull" the original
+        content server periodically.
+        """)
+
+    PUSH = Item(2, """
+        Push
+
+        Original content server has enough access to the Mirror and is able to
+        "push" new modification as soon as they happen.
+        """)
+
+
+class MirrorSpeed(DBSchema):
+    """The speed of a given mirror."""
+
+    S128K = Item(1, """
+        128Kb per second
+
+        The upstream link of this mirror can make up to 128Kb per second.
+        """)
+
+    S256K = Item(2, """
+        256Kb per second
+
+        The upstream link of this mirror can make up to 256Kb per second.
+        """)
+
+    S512K = Item(3, """
+        512Kb per second
+
+        The upstream link of this mirror can make up to 512Kb per second.
+        """)
+
+    S1M = Item(4, """
+        1Mb per second
+
+        The upstream link of this mirror can make up to 1Mb per second.
+        """)
+
+    S2M = Item(5, """
+        2Mb per second
+
+        The upstream link of this mirror can make up to 2Mb per second.
+        """)
+
+    S10M = Item(6, """
+        10Mb per second
+
+        The upstream link of this mirror can make up to 10Mb per second.
+        """)
+
+    S100M = Item(7, """
+        100Mb per second
+
+        The upstream link of this mirror can make up to 100Mb per second.
+        """)
+
+
+class MirrorStatus(DBSchema):
+    """The status of a given mirror."""
+
+    UP = Item(1, """
+        Up to date
+
+        This mirror is up to date with the original content.
+        """)
+
+    ONEHOURBEHIND = Item(2, """
+        One hour behind
+
+        This mirror's content seems to have been last updated one hour ago.
+        """)
+
+    TWOHOURSBEHIND = Item(3, """
+        Two hours behind
+
+        This mirror's content seems to have been last updated two hours ago.
+        """)
+
+    SIXHOURSBEHIND = Item(4, """
+        Six hours behind
+
+        This mirror's content seems to have been last updated six hours ago.
+        """)
+
+    ONEDAYBEHIND = Item(5, """
+        One day behind
+
+        This mirror's content seems to have been last updated one day ago.
+        """)
+
+    TWODAYSBEHIND = Item(6, """
+        Two days behind
+
+        This mirror's content seems to have been last updated two days ago.
+        """)
+
+    ONEWEEKBEHIND = Item(7, """
+        One week behind
+
+        This mirror's content seems to have been last updated one week ago.
+        """)
+
+    UNKNOWN = Item(8, """
+        Unknown
+
+        We couldn't determine when this mirror's content was last updated.
         """)
 
 

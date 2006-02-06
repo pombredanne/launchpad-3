@@ -20,7 +20,7 @@ Edit a bug task's severity as user Foo Bar.
   ... -----------------------------19142096961497584187956613781
   ... Content-Disposition: form-data; name="field.status"
   ... 
-  ... Accepted
+  ... Confirmed
   ... -----------------------------19142096961497584187956613781
   ... Content-Disposition: form-data; name="field.status-empty-marker"
   ... 
@@ -46,7 +46,7 @@ Edit a bug task's severity as user Foo Bar.
   ... 
   ... name12
   ... -----------------------------19142096961497584187956613781
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="FORM_SUBMIT"
   ... 
   ... Change
   ... -----------------------------19142096961497584187956613781--

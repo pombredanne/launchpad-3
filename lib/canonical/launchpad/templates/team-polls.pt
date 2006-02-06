@@ -11,7 +11,7 @@
 
   <div metal:fill-slot="main">
 
-    <h2>Current Polls for 
+    <h2>Current polls for 
       &#8220;<span tal:replace="context/browsername" />&#8221;
     </h2>
 
@@ -49,7 +49,7 @@
     </ul>
 
     <tal:block condition="view/closedpolls" >
-      <h2>Recent Polls</h2>
+      <h2>Recent polls</h2>
 
       <ul>
         <li tal:repeat="poll view/closedpolls">

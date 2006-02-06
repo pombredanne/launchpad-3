@@ -1,12 +1,16 @@
 
 __all__ = [
     'validate_url',
+    'valid_http_url',
+    'valid_ftp_url',
+    'valid_rsync_url',
     'valid_webref',
     'non_duplicate_bug',
     'valid_bug_number',
     'valid_emblem',
     'valid_hackergotchi',
     'valid_unregistered_email',
+    'validate_distribution_mirror_schema',
     ]
 
 import urllib
@@ -15,11 +19,13 @@ from StringIO import StringIO
 
 from zope.component import getUtility
 from zope.exceptions import NotFoundError
+from zope.app.form.interfaces import WidgetsError
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import valid_email
+from canonical.lp.dbschema import MirrorPulseType
 
 def validate_url(url, valid_schemes):
     """Returns a boolean stating whether 'url' is a valid URL.
@@ -30,21 +36,21 @@ def validate_url(url, valid_schemes):
 
        None and an empty string are not valid URLs::
 
-           >>> _validate_url(None, [])
+           >>> validate_url(None, [])
            False
-           >>> _validate_url('', [])
+           >>> validate_url('', [])
            False
 
        The valid_schemes list is checked::
 
-           >>> _validate_url('http://example.com', ['http'])
+           >>> validate_url('http://example.com', ['http'])
            True
-           >>> _validate_url('http://example.com', ['https', 'ftp'])
+           >>> validate_url('http://example.com', ['https', 'ftp'])
            False
 
        A URL without a host name is not valid:
 
-           >>> _validate_url('http://', ['http'])
+           >>> validate_url('http://', ['http'])
            False
 
       """
@@ -60,7 +66,23 @@ def validate_url(url, valid_schemes):
 
 
 def valid_webref(web_ref):
-    if validate_url(web_ref, ['http', 'https', 'ftp']):
+    """Returns True if web_ref is not a valid download URL, or raises a
+    LaunchpadValidationError.
+
+    >>> valid_webref('http://example.com')
+    True
+    >>> valid_webref('https://example.com/foo/bar')
+    True
+    >>> valid_webref('ftp://example.com/~ming')
+    True
+    >>> valid_webref('sftp://example.com//absolute/path/maybe')
+    True
+    >>> valid_webref('other://example.com/moo')
+    Traceback (most recent call last):
+    ...
+    LaunchpadValidationError: ...
+    """
+    if validate_url(web_ref, ['http', 'https', 'ftp', 'sftp']):
         # Allow ftp so valid_webref can be used for download_url, and so
         # it doesn't lock out weird projects where the site or
         # screenshots are kept on ftp.
@@ -70,6 +92,30 @@ def valid_webref(web_ref):
             Not a valid URL. Please enter the full URL, including the
             scheme (for instance, http:// for a web URL), and ensure the
             URL uses either http, https or ftp.""")))
+
+def valid_ftp_url(url):
+    if validate_url(url, ['ftp']):
+        return True
+    else:
+        raise LaunchpadValidationError(_(dedent("""
+            Not a valid FTP URL. Please enter the full URL, including the
+            ftp:// part.""")))
+
+def valid_rsync_url(url):
+    if validate_url(url, ['rsync']):
+        return True
+    else:
+        raise LaunchpadValidationError(_(dedent("""
+            Not a valid Rsync URL. Please enter the full URL, including the
+            rsync:// part.""")))
+
+def valid_http_url(url):
+    if validate_url(url, ['http']):
+        return True
+    else:
+        raise LaunchpadValidationError(_(dedent("""
+            Not a valid HTTP URL. Please enter the full URL, including the
+            http:// part.""")))
 
 def non_duplicate_bug(value):
     """Prevent dups of dups.
@@ -162,3 +208,29 @@ def valid_unregistered_email(email):
     else:
         raise LaunchpadValidationError(_(dedent("""
             %s isn't a valid email address.""" % email)))
+
+def validate_distribution_mirror_schema(form_values):
+    """Perform schema validation according to IDistributionMirror constraints.
+
+    This validation will take place after the values of individual widgets
+    are validated. It's necessary because we have some constraints where we
+    need to take into account the value of multiple widgets.
+
+    :form_values: A dictionary mapping IDistributionMirror attributes to the
+                  values suplied by the user.
+    """
+    errors = []
+    if (form_values['pulse_type'] == MirrorPulseType.PULL 
+        and not form_values['pulse_source']):
+        errors.append(LaunchpadValidationError(_(
+            "You have choosen 'Pull' as the pulse type but have not "
+            "supplied a pulse source.")))
+
+    if not (form_values['http_base_url'] or form_values['ftp_base_url']
+            or form_values['rsync_base_url']):
+        errors.append(LaunchpadValidationError(_(
+            "All mirrors require at least one URL (HTTP, FTP or "
+            "Rsync) to be specified.")))
+
+    if errors:
+        raise WidgetsError(errors)

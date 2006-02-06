@@ -19,7 +19,7 @@
 
 <div metal:fill-slot="main">
 
-    <h1>PO Template Names in
+    <h1>PO template names for
         <span tal:content='context/title'>context.title</span>
     </h1>
 

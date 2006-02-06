@@ -26,6 +26,8 @@ class Batch(object):
     implements(IBatch)
 
     def __init__(self, list, start=0, size=20, _listlength=None):
+        if list is None:
+            list = []
         self.list = list
         self.start = start
         # We only check the length of the list once, because if the

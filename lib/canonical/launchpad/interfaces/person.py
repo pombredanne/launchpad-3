@@ -11,6 +11,7 @@ __all__ = [
     'IEmailAddress',
     'IEmailAddressSet',
     'IRequestPeopleMerge',
+    'IAdminRequestPeopleMerge',
     'IObjectReassignment',
     'ITeamReassignment',
     'ITeamCreation',
@@ -19,7 +20,7 @@ __all__ = [
 
 
 from zope.schema import (
-    Choice, Datetime, Int, Text, TextLine, Password, Bytes)
+    Choice, Datetime, Int, Text, TextLine, Password, Bytes, Bool)
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
@@ -144,6 +145,9 @@ class IPerson(IHasSpecifications):
             )
     languages = Attribute(_('List of languages known by this person'))
 
+    hide_email_addresses = Bool(
+        title=_("Hide my email addresses from other Launchpad users"),
+        required=False, default=False)
     # this is not a date of birth, it is the date the person record was
     # created in this db
     datecreated = Datetime(
@@ -165,13 +169,13 @@ class IPerson(IHasSpecifications):
     # Properties of the Person object.
     karma_category_caches = Attribute('The caches of karma scores, by '
         'karma category.')
-    is_ubuntite = Attribute("Ubuntite Flag")
+    is_ubuntero = Attribute("Ubuntero Flag")
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
     signedcocs = Attribute("List of Signed Code Of Conduct")
-    gpgkeys = Attribute("List of valid GPGkeys ordered by ID")
-    pendinggpgkeys = Attribute("Set of GPG fingerprints pending validation")
-    inactivegpgkeys = Attribute("List of inactive GPG keys in LP Context, "
+    gpgkeys = Attribute("List of valid OpenPGP keys ordered by ID")
+    pendinggpgkeys = Attribute("Set of fingerprints pending confirmation")
+    inactivegpgkeys = Attribute("List of inactive OpenPGP keys in LP Context, "
                                 "ordered by ID")
     ubuntuwiki = Attribute("The Ubuntu WikiName of this Person.")
     otherwikis = Attribute(
@@ -194,6 +198,9 @@ class IPerson(IHasSpecifications):
     activememberships = Attribute(
         "List of TeamMembership objects for people who are active members "
         "in this team.")
+    teams_participated_in = Attribute(
+            "Iterable of all Teams that this person is active in, recursive"
+            )
     guessedemails = Attribute("List of emails with status NEW. These email "
         "addresses probably came from a gina or POFileImporter run.")
     validatedemails = Attribute("Emails with status VALIDATED")
@@ -249,7 +256,7 @@ class IPerson(IHasSpecifications):
     preferredemail = TextLine(
             title=_("Preferred Email Address"), description=_(
                 "The preferred email address for this person. The one "
-                "we'll use to communicate with them."), readonly=False)
+                "we'll use to communicate with them."), readonly=True)
 
     preferredemail_sha1 = TextLine(title=_("SHA-1 Hash of Preferred Email"),
             description=_("The SHA-1 hash of the preferred email address as "
@@ -312,6 +319,16 @@ class IPerson(IHasSpecifications):
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
 
+    def getBugContactPackages():
+        """Return a list of packages for which this person is a bug contact.
+
+        Returns a list of IDistributionSourcePackage's, ordered alphabetically
+        (A to Z) by name.
+        """
+
+    def setPreferredEmail(email):
+        """Set the given email address as this person's preferred one."""
+
     def getBranch(product_name, branch_name):
         """The branch associated to this person and product with this name.
 
@@ -323,11 +340,6 @@ class IPerson(IHasSpecifications):
 
     def assignKarma(action_name):
         """Assign karma for the action named <action_name> to this person."""
-
-    def updateKarmaCache():
-        """Update this person's karma attribute and all entries in the
-        KarmaCache table for this person.
-        """
 
     def latestKarma(quantity=25):
         """Return the latest karma actions for this person, up to the number
@@ -515,12 +527,6 @@ class IPersonSet(Interface):
 
     title = Attribute('Title')
 
-    def __getitem__(personid):
-        """Return the person with the given id.
-
-        Raise NotFoundError if there is no such person.
-        """
-    
     def topPeople():
         """Return the top 5 people by Karma score in the Launchpad."""
 
@@ -601,11 +607,18 @@ class IPersonSet(Interface):
         default ordering specified in Person._defaultOrder.
         """
 
+    def updateStatistics(ztm):
+        """Update statistics caches and commit."""
+
     def peopleCount():
-        """Return the number of non-merged persons in the database."""
+        """Return the number of non-merged persons in the database as
+           of the last statistics update.
+        """
 
     def teamsCount():
-        """Return the number of teams in the database."""
+        """Return the number of teams in the database as of the last
+           statistics update.
+        """
 
     def find(text, orderBy=None):
         """Return all non-merged Persons and Teams whose name, displayname,
@@ -652,8 +665,8 @@ class IPersonSet(Interface):
         address.
         """
 
-    def getUbuntites(orderBy=None):
-        """Return a set of person with valid Ubuntite flag.
+    def getUbunteros(orderBy=None):
+        """Return a set of person with valid Ubuntero flag.
         
         <orderBy> can be either a string with the column name you want to sort
         or a list of column names as strings.
@@ -677,6 +690,13 @@ class IEmailAddress(Interface):
     def destroySelf():
         """Delete this email from the database."""
 
+    def syncUpdate():
+        """Write updates made on this object to the database.
+
+        This should be used when you can't wait until the transaction is
+        committed to have some updates actually written to the database.
+        """
+
 
 class IEmailAddressSet(Interface):
     """The set of EmailAddresses."""
@@ -686,12 +706,6 @@ class IEmailAddressSet(Interface):
 
         Also make sure that the given status is an item of
         dbschema.EmailAddressStatus.
-        """
-
-    def __getitem__(emailid):
-        """Return the email address with the given id.
-
-        Raise KeyError if there is no such email address.
         """
 
     def get(emailid, default=None):
@@ -713,11 +727,25 @@ class IEmailAddressSet(Interface):
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want a very specific vocabulary."""
 
-    dupeaccount = Choice(title=_('Duplicated Account'), required=True,
-                         vocabulary='PersonAccountToMerge',
-                         description=_("The duplicated account you found in "
-                                       "Launchpad"))
+    dupeaccount = Choice(
+        title=_('Duplicated Account'), required=True,
+        vocabulary='PersonAccountToMerge',
+        description=_("The duplicated account you found in Launchpad"))
 
+
+class IAdminRequestPeopleMerge(Interface):
+    """The schema used by admin merge accounts page."""
+
+    dupe_account = Choice(
+        title=_('Duplicated Account'), required=True,
+        vocabulary='PersonAccountToMerge',
+        description=_("The duplicated account found in Launchpad"))
+
+    target_account = Choice(
+        title=_('Account'), required=True,
+        vocabulary='PersonAccountToMerge',
+        description=_("The account to be merged on"))
+                        
 
 class IObjectReassignment(Interface):
     """The schema used by the object reassignment page."""

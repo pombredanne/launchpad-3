@@ -1,0 +1,85 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+  <metal:leftportlets fill-slot="portlets_one">
+    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/distribution/@@+portlet-details" />
+  </metal:leftportlets>
+
+  <div metal:fill-slot="main">
+
+    <h1><span tal:replace="context/title">TITLE</span>:
+      Distribution Mirror Overview</h1>
+
+    <div class="highlighted" style="font-size: 80%;"
+         tal:condition="context/description">
+      <p tal:replace="structure context/description/fmt:text-to-html">
+          Distribution Mirror Description
+      </p>
+    </div>
+
+    <h2>Mirror URLs</h2>
+
+    <p tal:condition="context/http_base_url" 
+       tal:content="context/http_base_url" />
+    <p tal:condition="context/ftp_base_url" 
+       tal:content="context/ftp_base_url" />
+    <p tal:condition="context/rsync_base_url"
+       tal:content="context/rsync_base_url" />
+
+    <h2>Arch Releases Mirrored</h2>
+    <div tal:condition="not: context/arch_releases">
+      This mirror has no registered Arch Releases. You can 
+      <a href="+addarchrelease">register</a> the first one.
+    </div>
+
+    <table tal:condition="context/arch_releases" class="listing">
+    <thead>
+      <tr>
+        <th>Release</th>
+        <th>Architecture</th>
+        <th>Pocket</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="arch_release context/arch_releases">
+        <td tal:content="arch_release/distro_arch_release/distrorelease/title" />
+        <td tal:content="arch_release/distro_arch_release/architecturetag" />
+        <td tal:content="arch_release/pocket/title" />
+        <td tal:content="arch_release/status/title" />
+      </tr>
+    </tbody>
+    </table>
+
+    <h2>Source Releases Mirrored</h2>
+    <div tal:condition="not: context/source_releases">
+      This mirror has no registered Source Releases. You can 
+      <a href="+addsourcerelease">register</a> the first one.
+    </div>
+
+    <table tal:condition="context/source_releases" class="listing">
+    <thead>
+      <tr>
+        <th>Release</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr tal:repeat="source_release context/source_releases">
+        <td tal:content="source_release/distro_release/title" />
+        <td tal:content="source_release/status/title" />
+      </tr>
+    </tbody>
+    </table>
+
+
+  </div>
+
+</body>
+</html>
+

@@ -17,7 +17,7 @@
 
     <b>Component:</b>
     <span tal:replace="context/component/name" /><br />
-    
+
     <b>Priority:</b>
     <span tal:replace="context/priority/title" /><br />
 

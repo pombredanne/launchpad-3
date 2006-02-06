@@ -1,0 +1,45 @@
+
+Confirm that launchpad developers get tracebacks if an exception occurs
+when they are logged in, and that other users do not.
+
+As our test runner runs in 'always show tracebacks' mode, we need to
+switch this off for these tests to work
+
+    >>> from canonical.config import config
+    >>> show_tracebacks = config.show_tracebacks
+    >>> config.show_tracebacks = False
+    >>> config.show_tracebacks
+    False
+
+First check that Anonymous users don't get tracebacks
+
+    >>> result = http(r"""
+    ... GET /doesnotexist HTTP/1.1
+    ... """)
+    >>> 'Traceback' in str(result)
+    False
+
+Developers logged in via Basic Auth should get tracebacks. In this case,
+we are logged in as the foo.bar@canonical.com user
+
+    >>> result = http(r"""
+    ... GET /doesnotexist HTTP/1.1
+    ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+    ... """)
+    >>> 'Traceback' in str(result)
+    True
+
+Other users logged in via basic auth will not get tracebacks. In this
+case, Carlos
+
+    >>> result = http(r"""
+    ... GET /doesnotexist HTTP/1.1
+    ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+    ... """)
+    >>> 'Traceback' in str(result)
+    False
+
+Reset the show_tracebacks config items
+
+    >>> config.show_tracebacks = show_tracebacks
+

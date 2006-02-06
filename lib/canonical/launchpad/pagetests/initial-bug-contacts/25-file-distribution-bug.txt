@@ -46,7 +46,7 @@ contact, the Launchpad Admins team.
 
   >>> bugset = getUtility(IBugSet)
   >>> sorted([s.person.name for s in bugset.get(11).subscriptions])
-  [u'admins', u'carlos', u'sabdfl']
+  [u'admins', u'carlos', u'name16', u'sabdfl']
 
   >>> logout()
 

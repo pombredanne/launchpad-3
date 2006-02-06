@@ -19,14 +19,15 @@ First we define a helper function to make it easier to construct a view.
 Open bugtasks
 -------------
 
-All bug tasks the have status NEW or ACCEPTED:
+A bugtask is considered "open" if it is set to one of the statuses defined by
+canonical.launchpad.interfaces.bugtask.UNRESOLVED_BUGTASK_STATUSES.
 
     >>> open_bugtasks_view = create_view(debian, '+bugs-open')
     >>> open_bugtasks = list(open_bugtasks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name)
     ...         for bugtask in open_bugtasks])
-    [(1, 'ACCEPTED'), (2, 'ACCEPTED'), (3, 'NEW')]
-    >>> open_bugtasks_view.taskCount
+    [(1, 'CONFIRMED'), (2, 'CONFIRMED'), (3, 'UNCONFIRMED')]
+    >>> open_bugtasks_view.unfilteredTaskCount
     3
 
 This is a  distribuiton bug listing, so the package names should be
@@ -49,7 +50,7 @@ Sample Person and see which bugs are assigned to him.
     >>> sorted([(bugtask.bug.id, bugtask.assignee.displayname)
     ...         for bugtask in assigned_bugtasks])
     [(2, u'Sample Person')]
-    >>> assigned_to_bugtasks_view.taskCount
+    >>> assigned_to_bugtasks_view.unfilteredTaskCount
     1
 
     login(ANONYMOUS)
@@ -67,7 +68,7 @@ critical bugs, so we look at Firefox's bugs instead:
     >>> sorted([(bugtask.bug.id, bugtask.severity.name)
     ...         for bugtask in critical_bugtasks])
     [(5, 'CRITICAL')]
-    >>> critical_bugtasks_view.taskCount
+    >>> critical_bugtasks_view.unfilteredTaskCount
     1
 
 Now we have a product bug listing, and of course we shouldn't show any
@@ -79,14 +80,14 @@ package names, since we don't have any to show:
 Untriaged bugtasks
 ------------------
 
-All bugtasks with status NEW.
+All bugtasks with status UNCONFIRMED.
 
     >>> untriaged_bugtasks_view = create_view(debian, '+bugs-untriaged')
     >>> untriaged_bugtasks = list(untriaged_bugtasks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name)
     ...         for bugtask in untriaged_bugtasks])
-    [(3, 'NEW')]
-    >>> untriaged_bugtasks_view.taskCount
+    [(3, 'UNCONFIRMED')]
+    >>> untriaged_bugtasks_view.unfilteredTaskCount
     1
 
 Unassigned bugtasks
@@ -99,7 +100,7 @@ All open bugtasks that don't have an assignee.
     >>> sorted([(bugtask.bug.id, bugtask.assignee)
     ...         for bugtask in unassigned_bugtasks])
     [(1, None), (3, None)]
-    >>> unassigned_bugtasks_view.taskCount
+    >>> unassigned_bugtasks_view.unfilteredTaskCount
     2
 
 All bugs
@@ -111,8 +112,8 @@ All bugtasks ever reported on the target, including closed ones.
     >>> all_bugtasks = list(all_bugtasks_view.search().batch)
     >>> sorted([(bugtask.bug.id, bugtask.status.name)
     ...         for bugtask in all_bugtasks])
-    [(1, 'ACCEPTED'), (2, 'ACCEPTED'), (3, 'NEW'), (8, 'FIXED')]
-    >>> all_bugtasks_view.taskCount
+    [(1, 'CONFIRMED'), (2, 'CONFIRMED'), (3, 'UNCONFIRMED'), (8, 'FIXRELEASED')]
+    >>> all_bugtasks_view.unfilteredTaskCount
     4
 
 Advanced search
@@ -122,5 +123,5 @@ Advanced search
     >>> bugtasks = list(advanced_search_view.search().batch)
     >>> sorted([bugtask.bug.id for bugtask in bugtasks])
     [1, 2, 3]
-    >>> advanced_search_view.taskCount
+    >>> advanced_search_view.unfilteredTaskCount
     3

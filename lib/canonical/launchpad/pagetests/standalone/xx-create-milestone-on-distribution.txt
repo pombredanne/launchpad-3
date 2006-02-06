@@ -1,22 +1,47 @@
 
-First, let's see if Foo Bar can view the page to add a milestone to the
-Ubuntu distribution.
+First, let's make sure the sample user (name12) can't view the page to
+add a milestone to the Ubuntu distribution, which is owned by the Ubuntu
+Team (name17).
 
   >>> print http(r"""
   ... GET /distros/ubuntu/+addmilestone HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """)
+  HTTP/1.1 403 Forbidden
+  ...
+
+
+Let's make the sample user an owner of Ubuntu for this test. The owner
+of the distribution should be able to add milestones for it, of course!
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+reassign HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ...
+  ... field.owner=name12&existing=existing&CHANGE_OWNER=Change+Owner""")
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: .
+  ...
+
+
+Now let's go back and try the add milestone page again. It works:
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/+addmilestone HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok
-  ...<h1>Add a Milestone</h1>...
+  ...
 
 
 Now, if we post to that form, we should see a success, and the page should
 redirect to the Ubuntu page showing the milestone we added.
 
-
   >>> print http(r"""
   ... POST /distros/ubuntu/+addmilestone HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 434
   ... Content-Type: multipart/form-data; boundary=---------------------------114216684419655310401202000685
   ... 
@@ -63,7 +88,7 @@ database ID for the milestone, so we find the ID:
 
   >>> print http(r"""
   ... POST /distros/ubuntu/+source/mozilla-firefox/+bug/1/+editstatus HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Length: 1982
   ... Content-Type: multipart/form-data; boundary=---------------------------3354718323763093901439946724
   ... 
@@ -74,7 +99,7 @@ database ID for the milestone, so we find the ID:
   ... -----------------------------3354718323763093901439946724
   ... Content-Disposition: form-data; name="field.status"
   ... 
-  ... New
+  ... Unconfirmed
   ... -----------------------------3354718323763093901439946724
   ... Content-Disposition: form-data; name="field.status-empty-marker"
   ... 
@@ -120,11 +145,7 @@ database ID for the milestone, so we find the ID:
   ... 
   ... 1
   ... -----------------------------3354718323763093901439946724
-  ... Content-Disposition: form-data; name="field.statusexplanation"
-  ... 
-  ... 
-  ... -----------------------------3354718323763093901439946724
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... Content-Disposition: form-data; name="FORM_SUBMIT"
   ... 
   ... Save Changes
   ... -----------------------------3354718323763093901439946724--
@@ -146,7 +167,7 @@ Verify that the bug now has the milestone set on the view page:
   Content-Type: text/html;charset=utf-8
   <BLANKLINE>
   ...
-  <span class="statusNew">New</span>
+  <span class="statusUnconfirmed">Unconfirmed</span>
   ...
   <span class="severityNormal">Normal</span>
   ...
@@ -154,3 +175,20 @@ Verify that the bug now has the milestone set on the view page:
   ...
   <td>sounder01</td>
   ...
+
+
+XXX: why is this necessary? -- kiko, 2006-01-18 Revert owner of
+distribution back to ubuntu team, avoids PQM failure in
+xx-reassign-distribution.
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/+reassign HTTP/1.1
+  ... Authorization: Basic bWFya0BoYmQuY29tOnRlc3Q=
+  ...
+  ... field.owner=name17&existing=existing&CHANGE_OWNER=Change+Owner""")
+  HTTP/1.1 303 See Other
+  Content-Length: ...
+  Content-Type: text/html;charset=utf-8
+  Location: .
+  ...
+

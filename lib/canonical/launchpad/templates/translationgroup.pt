@@ -15,7 +15,7 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Translation Group Overview</h1>
+  <h1>Translation group overview</h1>
 
   <p class="documentDescription" tal:content="context/summary">
       $TranslationGroup.summary goes here. This should be quite short,

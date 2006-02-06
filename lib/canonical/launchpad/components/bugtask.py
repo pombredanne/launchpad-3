@@ -51,26 +51,6 @@ class BugTaskMixin:
         return title
 
     @property
-    def maintainer(self):
-        """See canonical.launchpad.interfaces.IBugTask."""
-        warn("IBugTask.maintainer was deprecated as part of "
-             "InitialBugContacts. Talk to bradb about removing this "
-             "completely from the UI and data model.", DeprecationWarning)
-
-        if self.product:
-            return self.product.owner
-
-        return None
-
-    @property
-    def maintainer_displayname(self):
-        """See canonical.launchpad.interfaces.IBugTask."""
-        if self.maintainer:
-            return self.maintainer.displayname
-        else:
-            return None
-
-    @property
     def targetname(self):
         """See canonical.launchpad.interfaces.IBugTask."""
         return self.targetnamecache
@@ -159,7 +139,8 @@ class BugTaskMixin:
         if related_tasks:
             fixes_found = len(
                 [task for task in related_tasks
-                 if task.status == BugTaskStatus.FIXED])
+                 if (task.status == BugTaskStatus.FIXCOMMITTED or
+                     task.status == BugTaskStatus.FIXRELEASED)])
             if fixes_found:
                 return "fixed in %d of %d places" % (
                     fixes_found, len(self.bug.bugtasks))

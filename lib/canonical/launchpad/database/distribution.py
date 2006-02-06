@@ -10,7 +10,7 @@ from sqlobject import (
     RelatedJoin, SQLObjectNotFound, StringCol, ForeignKey, MultipleJoin)
 
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
-
+from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
@@ -18,6 +18,7 @@ from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.distributionbounty import DistributionBounty
+from canonical.launchpad.database.distributionmirror import DistributionMirror
 from canonical.launchpad.database.distributionsourcepackage import (
     DistributionSourcePackage)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
@@ -44,14 +45,15 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IDistroPackageFinder, NotFoundError,
-    IHasBuildRecords, ISourcePackageName, IBuildSet)
+    IHasBuildRecords, ISourcePackageName, IBuildSet,
+    UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
 from sourcerer.deb.version import Version
 
 from canonical.launchpad.validators.name import valid_name
 
 
-class Distribution(SQLBase):
+class Distribution(SQLBase, BugTargetBase):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(IDistribution, IHasBuildRecords)
 
@@ -87,6 +89,16 @@ class Distribution(SQLBase):
         joinColumn='distribution', orderBy='name')
 
     @property
+    def enabled_official_mirrors(self):
+        return DistributionMirror.selectBy(
+            distributionID=self.id, official_approved=True,
+            official_candidate=True, enabled=True)
+
+    @property
+    def enabled_mirrors(self):
+        return DistributionMirror.selectBy(distributionID=self.id, enabled=True)
+
+    @property
     def releases(self):
         ret = DistroRelease.selectBy(distributionID=self.id)
         return sorted(ret, key=lambda a: Version(a.version), reverse=True)
@@ -95,6 +107,24 @@ class Distribution(SQLBase):
         """See canonical.launchpad.interfaces.IBugTarget."""
         search_params.setDistribution(self)
         return BugTaskSet().search(search_params)
+
+    def getMirrorByName(self, name):
+        """See IDistribution."""
+        return DistributionMirror.selectOneBy(distributionID=self.id, name=name)
+
+    def newMirror(self, owner, name, speed, country, content, pulse_type,
+                  displayname=None, description=None, http_base_url=None,
+                  ftp_base_url=None, rsync_base_url=None, file_list=None,
+                  official_candidate=False, enabled=False, pulse_source=None):
+        """See IDistribution."""
+        return DistributionMirror(
+            distribution=self, owner=owner, name=name, speed=speed,
+            country=country, content=content, pulse_type=pulse_type,
+            displayname=displayname, description=description,
+            http_base_url=http_base_url, ftp_base_url=ftp_base_url,
+            rsync_base_url=rsync_base_url, file_list=file_list,
+            official_candidate=official_candidate, enabled=enabled,
+            pulse_source=pulse_source)
 
     def createBug(self, owner, title, comment, private=False):
         """See canonical.launchpad.interfaces.IBugTarget."""
@@ -105,34 +135,34 @@ class Distribution(SQLBase):
     @property
     def open_cve_bugtasks(self):
         """See IDistribution."""
+        open_bugtask_status_sql_values = "(%s)" % (
+            ', '.join(sqlvalues(*UNRESOLVED_BUGTASK_STATUSES)))
+
         result = BugTask.select("""
             CVE.id = BugCve.cve AND
             BugCve.bug = Bug.id AND
             BugTask.bug = Bug.id AND
-            BugTask.distribution=%s AND
-            BugTask.status IN (%s, %s)
-            """ % sqlvalues(
-                self.id,
-                BugTaskStatus.NEW,
-                BugTaskStatus.ACCEPTED),
+            BugTask.distribution=%d AND
+            BugTask.status IN %s
+            """ % (self.id, open_bugtask_status_sql_values),
             clauseTables=['Bug', 'Cve', 'BugCve'],
             orderBy=['-severity', 'datecreated'])
+
         return result
 
     @property
     def resolved_cve_bugtasks(self):
         """See IDistribution."""
+        resolved_bugtask_status_sql_values = "(%s)" % (
+            ', '.join(sqlvalues(*RESOLVED_BUGTASK_STATUSES)))
+
         result = BugTask.select("""
             CVE.id = BugCve.cve AND
             BugCve.bug = Bug.id AND
             BugTask.bug = Bug.id AND
-            BugTask.distribution=%s AND
-            BugTask.status IN (%s, %s, %s)
-            """ % sqlvalues(
-                self.id,
-                BugTaskStatus.REJECTED,
-                BugTaskStatus.FIXED,
-                BugTaskStatus.PENDINGUPLOAD),
+            BugTask.distribution=%d AND
+            BugTask.status IN %s
+            """ % (self.id, resolved_bugtask_status_sql_values),
             clauseTables=['Bug', 'Cve', 'BugCve'],
             orderBy=['-severity', 'datecreated'])
         return result
@@ -503,7 +533,7 @@ class DistributionSet:
     implements(IDistributionSet)
 
     def __init__(self):
-        self.title = "Launchpad Distributions"
+        self.title = "Distributions registered in Launchpad"
 
     def __iter__(self):
         return iter(Distribution.select())

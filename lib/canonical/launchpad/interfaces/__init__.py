@@ -6,8 +6,6 @@ __metaclass__ = type
 # Please DO NOT put interfaces in this file. Put them in the correct
 # file, one file for each interface type: person, project, bug, etc.
 
-from zope.interface import Interface, Attribute
-
 from canonical.launchpad.interfaces.launchpad import *
 from canonical.launchpad.interfaces.validation import *
 
@@ -43,6 +41,7 @@ from canonical.launchpad.interfaces.cve import *
 from canonical.launchpad.interfaces.cvereference import *
 from canonical.launchpad.interfaces.distribution import *
 from canonical.launchpad.interfaces.distributionbounty import *
+from canonical.launchpad.interfaces.distributionmirror import *
 from canonical.launchpad.interfaces.distributionsourcepackage import *
 from canonical.launchpad.interfaces.distributionsourcepackagecache import *
 from canonical.launchpad.interfaces.distributionsourcepackagerelease import *
@@ -55,7 +54,6 @@ from canonical.launchpad.interfaces.distroreleaselanguage import *
 from canonical.launchpad.interfaces.distroreleasepackagecache import *
 from canonical.launchpad.interfaces.distroreleasesourcepackagerelease import *
 from canonical.launchpad.interfaces.files import *
-from canonical.launchpad.interfaces.general import *
 from canonical.launchpad.interfaces.geoip import *
 from canonical.launchpad.interfaces.gpg import *
 from canonical.launchpad.interfaces.gpghandler import *
@@ -76,6 +74,7 @@ from canonical.launchpad.interfaces.manifest import *
 from canonical.launchpad.interfaces.message import *
 from canonical.launchpad.interfaces.milestone import *
 from canonical.launchpad.interfaces.package import *
+from canonical.launchpad.interfaces.packagerelationship import *
 from canonical.launchpad.interfaces.packaging import *
 from canonical.launchpad.interfaces.pathlookup import *
 from canonical.launchpad.interfaces.person import *

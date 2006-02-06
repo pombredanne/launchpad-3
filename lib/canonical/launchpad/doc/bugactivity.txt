@@ -121,7 +121,7 @@ EVENT: bug gets assigned to a source package
   >>> latest_activity.whatchanged
   u'bug'
   >>> latest_activity.message
-  u'assigned to mozilla-firefox (ubuntu)'
+  u'assigned to mozilla-firefox (Ubuntu)'
 
 EVENT: source package assignment edited
 
@@ -129,20 +129,20 @@ EVENT: source package assignment edited
   >>> from canonical.launchpad.interfaces import IBugTask
   >>> edit_fields = [
   ...     "distribution", "sourcepackagename", "binarypackagename", "milestone", "status",
-  ...     "priority", "severity", "assignee", "bugwatch", "statusexplanation"]
+  ...     "priority", "severity", "assignee", "bugwatch"]
   >>> old_source_package_assignment = capture_state(
   ...     source_package_assignment, *edit_fields)
   >>> directlyProvides(old_source_package_assignment, IDistroBugTask)
-  >>> source_package_assignment.status = BugTaskStatus.ACCEPTED
+  >>> source_package_assignment.status = BugTaskStatus.CONFIRMED
   >>> source_package_assignment_edited = SQLObjectModifiedEvent(
   ...     source_package_assignment, old_source_package_assignment, edit_fields)
   >>> notify(source_package_assignment_edited)
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
   u'mozilla-firefox: status'
-  >>> latest_activity.oldvalue == BugTaskStatus.NEW.title
+  >>> latest_activity.oldvalue == BugTaskStatus.UNCONFIRMED.title
   True
-  >>> latest_activity.newvalue == BugTaskStatus.ACCEPTED.title
+  >>> latest_activity.newvalue == BugTaskStatus.CONFIRMED.title
   True
 
 EVENT: bug gets assigned to an upstream product
@@ -160,8 +160,8 @@ EVENT: bug gets assigned to an upstream product
 EVENT: upstream product assignment edited
 
   >>> edit_fields = [
-  ...     "product", "maintainer_displayname", "milestone", "status",
-  ...     "priority", "severity", "assignee", "bugwatch", "statusexplanation"]
+  ...     "product", "milestone", "status", "assignee", "bugwatch",
+  ...     "priority", "severity"]
   >>> old_product_assignment = capture_state(product_assignment, *edit_fields)
   >>> directlyProvides(old_product_assignment, IUpstreamBugTask)
   >>> product_assignment.status = BugTaskStatus.REJECTED
@@ -171,7 +171,7 @@ EVENT: upstream product assignment edited
   >>> latest_activity = bug.activity[-1]
   >>> latest_activity.whatchanged
   u'thunderbird: status'
-  >>> latest_activity.oldvalue == BugTaskStatus.NEW.title
+  >>> latest_activity.oldvalue == BugTaskStatus.UNCONFIRMED.title
   True
   >>> latest_activity.newvalue == BugTaskStatus.REJECTED.title
   True

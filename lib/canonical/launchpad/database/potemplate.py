@@ -476,8 +476,7 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             data['origin'] = self.sourcepackagename.name
 
-        return DummyPOFile(self, language, owner=owner,
-            header=standardPOFileHeader % data)
+        return DummyPOFile(self, language, owner=owner)
 
     def createMessageIDSighting(self, potmsgset, messageID):
         """Creates in the database a new message ID sighting.
@@ -621,42 +620,49 @@ class POTemplate(SQLBase, RosettaStats):
 class POTemplateSubset:
     implements(IPOTemplateSubset)
 
-    def __init__(self, sourcepackagename=None,
+    def __init__(self, sourcepackagename=None, from_sourcepackagename=None,
                  distrorelease=None, productseries=None):
         """Create a new POTemplateSubset object.
 
         The set of POTemplate depends on the arguments you pass to this
-        constructor. The sourcepackagename, distrorelease and productseries
-        are just filters for that set.
+        constructor. The sourcepackagename, from_sourcepackagename,
+        distrorelease and productseries are just filters for that set.
         """
         self.sourcepackagename = sourcepackagename
         self.distrorelease = distrorelease
         self.productseries = productseries
 
         if (productseries is not None and (distrorelease is not None or
-            sourcepackagename is not None)):
-            raise ValueError('A product release must not be used '
-                             'with a source package name or a distro '
-                             'release.')
+            sourcepackagename is not None or
+            from_sourcepackagename is not None)):
+            raise AssertionError('A product release must not be used with a'
+                                 ' source package name or a distro release.')
         elif productseries is not None:
-            self.query = ('POTemplate.productseries = %d' % productseries.id)
+            self.query = ('POTemplate.productseries = %s' %
+                sqlvalues(productseries.id))
             self.orderby = None
             self.clausetables = None
+        elif distrorelease is not None and from_sourcepackagename is not None:
+            self.query = ('POTemplate.from_sourcepackagename = %s AND'
+                          ' POTemplate.distrorelease = %s ' %
+                            sqlvalues(from_sourcepackagename.id,
+                                      distrorelease.id))
+            self.sourcepackagename = from_sourcepackagename
         elif distrorelease is not None and sourcepackagename is not None:
-            self.query = ('POTemplate.sourcepackagename = %d AND'
-                          ' POTemplate.distrorelease = %d ' %
-                          (sourcepackagename.id, distrorelease.id))
+            self.query = ('POTemplate.sourcepackagename = %s AND'
+                          ' POTemplate.distrorelease = %s ' %
+                            sqlvalues(sourcepackagename.id, distrorelease.id))
             self.orderby = None
             self.clausetables = None
         elif distrorelease is not None:
             self.query = (
                 'POTemplate.distrorelease = DistroRelease.id AND'
-                ' DistroRelease.id = %d' % distrorelease.id)
+                ' DistroRelease.id = %s' % sqlvalues(distrorelease.id))
             self.orderby = 'DistroRelease.name'
             self.clausetables = ['DistroRelease']
         else:
-            raise ValueError('You need to specify the kind '
-                             'of subset you want.')
+            raise AssertionError(
+                'You need to specify the kind of subset you want.')
 
     def __iter__(self):
         """See IPOTemplateSubset."""
@@ -713,20 +719,13 @@ class POTemplateSubset:
         except SQLObjectNotFound:
             return None
 
-        if self.query is None:
-            query = 'POTemplate.potemplatename = %d' % ptn.id
-        else:
-            query = '%s AND POTemplate.potemplatename = %d' % (
-                self.query, ptn.id)
+        query = '%s AND POTemplate.potemplatename = %d' % (self.query, ptn.id)
 
         return POTemplate.selectOne(query, clauseTables=self.clausetables)
 
     def getPOTemplateByPath(self, path):
         """See IPOTemplateSubset."""
-        if self.query is None:
-            query = 'POTemplate.path = %s' % path
-        else:
-            query = '%s POTemplate.path = %s' % (self.query, path)
+        query = '%s AND POTemplate.path = %s' % (self.query, quote(path))
 
         return POTemplate.selectOne(query, clauseTables=self.clausetables)
 
@@ -752,38 +751,24 @@ class POTemplateSet:
             raise NotFoundError(name)
         return result
 
-    def getSubset(self, **kw):
+    def getSubset(self, distrorelease=None, sourcepackagename=None,
+                  productseries=None):
         """See IPOTemplateSet."""
-        if kw.get('distrorelease'):
-            # XXX: Should this really be an assert?
-            #      -- SteveAlexander 2005-04-23
-            assert 'productseries' not in kw
-
-            distrorelease = kw['distrorelease']
-
-            if kw.get('sourcepackagename'):
-                sourcepackagename = kw['sourcepackagename']
-                return POTemplateSubset(
-                    distrorelease=distrorelease,
-                    sourcepackagename=sourcepackagename)
-            else:
-                return POTemplateSubset(distrorelease=distrorelease)
-
-        # XXX: Should this really be an assert?
-        #      -- SteveAlexander 2005-04-23
-        assert kw.get('productseries')
-        return POTemplateSubset(productseries=kw['productseries'])
+        return POTemplateSubset(
+            distrorelease=distrorelease,
+            sourcepackagename=sourcepackagename,
+            productseries=productseries)
 
     def getSubsetFromImporterSourcePackageName(self, distrorelease,
         sourcepackagename):
         """See IPOTemplateSet."""
-        if distrorelease is None or sourcepackage is None:
+        if distrorelease is None or sourcepackagename is None:
             raise AssertionError(
                 'distrorelease and sourcepackage must be not None.')
 
         return POTemplateSubset(
             distrorelease=distrorelease,
-            from_sourcepackagename=sourcepackagename)
+            sourcepackagename=sourcepackagename)
 
     def getTemplatesPendingImport(self):
         """See IPOTemplateSet."""

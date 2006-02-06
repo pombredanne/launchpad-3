@@ -12,6 +12,11 @@
         classes="BugTrackerContextMenu BugTrackerSetContextMenu"
         />
 
+    <browser:navigation
+        module="canonical.launchpad.browser"
+        classes="BugTrackerNavigation BugTrackerSetNavigation"
+        />
+
     <!-- BugTracker -->
     <content class="canonical.launchpad.database.BugTracker">
         <allow interface="canonical.launchpad.interfaces.IBugTracker" />
@@ -59,7 +64,7 @@
       for="canonical.launchpad.interfaces.IBugTracker"
       schema="canonical.launchpad.interfaces.IBugTracker"
       class="canonical.launchpad.browser.BugTrackerView"
-      label="Edit Bug Tracker Details"
+      label="Edit bug tracker details"
       fields="title summary baseurl contactdetails"
       permission="launchpad.AnyPerson"
       template="../templates/bugtracker-edit.pt"
@@ -87,11 +92,6 @@
         for="canonical.launchpad.interfaces.IBugTrackerSet"
         name="+index" />
 
-    <browser:navigation
-        module="canonical.launchpad.browser"
-        classes="BugTrackerSetNavigation"
-        />
-
     <browser:url
         for="canonical.launchpad.interfaces.IBugTrackerSet"
         path_expression="string:bugtrackers"
@@ -118,7 +118,7 @@
     <browser:addform
         name="+newbugtracker"
         permission="launchpad.AnyPerson"
-        label="Register an External Bug Tracker"
+        label="Register an external bug tracker"
         class="canonical.launchpad.browser.bugtracker.BugTrackerAddView"
         for="canonical.launchpad.interfaces.IBugTrackerSet"
         schema="canonical.launchpad.interfaces.IBugTracker"
@@ -128,6 +128,30 @@
         template="../templates/bugtrackers-add.pt"
         lp:url="malone/bugtrackers/+newbugtracker"
     />
+
+    <!-- RemoteBug -->
+    <content class="canonical.launchpad.browser.bugtracker.RemoteBug">
+        <allow interface="canonical.launchpad.interfaces.IRemoteBug" />
+    </content>
+
+    <browser:url
+        for="canonical.launchpad.interfaces.IRemoteBug"
+        path_expression="string:${remotebug}"
+        attribute_to_parent="bugtracker"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IRemoteBug"
+        name="+index" />
+
+    <browser:pages
+        for="canonical.launchpad.interfaces.IRemoteBug"
+        permission="zope.Public">
+        <browser:page
+            name="+index"
+            template="../templates/remotebug-index.pt"
+            lp:url="malone/bugtrackers/$BugTracker.name/$remotebug" />
+    </browser:pages>
 
   </facet>
 
