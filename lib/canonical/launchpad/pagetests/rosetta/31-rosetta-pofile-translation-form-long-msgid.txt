@@ -34,7 +34,7 @@ Check that the previous submit was saved.
   ...
 
                           <input type="text"
-      name="set_150_translation_es_0" value="foo %i"
+      name="msgset_150_es_translation_0" value="foo %i"
       tabindex="1" />
 
 
@@ -42,9 +42,9 @@ Check that the previous submit was saved.
 
 
                           <input type="text"
-      name="set_150_translation_es_1" value="bar %i"
+      name="msgset_150_es_translation_1" value="bar %i"
       tabindex="2" />
   ...
                               <input type="checkbox"
-      value="fuzzy" name="set_150_fuzzy_es" tabindex:="3" />
+      value="fuzzy" name="msgset_150_es_needsreview" tabindex="3" />
   ...
