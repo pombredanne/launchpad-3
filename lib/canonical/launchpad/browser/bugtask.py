@@ -53,7 +53,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
-from canonical.launchpad.browser.bug import BugContextMenu, BugTextView
+from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
 from canonical.launchpad.components.bugtask import NullBugTask
 from canonical.launchpad.webapp.generalform import GeneralFormView
@@ -1032,15 +1032,10 @@ class BugTargetTextView(LaunchpadView):
     """View for simple text page showing bugs filed against a bug target."""
 
     def render(self):
-        params = BugTaskSearchParams(getUtility(ILaunchBag).user)
-        tasks = self.context.searchTasks(params)
-        texts = []
         self.request.response.setHeader('Content-type', 'text/plain')
-        view = BugTextView(self.context, self.request)
+        tasks = self.context.searchTasks(BugTaskSearchParams(self.user))
 
-        for task in tasks:
-            texts.append(view.bug_text(task.bug))
-            texts.append(view.bugtask_text(task))
-
-        return u'\n'.join(texts)
+        # We use task.bugID rather than task.bug.id here as the latter
+        # would require an extra query per task.
+        return u''.join('%d\n' % task.bugID for task in tasks)
 
