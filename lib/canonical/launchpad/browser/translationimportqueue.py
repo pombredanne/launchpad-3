@@ -19,7 +19,7 @@ from zope.interface import implements
 from canonical.launchpad.interfaces import (
     ITranslationImportQueueEntry, ITranslationImportQueue, ICanonicalUrlData,
     ILaunchpadCelebrities, IEditTranslationImportQueueEntry, IPOTemplateSet,
-    IRawFileData, RawFileBusy, NotFoundError)
+    IRawFileData, RawFileBusy, NotFoundError, UnexpectedFormData)
 from canonical.launchpad.webapp import (
     GetitemNavigation, LaunchpadView, ContextMenu, Link, canonical_url)
 from canonical.launchpad.webapp.generalform import GeneralFormView
@@ -226,7 +226,7 @@ class TranslationImportQueueView(LaunchpadView):
                     # that is not a number, that means that someone is playing
                     # badly with our system so it's safe to just ignore the
                     # request.
-                    raise AssertionError(
+                    raise UnexpectedFormData(
                         'Ignored your request because is broken.')
                 self.form_entries.append(id)
 
@@ -243,7 +243,7 @@ class TranslationImportQueueView(LaunchpadView):
                         if key in self.form
                       ]
         if len(dispatch_to) != 1:
-            raise AssertionError(
+            raise UnexpectedFormData(
                 "There should be only one command in the form",
                 dispatch_to)
         key, callback_arguments = dispatch_to[0]
@@ -280,13 +280,18 @@ class TranslationImportQueueView(LaunchpadView):
         # permissions here but use the standard security system. Please, look
         # at https://launchpad.net/products/rosetta/+bug/4814 bug for more
         # details.
-        if self.user.inTeam(item.importer):
+        celebrities = getUtility(ILaunchpadCelebrities)
+        # Only the importer, launchpad admins or Rosetta experts can remove
+        # the entries.
+        if (self.user.inTeam(celebrities.admin) or
+            self.user.inTeam(celebrities.rosetta_expert) or
+            self.user.inTeam(item.importer)):
             # Do the removal.
             self.context.remove(item)
         else:
             # The user was not the importer and that means that is a
             # broken request.
-            raise AssertionError(
+            raise UnexpectedFormData(
                 'Ignored your request to remove some items, because'
                 ' they are not yours.')
 
@@ -306,7 +311,7 @@ class TranslationImportQueueView(LaunchpadView):
         else:
             # The user does not have the needed permissions to do
             # this.
-            raise AssertionError(
+            raise UnexpectedFormData(
                 'Ignored your request to block some items, because'
                 ' they are not yours.')
 
@@ -326,6 +331,6 @@ class TranslationImportQueueView(LaunchpadView):
         else:
             # The user does not have the needed permissions to do
             # this.
-            raise AssertionError(
+            raise UnexpectedFormData(
                 'Ignored your request to block some items, because'
                 ' they are not yours.')
