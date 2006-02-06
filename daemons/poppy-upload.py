@@ -35,7 +35,8 @@ def main():
         return 1
 
     root, port = args
-    host = "127.0.0.1"
+    # host = "127.0.0.1"
+    host "82.211.81.167" # Drescher's public IP
     ident = "lucille upload server"
     numthreads = 4
 
