@@ -233,9 +233,11 @@ class POFile(SQLBase, RosettaStats):
         """See IPOFile."""
         if _canEditTranslations(self, person):
             return True
-        else:
+        elif person is not None:
             # Finally, check for the owner of the PO file
             return person.inTeam(self.owner)
+        else:
+            return False
 
     def currentMessageSets(self):
         return POMsgSet.select(
