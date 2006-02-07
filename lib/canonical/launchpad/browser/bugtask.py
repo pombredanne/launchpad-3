@@ -36,6 +36,7 @@ from zope.app.form.utility import (
 from zope.app.form.interfaces import IInputWidget, WidgetsError
 from zope.schema.interfaces import IList
 
+from canonical.config import config
 from canonical.lp import dbschema
 from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
@@ -49,8 +50,7 @@ from canonical.launchpad.interfaces import (
     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, IPerson,
     INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
     NotFoundError, IDistributionSourcePackage, ISourcePackage,
-    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES, IBugTaskSearch,
-    BUGTASK_BATCH_SIZE)
+    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES, IBugTaskSearch)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
@@ -651,9 +651,10 @@ class BugTaskSearchListingView(LaunchpadView):
         if self.showBatchedListing():
             if batch_start is None:
                 batch_start = int(self.request.get('batch_start', 0))
-            batch = Batch(tasks, batch_start, BUGTASK_BATCH_SIZE)
+            batch = Batch(tasks, batch_start, config.malone.buglist_batch_size)
         else:
             batch = tasks
+
         return BatchNavigator(batch=batch, request=self.request)
 
     def shouldShowAdvancedSearchWidgets(self):
