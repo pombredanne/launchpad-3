@@ -88,10 +88,8 @@ class DistroArchReleaseBinaryPackageRelease:
         if status is not None:
             query += " AND status = %s" % sqlvalues(status)
 
-        bpps = BinaryPackagePublishing.select(query, orderBy='-datecreated')
-        if len(bpps) == 0:
-            return None
-        return bpps[0]
+        return BinaryPackagePublishing.selectFirst(
+            query, orderBy='-datecreated')
 
     @property
     def publishing_history(self):
