@@ -256,7 +256,7 @@ class POMsgSetView(LaunchpadView):
             return self._suggested_submissions
 
         sugg = self.context.getSuggestedSubmissions(index)
-        self._suggested_submissions = sugg[:3]
+        self._suggested_submissions = list(sugg[:3])
         return self._suggested_submissions
 
     def get_alternate_language_submissions(self, index):

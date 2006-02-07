@@ -226,6 +226,8 @@ builder_cancel = ContextTitle(smartquote('Cancel job for "%s"'))
 
 builder_mode = ContextTitle(smartquote('Change mode for "%s"'))
 
+builder_admin = ContextTitle(smartquote('Administer "%s" builder'))
+
 calendar_index = ContextTitle('%s')
 
 calendar_event_addform = ContextTitle('Add event to %s')
