@@ -10,6 +10,7 @@ __metaclass__ = type
 import _pythonpath
 
 import sys
+import os
 from optparse import OptionParser
 
 from zope.component import getUtility
@@ -56,6 +57,10 @@ def rebuildQueue(log):
     buildMaster.sanitiseAndScoreCandidates()
 
 if __name__ == '__main__':
+    if os.path.exists("/srv/launchpad.net/ubuntu-archive/cron.daily.lock"):
+        # Quick and dirty "don't start if the publisher is here"
+        sys.exit(0)
+
     parser = OptionParser()
     logger_options(parser)
     (options, arguments) = parser.parse_args()
