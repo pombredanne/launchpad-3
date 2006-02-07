@@ -17,7 +17,7 @@ from canonical.config import config
 __all__ = ['SQLBase', 'quote', 'quote_like', 'quoteIdentifier', 'sqlvalues',
            'ZopelessTransactionManager', 'ConflictingTransactionManagerError',
            'flush_database_updates', 'flush_database_caches', 'cursor',
-           'begin', 'commit', 'rollback', 'alreadyInstalledMsg', 'connect'
+           'begin', 'commit', 'rollback', 'alreadyInstalledMsg', 'connect',
            'AUTOCOMMIT_ISOLATION', 'READ_COMMITTED_ISOLATION',
            'SERIALIZED_ISOLATION', 'DEFAULT_ISOLATION']
 

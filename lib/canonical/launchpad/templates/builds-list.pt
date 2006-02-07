@@ -90,6 +90,16 @@
             </tal:log>
           </td>
         </tr>
+        <tr class="secondary" tal:condition="not: build/was_built">
+          <td></td>
+          <td>
+            Pending
+            (<span
+              tal:condition="build/buildqueue_record"
+              tal:replace="build/buildqueue_record/lastscore"
+            />)
+          </td>
+        </tr>
       </tal:batch>
     </tbody>
   </table>

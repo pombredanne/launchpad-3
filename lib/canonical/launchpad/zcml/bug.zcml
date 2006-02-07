@@ -56,6 +56,14 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.IBug"
+        name="+text"
+        class="canonical.launchpad.browser.BugTextView"
+        permission="zope.Public"
+        attribute="__call__"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IBug"
         name="+listing-detailed"
         template="../templates/bug-listing-detailed.pt"
         permission="zope.Public" />
