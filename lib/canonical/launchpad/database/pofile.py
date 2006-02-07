@@ -46,22 +46,16 @@ from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 
 
 def _check_translation_perms(permission, translators, person):
-    """This is a utility function that will return True or False depending
-    on whether the person is part of the right group of translators, and the
-    permission on the relevant project or product.
+    """Return True or False dependening on whether the person is part of the
+    right group of translators, and the permission on the relevant project,
+    product or distribution.
+
+    :permission: The kind of TranslationPermission.
+    :translators: The list of official translators for the
+        product/project/distribution.
+    :person: The person that we want to check if has translation permissions.
     """
-
-    if person is None:
-        return False
-
-    rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
-
-    if person.inTeam(rosetta_experts):
-        # Rosetta experts can edit translations always.
-        return True
-
-    # now, let's determine if the person is part of a designated
-    # translation team
+    # Let's determine if the person is part of a designated translation team
     is_designated_translator = False
     # XXX sabdfl 25/05/05 this code could be improved when we have
     # implemented CrowdControl
@@ -96,6 +90,40 @@ def _check_translation_perms(permission, translators, person):
 
     # ok, thats all we can check, and so we must assume the answer is no
     return False
+
+def _canEditTranslations(pofile, person):
+    """Say if a person is able to edit existing translations.
+
+    Return True or False indicating whether the person is allowed
+    to edit these translations.
+    """
+    # If the person is None, then they cannot edit
+    if person is None:
+        return False
+
+    # XXX Carlos Perello Marin 20060207: We should not check the
+    # permissions here but use the standard security system. Please, look
+    # at https://launchpad.net/products/rosetta/+bug/4814 bug for more
+    # details.
+
+    # Rosetta experts and admins can always edit translations.
+    admins = getUtility(ILaunchpadCelebrities).admin
+    rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
+    if (person.inTeam(admins) or person.inTeam(rosetta_experts) or
+        person.id == rosetta_experts.id):
+        return True
+
+    # The owner of the product is also able to edit translations.
+    if pofile.potemplate.productseries is not None:
+        product = pofile.potemplate.productseries.product
+        if person.inTeam(product.owner):
+            return True
+
+    translators = [t.translator for t in pofile.translators]
+    return _check_translation_perms(
+        pofile.translationpermission,
+        translators,
+        person)
 
 
 class POFile(SQLBase, RosettaStats):
@@ -203,34 +231,11 @@ class POFile(SQLBase, RosettaStats):
 
     def canEditTranslations(self, person):
         """See IPOFile."""
-        # If the person is None, then they cannot edit
-        if person is None:
-            return False
-
-        # Rosetta experts and admins can always edit translations.
-        admins = getUtility(ILaunchpadCelebrities).admin
-        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
-        if (person.inTeam(admins) or person.inTeam(rosetta_experts) or
-            person.id == rosetta_experts.id):
+        if _canEditTranslations(self, person):
             return True
-
-        # The owner of the product is also able to edit translations.
-        if self.potemplate.productseries is not None:
-            product = self.potemplate.productseries.product
-            if person.inTeam(product.owner):
-                return True
-
-        # check based on permissions
-        translators = [t.translator for t in self.translators]
-        perm_result = _check_translation_perms(
-            self.translationpermission,
-            translators,
-            person)
-        if perm_result is True:
-            return True
-
-        # Finally, check for the owner of the PO file
-        return person.inTeam(self.owner)
+        else:
+            # Finally, check for the owner of the PO file
+            return person.inTeam(self.owner)
 
     def currentMessageSets(self):
         return POMsgSet.select(
@@ -856,7 +861,6 @@ class DummyPOFile(RosettaStats):
         self.owner = owner
         self.latestsubmission = None
         self.pluralforms = language.pluralforms
-        self.translationpermission = self.potemplate.translationpermission
         self.lasttranslator = None
         self.contributors = []
 
@@ -887,29 +891,14 @@ class DummyPOFile(RosettaStats):
                 ret.append(translator)
         return ret
 
+    @property
+    def translationpermission(self):
+        """See IPOFile."""
+        return self.potemplate.translationpermission
+
     def canEditTranslations(self, person):
         """See IPOFile."""
-        # If the person is None, then they cannot edit
-        if person is None:
-            return False
-
-        # Rosetta experts and admins can always edit translations.
-        admins = getUtility(ILaunchpadCelebrities).admin
-        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
-        if person.inTeam(admins) or person.inTeam(rosetta_experts):
-            return True
-
-        # The owner of the product is also able to edit translations.
-        if self.potemplate.productseries is not None:
-            product = self.potemplate.productseries.product
-            if person.inTeam(product.owner):
-                return True
-
-        translators = [t.translator for t in self.translators]
-        return _check_translation_perms(
-            self.translationpermission,
-            translators,
-            person)
+        return _canEditTranslations(self, person)
 
     def getPOMsgSet(self, key, only_current=False):
         """See IPOFile."""

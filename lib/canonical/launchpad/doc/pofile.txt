@@ -171,7 +171,7 @@ Now, we check with a date that is in the past.
 canEditTranslations
 -------------------
 
-This method determines if someone is allowed to edit officially translations.
+This method determines if someone is allowed to edit translations.
 
 Do some needed imports.
 
@@ -182,12 +182,14 @@ Do some needed imports.
     >>> from canonical.launchpad.database import POFile
     >>> from canonical.launchpad.ftests import login
     >>> from canonical.lp.dbschema import TranslationPermission
+    >>> person_set = getUtility(IPersonSet)
 
 Need extra permissions to change the values.
 
     >>> login('carlos@canonical.com')
 
-Set a translation group to test the CLOSED mode.
+Set a translation group to test the CLOSED mode. This mode allows translations
+only from the teams set as official translators.
 
     >>> product = getUtility(IProductSet).getByName('evolution')
     >>> product.translationgroup = getUtility(
@@ -198,31 +200,112 @@ Get the IPOFile we are going to use.
 
     >>> product_series = product.translatable_series[0]
     >>> potemplate = product_series.getPOTemplate('evolution-2.2')
-    >>> pofile = potemplate.getPOFileByLang('es')
+    >>> pofile_es = potemplate.getPOFileByLang('es')
 
 A Launchpad admin must have permission always.
 
     >>> admins = getUtility(ILaunchpadCelebrities).admin
-    >>> pofile.canEditTranslations(admins)
+    >>> pofile_es.canEditTranslations(admins)
     True
 
-And a Rosetta Expert too.
+A Rosetta Expert too.
 
     >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_expert
-    >>> pofile.canEditTranslations(rosetta_experts)
+    >>> pofile_es.canEditTranslations(rosetta_experts)
+    True
+
+And Valentina Commissari, as member of the Spanish translation team for
+evolution should also have rights.
+
+    >>> valentina = person_set.getByName('tsukimi')
+    >>> pofile_es.canEditTranslations(valentina)
     True
 
 But the unpriviledged account should not.
 
-    >>> person_set = getUtility(IPersonSet)
     >>> no_priv = person_set.getByName('no-priv')
-    >>> pofile.canEditTranslations(no_priv)
+    >>> pofile_es.canEditTranslations(no_priv)
     False
 
-We should revert our changes to prevent other tests to fail
+Now, we get an IPOFile that does not have a translation team assigned.
+
+    >>> pofile_cy = potemplate.getPOFileOrDummy('cy')
+
+Valentina Commissari is not a translator for this language and does not
+have permissions.
+
+    >>> pofile_cy.canEditTranslations(valentina)
+    False
+
+And same thing with the unpriviledged account.
+
+    >>> pofile_cy.canEditTranslations(no_priv)
+    False
+
+Now, let's test the STRUCTURED mode. In this mode, only the defined
+translation teams can translate like the CLOSE mode, but in addition, if we
+don't have any language team for one language, anyone can add translations.
+
+    >>> product.translationpermission = TranslationPermission.STRUCTURED
+
+Valentina Commissari, as member of the Spanish translation team for
+evolution should have rights for the Spanish IPOFile.
+
+    >>> pofile_es.canEditTranslations(valentina)
+    True
+
+But the unpriviledged account should not.
+
+    >>> pofile_es.canEditTranslations(no_priv)
+    False
+
+And this is the difference with the CLOSED mode, anyone will be able to
+translate into Welsh, as we can see with Valentina:
+
+    >>> pofile_cy.canEditTranslations(valentina)
+    True
+
+And same thing with the unpriviledged account.
+
+    >>> pofile_cy.canEditTranslations(no_priv)
+    True
+
+Finally, let's check the OPEN mode to be 100% sure that in that mode
+anyone can do translations.
 
     >>> product.translationgroup = None
     >>> product.translationpermission = TranslationPermission.OPEN
+
+We don't have any translation group for the Evolution product so there are
+no translators assigned to it, but Valentina Commissari still has rights to
+do translations.
+
+    >>> pofile_es.canEditTranslations(valentina)
+    True
+
+And samething with the unpriviledged account.
+
+    >>> pofile_es.canEditTranslations(no_priv)
+    True
+
+
+Security tests
+==============
+
+Import the function that will help us to do this test.
+
+    >>> from canonical.launchpad.helpers import check_permission
+
+A Launchpad admin must have permission to edit an IPOFile always.
+    >>> login('foo.bar@canonical.com')
+    >>> check_permission('launchpad.Edit', pofile)
+    True
+
+And a Rosetta Expert too.
+
+    >>> login('jordi@ubuntu.com')
+    >>> check_permission('launchpad.Edit', pofile)
+    True
 
 
 POFile View
