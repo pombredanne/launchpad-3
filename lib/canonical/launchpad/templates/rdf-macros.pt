@@ -4,7 +4,8 @@
 <rdf:RDF xmlns:foaf="http://xmlns.com/foaf/0.1/"
     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
     xmlns:tal="http://xml.zope.org/namespaces/tal"
-    xmlns:metal="http://xml.zope.org/namespaces/metal">
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+    xmlns:wot="http://xmlns.com/wot/0.1/">
     <metal:block define-macro="owner_foaf">
             <foaf:Person tal:condition="not:context/owner/isTeam">
                 <foaf:name tal:content="context/owner/displayname">
@@ -41,8 +42,8 @@
     </metal:block>
 
     <metal:block define-macro="owner_foaf_gpg">
-        <wot:hasKey tal:condition="owner/gpgkeys">
-            <wot:PubKey tal:repeat="gpgkey owner/gpgkeys">
+        <wot:hasKey tal:condition="context/owner/gpgkeys">
+            <wot:PubKey tal:repeat="gpgkey context/owner/gpgkeys">
                 <wot:hex_id tal:content="gpgkey/keyid">91CFA34D</wot:hex_id>
                 <wot:length tal:content="gpgkey/keysize">1024</wot:length>
                 <wot:fingerprint tal:content="gpgkey/fingerprint">04FFF3AC57DF217C6D383DBC0110FB923756EA0B</wot:fingerprint>
