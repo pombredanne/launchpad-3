@@ -506,6 +506,8 @@ person_packages = ContextDisplayName('Packages maintained by %s')
 
 person_packagebugs = ContextDisplayName("%s's package bug reports")
 
+person_packagebugs_advanced = person_packagebugs
+
 person_packagebugs_overview = person_packagebugs
 
 person_packagebugs_search = person_packagebugs

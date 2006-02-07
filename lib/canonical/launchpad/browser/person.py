@@ -767,7 +767,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         return search_params
 
     def getBugContactPackageSearchURL(self, distributionsourcepackage=None,
-                                      extra_params=None):
+                                      advanced=False, extra_params=None):
         """Construct a default search URL for a distributionsourcepackage.
 
         Optional filter parameters can be specified as a dict with the
@@ -793,7 +793,15 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         person_url = canonical_url(self.context)
         query_string = urllib.urlencode(sorted(params.items()), doseq=True)
 
-        return person_url + '/+packagebugs-search?%s' % query_string
+        if advanced:
+            return person_url + '/+packagebugs-advanced?%s' % query_string
+        else:
+            return person_url + '/+packagebugs-search?%s' % query_string
+
+    def getBugContactPackageAdvancedSearchURL(self,
+                                              distributionsourcepackage=None):
+        """Construct the advanced search URL for a distributionsourcepackage."""
+        return self.getBugContactPackageSearchURL(advanced=True)
 
     def getOpenBugsURL(self, distributionsourcepackage):
         """Return the URL for open bugs on distributionsourcepackage."""

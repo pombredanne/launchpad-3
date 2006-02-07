@@ -1,7 +1,4 @@
-<!-- XXX Brad Bollenbach, 2006-02-01: NOTE TO CODE REVIEWER: Please don't review
-this file yet. This is my prototype, not yet exposed in the app, but will be
-implemented in the next iteration of the bug contact reports.
-
+<tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
@@ -14,11 +11,8 @@ implemented in the next iteration of the bug contact reports.
   </metal:leftportlets>
 
   <div metal:fill-slot="main">
-    Sample Person is also a bug contact for: <a href="">evolution</a>, <a href="">pmount</a> <br /><br />
-    <div style="margin-bottom: 5px; border-width: 0px 0px 1px 0px; border-style: solid">
-      <b>Search bugs in mozilla-firefox (Ubuntu)</b>
-    </div>
-    <br />
+    <div style="margin-left: 0; width: 74%; float: left">
+      <strong>Search bugs in mozilla-firefox (Ubuntu)</strong>
       <center>
         <input type="text" size="40" value="foobar" /> <input type="submit" value="Search" />
         <a href=""><small>Simple</small></a>
@@ -102,8 +96,13 @@ implemented in the next iteration of the bug contact reports.
             <td><br /><input type="submit" value="Search" /></td>
           </tr>
         </table>
+    </div>
+    <div id="portal-column-two">
+      <metal:macro use-macro="context/@@main_template/action-menu" />
+      <div tal:content="structure context/@@+portlet-otherpackages" />
+    </div>
+    <div class="visualClear">&nbsp;</div>
   </div>
 </body>
 </html>
 </tal:layout>
--->
