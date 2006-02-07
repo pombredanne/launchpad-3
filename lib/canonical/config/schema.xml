@@ -301,6 +301,8 @@
         </description>
         <key name="bugmail_error_from_address" datatype="string"
             required="yes" />
+        <key name="buglist_batch_size" datatype="integer"
+            required="yes" />
     </sectiontype>
 
     <sectiontype name="poimport">
