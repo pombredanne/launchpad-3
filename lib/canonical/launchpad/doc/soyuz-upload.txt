@@ -513,7 +513,11 @@ Invoke Publisher script against the 'ubuntutest' distribution:
 
   >>> script = os.path.join(config.root, "scripts", "publish-distro.py")
   >>> process = subprocess.Popen([sys.executable, script, "-Cq",
-  ...                             "-d", "ubuntutest"])
+  ...                             "-d", "ubuntutest"],
+  ...                            stdout=subprocess.PIPE,
+  ...                            stderr=subprocess.PIPE)
+  >>> garbage = process.stderr.read()
+  >>> garbage = process.stdout.read()
   >>> process.wait()
   0
 

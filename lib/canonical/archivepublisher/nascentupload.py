@@ -1327,7 +1327,9 @@ class NascentUpload:
                            os.path.join(tmpdir, source_file.filename))
             args = ["dpkg-source", "-sn", "-x",
                     os.path.join(tmpdir,dsc_file.filename)]
-            dpkg_source = subprocess.Popen(args, stdout=subprocess.PIPE)
+            dpkg_source = subprocess.Popen(args, stdout=subprocess.PIPE,
+                                           stderr=subprocess.PIPE)
+            garbage = dpkg_source.stderr.read()
             output = dpkg_source.stdout.read()
             result = dpkg_source.wait()
             if result != 0:
