@@ -25,7 +25,7 @@ from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.interfaces import (
     NotFoundError, IDistributionSet, IDistroReleaseQueueSet,
     IComponentSet, ISectionSet, QueueInconsistentStateError,
-    IPerson)
+    IPersonSet)
 
 from canonical.lp.dbschema import (
     DistroReleaseQueueStatus, PackagePublishingPriority)
@@ -304,7 +304,7 @@ class QueueAction:
         permitted uploaders.
         """
         okay = []
-        person_util = getUtility(IPerson)
+        person_util = getUtility(IPersonSet)
         for address in addresslist:
             p = person_util.getByEmail(address)
             if p is not None:
@@ -337,9 +337,8 @@ class QueueAction:
         os.remove(temp_name)
 
         for field in ['maintainer', 'changed-by']:
-            email = None
             (rfc822, rfc2047, name, email) = fix_maintainer(
-                ascii_smash(addr), fieldname)
+                ascii_smash(changes[field]), field)
             full_set.add(email)
 
         # Finally, filter the set of recipients based on the whitelist
