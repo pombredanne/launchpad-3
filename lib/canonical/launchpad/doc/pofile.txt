@@ -221,7 +221,7 @@ evolution should also have rights.
     >>> pofile_es.canEditTranslations(valentina)
     True
 
-But the unpriviledged account should not.
+But the unprivileged account should not.
 
     >>> no_priv = person_set.getByName('no-priv')
     >>> pofile_es.canEditTranslations(no_priv)
@@ -237,7 +237,7 @@ have permissions.
     >>> pofile_cy.canEditTranslations(valentina)
     False
 
-And same thing with the unpriviledged account.
+And same thing with the unprivileged account.
 
     >>> pofile_cy.canEditTranslations(no_priv)
     False
@@ -254,7 +254,7 @@ evolution should have rights for the Spanish IPOFile.
     >>> pofile_es.canEditTranslations(valentina)
     True
 
-But the unpriviledged account should not.
+But the unprivileged account should not.
 
     >>> pofile_es.canEditTranslations(no_priv)
     False
@@ -265,7 +265,7 @@ translate into Welsh, as we can see with Valentina:
     >>> pofile_cy.canEditTranslations(valentina)
     True
 
-And same thing with the unpriviledged account.
+And same thing with the unprivileged account.
 
     >>> pofile_cy.canEditTranslations(no_priv)
     True
@@ -283,7 +283,7 @@ do translations.
     >>> pofile_es.canEditTranslations(valentina)
     True
 
-And samething with the unpriviledged account.
+And samething with the unprivileged account.
 
     >>> pofile_es.canEditTranslations(no_priv)
     True

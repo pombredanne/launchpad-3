@@ -50,10 +50,11 @@ def _check_translation_perms(permission, translators, person):
     right group of translators, and the permission on the relevant project,
     product or distribution.
 
-    :permission: The kind of TranslationPermission.
-    :translators: The list of official translators for the
+    :param permission: The kind of TranslationPermission.
+    :param translators: The list of official translators for the
         product/project/distribution.
-    :person: The person that we want to check if has translation permissions.
+    :param person: The person that we want to check if has translation
+        permissions.
     """
     # Let's determine if the person is part of a designated translation team
     is_designated_translator = False
@@ -91,7 +92,7 @@ def _check_translation_perms(permission, translators, person):
     # ok, thats all we can check, and so we must assume the answer is no
     return False
 
-def _canEditTranslations(pofile, person):
+def _can_edit_translations(pofile, person):
     """Say if a person is able to edit existing translations.
 
     Return True or False indicating whether the person is allowed
@@ -105,6 +106,9 @@ def _canEditTranslations(pofile, person):
     # permissions here but use the standard security system. Please, look
     # at https://launchpad.net/products/rosetta/+bug/4814 bug for more
     # details.
+
+    # XXX Carlos Perello Marin 20060208: The check person.id ==
+    # rosetta_experts.id must be removed as soon as the bug #30789 is closed.
 
     # Rosetta experts and admins can always edit translations.
     admins = getUtility(ILaunchpadCelebrities).admin
@@ -231,7 +235,7 @@ class POFile(SQLBase, RosettaStats):
 
     def canEditTranslations(self, person):
         """See IPOFile."""
-        if _canEditTranslations(self, person):
+        if _can_edit_translations(self, person):
             return True
         elif person is not None:
             # Finally, check for the owner of the PO file
@@ -900,7 +904,7 @@ class DummyPOFile(RosettaStats):
 
     def canEditTranslations(self, person):
         """See IPOFile."""
-        return _canEditTranslations(self, person)
+        return _can_edit_translations(self, person)
 
     def getPOMsgSet(self, key, only_current=False):
         """See IPOFile."""
