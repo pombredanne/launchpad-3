@@ -54,7 +54,7 @@
         <key name="bugs_domain" datatype="string" required="no"
             default="bugs.launchpad.net" />
         <key name="oops_root_url" datatype="string" required="no"
-            default="https://chinstrap.ubuntu.com/~jamesh/oops.cgi" />
+            default="https://chinstrap.ubuntu.com/~jamesh/oops.cgi/" />
         <key name="max_bug_attachment_size" datatype="integer" required="no"
             default="0">
             <description>
