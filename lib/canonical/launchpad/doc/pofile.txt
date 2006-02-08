@@ -356,6 +356,7 @@ All the tests will be submitted as comming from the Foo Bar person.
 
 Now it's time to test the initialisation of the view class.
 
+    >>> potemplate = potemplatesubset['evolution-2.2']
     >>> pofile_es = potemplate.getPOFileByLang('es')
     >>> request = DummyRequest()
     >>> pofile_view = POFileView(pofile_es, request)
