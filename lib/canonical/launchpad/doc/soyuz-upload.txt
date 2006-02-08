@@ -45,22 +45,10 @@ Now, let's create a subprocess running the poppy FTP server. It won't
 call the upload processing tool. We'll do that ourselves in our test,
 so that we can control what's going on.
 
-  >>> from canonical.config import config
-  >>> import subprocess
-  >>> import sys
-  >>> import os
-  >>> script = os.path.join(config.root, "daemons/poppy-upload.py")
-  >>> process = subprocess.Popen([sys.executable, script,
-  ...                             "--allow-user", 'ubuntutest',
-  ...                             "--cmd", "echo @distro@; ls @fsroot@",
-  ...                             incoming_dir, "3421"],
-  ...                             stdout=subprocess.PIPE)
-
-
-Let's create a custom exception to be used in the scope of this test:
-
-  >>> class SoyuzUploadError(Exception):
-  ...      pass
+  >>> from canonical.archivepublisher.ftests import PoppyTestSetup, \
+  ...                                               SoyuzUploadError
+  >>> poppy = PoppyTestSetup(incoming_dir)
+  >>> poppy.startPoppy()
 
 Connect to the server and login. We'll keep trying to connect until
 the server dies or the connection succeeds.
@@ -71,7 +59,7 @@ the server dies or the connection succeeds.
   ...    try:
   ...        reply = ftp.connect("localhost", 3421)
   ...    except socket.error:
-  ...        if process.poll() is not None:
+  ...        if not poppy.alive:
   ...            raise SoyuzUploadError('Server can not start.')
   ...    else:
   ...        break
@@ -86,6 +74,7 @@ the poppy server. We send each package set on a different ftp
 session.
 
   >>> from canonical.archivepublisher.tagfiles import parse_tagfile
+  >>> from canonical.config import config
   >>> from cStringIO import StringIO
   >>> import glob
   >>> import time
@@ -136,13 +125,7 @@ We don't want to block forever reading data from the process, since
 it's a daemon and should not die until we ask it to. So, we first
 set the stdout to non-blocking...
 
-  >>> import fcntl
-  >>> def set_non_blocking(fd):
-  ...    flags = fcntl.fcntl(fd, fcntl.F_GETFL, 0)
-  ...    flags |= os.O_NONBLOCK
-  ...    fcntl.fcntl(fd, fcntl.F_SETFL, flags)
-  >>> set_non_blocking(process.stdout.fileno())
-
+  >>> poppy.setNonBlocking()
 
 Then, we create a set of the filenames we expect to see in the
 FTP server process output, and wait until all of them have been
@@ -154,40 +137,7 @@ FTP process would block automated tests. Instead, we define a
 timeout between output data. If the process doesn't provide new
 data in the given number seconds, we report a failure.
 
-  >>> import errno
-  >>> expected = list(sent_filenames)
-  >>> timeout = 600
-  >>> ping = time.time()
-  >>> buffer = ""
-  >>> while time.time()-ping < timeout:
-  ...     if process.poll() is not None:
-  ...         raise SoyuzUploadError("FTP server died unexpectedly")
-  ...     try:
-  ...        data = process.stdout.read()
-  ...     except IOError, e:
-  ...         if e.errno != errno.EWOULDBLOCK:
-  ...             raise
-  ...     else:
-  ...         if data:
-  ...             ping = time.time()
-  ...             buffer += data
-  ...             lines = buffer.splitlines()
-  ...             buffer = lines.pop(0)
-  ...             for line in lines:
-  ...                 if line == "ubuntutest":
-  ...                     continue
-  ...                 if line not in expected:
-  ...                     raise SoyuzUploadError("Unexpected line found in FTP "
-  ...                                            "output: %r" % line)
-  ...                 expected.remove(line)
-  ...             if not expected:
-  ...                 break
-  ...     time.sleep(0.5)
-  ... else:
-  ...     raise SoyuzUploadError("FTP server is not responding correctly, bad boy\n"
-  ...                            "The following lines were still expected: %s\n"
-  ...                            % "\n".join(line for line in expected))
-
+  >>> poppy.verify_output(list(sent_filenames))
 
 At that point we must have a bunch of directories in the upload
 base directory named <TIMESTAMP>-XXXXXX, each one as a result of
@@ -216,10 +166,7 @@ of these files match the uploaded ones.
 Right, that's all we need from the FTP server. We don't need it anymore,
 so we'll just kill the process.
 
-  >>> import signal
-  >>> os.kill(process.pid, signal.SIGTERM)
-  >>> status = process.wait()
-
+  >>> status = poppy.killPoppy()
 
 
 Processing Uploads
@@ -303,6 +250,7 @@ NascentUpload in the 'sync' policy in the future.
 That's all for the FTP server. Now we must process the uploaded packages.
 This is done by running process-upload.py on each upload directory.
 
+  >>> import subprocess, sys
   >>> script = os.path.join(config.root, "scripts/process-upload.py")
   >>> process = subprocess.Popen([sys.executable, script, "--no-mails", "-q",
   ...                             "-C", "sync", temp_dir])
@@ -467,15 +415,18 @@ See bug # 29642
 Using getFancyQueueItem to inspect current NEW queue and accept them.
 
   >>> queue_items = release.getFancyQueueItems(DistroReleaseQueueStatus.NEW)
+  >>> L = []
   >>> for queue_item in queue_items:
   ...      try:
   ...          queue_item.set_accepted()
   ...      except QueueInconsistentStateError, e:
-  ...          print queue_item.sourcepackagename.name, e
+  ...          L.append("%s %s" % (queue_item.sourcepackagename.name, e))
   ...      else:
-  ...          print queue_item.sourcepackagename.name, 'ACCEPTED'
-  etherwake ACCEPTED
+  ...          L.append("%s %s" % (queue_item.sourcepackagename.name, 'ACCEPTED'))
+  >>> L.sort()
+  >>> print "\n".join(L)
   drdsl Component "non-free" is not allowed in breezy-autotest
+  etherwake ACCEPTED
 
 We must flush these changes so that it gets out of the cache and
 into the database. Without this process-accepted.py wouldn't see
