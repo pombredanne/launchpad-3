@@ -694,7 +694,8 @@ class ShippingRequestAdminView:
         shipped_requests = self.context.recipient.shippedShipItRequests()
         if not shipped_requests:
             return False
-        elif len(shipped_requests) == 1 and shipped_requests[0] == self.context:
+        elif (shipped_requests.count() == 1 
+              and shipped_requests[0] == self.context):
             return False
         else:
             return True
