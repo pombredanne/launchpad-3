@@ -11,8 +11,55 @@ import re
 import rfc822
 import time
 import datetime
+import urllib
 
-COUNT = 15
+COUNT = 20
+
+# This pattern is intended to match the majority of search engines I
+# built up this list by checking what was accessing
+# https://launchpad.net/robots.txt, so it is probably incomplete.  It
+# covers the major engines though (Google and Yahoo).
+_robot_pat = re.compile(r'''
+  Yahoo!\sSlurp               | # main Yahoo spider
+  Yahoo-Blogs                 | # Yahoo blog search
+  YahooSeeker                 | # Yahoo shopping
+  Jakarta\sCommons-HttpClient |
+  Googlebot/\d+               | # main Google spider
+  Googlebot-Image/\d+         | # Google image search
+  PrivacyFinder/\d+           |
+  W3C-checklink/\d+           |
+  Accoona-AI-Agent/\d+        |
+  CE-Preload                  |
+  FAST\sEnterprise\sCrawler   |
+  Sensis\sWeb\sCrawler        |
+  ia_archiver                 | # web.archive.org
+  heritrix/\d+                |
+  LinkAlarm/d+                |
+  rssImagesBot/d+             |
+  SBIder/\d+                  |
+  HTTrack\s\d+                |
+  schibstedsokbot             |
+  Nutch\S*/d+                 | # Lucene
+  Mediapartners-Google/d+     |
+  Miva                        |
+  ImagesHereImagesThereImagesEverywhere/d+ |
+  DiamondBot                  |
+  e-SocietyRobot              |
+  Tarantula/\d+               |
+  www.yacy.net                | # some P2P web index
+  penthesila/\d+              |
+  asterias/\d+                |
+  OpenIntelligenceData/d+     |
+  Omnipelagos.com             |
+  LinkChecker/d+              |
+  updated/\d+                 |
+  VSE/\d+                     |
+  Thumbnail.CZ\srobot         |
+  SunONERobot/\d+             |
+  OutfoxBot/\d+               |
+  Ipselonbot/\d+              |
+  CsCrawler
+  ''', re.VERBOSE)
 
 def _parsedate(s):
     """Return a naive date time object for the given ISO 8601 string.
@@ -29,12 +76,17 @@ class ErrorData:
         self.etype = etype
         self.evalue = evalue
         self.urls = {}
+        self.count = 0
+        self.local_referers = 0
+        self.bots = 0
 
-    def addUrl(self, url, oopsid):
+    def addUrl(self, url, oopsid, local_referer, is_bot):
         self.urls.setdefault(url, set()).add(oopsid)
-
-    def count(self):
-        return sum(len(oopsids) for oopsids in self.urls.itervalues())
+        self.count += 1
+        if local_referer:
+            self.local_referers += 1
+        if is_bot:
+            self.bots += 1
 
 
 class ErrorSummary:
@@ -46,10 +98,11 @@ class ErrorSummary:
         self.start = None
         self.end = None
 
-    def addOops(self, errordict, etype, evalue, url, oopsid):
+    def addOops(self, errordict, etype, evalue, url, oopsid, local_referer,
+                is_bot):
         data = errordict.setdefault((etype, evalue),
                                     ErrorData(etype, evalue))
-        data.addUrl(url, oopsid)
+        data.addUrl(url, oopsid, local_referer, is_bot)
 
     def processOops(self, fname):
         msg = rfc822.Message(open(fname, 'r'))
@@ -74,16 +127,41 @@ class ErrorSummary:
         etype = msg.getheader('exception-type')
         evalue = msg.getheader('exception-value')
 
+        # read the referrer and user agent from the request variables
+        referer = ''
+        useragent = ''
+        for line in msg.fp.readlines():
+            line = line.strip()
+            if line == '':
+                break
+            if '=' not in line:
+                continue
+            key, value = line.split('=', 1)
+            key = urllib.unquote(key)
+            value = urllib.unquote(value)
+            if key == 'HTTP_REFERER':
+                referer = value
+            elif key == 'HTTP_USER_AGENT':
+                useragent = value
+
+        local_referer = ('launchpad.net' in referer or
+                         'ubuntu.com' in referer)
+        is_bot = _robot_pat.search(useragent) is not None
+
         # replace pointer values in exception values with a constant
         # string.
         evalue = re.sub("0x[abcdef0-9]+", "INSTANCE-ID", evalue)
 
-        if etype in ('RequestExpired', 'RequestQueryTimedOut'):
-            self.addOops(self.expired, etype, evalue, url, oopsid)
-        elif etype == 'NotFound':
-            self.addOops(self.notfound, etype, evalue, url, oopsid)
+        if etype in ['RequestExpired', 'RequestQueryTimedOut',
+                     'SoftRequestTimeout']:
+            self.addOops(self.expired, etype, evalue, url, oopsid,
+                         local_referer, is_bot)
+        elif etype in ['NotFound', 'NotFoundError']:
+            self.addOops(self.notfound, etype, evalue, url, oopsid,
+                         local_referer, is_bot)
         else:
-            self.addOops(self.exceptions, etype, evalue, url, oopsid)
+            self.addOops(self.exceptions, etype, evalue, url, oopsid,
+                         local_referer, is_bot)
 
     def processDir(self, directory):
         for filename in os.listdir(directory):
@@ -91,16 +169,22 @@ class ErrorSummary:
             if os.path.isfile(path):
                 self.processOops(path)
 
-    def printTable(self, source, title):
-        print '=== Top %d %s ===' % (COUNT, title)
+    def printTable(self, source, title, count=COUNT):
+        if count >= 0:
+            print '=== Top %d %s ===' % (count, title)
+        else:
+            print '=== All %s ===' % title
         print
 
         errors = sorted(source.itervalues(),
-                        key=lambda data: data.count(),
+                        key=lambda data: data.count,
                         reverse=True)
 
-        for data in errors[:COUNT]:
-            print '%4d %s: %s' % (data.count(), data.etype, data.evalue)
+        for data in errors[:count]:
+            print '%4d %s: %s' % (data.count, data.etype, data.evalue)
+            print '    %d%% from search bots, %d%% referred from local sites' \
+                  % (int(100.0 * data.bots / data.count),
+                     int(100.0 * data.local_referers / data.count))
             urls = sorted(((len(oopsids), url) for (url, oopsids)
                                                    in data.urls.iteritems()),
                           reverse=True)
@@ -115,8 +199,8 @@ class ErrorSummary:
             
     def printReport(self):
         self.printTable(self.expired, 'Time Out Pages')
-        self.printTable(self.notfound, '404 Pages')
-        self.printTable(self.exceptions, 'Exceptions')
+        self.printTable(self.notfound, 'Not Found Errors', count=-1)
+        self.printTable(self.exceptions, 'Exceptions', count=-1)
 
         period = self.end - self.start
         days = period.days + period.seconds / 86400.0

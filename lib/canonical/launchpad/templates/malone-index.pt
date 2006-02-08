@@ -40,7 +40,7 @@
     </li>
   </ul>
 
-  <h2 style="margin-top: 0.1em">Bugs in Distribution Packages</h2>
+  <h2 style="margin-top: 0.1em">Bugs in distribution packages</h2>
   <ul>
     <div class="discreet">
       A package is software specifically prepared for your
@@ -62,7 +62,7 @@
     </li>
   </ul>
   
-  <h2 style="margin-top: 0.1em">Bugs in Upstream Products</h2>
+  <h2 style="margin-top: 0.1em">Bugs in upstream products</h2>
 
   <ul>
     <div class="discreet">Software that is not a distribution
@@ -81,7 +81,7 @@
     </li>
   </ul>
 
-  <h2>Latest Bugs Reported Across Launchpad</h2>
+  <h2>Latest bugs reported across Launchpad</h2>
 
   <table>
     <tbody>

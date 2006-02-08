@@ -85,7 +85,7 @@ body {
   padding: 0;
 }
 .body {
-  margin: 0 1em 1em;
+  margin: 0.75em 0.75em 0;
 }
 
 :visited {
@@ -132,6 +132,10 @@ h3, h4, h5, h6 {
   font-size: 1em;
   margin-bottom: 0;
 }
+h5.languages {
+  background-image: url(/++resource++languages.gif);
+  background-repeat: no-repeat;
+}
 label {
   font-weight: bold;
 }
@@ -159,10 +163,6 @@ th.icon.left, td.icon.left {
 th.icon.right, td.icon.right {
   padding-left: 0;
 }
-td p:first-child, td ol:first-child, td blockquote:first-child {
-  margin-top: 0;
-}
-
 table.listing {
   font-size: 85%;
   margin: 1em 0;
@@ -252,7 +252,7 @@ ol {
   font-weight: normal;
 }
 .portlet h4 { /* the base portlet heading */
-  padding: 0em 0.3em 0em 1em;
+  padding: 0em 0.3em 0em 0.75em;
   display: block;
   font-size: 1em;
 }
@@ -275,7 +275,7 @@ ol {
   border: 1px solid #8cacbb;
 }
 .portletContent {
-  padding: 1em;
+  padding: 0.75em;
 }
 
 /* -- Form controls: -- */
@@ -283,6 +283,8 @@ textarea {
   border: 1px solid #8cacbb;  
   color: black;
   background-color: white;
+  font-family: sans-serif;
+  font-family: caption;
   width: 100%;
 }
 .fieldRequired {
@@ -394,9 +396,6 @@ ul.app>li.current {
 }
 
 /* Column definitions: */
-#portal-columns {
-  margin-top: 1em;
-}
 #portal-column-content {
   display: inline; /* avoid MSIE Double Float Margin bug */
   float: left;
@@ -519,11 +518,6 @@ select {
     color: Black;
     background-color: White;
     vertical-align: top;
-}
-blockquote {
-    font-family: Times, "Times New Roman", serif;
-    font-style: italic;
-    font-size: 120%;
 }
 ins {
     color: green;
@@ -681,7 +675,7 @@ tr.highlight {
 }
 
 /* Bug Status, Severity, Priority markers */
-.statusUnconfirmed { color: Orange; }
+.statusUnconfirmed { color: #993300; }
 .statusConfirmed   { color: Red; }
 .statusFixed       { color: Black; }
 .statusReleased    { color: Green; }
@@ -709,9 +703,9 @@ tr.highlight {
 .specstatusIMPLEMENTED     { color: Green; }
 .specstatusINFORMATIONAL   { color: Green; }
 .specstatusAPPROVED        { color: Black; }
-.specstatusPENDINGAPPROVAL { color: Yellow; }
-.specstatusPENDINGREVIEW   { color: Yellow; }
-.specstatusDRAFT           { color: Orange; }
+.specstatusPENDINGAPPROVAL { color: #f09; }
+.specstatusPENDINGREVIEW   { color: #f09; }
+.specstatusDRAFT           { color: #930; }
 .specstatusBRAINDUMP       { color: Red; }
 .specstatusSUPERSEDED      { color: Gray; }
 .specstatusOBSOLETE        { color: Gray; }
@@ -1154,3 +1148,12 @@ Calendar stuff.
   font-weight: bold;
   color: #cc0000;
 }
+
+dl.faq dt {
+    font-weight: bold;
+}
+
+dl.faq dd {
+    margin: 0.5em 1em;
+}
+

@@ -87,6 +87,19 @@ Finally, you can ask for the links for each of the result pages:
   3 http://www.example.com/foo?batch_start=6&batch_end=9
   _last_ http://www.example.com/foo?batch_start=6&batch_end=9
 
+Empty Batches
+-------------
+
+You can also create an empty batch that will not have any items:
+  
+  >>> items = None
+  >>> null_batch = Batch(list=items, size=3)
+  >>> null_batch_navigator = BatchNavigator(
+  ...     batch=null_batch, request=DummyRequest(''))
+  >>> null_batch_navigator.nextBatchURL()
+  ''
+  >>> null_batch_navigator.prevBatchURL()
+  ''
 
 TODO:
 

@@ -20,4 +20,10 @@
         set_schema="canonical.launchpad.interfaces.IPOMsgSet" />
     </content>
 
+    <browser:page
+      for="*"
+      name="+pomsgset-translate"
+      permission="launchpad.AnyPerson"
+      template="../templates/pomsgset-translate.pt" />
+
 </configure>

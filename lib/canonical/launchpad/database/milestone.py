@@ -67,6 +67,24 @@ class MilestoneSet:
             raise NotFoundError(
                 "Milestone with ID %d does not exist" % milestoneid)
 
+    def getByNameAndProduct(self, name, product, default=None):
+        """See canonical.launchpad.interfaces.milestone.IMilestoneSet."""
+        query = AND(Milestone.q.name==name,
+                    Milestone.q.productID==product.id)
+        milestone = Milestone.selectOne(query)
+        if milestone is None:
+            return default
+        return milestone
+
+    def getByNameAndDistribution(self, name, distribution, default=None):
+        """See canonical.launchpad.interfaces.milestone.IMilestoneSet."""
+        query = AND(Milestone.q.name==name,
+                    Milestone.q.distributionID==distribution.id)
+        milestone = Milestone.selectOne(query)
+        if milestone is None:
+            return default
+        return milestone
+            
     def new(self, name, product=None, distribution=None, dateexpected=None,
         visible=True):
         """See IMilestoneSet."""

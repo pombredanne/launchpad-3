@@ -18,50 +18,69 @@
   ...
 
 
-  Change existing values and submit:
+  And now submit the form with the displayname changed and the option to hide
+  email addresses selected.
 
   >>> print http(r"""
   ... POST /people/name16/+edit HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... Content-Type: multipart/form-data; boundary=---------------------------14536564971542455713887772277
+  ... Content-Type: multipart/form-data; boundary=---------------------------1686168710640211894599015137
+  ... Referer: http://localhost:9000/people/name16/+edit
   ... 
-  ... -----------------------------14536564971542455713887772277
+  ... -----------------------------1686168710640211894599015137
   ... Content-Disposition: form-data; name="field.name"
   ... 
-  ... name161
-  ... -----------------------------14536564971542455713887772277
+  ... name16
+  ... -----------------------------1686168710640211894599015137
   ... Content-Disposition: form-data; name="field.displayname"
   ... 
-  ... Foo Bar1
-  ... -----------------------------14536564971542455713887772277
+  ... Foo Bar2
+  ... -----------------------------1686168710640211894599015137
   ... Content-Disposition: form-data; name="field.givenname"
   ... 
-  ... Foo1
-  ... -----------------------------14536564971542455713887772277
+  ... Foo
+  ... -----------------------------1686168710640211894599015137
   ... Content-Disposition: form-data; name="field.familyname"
   ... 
-  ... Bar1
-  ... -----------------------------14536564971542455713887772277
+  ... Bar
+  ... -----------------------------1686168710640211894599015137
+  ... Content-Disposition: form-data; name="field.hide_email_addresses.used"
+  ... 
+  ... 
+  ... -----------------------------1686168710640211894599015137
+  ... Content-Disposition: form-data; name="field.hide_email_addresses"
+  ... 
+  ... on
+  ... -----------------------------1686168710640211894599015137
   ... Content-Disposition: form-data; name="field.timezone"
   ... 
-  ... Africa/Harare
-  ... -----------------------------14536564971542455713887772277
+  ... Africa/Johannesburg
+  ... -----------------------------1686168710640211894599015137
   ... Content-Disposition: form-data; name="field.timezone-empty-marker"
   ... 
   ... 1
-  ... -----------------------------14536564971542455713887772277
+  ... -----------------------------1686168710640211894599015137
   ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
   ... 
   ... Change
-  ... -----------------------------14536564971542455713887772277--
+  ... -----------------------------1686168710640211894599015137--
   ... """)
   HTTP/1.1 303 See Other
   ...
-  ...name="field.name" ... value="name161"...
-  ...name="field.displayname" ... value="Foo Bar1"...
-  ...name="field.givenname" ... value="Foo1"...
-  ...name="field.familyname" ... value="Bar1"...
-  ...id="field.timezone"...
-  ...selected="selected" value="Africa/Harare"...
+  Location: http://localhost:9000/people/name16
   ...
 
+
+  Now we check to make sure the displayname was changed and the email
+  addresses are not shown on name16's home page.
+
+  >>> name16_page = http(r"""
+  ... GET /people/name16 HTTP/1.1
+  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... """).getBody()
+
+  >>> 'Foo Bar2' in name16_page
+  True
+
+  >>> 'foo.bar@canonical.com' in name16_page
+  False

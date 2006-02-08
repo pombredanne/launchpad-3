@@ -476,8 +476,7 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             data['origin'] = self.sourcepackagename.name
 
-        return DummyPOFile(self, language, owner=owner,
-            header=standardPOFileHeader % data)
+        return DummyPOFile(self, language, owner=owner)
 
     def createMessageIDSighting(self, potmsgset, messageID):
         """Creates in the database a new message ID sighting.
@@ -720,20 +719,13 @@ class POTemplateSubset:
         except SQLObjectNotFound:
             return None
 
-        if self.query is None:
-            query = 'POTemplate.potemplatename = %d' % ptn.id
-        else:
-            query = '%s AND POTemplate.potemplatename = %d' % (
-                self.query, ptn.id)
+        query = '%s AND POTemplate.potemplatename = %d' % (self.query, ptn.id)
 
         return POTemplate.selectOne(query, clauseTables=self.clausetables)
 
     def getPOTemplateByPath(self, path):
         """See IPOTemplateSubset."""
-        if self.query is None:
-            query = 'POTemplate.path = %s' % path
-        else:
-            query = '%s POTemplate.path = %s' % (self.query, path)
+        query = '%s AND POTemplate.path = %s' % (self.query, quote(path))
 
         return POTemplate.selectOne(query, clauseTables=self.clausetables)
 

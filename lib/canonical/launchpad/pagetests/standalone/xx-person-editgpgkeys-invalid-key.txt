@@ -26,7 +26,7 @@ The following keys are used in these tests:
   sub   2048g/D501190D 2005-10-12 [expired: 2005-10-13]
 
 
-Attempts to claim a revoked GPG key fail:
+Attempts to claim a revoked OpenPGP key fail:
 
   >>> print http(r"""
   ... POST /people/name12/+editgpgkeys HTTP/1.1
@@ -43,7 +43,7 @@ Attempts to claim a revoked GPG key fail:
   ...
 
 
-Attempts to claim an expired GPG key also fail:
+Attempts to claim an expired OpenPGP key also fail:
 
   >>> print http(r"""
   ... POST /people/name12/+editgpgkeys HTTP/1.1
@@ -81,7 +81,7 @@ will create login tokens for the revoked and expired test keys:
   >>> logout()
 
 
-Try to validate the revoked GPG key:
+Try to validate the revoked OpenPGP key:
 
   >>> print http(r"""
   ... POST /token/%s/+validategpg HTTP/1.1
@@ -98,7 +98,7 @@ Try to validate the revoked GPG key:
   ...
 
 
-Try to validate the revoked GPG key:
+Try to validate the revoked OpenPGP key:
 
   >>> print http(r"""
   ... POST /token/%s/+validategpg HTTP/1.1

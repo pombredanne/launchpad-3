@@ -1,5 +1,0 @@
-<configure xmlns="http://namespaces.zope.org/zope">
-  <content class="canonical.soyuz.generalapp.builddepsSet">
-    <allow interface="canonical.launchpad.interfaces.IbuilddepsSet"/>
-  </content>
-</configure>

@@ -1,6 +1,6 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-"""GPG key interfaces."""
+"""OpenPGP key interfaces."""
 
 __metaclass__ = type
 
@@ -22,12 +22,12 @@ KEYSERVER_QUERY_URL = (
 
 
 class IGPGKey(IHasOwner):
-    """GPG support"""
+    """OpenPGP support"""
     id = Int(title=_("Database id"), required=True, readonly=True)
     keysize = Int(title=_("Keysize"), required=True)
     algorithm = Choice(title=_("Algorithm"), required=True,
             vocabulary='GpgAlgorithm')
-    keyid = TextLine(title=_("GPG KeyID"), required=True,
+    keyid = TextLine(title=_("OpenPGP key ID"), required=True,
             constraint=valid_keyid)
     fingerprint = TextLine(title=_("User Fingerprint"), required=True,
             constraint=valid_fingerprint)
@@ -69,7 +69,7 @@ class IGPGKeySet(Interface):
         """
 
     def getGPGKeys(ownerid=None, active=True):
-        """Return GPG keys ordered by id.
+        """Return OpenPGP keys ordered by id.
 
         Optionally for a given owner and or a given status.
         """

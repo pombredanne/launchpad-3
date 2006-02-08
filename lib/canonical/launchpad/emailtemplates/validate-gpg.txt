@@ -2,19 +2,17 @@
 Hello
 
 We received a request from %(requester)s using email address 
-%(requesteremail)s, trying to validate the GPG Key for use in 
+%(requesteremail)s, trying to confirm an OpenPGP key for use in 
 Launchpad.
 
-GPG Key Details
+Key details:
 
         %(fingerprint)s 
         %(displayname)s
 %(uids)s
 
-Please click on the link below and complete the process to 
-add the key in question to your existing Launchpad account.
-
-   %(appurl)s/token/%(longstring)s
+Please go here to finish adding the key to your Launchpad account:
+%(appurl)s/token/%(longstring)s
 
 Thanks,
 
