@@ -39,7 +39,7 @@
   </metal:block>
 
   <div metal:fill-slot="main">
-    <div style="margin-left: 0; width: 74%">
+    <div style="margin-left: 0; width: 74%; float: left">
       <h2 class="lpcontext"
           tal:content="string:${context/displayname}'s package bug reports">
         Sample Person package bug reports
