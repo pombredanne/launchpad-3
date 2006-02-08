@@ -33,7 +33,7 @@
 
     <!-- IBugTask -->
     <content class="canonical.launchpad.database.BugTask">
-        <allow attributes="id bug target" />
+        <allow attributes="id bug bugID target" />
         <require
             permission="launchpad.View"
             attributes="product sourcepackagename distribution
@@ -288,14 +288,12 @@
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.bug.BugAlsoReportInView"
         label="Request fix in a product"
-        fields="product owner"
-        content_factory="canonical.launchpad.database.BugTaskFactory"
+        fields="product"
         arguments=""
-        keyword_arguments="product owner"
+        keyword_arguments="product"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
         lp:url="malone/bugs/$Bug.id/+upstreamtask">
-        <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
     </browser:addform>
 
     <browser:generalform
@@ -335,16 +333,11 @@
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.bug.BugAlsoReportInView"
         label="Request fix in a distribution"
-        fields="distribution sourcepackagename owner"
-        content_factory="canonical.launchpad.database.BugTaskFactory"
-        keyword_arguments="distribution sourcepackagename owner"
+        fields="distribution sourcepackagename"
+        keyword_arguments="distribution sourcepackagename"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
         lp:url="malone/bugs/$Bug.id/+distrotask">
-        <browser:widget
-          field="owner"
-          class="canonical.widgets.HiddenUserWidget"
-          />
     </browser:addform>
 
     <browser:editform

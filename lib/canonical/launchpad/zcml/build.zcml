@@ -41,16 +41,6 @@
         facet="overview"
         template="../templates/build-index.pt"
         />
-      <browser:page 
-        name="+changes"
-        facet="overview"
-        template="../templates/build-changes.pt"
-        />
-      <browser:page 
-        name="+buildlog"
-        facet="overview"
-        template="../templates/build-buildlog.pt"
-        />
       <browser:page
         name="+portlet-binaries"
         template="../templates/build-portlet-binaries.pt"

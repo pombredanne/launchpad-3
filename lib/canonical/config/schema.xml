@@ -49,8 +49,12 @@
         <key name="dbuser" datatype="string" default="launchpad" />
         <key name="root_url" datatype="canonical.config.urlbase"
             required="yes" />
-        <key name="errors_address" datatype="string" required="yes" />
-        <key name="bugs_domain" datatype="string" required="yes" />
+        <key name="errors_address" datatype="string" required="no"
+            default="launchpad-error-reports@lists.canonical.com" />
+        <key name="bugs_domain" datatype="string" required="no"
+            default="bugs.launchpad.net" />
+        <key name="oops_root_url" datatype="string" required="no"
+            default="https://chinstrap.ubuntu.com/~jamesh/oops.cgi/" />
         <key name="max_bug_attachment_size" datatype="integer" required="no"
             default="0">
             <description>
@@ -301,6 +305,8 @@
         </description>
         <key name="bugmail_error_from_address" datatype="string"
             required="yes" />
+        <key name="buglist_batch_size" datatype="integer"
+            required="no" default="20" />
     </sectiontype>
 
     <sectiontype name="poimport">

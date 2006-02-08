@@ -265,7 +265,7 @@ Reason:
                         'quantityamd64': order.quantityamd64,
                         'quantityppc': order.quantityppc,
                         'shipped_requests':
-                            len(recipient.shippedShipItRequests()),
+                            recipient.shippedShipItRequests().count(),
                         'reason': order.reason}
         message = self.mail_template % replacements
         simple_sendmail(self.from_addr, self.shipit_admins, subject, message,
@@ -694,7 +694,8 @@ class ShippingRequestAdminView:
         shipped_requests = self.context.recipient.shippedShipItRequests()
         if not shipped_requests:
             return False
-        elif len(shipped_requests) == 1 and shipped_requests[0] == self.context:
+        elif (shipped_requests.count() == 1 
+              and shipped_requests[0] == self.context):
             return False
         else:
             return True

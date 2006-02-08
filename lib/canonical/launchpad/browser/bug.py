@@ -7,33 +7,45 @@ __all__ = [
     'BugView',
     'BugSetView',
     'BugEditView',
-    'BugAddView',
-    'BugAddingView',
     'BugLinkView',
     'BugUnlinkView',
     'BugRelatedObjectEditView',
     'BugAlsoReportInView',
     'BugContextMenu',
     'BugWithoutContextView',
-    'DeprecatedAssignedBugsView']
+    'DeprecatedAssignedBugsView',
+    'BugTextView']
 
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, Link, structured, Navigation)
+    canonical_url, ContextMenu, Link, structured, Navigation, LaunchpadView)
 from canonical.launchpad.interfaces import (
-    IBug, ILaunchBag, IBugSet, IBugLinkTarget,
+    IBug, ILaunchBag, IBugSet, IBugTaskSet, IBugLinkTarget,
     IDistroBugTask, IDistroReleaseBugTask, NotFoundError)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.webapp import GeneralFormView
+from canonical.launchpad.webapp import GeneralFormView, stepthrough
 from canonical.launchpad.helpers import check_permission
 
 
 class BugSetNavigation(Navigation):
 
     usedfor = IBugSet
+
+    # XXX
+    # The browser:page declaration should be sufficient, but the traversal
+    # takes priority. This is a workaround.
+    # https://launchpad.net/products/launchpad/+bug/30238
+    # -- Daf 2006/02/01
+
+    @stepthrough('+text')
+    def text(self, name):
+        try:
+            return getUtility(IBugSet).getByNameOrID(name)
+        except (NotFoundError, ValueError):
+            return None
 
     def traverse(self, name):
         try:
@@ -201,8 +213,18 @@ class BugWithoutContextView:
 class BugAlsoReportInView(SQLObjectAddView):
     """View class for reporting a bug in other contexts."""
 
-    def add(self, content):
-        self.taskadded = content
+    def create(self, product=None, distribution=None, sourcepackagename=None):
+        """Create new bug task.
+
+        Only one of product and distribution may be not None, and
+        if product is None, sourcepackagename has to be None.
+        """
+        self.taskadded = getUtility(IBugTaskSet).createTask(
+            self.context.bug,
+            getUtility(ILaunchBag).user,
+            product=product,
+            distribution=distribution, sourcepackagename=sourcepackagename)
+        return self.taskadded
 
     def nextURL(self):
         """Return the user to the URL of the task they just added."""
@@ -233,35 +255,6 @@ class BugEditView(BugView, SQLObjectEditView):
 
     def changed(self):
         self.request.response.redirect(canonical_url(self.current_bugtask))
-
-
-class BugAddView(SQLObjectAddView):
-    """View for adding a bug."""
-
-    def add(self, content):
-        self.bugadded = content
-        return content
-
-    def create(self, **kw):
-        """"Create a new bug."""
-        return getUtility(IBugSet).createBug(**kw)
-
-    def nextURL(self):
-        bugtask = self.bugadded.bugtasks[0]
-        return canonical_url(bugtask)
-
-
-class BugAddingView(SQLObjectAddView):
-    """A hack for browser:addform's that use IBug as their context.
-
-    Use this class in the class="" of a browser:addform directive
-    for IBug.
-    """
-    def add(self, content):
-        return content
-
-    def nextURL(self):
-        return "."
 
 
 class BugRelatedObjectEditView(SQLObjectEditView):
@@ -331,3 +324,55 @@ class DeprecatedAssignedBugsView:
         self.request.response.redirect(
             canonical_url(getUtility(ILaunchBag).user) +
             "/+assignedbugs")
+
+
+class BugTextView(LaunchpadView):
+    """View for simple text page displaying information for a bug."""
+
+    def person_text(self, person):
+        return '%s (%s)' % (person.displayname, person.name)
+
+    def bug_text(self, bug):
+        text = []
+        text.append('bug: %d' % bug.id)
+        text.append('title: %s' % bug.title)
+        text.append('reporter: %s' % self.person_text(bug.owner))
+        text.append('subscribers: ')
+
+        for subscription in bug.subscriptions:
+            text.append(' %s' % self.person_text(subscription.person))
+
+        return ''.join(line + '\n' for line in text)
+
+    def bugtask_text(self, task):
+        text = []
+        text.append('task: %s' % task.targetname)
+        text.append('status: %s' % task.status.title)
+        text.append('reporter: %s' % self.person_text(task.owner))
+
+        if task.priority:
+            text.append('priority: %s' % task.priority.title)
+        else:
+            text.append('priority: ')
+
+        text.append('severity: %s' % task.severity.title)
+
+        if task.assignee:
+            text.append('assignee: %s' % self.person_text(task.assignee))
+        else:
+            text.append('assignee: ')
+
+        if task.milestone:
+            text.append('milestone: %s' % task.milestone.name)
+        else:
+            text.append('milestone: ')
+
+        return ''.join(line + '\n' for line in text)
+
+    def render(self):
+        self.request.response.setHeader('Content-type', 'text/plain')
+        texts = (
+            [self.bug_text(self.context)] +
+            [self.bugtask_text(task) for task in self.context.bugtasks])
+        return u'\n'.join(texts)
+

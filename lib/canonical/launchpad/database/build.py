@@ -3,14 +3,12 @@
 __metaclass__ = type
 __all__ = ['Build', 'BuildSet']
 
-from urllib2 import URLError
 
 from zope.interface import implements
-from zope.component import getUtility
 
 # SQLObject/SQLBase
 from sqlobject import (
-    StringCol, ForeignKey, IntervalCol, MultipleJoin)
+    StringCol, ForeignKey, IntervalCol)
 from sqlobject.sqlbuilder import AND, IN
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -26,11 +24,7 @@ from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.builder import BuildQueue
 
-from canonical.librarian.interfaces import ILibrarianClient
-
-
 from canonical.lp.dbschema import EnumCol, BuildStatus
-
 
 class Build(SQLBase):
     implements(IBuild)
@@ -83,6 +77,11 @@ class Build(SQLBase):
             self.distroarchrelease.distrorelease.name)
 
     @property
+    def was_built(self):
+        """See IBuild"""
+        return self.buildstate is not BuildStatus.NEEDSBUILD
+
+    @property
     def build_icon(self):
         """See IBuild"""
 
@@ -98,6 +97,10 @@ class Build(SQLBase):
     @property
     def distributionsourcepackagerelease(self):
         """See IBuild."""
+        from canonical.launchpad.database.distributionsourcepackagerelease \
+             import (
+            DistributionSourcePackageRelease)
+
         return DistributionSourcePackageRelease(
             distribution=self.distroarchrelease.distrorelease.distribution,
             sourcepackagerelease=self.sourcepackagerelease)
@@ -124,7 +127,6 @@ class Build(SQLBase):
         self.gpgsigningkey = None
         self.changes = None
         self.buildlog = None
-        
 
     def __getitem__(self, name):
         return self.getBinaryPackageRelease(name)
@@ -218,6 +220,9 @@ class BuildSet:
         if not arch_ids:
             return None
 
+        clauseTables = []
+        orderBy="-datebuilt"
+
         # format clause according single/multiple architecture(s) form
         if len(arch_ids) == 1:
             condition_clauses = [('distroarchrelease=%s'
@@ -226,9 +231,23 @@ class BuildSet:
             condition_clauses = [('distroarchrelease IN %s'
                                   % sqlvalues(arch_ids))]
 
+        # exclude gina-generated builds
+        # buildstate == FULLYBUILT && datebuilt == null
+        condition_clauses.append(
+            "NOT (Build.buildstate = %s AND Build.datebuilt is NULL)"
+            % sqlvalues(BuildStatus.FULLYBUILT))
+
         # attempt to given status
-        if status:
+        if status is not None:
             condition_clauses.append('buildstate=%s' % sqlvalues(status))
 
+        # Order NEEDSBUILD by lastscore, it should present the build
+        # in a more natural order.
+        if status == BuildStatus.NEEDSBUILD:
+            orderBy = "BuildQueue.lastscore"
+            clauseTables.append('BuildQueue')
+            condition_clauses.append('BuildQueue.build = Build.id')
+
         return Build.select(' AND '.join(condition_clauses),
-                            orderBy="-datebuilt")
+                            clauseTables=clauseTables,
+                            orderBy=orderBy)

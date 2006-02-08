@@ -60,7 +60,7 @@ Abkhasian. We should get redirected back to the group page.
   <BLANKLINE>
   ...
 
-And let's appoint Foo Bar for Afrikaans too.
+And let's appoint No Priviledges user for Afrikaans too.
 
   >>> print http(r"""
   ... POST /rosetta/groups/polyglot/+appoint HTTP/1.1
@@ -79,7 +79,7 @@ And let's appoint Foo Bar for Afrikaans too.
   ... -----------------------------1528991119743688478288052508
   ... Content-Disposition: form-data; name="field.translator"
   ... 
-  ... name16
+  ... no-priv
   ... -----------------------------1528991119743688478288052508
   ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
   ... 
@@ -108,6 +108,6 @@ Now we should see both of those appointments on the polyglot page:
         <td><a href="/people/name21">Hoary Gnome Team</a>
   ...
         <td>Afrikaans</td>
-        <td><a href="/people/name16">Foo Bar</a>
+        <td><a href="/people/no-priv">No Privileges Person</a>
   ...
 

@@ -1,0 +1,48 @@
+#!/usr/bin/python
+
+import base64
+import httplib
+import os
+import sys
+import urllib
+import urllib2
+
+from MimeWriter import MimeWriter
+from StringIO import StringIO
+
+paste_host = 'chinstrap.ubuntu.com'
+paste_path = '/~dsilvers/paste/'
+auth_file = os.path.expanduser('~/.canonical_paste_auth')
+
+def read_auth_file(path):
+    f = file(path)
+    username = f.readline().strip()
+    password = f.readline().strip()
+    f.close()
+    return (username, password)
+
+def make_basic_auth_header(username, password):
+    auth = '%s:%s' % (username, password)
+    return 'Basic %s' % base64.encodestring(auth).strip()
+
+def https_post_form_with_auth(host, path, form, auth):
+    form_data = urllib.urlencode(form).strip()
+    connection = httplib.HTTPSConnection(host)
+    connection.request('POST', path, form_data, {
+        'Host': host,
+        'Authorization': auth,
+        'Content-type': 'application/x-www-form-urlencoded',
+        'Content-length': str(len(form_data)),
+        })
+    return connection.getresponse()
+
+if __name__ == '__main__':
+    form = (('title', sys.argv[1]), ('content', sys.stdin.read()))
+    username, password = read_auth_file(auth_file)
+    auth = make_basic_auth_header(username, password)
+    response = https_post_form_with_auth(paste_host, paste_path, form, auth)
+    refresh = response.getheader('refresh')
+
+    if refresh:
+        print refresh.split('=')[1]
+

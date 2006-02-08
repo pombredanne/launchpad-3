@@ -24,7 +24,7 @@
   </p>
 
   <tal:block condition="view/allMembersCount">
-    <tal:block condition="context/activemembers/count:len">
+    <tal:block condition="context/active_member_count">
       <h2>Active members</h2>
 
       <table class="listing sortable" id="activemembers">
@@ -65,7 +65,7 @@
       </table>
     </tal:block>
 
-    <tal:block condition="context/proposedmembers/count:len">
+    <tal:block condition="context/proposedmembers/count">
       <h2>Proposed members</h2>
 
       <p>
@@ -106,7 +106,7 @@
         </li>
       </ul>
     </tal:block>
-    <tal:block condition="context/inactivemembers/count:len">
+    <tal:block condition="context/inactivemembers/count">
       <h2>Inactive members</h2>
       <p>
         Inactive members are those whose

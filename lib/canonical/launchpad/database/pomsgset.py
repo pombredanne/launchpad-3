@@ -563,9 +563,9 @@ class POMsgSet(SQLBase):
 
         if len(posubmission_ids) > 0:
             ids = [str(L[0]) for L in posubmission_ids]
-            return POSubmission.select(
+            return helpers.shortlist(POSubmission.select(
                 'POSubmission.id IN (%s)' % ', '.join(ids),
-                orderBy='-datecreated')
+                orderBy='-datecreated'))
         else:
             return []
 

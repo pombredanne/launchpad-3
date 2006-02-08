@@ -64,20 +64,15 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
 
 def linkify_changelog(changelog, sourcepkgnametxt):
-    # XXX: salgado: No bugtracker URL should be hardcoded.
     if changelog is None:
         return changelog
     changelog = cgi.escape(changelog)
-    deb_bugs = 'http://bugs.debian.org/cgi-bin/bugreport.cgi?bug='
-    warty_bugs = 'https://bugzilla.ubuntu.com/show_bug.cgi?id='
+    # XXX cprov 20060207: use re.match and fmt:url instead of this nasty
+    # url builder. Also we need an specification describing the syntax for
+    # changelog linkification and processing (mostly bug interface),
+    # bug # 30817
     changelog = re.sub(r'%s \(([^)]+)\)' % sourcepkgnametxt,
-                       r'%s (<a href="../\1">\1</a>)' % sourcepkgnametxt,
-                       changelog)
-    changelog = re.sub(r'(([Ww]arty|[Uu]buntu) *#)([0-9]+)',
-                       r'<a href="%s\3">\1\3</a>' % warty_bugs,
-                       changelog)
-    changelog = re.sub(r'[^(W|w)arty]#([0-9]+)',
-                       r'<a href="%s\1">#\1</a>' % deb_bugs,
+                       r'%s (<a href="\1">\1</a>)' % sourcepkgnametxt,
                        changelog)
     return changelog
 
