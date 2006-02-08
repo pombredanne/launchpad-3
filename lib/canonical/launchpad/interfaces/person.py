@@ -20,7 +20,7 @@ __all__ = [
 
 
 from zope.schema import (
-    Choice, Datetime, Int, Text, TextLine, Password, Bytes)
+    Choice, Datetime, Int, Text, TextLine, Password, Bytes, Bool)
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
@@ -145,6 +145,9 @@ class IPerson(IHasSpecifications):
             )
     languages = Attribute(_('List of languages known by this person'))
 
+    hide_email_addresses = Bool(
+        title=_("Hide my email addresses from other Launchpad users"),
+        required=False, default=False)
     # this is not a date of birth, it is the date the person record was
     # created in this db
     datecreated = Datetime(
@@ -195,6 +198,9 @@ class IPerson(IHasSpecifications):
     activememberships = Attribute(
         "List of TeamMembership objects for people who are active members "
         "in this team.")
+    teams_participated_in = Attribute(
+            "Iterable of all Teams that this person is active in, recursive"
+            )
     guessedemails = Attribute("List of emails with status NEW. These email "
         "addresses probably came from a gina or POFileImporter run.")
     validatedemails = Attribute("Emails with status VALIDATED")
@@ -312,6 +318,13 @@ class IPerson(IHasSpecifications):
 
     browsername = Attribute(
         'Return a textual name suitable for display in a browser.')
+
+    def getBugContactPackages():
+        """Return a list of packages for which this person is a bug contact.
+
+        Returns a list of IDistributionSourcePackage's, ordered alphabetically
+        (A to Z) by name.
+        """
 
     def setPreferredEmail(email):
         """Set the given email address as this person's preferred one."""
@@ -594,11 +607,18 @@ class IPersonSet(Interface):
         default ordering specified in Person._defaultOrder.
         """
 
+    def updateStatistics(ztm):
+        """Update statistics caches and commit."""
+
     def peopleCount():
-        """Return the number of non-merged persons in the database."""
+        """Return the number of non-merged persons in the database as
+           of the last statistics update.
+        """
 
     def teamsCount():
-        """Return the number of teams in the database."""
+        """Return the number of teams in the database as of the last
+           statistics update.
+        """
 
     def find(text, orderBy=None):
         """Return all non-merged Persons and Teams whose name, displayname,
