@@ -42,6 +42,21 @@ def f_touch(*parts):
     fname = os.path.join(*parts)
     open(fname, "w").close()
 
+def reorder_components(components):
+    """Return a list of the components provided.
+
+    The list will be ordered by the semi arbitrary rules of ubuntu.
+    Over time this method needs to be removed and replaced by having
+    component ordering codified in the database.
+    """
+    ret = []
+    for comp in ['main', 'restricted', 'universe', 'multiverse']:
+        if comp in components:
+            ret.append(comp)
+            components.remove(comp)
+    ret.extend(components)
+    return ret
+
 class Publisher(object):
     """Publisher is the class used to provide the facility to publish
     files in the pool of a Distribution. The publisher objects will be
@@ -710,8 +725,8 @@ Description: %s
 """ % (distribution.displayname, distribution.displayname,
        full_name, distrorelease.version, distrorelease.name,
        datetime.utcnow().strftime("%a, %d %b %Y %k:%M:%S UTC"),
-       " ".join(all_architectures), " ".join(all_components),
-       drsummary))
+       " ".join(all_architectures),
+       " ".join(reorder_components(all_components)), drsummary))
         f.write("MD5Sum:\n")
         all_files = sorted(list(all_files), key=os.path.dirname)
         for file_name in all_files:
