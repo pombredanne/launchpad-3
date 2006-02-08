@@ -297,14 +297,14 @@ class ShippingRequestSet:
         if recipient_text:
             recipient_text = recipient_text.lower()
             queries.append("""
-                ShippingRequest.fti @@ ftq(%s) OR recipient IN 
+                (ShippingRequest.fti @@ ftq(%s) OR recipient IN 
                     (
                     SELECT Person.id FROM Person 
                         WHERE Person.fti @@ ftq(%s)
                     UNION
                     SELECT EmailAddress.person FROM EmailAddress
                         WHERE lower(EmailAddress.email) LIKE %s || '%%'
-                    )
+                    ))
                 """ % (quote(recipient_text), quote(recipient_text),
                        quote_like(recipient_text)))
 
