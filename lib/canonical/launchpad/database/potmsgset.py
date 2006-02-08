@@ -19,6 +19,7 @@ from canonical.launchpad.database.pomsgset import POMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
 from canonical.launchpad.database.poselection import POSelection
 from canonical.launchpad.database.posubmission import POSubmission
+from canonical.launchpad.helpers import shortlist
 
 
 class POTMsgSet(SQLBase):
@@ -68,7 +69,7 @@ class POTMsgSet(SQLBase):
                 'POSubmission.id IN (%s)' % ', '.join(ids),
                 orderBy='-datecreated')
 
-            return posubmissions
+            return shortlist(posubmissions)
         else:
             return []
 
