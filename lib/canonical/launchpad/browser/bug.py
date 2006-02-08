@@ -16,18 +16,21 @@ __all__ = [
     'DeprecatedAssignedBugsView',
     'BugTextView']
 
+from zope.app.form.interfaces import WidgetsError
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, structured, Navigation, LaunchpadView)
 from canonical.launchpad.interfaces import (
-    IBug, ILaunchBag, IBugSet, IBugTaskSet, IBugLinkTarget,
-    IDistroBugTask, IDistroReleaseBugTask, NotFoundError)
+    IAddUpstreamBugTaskForm, IBug, ILaunchBag, IBugSet, IBugTaskSet,
+    IBugLinkTarget, IBugWatchSet, IDistroBugTask, IDistroReleaseBugTask,
+    NotFoundError)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp import GeneralFormView, stepthrough
 from canonical.launchpad.helpers import check_permission
+from canonical.launchpad.validators import LaunchpadValidationError
 
 
 class BugSetNavigation(Navigation):
@@ -210,25 +213,58 @@ class BugWithoutContextView:
         self.request.response.redirect(canonical_url(bugtasks[0]))
 
 
-class BugAlsoReportInView(SQLObjectAddView):
+class BugAlsoReportInView(GeneralFormView):
     """View class for reporting a bug in other contexts."""
 
-    def create(self, product=None, distribution=None, sourcepackagename=None):
+    label = "Request fix in a product"
+    schema = IAddUpstreamBugTaskForm
+    fieldNames = ['product', 'bugtracker', 'remotebug']
+    _keyword_arguments = fieldNames
+
+    def validate(self, data):
+        """Validate the form.
+
+        Check that:
+
+            * If bugtracker is not None, remotebug has to be not None
+        """
+        errors = []
+        widgets_data = {}
+        bugtracker = data.get('bugtracker')
+        remotebug = data.get('remotebug')
+        if bugtracker is not None and remotebug is None:
+            errors.append(LaunchpadValidationError(
+                "Please specify the remote bug number in the remote "
+                "bug tracker."))
+            widgets_data['bugtracker'] = bugtracker
+            widgets_data['remotebug'] = remotebug
+
+        if errors:
+            raise WidgetsError(errors, widgetsData=widgets_data)
+
+    def process(self, product=None, distribution=None, sourcepackagename=None,
+                bugtracker=None, remotebug=None):
         """Create new bug task.
 
         Only one of product and distribution may be not None, and
         if product is None, sourcepackagename has to be None.
         """
-        self.taskadded = getUtility(IBugTaskSet).createTask(
+        taskadded = getUtility(IBugTaskSet).createTask(
             self.context.bug,
             getUtility(ILaunchBag).user,
             product=product,
             distribution=distribution, sourcepackagename=sourcepackagename)
-        return self.taskadded
 
-    def nextURL(self):
-        """Return the user to the URL of the task they just added."""
-        return canonical_url(self.taskadded)
+        if bugtracker is not None:
+            user = getUtility(ILaunchBag).user
+            bug_watch = getUtility(IBugWatchSet).createBugWatch(
+                bug=taskadded.bug, owner=user, bugtracker=bugtracker,
+                remotebug=remotebug)
+            if not product.official_malone:
+                taskadded.bugwatch = bug_watch
+
+        self._nextURL = canonical_url(taskadded)
+        return ''
 
 
 class BugSetView:

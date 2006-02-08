@@ -189,13 +189,15 @@ def bugs_assigned(context, view):
     else:
         return 'No-one to display bugs for'
 
+bugtask_edit = BugTaskPageTitle()
+
 bugtask_index = BugTaskPageTitle()
 
 bugtask_release_targeting = BugTaskTargetingTitle()
 
-bugtask_view = BugTaskPageTitle()
+bugtask_upstreamtask = LaunchbagBugID('Bug #%d - Request fix in a product')
 
-bugtask_edit = BugTaskPageTitle()
+bugtask_view = BugTaskPageTitle()
 
 # bugtask_macros_buglisting contains only macros
 # bugtasks_index is a redirect

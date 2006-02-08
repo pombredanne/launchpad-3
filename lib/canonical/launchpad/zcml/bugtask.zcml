@@ -282,19 +282,14 @@
         for="canonical.launchpad.interfaces.IUpstreamBugTask"
         name="+index" />
 
-    <browser:addform
+    <browser:page
         name="+upstreamtask"
-        schema="canonical.launchpad.interfaces.IUpstreamBugTask"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.bug.BugAlsoReportInView"
-        label="Request fix in a product"
-        fields="product"
-        arguments=""
-        keyword_arguments="product"
         permission="launchpad.AnyPerson"
-        template="../templates/launchpad-addform.pt"
+        template="../templates/bugtask-upstreamtask.pt"
         lp:url="malone/bugs/$Bug.id/+upstreamtask">
-    </browser:addform>
+    </browser:page>
 
     <browser:generalform
         name="+editstatus-page"
