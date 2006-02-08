@@ -68,7 +68,9 @@ def linkify_changelog(changelog, sourcepkgnametxt):
         return changelog
     changelog = cgi.escape(changelog)
     # XXX cprov 20060207: use re.match and fmt:url instead of this nasty
-    # url builder.
+    # url builder. Also we need an specification describing the syntax for
+    # changelog linkification and processing (mostly bug interface),
+    # bug # 30817
     changelog = re.sub(r'%s \(([^)]+)\)' % sourcepkgnametxt,
                        r'%s (<a href="\1">\1</a>)' % sourcepkgnametxt,
                        changelog)
