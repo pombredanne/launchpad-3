@@ -160,11 +160,11 @@ class BinaryPackageRelease(SQLBase):
 
     def override(self, component=None, section=None, priority=None):
         """See IBinaryPackageRelease."""
-        if component:
+        if component is not None:
             self.component = component
-        if section:
+        if section is not None:
             self.section = section
-        if priority:
+        if priority is not None:
             self.priority = priority
 
 

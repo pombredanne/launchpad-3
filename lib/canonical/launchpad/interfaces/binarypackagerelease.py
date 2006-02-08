@@ -71,7 +71,8 @@ class IBinaryPackageRelease(Interface):
     def override(component=None, section=None, priority=None):
         """Uniform method to override binarypackagerelease attribute.
 
-        All arguments are optional and can be set individually.
+        All arguments are optional and can be set individually. A non-passed
+        argument remains untouched.
         """
 
 class IBinaryPackageReleaseSet(Interface):

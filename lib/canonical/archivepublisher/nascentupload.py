@@ -1741,7 +1741,14 @@ class NascentUpload:
         arg_section = getUtility(ISectionSet)[section_name]
         arg_creator = self.changed_by['person'].id
         arg_urgency = urgency_map[self.changes['urgency'].lower()]
-        arg_changelog = guess_encoding(self.changes['changes'])
+        # rebuild the changes author line as specified in bug # 30621,
+        # new line containing:
+        # ' -- <CHANGED-BY>  <DATE>'
+        changes_author = ('\n -- %s   %s' % (self.changes['changed-by'],
+                                             self.changes['date']))
+        changes_content = self.changes['changes'] + changes_author
+        arg_changelog = guess_encoding(changes_content)
+
         arg_dsc = guess_encoding(self.dsc_contents['filecontents'])
         arg_dscsigningkey = self.dsc_signing_key
         arg_manifest = None
