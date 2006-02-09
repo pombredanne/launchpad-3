@@ -235,8 +235,7 @@
   >>> import canonical.database.sqlbase
   >>> canonical.database.sqlbase.flush_database_caches()
   >>> from canonical.launchpad.database import EmailAddressSet
-  >>> email = EmailAddressSet().getByEmail('foo@baz.com')
-  >>> email.person.name
+  >>> EmailAddressSet().getByEmail('foo@baz.com').person.name
   u'no-priv'
 
 
