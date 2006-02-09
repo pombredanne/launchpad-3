@@ -272,6 +272,7 @@ class QueueAction:
         """ """
         print "Would be sending a mail:"
         print "   Subject: %s" % message['Subject']
+        print "   Sender: %s" % message['From']
         print "   Recipients: %s" % message['To']
         print "   Body:"
         for line in message.get_payload().split("\n"):
@@ -539,7 +540,7 @@ class QueueActionAccept(QueueAction):
             else:
                 for source in queue_item.sources:
                     src_rel = source.sourcepackagerelease
-                    summary = ('%s_%s was ACCEPTED as %s/%s'
+                    summary = ('%s %s was ACCEPTED.\n    Component: %s Section: %s'
                                % (src_rel.name, src_rel.version,
                                   src_rel.component.name,
                                   src_rel.section.name))
@@ -555,7 +556,7 @@ class QueueActionAccept(QueueAction):
 
                     replacements = {
                         "MAINTAINERFROM": sender,
-                        "ANNOUNCE": self.announce,
+                        "ANNOUNCE": self.announcelist,
                         "SOURCE": src_rel.name,
                         "VERSION": src_rel.version,
                         "ARCH": 'source',
