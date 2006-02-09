@@ -705,8 +705,6 @@ sourcepackage = ContextTitle('%s')
 
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
 
-sourcepackage_buildlog = ContextTitle('Build log for %s')
-
 sourcepackage_builds = ContextTitle('Builds for %s')
 
 sourcepackage_translate = ContextTitle('Help translate %s')
@@ -728,13 +726,6 @@ sourcepackage_translate = ContextTitle('Help translate %s')
 
 sourcepackage_translations = ContextTitle(
     'Rosetta translation templates for %s')
-
-sourcepackagebuild_buildlog = 'Source package build log'
-
-sourcepackagebuild_changes = 'Source package changes'
-
-def sourcepackagebuild_index(context, view):
-    return 'Builds of %s' % context.sourcepackagerelease.sourcepackage.summary
 
 sourcepackagenames_index = 'Source package name set'
 

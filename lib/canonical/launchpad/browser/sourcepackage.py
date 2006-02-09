@@ -92,7 +92,7 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     usedfor = ISourcePackage
     facet = 'overview'
-    links = ['hct', 'changelog', 'buildlog', 'builds']
+    links = ['hct', 'changelog', 'builds']
 
     def hct(self):
         text = structured(
@@ -101,9 +101,6 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     def changelog(self):
         return Link('+changelog', 'Change Log', icon='list')
-
-    def buildlog(self):
-        return Link('+buildlog', 'Build Log', icon='build-success')
 
     def upstream(self):
         return Link('+packaging', 'Edit Upstream Link', icon='edit')
