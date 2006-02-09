@@ -155,7 +155,23 @@ class ErrorSummary:
         # string.
         evalue = re.sub("0x[abcdef0-9]+", "INSTANCE-ID", evalue)
 
+        # XXX: 20060209 jamesh
+        # temporary decoding of RequestQueryTimedOut exceptions
+        # this is gross.
+        if etype == 'RequestQueryTimedOut':
+            ns = { '__builtins__': {} }
+            try:
+                t = eval(evalue.replace('\\\\', '\\'), ns, ns)
+            except:
+                t = None
+            if isinstance(t, tuple) and len(t) == 2:
+                evalue = t[1].replace('\n', ' ')
+
         if etype in ['RequestExpired', 'RequestQueryTimedOut']:
+            evalue = re.sub(r"'(?:\\\\|\\[^\\]|[^'])*'",
+                            '$STRING', evalue)
+            evalue = re.sub(r'\b\d+', '$INT', evalue)
+
             self.addOops(self.expired, etype, evalue, url, oopsid,
                          local_referer, is_bot)
         elif etype in ['SoftRequestTimeout']:
