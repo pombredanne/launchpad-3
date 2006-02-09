@@ -142,8 +142,23 @@ class GPGHandler:
         
         result = c.op_verify_result()
 
-        # XXX cprov 20050328
-        # it doesn't support multiple signatures yet
+        # XXX 20060131 jamesh
+        # We raise an exception if we don't get exactly one signature.
+        # If we are verifying a clear signed document, multiple signatures
+        # may indicate two differently signed sections concatenated
+        # together.
+        # Multiple signatures for the same signed block of data is possible,
+        # but uncommon.  If people complain, we'll need to examine the issue
+        # again.
+        
+        # if no signatures were found, raise an error:
+        if result.signatures is None:
+            raise GPGVerificationError('No signatures found')
+        # we only expect a single signature:
+        if result.signatures.next is not None:
+            raise GPGVerificationError('Single signature expected, '
+                                       'found multiple signatures')
+
         signature = result.signatures
 
         # signature.status == 0 means "Ok"
@@ -154,7 +169,7 @@ class GPGHandler:
         # keyserver and use the master key fingerprint.
         result, key = self.retrieveKey(signature.fpr)
         if not result:
-            raise GPGVerificationError("Unable to map subkey")
+            raise GPGVerificationError("Unable to map subkey: %s" % key)
         
         plain.seek(0, 0)
         plain_data = plain.read()

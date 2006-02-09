@@ -22,6 +22,7 @@ from psycopgda.adapter import PG_ENCODING
 SECONDS = 1
 MINUTES = 60 * SECONDS
 HOURS = 60 * MINUTES
+DAYS = 24 * HOURS
 
 class PGSessionDataContainer:
     """An ISessionDataContainer that stores data in PostgreSQL
@@ -45,10 +46,10 @@ class PGSessionDataContainer:
     """
     implements(ISessionDataContainer)
 
-    timeout = 12 * HOURS
+    timeout = 60 * DAYS
     # If we have a low enough resolution, we can determine active users
     # using the session data.
-    resolution = 10 * MINUTES
+    resolution = 9 * MINUTES
 
     session_data_table_name = 'SessionData'
     session_pkg_data_table_name = 'SessionPkgData'

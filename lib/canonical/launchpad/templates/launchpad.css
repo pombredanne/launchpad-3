@@ -132,6 +132,10 @@ h3, h4, h5, h6 {
   font-size: 1em;
   margin-bottom: 0;
 }
+h5.languages {
+  background-image: url(/++resource++languages.gif);
+  background-repeat: no-repeat;
+}
 label {
   font-weight: bold;
 }
@@ -1144,3 +1148,12 @@ Calendar stuff.
   font-weight: bold;
   color: #cc0000;
 }
+
+dl.faq dt {
+    font-weight: bold;
+}
+
+dl.faq dd {
+    margin: 0.5em 1em;
+}
+

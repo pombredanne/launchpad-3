@@ -52,5 +52,10 @@
     </browser:addform>
 
 
+    <!-- BinaryAndSourcePackagename -->
+    <content class="canonical.launchpad.database.BinaryAndSourcePackageName">
+        <allow interface="canonical.launchpad.interfaces.IBinaryAndSourcePackageName" />
+    </content>
+
 </facet>
 </configure>

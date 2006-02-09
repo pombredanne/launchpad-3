@@ -21,7 +21,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.lp.dbschema import (
     EnumCol, TranslationPermission, BugTaskSeverity, BugTaskStatus,
     SpecificationSort)
-
+from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.launchpad.database.bug import BugSet
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productbounty import ProductBounty
@@ -38,7 +38,7 @@ from canonical.launchpad.interfaces import (
     )
 
 
-class Product(SQLBase):
+class Product(SQLBase, BugTargetBase):
     """A Product."""
 
     implements(IProduct, ICalendarOwner)
@@ -339,7 +339,6 @@ class Product(SQLBase):
             product=self, name=name, title=title, url=url, home_page=home_page,
             lifecycle_status=lifecycle_status, summary=summary,
             whiteboard=whiteboard)
-        
 
 
 class ProductSet:
@@ -389,7 +388,8 @@ class ProductSet:
                       description, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
                       downloadurl=None, freshmeatproject=None,
-                      sourceforgeproject=None, programminglang=None):
+                      sourceforgeproject=None, programminglang=None,
+                      reviewed=False):
         """See canonical.launchpad.interfaces.product.IProductSet."""
         return Product(
             owner=owner, name=name, displayname=displayname,
@@ -398,7 +398,7 @@ class ProductSet:
             screenshotsurl=screenshotsurl, wikiurl=wikiurl,
             downloadurl=downloadurl, freshmeatproject=freshmeatproject,
             sourceforgeproject=sourceforgeproject,
-            programminglang=programminglang)
+            programminglang=programminglang, reviewed=reviewed)
 
     def forReview(self):
         """See canonical.launchpad.interfaces.product.IProductSet."""

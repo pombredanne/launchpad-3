@@ -9,6 +9,8 @@ __all__ = [
     'DistroReleaseSet',
     ]
 
+from cStringIO import StringIO
+
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -27,11 +29,11 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     IDistroRelease, IDistroReleaseSet, ISourcePackageName,
     IPublishedPackageSet, IHasBuildRecords, NotFoundError,
-    IBinaryPackageName, IBuildSet, UNRESOLVED_BUGTASK_STATUSES,
-    RESOLVED_BUGTASK_STATUSES)
+    ILibraryFileAliasSet, IBinaryPackageName, IBuildSet,
+    UNRESOLVED_BUGTASK_STATUSES, RESOLVED_BUGTASK_STATUSES)
 
+from canonical.launchpad.components.bugtarget import BugTargetBase
 from canonical.database.constants import DEFAULT, UTC_NOW
-
 from canonical.launchpad.database.binarypackagename import (
     BinaryPackageName)
 from canonical.launchpad.database.distroreleasebinarypackage import (
@@ -63,7 +65,7 @@ from canonical.launchpad.database.queue import DistroReleaseQueue
 from canonical.launchpad.helpers import shortlist
 
 
-class DistroRelease(SQLBase):
+class DistroRelease(SQLBase, BugTargetBase):
     """A particular release of a distribution."""
     implements(IDistroRelease, IHasBuildRecords)
 
@@ -289,7 +291,7 @@ class DistroRelease(SQLBase):
         """See IDistroRelease."""
         # first find the set of all languages for which we have pofiles in
         # the distribution
-        langidset = set([
+        langidset = set(
             language.id for language in Language.select('''
                 Language.id = POFile.language AND
                 POFile.potemplate = POTemplate.id AND
@@ -298,7 +300,7 @@ class DistroRelease(SQLBase):
                 orderBy=['code'],
                 distinct=True,
                 clauseTables=['POFile', 'POTemplate'])
-            ])
+            )
         # now run through the existing DistroReleaseLanguages for the
         # distrorelease, and update their stats, and remove them from the
         # list of languages we need to have stats for
@@ -374,6 +376,52 @@ class DistroRelease(SQLBase):
         """See IDistroRelease."""
         return SourcePackagePublishing.selectBy(distroreleaseID=self.id,
                                                 status=status)
+
+    def getBinaryPackagePublishing(self, name=None, version=None, archtag=None,
+                                   sourcename=None, orderBy=None):
+        """See IDistroRelease."""
+
+        clauseTables = ['BinaryPackagePublishing', 'DistroArchRelease',
+                        'BinaryPackageRelease', 'BinaryPackageName', 'Build',
+                        'SourcePackageRelease', 'SourcePackageName' ]
+
+        query = ['''BinaryPackagePublishing.binarypackagerelease =
+                        BinaryPackageRelease.id AND
+                    BinaryPackagePublishing.distroarchrelease =
+                        DistroArchRelease.id AND
+                    BinaryPackageRelease.binarypackagename = 
+                        BinaryPackageName.id AND
+                    BinaryPackageRelease.build =
+                        Build.id AND
+                    Build.sourcepackagerelease =
+                        SourcePackageRelease.id AND
+                    SourcePackageRelease.sourcepackagename =
+                        SourcePackageName.id AND
+                    DistroArchRelease.distrorelease = %s AND
+                    BinaryPackagePublishing.status = %s'''
+            % sqlvalues(self.id, PackagePublishingStatus.PUBLISHED)]
+
+        if name:
+            query.append('BinaryPackageName.name = %s' % sqlvalues(name))
+
+        if version:
+            query.append('BinaryPackageRelease.version = %s'
+                      % sqlvalues(version))
+
+        if archtag:
+            query.append('DistroArchRelease.architecturetag = %s'
+                      % sqlvalues(archtag))
+
+        if sourcename:
+            query.append('SourcePackageName.name = %s' % sqlvalues(sourcename))
+
+        query = " AND ".join(query)
+
+        result = BinaryPackagePublishing.select(query, distinct=False,
+                                                clauseTables=clauseTables,
+                                                orderBy=orderBy)
+
+        return result
 
     def publishedBinaryPackages(self, component=None):
         """See IDistroRelease."""
@@ -551,13 +599,24 @@ class DistroRelease(SQLBase):
             distrorelease=self, owner=owner)
         return dar
 
-    def createQueueEntry(self, pocket,
-                         status=DistroReleaseQueueStatus.ACCEPTED):
+    def createQueueEntry(self, pocket, changesfilename, changesfilecontent):
         """See IDistroRelease."""
-
+        # We store the changes file in the librarian to avoid having to
+        # deal with broken encodings in these files; this will allow us
+        # to regenerate these files as necessary.
+        #
+        # The use of StringIO here should be safe: we do no encoding of
+        # the content in the changes file (as doing so would be guessing
+        # at best, causing unpredictable corruption), and simply pass it
+        # off to the librarian.
+        file_alias_set = getUtility(ILibraryFileAliasSet)
+        changes_file = file_alias_set.create(changesfilename,
+            len(changesfilecontent), StringIO(changesfilecontent),
+            'text/plain')
         return DistroReleaseQueue(distrorelease=self.id,
+                                  status=DistroReleaseQueueStatus.NEW,
                                   pocket=pocket,
-                                  status=status)
+                                  changesfile=changes_file.id)
 
     def getQueueItems(self, status=DistroReleaseQueueStatus.ACCEPTED):
         """See IDistroRelease."""
