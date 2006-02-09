@@ -10,6 +10,7 @@ import tempfile
 from cStringIO import StringIO
 import os
 import shutil
+import gc
 
 from bzrlib.branch import ScratchBranch
 import bzrlib.branch
@@ -127,6 +128,19 @@ class AcceptanceTests(BzrTestCase):
     def tearDown(self):
         # Undo setUp.
         self.server.tearDown()
+
+        # XXX: spiv 2006-02-09: manually break cycles in uncollectable garbage
+        # caused by the server shutting down while paramiko clients still have
+        # connections to it.  This bug has been fixed in upstream paramiko, so
+        # soon this will be unnecessary.
+        gc.collect()
+        for obj in gc.garbage:
+            if getattr(obj, 'auth_handler', None) is not None:
+                obj.auth_handler = None
+        del obj
+        del gc.garbage[:]
+        gc.collect()
+
         os.environ['HOME'] = self.realHome
         self.authserver.tearDown()
         LaunchpadZopelessTestSetup().tearDown()
