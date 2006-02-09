@@ -173,7 +173,7 @@
         <browser:widget
            field="title"
            class="zope.app.form.browser.TextWidget"
-           displayWidth="55" />
+           displayWidth="30" />
     </browser:editform>
 
     <browser:editform
@@ -262,7 +262,7 @@
         <browser:widget
             field="url"
             class="zope.app.form.browser.TextWidget"
-            displayWidth="60" />
+            displayWidth="30" />
     </browser:addform>
 
     <browser:addform
