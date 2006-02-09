@@ -125,12 +125,14 @@ ACCEPT
   Accepting alsa-utils
   Would be sending a mail:
      Subject: Accepted alsa-utils 1.0.9a-4ubuntu1 (source)
+     Sender: []
      Recipients: foo@bar.com
      Body:
   Fake Changesfile
   <BLANKLINE>
   Accepted:
-  alsa-utils_1.0.9a-4ubuntu1 was ACCEPTED as main/base
+  alsa-utils 1.0.9a-4ubuntu1 was ACCEPTED.
+  ...Component: main Section: base
   <BLANKLINE>
   ---------------------------------------------------------------------------
                                                                 1/4 total
