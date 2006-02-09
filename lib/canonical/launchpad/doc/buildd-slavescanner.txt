@@ -411,7 +411,7 @@ let's see how this method works:
   >>> logfile = getUtility(ILibraryFileAliasSet)[logfile_alias]
 
   >>> logfile.filename, logfile.mimetype
-  (u'buildlog_ubuntu-hoary-i386.pmount_0.1-1.txt.gz', u'text/plain')
+  (u'buildlog_ubuntu-hoary-i386.pmount_0.1-1_FULLYBUILT.txt.gz', u'text/plain')
 
   Force Librarian to write down the stuff
   XXX cprov 20051010: is this a bug on librarian_client API ?

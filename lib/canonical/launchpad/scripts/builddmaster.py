@@ -358,15 +358,24 @@ class BuilderGroup:
         """
         sourcename = queueItem.build.sourcepackagerelease.name
         version = queueItem.build.sourcepackagerelease.version
+        # we rely on previous storage of current buildstate
+        # in the state handling methods.
+        state = queueItem.build.buildstate.name
 
         dar = queueItem.build.distroarchrelease
         distroname = dar.distrorelease.distribution.name
         distroreleasename = dar.distrorelease.name
         archname = dar.architecturetag
 
-        logfilename = ('buildlog_%s-%s-%s.%s_%s.txt'
+        # logfilename format:
+        # buildlog_<DISTRIBUTION>_<DISTRORELEASE>_<ARCHITECTURE>_\
+        # <SOURCENAME>_<SOURCEVERSION>_<BUILDSTATE>.txt
+        # as:
+        # buildlog_ubuntu_dapper_i386_foo_1.0-ubuntu0_FULLYBUILT.txt
+        # it fix request from bug # 30617
+        logfilename = ('buildlog_%s-%s-%s.%s_%s_%s.txt'
                        % (distroname, distroreleasename,
-                          archname, sourcename, version))
+                          archname, sourcename, version, state))
 
         return self.getFileFromSlave(slave, logfilename,
                                      'buildlog', librarian)
@@ -635,8 +644,8 @@ class BuilderGroup:
         self.logger.debug("Gathered build of %s completely"
                           % queueItem.name)
         # store build info
-        self.storeBuildInfo(queueItem, slave, librarian, buildid)
         queueItem.build.buildstate = dbschema.BuildStatus.FULLYBUILT
+        self.storeBuildInfo(queueItem, slave, librarian, buildid)
         queueItem.destroySelf()
 
         # release the builder
@@ -654,8 +663,8 @@ class BuilderGroup:
         set the job status as FAILEDTOBUILD, store available info and
         remove Buildqueue entry.
         """
-        self.storeBuildInfo(queueItem, slave, librarian, buildid)
         queueItem.build.buildstate = dbschema.BuildStatus.FAILEDTOBUILD
+        self.storeBuildInfo(queueItem, slave, librarian, buildid)
         slave.clean()
         queueItem.destroySelf()
 
@@ -667,8 +676,8 @@ class BuilderGroup:
         MANUALDEPWAIT, store availble information, remove BuildQueue
         entry and release builder slave for another job.
         """
-        self.storeBuildInfo(queueItem, slave, librarian, buildid)
         queueItem.build.buildstate = dbschema.BuildStatus.MANUALDEPWAIT
+        self.storeBuildInfo(queueItem, slave, librarian, buildid)
         self.logger.critical("***** %s is MANUALDEPWAIT *****"
                              % queueItem.builder.name)
         slave.clean()
@@ -682,8 +691,8 @@ class BuilderGroup:
         job as CHROOTFAIL, store available information, remove BuildQueue
         and release the builder.
         """
-        self.storeBuildInfo(queueItem, slave, librarian, buildid)
         queueItem.build.buildstate = dbschema.BuildStatus.CHROOTWAIT
+        self.storeBuildInfo(queueItem, slave, librarian, buildid)
         self.logger.critical("***** %s is CHROOTWAIT *****" %
                              queueItem.builder.name)
         slave.clean()
