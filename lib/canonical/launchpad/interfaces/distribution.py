@@ -108,9 +108,7 @@ class IDistribution(IHasOwner, IBugTarget, ISpecificationTarget,
 
     official_malone = Bool(title=_('Uses Malone Officially'),
         required=True, description=_('Check this box to indicate that '
-        'this distribution officially uses Malone for bug tracking '
-        'upstream.'
-        ))
+        'this distribution officially uses Malone for bug tracking.'))
 
     official_rosetta = Bool(title=_('Uses Rosetta Officially'),
         required=True, description=_('Check this box to indicate that '
