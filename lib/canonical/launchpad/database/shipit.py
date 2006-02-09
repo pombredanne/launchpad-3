@@ -94,6 +94,11 @@ class ShippingRequest(SQLBase):
     recipientdisplayname = StringCol(notNull=True)
 
     @property
+    def recipient_email(self):
+        """See IShippingRequest"""
+        return self.recipient.preferredemail.email
+
+    @property
     def shipment(self):
         """See IShippingRequest"""
         return Shipment.selectOneBy(requestID=self.id)
