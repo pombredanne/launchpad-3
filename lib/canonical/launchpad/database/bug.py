@@ -17,6 +17,7 @@ from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
 from sqlobject import SQLObjectNotFound
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities)
 from canonical.launchpad.helpers import contactEmailAddresses
@@ -35,8 +36,6 @@ from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 
-from zope.i18n import MessageIDFactory
-_ = MessageIDFactory("launchpad")
 
 
 class Bug(SQLBase):
