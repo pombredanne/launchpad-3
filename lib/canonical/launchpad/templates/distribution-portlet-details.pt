@@ -29,6 +29,14 @@
     <span tal:replace="context/translationpermission/title">Open</span>
     <br />
 
+    <div tal:condition="not: context/official_rosetta">
+      <i>Doesn&rsquo;t use Rosetta</i>
+    </div>
+
+    <div tal:condition="not: context/official_malone">
+      <i>Doesn&rsquo;t use Malone</i>
+    </div>
+
     <b>Uploads:</b><br />
     <tal:per_component repeat="dcu context/uploaders">
       <span tal:replace="dcu/component/name">main</span>:
