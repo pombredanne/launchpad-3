@@ -257,7 +257,8 @@ def init():
     Lock.acquire(blocking=True)
 
     Log.debug("Initialising connection.")
-    ztm = initZopeless(dbuser="lucille", dbname="launchpad_dogfood")
+    ztm = initZopeless(dbuser="lucille", dbname="launchpad_prod",
+                       dbhost="emperor")
 
     execute_zcml_for_scripts()
 

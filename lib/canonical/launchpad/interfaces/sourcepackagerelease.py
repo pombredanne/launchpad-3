@@ -104,7 +104,8 @@ class ISourcePackageRelease(Interface):
     def override(component=None, section=None, urgency=None):
         """Uniform method to override sourcepackagerelease attribute.
 
-        All arguments are optional and can be set individually.
+        All arguments are optional and can be set individually. A non-passed
+        argument remains untouched.
         """
 
     def attachTranslationFiles(tarball_alias, is_published, importer=None):

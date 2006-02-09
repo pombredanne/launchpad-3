@@ -332,6 +332,24 @@ Finally we can ask the upload to process itself.
   above if files already exist in other distroreleases.
   END
 
+Retrive the jusr-inserted SourcePackageRelease correspondent to 'ed'
+(it's the only one we have, the process to retrieve a non-published
+SPR w/o at least and DRQ entry is quite unusual)
+
+  >>> from canonical.launchpad.database import (
+  ...     SourcePackageRelease, SourcePackageName)
+  >>> ed_name = SourcePackageName.selectOneBy(name='ed')
+  >>> ed_spr = SourcePackageRelease.selectBy(sourcepackagenameID=ed_name.id)[0]
+
+Check if we have rebuid the change's author line properly (as
+mentioned in bug # 30621)
+
+  >>> print ed_spr.changelog
+  ed (0.2-20) unstable; urgency=low
+  ...
+   -- James Troup <james@nocrew.org>  Wed,  2 Apr 2003 17:19:47 +0100
+
+
 (and some tear down)
 
   >>> import transaction
