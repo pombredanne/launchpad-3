@@ -60,7 +60,8 @@
       schema="canonical.launchpad.interfaces.IPerson"
       class="canonical.launchpad.browser.PersonEditView"
       label="Edit personal details"
-      fields="name displayname givenname familyname timezone"
+      fields="name displayname givenname familyname hide_email_addresses
+              timezone"
       permission="launchpad.Edit"
       template="../templates/person-edit.pt"
       lp:url="/people/$person.id/+edit">
@@ -161,6 +162,14 @@
   </browser:pages>
 
   <browser:page
+     for="canonical.launchpad.interfaces.IPerson"
+     name="+portlet-otherpackages"
+     permission="zope.Public"
+     class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
+     template="../templates/person-portlet-otherpackages.pt"
+     lp:url="/people/$Person.name/+portlet-otherpackages" />
+
+  <browser:page
       for="canonical.launchpad.interfaces.IPerson"
       name="+rdf"
       lp:url="/person/$Person.name/+rdf"
@@ -185,13 +194,20 @@
       lp:url="/people/$Person.name/+assignedbugs" />
 
   <browser:page
+      name="+packagebugs-search"
+      for="canonical.launchpad.interfaces.IPerson"
+      facet="bugs"
+      class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
+      permission="zope.Public"
+      template="../templates/person-packagebugs-search.pt" />
+
+  <browser:page
       name="+packagebugs"
       for="canonical.launchpad.interfaces.IPerson"
       facet="bugs"
-      class="canonical.launchpad.browser.BugTasksOnMaintainedSoftwareSearchListingView"
+      class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
       permission="zope.Public"
-      template="../templates/person-packagebugs.pt"
-      lp:url="/people/$Person.name/+packagebugs" />
+      template="../templates/person-packagebugs-overview.pt" />
 
   <browser:page
       name="+reportedbugs"

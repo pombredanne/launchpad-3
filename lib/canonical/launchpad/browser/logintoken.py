@@ -219,7 +219,7 @@ class ValidateEmailView(BaseLoginTokenView):
         if email is not None:
             if requester.preferredemail is not None:
                 requester.preferredemail.destroySelf()
-            requester.preferredemail = email
+            requester.setPreferredEmail(email)
 
         # At this point, either this email address is validated or it can't be
         # validated for this team because it's owned by someone else in

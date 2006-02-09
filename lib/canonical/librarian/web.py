@@ -12,12 +12,12 @@ from canonical.database.sqlbase import begin, rollback
 defaultResource = static.Data("""
         <html>
         <body>
-        <h1><blink>Launchpad Librarian</blink></h1>
+        <h1>Launchpad Librarian</h1>
         <p>
         http://librarian.launchpad.net/ is a
         file repository used by <a href="https://launchpad.net/">Launchpad</a>.
         </p>
-        <p><small>Copyright 2004-2005 Canonical Ltd.</small></p>
+        <p><small>Copyright 2004-2006 Canonical Ltd.</small></p>
         <!-- kthxbye. -->
         </body></html>
         """, type='text/html')
