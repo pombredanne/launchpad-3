@@ -275,9 +275,9 @@
           template="../templates/person-editjabberids.pt"
           lp:url="/people/$person.id/+editjabberids" />
       <browser:page
-          name="+editgpgkeys"
-          template="../templates/person-editgpgkeys.pt"
-          lp:url="/people/$person.id/+editgpgkeys" />
+          name="+editpgpkeys"
+          template="../templates/person-editpgpkeys.pt"
+          lp:url="/people/$person.id/+editpgpkeys" />
   </browser:pages>
 
   <browser:pages

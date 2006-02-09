@@ -354,7 +354,7 @@ wrong.
     ...
     The email you sent included commands to edit the bug, but your
     GPG key isn't imported into Launchpad. Please go to
-    http://localhost:8086/people/name12/+editgpgkeys to import your
+    http://localhost:8086/people/name12/+editpgpkeys to import your
     key.
     ...
 
