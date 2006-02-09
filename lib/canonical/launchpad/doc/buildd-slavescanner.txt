@@ -330,7 +330,7 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
   >>> assert bqItem4.build.buildduration is not None
   >>> assert bqItem4.build.buildlog is not None
   >>> bqItem4.build.buildstate.title
-  'Manual dependency wait'
+  'Dependency wait'
 
   WAITING - CHROOTFAIL -> the Chroot for this distrorelease is damage, nor
   builder, but right state stored in Build entry:
@@ -343,7 +343,7 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
   >>> assert bqItem5.build.buildduration is not None
   >>> assert bqItem5.build.buildlog is not None
   >>> bqItem5.build.buildstate.title
-  'Chroot wait'
+  'Chroot problem'
 
   WAITING - BUILDERFAIL -> builder has failed by internal error, job is
   available for next build round:
@@ -397,7 +397,7 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
   >>> assert bqItem10.build.buildduration is not None
   >>> assert bqItem10.build.buildlog is not None
   >>> bqItem10.build.buildstate.title
-  'Fully built'
+  'Successfully built'
 
 
 The buildlog is collected and compressed locally using gzip algorithm,

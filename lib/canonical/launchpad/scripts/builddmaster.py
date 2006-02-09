@@ -1088,7 +1088,11 @@ class BuilddMaster:
         # apt_pkg requires InitSystem to get VersionCompare working properly
         apt_pkg.InitSystem()
 
-        # parse package builde dependencies using apt_pkg
+        # Score the package down if it has unsatisfiable build-depends
+        # in the hope that doing so will allow the depended on package
+        # to be built first.
+
+        # parse package build dependencies using apt_pkg
         try:
             parsed_deps = apt_pkg.ParseDepends(job.builddependsindep)
         except ValueError:
@@ -1097,7 +1101,7 @@ class BuilddMaster:
             parsed_deps = []
 
         # this dict maps the package version relationship syntax in lambda
-        # functions which returns bollean according the results of
+        # functions which returns boolean according the results of
         # apt_pkg.VersionCompare function (see the order above).
         # For further information about pkg relationship syntax see:
         #
@@ -1123,10 +1127,11 @@ class BuilddMaster:
                 name, version, relation = token[0]
             except ValueError:
                 # XXX cprov 20051018:
-                # We should remove the job if we could not parse it's
-                # dependency, but AFAICS, the integrity checks in uploader
-                # component will be in charge of this. In few words i'm
-                # confident this piece of code are never going to be executed
+                # We should remove the job if we could not parse its
+                # dependency, but AFAICS, the integrity checks in
+                # uploader component will be in charge of this. In
+                # short I'm confident this piece of code is never
+                # going to be executed
                 self._logger.critical("DEP FORMAT ERROR: '%s'" % token[0])
                 continue
 
@@ -1134,14 +1139,14 @@ class BuilddMaster:
 
             if dep_candidate:
                 # use apt_pkg function to compare versions
-                # it behaves similar to cmp, i.e., returns negative
+                # it behaves similar to cmp, i.e. returns negative
                 # if first < second, zero if first == second and
                 # positive if first > second
                 dep_result = apt_pkg.VersionCompare(
                     dep_candidate.binarypackageversion, version)
 
-                # use the previous mapped result to identify if the depency
-                # ws satisfied or not
+                # use the previously mapped result to identify whether
+                # or not the dependency was satisfied or not
                 if relation_map[relation](dep_result):
                     # decrement score of 5 point for each dependency
                     # it postpones the handling of packages with huge

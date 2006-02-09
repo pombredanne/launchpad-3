@@ -31,11 +31,11 @@ Heres various sets of things that we'll need.
     >>> from canonical.launchpad.interfaces import IPOTemplateSet
     >>> potemplate_set = getUtility(IPOTemplateSet)
 
-Here are Carlos and Foo. Carlos manages the translation group for Evolution,
-and Foo is a translator.
+Here are Carlos and No Privileges Person. Carlos manages the translation group
+for Evolution, and No Privileges Person is a translator.
 
     >>> carlos = person_set.getByName('carlos')
-    >>> foo = person_set.getByName('name16')
+    >>> no_priv = person_set.getByName('no-priv')
 
 Here's our translation group.
 
@@ -55,27 +55,27 @@ Let's only allow translators from that group to translate.
     >>> from canonical.lp.dbschema import TranslationPermission
     >>> evolution.translationpermission = TranslationPermission.CLOSED
 
-Daf isn't allowed to translate into Welsh.
+No Privileges Person isn't allowed to translate into Welsh.
 
    >>> series = evolution.getSeries('main')
    >>> subset = potemplate_set.getSubset(productseries=series)
    >>> potemplate = subset['evolution-2.2']
    >>> pofile = potemplate.getOrCreatePOFile('cy')
-   >>> pofile.canEditTranslations(foo)
+   >>> pofile.canEditTranslations(no_priv)
    False
 
 Let's add him to the group.
 
     >>> welsh = language_set['cy']
 
-    >>> foo_translator = translator_set.new(
+    >>> no_priv_translator = translator_set.new(
     ...     translationgroup=group,
     ...     language=welsh,
-    ...     translator=foo)
+    ...     translator=no_priv)
 
-Daf *is* allowed to translate into Welsh.
+No Privileges Person *is* allowed to translate into Welsh.
 
-    >>> pofile.canEditTranslations(foo)
+    >>> pofile.canEditTranslations(no_priv)
     True
 
     >>> LaunchpadFunctionalTestSetup().tearDown()
