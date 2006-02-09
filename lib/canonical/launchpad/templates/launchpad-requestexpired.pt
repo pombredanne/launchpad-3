@@ -7,18 +7,19 @@
       </h1>
       <p>
         Sorry, Launchpad took too long to process your request.
-      </p>
-      <p>
-        Trying again in a couple of minutes might work.
-        If it doesn&#8217;t, it&#8217;s a bug in Launchpad.
         We&#8217;ve recorded what happened,
         and we&#8217;ll fix it as soon as possible.
         Sorry for the inconvenience.
       </p>
-      <p tal:condition="request/oopsid">
-        The reference for this error is
-        <tt class="oopsid" tal:content="request/oopsid">OOPS-A1234</tt>.
-        Please include it in any related bug report or e-mail message.
+      <p>
+        Trying again in a couple of minutes might work.
+        If it doesn&#8217;t, and this is blocking your work, you can
+        <a href="https://launchpad.net/products/launchpad/+addticket"
+        >make a support request</a>
+        so we can help you out.
+        Include the error ID
+        <code class="oopsid" tal:content="request/oopsid">OOPS-A1234</code>
+        in your request.
       </p>
       <tal:replace tal:replace="structure view/maybeShowTraceback" />
     </div>

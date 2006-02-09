@@ -12,10 +12,14 @@
         so try again in a few days.
         Sorry for the inconvenience.
       </p>
-      <p tal:condition="request/oopsid">
-        The reference for this error is
-        <tt class="oopsid" tal:content="request/oopsid">OOPS-A1234</tt>.
-        Please include it in any related bug report or e-mail message.
+      <p>
+        If this is blocking your work, you can
+        <a href="https://launchpad.net/products/launchpad/+addticket"
+        >make a support request</a>
+        so we can help you out.
+        Include the error ID
+        <code class="oopsid" tal:content="request/oopsid">OOPS-A1234</code>
+        in your request.
       </p>
       <tal:traceback replace="structure view/maybeShowTraceback" />
     </div>

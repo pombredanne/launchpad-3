@@ -21,7 +21,8 @@
     <h1>OpenPGP keys and Launchpad</h1> 
 
     <p>
-      Launchpad lets you register OpenPGP keys, created by software such as GPG.
+      Launchpad lets you register OpenPGP keys,
+      created by software such as GnuPG.
       OpenPGP keys are required to sign the
       <a href="/codeofconduct">Ubuntu Code of Conduct</a>,
       and to build and upload packages using HCT.
@@ -98,14 +99,14 @@
       <div class="formHelp">
         To import an OpenPGP key, you must first ensure that:
         <ul>
-          <li>You already have a key (use <kbd>gpg --gen-key</kbd>)
+          <li>You already have a key (use <code>gpg --gen-key</code>)
           <li>The key has already been uploaded to a keyserver (use
-          <kbd>gpg --send-key &lt;key-id&gt;</kbd>)
+          <code>gpg --send-key &lt;key-id&gt;</code>)
         </ul>
         <p>
         You should paste your key fingerprint below. To find out what
-        your fingerprint is, use <kbd>gpg --fingerprint
-        &lt;key-id&gt;</kbd>; it is a sequence of hex digits like the
+        your fingerprint is, use <code>gpg --fingerprint
+        &lt;key-id&gt;</code>; it is a sequence of hex digits like the
         example below.
         <p>
         Launchpad will then send a message to <code
