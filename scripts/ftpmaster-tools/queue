@@ -35,7 +35,8 @@ from canonical.launchpad.mail import sendmail
 
 from canonical.encoding import ascii_smash
 
-from canonical.archivepublisher.template_messages import announce_template
+from canonical.archivepublisher.template_messages import (
+    announce_template, rejection_template)
 
 from canonical.cachedproperty import cachedproperty
 
@@ -113,7 +114,13 @@ class QueueAction:
         self.distribution_name = distribution_name
         self.distrorelease_name = distrorelease_name
         self.announcelist = announcelist
-
+        self.default_sender = "%s <%s>" % (
+            config.uploader.default_sender_name,
+            config.uploader.default_sender_address)
+        self.default_recipient = "%s <%s>" % (
+            config.uploader.default_recipient_name,
+            config.uploader.default_recipient_address)
+        
     @cachedproperty
     def queue_size(self):
         """ """
@@ -273,7 +280,6 @@ class QueueAction:
     def send_email(self, message):
         """Send the mails provided using the launchpad mail infrastructure."""
         mail_message = message_from_string(ascii_smash(message))
-        mail_message['To'] = self.announcelist
         mail_message['X-Katie'] = "Launchpad actually"
         if not self.no_mail:
             sendmail(mail_message)
@@ -312,7 +318,7 @@ class QueueAction:
                     okay.append(address)
         return okay
 
-    def find_recipients_from(self, changesfile):
+    def find_addresses_from(self, changesfile):
         """Given a libraryfilealias which is a changes file, find a
         set of permitted recipients for the current distrorelease.
         """
@@ -336,13 +342,25 @@ class QueueAction:
 
         os.remove(temp_name)
 
-        for field in ['maintainer', 'changed-by']:
-            (rfc822, rfc2047, name, email) = fix_maintainer(
-                ascii_smash(changes[field]), field)
-            full_set.add(email)
+        (rfc822, rfc2047, name, email) = fix_maintainer(
+            ascii_smash(changes['maintainer']), 'maintainer')
+        full_set.add(email)
+
+        (rfc822, rfc2047, name, email) = fix_maintainer(
+            ascii_smash(changes['changed-by']), 'changed-by')
+        full_set.add(email)
 
         # Finally, filter the set of recipients based on the whitelist
-        return self.filter_addresses(full_set)
+        recipient_addresses = self.filter_addresses(full_set)
+
+        if email in recipient_addresses:
+            from_address = rfc2047
+        else:
+            from_address = self.default_sender
+
+        # Return the sender for the announce and any recipients for the
+        # accept/reject messages themselves
+        return from_address, recipient_addresses
 
 
 class QueueActionHelp:
@@ -477,9 +495,8 @@ class QueueActionReject(QueueAction):
                                % (src_rel.name, src_rel.version,
                                   src_rel.component.name,
                                   src_rel.section.name))
-                    recipients = self.find_recipients_from(
+                    sender, recipients = self.find_addresses_from(
                         queue_item.changesfile)
-                    # We don't send REJECT to the announce list.
 
                     queue_item.changesfile.open()
                     changescontent = queue_item.changesfile.read()
@@ -487,18 +504,14 @@ class QueueActionReject(QueueAction):
 
                     replacements = {
                         "TO": ", ".join(recipients),
-                        "ANNOUNCE": self.announcelist,
-                        "MAINTAINERFROM": src_rel.maintainer.displayname,
+                        "FROM": self.default_sender,
                         "CHANGES": queue_item.changesfilename,
-                        "SUMMARY": summary,
+                        "REJECTION": summary,
                         "CHANGESFILE": changescontent,
-                        "SOURCE": src_rel.name,
-                        "VERSION": src_rel.version,
-                        "ARCH": 'source',
                         }
 
                     # append an email describing this action.
-                    message = announce_template % replacements
+                    message = rejection_template % replacements
                     self.send_email(message.decode('ascii'))
 
         self.printRule()
@@ -531,7 +544,7 @@ class QueueActionAccept(QueueAction):
                                   src_rel.component.name,
                                   src_rel.section.name))
 
-                    recipients = self.find_recipients_from(
+                    sender, recipients = self.find_addresses_from(
                         queue_item.changesfile)
                     if self.announcelist is not None:
                         recipients.append(self.announcelist)
@@ -541,15 +554,13 @@ class QueueActionAccept(QueueAction):
                     queue_item.changesfile.close()
 
                     replacements = {
-                        "TO": ", ".join(recipients),
-                        "ANNOUNCE": self.announcelist,
-                        "MAINTAINERFROM": src_rel.maintainer.displayname,
-                        "CHANGES": queue_item.changesfilename,
-                        "SUMMARY": summary,
-                        "CHANGESFILE": changescontent,
+                        "MAINTAINERFROM": sender,
+                        "ANNOUNCE": self.announce,
                         "SOURCE": src_rel.name,
                         "VERSION": src_rel.version,
                         "ARCH": 'source',
+                        "CHANGESFILE": changescontent,
+                        "SUMMARY": summary,
                         }
 
                     # append an email describing this action.
