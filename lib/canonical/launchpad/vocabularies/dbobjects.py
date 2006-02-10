@@ -505,11 +505,13 @@ class ValidPersonOrTeamVocabulary(
         name_matches = Person.select(
             name_match_query, clauseTables=['ValidPersonOrTeamCache'])
 
+        # Note that we must use lower(email) LIKE rather than ILIKE
+        # as ILIKE no longer appears to be hitting the index under PG8.0
         email_match_query = """
             EmailAddress.person = Person.id
             AND EmailAddress.person = ValidPersonOrTeamCache.id
             AND EmailAddress.status IN %s
-            AND EmailAddress.email ILIKE %s || '%%'
+            AND lower(email) LIKE %s || '%%'
             """ % (sqlvalues(EmailAddressStatus.VALIDATED,
                              EmailAddressStatus.PREFERRED),
                    quote_like(text))

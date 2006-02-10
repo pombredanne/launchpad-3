@@ -336,10 +336,10 @@ class QueueAction:
         try:
             changes = parse_tagfile(temp_name, allow_unsigned=True)
         except TagFileParseError, e:
-            # remove tmp file and return empty list to satisfy callsite
+            # remove tmp file and return emptis lists to satisfy callsite
             # requirements.
             os.remove(temp_name)
-            return []
+            return [], []
 
         os.remove(temp_name)
 
@@ -540,7 +540,8 @@ class QueueActionAccept(QueueAction):
             else:
                 for source in queue_item.sources:
                     src_rel = source.sourcepackagerelease
-                    summary = ('%s %s was ACCEPTED.\n    Component: %s Section: %s'
+                    summary = ('%s %s was ACCEPTED.\n\t'
+                               'Component: %s Section: %s'
                                % (src_rel.name, src_rel.version,
                                   src_rel.component.name,
                                   src_rel.section.name))
@@ -556,6 +557,7 @@ class QueueActionAccept(QueueAction):
 
                     replacements = {
                         "MAINTAINERFROM": sender,
+                        "FROM": self.default_sender,
                         "ANNOUNCE": self.announcelist,
                         "SOURCE": src_rel.name,
                         "VERSION": src_rel.version,

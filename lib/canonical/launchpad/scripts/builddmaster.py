@@ -358,15 +358,24 @@ class BuilderGroup:
         """
         sourcename = queueItem.build.sourcepackagerelease.name
         version = queueItem.build.sourcepackagerelease.version
+        # we rely on previous storage of current buildstate
+        # in the state handling methods.
+        state = queueItem.build.buildstate.name
 
         dar = queueItem.build.distroarchrelease
         distroname = dar.distrorelease.distribution.name
         distroreleasename = dar.distrorelease.name
         archname = dar.architecturetag
 
-        logfilename = ('buildlog_%s-%s-%s.%s_%s.txt'
+        # logfilename format:
+        # buildlog_<DISTRIBUTION>_<DISTRORELEASE>_<ARCHITECTURE>_\
+        # <SOURCENAME>_<SOURCEVERSION>_<BUILDSTATE>.txt
+        # as:
+        # buildlog_ubuntu_dapper_i386_foo_1.0-ubuntu0_FULLYBUILT.txt
+        # it fix request from bug # 30617
+        logfilename = ('buildlog_%s-%s-%s.%s_%s_%s.txt'
                        % (distroname, distroreleasename,
-                          archname, sourcename, version))
+                          archname, sourcename, version, state))
 
         return self.getFileFromSlave(slave, logfilename,
                                      'buildlog', librarian)
@@ -635,8 +644,8 @@ class BuilderGroup:
         self.logger.debug("Gathered build of %s completely"
                           % queueItem.name)
         # store build info
-        self.storeBuildInfo(queueItem, slave, librarian, buildid)
         queueItem.build.buildstate = dbschema.BuildStatus.FULLYBUILT
+        self.storeBuildInfo(queueItem, slave, librarian, buildid)
         queueItem.destroySelf()
 
         # release the builder
@@ -654,8 +663,8 @@ class BuilderGroup:
         set the job status as FAILEDTOBUILD, store available info and
         remove Buildqueue entry.
         """
-        self.storeBuildInfo(queueItem, slave, librarian, buildid)
         queueItem.build.buildstate = dbschema.BuildStatus.FAILEDTOBUILD
+        self.storeBuildInfo(queueItem, slave, librarian, buildid)
         slave.clean()
         queueItem.destroySelf()
 
@@ -667,8 +676,8 @@ class BuilderGroup:
         MANUALDEPWAIT, store availble information, remove BuildQueue
         entry and release builder slave for another job.
         """
-        self.storeBuildInfo(queueItem, slave, librarian, buildid)
         queueItem.build.buildstate = dbschema.BuildStatus.MANUALDEPWAIT
+        self.storeBuildInfo(queueItem, slave, librarian, buildid)
         self.logger.critical("***** %s is MANUALDEPWAIT *****"
                              % queueItem.builder.name)
         slave.clean()
@@ -682,8 +691,8 @@ class BuilderGroup:
         job as CHROOTFAIL, store available information, remove BuildQueue
         and release the builder.
         """
-        self.storeBuildInfo(queueItem, slave, librarian, buildid)
         queueItem.build.buildstate = dbschema.BuildStatus.CHROOTWAIT
+        self.storeBuildInfo(queueItem, slave, librarian, buildid)
         self.logger.critical("***** %s is CHROOTWAIT *****" %
                              queueItem.builder.name)
         slave.clean()
@@ -1079,7 +1088,11 @@ class BuilddMaster:
         # apt_pkg requires InitSystem to get VersionCompare working properly
         apt_pkg.InitSystem()
 
-        # parse package builde dependencies using apt_pkg
+        # Score the package down if it has unsatisfiable build-depends
+        # in the hope that doing so will allow the depended on package
+        # to be built first.
+
+        # parse package build dependencies using apt_pkg
         try:
             parsed_deps = apt_pkg.ParseDepends(job.builddependsindep)
         except ValueError:
@@ -1088,7 +1101,7 @@ class BuilddMaster:
             parsed_deps = []
 
         # this dict maps the package version relationship syntax in lambda
-        # functions which returns bollean according the results of
+        # functions which returns boolean according the results of
         # apt_pkg.VersionCompare function (see the order above).
         # For further information about pkg relationship syntax see:
         #
@@ -1114,10 +1127,11 @@ class BuilddMaster:
                 name, version, relation = token[0]
             except ValueError:
                 # XXX cprov 20051018:
-                # We should remove the job if we could not parse it's
-                # dependency, but AFAICS, the integrity checks in uploader
-                # component will be in charge of this. In few words i'm
-                # confident this piece of code are never going to be executed
+                # We should remove the job if we could not parse its
+                # dependency, but AFAICS, the integrity checks in
+                # uploader component will be in charge of this. In
+                # short I'm confident this piece of code is never
+                # going to be executed
                 self._logger.critical("DEP FORMAT ERROR: '%s'" % token[0])
                 continue
 
@@ -1125,14 +1139,14 @@ class BuilddMaster:
 
             if dep_candidate:
                 # use apt_pkg function to compare versions
-                # it behaves similar to cmp, i.e., returns negative
+                # it behaves similar to cmp, i.e. returns negative
                 # if first < second, zero if first == second and
                 # positive if first > second
                 dep_result = apt_pkg.VersionCompare(
                     dep_candidate.binarypackageversion, version)
 
-                # use the previous mapped result to identify if the depency
-                # ws satisfied or not
+                # use the previously mapped result to identify whether
+                # or not the dependency was satisfied or not
                 if relation_map[relation](dep_result):
                     # decrement score of 5 point for each dependency
                     # it postpones the handling of packages with huge

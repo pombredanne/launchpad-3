@@ -330,7 +330,7 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
   >>> assert bqItem4.build.buildduration is not None
   >>> assert bqItem4.build.buildlog is not None
   >>> bqItem4.build.buildstate.title
-  'Manual dependency wait'
+  'Dependency wait'
 
   WAITING - CHROOTFAIL -> the Chroot for this distrorelease is damage, nor
   builder, but right state stored in Build entry:
@@ -343,7 +343,7 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
   >>> assert bqItem5.build.buildduration is not None
   >>> assert bqItem5.build.buildlog is not None
   >>> bqItem5.build.buildstate.title
-  'Chroot wait'
+  'Chroot problem'
 
   WAITING - BUILDERFAIL -> builder has failed by internal error, job is
   available for next build round:
@@ -397,7 +397,7 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
   >>> assert bqItem10.build.buildduration is not None
   >>> assert bqItem10.build.buildlog is not None
   >>> bqItem10.build.buildstate.title
-  'Fully built'
+  'Successfully built'
 
 
 The buildlog is collected and compressed locally using gzip algorithm,
@@ -411,7 +411,7 @@ let's see how this method works:
   >>> logfile = getUtility(ILibraryFileAliasSet)[logfile_alias]
 
   >>> logfile.filename, logfile.mimetype
-  (u'buildlog_ubuntu-hoary-i386.pmount_0.1-1.txt.gz', u'text/plain')
+  (u'buildlog_ubuntu-hoary-i386.pmount_0.1-1_FULLYBUILT.txt.gz', u'text/plain')
 
   Force Librarian to write down the stuff
   XXX cprov 20051010: is this a bug on librarian_client API ?
