@@ -71,7 +71,7 @@ def linkify_changelog(changelog, sourcepkgnametxt):
     # url builder. Also we need an specification describing the syntax for
     # changelog linkification and processing (mostly bug interface),
     # bug # 30817
-    changelog = re.sub(r'%s \(([^)]+)\)' % sourcepkgnametxt,
+    changelog = re.sub(r'%s \(([^)]+)\)' % re.escape(sourcepkgnametxt),
                        r'%s (<a href="\1">\1</a>)' % sourcepkgnametxt,
                        changelog)
     return changelog
@@ -107,7 +107,7 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     def builds(self):
         text = 'View Builds'
-        return Link('+builds', text, icon='info')        
+        return Link('+builds', text, icon='info')
 
 
 class SourcePackageBugsMenu(ApplicationMenu):
