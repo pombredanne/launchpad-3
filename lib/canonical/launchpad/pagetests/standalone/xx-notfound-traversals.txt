@@ -159,7 +159,7 @@ spider -- StuartBishop 20050822
 #>>> check("/distros/ubuntu/hoary/+source/evolution/+hctstatus")
 
 >>> check("/distros/ubuntu/hoary/+source/evolution/+changelog")
->>> check("/distros/ubuntu/hoary/+source/evolution/+buildlog")
+>>> check_not_found("/distros/ubuntu/hoary/+source/evolution/+buildlog")
 >>> check("/distros/ubuntu/hoary/+source/evolution/+packaging", auth=True)
 >>> check("/distros/ubuntu/hoary/+source/evolution/+gethelp")
 >>> check("/distros/ubuntu/hoary/+source/evolution/+translate")

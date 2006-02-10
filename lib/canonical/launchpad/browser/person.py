@@ -1785,35 +1785,28 @@ class RequestPeopleMergeView(AddView):
     of those (s)he wants to claim.
     """
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        AddView.__init__(self, context, request)
-        self._nextURL = '.'
+    _nextURL = '.'
 
     def nextURL(self):
         return self._nextURL
 
     def createAndAdd(self, data):
-        kw = {}
-        for key, value in data.items():
-            kw[str(key)] = value
-
         user = getUtility(ILaunchBag).user
-        dupeaccount = kw['dupeaccount']
+        dupeaccount = data['dupeaccount']
         if dupeaccount == user:
             # Please, don't try to merge you into yourself.
             return
 
-        emails = shortlist(getUtility(IEmailAddressSet).getByPerson(dupeaccount))
-        if len(emails) > 1:
+        emails = getUtility(IEmailAddressSet).getByPerson(dupeaccount)
+        emails_count = emails.count()
+        if emails_count > 1:
             # The dupe account have more than one email address. Must redirect
             # the user to another page to ask which of those emails (s)he
             # wants to claim.
             self._nextURL = '+requestmerge-multiple?dupe=%d' % dupeaccount.id
             return
 
-        assert len(emails) == 1
+        assert emails_count == 1
         email = emails[0]
         login = getUtility(ILaunchBag).login
         logintokenset = getUtility(ILoginTokenSet)
@@ -1905,7 +1898,7 @@ class FinishedPeopleMergeRequestView:
         """
         dupe_account = getUtility(IPersonSet).get(self.request.get('dupe'))
         results = getUtility(IEmailAddressSet).getByPerson(dupe_account)
-        assert len(results) == 1
+        assert results.count() == 1
         return results[0].email
 
 

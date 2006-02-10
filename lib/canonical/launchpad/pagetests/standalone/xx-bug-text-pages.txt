@@ -11,6 +11,7 @@ Get text page for a single bug.
   bug: 1
   title: Firefox does not support SVG
   reporter: Sample Person (name12)
+  duplicate-of: 
   subscribers: 
    Steve Alexander (stevea)
    Sample Person (name12)
@@ -40,6 +41,19 @@ Get text page for a single bug.
   assignee: 
   milestone: 
   <BLANKLINE>
+
+Check a bug that is a duplicate.
+
+  >>> print http(r"""
+  ... GET /bugs/6/+text HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  Content-Type: text/plain;charset=utf-8
+  <BLANKLINE>
+  ...
+  duplicate-of: 5
+  ...
 
 Get bug text page for a product.
 
