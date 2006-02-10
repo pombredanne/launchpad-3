@@ -119,6 +119,11 @@ class AbstractUploadPolicy:
                 # list in the upload. Thusly a sourceful upload with one build
                 # has two architectures listed.
                 max = 2
+            if 'all' in upload.archs:
+                # Sometimes we get 'i386 all' which would count as two archs
+                # so if 'all' is present, we bump the permitted number up
+                # by one.
+                max += 1
             if len(upload.archs) > max:
                 upload.reject("Policy permits only one build per upload.")
 
