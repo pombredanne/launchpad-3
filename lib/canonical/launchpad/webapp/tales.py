@@ -676,6 +676,10 @@ class FormattersAPI:
                 return text
 
             root_url = config.launchpad.oops_root_url
+
+            if not root_url.endswith('/'):
+                root_url += '/'
+
             url = root_url + match.group('oopscode')
             return '<a rel="nofollow" href="%s">%s</a>' % (url, text)
         else:
@@ -697,7 +701,7 @@ class FormattersAPI:
       ) |
       (?P<oops>
         oops\s*-?\s*
-        (?P<oopscode> [abcd0-9]+)
+        (?P<oopscode> \d* [a-z]+ \d+)
       )
     ''', re.IGNORECASE | re.VERBOSE)
 
