@@ -211,6 +211,19 @@ class DistroReleaseQueue(SQLBase):
         for queue_build in self.builds:
             return queue_build.build.sourcepackagerelease.version
 
+    @cachedproperty
+    def sourcepackagerelease(self):
+        """The source package release related to this queue item.
+
+        This is currently heuristic but may be more easily calculated later.
+        """
+        assert self.sources or self.builds
+        for queue_source in self.sources:
+            return queue_source.sourcepackagerelease
+        for queue_build in self.builds:
+            return queue_build.build.sourcepackagerelease
+        
+
     def realiseUpload(self, logger=None):
         """See IDistroReleaseQueue."""
         assert self.status == DistroReleaseQueueStatus.ACCEPTED
