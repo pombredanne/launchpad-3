@@ -12,19 +12,15 @@ We need to get a POTMsgSet object to performe this test.
     >>> potemplate = potemplate_set['pmount']
 
 
-POTMsgSet.poMsgSet
+POTMsgSet.getPOMsgSet
 ------------------
 
 A request for a POMsgSet with a variant field value should not break.
 
     >>> potmsgsets = potemplate.getPOTMsgSets()
-    >>> for potmsgset in potmsgsets:
-    ...     potmsgset.poMsgSet('en', 'boldquot')
-    ...     break
-    Traceback (most recent call last):
-    ...
-    NotFoundError: ('en', 'boldquot')
-
+    >>> potmsgset = potmsgsets.next()
+    >>> potmsgset.getPOMsgSet('en', 'boldquot') is None
+    True
 
 POTMsgSet.normalize_whitespaces
 -------------------------------

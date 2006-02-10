@@ -18,7 +18,7 @@ from optparse import OptionParser
 from canonical.launchpad.scripts import logger_options, logger
 from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.librarian import librariangc
-from canonical.lp import initZopeless
+from canonical.lp import initZopeless, READ_COMMITTED_ISOLATION
 from canonical.config import config
 
 _default_lock_file = '/var/lock/librarian-gc.lock'
@@ -57,7 +57,8 @@ def main():
 
     try:
         ztm = initZopeless(
-                dbuser=config.librarian.gc.dbuser, implicitBegin=False
+                dbuser=config.librarian.gc.dbuser, implicitBegin=False,
+                isolation=READ_COMMITTED_ISOLATION
                 )
         # Note - no need to issue ztm.begin() or ztm.commit(),
         # as each of these next steps will issue these as appropriate

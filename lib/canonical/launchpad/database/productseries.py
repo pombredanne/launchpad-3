@@ -93,15 +93,12 @@ class ProductSeries(SQLBase):
         return sorted(result, key=lambda x: x.potemplatename.name)
 
     def getPOTemplate(self, name):
-        template = POTemplate.selectOne(
+        """See IProductSeries."""
+        return POTemplate.selectOne(
             "POTemplate.productseries = %s AND "
             "POTemplate.potemplatename = POTemplateName.id AND "
             "POTemplateName.name = %s" % sqlvalues(self.id, name),
-            clauseTables=['ProductRelease', 'POTemplateName'])
-
-        if template is None:
-            raise NotFoundError(name)
-        return template
+            clauseTables=['POTemplateName'])
 
     @property
     def title(self):

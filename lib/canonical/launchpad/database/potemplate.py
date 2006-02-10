@@ -476,8 +476,7 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             data['origin'] = self.sourcepackagename.name
 
-        return DummyPOFile(self, language, owner=owner,
-            header=standardPOFileHeader % data)
+        return DummyPOFile(self, language, owner=owner)
 
     def createMessageIDSighting(self, potmsgset, messageID):
         """Creates in the database a new message ID sighting.

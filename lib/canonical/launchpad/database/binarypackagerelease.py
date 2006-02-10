@@ -136,7 +136,7 @@ class BinaryPackageRelease(SQLBase):
             raise NotFoundError('BinaryPackageRelease not found in '
                                 'PackagePublishing')
         return packagepublishing.status.title
-    
+
     def __getitem__(self, version):
         clauseTables = ["Build"]
         query = """Build.id = build

@@ -506,7 +506,11 @@ person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 
 person_packages = ContextDisplayName('Packages maintained by %s')
 
-person_packagebugs = ContextDisplayName('Bugs on software %s maintains')
+person_packagebugs = ContextDisplayName("%s's package bug reports")
+
+person_packagebugs_overview = person_packagebugs
+
+person_packagebugs_search = person_packagebugs
 
 person_reportedbugs = ContextDisplayName('Bugs %s reported')
 
@@ -679,6 +683,8 @@ shipit_exports = 'ShipIt exports'
 
 shipit_myrequest = "Your ShipIt order"
 
+shipit_oops = 'Error: Oops'
+
 shipit_reports = 'ShipIt reports'
 
 shipitrequests_index = 'ShipIt requests'
@@ -688,8 +694,6 @@ shipitrequests_search = 'Search ShipIt requests'
 shipitrequest_edit = 'Edit ShipIt request'
 
 shipit_notfound = 'Error: Page not found'
-
-shipit_default_error = 'Error: Oops'
 
 signedcodeofconduct_index = ContextDisplayName('%s')
 
