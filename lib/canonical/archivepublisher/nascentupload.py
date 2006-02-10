@@ -1702,13 +1702,13 @@ class NascentUpload:
         assert self.rejected
 
         interpolations = {
-            "FROM": self.sender,
+            "SENDER": self.sender,
             "CHANGES": self.changes_basename,
-            "REJECTION": self.rejection_message,
+            "SUMMARY": self.rejection_message,
             "CHANGESFILE": guess_encoding(self.changes['filecontents'])
             }
         self.build_recipients()
-        interpolations['TO'] = ", ".join(self.recipients)
+        interpolations['RECIPIENT'] = ", ".join(self.recipients)
 
         interpolations = self.policy.filterInterpolations(self,
                                                           interpolations)
@@ -1919,7 +1919,7 @@ class NascentUpload:
             return False, self.do_reject()
         try:
             interpolations = {
-                "FROM": self.sender,
+                "SENDER": self.sender,
                 "CHANGES": self.changes_basename,
                 "SUMMARY": self.build_summary(),
                 "CHANGESFILE": guess_encoding(self.changes['filecontents']),
@@ -1929,17 +1929,20 @@ class NascentUpload:
                 "SOURCE": self.changes['source'],
                 "VERSION": self.changes['version'],
                 "ARCH": self.changes['architecture'],
-                "MAINTAINERFROM": self.sender
                 }
             if self.signer:
                 interpolations['MAINTAINERFROM'] = self.changed_by['rfc2047']
+
             if interpolations['ANNOUNCE'] is None:
                 interpolations['ANNOUNCE'] = 'nowhere'
+
             self.build_recipients()
-            interpolations['TO'] = ", ".join(self.recipients)
+
+            interpolations['RECIPIENT'] = ", ".join(self.recipients)
 
             interpolations = self.policy.filterInterpolations(
                 self, interpolations)
+
             self.insert_into_queue()
 
             if self.is_new():
@@ -1953,7 +1956,7 @@ class NascentUpload:
                                                   "approval by a distro "
                                                   "manager\n")
                     return True, [accept_msg % interpolations]
-                
+
         except Exception, e:
             # Any exception which occurs while processing an accept will
             # cause a rejection to occur. The exception is logged in the
