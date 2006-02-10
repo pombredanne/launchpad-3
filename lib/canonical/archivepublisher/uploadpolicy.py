@@ -205,16 +205,24 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
                 DistributionReleaseStatus.EXPERIMENTAL,
                 DistributionReleaseStatus.DEVELOPMENT,
                 DistributionReleaseStatus.FROZEN)
-        if (self.pocket == PackagePublishingPocket.RELEASE and
-            not distrorelease_is_open):
-            upload.reject("Not permitted to upload to a release in %s state" %
-                          self.distrorelease.releasestatus.name)
-        elif (self.pocket == PackagePublishingPocket.UPDATES and
-              distrorelease_is_open):
-            upload.reject("Not permitted to upload to the UPDATES pocket "
-                          "in a release in %s state" %
-                          self.distrorelease.releasestatus.name)
+        if self.pocket == PackagePublishingPocket.RELEASE:
+            if distrorelease_is_open:
+                # RELEASE+open == okay
+                return
+            else:
+                upload.reject("Not permitted to upload to a release in "
+                              "%s state" %
+                              self.distrorelease.releasestatus.name)
+        elif self.pocket == PackagePublishingPocket.UPDATES:
+            if distrorelease_is_open:
+                upload.reject("Not permitted to upload to the UPDATES pocket "
+                              "in a release in %s state" %
+                              self.distrorelease.releasestatus.name)
+            else:
+                # UPDATES+closed == okay
+                return
         else:
+            # Anything else == not okay
             upload.reject("Not permitted to upload to %s in %s" % (
                 self.pocket.name, self.distrorelease.name))
 
