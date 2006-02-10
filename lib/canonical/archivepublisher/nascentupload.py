@@ -37,7 +37,7 @@ from canonical.archivepublisher.utils import (
 from canonical.lp.dbschema import (
     SourcePackageUrgency, PackagePublishingPriority,
     DistroReleaseQueueCustomFormat, BinaryPackageFormat,
-    BuildStatus, PackagePublishingPocket)
+    BuildStatus, PackagePublishingPocket, DistroReleaseQueueStatus)
 
 from canonical.launchpad.interfaces import (
     IGPGHandler, GPGVerificationError, IGPGKeySet, IPersonSet,
@@ -930,6 +930,21 @@ class NascentUpload:
                 if spr.sourcepackagerelease.version == source_version:
                     self.policy.sourcepackagerelease = spr.sourcepackagerelease
                     found = True
+            # If we didn't find it, try to find it in the queues...
+            if not found:
+                # Obtain the ACCEPTED queue
+                self.logger.debug("Checking in the ACCEPTED queue")
+                q = dr.getQueueItems(status=DistroReleaseQueueStatus.ACCEPTED)
+                for qitem in q:
+                    self.logger.debug("Looking at qitem %s/%s" % (
+                        qitem.sourcepackagename.name,
+                        qitem.sourceversion))
+                    if (qitem.sourcepackagename == spn and
+                        qitem.sourceversion == source_version):
+                        self.policy.sourcepackagerelease = (
+                            qitem.sourcepackagerelease )
+                        found = True
+                        
             if not found:
                 # XXX: dsilvers: 20051012: Perhaps check the NEW queue too?
                 # bug 3138
