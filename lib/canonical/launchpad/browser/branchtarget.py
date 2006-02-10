@@ -29,7 +29,7 @@ class BranchTargetView:
         if '+authoredbranches' in url:
             return "authored by"
         elif '+registeredbranches' in url:
-            return "registered by"
+            return "registered but not authored by"
         elif '+subscribedbranches' in url:
             return "subscribed to by"
         else:

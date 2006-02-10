@@ -220,6 +220,7 @@ class NamedSQLObjectHugeVocabulary(NamedSQLObjectVocabulary):
 
 class BasePersonVocabulary:
     """This is a base class to be used by all different Person Vocabularies."""
+
     _table = Person
 
     def toTerm(self, obj):
@@ -279,14 +280,15 @@ class BinaryAndSourcePackageNameVocabulary(SQLObjectVocabularyBase):
     """
     implements(IHugeVocabulary)
 
+    _table = BinaryAndSourcePackageName
     displayname = 'Select a Package'
 
     def __contains__(self, name):
         # Is this a source or binary package name?
-        return BinaryAndSourcePackageName.selectOneBy(name=name)
+        return self._table.selectOneBy(name=name)
 
     def getTermByToken(self, token):
-        name = BinaryAndSourcePackageName.selectOneBy(name=token)
+        name = self._table.selectOneBy(name=token)
         if name is None:
             raise LookupError(token)
         return self.toTerm(name)
@@ -297,7 +299,7 @@ class BinaryAndSourcePackageNameVocabulary(SQLObjectVocabularyBase):
             return self.emptySelectResults()
 
         query = "name ILIKE '%%' || %s || '%%'" % quote_like(query)
-        return BinaryAndSourcePackageName.select(query)
+        return self._table.select(query)
 
     def toTerm(self, obj):
         return SimpleTerm(obj.name, obj.name, obj.name)
