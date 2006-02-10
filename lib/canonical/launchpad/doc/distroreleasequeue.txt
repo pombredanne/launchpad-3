@@ -180,6 +180,9 @@ Check the behaviour of @cachedproperty  attributes:
   >>> qitem.sourceversion
   u'0.9'
 
+  >>> qitem.sourcepackagerelease
+  <SourcePackageRelease at ...>
+
 
 Explore the queue features of a DistroRelease instance, let's check
 some usages of IDistroRelease.getFancyQueueItems, which returns a list

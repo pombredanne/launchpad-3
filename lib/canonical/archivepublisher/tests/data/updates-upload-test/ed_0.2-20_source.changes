@@ -1,10 +1,13 @@
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA1
+
 Format: 1.7
 Date: Wed,  2 Apr 2003 17:19:47 +0100
 Source: ed
 Binary: ed
 Architecture: source
 Version: 0.2-20
-Distribution: unstable
+Distribution: hoary-updates
 Urgency: low
 Maintainer: James Troup <james@nocrew.org>
 Changed-By: James Troup <james@nocrew.org>
@@ -46,3 +49,11 @@ Changes:
 Files: 
  22beb6b9d1fe984cd3a20571a4e958ac 522 editors important ed_0.2-20.dsc
  f9e1e5f13725f581919e9bfd62272a05 8506 editors important ed_0.2-20.diff.gz
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.1 (GNU/Linux)
+
+iD8DBQFD7KqrK8hAFiBoeJURAnWSAJ9qY9jRt6wMkIGrs17JZ/1A4rk75wCgzwci
+dtROLvLiFEJxcVA81lr7nu0=
+=1TEF
+-----END PGP SIGNATURE-----

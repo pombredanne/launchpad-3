@@ -37,7 +37,7 @@ from canonical.archivepublisher.utils import (
 from canonical.lp.dbschema import (
     SourcePackageUrgency, PackagePublishingPriority,
     DistroReleaseQueueCustomFormat, BinaryPackageFormat,
-    BuildStatus, PackagePublishingPocket)
+    BuildStatus, PackagePublishingPocket, DistroReleaseQueueStatus)
 
 from canonical.launchpad.interfaces import (
     IGPGHandler, GPGVerificationError, IGPGKeySet, IPersonSet,
@@ -930,6 +930,21 @@ class NascentUpload:
                 if spr.sourcepackagerelease.version == source_version:
                     self.policy.sourcepackagerelease = spr.sourcepackagerelease
                     found = True
+            # If we didn't find it, try to find it in the queues...
+            if not found:
+                # Obtain the ACCEPTED queue
+                self.logger.debug("Checking in the ACCEPTED queue")
+                q = dr.getQueueItems(status=DistroReleaseQueueStatus.ACCEPTED)
+                for qitem in q:
+                    self.logger.debug("Looking at qitem %s/%s" % (
+                        qitem.sourcepackagename.name,
+                        qitem.sourceversion))
+                    if (qitem.sourcepackagename == spn and
+                        qitem.sourceversion == source_version):
+                        self.policy.sourcepackagerelease = (
+                            qitem.sourcepackagerelease )
+                        found = True
+                        
             if not found:
                 # XXX: dsilvers: 20051012: Perhaps check the NEW queue too?
                 # bug 3138
@@ -1860,12 +1875,6 @@ class NascentUpload:
         queue_root = self.distrorelease.createQueueEntry(self.policy.pocket,
             self.changes_basename, self.changes["filecontents"])
 
-        # if it is known (already overridden properly), move it
-        # to ACCEPTED state automatically
-        if not self.is_new():
-            self.logger.debug("Setting it to ACCEPTED")
-            queue_root.set_accepted()
-
         # Next, if we're sourceful, add a source to the queue
         if self.sourceful:
             queue_root.addSource(self.policy.sourcepackagerelease)
@@ -1881,6 +1890,19 @@ class NascentUpload:
                     open(uploaded_file.full_filename, "rb"),
                     uploaded_file.content_type),
                     uploaded_file.custom_type)
+
+        # Stuff the queue item away in case we want it later
+        self.queue_root = queue_root
+
+        # if it is known (already overridden properly), move it
+        # to ACCEPTED state automatically
+        if not self.is_new():
+            if self.policy.autoApprove(self):
+                self.logger.debug("Setting it to ACCEPTED")
+                queue_root.set_accepted()
+            else:
+                self.logger.debug("Setting it to UNAPPROVED")
+                queue_root.set_unapproved()
 
     def do_accept(self, new_msg=new_template, accept_msg=accepted_template,
                   announce_msg=announce_template):
@@ -1923,8 +1945,15 @@ class NascentUpload:
             if self.is_new():
                 return True, [new_msg % interpolations]
             else:
-                return True, [accept_msg % interpolations,
-                              announce_msg % interpolations]
+                if self.policy.autoApprove(self):
+                    return True, [accept_msg % interpolations,
+                                  announce_msg % interpolations]
+                else:
+                    interpolations["SUMMARY"] += ("\nThis upload awaits "
+                                                  "approval by a distro "
+                                                  "manager\n")
+                    return True, [accept_msg % interpolations]
+                
         except Exception, e:
             # Any exception which occurs while processing an accept will
             # cause a rejection to occur. The exception is logged in the
