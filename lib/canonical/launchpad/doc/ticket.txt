@@ -244,3 +244,10 @@ If no ticket exists, a default value is returned:
     ...     123456, default=default)
     >>> ticket_nonexistant is default
     True
+
+If no default value is given, None is returned:
+
+    >>> getUtility(ITicketSet).get(123456) is None
+    True
+
+

@@ -9,7 +9,7 @@ from zope.event import notify
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, StringCol, MultipleJoin, RelatedJoin)
+    ForeignKey, StringCol, MultipleJoin, RelatedJoin, SQLObjectNotFound)
 
 from canonical.launchpad.interfaces import ITicket, ITicketSet
 
@@ -265,8 +265,7 @@ class TicketSet:
 
     def get(self, ticket_id, default=None):
         """See ITicketSet."""
-        ticket = Ticket.selectOne("""id=%s""" % ticket_id)
-        if ticket is None:
-            return default
-        else:
-            return ticket
+        try:
+           return Ticket.get(ticket_id)
+        except SQLObjectNotFound:
+            return None
