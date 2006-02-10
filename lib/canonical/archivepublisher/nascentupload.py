@@ -1863,8 +1863,12 @@ class NascentUpload:
         # if it is known (already overridden properly), move it
         # to ACCEPTED state automatically
         if not self.is_new():
-            self.logger.debug("Setting it to ACCEPTED")
-            queue_root.set_accepted()
+            if self.policy.autoApprove(self):
+                self.logger.debug("Setting it to ACCEPTED")
+                queue_root.set_accepted()
+            else:
+                self.logger.debug("Setting it to UNAPPROVED")
+                queue_root.set_unapproved()
 
         # Next, if we're sourceful, add a source to the queue
         if self.sourceful:
@@ -1923,8 +1927,15 @@ class NascentUpload:
             if self.is_new():
                 return True, [new_msg % interpolations]
             else:
-                return True, [accept_msg % interpolations,
-                              announce_msg % interpolations]
+                if self.policy.autoApprove(self):
+                    return True, [accept_msg % interpolations,
+                                  announce_msg % interpolations]
+                else:
+                    interpolations["SUMMARY"] += ("\nThis upload awaits "
+                                                  "approval by a distro "
+                                                  "manager\n")
+                    return True, [accept_msg % interpolations]
+                
         except Exception, e:
             # Any exception which occurs while processing an accept will
             # cause a rejection to occur. The exception is logged in the
