@@ -227,7 +227,7 @@ class TranslationImportQueueView(LaunchpadView):
                     # badly with our system so it's safe to just ignore the
                     # request.
                     raise UnexpectedFormData(
-                        'Ignored your request because is broken.')
+                        'Ignored your request because it is broken.')
                 self.form_entries.append(id)
 
         dispatch_table = {
@@ -289,7 +289,7 @@ class TranslationImportQueueView(LaunchpadView):
             # Do the removal.
             self.context.remove(item)
         else:
-            # The user was not the importer and that means that is a
+            # The user was not the importer and that means that it's a
             # broken request.
             raise UnexpectedFormData(
                 'Ignored your request to remove some items, because'
