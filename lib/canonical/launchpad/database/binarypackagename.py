@@ -1,7 +1,8 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['BinaryPackageName', 'BinaryPackageNameSet']
+__all__ = ['BinaryPackageName', 'BinaryPackageNameSet',
+           'BinaryAndSourcePackageName']
 
 # Zope imports
 from zope.interface import implements
@@ -16,7 +17,8 @@ from canonical.database.sqlbase import SQLBase
 
 # interfaces and database 
 from canonical.launchpad.interfaces import (
-    IBinaryPackageName, IBinaryPackageNameSet, NotFoundError)
+    IBinaryPackageName, IBinaryPackageNameSet, NotFoundError,
+    IBinaryAndSourcePackageName)
 
 
 class BinaryPackageName(SQLBase):
@@ -54,14 +56,8 @@ class BinaryPackageNameSet:
         return BinaryPackageName.select(
             CONTAINSSTRING(BinaryPackageName.q.name, name))
 
-    def query(self, name=None, distribution=None, distrorelease=None,
-              distroarchrelease=None, text=None):
-        if (name is None and distribution is None and
-            distrorelease is None and text is None):
-            raise ValueError('must give something to the query.')
-        clauseTables = set(['BinaryPackage'])
-        # XXX sabdfl 12/12/04 not done yet
-        raise NotImplementedError
+    def queryByName(self, name):
+        return BinaryPackageName.selectOneBy(name=name)
 
     def new(self, name):
         return BinaryPackageName(name=name)
@@ -82,3 +78,18 @@ class BinaryPackageNameSet:
             return BinaryPackageName.byName(name)
         except SQLObjectNotFound:
             return BinaryPackageName(name=name)
+
+
+class BinaryAndSourcePackageName(SQLBase):
+    """See IBinaryAndSourcePackageName"""
+
+    implements(IBinaryAndSourcePackageName)
+
+    _table = 'BinaryAndSourcePackageNameView'
+    _idName = 'name'
+    _idType = str
+    _defaultOrder = 'name'
+
+    name = StringCol(dbName='name', notNull=True, unique=True,
+                     alternateID=True)
+

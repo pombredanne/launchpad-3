@@ -13,15 +13,18 @@ __all__ = [
     'BugListingPortletView',
     'BugTaskSearchListingView',
     'AssignedBugTasksView',
+    'BugTasksOldView',
     'OpenBugTasksView',
     'CriticalBugTasksView',
     'UntriagedBugTasksView',
     'UnassignedBugTasksView',
+    'AllBugTasksView',
     'AdvancedBugTaskSearchView',
     'BugTargetView',
     'BugTaskView',
     'BugTaskReleaseTargetingView',
-    'get_sortorder_from_request']
+    'get_sortorder_from_request',
+    'BugTargetTextView']
 
 import urllib
 
@@ -31,7 +34,9 @@ from zope.component import getUtility, getView
 from zope.app.form.utility import (
     setUpWidgets, getWidgetsData, applyWidgetsChanges)
 from zope.app.form.interfaces import IInputWidget, WidgetsError
+from zope.schema.interfaces import IList
 
+from canonical.config import config
 from canonical.lp import dbschema
 from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
@@ -45,10 +50,9 @@ from canonical.launchpad.interfaces import (
     IUpstreamBugTask, IDistroBugTask, IDistroReleaseBugTask, IPerson,
     INullBugTask, IBugAttachmentSet, IBugExternalRefSet, IBugWatchSet,
     NotFoundError, IDistributionSourcePackage, ISourcePackage,
-    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES)
+    IPersonBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES, IBugTaskSearch)
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.launchpad import helpers
-from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectModifiedEvent
 from canonical.launchpad.browser.bug import BugContextMenu
 from canonical.launchpad.interfaces.bug import BugDistroReleaseTargetDetails
@@ -483,7 +487,7 @@ class BugListing:
 
         self.displayname = displayname
         self.url = canonical_url(target) + '/' + name
-        self.count = listing_view.taskCount
+        self.count = listing_view.unfilteredTaskCount
         self.require_login = require_login
 
 
@@ -493,22 +497,64 @@ class BugListingPortletView(LaunchpadView):
     @property
     def buglistings(self):
         request = self.request
+        context = self.context
         require_login = self.user is None
         return [
-            BugListing(self.context, 'All open bugs', '+bugs-open', request),
+            BugListing(context, 'All open bugs', '+bugs-open', request),
             BugListing(
-                self.context, 'Assigned to me', '+bugs-assigned-to', request,
+                context, 'Assigned to me', '+bugs-assigned-to', request,
                 require_login=require_login),
-            BugListing(self.context, 'Critical', '+bugs-critical', request),
-            BugListing(self.context, 'Untriaged', '+bugs-untriaged', request),
-            BugListing(
-                self.context, 'Unassigned', '+bugs-unassigned', request),
-            BugListing(
-                self.context, 'All bugs ever reported', '+bugs-all', request),
-            BugListing(
-                self.context, 'Advanced search', '+bugs-advanced', request),
+            BugListing(context, 'Critical', '+bugs-critical', request),
+            BugListing(context, 'Untriaged', '+bugs-untriaged', request),
+            BugListing(context, 'Unassigned', '+bugs-unassigned', request),
+            BugListing(context, 'All bugs ever reported', '+bugs-all', request),
+            BugListing(context, 'Advanced search', '+bugs-advanced', request),
             ]
 
+
+def getInitialValuesFromSearchParams(search_params, form_schema):
+    """Build a dictionary that can be given as initial values to
+    setUpWidgets, based on the given search params.
+
+    >>> initial = getInitialValuesFromSearchParams(
+    ...     {'status': any(*UNRESOLVED_BUGTASK_STATUSES)}, IBugTaskSearch)
+    >>> [status.name for status in initial['status']]
+    ['UNCONFIRMED', 'CONFIRMED', 'INPROGRESS', 'NEEDSINFO']
+
+    >>> initial = getInitialValuesFromSearchParams(
+    ...     {'status': dbschema.BugTaskStatus.REJECTED}, IBugTaskSearch)
+    >>> [status.name for status in initial['status']]
+    ['REJECTED']
+
+    >>> initial = getInitialValuesFromSearchParams(
+    ...     {'severity': [dbschema.BugTaskSeverity.CRITICAL,
+    ...                   dbschema.BugTaskSeverity.MAJOR]}, IBugTaskSearch)
+    >>> [severity.name for severity in initial['severity']]
+    ['CRITICAL', 'MAJOR']
+
+    >>> getInitialValuesFromSearchParams(
+    ...     {'assignee': NULL}, IBugTaskSearch)
+    {'assignee': None}
+    """
+    initial = {}
+    for key, value in search_params.items():
+        if IList.providedBy(form_schema[key]):
+            if isinstance(value, any):
+                value = value.query_values
+            elif isinstance(value, (list, tuple)):
+                value = value
+            else:
+                value = [value]
+        elif value == NULL:
+            value = None
+        else:
+            # Should be safe to pass value as it is to setUpWidgets, no need
+            # to worry
+            pass
+
+        initial[key] = value
+
+    return initial
 
 class BugTaskSearchListingView(LaunchpadView):
     """Base class for bug listings.
@@ -516,6 +562,12 @@ class BugTaskSearchListingView(LaunchpadView):
     Subclasses should define getExtraSearchParams() to filter the
     search.
     """
+
+    def __init__(self, context, request):
+        LaunchpadView.__init__(self, context, request)
+        # The initial values to be used when setting up the widgets of this 
+        # page.
+        self.initial_values = {}
 
     def initialize(self):
         #XXX: The base class should have a simple schema containing only
@@ -531,10 +583,11 @@ class BugTaskSearchListingView(LaunchpadView):
         else:
             raise TypeError("Unknown context: %s" % repr(self.context))
 
-        setUpWidgets(self, self.search_form_schema, IInputWidget)
+        setUpWidgets(self, self.search_form_schema, IInputWidget,
+                     initial=self.initial_values)
 
     @property
-    def taskCount(self):
+    def unfilteredTaskCount(self):
         """The number of tasks an empty search will return."""
         # We need to pass in batch_start, so it doesn't use a value from
         # the request.
@@ -548,6 +601,10 @@ class BugTaskSearchListingView(LaunchpadView):
         """Should the search results be displayed as a list?"""
         return True
 
+    def shouldShowAssignee(self):
+        """Should we show the assignee in the list of results?"""
+        return True
+
     def getExtraSearchParams(self):
         """Return extra search parameters to filter the bug list.
 
@@ -556,13 +613,12 @@ class BugTaskSearchListingView(LaunchpadView):
         """
         return {}
 
-    def search(self, searchtext=None, batch_start=None):
-        """Return an IBatchNavigator for the GETed search criteria.
+    def search(self, searchtext=None, batch_start=None, context=None):
+        """Return an IBatchNavigator for the GET search criteria.
 
         If :searchtext: is None, the searchtext will be gotten from the
         request.
         """
-
         form_params = getWidgetsData(self, self.search_form_schema)
         search_params = BugTaskSearchParams(user=self.user, omit_dupes=True)
         search_params.orderby = get_sortorder_from_request(self.request)
@@ -587,14 +643,23 @@ class BugTaskSearchListingView(LaunchpadView):
         for param_name in extra_params:
             setattr(search_params, param_name, extra_params[param_name])
 
-        tasks = self.context.searchTasks(search_params)
+        # Base classes can provide an explicit search context.
+        if not context:
+            context = self.context
+
+        tasks = context.searchTasks(search_params)
         if self.showBatchedListing():
             if batch_start is None:
                 batch_start = int(self.request.get('batch_start', 0))
-            batch = Batch(tasks, batch_start)
+            batch = Batch(tasks, batch_start, config.malone.buglist_batch_size)
         else:
             batch = tasks
+
         return BatchNavigator(batch=batch, request=self.request)
+
+    def shouldShowAdvancedSearchWidgets(self):
+        """Return True if the advanced search widgets should be shown."""
+        return False
 
     def shouldShowSearchWidgets(self):
         """Should the search widgets be displayed on this page?"""
@@ -689,9 +754,8 @@ class BugTaskSearchListingView(LaunchpadView):
         releases = getUtility(IDistroReleaseSet).search(
             distribution=distribution, orderBy="-datereleased")
 
-        request = self.request
         return [
-            BugListing(release, release.displayname, '+bugs', request)
+            BugListing(release, release.displayname, '+bugs', self.request)
             for release in releases]
 
     def getSortLink(self, colname):
@@ -803,48 +867,86 @@ class BugTaskSearchListingView(LaunchpadView):
         return IDistroRelease(self.context, None)
 
 
-class AssignedBugTasksView(BugTaskSearchListingView):
+class RedirectToAdvancedBugTasksView(BugTaskSearchListingView):
+    """A view that will render the advanced search page if the user requested
+    an advanced search form.
+    """
+
+    def render(self):
+        request = self.request
+        if request.form.get('advanced'):
+            # The user wants to do an advanced search, let's render the
+            # advanced page and keep the predefined values of this search.
+            new_view = getView(self.context, '+bugs-advanced', request)
+            new_view.initial_values = getInitialValuesFromSearchParams(
+                self.getExtraSearchParams(), self.search_form_schema)
+            return new_view()
+        else:
+            return BugTaskSearchListingView.render(self)
+
+
+class AssignedBugTasksView(RedirectToAdvancedBugTasksView):
     """All open bugs assigned to someone."""
 
     def getExtraSearchParams(self):
         return {'status': any(*UNRESOLVED_BUGTASK_STATUSES),
                 'assignee': self.user}
 
-    def doNotShowAssignee(self):
-        """Should we not show the assignee in the list of results?"""
-        return True
+    def shouldShowAssignee(self):
+        """Should we show the assignee in the list of results?"""
+        return False
 
 
-class OpenBugTasksView(BugTaskSearchListingView):
+class OpenBugTasksView(RedirectToAdvancedBugTasksView):
     """All open bugs."""
+
+    @property
+    def unfilteredTaskCount(self):
+        return self.context.open_bugtasks.count()
 
     def getExtraSearchParams(self):
         return {'status': any(*UNRESOLVED_BUGTASK_STATUSES)}
 
 
-class CriticalBugTasksView(BugTaskSearchListingView):
+class CriticalBugTasksView(RedirectToAdvancedBugTasksView):
     """All open critical bugs."""
+
+    @property
+    def unfilteredTaskCount(self):
+        return self.context.critical_bugtasks.count()
 
     def getExtraSearchParams(self):
         return {'status': any(*UNRESOLVED_BUGTASK_STATUSES),
                 'severity': dbschema.BugTaskSeverity.CRITICAL}
 
 
-class UntriagedBugTasksView(BugTaskSearchListingView):
+class UntriagedBugTasksView(RedirectToAdvancedBugTasksView):
     """All untriaged bugs.
 
-    Only bugs with status NEW are considered to be untriaged.
+    Only bugs with status UNCONFIRMED are considered to be untriaged.
     """
 
     def getExtraSearchParams(self):
         return {'status': dbschema.BugTaskStatus.UNCONFIRMED}
 
 
-class UnassignedBugTasksView(BugTaskSearchListingView):
+class UnassignedBugTasksView(RedirectToAdvancedBugTasksView):
     """All open bugs that don't have an assignee."""
+
+    @property
+    def unfilteredTaskCount(self):
+        return self.context.unassigned_bugtasks.count()
 
     def getExtraSearchParams(self):
         return {'status': any(*UNRESOLVED_BUGTASK_STATUSES), 'assignee': NULL}
+
+    def shouldShowAssignee(self):
+        """Should we show the assignee in the list of results?"""
+        return False
+
+
+class AllBugTasksView(RedirectToAdvancedBugTasksView):
+    """All bugs ever reported."""
 
 
 class AdvancedBugTaskSearchView(BugTaskSearchListingView):
@@ -858,7 +960,12 @@ class AdvancedBugTaskSearchView(BugTaskSearchListingView):
         pages and still use this method to get the extra params of the
         submitted simple form.
         """
-        form_params = getWidgetsData(self, self.search_form_schema)
+        # Even though we pass self.initial_values to setUpWidgets(), that
+        # method won't add anything to the request (obviously), and that's
+        # where getWidgetsData() will get the values from. For this reason we
+        # update self.initial_values with the return of getWidgetsData().
+        form_params = self.initial_values
+        form_params.update(getWidgetsData(self, self.search_form_schema))
 
         search_params = {}
         search_params['statusexplanation'] = form_params.get(
@@ -899,6 +1006,29 @@ class AdvancedBugTaskSearchView(BugTaskSearchListingView):
 
         return search_params
 
+    def shouldShowAdvancedSearchWidgets(self):
+        return True
+
+    def hasSimpleMode(self):
+        """Does this view has a "simple" mode where only a small subset of
+        widgets are displayed?
+
+        We need to know this in order to provide a button to switch to that
+        mode when we are in the advanced mode.
+        """
+        return False
+
+
+class BugTasksOldView(AdvancedBugTaskSearchView):
+    """The old +bugs view has to be an AdvancedBugTaskSearchView but shouldn't
+    display the advanced widgets.
+
+    We keep this view around to not break existing bookmars.
+    """
+
+    def shouldShowAdvancedSearchWidgets(self):
+        return False
+
 
 class BugTargetView:
     """Used to grab bugs for a bug target; used by the latest bugs portlet"""
@@ -909,4 +1039,16 @@ class BugTargetView:
 
         tasklist = self.context.searchTasks(params)
         return tasklist[:quantity]
+
+
+class BugTargetTextView(LaunchpadView):
+    """View for simple text page showing bugs filed against a bug target."""
+
+    def render(self):
+        self.request.response.setHeader('Content-type', 'text/plain')
+        tasks = self.context.searchTasks(BugTaskSearchParams(self.user))
+
+        # We use task.bugID rather than task.bug.id here as the latter
+        # would require an extra query per task.
+        return u''.join('%d\n' % task.bugID for task in tasks)
 

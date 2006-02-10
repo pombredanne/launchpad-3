@@ -179,21 +179,9 @@ def generate_bug_add_email(bug):
         body += u"         Status: %s\n" % bugtask.status.title
 
     # Add the description.
-    #
-    # XXX, Brad Bollenbach, 2005-06-29: A hack to workaround some data
-    # migration issues; many older bugs don't have descriptions
-    # set. The bug filed for this is at:
-    #
-    # https://launchpad.ubuntu.com/malone/bugs/1187
-    if bug.description:
-        description = bug.description
-    else:
-        # This bug is in need of some data migration love.
-        description = bug.messages[0].contents
-
     body += u"\n"
     mailwrapper = MailWrapper(width=72)
-    body += u"Description:\n%s" % mailwrapper.format(description)
+    body += u"Description:\n%s" % mailwrapper.format(bug.description)
 
     body = body.rstrip()
 
@@ -426,7 +414,7 @@ def generate_bug_comment_email(bug_comment):
             u"%(comment)s"
             % {'visibility' : visibility, 'bugurl' : canonical_url(bug),
                'comment' : comment_wrapper.format(
-                    bug_comment.message.contents)})
+                    bug_comment.message.text_contents)})
 
     body = body.rstrip()
 
@@ -1023,7 +1011,7 @@ def notify_ticket_modified(ticket, event):
             # There should be a blank line between the changes and the
             # comment.
             body += '\n\n'
-        body += 'Comment:\n%s' % comment.contents
+        body += 'Comment:\n%s' % comment.text_contents
     else:
         raise AssertionError(
             "There shouldn't be more than one comment for a notification.")
