@@ -20,6 +20,11 @@ To retrieve a specific Bug, use IBugSet.get:
     >>> print firefox_crashes.title
     Firefox crashes when Save As dialog for a nonexistent window is closed
 
+Or you can use IBugSet.getByNameOrID to get it by its nickname
+    >>> blackhole_bug = bugset.getByNameOrID('blackhole') 
+    >>> print blackhole_bug.title
+    Blackhole Trash folder
+
 If the bug can't be found, a zope.exceptions.NotFoundError will be
 raised:
 
@@ -27,6 +32,12 @@ raised:
     Traceback (most recent call last):
       ...
     NotFoundError: 'Unable to locate bug with ID 123456'
+
+    >>> bugset.getByNameOrID('+bugs')
+    Traceback (most recent call last):
+      ...
+    NotFoundError: 'Unable to locate bug with nickname +bugs'
+
 
 Searching for Bugs
 ------------------
