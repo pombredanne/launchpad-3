@@ -1699,12 +1699,17 @@ class NascentUpload:
         if self.binaryful:
             self.insert_binary_into_db()
 
+        # create a DRQ entry in new state
+        queue_root = self.distrorelease.createQueueEntry(self.policy.pocket,
+            self.changes_basename, self.changes["filecontents"])
+
         # Create a Queue item for us to attach our uploads to.
         status = DistroReleaseQueueStatus.ACCEPTED
         if self.is_new():
             status = DistroReleaseQueueStatus.NEW
-        queue_root = self.distrorelease.createQueueEntry(
-            self.policy.pocket, status=status)
+
+        queue_root.status = status
+
         # Next, if we're sourceful, add a source to the queue
         if self.sourceful:
             queue_root.addSource(self.policy.sourcepackagerelease)

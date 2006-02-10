@@ -227,7 +227,9 @@ class MaloneHandler:
                             add_comment_to_bug = False
                     elif IBugTaskEmailCommand.providedBy(command):
                         if bugtask_event is not None:
-                            notify(bugtask_event)
+                            if not ISQLObjectCreatedEvent.providedBy(
+                                bug_event):
+                                notify(bugtask_event)
                             bugtask_event = None
                         bugtask, bugtask_event = command.execute(bug)
                     elif IBugEditEmailCommand.providedBy(command):
@@ -255,7 +257,8 @@ class MaloneHandler:
                     raise IncomingEmailError(
                         get_error_message('no-affects-target-on-submit.txt'))
             if bugtask_event is not None:
-                notify(bugtask_event)
+                if not ISQLObjectCreatedEvent.providedBy(bug_event):
+                    notify(bugtask_event)
 
         except IncomingEmailError, error:
             transaction.abort()

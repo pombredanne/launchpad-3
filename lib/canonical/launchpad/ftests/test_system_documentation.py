@@ -173,7 +173,8 @@ def test_suite():
     for filename in filenames:
         path = os.path.join('../doc/', filename)
         suite.addTest(FunctionalDocFileSuite(
-            path, setUp=setUp, tearDown=tearDown
+            path, setUp=setUp, tearDown=tearDown,
+            optionflags=default_optionflags
             ))
 
     return suite
