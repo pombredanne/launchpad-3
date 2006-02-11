@@ -20,6 +20,7 @@ from canonical.launchpad.database.ticketbug import TicketBug
 from canonical.launchpad.database.ticketmessage import TicketMessage
 from canonical.launchpad.database.ticketreopening import TicketReopening
 from canonical.launchpad.database.ticketsubscription import TicketSubscription
+from canonical.launchpad.helpers import check_permission
 
 from canonical.lp.dbschema import EnumCol, TicketStatus, TicketPriority
 
@@ -136,11 +137,20 @@ class Ticket(SQLBase):
 
     def acceptAnswer(self, acceptor, when=None):
         """See ITicket."""
+        can_accept_answer = (acceptor == self.owner or 
+                             check_permission('launchpad.Admin', acceptor))
+        assert can_accept_answer, (
+            "Only the owner or admins can accept an answer.")
         self.status = TicketStatus.ANSWERED
         if when is None:
             self.dateanswered = UTC_NOW
         else:
             self.dateanswered = when
+        #XXX: Set the answer to the last, non-submitter, who commented
+        #     on the ticket. This is only temporary until
+        #     SupportTrackerTweaks is fully implemented, and the
+        #     submitter will be able to choose who answered the ticket.
+        #     -- Bjorn Tillenius, 2006-02-11
         for commenter in [message.owner for message in self.messages]:
             if commenter != self.owner:
                 self.answerer = commenter

@@ -79,8 +79,7 @@
           <tal:can_close_ticket condition="not: context/is_resolved">
             <tal:is_owner condition="view/is_owner">
               <label>
-                <input type="checkbox" name="field.resolved"
-                       value="answers">
+                <input type="checkbox" name="field.resolved">
                 Support request is answered
               </label>
               <div class="discreet">

@@ -78,7 +78,7 @@ Answered.
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... field.subject=Use+a+new+computer&field.content=Yes.&field.resolved=answers&UPDATE_SUBMIT=Post+Comment""")
+  ... field.subject=Use+a+new+computer&field.content=Yes.&field.resolved=on&UPDATE_SUBMIT=Post+Comment""")
   HTTP/1.1 303 See Other
   ...
   Location: http://.../products/firefox/+ticket/2
