@@ -268,4 +268,4 @@ class TicketSet:
         try:
            return Ticket.get(ticket_id)
         except SQLObjectNotFound:
-            return None
+            return default
