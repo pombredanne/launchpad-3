@@ -304,8 +304,16 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
   >>> from canonical.librarian.interfaces import ILibrarianClient
   >>> librarian = getUtility(ILibrarianClient)
 
-  We are not able to test succesfully built packages, but we can test
-  all other states:
+Remove any previous buildmaster ROOT directory, to avoid any garbage
+lock conflict (it would be recreated automatically if necessary)
+
+  >>> from canonical.config import config
+  >>> import shutil
+  >>> import os
+  >>> if os.access(config.builddmaster.root, os.F_OK):
+  ...     shutil.rmtree(config.builddmaster.root)
+
+Let's check the procedures to verify/collect running build process:
 
   WAITING - PACKAGEFAIL -> Package has failed to build, notice from
   builder is stored, but Build.buildstate is mark as 'Failed to Build':
@@ -444,7 +452,6 @@ Both access methods work as expected, remove the temporary file used here.
 
 Check uploader log storage:
 
-  >>> from canonical.config import config
   >>> failed_dir = os.path.join(config.builddmaster.root, 'failed')
   >>> failed_upload = os.listdir(failed_dir)[0]
   >>> uploader_log = open(os.path.join(failed_dir, failed_upload,
@@ -457,14 +464,12 @@ Check uploader log storage:
   DEBUG   Initialising connection.
   ...
   DEBUG   Got the upload directory lock
-  DEBUG   Finding policy
   ...
   DEBUG   Rolling back any remaining transactions.
   <BLANKLINE>
 
 Remove build upload results root
 
-  >>> import shutil
   >>> shutil.rmtree(config.builddmaster.root)
 
 

@@ -870,13 +870,20 @@ class BuilddMaster:
         """Iterate over published package and ensure we have a proper
         build entry for it.
         """
+        # Do not create builds for distroreleases with no nominatedarchindep
+        # they can't build architecture independent packages properly.
+        if not distrorelease.nominatedarchindep:
+            self._logger.warn("No Nominated Architecture Independent, skipping"
+                              " distrorelease %s", distrorelease.title)
+            return
+
 
         pas_verify = BuildDaemonPackagesArchSpecific(config.builddmaster.root,
                                                      distrorelease)
 
         # 1. get all sourcepackagereleases published or pending in this
         # distrorelease
-        spp = distrorelease.getAllReleasesByStatus(
+        sources_published = distrorelease.getAllReleasesByStatus(
             dbschema.PackagePublishingStatus.PUBLISHED
             )
 
@@ -884,16 +891,8 @@ class BuilddMaster:
                           distrorelease.distribution.title,
                           distrorelease.title)
 
-        releases = set(pubrec.sourcepackagerelease for pubrec in spp)
-
-        self._logger.info("Found %d Sources to build.", len(releases))
-
-        # Do not create builds for distroreleases with no nominatedarchindep
-        # they can't build architecture independent packages properly.
-        if not distrorelease.nominatedarchindep:
-            self._logger.warn("No Nominated Architecture Independent, skipping"
-                              " distrorelease %s", distrorelease.title)
-            return
+        self._logger.info("Found %d Sources to build.",
+                          sources_published.count())
 
         # 2. Determine the set of distroarchreleases we care about in this
         # cycle
@@ -911,20 +910,21 @@ class BuilddMaster:
             return
 
         # 3. For each of the sourcepackagereleases, find its builds...
-        for release in releases:
+        for pubrec in sources_published:
             header = ("Build Record %s-%s for '%s' " %
-                      (release.name, release.version,
-                       release.architecturehintlist))
+                      (pubrec.sourcepackagerelease.name,
+                       pubrec.sourcepackagerelease.version,
+                       pubrec.sourcepackagerelease.architecturehintlist))
 
             # Abort packages with empty architecturehintlist, they are simply
             # wrong.
             # XXX cprov 20050931
             # This check should be done earlier in the upload component/hct
-            if release.architecturehintlist is None:
+            if pubrec.sourcepackagerelease.architecturehintlist is None:
                 self._logger.debug(header + "ABORT EMPTY ARCHHINTLIST")
                 continue
 
-            hintlist = release.architecturehintlist
+            hintlist = pubrec.sourcepackagerelease.architecturehintlist
             if hintlist == 'any':
                 hintlist = " ".join([arch.architecturetag for arch in archs])
 
@@ -932,7 +932,7 @@ class BuilddMaster:
             # in this case only one build entry is needed.
             if hintlist == 'all':
                 # it's already there, skip to next package
-                if release.builds:
+                if pubrec.sourcepackagerelease.builds:
                     # self._logger.debug(header + "SKIPPING ALL")
                     continue
 
@@ -941,7 +941,7 @@ class BuilddMaster:
                 # to build on one architecture, the distrorelease.
                 # nominatedarchindep
                 processor = distrorelease.nominatedarchindep.default_processor
-                release.createBuild(
+                pubrec.sourcepackagerelease.createBuild(
                     distroarchrelease=distrorelease.nominatedarchindep,
                     processor=processor)
                 self._logger.debug(header + "CREATING ALL")
@@ -956,9 +956,9 @@ class BuilddMaster:
                 # architecture and the current architecture is not
                 # mentioned in the list, continues
                 supported = True
-                if release.name in pas_verify.permit:
+                if pubrec.sourcepackagerelease.name in pas_verify.permit:
                     if (arch.architecturetag not in
-                        pas_verify.permit[release.name]):
+                        pas_verify.permit[pubrec.sourcepackagerelease.name]):
                         supported = False
                 if not supported:
                     supported_list = hintlist.split()
@@ -977,13 +977,12 @@ class BuilddMaster:
                     # this distroarchrelease.processorfamily. The data model
                     # should change to have a default processor for a
                     # processorfamily
-                    release.createBuild(distroarchrelease=arch,
-                                        processor=arch.default_processor)
+                    pubrec.sourcepackagerelease.createBuild(
+                        distroarchrelease=arch,
+                        processor=arch.default_processor)
                     self._logger.debug(header + "CREATING %s" %
                                        arch.architecturetag)
-                #else:
-                #    self._logger.debug(header + "SKIPPING %s" %
-                #                       arch.architecturetag)
+
         self.commit()
 
     def addMissingBuildQueueEntries(self):
