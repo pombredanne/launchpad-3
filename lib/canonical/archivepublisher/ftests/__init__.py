@@ -89,7 +89,7 @@ class PoppyTestSetup:
                 buffer += data
                 lines = buffer.splitlines()
                 for line in lines:
-                    if line == "ubuntutest":
+                    if line == self.user:
                         continue
                     if line not in expected:
                         raise SoyuzUploadError("Unexpected line found in "

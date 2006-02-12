@@ -287,11 +287,11 @@ def do_one_entry(ztm, entry, fsroot, lock):
             log.debug("Overriding distribution: %s" %
                       options.distro)
 
-        log.debug("Finding policy")
-        policy = findPolicyByOptions(options)
 
         for filename in os.listdir(entry_path):
             if filename.endswith(".changes"):
+                log.debug("Finding fresh policy")
+                policy = findPolicyByOptions(options)
                 uploads.append(NascentUpload(
                     policy, entry_path, filename, log))
 

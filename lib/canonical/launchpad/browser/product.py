@@ -646,21 +646,28 @@ class ProductBugContactEditView(SQLObjectEditView):
     def changed(self):
         """Redirect to the product page with a success message."""
         product = self.context
-        contact_email = None
 
-        if product.bugcontact:
-            contact_email = product.bugcontact.preferredemail.email
+        bugcontact = product.bugcontact
+        if bugcontact:
+            contact_display_value = None
+            if bugcontact.preferredemail:
+                # The bug contact was set to a new person or team.
+                contact_display_value = bugcontact.preferredemail.email
+            else:
+                # The bug contact doesn't have a preferred email address, so it
+                # must be a team.
+                assert bugcontact.isTeam(), (
+                    "Expected bug contact with no email address to be a team.")
+                contact_display_value = bugcontact.browsername
 
-        if contact_email:
-            # The bug contact was set to a new person or team.
             self.request.response.addNotification(
-                "Successfully changed the bug contact to %s" % contact_email)
+                "Successfully changed the bug contact to %s" %
+                contact_display_value)
         else:
             # The bug contact was set to noone.
             self.request.response.addNotification(
-                "Successfully cleared the bug contact. This means that there "
-                "is no longer a contact address that will receive all bugmail "
-                "for this product. You can, of course, set the bug contact "
-                "again at any time.")
+                "Successfully cleared the bug contact. There is no longer a "
+                "contact address that will receive all bugmail for this "
+                "product. You can set the bug contact again at any time.")
 
         self.request.response.redirect(canonical_url(product))

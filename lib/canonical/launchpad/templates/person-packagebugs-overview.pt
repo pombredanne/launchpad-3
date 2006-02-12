@@ -1,0 +1,76 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+  <metal:block fill-slot="head_epilogue">
+    <!-- CSS rules local to this page -->
+    <style>
+      .results th {
+        color: #828282;
+        border: 1px solid #cfcfcf;
+        background-color: #E0E0E0;
+        text-align: left;
+      }
+
+      .bugcount {
+        text-align: center;
+      }
+
+      .results td {
+        border: 1px solid #cfcfcf;
+        background-color: #ededed
+      }
+    </style>
+  </metal:block>
+
+  <div metal:fill-slot="main">
+    <a href="#"
+       tal:content="context/displayname"
+       tal:attributes="href context/fmt:url">Sample Person</a>
+    is a bug contact for these packages:
+
+    <br /><br />
+    <table class="results">
+      <tr>
+        <th width="40%">Package</th>
+        <th width="14%">Open</th>
+        <th width="14%">Critical</th>
+        <th width="14%">Unassigned</th>
+        <th width="18%">In Progress</th>
+      </tr>
+      <tr tal:repeat="package_bug_counts view/getPackageBugCounts">
+        <td>
+          <a href="#"
+             tal:content="package_bug_counts/package_name"
+             tal:attributes="href package_bug_counts/package_search_url">
+            mozilla-firefox (Ubuntu)
+          </a>
+        </td>
+        <td class="bugcount">
+          <a href="#"
+             tal:attributes="href package_bug_counts/open_bugs_url"
+             tal:content="package_bug_counts/open_bugs_count">2</a>
+        </td>
+        <td class="bugcount">
+          <a href="#"
+             tal:attributes="href package_bug_counts/critical_bugs_url"
+             tal:content="package_bug_counts/critical_bugs_count">2</a>
+        </td>
+        <td class="bugcount">
+          <a href="#"
+             tal:attributes="href package_bug_counts/unassigned_bugs_url"
+             tal:content="package_bug_counts/unassigned_bugs_count">2</a>
+        </td>
+        <td class="bugcount">
+          <a href="#"
+             tal:attributes="href package_bug_counts/inprogress_bugs_url"
+             tal:content="package_bug_counts/inprogress_bugs_count">2</a>
+        </td>
+      </tr>
+    </table>
+  </div>
+</body>
+</html>

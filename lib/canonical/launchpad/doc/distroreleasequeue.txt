@@ -193,6 +193,9 @@ Check the behaviour of @cachedproperty  attributes:
   >>> qitem.sourceversion
   u'0.9'
 
+  >>> qitem.sourcepackagerelease
+  <SourcePackageRelease at ...>
+
 
 Explore the queue features of a DistroRelease instance, let's check
 some usages of IDistroRelease.getFancyQueueItems, which returns a list
@@ -369,8 +372,9 @@ Construct a new upload for universe/misc and a lot of errors ;)
   From: Root <root@localhost>
   To: Root <root@localhost>, Sample Person <test@canonical.com>
   Precedence: bulk
-  Subject: usplash_0.1-22_powerpc.changes REJECTED
+  Subject: usplash_0.1-22_powerpc.changes Rejected
   <BLANKLINE>
+  Rejected:
   usplash_0.1-22_powerpc.deb: Unknown architecture: 'powerpc'.
   Unable to find source package usplash/0.1-22 in hoary
   usplash_0.1-22_powerpc.deb: Unable to find arch: powerpc

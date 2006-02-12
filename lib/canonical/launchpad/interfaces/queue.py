@@ -84,6 +84,8 @@ class IDistroReleaseQueue(Interface):
 
     sourceversion = Attribute("The source package version for this item")
 
+    sourcepackagerelease = Attribute("The source package release for this item")
+
     age = Attribute("The age of this queue item.")
 
     def set_new():

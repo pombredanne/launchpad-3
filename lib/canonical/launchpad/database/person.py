@@ -43,6 +43,7 @@ from canonical.launchpad.database.logintoken import LoginToken
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.karma import (
     KarmaAction, Karma, KarmaCategory)
+from canonical.launchpad.database.packagebugcontact import PackageBugContact
 from canonical.launchpad.database.shipit import ShippingRequest
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
@@ -295,11 +296,11 @@ class Person(SQLBase):
             OR Specification.assignee = %(my_id)d
             OR Specification.drafter = %(my_id)d
             OR Specification.id IN (
-                SELECT SpecificationFeedback.id
+                SELECT SpecificationFeedback.specification
                 FROM SpecificationFeedback
                 WHERE SpecificationFeedback.reviewer = %(my_id)s
                 UNION
-                SELECT SpecificationSubscription.id
+                SELECT SpecificationSubscription.specification
                 FROM SpecificationSubscription
                 WHERE SpecificationSubscription.person = %(my_id)d
                 )
@@ -338,6 +339,21 @@ class Person(SQLBase):
         """See IPerson."""
         return Branch.select('owner=%d AND (author!=%d OR author is NULL)'
                              % (self.id, self.id), orderBy='-id')
+
+    def getBugContactPackages(self):
+        """See IPerson."""
+        package_bug_contacts = shortlist(
+            PackageBugContact.selectBy(bugcontactID=self.id),
+            longest_expected=25)
+
+        packages_for_bug_contact = [
+            package_bug_contact.distribution.getSourcePackage(
+                package_bug_contact.sourcepackagename)
+            for package_bug_contact in package_bug_contacts]
+
+        packages_for_bug_contact.sort(key=lambda x: x.name)
+
+        return packages_for_bug_contact
 
     def getBranch(self, product_name, branch_name):
         """See IPerson."""
