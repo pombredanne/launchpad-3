@@ -33,6 +33,19 @@ We need some setup for the upload handler.
   >>> from canonical.archivepublisher.uploadpolicy import findPolicyByName
   >>> from canonical.archivepublisher.tests import datadir
 
+  >>> pmount_upload = NascentUpload(findPolicyByName('anything'),
+  ...     datadir(''), "pmount_0.9.7-2ubuntu2_amd64.changes", MockLogger())
+  >>> pmount_upload.changes_filename == datadir("pmount_0.9.7-2ubuntu2_amd64.changes")
+  True
+  >>> pmount_upload.policy.setOptions(MockOptions())
+  >>> pmount_upload.policy.can_upload_binaries = True
+  >>> pmount_upload.policy.can_upload_mixed = True
+  >>> pmount_upload.process()
+  >>> success, msgs = pmount_upload.do_accept()
+  >>> success
+  True
+  >>> msgs
+
 Construct an upload.
 
   >>> ed_upload = NascentUpload(findPolicyByName('anything'),
