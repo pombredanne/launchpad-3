@@ -167,11 +167,16 @@ class ErrorSummary:
             if isinstance(t, tuple) and len(t) == 2:
                 evalue = t[1].replace('\n', ' ')
 
-        if etype in ['RequestExpired', 'RequestQueryTimedOut']:
+        if etype in ['RequestExpired', 'RequestQueryTimedOut',
+                     'ProgrammingError', 'SQLObjectMoreThanOneResultError',
+                     'RequestStatementTimedOut']:
             evalue = re.sub(r"'(?:\\\\|\\[^\\]|[^'])*'",
                             '$STRING', evalue)
             evalue = re.sub(r'\b\d+', '$INT', evalue)
 
+
+        if etype in ['RequestExpired', 'RequestQueryTimedOut',
+                     'RequestStatementTimedOut']:
             self.addOops(self.expired, etype, evalue, url, oopsid,
                          local_referer, is_bot)
         elif etype in ['SoftRequestTimeout']:
@@ -279,11 +284,7 @@ class ErrorSummary:
         fp.write('<html>\n'
                  '<head>\n'
                  '<title>Oops Report Summary</title>\n'
-                 '<style type="text/css">\n'
-                 '  .oops { font-size: small; list-style: none; }\n'
-                 '  .errurl { color: inherit; text-decoration: none; }\n'
-                 '  .pct { font-size: small; margin-left: 5em; }\n'
-                 '</style>\n'
+                 '<link rel="stylesheet" type="text/css" href="https://chinstrap.ubuntu.com/~mpt/oops.css" />\n'
                  '</head>\n'
                  '<body>\n'
                  '<h1>Oops Report Summary</h1>\n\n')
