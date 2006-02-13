@@ -60,7 +60,9 @@
             <td tal:content="build/datecreated/fmt:datetime">REQUESTED</td>
 
 	    <tal:pending condition="not: build/was_built">
-            <td colspan="5" align="center">PENDING</td>
+            <td colspan="5" align="center">PENDING
+            (<span tal:condition="build/buildqueue_record"
+                   tal:replace="build/buildqueue_record/lastscore"/>)</td>
             </tal:pending>
 
             <tal:was_built condition="build/was_built">

@@ -2644,7 +2644,7 @@ class BuildStatus(DBSchema):
         """)
 
     FULLYBUILT = Item(1, """
-        Fully built
+        Successfully built
 
         Build record is an historic account of the build. The build is complete
         and needs no further work to complete it. The build log etc are all
@@ -2661,7 +2661,7 @@ class BuildStatus(DBSchema):
         """)
 
     MANUALDEPWAIT = Item(3, """
-        Manual dependency wait
+        Dependency wait
 
         Build record represents a package whose build dependencies cannot
         currently be satisfied within the relevant DistroArchRelease. This
@@ -2670,7 +2670,7 @@ class BuildStatus(DBSchema):
         """)
 
     CHROOTWAIT = Item(4, """
-        Chroot wait
+        Chroot problem
 
         Build record represents a build which needs a chroot currently known
         to be damaged or bad in some way. The buildd maintainer will have to

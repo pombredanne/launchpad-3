@@ -266,3 +266,27 @@ If we create a new ticket, datecreated gets set to the current time:
     ...     owner=sample_person, product=firefox, when=now_plus_three_hours)
     >>> new_ticket.datecreated == now_plus_three_hours
     True
+
+
+ITicketSet
+----------
+
+ITicketSet can be used to get a ticket with a specific id:
+
+    >>> from canonical.launchpad.interfaces import ITicketSet
+    >>> ticket_one = getUtility(ITicketSet).get(1)
+    >>> ticket_one.title
+    u'Firefox cannot render Bank Site'
+
+If no ticket exists, a default value is returned:
+
+    >>> default = object()
+    >>> ticket_nonexistant = getUtility(ITicketSet).get(
+    ...     123456, default=default)
+    >>> ticket_nonexistant is default
+    True
+
+If no default value is given, None is returned:
+
+    >>> getUtility(ITicketSet).get(123456) is None
+    True

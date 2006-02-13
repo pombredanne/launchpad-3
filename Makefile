@@ -63,7 +63,7 @@ lintmerge:
 
 pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) ${PYTHON} test.py test_pages
-	
+
 inplace: build
 
 build:
@@ -143,15 +143,8 @@ launchpad.pot:
 	    -d launchpad -p lib/canonical/launchpad \
 	    -o locales
 
-#
-#   Naughty, naughty!  How many Zope3 developers are going to have
-#   that directory structure?  The 'ctags' package is capable of generating
-#   both emacs-sytle and vi-style tags files from python source;  can the
-#   emacs-provided 'etags' not read Python?
-#
 TAGS:
-	python ~/trunk/Tools/scripts/eptags.py `find . -name \*.py`
-#	etags `find . -name \*.py -print`
+	ctags -e -R lib sourcecode
 
 tags:
 	ctags -R lib sourcecode

@@ -350,69 +350,6 @@ def test_parse_cformat_string():
     UnrecognisedCFormatString: %
     '''
 
-def test_parse_translation_form():
-    r'''
-    >>> from canonical.launchpad.helpers import parse_translation_form
-
-    An empty form has no translations.
-
-    >>> parse_translation_form({})
-    {}
-
-    A message ID with no translations.
-
-    >>> x = parse_translation_form({'set_3_msgid' : 3 })
-    >>> x[3]['msgid']
-    3
-    >>> x[3]['translations']
-    {}
-    >>> x[3]['fuzzy']
-    False
-
-    A translation with no message ID.
-
-    >>> parse_translation_form({'set_3_translation_cy_0' : None})
-    Traceback (most recent call last):
-    ...
-    AssertionError: Orphaned translation in form.
-
-    A message ID with some translations.
-
-    >>> x = parse_translation_form({
-    ...     'set_1_msgid' : 1,
-    ...     'set_1_translation_cy_0' : 'aaa',
-    ...     'set_1_translation_cy_1' : 'bbb',
-    ...     'set_1_translation_cy_2' : 'ccc',
-    ...     'set_1_fuzzy_cy' : True
-    ...     })
-    >>> x[1]['msgid']
-    1
-    >>> x[1]['translations'][2]
-    'ccc'
-    >>> x[1]['fuzzy']
-    True
-
-    Test with a language which contains a country code. This is a regression
-    test.
-
-    >>> x = parse_translation_form({
-    ...     'set_1_msgid' : 1,
-    ...     'set_1_translation_pt_BR_0' : 'bar',
-    ...     })
-    >>> x[1]['translations'][0]
-    'bar'
-
-    Newlines in translations should be normalised to Unix style (line feeds
-    only).
-
-    >>> x = parse_translation_form({
-    ...     'set_1_msgid': 1,
-    ...     'set_1_translation_cy_0': 'foo\r\nbar',
-    ...     })
-    >>> x[1]['translations'][0]
-    'foo\nbar'
-    '''
-
 def test_msgid_html():
     r'''
     Test message ID presentation munger.

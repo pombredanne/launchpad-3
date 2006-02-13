@@ -17,6 +17,7 @@ from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import MultipleJoin, RelatedJoin
 from sqlobject import SQLObjectNotFound
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IBug, IBugSet, ICveSet, NotFoundError, ILaunchpadCelebrities)
 from canonical.launchpad.helpers import contactEmailAddresses
@@ -28,14 +29,13 @@ from canonical.launchpad.database.bugset import BugSetBase
 from canonical.launchpad.database.message import (
     Message, MessageChunk)
 from canonical.launchpad.database.bugmessage import BugMessage
-from canonical.launchpad.database.bugtask import BugTask, bugtask_sort_key
+from canonical.launchpad.database.bugtask import (
+    BugTask, BugTaskSet, bugtask_sort_key)
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.database.bugsubscription import BugSubscription
 from canonical.launchpad.event.sqlobjectevent import (
     SQLObjectCreatedEvent, SQLObjectDeletedEvent)
 
-from zope.i18n import MessageIDFactory
-_ = MessageIDFactory("launchpad")
 
 
 class Bug(SQLBase):
@@ -234,7 +234,11 @@ class BugSet:
                 raise NotFoundError(
                     "Unable to locate bug with ID %s" % str(bugid))
         else:
-            bug = self.get(bugid)
+            try:
+                bug = self.get(bugid)
+            except ValueError:
+                raise NotFoundError(
+                    "Unable to locate bug with nickname %s" % str(bugid))
         return bug
 
     def searchAsUser(self, user, duplicateof=None, orderBy=None, limit=None):
@@ -337,37 +341,15 @@ class BugSet:
 
         # Create the task on a product if one was passed.
         if product:
-            BugTask(bug=bug, product=product, owner=owner)
-
-            # If a product bug contact has been provided, subscribe that contact
-            # to all public bugs. Otherwise subscribe the product owner to all
-            # public bugs.
-            if not bug.private:
-                if product.bugcontact:
-                    bug.subscribe(product.bugcontact)
-                else:
-                    bug.subscribe(product.owner)
+            BugTaskSet().createTask(bug=bug, product=product, owner=owner)
 
         # Create the task on a source package name if one was passed.
         if distribution:
-            BugTask(
+            BugTaskSet().createTask(
                 bug=bug,
                 distribution=distribution,
                 sourcepackagename=sourcepackagename,
                 binarypackagename=binarypackagename,
                 owner=owner)
-
-            # If a distribution bug contact has been provided, subscribe that
-            # contact to all public bugs.
-            if distribution.bugcontact and not bug.private:
-                bug.subscribe(distribution.bugcontact)
-
-            # Subscribe package bug contacts to public bugs, if package
-            # information was provided.
-            if sourcepackagename:
-                package = distribution.getSourcePackage(sourcepackagename)
-                if package.bugcontacts and not bug.private:
-                    for pkg_bugcontact in package.bugcontacts:
-                        bug.subscribe(pkg_bugcontact.bugcontact)
 
         return bug
