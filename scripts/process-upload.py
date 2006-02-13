@@ -311,7 +311,7 @@ def do_one_entry(ztm, entry, fsroot, lock):
                       options.distro)
 
 
-        for filename in order_filename(os.listdir(entry_path)):
+        for filename in order_filenames(os.listdir(entry_path)):
             if filename.endswith(".changes"):
                 log.debug("Finding fresh policy")
                 policy = findPolicyByOptions(options)
