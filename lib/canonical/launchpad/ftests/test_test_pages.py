@@ -1,8 +1,5 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
-"""Test that 
-
-Set up the test data in the database first.
-"""
+"""Test that creating page test stories from files and directories work."""
 __metaclass__ = type
 
 import os
@@ -19,7 +16,6 @@ class TestMakeStoryTest(unittest.TestCase):
         # we need an empty story to test with, and it has to be in the 
         # testing namespace
         self.tempdir = tempfile.mkdtemp(dir=os.path.dirname(__file__))
-        print self.tempdir
         unittest.TestCase.setUp(self)
 
     def tearDown(self):

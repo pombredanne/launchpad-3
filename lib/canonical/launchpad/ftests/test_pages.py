@@ -21,6 +21,11 @@ here = os.path.dirname(os.path.realpath(__file__))
 
 _db_is_setup = False
 
+
+class PageTestError(Exception):
+    pass
+
+
 class StartStory(unittest.TestCase):
     def setUp(self):
         """Setup the database"""
@@ -132,15 +137,13 @@ class PageTest(unittest.TestCase):
         
             # A predictable order is important, even if it remains officially
             # undefined for un-numbered filenames.
-            numberedfilenames = list(numberedfilenames)
-            numberedfilenames.sort()
-            unnumberedfilenames = list(unnumberedfilenames)
-            unnumberedfilenames.sort()
+            numberedfilenames = sorted(numberedfilenames)
+            unnumberedfilenames = sorted(unnumberedfilenames)
             test_scripts = unnumberedfilenames + numberedfilenames
     
         modules = self._package.split('.')
         if len(modules) == 0:
-            raise RuntimeError('Invalid package.')
+            raise PageTestError('Invalid package: ' + self._package)
         segments = storydir_or_single_test.split('/')
         # either modules is in segments somewhere, or its not a valid package
         # for the filename. 
@@ -149,8 +152,8 @@ class PageTest(unittest.TestCase):
         while len(segments) > 0 and segments[:len(modules)] != modules:
             segments.pop(0)
         if not len(segments):
-            raise RuntimeError('Test script dir %s not in packages %s' % 
-                               (storydir_or_single_test, self._package))
+            raise PageTestError('Test script dir %s not in packages %s' % 
+                                (storydir_or_single_test, self._package))
         relative_dir = '/'.join(segments[len(modules):])
         for leaf_filename in test_scripts:
             filename = os.path.join(relative_dir, leaf_filename)
