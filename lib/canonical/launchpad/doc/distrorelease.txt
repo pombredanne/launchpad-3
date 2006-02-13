@@ -155,6 +155,23 @@ other things) the uploader for validating incoming uploads.
    ...     print s.name
    editors
 
+   >>> hoary.enableComponentByName('universe')
+   <ComponentSelection ...>
+
+   >>> hoary.enableSectionByName('web')
+   <SectionSelection ...>
+
+   >>> for c in hoary.components:
+   ...     print c.name
+   main
+   universe
+
+   >>> for s in hoary.sections:
+   ...     print s.name
+   web
+   editors
+
+
 [1] https://wiki.launchpad.canonical.com/DerivationOverview
 
 DistroReleases can be initialised from their parents

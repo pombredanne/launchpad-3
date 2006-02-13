@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'IComponent',
+    'IComponentSelection',
     'IComponentSet'
     ]
 
@@ -20,6 +21,13 @@ class IComponent(Interface):
     """
     id = Attribute("The ID")
     name = Attribute("The Component Name")
+
+
+class IComponentSelection(Interface):
+    """Represents the allowed components within a Distrorelease."""
+    id = Attribute("The ID")
+    distrorelease = Attribute("Target DistroRelease")
+    component = Attribute("Selected Component")
 
 
 class IComponentSet(Interface):

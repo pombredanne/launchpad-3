@@ -3,17 +3,18 @@
 __metaclass__ = type
 __all__ = [
     'Section',
+    'SectionSelection',
     'SectionSet'
     ]
 
 from zope.interface import implements
 
-from sqlobject import StringCol
+from sqlobject import StringCol, ForeignKey
 
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces import (
-    NotFoundError, ISection, ISectionSet)
+    NotFoundError, ISection, ISectionSelection, ISectionSet)
 
 
 class Section(SQLBase):
@@ -23,6 +24,19 @@ class Section(SQLBase):
     _defaultOrder= ['id']
 
     name = StringCol(notNull=True, alternateID=True)
+
+
+class SectionSelection(SQLBase):
+    """See ISectionSelection."""
+
+    implements(ISectionSelection)
+
+    _defaultOrder= ['id']
+
+    distrorelease = ForeignKey(dbName='distrorelease',
+        foreignKey='DistroRelease', notNull=True)
+    section = ForeignKey(dbName='section',
+        foreignKey='Section', notNull=True)
 
 
 class SectionSet:
