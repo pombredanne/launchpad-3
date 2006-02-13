@@ -1,0 +1,115 @@
+  >>> from canonical.launchpad.database import (
+  ...     ProcessorFamily, Component, GPGKey, Section, Manifest,
+  ...     SecureSourcePackagePublishingHistory)
+  >>> from canonical.launchpad.interfaces import (
+  ...     IDistributionSet, IDistroReleaseSet, ISourcePackageNameSet)
+
+  >>> from canonical.archivepublisher.nascentupload import NascentUpload
+  >>> from canonical.archivepublisher.uploadpolicy import findPolicyByName
+  >>> from canonical.archivepublisher.tests import datadir
+
+  >>> class MockLogger:
+  ...     def debug(self, s):
+  ...         print "DEBUG:", s
+
+
+  >>> class MockOptions:
+  ...     distro = "ubuntu"
+  ...     distrorelease = "dapper"
+
+
+  >>> from canonical.librarian.ftests.harness import LibrarianTestSetup
+  >>> LibrarianTestSetup().setUp()
+
+  >>> from canonical.launchpad.interfaces import IGPGKeySet
+  >>> from canonical.lp.dbschema import (
+  ... GPGKeyAlgorithm, SourcePackageUrgency, PackagePublishingStatus,
+  ... PackagePublishingPocket)
+  >>> from canonical.database.constants import UTC_NOW
+  >>> discarded_key = getUtility(IGPGKeySet).new(26, '20687895',
+  ...     '961F4EB829D7D304A77477822BC8401620687895', 1024, GPGKeyAlgorithm.D)
+
+  >>> from canonical.launchpad.ftests import import_public_test_keys
+  >>> import_public_test_keys()
+
+  >>> login('foo.bar@canonical.com')
+
+  >>> distro_release_set = getUtility(IDistroReleaseSet)
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+
+  >>> hoary = distro_release_set.queryByName(ubuntu, 'hoary')
+
+  >>> dapper = distro_release_set.new( ubuntu, 'dapper', 'Dapper', 'Dapper',
+  ...     'Dapper', 'Dapper', '06.04', hoary, hoary.owner)
+
+  >>> dapper_amd64 = dapper.newArch('amd64', ProcessorFamily.get(3), True,
+  ...     dapper.owner)
+
+  >>> pmount_sourcepackagename = getUtility(ISourcePackageNameSet)['pmount']
+  >>> source_package_release = dapper.createUploadedSourcePackageRelease(
+  ...     pmount_sourcepackagename, "0.9.7-2ubuntu2", dapper.owner, UTC_NOW,
+  ...     None, None, None, Component.get(1), dapper.owner,
+  ...     SourcePackageUrgency.LOW, None, None, GPGKey.get(1), Section.get(1),
+  ...     Manifest.get(1))
+
+  >>> publishing_history = SecureSourcePackagePublishingHistory(
+  ...     distrorelease=dapper.id,
+  ...     sourcepackagerelease=source_package_release.id,
+  ...     component=source_package_release.component.id,
+  ...     section=source_package_release.section.id,
+  ...     status=PackagePublishingStatus.PUBLISHED,
+  ...     datecreated=UTC_NOW,
+  ...     pocket=PackagePublishingPocket.RELEASE,
+  ...     embargo=False)
+
+  >>> pmount_upload = NascentUpload(findPolicyByName('buildd'),
+  ...     datadir(''), "pmount_0.9.7-2ubuntu2_amd64.changes", MockLogger())
+
+
+  >>> pmount_upload.changes_filename == datadir("pmount_0.9.7-2ubuntu2_amd64.changes")
+  True
+
+  >>> build = source_package_release.createBuild(dapper_amd64)
+  >>> mock_options = MockOptions()
+  >>> mock_options.buildid = build.id
+  >>> pmount_upload.policy.setOptions(mock_options)
+  >>> pmount_upload.policy.can_upload_binaries = True
+  >>> pmount_upload.policy.can_upload_mixed = True
+
+  >>> pmount_upload.process()
+  DEBUG: Beginning processing.
+  DEBUG: Changes file can be unsigned, storing None
+  DEBUG: Verifying the changes file.
+  DEBUG: Verifying files in upload.
+  DEBUG: Verifying binary pmount_0.9.7-2ubuntu2_amd64.deb
+  DEBUG: Performing overall file verification checks.
+  DEBUG: Verifying timestamps in pmount_0.9.7-2ubuntu2_amd64.deb
+  DEBUG: Finding and applying overrides.
+  DEBUG: Checking against amd64 for pmount
+  DEBUG: getReleasedPackages() returned 0 possibilit{y,ies}
+  DEBUG: pmount: (binary) NEW
+  DEBUG: Finished checking upload.
+
+  >>> pmount_upload.rejected
+  False
+
+  >>> success, msgs = pmount_upload.do_accept()
+  DEBUG: Building recipients list.
+  DEBUG: Changes file is unsigned, skipping mails
+  DEBUG: Creating a New queue entry
+
+  >>> success
+  True
+
+  >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
+  >>> queue_item = dapper.getQueueItems(status=DistroReleaseQueueStatus.NEW)[0]
+  >>> queue_item.customfiles[0].publish()
+
+  >>> from canonical.launchpad.interfaces import ITranslationImportQueue
+  >>> translation_import_queue = getUtility(ITranslationImportQueue)
+  >>> len(translation_import_queue)
+
+  >>> import transaction
+  >>> transaction.abort()
+
+  >>> LibrarianTestSetup().tearDown()
