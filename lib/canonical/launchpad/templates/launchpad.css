@@ -1157,3 +1157,26 @@ dl.faq dd {
     margin: 0.5em 1em;
 }
 
+/* New bug listing table view. */
+.buglisting {
+    margin: 10px 0px 10px 0px;
+}
+
+.buglisting th {
+    color: #828282;
+    border: 1px solid #cfcfcf;
+    background-color: #E0E0E0;
+    text-align: left;
+}
+
+.buglisting td {
+    border: 1px solid #cfcfcf;
+}
+
+.odd {
+    background-color: #ededed;
+}
+
+.even {
+    background-color: #ffffff;
+}

@@ -42,7 +42,7 @@ from canonical.launchpad.webapp import (
     canonical_url, GetitemNavigation, Navigation, stepthrough,
     redirection, LaunchpadView)
 from canonical.lp.z3batching import Batch
-from canonical.lp.batching import BatchNavigator
+from canonical.lp.batching import TableBatchNavigator
 from canonical.launchpad.interfaces import (
     ILaunchBag, IDistroBugTaskSearch, IUpstreamBugTaskSearch,
     IBugSet, IProduct, IDistribution, IDistroRelease, IBugTask, IBugTaskSet,
@@ -563,6 +563,10 @@ class BugTaskSearchListingView(LaunchpadView):
     search.
     """
 
+    # The names of columns to be shown for tabular bug listings. Subclasses
+    # should redefine this attribute, as needed.
+    columns_to_show = ["id", "summary", "importance", "status"]
+
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
         # The initial values to be used when setting up the widgets of this 
@@ -614,7 +618,7 @@ class BugTaskSearchListingView(LaunchpadView):
         return {}
 
     def search(self, searchtext=None, batch_start=None, context=None):
-        """Return an IBatchNavigator for the GET search criteria.
+        """Return an ITableBatchNavigator for the GET search criteria.
 
         If :searchtext: is None, the searchtext will be gotten from the
         request.
@@ -655,7 +659,9 @@ class BugTaskSearchListingView(LaunchpadView):
         else:
             batch = tasks
 
-        return BatchNavigator(batch=batch, request=self.request)
+        return TableBatchNavigator(
+            batch=batch, request=self.request,
+            columns_to_show=self.columns_to_show)
 
     def shouldShowAdvancedSearchWidgets(self):
         """Return True if the advanced search widgets should be shown."""

@@ -859,6 +859,8 @@ class PersonAssignedBugTaskSearchListingView(
 
     context_parameter = 'assignee'
 
+    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+
     def shouldShowAssignee(self):
         """Should we show the assignee in the list of results?"""
         return False
