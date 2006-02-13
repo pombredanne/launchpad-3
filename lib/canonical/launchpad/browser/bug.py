@@ -17,13 +17,14 @@ __all__ = [
     'BugTextView']
 
 from zope.app.form.interfaces import WidgetsError
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, structured, Navigation, LaunchpadView)
 from canonical.launchpad.interfaces import (
-    IAddUpstreamBugTaskForm, IBug, ILaunchBag, IBugSet, IBugTaskSet,
+    IAddBugTaskForm, IBug, ILaunchBag, IBugSet, IBugTaskSet,
     IBugLinkTarget, IBugWatchSet, IDistroBugTask, IDistroReleaseBugTask,
     NotFoundError)
 from canonical.launchpad.browser.addview import SQLObjectAddView
@@ -216,10 +217,34 @@ class BugWithoutContextView:
 class BugAlsoReportInView(GeneralFormView):
     """View class for reporting a bug in other contexts."""
 
-    label = "Request fix in a product"
-    schema = IAddUpstreamBugTaskForm
-    fieldNames = ['product', 'bugtracker', 'remotebug']
-    _keyword_arguments = fieldNames
+    schema = IAddBugTaskForm
+    fieldNames = None
+    template = ViewPageTemplateFile('../templates/bugtask-upstreamtask.pt')
+    process_status = None
+
+    def __init__(self, context, request):
+        """Override GeneralFormView.__init__() not to set up widgets."""
+        self.context = context
+        self.request = request
+        self.errors = {}
+
+    @property
+    def _keyword_arguments(self):
+        """All the fields should be given as keyword arguments."""
+        return self.fieldNames
+
+    def render_upstreamtask(self):
+        self.label = "Request fix in a product"
+        self.fieldNames = ['product', 'bugtracker', 'remotebug']
+        self._setUpWidgets()
+        return self.template()
+
+    def render_distrotask(self):
+        self.label = "Request fix in a distribution"
+        self.fieldNames = [
+            'distribution', 'sourcepackagename', 'bugtracker', 'remotebug']
+        self._setUpWidgets()
+        return self.template()
 
     def validate(self, data):
         """Validate the form.
@@ -260,7 +285,14 @@ class BugAlsoReportInView(GeneralFormView):
             bug_watch = getUtility(IBugWatchSet).createBugWatch(
                 bug=taskadded.bug, owner=user, bugtracker=bugtracker,
                 remotebug=remotebug)
-            if not product.official_malone:
+            if product is not None:
+                target = product
+            elif distribution is not None:
+                target = distribution
+            else:
+                raise AssertionError(
+                    'Neither product nor distribution was provided')
+            if not target.official_malone:
                 taskadded.bugwatch = bug_watch
 
         self._nextURL = canonical_url(taskadded)

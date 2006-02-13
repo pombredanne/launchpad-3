@@ -9,7 +9,7 @@ __all__ = [
     'INullBugTask',
     'IBugTaskSearch',
     'IUpstreamBugTaskSearch',
-    'IAddUpstreamBugTaskForm',
+    'IAddBugTaskForm',
     'IDistroBugTaskSearch',
     'IPersonBugTaskSearch',
     'IBugTaskDelta',
@@ -489,9 +489,11 @@ class IBugTaskSet(Interface):
         """
 
 
-class IAddUpstreamBugTaskForm(Interface):
+class IAddBugTaskForm(Interface):
     """Form for adding an upstream bugtask."""
     product = IUpstreamBugTask['product']
+    distribution = IDistroBugTask['distribution']
+    sourcepackagename = IDistroBugTask['sourcepackagename']
     bugtracker = Choice(
         title=_('Remote Bug Tracker'), required=False, vocabulary='BugTracker',
         description=_("The bug tracker in which the remote bug is found. "

@@ -264,7 +264,7 @@
         arguments=""
         keyword_arguments="title comment private"
         permission="launchpad.AnyPerson"
-        template="../templates/product-filebug.pt"
+        template="../templates/bugtarget-filebug.pt"
         lp:url="/products/$Product.name/+filebug">
         <browser:widget
            field="title"

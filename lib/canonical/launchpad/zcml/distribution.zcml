@@ -215,7 +215,7 @@
         facet="bugs"
         keyword_arguments="packagename title comment private"
         permission="launchpad.AnyPerson"
-        template="../templates/bug-add.pt"
+        template="../templates/bugtarget-filebug.pt"
         lp:url="/distros/$Distribution.name/+filebug">
         <browser:widget
            field="title"

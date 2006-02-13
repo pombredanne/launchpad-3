@@ -15,7 +15,19 @@ distribution. Let's start with a product, this is done using
     >>> firefox_task = bug_four.bugtasks[0]
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> request = LaunchpadTestRequest()
-    >>> add_task_view = getView(firefox_task, '+upstreamtask', request)
+
+Some of the setup is done just before the view is rendered. Let's
+create a helper function that makes sure the view is set up properly.
+We don't care about the actual rendering of the page, so we override
+the view.template().
+
+    >>> def get_and_setup_view(context, name, request):
+    ...     view = getView(context, name, request)
+    ...     view.template = lambda: ''
+    ...     view()
+    ...     return view
+    >>> add_task_view = get_and_setup_view(
+    ...     firefox_task, '+upstreamtask', request)
 
 We haven't posted the form, so if we call process_form(), nothing will
 happen.
@@ -27,7 +39,8 @@ If we POST the form without entering any information, it will complain
 that product is required:
 
     >>> request = LaunchpadTestRequest(form=dict(FORM_SUBMIT=''))
-    >>> add_task_view = getView(firefox_task, '+upstreamtask', request)
+    >>> add_task_view = get_and_setup_view(
+    ...     firefox_task, '+upstreamtask', request)
     >>> add_task_view.process_form()
     u'Please fix the problems below and try again.'
     >>> add_task_view.errors
@@ -38,7 +51,8 @@ If we specify a valid product, no errors will occur:
 
     >>> request = LaunchpadTestRequest(
     ...     form={'FORM_SUBMIT': '', 'field.product': 'thunderbird'})
-    >>> add_task_view = getView(firefox_task, '+upstreamtask', request)
+    >>> add_task_view = get_and_setup_view(
+    ...     firefox_task, '+upstreamtask', request)
     >>> add_task_view.process_form()
     ''
 
@@ -55,7 +69,8 @@ tracker, but omit the remote bug number, an error message is given:
     >>> request = LaunchpadTestRequest(
     ...     form={'FORM_SUBMIT': '', 'field.product': 'evolution',
     ...           'field.bugtracker-empty-marker': 1, 'field.bugtracker': 2})
-    >>> add_task_view = getView(firefox_task, '+upstreamtask', request)
+    >>> add_task_view = get_and_setup_view(
+    ...     firefox_task, '+upstreamtask', request)
     >>> add_task_view.process_form()
     u'Please fix the problems below and try again.'
     >>> add_task_view.top_of_page_errors
@@ -75,7 +90,8 @@ watch will be added:
     ...     form={'FORM_SUBMIT': '', 'field.product': 'evolution',
     ...           'field.bugtracker-empty-marker': 1, 'field.bugtracker': 2,
     ...           'field.remotebug': '42'})
-    >>> add_task_view = getView(firefox_task, '+upstreamtask', request)
+    >>> add_task_view = get_and_setup_view(
+    ...     firefox_task, '+upstreamtask', request)
     >>> add_task_view.process_form()
     ''
     >>> for bugtask in bug_four.bugtasks:
@@ -104,7 +120,8 @@ will use the watch to keep track of its status:
     ...     form={'FORM_SUBMIT': '', 'field.product': 'thunderbird',
     ...           'field.bugtracker-empty-marker': 1, 'field.bugtracker': 2,
     ...           'field.remotebug': '84'})
-    >>> add_task_view = getView(firefox_task, '+upstreamtask', request)
+    >>> add_task_view = get_and_setup_view(
+    ...     firefox_task, '+upstreamtask', request)
     >>> add_task_view.process_form()
     ''
     >>> for bugtask in bug_four.bugtasks:
