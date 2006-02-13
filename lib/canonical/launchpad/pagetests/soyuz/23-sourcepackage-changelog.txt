@@ -5,9 +5,15 @@
   HTTP/1.1 200 Ok
   Content-Length: ...
   ...
-  This is a placeholder changelog for pmount 0.1-2 
+  This is a placeholder changelog for pmount 0.1-2...
   <BLANKLINE>
-  This is a placeholder changelog for pmount 0.1-1 
+  pmount (<a href="0.1-1">0.1-1</a>) hoary; urgency=low...
+  <BLANKLINE>
+   * Fix description (Malone #1)
+   * Fix debian (Debian #2000)
+   * Fix warty (Warty Ubuntu #1)
+  <BLANKLINE>
+   -- Sample Person &lt;test@canonical.com&gt; Tue, 7 Feb 2006 12:10:08 +0300
   <BLANKLINE>
   <BLANKLINE>
   ...
