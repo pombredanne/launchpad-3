@@ -37,7 +37,8 @@ class ITicket(IHasOwner, IMessageTarget):
         u"you\N{right single quotation mark}re trying to achieve, what steps "
         "you take, what happens, and what you think should happen instead."))
     status = Choice(
-        title=_('Status'), vocabulary='TicketStatus', default=TicketStatus.NEW)
+        title=_('Status'), vocabulary='TicketStatus',
+        default=TicketStatus.OPEN)
     priority = Choice(
         title=_('Priority'), vocabulary='TicketPriority',
         default=TicketPriority.NORMAL)
@@ -53,8 +54,6 @@ class ITicket(IHasOwner, IMessageTarget):
         vocabulary='ValidPersonOrTeam')
     datecreated = Datetime(
         title=_('Date Created'), required=True, readonly=True)
-    dateaccepted = Datetime(
-        title=_('Date Accepted'), required=False, default=None)
     datedue = Datetime(
         title=_('Date Due'), required=False, default=None,
         description=_("The date by which we should have resolved this support "
@@ -68,12 +67,9 @@ class ITicket(IHasOwner, IMessageTarget):
         "with the customer. The combination of datelastquery and "
         "datelastresponse tells us in whose court the ball is."))
     dateanswered = Datetime(title=_("Date Answered"), required=False,
-        description=_("The date on which we submitted a message that "
-        "we believe answers the support problem. The customer will need to "
-        "verify that, and close the ticket."))
-    dateclosed = Datetime(title=_("Date Closed"), required=False,
-        description=_("The date on which the customer confirmed that "
-        "the answers provided were sufficient to resolve the issue."))
+        description=_(
+            "The date on which the submitter confirmed that the ticket is "
+            "Answered."))
     product = Choice(title=_('Upstream Product'), required=False,
         vocabulary='Product', description=_('Select the upstream product '
         'with which you need support.'))
@@ -101,23 +97,6 @@ class ITicket(IHasOwner, IMessageTarget):
     reopenings = Attribute("Records of times when this was reopened.")
 
     # workflow
-    def mark_resolved(person):
-        """Indicate that the person thinks this ticket is resolved.
-
-        Depending on whether this is the requester (owner) or someone else,
-        it will affect the status in different ways. When the owner says it
-        is resolved, we mark it as 'closed'. When someone else says it is
-        resolved, we mark it as 'answered.'
-        """
-
-    def accept():
-        """Mark this ticket as accepted.
-
-        This can only be done to NEW tickets. It will usually be done when
-        the first message for the ticket is received from someone other than
-        the requester (owner).  Doing so will also set the dateaccepted.
-        """
-
     def reject(rejector):
         """Mark this ticket as rejected.
 
@@ -133,6 +112,11 @@ class ITicket(IHasOwner, IMessageTarget):
     def reopen(reopener):
         """Open a ticket that has formerly been closed, or rejected."""
 
+    def acceptAnswer(acceptor):
+        """Mark the ticket as Answered.
+
+        dateanswered will be set to the current time.
+        """
 
     # subscription-related methods
     def subscribe(person):

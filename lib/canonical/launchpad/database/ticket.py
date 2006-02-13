@@ -22,6 +22,7 @@ from canonical.launchpad.database.ticketmessage import TicketMessage
 from canonical.launchpad.database.ticketreopening import TicketReopening
 from canonical.launchpad.database.ticketsubscription import TicketSubscription
 from canonical.launchpad.event import SQLObjectCreatedEvent
+from canonical.launchpad.helpers import check_permission
 
 from canonical.lp.dbschema import EnumCol, TicketStatus, TicketPriority
 
@@ -37,8 +38,8 @@ class Ticket(SQLBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person', notNull=True)
     title = StringCol(notNull=True)
     description = StringCol(notNull=True)
-    status = EnumCol(schema=TicketStatus, notNull=True,
-        default=TicketStatus.NEW)
+    status = EnumCol(
+        schema=TicketStatus, notNull=True, default=TicketStatus.OPEN)
     priority = EnumCol(schema=TicketPriority, notNull=True,
         default=TicketPriority.NORMAL)
     assignee = ForeignKey(dbName='assignee', notNull=False,
@@ -49,9 +50,7 @@ class Ticket(SQLBase):
     datedue = UtcDateTimeCol(notNull=False, default=None)
     datelastquery = UtcDateTimeCol(notNull=True, default=DEFAULT)
     datelastresponse = UtcDateTimeCol(notNull=False, default=None)
-    dateaccepted = UtcDateTimeCol(notNull=False, default=None)
     dateanswered = UtcDateTimeCol(notNull=False, default=None)
-    dateclosed = UtcDateTimeCol(notNull=False, default=None)
     product = ForeignKey(dbName='product', foreignKey='Product',
         notNull=False, default=None)
     distribution = ForeignKey(dbName='distribution',
@@ -100,44 +99,13 @@ class Ticket(SQLBase):
     @property
     def is_resolved(self):
         """See ITicket."""
-        return self.status in [TicketStatus.CLOSED, TicketStatus.REJECTED]
-
-    def mark_resolved(self, person):
-        """See ITicket."""
-        # the person believes this is resolved
-        if person.id == self.owner.id:
-            # it is the requester, so we should consider this ticket
-            # closed if it is not already that way.
-            if self.status != TicketStatus.CLOSED:
-                self.dateclosed = UTC_NOW
-                self.status = TicketStatus.CLOSED
-        else:
-            # this is another contributor. if the ticket status is not
-            # already answered or closed, then we should make it
-            # answered
-            if self.status not in [
-                TicketStatus.ANSWERED, TicketStatus.CLOSED]:
-                self.dateanswered = UTC_NOW
-                self.answerer = person
-                self.status = TicketStatus.ANSWERED
-        self.sync()
-
-    def accept(self):
-        """See ITicket."""
-        if self.status != TicketStatus.NEW:
-            return False
-        self.dateaccepted = UTC_NOW
-        self.datelastresponse = UTC_NOW
-        self.status = TicketStatus.OPEN
-        self.sync()
-        return True
+        return self.status in [TicketStatus.ANSWERED, TicketStatus.REJECTED]
 
     @property
     def can_be_rejected(self):
         """See ITicket."""
         return self.status not in [
-            TicketStatus.CLOSED, TicketStatus.ANSWERED,
-            TicketStatus.REJECTED]
+            TicketStatus.ANSWERED, TicketStatus.REJECTED]
 
     def reject(self, rejector):
         """See ITicket."""
@@ -153,8 +121,8 @@ class Ticket(SQLBase):
 
     @property
     def can_be_reopened(self):
-        return self.status in [TicketStatus.CLOSED, TicketStatus.ANSWERED,
-            TicketStatus.REJECTED]
+        return self.status in [
+            TicketStatus.ANSWERED, TicketStatus.REJECTED]
 
     def reopen(self, reopener):
         """See ITicket."""
@@ -168,6 +136,32 @@ class Ticket(SQLBase):
         self.dateanswered = None
         self.sync()
         return reop
+
+    def acceptAnswer(self, acceptor, when=None):
+        """See ITicket."""
+        can_accept_answer = (acceptor == self.owner or 
+                             check_permission('launchpad.Admin', acceptor))
+        assert can_accept_answer, (
+            "Only the owner or admins can accept an answer.")
+        self.status = TicketStatus.ANSWERED
+        if when is None:
+            self.dateanswered = UTC_NOW
+        else:
+            self.dateanswered = when
+        #XXX: Set the answer to the last, non-submitter, who commented
+        #     on the ticket. This is only temporary until
+        #     SupportTrackerTweaks is fully implemented, and the
+        #     submitter will be able to choose who answered the ticket.
+        #     -- Bjorn Tillenius, 2006-02-11
+        for commenter in [message.owner for message in self.messages]:
+            if commenter != self.owner:
+                self.answerer = commenter
+                break
+        else:
+            # Only the submitter commented on the ticket, set him as the
+            # answerer.
+            self.answerer = self.owner
+        self.sync()
 
     # subscriptions
     def subscribe(self, person):
@@ -192,17 +186,21 @@ class Ticket(SQLBase):
         otherColumn='message',
         intermediateTable='TicketMessage', orderBy='datecreated')
 
-    def newMessage(self, owner=None, subject=None, content=None):
+    def newMessage(self, owner=None, subject=None, content=None,
+                   when=None):
         """Create a new Message and link it to this ticket."""
-        msg = Message(owner=owner, rfc822msgid=make_msgid('lptickets'),
-            subject=subject)
+        if when is None:
+            when = UTC_NOW
+        msg = Message(
+            owner=owner, rfc822msgid=make_msgid('lptickets'), subject=subject,
+            datecreated=when)
         chunk = MessageChunk(messageID=msg.id, content=content, sequence=1)
         tktmsg = TicketMessage(ticket=self, message=msg)
         # make sure we update the relevant date of response or query
         if owner == self.owner:
-            self.datelastquery = UTC_NOW
+            self.datelastquery = msg.datecreated
         else:
-            self.datelastresponse = UTC_NOW
+            self.datelastresponse = msg.datecreated
         self.sync()
         return msg
 
@@ -254,10 +252,13 @@ class TicketSet:
         return Ticket.select(orderBy='-datecreated')[:10]
 
     def new(self, title=None, description=None, owner=None,
-        product=None, distribution=None):
+            product=None, distribution=None, when=None):
         """See ITicketSet."""
-        return Ticket(title=title, description=description, owner=owner,
-            product=product, distribution=distribution)
+        if when is None:
+            when = UTC_NOW
+        return Ticket(
+            title=title, description=description, owner=owner,
+            product=product, distribution=distribution, datecreated=when)
 
     def getAnsweredTickets(self):
         """See ITicketSet."""
