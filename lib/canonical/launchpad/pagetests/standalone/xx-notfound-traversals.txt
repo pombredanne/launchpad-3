@@ -340,3 +340,6 @@ And this is for a person:
 >>> check_not_found(
 ...     '/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/xxxx')
 
+
+Soyuz pages
+>>> check("/+builds/+build/7/pmount/")
