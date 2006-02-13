@@ -251,6 +251,29 @@ def move_subdirectory(entry_path, subdir):
         os.rename(distro_filename, target_path)
 
 
+def compare_filenames(a, b):
+    """Compare filenames a and b for ordering.
+
+    In particular, _source.changes sorts earlier than non source.
+    Otherwise it's a string compare.
+    """
+    a_sourceful = a.endswith("_source.changes")
+    b_sourceful = b.endswith("_source.changes")
+    if a_sourceful and not b_sourceful:
+        return -1
+    if b_sourceful and not a_sourceful:
+        return 1
+    # Compare by filename
+    return cmp(a,b)
+
+
+def order_filenames(fnames):
+    """Order filenames by upload type and then filenamename."""
+    fnames = list(fnames)
+    fnames.sort(key=compare_filenames)
+    return fnames
+
+
 def do_one_entry(ztm, entry, fsroot, lock):
     entry_path = os.path.join(fsroot, entry)
     if not os.path.isdir(entry_path):
@@ -288,7 +311,7 @@ def do_one_entry(ztm, entry, fsroot, lock):
                       options.distro)
 
 
-        for filename in os.listdir(entry_path):
+        for filename in order_filename(os.listdir(entry_path)):
             if filename.endswith(".changes"):
                 log.debug("Finding fresh policy")
                 policy = findPolicyByOptions(options)
