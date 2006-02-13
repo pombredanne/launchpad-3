@@ -270,7 +270,7 @@ def compare_filenames(a, b):
 def order_filenames(fnames):
     """Order filenames by upload type and then filenamename."""
     fnames = list(fnames)
-    fnames.sort(key=compare_filenames)
+    fnames.sort(cmp=compare_filenames)
     return fnames
 
 
