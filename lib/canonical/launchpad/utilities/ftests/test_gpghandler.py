@@ -7,7 +7,7 @@ from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.ftests import keys_for_tests 
 from canonical.launchpad.interfaces import IGPGHandler
 from zope.component import getUtility
-from pyme.constants import validity
+import gpgme
 
 class TestImportKeyRing(FunctionalTestCase):
     """Tests for keyring imports"""
@@ -80,9 +80,9 @@ class TestImportKeyRing(FunctionalTestCase):
 
         iterator = self.gpg_handler.localKeys()
         key = iterator.next()
-        self.assertEqual(key.owner_trust, validity.UNKNOWN)
-        key.setOwnerTrust(validity.FULL)
-        self.assertEqual(key.owner_trust, validity.FULL)
+        self.assertEqual(key.owner_trust, gpgme.VALIDITY_UNKNOWN)
+        key.setOwnerTrust(gpgme.VALIDITY_FULL)
+        self.assertEqual(key.owner_trust, gpgme.VALIDITY_FULL)
         other_iterator = self.gpg_handler.localKeys()
         other_key_instance = other_iterator.next()
         self.assertEqual(key.owner_trust, other_key_instance.owner_trust)
