@@ -311,6 +311,22 @@ class BinaryPackageNameVocabulary(NamedSQLObjectHugeVocabulary):
     _orderBy = 'name'
     displayname = 'Select a Binary Package'
 
+    def toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.name)
+
+    def search(self, query):
+        """Return IBinaryPackageNames matching the query.
+
+        Returns an empty list if query is None or an empty string.
+        """
+        if not query:
+            return self.emptySelectResults()
+
+        query = query.lower()
+        return self._table.select(
+            "BinaryPackageName.name LIKE '%%' || %s || '%%'"
+            % quote_like(query))
+
 
 class BugVocabulary(SQLObjectVocabularyBase):
 
