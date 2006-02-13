@@ -68,35 +68,48 @@ class UserDetailsStorageMixin(object):
         ri = self.connectionPool.runInteraction
         return ri(self._getSSHKeysInteraction, archiveName)
 
-    def _getSSHKeysInteraction(self, transaction, archiveName):
-        # The PushMirrorAccess table explicitly says that a person may access a
-        # particular push mirror.
-        transaction.execute(utf8('''
-            SELECT keytype, keytext
-            FROM SSHKey
-            JOIN PushMirrorAccess ON SSHKey.person = PushMirrorAccess.person
-            WHERE PushMirrorAccess.name = %s'''
-            % sqlvalues(archiveName))
-        )
-        authorisedKeys = transaction.fetchall()
-        
-        # A person can also access any archive named after a validated email
-        # address.
-        if '--' in archiveName:
-            email, suffix = archiveName.split('--', 1)
-        else:
-            email = archiveName
+    def _getSSHKeysInteraction(self, transaction, loginID):
+        if '@' in loginID:
+            # Bazaar 1.x logins.  Deprecated.
+            archiveName = loginID
+            # The PushMirrorAccess table explicitly says that a person may access a
+            # particular push mirror.
+            transaction.execute(utf8('''
+                SELECT keytype, keytext
+                FROM SSHKey
+                JOIN PushMirrorAccess ON SSHKey.person = PushMirrorAccess.person
+                WHERE PushMirrorAccess.name = %s'''
+                % sqlvalues(archiveName))
+            )
+            authorisedKeys = transaction.fetchall()
+            
+            # A person can also access any archive named after a validated email
+            # address.
+            if '--' in archiveName:
+                email, suffix = archiveName.split('--', 1)
+            else:
+                email = archiveName
 
-        transaction.execute(utf8('''
-            SELECT keytype, keytext
-            FROM SSHKey
-            JOIN EmailAddress ON SSHKey.person = EmailAddress.person
-            WHERE EmailAddress.email = %s
-            AND EmailAddress.status in (%s, %s)'''
-            % sqlvalues(email, dbschema.EmailAddressStatus.VALIDATED,
-                        dbschema.EmailAddressStatus.PREFERRED))
-        )
-        authorisedKeys.extend(transaction.fetchall())
+            transaction.execute(utf8('''
+                SELECT keytype, keytext
+                FROM SSHKey
+                JOIN EmailAddress ON SSHKey.person = EmailAddress.person
+                WHERE EmailAddress.email = %s
+                AND EmailAddress.status in (%s, %s)'''
+                % sqlvalues(email, dbschema.EmailAddressStatus.VALIDATED,
+                            dbschema.EmailAddressStatus.PREFERRED))
+            )
+            authorisedKeys.extend(transaction.fetchall())
+        else:
+            transaction.execute(utf8('''
+                SELECT keytype, keytext
+                FROM SSHKey
+                JOIN Person ON SSHKey.person = Person.id
+                WHERE Person.name = %s'''
+                % sqlvalues(loginID))
+            )
+            authorisedKeys = transaction.fetchall()
+
         # Replace keytype with correct DBSchema items.
         authorisedKeys = [(dbschema.SSHKeyType.items[keytype].title, keytext)
                           for keytype, keytext in authorisedKeys]
@@ -116,7 +129,7 @@ class UserDetailsStorageMixin(object):
         # postgres to optimise the query as much as possible (approx 10x faster
         # according to my tests with EXPLAIN on the production database).
         select = '''
-            SELECT Person.id, Person.displayname, Person.password,
+            SELECT Person.id, Person.displayname, Person.name, Person.password,
                    Wikiname.wikiname
             FROM Person '''
 
@@ -173,7 +186,7 @@ class UserDetailsStorageMixin(object):
         row = list(row)
         assert isinstance(row[1], unicode)
 
-        passwordDigest = row[2]
+        passwordDigest = row[3]
         if passwordDigest:
             salt = saltFromDigest(passwordDigest)
         else:
@@ -204,7 +217,7 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
     def _getUserInteraction(self, transaction, loginID):
         row = self._getPerson(transaction, loginID)
         try:
-            personID, displayname, passwordDigest, wikiname, salt = row
+            personID, displayname, name, passwordDigest, wikiname, salt = row
         except TypeError:
             # No-one found
             return {}
@@ -231,7 +244,7 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
     def _authUserInteraction(self, transaction, loginID, sshaDigestedPassword):
         row = self._getPerson(transaction, loginID)
         try:
-            personID, displayname, passwordDigest, wikiname, salt = row
+            personID, displayname, name, passwordDigest, wikiname, salt = row
         except TypeError:
             # No-one found
             return {}
@@ -409,7 +422,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     def _getUserInteraction(self, transaction, loginID):
         row = self._getPerson(transaction, loginID)
         try:
-            personID, displayname, passwordDigest, wikiname = row
+            personID, displayname, name, passwordDigest, wikiname = row
         except TypeError:
             # No-one found
             return {}
@@ -423,6 +436,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         return {
             'id': personID,
             'displayname': displayname,
+            'name': name,
             'emailaddresses': emailaddresses,
             'wikiname': wikiname,
             'teams': self._getTeams(transaction, personID),
@@ -451,7 +465,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     def _authUserInteraction(self, transaction, loginID, password):
         row = self._getPerson(transaction, loginID)
         try:
-            personID, displayname, passwordDigest, wikiname = row
+            personID, displayname, name, passwordDigest, wikiname = row
         except TypeError:
             # No-one found
             return {}
@@ -468,6 +482,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
 
         return {
             'id': personID,
+            'name': name,
             'displayname': displayname,
             'emailaddresses': emailaddresses,
             'wikiname': wikiname,
@@ -554,6 +569,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         personID = userDict['id']
         newPasswordDigest = self.encryptor.encrypt(newPassword)
         
+        # XXX: typo in query ("'%s'")?
         transaction.execute(utf8('''
             UPDATE Person
             SET password = '%s'
@@ -562,4 +578,74 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         )
         
         return userDict
+
+    def getBranchesForUser(self, personID):
+        ri = self.connectionPool.runInteraction
+        return ri(self._getBranchesForUserInteraction, personID)
+
+    def _getBranchesForUserInteraction(self, transaction, personID):
+        transaction.execute(utf8('''
+            SELECT Product.id, Product.name, Branch.id, Branch.name
+            FROM Product RIGHT OUTER JOIN Branch ON Branch.product = Product.id
+            WHERE Branch.owner = %s
+            ORDER BY Product.id
+            '''
+            % sqlvalues(personID))
+        )
+        branches = []
+        prevProductID = 'x'  # can never be equal to a real integer ID.
+        for productID, productName, branchID, branchName in transaction.fetchall():
+            if productID != prevProductID:
+                prevProductID = productID
+                currentBranches = []
+                if productID is None:
+                    assert productName is None
+                    # Replace Nones with '', because standards-compliant XML-RPC
+                    # can't handle None :(
+                    productID, productName = '', ''
+                branches.append((productID, productName, currentBranches))
+            currentBranches.append((branchID, branchName))
+        return branches
+
+    def fetchProductID(self, productName):
+        ri = self.connectionPool.runInteraction
+        return ri(self._fetchProductIDInteraction, productName)
+
+    def _fetchProductIDInteraction(self, transaction, productName):
+        transaction.execute(utf8('''
+            SELECT id FROM Product WHERE name = %s'''
+            % sqlvalues(productName))
+        )
+        row = transaction.fetchone()
+        if row is None:
+            # No product by that name in the DB.
+            productID = ''
+        else:
+            (productID,) = row
+        return productID
+
+    def createBranch(self, personID, productID, branchName):
+        ri = self.connectionPool.runInteraction
+        return ri(self._createBranchInteraction, personID, productID,
+                  branchName)
+
+    def _createBranchInteraction(self, transaction, personID, productID,
+                                 branchName):
+        # Convert psuedo-None to real None (damn XML-RPC!)
+        if productID == '':
+            productID = None
+
+        # Get the ID of the new branch
+        transaction.execute(
+            "SELECT NEXTVAL('branch_id_seq'); "
+        )
+        branchID = transaction.fetchone()[0]
+
+        transaction.execute(utf8('''
+            INSERT INTO Branch (id, owner, product, name, title, summary)
+            VALUES (%s, %s, %s, %s, %s, %s)'''
+            % sqlvalues(branchID, personID, productID, branchName, branchName,
+                        branchName))
+        )
+        return branchID
 

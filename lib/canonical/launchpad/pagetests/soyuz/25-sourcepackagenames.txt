@@ -36,6 +36,34 @@ Check if the add SourcePackageName is not broken.
   ...
 
 
+Then we test if the name field validator is working.
+
+  >>> print http(r"""
+  ... POST /sourcepackagenames/+new HTTP/1.1
+  ... Accept-Language: en-us,en;q=0.5
+  ... Authorization: Basic ZGFuaWVsLmRlYm9uemlAY2Fub25pY2FsLmNvbTp6ZWNh
+  ... Content-Length: 309
+  ... Content-Type: multipart/form-data; boundary=---------------------------11675438401425451428302623455
+  ... Cookie: tutorialExamplesURL="http://localhost:9673/Control_Panel/Products/ZopeTutorial/Examples/examples"; CP=null*; gallery_sessionadd_photos_mode=url
+  ... Referer: http://localhost:9000/sourcepackagenames/+new
+  ... 
+  ... -----------------------------11675438401425451428302623455
+  ... Content-Disposition: form-data; name="field.name"
+  ... 
+  ... Ubuntu-Libs
+  ... -----------------------------11675438401425451428302623455
+  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
+  ... 
+  ... Add
+  ... -----------------------------11675438401425451428302623455--
+  ... """)
+  HTTP/1.1 200 Ok 
+  ...
+  ...Invalid name 'Ubuntu-Libs'...
+  ...
+
+
+
 Add a new SourcePackageName and check the redirect request.
 
   >>> print http(r"""

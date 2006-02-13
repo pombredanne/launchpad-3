@@ -9,20 +9,28 @@ import sha
 import errno
 import tempfile
 
-from canonical.database.sqlbase import begin, commit, rollback
+from canonical.database.sqlbase import begin, commit, rollback, cursor
 
 __all__ = ['DigestMismatchError', 'LibrarianStorage', 'LibraryFileUpload',
-           'DuplicateFileIDError',
+           'DuplicateFileIDError', 'WrongDatabaseError',
            # _relFileLocation needed by other modules in this package.
            # Listed here to keep the import facist happy
            '_relFileLocation', '_sameFile']
 
 class DigestMismatchError(Exception):
-    """The given digest doesn't match the SHA-1 digest of the file"""
+    """The given digest doesn't match the SHA-1 digest of the file."""
 
 
 class DuplicateFileIDError(Exception):
-    """Given File ID already exists"""
+    """Given File ID already exists."""
+
+
+class WrongDatabaseError(Exception):
+    """The client's database name doesn't match our database."""
+    def __init__(self, clientDatabaseName, serverDatabaseName):
+        self.clientDatabaseName = clientDatabaseName
+        self.serverDatabaseName = serverDatabaseName
+        self.args = (clientDatabaseName, serverDatabaseName)
 
 
 class LibrarianStorage:
@@ -57,11 +65,13 @@ class LibrarianStorage:
 
 
 class LibraryFileUpload(object):
+    """A file upload from a client."""
     srcDigest = None
     mimetype = 'unknown/unknown'
     contentID = None
     aliasID = None
     expires = None
+    databaseName = None
 
     def __init__(self, storage, filename, size):
         self.storage = storage
@@ -91,7 +101,16 @@ class LibraryFileUpload(object):
 
         begin()
         try:
-            # If we havn't got a contentID, we need to create one and return
+            # If the client told us the name database of the database its using,
+            # check that it matches
+            if self.databaseName is not None:
+                cur = cursor()
+                cur.execute("SELECT current_database();")
+                databaseName = cur.fetchone()[0]
+                if self.databaseName != databaseName:
+                    raise WrongDatabaseError(self.databaseName, databaseName)
+            
+            # If we haven't got a contentID, we need to create one and return
             # it to the client.
             if self.contentID is None:
                 contentID = self.storage.library.add(dstDigest, self.size)

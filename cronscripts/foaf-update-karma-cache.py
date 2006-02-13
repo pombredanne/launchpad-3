@@ -9,12 +9,13 @@ from optparse import OptionParser
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.lp import initZopeless
+from canonical.lp import initZopeless, AUTOCOMMIT_ISOLATION
 from canonical.launchpad.scripts import (
         execute_zcml_for_scripts, logger_options, logger
         )
 from canonical.launchpad.scripts.lockfile import LockFile
 from canonical.launchpad.interfaces import IPersonSet
+from canonical.database.sqlbase import cursor
 
 _default_lock_file = '/var/lock/launchpad-karma-update.lock'
 
@@ -27,19 +28,71 @@ def update_karma_cache():
     the KarmaCache table. If a user doesn't have an entry for that category in
     KarmaCache a new one will be created.
     """
-    ztm = initZopeless(dbuser=config.karmacacheupdater.dbuser,
-                       implicitBegin=False)
-
-    personset = getUtility(IPersonSet)
+    # We use the autocommit transaction isolation level to minimize
+    # contention, and also allows us to not bother explicitly calling
+    # COMMIT all the time. This script in no way relies on transactions,
+    # so it is safe.
+    ztm = initZopeless(
+            dbuser=config.karmacacheupdater.dbuser,
+            implicitBegin=False, isolation=AUTOCOMMIT_ISOLATION
+            )
     ztm.begin()
-    person_ids = [p.id for p in personset.getAllValidPersons()]
-    ztm.commit()
-    for person_id in person_ids:
-        ztm.begin()
-        person = personset.get(person_id)
-        person.updateKarmaCache()
-        ztm.commit()
+    cur = cursor()
+    karma_expires_after = '1 year'
+    
+    # Calculate everyones karma. Karma degrades each day, becoming
+    # worthless after karma_expires_after. This query produces odd results
+    # when datecreated is in the future, but there is really no point adding
+    # the extra WHEN clause.
+    log.info("Calculating everyones karma")
+    cur.execute("""
+        SELECT person, category, ROUND(SUM(
+            CASE WHEN datecreated + %(karma_expires_after)s::interval
+                <= CURRENT_TIMESTAMP AT TIME ZONE 'UTC' THEN 0
+            ELSE points * (1 - extract(
+                EPOCH FROM CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - datecreated
+                ) / extract(EPOCH FROM %(karma_expires_after)s::interval))
+            END
+            ))
+        FROM Karma, KarmaAction
+        WHERE action = KarmaAction.id
+        GROUP BY person, category
+        """, vars())
 
+    # Suck into RAM to avoid tieing up resources on the DB.
+    results = list(cur.fetchall())
+
+    log.info("Got %d (person, category) scores", len(results))
+
+    # Note that we don't need to commit each iteration because we are running
+    # in autocommit mode.
+    for person, category, points in results:
+        log.debug(
+            "Setting person=%(person)d, category=%(category)d, "
+            "points=%(points)d", vars()
+            )
+        cur.execute("""
+            UPDATE KarmaCache SET karmavalue=%(points)s
+            WHERE person=%(person)s AND category=%(category)s
+            """, vars())
+        assert cur.rowcount in (0, 1), \
+                'Bad rowcount %r returned from DML' % (cur.rowcount,)
+        if cur.rowcount == 0:
+            cur.execute("""
+                INSERT INTO KarmaCache (person, category, karmavalue)
+                VALUES (%(person)s, %(category)s, %(points)s)
+                """, vars())
+
+    # Update the KarmaTotalCache table
+    cur.execute("BEGIN")
+    log.info("Rebuilding KarmaTotalCache")
+    cur.execute("DELETE FROM KarmaTotalCache")
+    cur.execute("""
+        INSERT INTO KarmaTotalCache (person, karma_total)
+        SELECT person, SUM(karmavalue) FROM KarmaCache
+        GROUP BY person
+        """)
+    cur.execute("COMMIT")
 
 if __name__ == '__main__':
     parser = OptionParser()

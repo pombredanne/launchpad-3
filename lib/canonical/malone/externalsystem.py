@@ -2,6 +2,7 @@
 
 import urllib
 import urllib2
+import xml.parsers.expat
 from xml.dom import minidom
 
 from canonical.lp.dbschema import BugTrackerType
@@ -103,7 +104,11 @@ class Bugzilla(ExternalSystem):
         except (urllib2.HTTPError, urllib2.URLError), val:
             raise BugTrackerConnectError(self.baseurl, val)
         ret = url.read()
-        document = minidom.parseString(ret)
+        try:
+            document = minidom.parseString(ret)
+        except xml.parsers.expat.ExpatError, e:
+            raise BugTrackerConnectError(self.baseurl, "Failed to parse output "
+                                         "when probing for version: %s" % e)
         bugzilla = document.getElementsByTagName("bugzilla")
         if not bugzilla:
             return None
@@ -141,7 +146,12 @@ class Bugzilla(ExternalSystem):
         getdata = urllib.urlencode(data)
         url = urllib2.urlopen("%s/buglist.cgi?%s" % (self.baseurl, getdata))
         ret = url.read()
-        document = minidom.parseString(ret)
+        try:
+            document = minidom.parseString(ret)
+        except xml.parsers.expat.ExpatError, e:
+            log.error('Failed to parse XML description for %s bug %s: %s' %
+                      (self.baseurl, bug_id, e))
+            return None
         result = None
         if len(document.getElementsByTagName("bz:id")) > 0:
             try:

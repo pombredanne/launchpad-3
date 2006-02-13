@@ -21,7 +21,7 @@ Foo Bar files a *private* bug on Ubuntu Linux. He gets redirected to it.
   ... Referer: http://localhost:9000/malone/distros/ubuntu/+filebug
   ... 
   ... -----------------------------1512617038523064916835258629
-  ... Content-Disposition: form-data; name="field.sourcepackagename"
+  ... Content-Disposition: form-data; name="field.packagename"
   ... 
   ... evolution
   ... -----------------------------1512617038523064916835258629

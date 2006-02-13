@@ -4,7 +4,7 @@
 
   <div class="portletBody portletContent">
 
-    <b>Creator:</b>
+    <b>Registrant:</b>
     <img src="/++resource++user.gif" />
     <a tal:content="context/owner/browsername"
        tal:attributes="href context/owner/fmt:url">Foo Bar</a><br />

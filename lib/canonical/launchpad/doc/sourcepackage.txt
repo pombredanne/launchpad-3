@@ -161,8 +161,34 @@ Now verify we still get a product for that source package
 Test the Changelog concatenation process:
 
     >>> sp = SourcePackage(sourcepackagename=pmount, distrorelease=hoary)
-    >>> sp.changelog
-    u'This is a placeholder changelog for pmount 0.1-2 \n\nThis is a placeholder changelog for pmount 0.1-1 \n\n'
+    >>> print sp.changelog
+    This is a placeholder changelog for pmount 0.1-2
+    <BLANKLINE>
+    pmount (0.1-1) hoary; urgency=low
+    <BLANKLINE>
+     * Fix description (Malone #1)
+     * Fix debian (Debian #2000)
+     * Fix warty (Warty Ubuntu #1)
+    <BLANKLINE>
+     -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300
+    <BLANKLINE>
+    <BLANKLINE>
+
+
+Checking handy Sourcepackage properties:
+
+XXX cprov 20060125: it's still very primitive test but it's better
+than nothing ... bug # 29659
+
+    >>> sp.manifest.uuid
+    u'e0451064-b405-4f52-b387-ebfc1a7ee297'
+
+    >>> len(sp.releases)
+    2
+
+    >>> len(sp.releasehistory)
+    2
+
 
 Comparing Sourcepackages
 ------------------------
@@ -177,3 +203,10 @@ Lastly, note that sourcepackages know how to compare to each other:
     True
     >>> hoary_firefox_one != warty_firefox
     True
+
+releasehistory
+--------------
+
+    >>> print len(hoary_firefox_one.releasehistory)
+    1
+

@@ -34,7 +34,7 @@ But if you want you can use any of the available commands as well.
 
 Let's take an example where we file a bug on Firefox:
 
-    >>> submit_mail = """From: Sample Person <test@canonical.com>
+    >>> submit_mail = """From: Foo Bar <foo.bar@canonical.com>
     ... To: new@bugs.launchpad.ubuntu.com
     ... Date: Fri Jun 17 10:20:23 BST 2005
     ... Subject: A bug in Firefox
@@ -59,7 +59,7 @@ And since we'll pass the email directly to the correct handler,
 we'll have to authenticate the user manually:
 
     >>> from canonical.launchpad.ftests import login
-    >>> login('test@canonical.com')
+    >>> login('foo.bar@canonical.com')
 
 Now if we pass the message to the Malone handler, we can see that the
 bug got submitted correctly:
@@ -110,7 +110,7 @@ And the entire body of the email was added as a comment:
     >>> comment = bug.messages[0]
     >>> print comment.title
     A bug in Firefox
-    >>> print comment.contents
+    >>> print comment.text_contents
     There is a bug in Firefox.
     <BLANKLINE>
      affects /products/firefox
@@ -118,31 +118,81 @@ And the entire body of the email was added as a comment:
 The owner of the bug was set to the submitter:
 
     >>> print bug.owner.displayname
-    Sample Person
+    Foo Bar
 
-If we would file a bug on Debian instead, we would submit a mail like
+A notification was sent to dilys, Foo Bar and Sample Person. Sample
+Person got notified since he's the owner of the product:
+
+    >>> len(stub.test_emails)
+    3
+    >>> dilys_msg, foo_bar_msg, sample_person_msg = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    >>> dilys_msg['To']
+    'dilys@muse.19inch.net'
+    >>> foo_bar_msg['To']
+    'foo.bar@canonical.com'
+    >>> sample_person_msg['To']
+    'test@canonical.com'
+    >>> print sample_person_msg.get_payload()
+    Public bug reported:
+    ...
+    Affects: firefox (upstream)
+    ...
+    There is a bug in Firefox.
+    ...
+
+    >>> stub.test_emails = []
+
+If we would file a bug on Ubuntu instead, we would submit a mail like
 this:
 
+    >>> login('test@canonical.com')
     >>> submit_mail = """From: Sample Person <test@canonical.com>
     ... To: new@bugs.canonical.com
     ... Date: Fri Jun 17 10:20:23 BST 2005
-    ... Subject: A bug in Debian's Evolution package
+    ... Subject: A bug in Ubuntu's Mozilla package
     ...
-    ... There's a bug in Debian.
-    ...  affects /distros/debian/evolution
+    ... There's a bug in Ubuntu.
+    ...  affects /distros/ubuntu/mozilla-firefox
     ... """
     >>> process_email(submit_mail)
     >>> bug = get_latest_added_bug()
 
     >>> print bug.title
-    A bug in Debian's Evolution package
+    A bug in Ubuntu's Mozilla package
 
     >>> distrotask = bug.bugtasks[0]
     >>> print distrotask.distribution.name
-    debian
+    ubuntu
     >>> print distrotask.sourcepackagename.name
-    evolution
+    mozilla-firefox
 
+A notification was sent to dilys, Foo Bar and Sample Person. Foo
+Bar got notified since he's a bug contact for the mozilla package:
+
+    >>> len(stub.test_emails)
+    3
+    >>> dilys_msg, foo_bar_msg, sample_person_msg = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    >>> dilys_msg['To']
+    'dilys@muse.19inch.net'
+    >>> foo_bar_msg['To']
+    'foo.bar@canonical.com'
+    >>> sample_person_msg['To']
+    'test@canonical.com'
+    >>> print sample_person_msg.get_payload()
+    Public bug reported:
+    ...
+    Affects: mozilla-firefox (Ubuntu)
+    ...
+    There's a bug in Ubuntu.
+    ...
+
+    >>> stub.test_emails = []
 
 Add a comment
 -------------
@@ -225,6 +275,148 @@ And the summaries were changed:
     >>> print bug_five.title
     Nicer summary
 
+GPG signing and adding comments
+-------------------------------
+
+In order to include commands in the comment, the email has to be GPG
+signed. The key used to sign the email has to be associated with the
+authenticated person in Launchpad. It happens quite often, though, that
+people who haven't registered their key in Launchpad sign their emails
+even though the only want to add a comment. These comments should of
+course not be rejected just because their key wasn't registered in
+Launchpad.
+
+To make a difference between if an email was signed with a key
+registered in Launchpad or not, we can look at which interfaces the
+currently authenticated principal provides. If the email used for
+authentication was unsigned or signed with a key, which isn't
+associated with the authenticated Person in Launchpad, the principal
+will provide IWeaklyAuthenticatedPrincipal. Let's mark the current
+principal with that.
+
+    >>> from canonical.launchpad.interfaces import IWeaklyAuthenticatedPrincipal
+    >>> from zope.interface import directlyProvides, directlyProvidedBy
+    >>> from zope.security.management import queryInteraction
+    >>> participations = queryInteraction().participations
+    >>> len(participations)
+    1
+    >>> current_principal = participations[0].principal
+    >>> directlyProvides(
+    ...     current_principal, directlyProvidedBy(current_principal),
+    ...     IWeaklyAuthenticatedPrincipal)
+
+
+Now we send a comment containing commands.
+
+    >>> comment_mail = """From: test@canonical.com
+    ... To: 1@malone-domain
+    ... Date: Fri Dec 17 10:20:23 BST 2005
+    ... Message-Id: <yada-yada-test2>
+    ... Subject: Change the summary
+    ...
+    ... Adding a comment via the email system. Let's change the summary
+    ... as well:
+    ...     summary "New summary"
+    ...
+    ... /Sample Person
+    ... """
+    >>> process_email(comment_mail)
+    >>> transaction.commit()
+
+The Malone handler saw that this email was signed, but since
+IWeaklyAuthenticatedPrincipal was provided by the current principal, no
+changes was made to the bug, and the comment wasn't added.
+
+    >>> added_message = getUtility(IMessageSet).get('<yada-yada-test2>')[0]
+    Traceback (most recent call last):
+    ...
+    NotFoundError:...
+
+    >>> bug_one = bugset.get(1)
+    >>> print bug_one.title
+    Better summary
+
+And an error message was sent to the Sample Person, telling him what's
+wrong.
+
+    >>> def print_latest_email():
+    ...     transaction.commit()
+    ...     from_addr, to_addrs, raw_message = stub.test_emails[-1]
+    ...     error_mail = email.message_from_string(raw_message)
+    ...     print "Subject: %s" % error_mail['Subject']
+    ...     print "To: %s" % ', '.join(to_addrs)
+    ...     print
+    ...     print error_mail.get_payload(decode=True)
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    The email you sent included commands to edit the bug, but your
+    GPG key isn't imported into Launchpad. Please go to
+    http://localhost:8086/people/name12/+editgpgkeys to import your
+    key.
+    ...
+
+The same will happen if we send the same email without signing it:
+
+    >>> class MockUnsignedMessage(email.Message.Message):
+    ...     signedMessage = None
+    ...     signature = None
+    >>> msg = email.message_from_string(
+    ...     comment_mail, _class=MockUnsignedMessage)
+    >>> handler.process(msg, msg['To'])
+    True
+    >>> transaction.commit()
+
+    >>> added_message = getUtility(IMessageSet).get('<yada-yada-test2>')[0]
+    Traceback (most recent call last):
+    ...
+    NotFoundError:...
+
+    >>> bug_one = bugset.get(1)
+    >>> print bug_one.title
+    Better summary
+
+A different error message is sent, though:
+
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    The email you sent included commands to edit the bug, but you
+    didn't sign the email with your GPG key.
+    ...
+
+
+If we don't include any commands in the comment, it will be added
+to the bug:
+
+    >>> comment_mail = """From: test@canonical.com
+    ... To: 1@malone-domain
+    ... Date: Fri Dec 17 10:20:23 BST 2005
+    ... Message-Id: <yada-yada-test3>
+    ... Subject: Change the summary
+    ...
+    ... Adding a comment via the email system.
+    ...
+    ... /Sample Person
+    ... """
+    >>> process_email(comment_mail)
+    >>> transaction.commit()
+
+    >>> added_message = getUtility(IMessageSet).get('<yada-yada-test3>')[0]
+    >>> bug_one = bugset.get(1)
+    >>> added_message in bug_one.messages
+    True
+
+Unmark the principal:
+
+    >>> provided_interfaces = directlyProvidedBy(current_principal)
+    >>> directlyProvides(
+    ...     current_principal,
+    ...     provided_interfaces - IWeaklyAuthenticatedPrincipal)
 
 Commands
 --------
@@ -255,6 +447,7 @@ messages as well:
     ...     print "To: %s" % ', '.join(to_addrs)
     ...     print
     ...     print error_mail.get_payload(decode=True)
+
 
 
 bug $bugid
@@ -442,6 +635,11 @@ If we specify a non-existant user, an error message will be sent:
     There's no such person with the specified name or email: non_existant
     ...
 
+Let's subscribe Sample Person to the bug again, so that it has at least
+one subscriber:
+
+    >>> submit_commands(bug_four, 'subscribe test@canonical.com')
+
 
 affects $path [assignee $name|$email]
               [status $status]
@@ -457,6 +655,7 @@ the following form:
 If there is no task with the specified $path target, a new task is
 created:
 
+    >>> stub.test_emails = []
     >>> len(bug_four.bugtasks)
     1
     >>> 'debian' in [bugtask.target.name for bugtask in bug_four.bugtasks]
@@ -466,6 +665,25 @@ created:
     2
     >>> 'debian' in [bugtask.target.name for bugtask in bug_four.bugtasks]
     True
+
+A notification was sent to all the bug's subscribers, and to dilys:
+
+    >>> len(stub.test_emails)
+    2
+    >>> dilys_msg, sample_person_msg = [
+    ...     email.message_from_string(raw_message)
+    ...     for from_addr, to_addrs, raw_message in sorted(stub.test_emails)
+    ...     ]
+    >>> dilys_msg['To']
+    'dilys@muse.19inch.net'
+    >>> sample_person_msg['To']
+    'test@canonical.com'
+    >>> print sample_person_msg.get_payload()
+    Public bug report changed:
+    ...
+    Also affects: Debian
+    ...
+
 
 Submitting the same thing again doesn't do anything, since the task
 already exists:

@@ -225,3 +225,29 @@ Sample Person is happy with the answer, so he closes the ticket:
     >>> firefox_ticket.mark_resolved(sample_person)
     >>> firefox_ticket.status.title
     'Closed'
+
+
+ITicketSet
+----------
+
+ITicketSet can be used to get a ticket with a specific id:
+
+    >>> from canonical.launchpad.interfaces import ITicketSet
+    >>> ticket_one = getUtility(ITicketSet).get(1)
+    >>> ticket_one.title
+    u'Firefox cannot render Bank Site'
+
+If no ticket exists, a default value is returned:
+
+    >>> default = object()
+    >>> ticket_nonexistant = getUtility(ITicketSet).get(
+    ...     123456, default=default)
+    >>> ticket_nonexistant is default
+    True
+
+If no default value is given, None is returned:
+
+    >>> getUtility(ITicketSet).get(123456) is None
+    True
+
+

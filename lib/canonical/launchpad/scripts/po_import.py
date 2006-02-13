@@ -12,7 +12,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
     IPOTemplateSet, IPOFileSet, IPOFile, IPOTemplate, ITranslationImportQueue,
-    UnsupportedFileType)
+    UnsupportedFileType, RawFileBusy)
 
 
 class ImportProcess:
@@ -161,7 +161,6 @@ class ImportProcess:
         return there_are_things_to_import
 
     def run(self):
-        UTC = pytz.timezone('UTC')
         while True:
 
             # Note we invoke getPendingImports each loop, as this avoids

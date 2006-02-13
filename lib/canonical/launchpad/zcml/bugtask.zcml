@@ -33,25 +33,24 @@
 
     <!-- IBugTask -->
     <content class="canonical.launchpad.database.BugTask">
-        <allow attributes="id bug target" />
+        <allow attributes="id bug bugID target" />
         <require
             permission="launchpad.View"
             attributes="product sourcepackagename distribution
                         distrorelease milestone status statusexplanation
                         priority severity assignee binarypackagename
                         bugwatch dateassigned datecreated age owner
-                        maintainer maintainer_displayname targetname
-                        title related_tasks statusdisplayhtml statuselsewhere
-                        setStatusFromDebbugs setSeverityFromDebbugs
-                        updateTargetNameCache asEmailHeaderValue" />
+                        targetname title related_tasks statusdisplayhtml
+                        statuselsewhere setStatusFromDebbugs
+                        setSeverityFromDebbugs updateTargetNameCache
+                        asEmailHeaderValue" />
         <require
             permission="launchpad.Edit"
             set_attributes="product sourcepackagename distribution
                             distrorelease milestone status statusexplanation
                             priority severity assignee binarypackagename
                             bugwatch dateassigned datecreated age owner
-                            maintainer maintainer_displayname targetname
-                            title related_tasks statusdisplayhtml
+                            targetname title related_tasks statusdisplayhtml
                             statuselsewhere setStatusFromDebbugs
                             setSeverityFromDebbugs" />
     </content>
@@ -289,42 +288,35 @@
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.bug.BugAlsoReportInView"
         label="Request fix in a product"
-        fields="product owner"
-        content_factory="canonical.launchpad.database.BugTaskFactory"
+        fields="product"
         arguments=""
-        keyword_arguments="product owner"
+        keyword_arguments="product"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
         lp:url="malone/bugs/$Bug.id/+upstreamtask">
-        <browser:widget field="owner" class="canonical.widgets.HiddenUserWidget" />
     </browser:addform>
 
-    <browser:editform
+    <browser:generalform
         name="+editstatus-page"
         for="canonical.launchpad.interfaces.IUpstreamBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
-        fields="maintainer_displayname milestone status priority
-                severity assignee bugwatch statusexplanation product"
+        fields="product milestone status priority severity assignee
+                bugwatch statusexplanation"
         label="Edit fix request"
         permission="launchpad.Edit"
-        template="../templates/bugtask-edit.pt"
-        lp:url="malone/tasks/$BugTask.id/+edit">
-        <browser:widget
-          field="statusexplanation"
-          class="zope.app.form.browser.TextAreaWidget"
-          height="2" />
+        template="../templates/bugtask-edit.pt">
         <browser:widget
           field="assignee"
           class="canonical.widgets.bugtask.BugTaskAssigneeWidget" />
-    </browser:editform>
+    </browser:generalform>
 
     <browser:schemadisplay
         name="+viewstatus-page"
         for="canonical.launchpad.interfaces.IUpstreamBugTask"
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
-        fields="maintainer_displayname milestone status priority severity
-                assignee bugwatch statusexplanation"
+        fields="milestone status priority severity assignee bugwatch
+                statusexplanation"
         label="Product fix request"
         permission="launchpad.View"
         template="../templates/bugtask-view.pt"
@@ -341,16 +333,11 @@
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.bug.BugAlsoReportInView"
         label="Request fix in a distribution"
-        fields="distribution sourcepackagename owner"
-        content_factory="canonical.launchpad.database.BugTaskFactory"
-        keyword_arguments="distribution sourcepackagename owner"
+        fields="distribution sourcepackagename"
+        keyword_arguments="distribution sourcepackagename"
         permission="launchpad.AnyPerson"
         template="../templates/launchpad-addform.pt"
         lp:url="malone/bugs/$Bug.id/+distrotask">
-        <browser:widget
-          field="owner"
-          class="canonical.widgets.HiddenUserWidget"
-          />
     </browser:addform>
 
     <browser:editform

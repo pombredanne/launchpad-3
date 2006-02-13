@@ -22,12 +22,13 @@ from canonical.lp.batching import BatchNavigator
 from canonical.lp.dbschema import PackagePublishingPocket
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
-    IPOTemplateSet, IPackaging, ILaunchBag, ICountry, ISourcePackage)
+    IPOTemplateSet, IPackaging, ICountry, ISourcePackage)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.browser.potemplate import POTemplateView
-from canonical.soyuz.generalapp import builddepsSet
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
+from canonical.launchpad.browser.packagerelationship import (
+    PackageRelationship)
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
@@ -63,20 +64,15 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
 
 def linkify_changelog(changelog, sourcepkgnametxt):
-    # XXX: salgado: No bugtracker URL should be hardcoded.
     if changelog is None:
         return changelog
     changelog = cgi.escape(changelog)
-    deb_bugs = 'http://bugs.debian.org/cgi-bin/bugreport.cgi?bug='
-    warty_bugs = 'https://bugzilla.ubuntu.com/show_bug.cgi?id='
-    changelog = re.sub(r'%s \(([^)]+)\)' % sourcepkgnametxt,
-                       r'%s (<a href="../\1">\1</a>)' % sourcepkgnametxt,
-                       changelog)
-    changelog = re.sub(r'(([Ww]arty|[Uu]buntu) *#)([0-9]+)',
-                       r'<a href="%s\3">\1\3</a>' % warty_bugs,
-                       changelog)
-    changelog = re.sub(r'[^(W|w)arty]#([0-9]+)',
-                       r'<a href="%s\1">#\1</a>' % deb_bugs,
+    # XXX cprov 20060207: use re.match and fmt:url instead of this nasty
+    # url builder. Also we need an specification describing the syntax for
+    # changelog linkification and processing (mostly bug interface),
+    # bug # 30817
+    changelog = re.sub(r'%s \(([^)]+)\)' % re.escape(sourcepkgnametxt),
+                       r'%s (<a href="\1">\1</a>)' % sourcepkgnametxt,
                        changelog)
     return changelog
 
@@ -96,7 +92,7 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     usedfor = ISourcePackage
     facet = 'overview'
-    links = ['hct', 'changelog', 'buildlog', 'builds']
+    links = ['hct', 'changelog', 'builds']
 
     def hct(self):
         text = structured(
@@ -106,15 +102,12 @@ class SourcePackageOverviewMenu(ApplicationMenu):
     def changelog(self):
         return Link('+changelog', 'Change Log', icon='list')
 
-    def buildlog(self):
-        return Link('+buildlog', 'Build Log', icon='build-success')
-
     def upstream(self):
         return Link('+packaging', 'Edit Upstream Link', icon='edit')
 
     def builds(self):
         text = 'View Builds'
-        return Link('+builds', text, icon='info')        
+        return Link('+builds', text, icon='info')
 
 
 class SourcePackageBugsMenu(ApplicationMenu):
@@ -225,26 +218,28 @@ class SourcePackageView(BuildRecordsView):
         return results
 
     def builddepends(self):
-        if not self.context.currentrelease.builddepends:
+        builddepends = self.context.currentrelease.builddepends
+
+        if not builddepends:
             return []
 
-        builddepends = []
-
-        depends = ParseSrcDepends(self.context.currentrelease.builddepends)
-        for dep in depends:
-            builddepends.append(builddepsSet(*dep[0]))
-        return builddepends
+        relationships = [L[0] for L in ParseSrcDepends(builddepends)]
+        return [
+            PackageRelationship(name, signal, version)
+            for name, version, signal in relationships
+            ]
 
     def builddependsindep(self):
-        if not self.context.currentrelease.builddependsindep:
+        builddependsindep = self.context.currentrelease.builddependsindep
+
+        if not builddependsindep:
             return []
-        builddependsindep = []
 
-        depends = ParseSrcDepends(self.context.currentrelease.builddependsindep)
-
-        for dep in depends:
-            builddependsindep.append(builddepsSet(*dep[0]))
-        return builddependsindep
+        relationships = [L[0] for L in ParseSrcDepends(builddependsindep)]
+        return [
+            PackageRelationship(name, signal, version)
+            for name, version, signal in relationships
+            ]
 
     def has_build_depends(self):
         return self.context.currentrelease.builddependsindep or \

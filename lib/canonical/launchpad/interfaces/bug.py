@@ -13,17 +13,16 @@ __all__ = [
     'IBugTarget',
     'BugDistroReleaseTargetDetails']
 
-from zope.i18nmessageid import MessageIDFactory
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Datetime, Int, Text, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
+from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     non_duplicate_bug, IMessageTarget)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import Title, Summary, BugField
 
-_ = MessageIDFactory('launchpad')
 
 class CreatedBugWithNoBugTasksError(Exception):
     """Raised when a bug is created with no bug tasks."""
@@ -170,6 +169,10 @@ class IBugTarget(Interface):
         """
 
     bugtasks = Attribute("A list of BugTasks for this target.")
+    open_bugtasks = Attribute("A list of Open BugTasks for this target.")
+    inprogress_bugtasks = Attribute("A list of In Progress BugTasks for this target.")
+    critical_bugtasks = Attribute("A list of Critical BugTasks for this target.")
+    unassigned_bugtasks = Attribute("A list of Unassigned BugTasks for this target.")
 
 
 class BugDistroReleaseTargetDetails:
@@ -198,6 +201,7 @@ class IBugDelta(Interface):
     bug = Attribute("The IBug, after it's been edited.")
     bugurl = Attribute("The absolute URL to the bug.")
     user = Attribute("The IPerson that did the editing.")
+    comment_on_change = Attribute("An optional comment for this change.")
 
     # fields on the bug itself
     title = Attribute("The new bug title or None.")
@@ -237,12 +241,11 @@ class IBugAddForm(IBug):
             which was installed by something other than apt-get, rpm,
             emerge or similar"""),
             vocabulary="Product")
-    sourcepackagename = Choice(
-            title=_("Source Package Name"), required=False,
-            description=_("""The distribution package you found
-            this bug in, which was installed via apt-get, rpm,
-            emerge or similar."""),
-            vocabulary="SourcePackageName")
+    packagename = Choice(
+            title=_("Package Name"), required=False,
+            description=_("""The package you found this bug in,
+            which was installed via apt-get, rpm, emerge or similar."""),
+            vocabulary="BinaryAndSourcePackageName")
     distribution = Choice(
             title=_("Linux Distribution"), required=True,
             description=_("""Ubuntu, Debian, Gentoo, etc."""),
@@ -266,8 +269,13 @@ class IBugSet(Interface):
     def get(bugid):
         """Get a specific bug by its ID.
 
-        If it can't be found, a zope.exceptions.NotFoundError will be
-        raised.
+        If it can't be found, NotFoundError will be raised.
+        """
+
+    def getByNameOrID(bugid):
+        """Get a specific bug by its ID or nickname
+
+        If it can't be found, NotFoundError will be raised.
         """
 
     def searchAsUser(user, duplicateof=None, orderBy=None, limit=None):

@@ -165,3 +165,9 @@ class ITicketSet(Interface):
     def getAnsweredTickets():
         """Return all tickets with the status ANSWERED."""
 
+    def get(ticket_id, default=None):
+        """Return the ticket with the given id.
+
+        Return :default: if no such ticket exists.
+        """
+
