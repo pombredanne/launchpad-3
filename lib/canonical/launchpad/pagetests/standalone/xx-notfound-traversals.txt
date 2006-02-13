@@ -342,4 +342,5 @@ And this is for a person:
 
 
 Soyuz pages
+>>> check("/+builds/+build/7/")
 >>> check("/+builds/+build/7/pmount/")
