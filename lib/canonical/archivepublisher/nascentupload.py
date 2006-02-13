@@ -1822,7 +1822,10 @@ class NascentUpload:
             format=BinaryPackageFormat.DEB
             if uploaded_file.type == "udeb":
                 format=BinaryPackageFormat.UDEB
-            build = self.find_build(uploaded_file.architecture)
+            archtag = uploaded_file.architecture
+            if archtag == 'all':
+                archtag = self.changes_filename_archtag
+            build = self.find_build(archtag)
             component = getUtility(IComponentSet)[uploaded_file.component].id
             section = getUtility(ISectionSet)[uploaded_file.section].id
             # Also remember the control data for the uploaded file
