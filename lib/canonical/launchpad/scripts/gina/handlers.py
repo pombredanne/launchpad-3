@@ -324,7 +324,7 @@ class ImporterHandler:
                 return sourcepackage
 
             log.warn("Nope, couldn't find it. Could it be a "
-                     "bin-only-NMU? Checking...")
+                     "bin-only-NMU? Checking version %s" % version)
 
             # XXX: testing a third cycle of this loop isn't done
 
@@ -795,6 +795,14 @@ class BinaryPackageHandler:
         distroarchrelease = distroarchinfo['distroarchrelease']
         distribution = distroarchrelease.distrorelease.distribution
         clauseTables = ["Build", "DistroArchRelease", "DistroRelease"]
+
+        # XXX: this method doesn't work for real bin-only NMUs that are
+        # new versions of packages that were picked up by Gina before.
+        # The reason for that is that these bin-only NMUs' corresponding
+        # source package release will already have been built at least
+        # once, and the two checks below will of course blow up when
+        # doing it the second time.
+        #   -- kiko, 2006-02-03
 
         query = ("Build.sourcepackagerelease = %d AND "
                  "Build.distroarchrelease = DistroArchRelease.id AND " 

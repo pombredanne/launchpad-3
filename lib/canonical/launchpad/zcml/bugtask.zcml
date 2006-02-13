@@ -33,7 +33,7 @@
 
     <!-- IBugTask -->
     <content class="canonical.launchpad.database.BugTask">
-        <allow attributes="id bug target" />
+        <allow attributes="id bug bugID target" />
         <require
             permission="launchpad.View"
             attributes="product sourcepackagename distribution

@@ -127,6 +127,7 @@ spider -- StuartBishop 20050822
 >>> check("/distros/ubuntu/+addbounty", auth=True)
 >>> check("/distros/ubuntu/+addspec", auth=True)
 >>> check("/distros/ubuntu/+source/evolution/+bugs")
+>>> check("/distros/ubuntu/hoary/i386/pmount/0.1-1")
 
 >>> check("/distros/kubuntu/+bugs")
 >>> check("/distros/kubuntu/+specs")

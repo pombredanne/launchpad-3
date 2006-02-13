@@ -90,6 +90,10 @@ class POTemplateAppMenus(POFileAppMenus):
         text = 'Download Translations'
         return Link('+export', text, icon='download')
 
+    def edit(self):
+        text = 'Edit Details'
+        return Link('+edit', text, icon='edit')
+
     @enabled_with_permission('launchpad.Admin')
     def administer(self):
         text = 'Admin Edit'

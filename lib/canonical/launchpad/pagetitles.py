@@ -228,6 +228,8 @@ builder_cancel = ContextTitle(smartquote('Cancel job for "%s"'))
 
 builder_mode = ContextTitle(smartquote('Change mode for "%s"'))
 
+builder_admin = ContextTitle(smartquote('Administer "%s" builder'))
+
 calendar_index = ContextTitle('%s')
 
 calendar_event_addform = ContextTitle('Add event to %s')
@@ -284,6 +286,8 @@ distribution_allpackages = ContextTitle('All packages in %s')
 distribution_bugcontact = ContextTitle('Change bug contact for %s')
 
 distribution_cvereport = ContextTitle('CVE reports for %s')
+
+distribution_edit = ContextTitle('Edit %s')
 
 distribution_members = ContextTitle('%s distribution members')
 
@@ -506,7 +510,11 @@ person_karma = ContextDisplayName(smartquote("%s's karma in Launchpad"))
 
 person_packages = ContextDisplayName('Packages maintained by %s')
 
-person_packagebugs = ContextDisplayName('Bugs on software %s maintains')
+person_packagebugs = ContextDisplayName("%s's package bug reports")
+
+person_packagebugs_overview = person_packagebugs
+
+person_packagebugs_search = person_packagebugs
 
 person_reportedbugs = ContextDisplayName('Bugs %s reported')
 
