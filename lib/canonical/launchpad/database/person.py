@@ -296,11 +296,11 @@ class Person(SQLBase):
             OR Specification.assignee = %(my_id)d
             OR Specification.drafter = %(my_id)d
             OR Specification.id IN (
-                SELECT SpecificationFeedback.id
+                SELECT SpecificationFeedback.specification
                 FROM SpecificationFeedback
                 WHERE SpecificationFeedback.reviewer = %(my_id)s
                 UNION
-                SELECT SpecificationSubscription.id
+                SELECT SpecificationSubscription.specification
                 FROM SpecificationSubscription
                 WHERE SpecificationSubscription.person = %(my_id)d
                 )

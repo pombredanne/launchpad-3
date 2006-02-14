@@ -275,8 +275,11 @@ class POMsgSetView(LaunchpadView):
     def process_form(self):
         """Check whether the form was submitted and calls the right callback.
         """
-        if self.request.method != 'POST' or self.user is None:
+        if (self.request.method != 'POST' or self.user is None or
+            'pofile_translation_filter' in self.form):
             # The form was not submitted or the user is not logged in.
+            # If we get 'pofile_translation_filter' we should ignore that POST
+            # because it's useless for this view.
             return
 
         dispatch_table = {
