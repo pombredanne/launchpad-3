@@ -697,6 +697,7 @@ class ReportedBugTaskSearchListingView(BasePersonBugTaskSearchListingView):
     """All bugs reported by someone."""
 
     context_parameter = 'owner'
+    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
 
 
 class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
@@ -870,6 +871,7 @@ class SubscribedBugTaskSearchListingView(BasePersonBugTaskSearchListingView):
     """All bugs someone is subscribed to."""
 
     context_parameter = 'subscriber'
+    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
 
 
 class PersonView:

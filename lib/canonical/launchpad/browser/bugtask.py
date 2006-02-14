@@ -14,12 +14,6 @@ __all__ = [
     'BugTaskSearchListingView',
     'AssignedBugTasksView',
     'BugTasksOldView',
-    'OpenBugTasksView',
-    'CriticalBugTasksView',
-    'UntriagedBugTasksView',
-    'UnassignedBugTasksView',
-    'AllBugTasksView',
-    'AdvancedBugTaskSearchView',
     'BugTargetView',
     'BugTaskView',
     'BugTaskReleaseTargetingView',
@@ -469,28 +463,6 @@ class BugTaskEditView(GeneralFormView):
         return canonical_url(self.context)
 
 
-class BugListing:
-    """Helper class for information about a bug listing.
-
-        :target: the IBugTarget
-        :displayname: the name that will be displayed in the portlet
-        :name: the name of the page, e.g. +bugs-open
-        :request: the IBrowserRequest
-        :require_login: whether login is required to view the page
-
-    The number of bugtasks in the buglisting will be calculated.
-    """
-
-    def __init__(self, target, displayname, name, request, require_login=False):
-        listing_view = getView(target, name, request)
-        listing_view.initialize()
-
-        self.displayname = displayname
-        self.url = canonical_url(target) + '/' + name
-        self.count = listing_view.unfilteredTaskCount
-        self.require_login = require_login
-
-
 class BugListingPortletView(LaunchpadView):
     """Portlet containing all available bug listings."""
 
@@ -507,8 +479,7 @@ class BugListingPortletView(LaunchpadView):
             BugListing(context, 'Critical', '+bugs-critical', request),
             BugListing(context, 'Untriaged', '+bugs-untriaged', request),
             BugListing(context, 'Unassigned', '+bugs-unassigned', request),
-            BugListing(context, 'All bugs ever reported', '+bugs-all', request),
-            BugListing(context, 'Advanced search', '+bugs-advanced', request),
+            BugListing(context, 'All bugs ever reported', '+bugs-all', request)
             ]
 
 
@@ -871,169 +842,6 @@ class BugTaskSearchListingView(LaunchpadView):
         Return the IDistroRelease if yes, otherwise return None.
         """
         return IDistroRelease(self.context, None)
-
-
-class RedirectToAdvancedBugTasksView(BugTaskSearchListingView):
-    """A view that will render the advanced search page if the user requested
-    an advanced search form.
-    """
-
-    def render(self):
-        request = self.request
-        if request.form.get('advanced'):
-            # The user wants to do an advanced search, let's render the
-            # advanced page and keep the predefined values of this search.
-            new_view = getView(self.context, '+bugs-advanced', request)
-            new_view.initial_values = getInitialValuesFromSearchParams(
-                self.getExtraSearchParams(), self.search_form_schema)
-            return new_view()
-        else:
-            return BugTaskSearchListingView.render(self)
-
-
-class AssignedBugTasksView(RedirectToAdvancedBugTasksView):
-    """All open bugs assigned to someone."""
-
-    def getExtraSearchParams(self):
-        return {'status': any(*UNRESOLVED_BUGTASK_STATUSES),
-                'assignee': self.user}
-
-    def shouldShowAssignee(self):
-        """Should we show the assignee in the list of results?"""
-        return False
-
-
-class OpenBugTasksView(RedirectToAdvancedBugTasksView):
-    """All open bugs."""
-
-    @property
-    def unfilteredTaskCount(self):
-        return self.context.open_bugtasks.count()
-
-    def getExtraSearchParams(self):
-        return {'status': any(*UNRESOLVED_BUGTASK_STATUSES)}
-
-
-class CriticalBugTasksView(RedirectToAdvancedBugTasksView):
-    """All open critical bugs."""
-
-    @property
-    def unfilteredTaskCount(self):
-        return self.context.critical_bugtasks.count()
-
-    def getExtraSearchParams(self):
-        return {'status': any(*UNRESOLVED_BUGTASK_STATUSES),
-                'severity': dbschema.BugTaskSeverity.CRITICAL}
-
-
-class UntriagedBugTasksView(RedirectToAdvancedBugTasksView):
-    """All untriaged bugs.
-
-    Only bugs with status UNCONFIRMED are considered to be untriaged.
-    """
-
-    def getExtraSearchParams(self):
-        return {'status': dbschema.BugTaskStatus.UNCONFIRMED}
-
-
-class UnassignedBugTasksView(RedirectToAdvancedBugTasksView):
-    """All open bugs that don't have an assignee."""
-
-    @property
-    def unfilteredTaskCount(self):
-        return self.context.unassigned_bugtasks.count()
-
-    def getExtraSearchParams(self):
-        return {'status': any(*UNRESOLVED_BUGTASK_STATUSES), 'assignee': NULL}
-
-    def shouldShowAssignee(self):
-        """Should we show the assignee in the list of results?"""
-        return False
-
-
-class AllBugTasksView(RedirectToAdvancedBugTasksView):
-    """All bugs ever reported."""
-
-
-class AdvancedBugTaskSearchView(BugTaskSearchListingView):
-    """Advanced search for bugtasks."""
-
-    def getExtraSearchParams(self):
-        """Return the extra parameters for a search that used the advanced form.
-        
-        This method can also be used to get the extra parameters when a simple
-        form is submitted. This allows us to hide the advanced form in some
-        pages and still use this method to get the extra params of the
-        submitted simple form.
-        """
-        # Even though we pass self.initial_values to setUpWidgets(), that
-        # method won't add anything to the request (obviously), and that's
-        # where getWidgetsData() will get the values from. For this reason we
-        # update self.initial_values with the return of getWidgetsData().
-        form_params = self.initial_values
-        form_params.update(getWidgetsData(self, self.search_form_schema))
-
-        search_params = {}
-        search_params['statusexplanation'] = form_params.get(
-            "statusexplanation")
-        search_params['assignee'] = form_params.get("assignee")
-
-        severities = form_params.get("severity")
-        if severities:
-            search_params['severity'] = any(*severities)
-
-        milestones = form_params.get("milestone")
-        if milestones:
-            search_params['milestone'] = any(*milestones)
-
-        attachmenttype = form_params.get("attachmenttype")
-        if attachmenttype:
-            search_params['attachmenttype'] = any(*attachmenttype)
-
-        statuses = form_params.get("status", UNRESOLVED_BUGTASK_STATUSES)
-        if statuses is not None:
-            search_params['status'] = any(*statuses)
-
-        unassigned = form_params.get("unassigned")
-        if unassigned:
-            # If the user both inputs an assignee, and chooses to show
-            # only unassigned bugs, he will get all unassigned bugs.
-            search_params['assignee'] = NULL
-
-        # This reversal with include_dupes and omit_dupes is a bit odd;
-        # the reason to do this is that from the search UI's viewpoint,
-        # including a dupe is the special case, whereas a
-        # BugTaskSet.search() method that omitted dupes silently would
-        # be a source of surprising bugs.
-        if form_params.get("include_dupes"):
-            search_params['omit_dupes'] = False
-        else:
-            search_params['omit_dupes'] = True
-
-        return search_params
-
-    def shouldShowAdvancedSearchWidgets(self):
-        return True
-
-    def hasSimpleMode(self):
-        """Does this view has a "simple" mode where only a small subset of
-        widgets are displayed?
-
-        We need to know this in order to provide a button to switch to that
-        mode when we are in the advanced mode.
-        """
-        return False
-
-
-class BugTasksOldView(AdvancedBugTaskSearchView):
-    """The old +bugs view has to be an AdvancedBugTaskSearchView but shouldn't
-    display the advanced widgets.
-
-    We keep this view around to not break existing bookmars.
-    """
-
-    def shouldShowAdvancedSearchWidgets(self):
-        return False
 
 
 class BugTargetView:

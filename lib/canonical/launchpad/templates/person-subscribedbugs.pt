@@ -1,27 +1,37 @@
+<tal:layout define="columns1 default">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
 <body>
-
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-details" />
-  </metal:leftportlets>
-
   <div metal:fill-slot="main">
 
-    <metal:page
-        use-macro="context/@@+bugtask-macros-buglisting/page"
-        tal:define="task_batch_navigator view/search">
+    <div style="margin-left: 0; width: 74%; float: left">
+      <h1>Bugs <span tal:replace="context/browsername" /> is subscribed to</h1>
 
-      <metal:heading fill-slot="heading">
-        <h1>Bugs <span tal:replace="context/browsername"/> is subscribed to</h1>
-      </metal:heading>
-
-    </metal:page>
+      <div tal:define="batch_navigator view/search">
+        <form method="GET" name="search" action="">
+          <input type="text" name="field.searchtext" size="40"
+                 tal:attributes="value python:request.form.get('field.searchtext', '')" />
+          <input type="submit" name="search" value="Search" />
+          <span style="color: #A8A8A8"><small>(Advanced search coming soon)</small></span>
+        </form>
+        <script>
+          <!--
+              document.forms["search"].elements['field.searchtext'].focus();
+            -->
+        </script>
+        <br />
+        <tal:buglisting content="structure batch_navigator/@@+table-view" />
+      </div>
+    </div>
+    <div id="portal-column-two">
+      <metal:macro use-macro="context/@@main_template/action-menu" />
+    </div>
+    <div class="visualClear">&nbsp;</div>
 
   </div>
-
 </body>
 </html>
+</tal:layout>
