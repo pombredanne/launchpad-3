@@ -221,7 +221,7 @@ class BugAlsoReportInView(GeneralFormView):
 
     schema = IAddBugTaskForm
     fieldNames = None
-    template = ViewPageTemplateFile('../templates/bugtask-upstreamtask.pt')
+    template = ViewPageTemplateFile('../templates/bugtask-requestfix.pt')
     process_status = None
 
     def __init__(self, context, request):
@@ -247,6 +247,19 @@ class BugAlsoReportInView(GeneralFormView):
             'distribution', 'sourcepackagename', 'bugtracker', 'remotebug']
         self._setUpWidgets()
         return self.template()
+
+    def widgets(self):
+        """Return the widgets that should be rendered by the main macro.
+
+        We will place the bug watch widgets ourself, so we don't want
+        them rendered automatically.
+        """
+        bug_watch_widgets = [
+            self.schema['bugtracker'], self.schema['remotebug']]
+        return [
+            widget for widget in GeneralFormView.widgets(self)
+            if widget.context not in bug_watch_widgets
+            ]
 
     def validate(self, data):
         """Validate the form.

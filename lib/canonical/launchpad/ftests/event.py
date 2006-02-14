@@ -8,12 +8,14 @@ from zope.app.tests import ztapi
 
 
 class TestEventListener:
-    """Listen for a specific object event.
+    """Listen for a specific object event in tests.
 
     When an event of the specified type is fired of for an object with
     the specifed type, the given callback is called.
 
-    At the end of the test you have to unregister the even listener
+    The callback function should take an object and an event.
+
+    At the end of the test you have to unregister the event listener
     using event_listener.unregister().
     """
 

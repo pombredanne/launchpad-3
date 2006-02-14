@@ -182,7 +182,7 @@ bugtask_index = BugTaskPageTitle()
 
 bugtask_release_targeting = BugTaskTargetingTitle()
 
-bugtask_upstreamtask = LaunchbagBugID('Bug #%d - Request fix in a product')
+bugtask_requestfix = LaunchbagBugID('Bug #%d - Request fix in a product')
 
 bugtask_view = BugTaskPageTitle()
 
