@@ -11,14 +11,13 @@ represents all the people who are /effective members/ of the team.
 
 First of all, create some teams:
 
+>>> import pytz
+>>> from datetime import datetime, timedelta
 >>> from canonical.launchpad.database import Person
->>> from canonical.launchpad.database.person import _getAllMembers
->>> from canonical.lp.dbschema import TeamSubscriptionPolicy
->>> from canonical.lp.dbschema import TeamMembershipStatus
-
+>>> from canonical.lp.dbschema import (
+...     TeamSubscriptionPolicy, TeamMembershipStatus)
 >>> from canonical.database.sqlbase import flush_database_updates
 
->>> defaultOrder = 'displayname'
 >>> o = TeamSubscriptionPolicy.OPEN
 >>> m = TeamSubscriptionPolicy.MODERATED
 
@@ -36,17 +35,17 @@ One of your users want to join the t3 and t4 teams.
     True
     >>> p.join(t4)
     True
-    >>> [m.displayname for m in _getAllMembers(t3, orderBy=defaultOrder)]
+    >>> [m.displayname for m in t3.allmembers]
     []
 
 But these are MODERATED teams, somebody has to approve 'name16' as a member:
 
     >>> t4.setMembershipStatus(p, TeamMembershipStatus.APPROVED)
-    >>> [m.displayname for m in _getAllMembers(t4, orderBy=defaultOrder)]
+    >>> [m.displayname for m in t4.allmembers]
     [u'Foo Bar']
 
     >>> t3.setMembershipStatus(p, TeamMembershipStatus.APPROVED)
-    >>> [m.displayname for m in _getAllMembers(t3, orderBy=defaultOrder)]
+    >>> [m.displayname for m in t3.allmembers]
     [u'Foo Bar']
 
 
@@ -64,7 +63,7 @@ to addMember() it.
 By making t3 a member of t2, that means that all members of t3 will also be
 added as a member of t2.
 
-    >>> [m.displayname for m in _getAllMembers(t2, orderBy=defaultOrder)]
+    >>> [m.displayname for m in t2.allmembers]
     [u'Foo Bar', u't3']
 
 Can we add t2 as a member of t3? No, we prevent this kind of loop, and users
@@ -79,13 +78,13 @@ loops.
 Adding t2 as a member of t1 will add all t2 members as t1 members too.
 
     >>> t1.addMember(t2)
-    >>> [m.displayname for m in _getAllMembers(t1, orderBy=defaultOrder)]
+    >>> [m.displayname for m in t1.allmembers]
     [u'Foo Bar', u't2', u't3']
 
 Adding t2 as a member of t5 will add all t2 members as t5 members too.
 
     >>> t5.addMember(t2)
-    >>> [m.displayname for m in _getAllMembers(t5, orderBy=defaultOrder)]
+    >>> [m.displayname for m in t5.allmembers]
     [u'Foo Bar', u't2', u't3']
 
 Adding t5 and t1 as members of t4 will add all t5 and t1 members as t4 
@@ -93,7 +92,7 @@ members too.
 
     >>> t4.addMember(t5)
     >>> t4.addMember(t1)
-    >>> [m.displayname for m in _getAllMembers(t4, orderBy=defaultOrder)]
+    >>> [m.displayname for m in t4.allmembers]
     [u'Foo Bar', u't1', u't2', u't3', u't5']
 
 After adding all this mess, this is what we have:
@@ -123,16 +122,16 @@ Removing t2 from t5 will have implications in all teams that have t5 as a
 t5 had only one member and two other indirect members. Now that t2 is not its
 member anymore, it doesn't have any indirect members either.
 
-    >>> [m.displayname for m in _getAllMembers(t5, orderBy=defaultOrder)]
+    >>> [m.displayname for m in t5.allmembers]
     []
 
 Removing t2 from t5 won't remove it from t4, because t2 is also a member of
 t1, which is a member of t4.
-    >>> [m.displayname for m in _getAllMembers(t4, orderBy=defaultOrder)]
+    >>> [m.displayname for m in t4.allmembers]
     [u'Foo Bar', u't1', u't2', u't3', u't5']
 
 Nothing changes in t1, because t5 wasn't one of its members.
-    >>> [m.displayname for m in _getAllMembers(t1, orderBy=defaultOrder)]
+    >>> [m.displayname for m in t1.allmembers]
     [u'Foo Bar', u't2', u't3']
 
 If 'Foo Bar' decides to leave t3, he'll also be removed from t1, t2, but not
@@ -162,16 +161,16 @@ Now, if I add a new member to t3, will it be added to t2, t1 and t4 as well?
 Let's see...
 
     >>> t3.addMember(Person.byName('salgado'))
-    >>> [m.displayname for m in _getAllMembers(t3, orderBy=defaultOrder)]
+    >>> [m.displayname for m in t3.allmembers]
     [u'Guilherme Salgado']
 
-    >>> [m.displayname for m in _getAllMembers(t2, orderBy=defaultOrder)]
+    >>> [m.displayname for m in t2.allmembers]
     [u'Guilherme Salgado', u't3']
 
-    >>> [m.displayname for m in _getAllMembers(t1, orderBy=defaultOrder)]
+    >>> [m.displayname for m in t1.allmembers]
     [u'Guilherme Salgado', u't2', u't3']
 
-    >>> [m.displayname for m in _getAllMembers(t4, orderBy=defaultOrder)]
+    >>> [m.displayname for m in t4.allmembers]
     [u'Foo Bar', u'Guilherme Salgado', u't1', u't2', u't3', u't5']
 
 
@@ -181,6 +180,78 @@ his rights over the team because he's the team's owner:
     >>> flush_database_updates()
     >>> p.inTeam(t5)
     True
+
+
+Flagging expired memberships
+----------------------------
+
+The expired memberships are flagged by a cronscript that runs daily. This
+script simply flags all active memberships which reached their expiry date as
+expired.
+
+    >>> import transaction
+    >>> from canonical.launchpad.database import TeamMembershipSet, Person
+    >>> from canonical.launchpad.ftests import login
+    >>> login('foo.bar@canonical.com')
+    >>> one_day_ago = datetime.now(pytz.timezone('UTC')) - timedelta(days=1)
+
+Let's change the expiry date of an active membership, so we have something for
+our script to flag as expired.
+
+    >>> foobar_on_admins = TeamMembershipSet().getByPersonAndTeam(
+    ...     Person.selectOneBy(name='name16'),
+    ...     Person.selectOneBy(name='admins'))
+    >>> foobar_on_admins.dateexpires is None
+    True
+    >>> foobar_on_admins.status.title
+    'Administrator'
+    >>> foobar_on_admins.dateexpires = one_day_ago
+
+And here we change the expiry date of a membership that's already deactivated.
+The cronscript will not change this membership, because it's not active.
+
+    >>> sp_on_ubuntu_translators = TeamMembershipSet().getByPersonAndTeam(
+    ...     Person.selectOneBy(name='name12'),
+    ...     Person.selectOneBy(name='ubuntu-translators'))
+    >>> sp_on_ubuntu_translators.dateexpires is None
+    True
+    >>> sp_on_ubuntu_translators.status.title
+    'Deactivated'
+    >>> sp_on_ubuntu_translators.dateexpires = one_day_ago
+
+Now we commit the changes and run the cronscript.
+
+    >>> transaction.commit()
+    >>> import subprocess
+    >>> process = subprocess.Popen(
+    ...     'cronscripts/flag-expired-memberships.py -q', shell=True,
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE, 
+    ...     stderr=subprocess.PIPE)
+    >>> (out, err) = process.communicate()
+    >>> out, err
+    ('', '')
+    >>> process.returncode
+    0
+
+Here we can see that the membership that was active is now flagged as expired
+while the one that was inactive hasn't changed.
+
+    # These two objects were updated in another transaction, so we need to
+    # expire them.
+    >>> foobar_on_admins.expire()
+    >>> sp_on_ubuntu_translators.expire()
+
+    >>> foobar_on_admins = TeamMembershipSet().getByPersonAndTeam(
+    ...     Person.selectOneBy(name='name16'),
+    ...     Person.selectOneBy(name='admins'))
+    >>> foobar_on_admins.status.title
+    'Expired'
+
+    >>> sp_on_ubuntu_translators = TeamMembershipSet().getByPersonAndTeam(
+    ...     Person.selectOneBy(name='name12'),
+    ...     Person.selectOneBy(name='ubuntu-translators'))
+    >>> sp_on_ubuntu_translators.status.title
+    'Deactivated'
 
 
 Querying a person for team participation

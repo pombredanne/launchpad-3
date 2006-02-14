@@ -26,7 +26,7 @@ class ITeamMembership(Interface):
     reviewercomment = Text(title=_("Reviewer Comment"), required=False,
                            readonly=False)
     status= Int(title=_("If Membership was approved or not"), required=True,
-                readonly=False)
+                readonly=True)
 
     # Properties
     statusname = Attribute("Status Name")
@@ -36,9 +36,30 @@ class ITeamMembership(Interface):
     def isExpired():
         """Return True if this membership's status is EXPIRED."""
 
+    def setStatus(self, status):
+        """Set the status of this membership, filling or cleaning the
+        TeamParticipation table if necessary.
+        """
+
 
 class ITeamMembershipSet(Interface):
     """A Set for TeamMembership objects."""
+
+    def getMembershipsToExpire():
+        """Return all TeamMemberships that should be expired.
+
+        A TeamMembership should be expired when its expiry date is prior or
+        equal to today and its status is either ADMIN or APPROVED.
+        """
+
+    def new(person, team, status, dateexpires=None, reviewer=None,
+            reviewercomment=None):
+        """Create and return a new TeamMembership object.
+
+        The status of this new object must be either APPROVED or PROPOSED. If
+        the status is APPROVED, this method will also take care of filling the
+        TeamParticipation table.
+        """
 
     def getActiveMemberships(team, orderBy=None):
         """Return all active TeamMemberships for the given team.
