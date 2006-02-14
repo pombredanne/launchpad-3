@@ -1,14 +1,14 @@
 SET client_min_messages=ERROR;
 
-ALTER TABLE Build ADD COLUMN pocket integer;
+CREATE INDEX mirrorproberecord__date_created__idx
+    ON MirrorProbeRecord(date_created);
 
-UPDATE Build SET pocket = 0;
+CREATE INDEX mirrorproberecord__distribution_mirror__idx
+    ON MirrorProbeRecord(distribution_mirror);
 
-ALTER TABLE Build ALTER COLUMN pocket SET NOT NULL;
+DROP INDEX person_sorting_idx;
 
--- Temporarily keep API contranints, will be removed as soon as the
--- proper handling code gets merged.
-ALTER TABLE Build ALTER COLUMN pocket SET DEFAULT 0;
+CREATE INDEX person_sorting_idx ON Person(person_sort_key(displayname, name));
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (40, 18, 0);
 

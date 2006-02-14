@@ -16,7 +16,7 @@ from canonical.database.sqlbase import (
 
 from canonical.config import config
 
-from psycopgda import adapter
+import psycopgda.adapter
 
 # Single MessageIDFactory for everyone
 from canonical.launchpad import _
@@ -25,7 +25,7 @@ __all__ = [
     'DEFAULT_ISOLATION', 'AUTOCOMMIT_ISOLATION',
     'READ_COMMITTED_ISOLATION', 'SERIALIZED_ISOLATION',
     'dbname', 'dbhost', 'dbuser', 'isZopeless', 'initZopeless',
-    'decorates', 'Passthrough'
+    'decorates', 'Passthrough',
     ]
 
 # Allow override by environment variables for backwards compatibility.
@@ -66,7 +66,7 @@ def registerTypes():
     '''
     global _typesRegistered
     if not _typesRegistered:
-        adapter.registerTypes()
+        psycopgda.adapter.registerTypes(psycopgda.adapter.PG_ENCODING)
         _typesRegistered = True
 
 registerTypes()

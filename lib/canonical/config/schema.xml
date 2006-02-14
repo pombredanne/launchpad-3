@@ -424,6 +424,13 @@
                 regarding answered tickets.
             </description>
         </key>
+        <key name="email_domain" datatype="string"
+            default="support.launchpad.net" >
+            <description>
+                The email domain, to which incomings emails should be
+                sent.
+            </description>
+        </key>
     </sectiontype>
 
     <sectiontype name="trebuchet_server">
