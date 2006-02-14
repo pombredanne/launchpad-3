@@ -200,10 +200,8 @@ class GPGHandler:
         # no key was imported
         if result.considered == 0:
             raise ValueError('Empty or invalid keyring')
-        keys = []
-        for (fingerprint, result, status) in result.imports:
-            keys.append(PymeKey(fingerprint))
-        return keys
+        return [PymeKey(fingerprint)
+                for (fingerprint, result, status) in result.imports]
 
     def encryptContent(self, content, fingerprint):
         """See IGPGHandler."""
