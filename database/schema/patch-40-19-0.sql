@@ -16,5 +16,5 @@ UPDATE Distribution SET official_rosetta = TRUE WHERE NAME = 'baltix';
 ALTER TABLE Distribution ALTER COLUMN official_malone SET NOT NULL;
 ALTER TABLE Distribution ALTER COLUMN official_rosetta SET NOT NULL;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (40, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (40, 19, 0);
 
