@@ -83,6 +83,9 @@ class TeamMembership(SQLBase):
 
         self.syncUpdate()
 
+        # XXX: The logic here is not correct, as deactivated or expired
+        # members should be able to propose themselves as members.
+        # https://launchpad.net/bugs/5997
         if ((status == approved and self.status != admin) or
             (status == admin and self.status != approved)):
             _fillTeamParticipation(self.person, self.team)

@@ -26,7 +26,7 @@ class ITeamMembership(Interface):
     reviewercomment = Text(title=_("Reviewer Comment"), required=False,
                            readonly=False)
     status= Int(title=_("If Membership was approved or not"), required=True,
-                readonly=False)
+                readonly=True)
 
     # Properties
     statusname = Attribute("Status Name")
