@@ -8,6 +8,7 @@ Imports and test setup:
     >>> import threading
     >>> import time
     >>> import psycopg
+    >>> import transaction
     >>> from zope.component import getUtility
     >>> from zope.app.rdb.interfaces import IZopeDatabaseAdapter
     >>> from sqlos.interfaces import IConnectionName
@@ -233,11 +234,10 @@ connection. For example we can make it read only:
 
 The read only status only lasts until the end of the transaction.:
 
-    >>> import transaction
     >>> transaction.abort()
     >>> cursor = da().cursor()
     >>> cursor.execute("""
-    ...     INSERT INTO SourcePackageName(name) VALUES ('fnord2')
+    ...     INSERT INTO SourcePackageName(name) VALUES ('fnord3')
     ...     """)
     >>> transaction.abort()
 
@@ -288,6 +288,138 @@ So you need to explicity set the user back:
     >>> cursor.execute("SELECT current_user")
     >>> cursor.fetchone()[0] == config.launchpad.dbuser
     True
+
+
+Deadlocks & Serialization errors
+================================
+
+The Psycopg Database Adapter will catch serialization or deadlock
+exceptions and reraise them as Retry exceptions. A serialization exception
+occurs when a connection is running in the SERIALIZABLE transaction isolation
+level and PostgreSQL is detects that your connections reads are now
+inconsistant due to a concurrent update. Retrying the transaction is the
+documented way of handling this case. A deadlock occurs when two
+connections are waiting on locks both held by the other connection. The
+best way of handling this for a web application seems also to be to retry
+the transaction.
+
+This is not being tested upstream in the SVN PsycopgDA branch, as testing
+requires access to a PostgreSQL database and I can't write a suitably
+generic test harness at this time. So we test here in Launchpad to catch
+regressions, which I expect will occur with PostgreSQL and psycopg version
+changes.
+
+In order to catch the psycopg connections, Psycopgda needs to return
+wrapped ZopeConnection and ZopeCursor instances (the wrapped connection
+is only needed to make the cursor() method return a wrapped cursor).
+
+    >>> from psycopgda.adapter import PsycopgConnection, PsycopgCursor
+    >>> con = da()
+    >>> cur = con.cursor()
+    >>> isinstance(con, PsycopgConnection)
+    True
+    >>> isinstance(cur, PsycopgCursor)
+    True
+
+To trigger a serialization exception using the database adapter, we need
+to use two threads that are synchronized to ensure the querys occur in the
+correct order.
+
+    >>> import traceback
+    >>> from threading import Thread, Event
+    >>> steps = [Event(), Event()]
+    >>> class STask1(Thread):
+    ...     def run(self):
+    ...         try:
+    ...             self.traceback = None
+    ...             con = da()
+    ...             cur = con.cursor()
+    ...             cur.execute("SELECT name FROM Person WHERE id=22")
+    ...             self.traceback = repr(list(cur.fetchall()))
+    ...             steps[0].set()
+    ...             steps[1].wait()
+    ...             cur.execute("UPDATE Person SET name='argh' WHERE id=22")
+    ...             transaction.commit()
+    ...             self.traceback = "Failed to trigger serialization exception"
+    ...         except:
+    ...             self.traceback = traceback.format_exc()
+    ...             steps[0].set()
+
+    >>> class STask2(threading.Thread):
+    ...     def run(self):
+    ...         try:
+    ...             self.traceback = None
+    ...             con = da()
+    ...             cur = con.cursor()
+    ...             steps[0].wait()
+    ...             cur.execute("UPDATE Person SET name='whatever' WHERE id=22")
+    ...             transaction.commit()
+    ...         except Exception:
+    ...             self.traceback = traceback.format_exc()
+    ...         steps[1].set()
+
+    >>> task1 = STask1()
+    >>> task2 = STask2()
+    >>> task1.start()
+    >>> task2.start()
+    >>> task1.join()
+    >>> task2.join()
+    >>> print task1.traceback
+    Traceback (most recent call last):
+    ...
+    Retry: ...
+    >>> print task2.traceback
+    None
+
+
+Deadlocks can be tested for the same way as serialization exceptions.
+
+    >>> steps = [Event(), Event()]
+    >>> class DTask1(Thread):
+    ...     def run(self):
+    ...         try:
+    ...             self.traceback = None
+    ...             con = da()
+    ...             cur = con.cursor()
+    ...             cur.execute("LOCK Person IN ACCESS EXCLUSIVE MODE")
+    ...             steps[0].set()
+    ...             steps[1].wait()
+    ...             cur.execute("LOCK Bug IN ACCESS EXCLUSIVE MODE")
+    ...         except:
+    ...             self.traceback = traceback.format_exc()
+    ...             steps[0].set()
+
+    >>> class DTask2(threading.Thread):
+    ...     def run(self):
+    ...         try:
+    ...             self.traceback = None
+    ...             con = da()
+    ...             cur = con.cursor()
+    ...             steps[0].wait()
+    ...             cur.execute("LOCK Bug IN ACCESS EXCLUSIVE MODE")
+    ...             steps[1].set()
+    ...             cur.execute("LOCK Person IN ACCESS EXCLUSIVE MODE")
+    ...         except Exception:
+    ...             self.traceback = traceback.format_exc()
+    ...             steps[1].set()
+
+    >>> task1 = DTask1()
+    >>> task2 = DTask2()
+    >>> task1.start()
+    >>> task2.start()
+    >>> task1.join()
+    >>> task2.join()
+
+Only one of the threads will have raised a Retry exception; the other
+thread will have succeeded.
+
+    >>> (task1.traceback is None) != (task2.traceback is None)
+    True
+    >>> print task1.traceback or task2.traceback
+    Traceback (most recent call last):
+    ...
+    Retry: ...
+
 
 Cleanup:
 

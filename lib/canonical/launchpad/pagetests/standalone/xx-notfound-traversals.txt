@@ -127,6 +127,8 @@ spider -- StuartBishop 20050822
 >>> check("/distros/ubuntu/+addbounty", auth=True)
 >>> check("/distros/ubuntu/+addspec", auth=True)
 >>> check("/distros/ubuntu/+source/evolution/+bugs")
+>>> check_redirect("/distros/ubuntu/+source/evolution/+editbugcontact")
+>>> check("/distros/ubuntu/+source/evolution/+subscribe", auth=True)
 >>> check("/distros/ubuntu/hoary/i386/pmount/0.1-1")
 
 >>> check("/distros/kubuntu/+bugs")
@@ -159,7 +161,7 @@ spider -- StuartBishop 20050822
 #>>> check("/distros/ubuntu/hoary/+source/evolution/+hctstatus")
 
 >>> check("/distros/ubuntu/hoary/+source/evolution/+changelog")
->>> check("/distros/ubuntu/hoary/+source/evolution/+buildlog")
+>>> check_not_found("/distros/ubuntu/hoary/+source/evolution/+buildlog")
 >>> check("/distros/ubuntu/hoary/+source/evolution/+packaging", auth=True)
 >>> check("/distros/ubuntu/hoary/+source/evolution/+gethelp")
 >>> check("/distros/ubuntu/hoary/+source/evolution/+translate")
@@ -338,3 +340,6 @@ And this is for a person:
 >>> check_not_found(
 ...     '/distros/ubuntu/hoary/+sources/evolution/+pots/evolution-2.2/xxxx')
 
+
+Soyuz pages
+>>> check("/+builds/+build/7/pmount/")

@@ -94,6 +94,11 @@ class ShippingRequest(SQLBase):
     recipientdisplayname = StringCol(notNull=True)
 
     @property
+    def recipient_email(self):
+        """See IShippingRequest"""
+        return self.recipient.preferredemail.email
+
+    @property
     def shipment(self):
         """See IShippingRequest"""
         return Shipment.selectOneBy(requestID=self.id)
@@ -261,13 +266,13 @@ class ShippingRequestSet:
 
     def getUnshippedRequests(self, priority):
         """See IShippingRequestSet"""
-        query = ('ShippingRequest.cancelled = false AND '
-                 'ShippingRequest.approved = true AND '
-                 'ShippingRequest.id NOT IN (SELECT request from Shipment) ')
+        query = ('ShippingRequest.cancelled IS FALSE AND '
+                 'ShippingRequest.approved IS TRUE AND '
+                 'ShippingRequest.id NOT IN (SELECT request FROM Shipment) ')
         if priority == ShippingRequestPriority.HIGH:
-            query += 'AND ShippingRequest.highpriority = true'
+            query += 'AND ShippingRequest.highpriority IS TRUE'
         elif priority == ShippingRequestPriority.NORMAL:
-            query += 'AND ShippingRequest.highpriority = false'
+            query += 'AND ShippingRequest.highpriority IS FALSE'
         else:
             # Nothing to filter, return all unshipped requests.
             pass
@@ -297,19 +302,19 @@ class ShippingRequestSet:
         if recipient_text:
             recipient_text = recipient_text.lower()
             queries.append("""
-                ShippingRequest.fti @@ ftq(%s) OR recipient IN 
+                (ShippingRequest.fti @@ ftq(%s) OR recipient IN 
                     (
                     SELECT Person.id FROM Person 
                         WHERE Person.fti @@ ftq(%s)
                     UNION
                     SELECT EmailAddress.person FROM EmailAddress
                         WHERE lower(EmailAddress.email) LIKE %s || '%%'
-                    )
+                    ))
                 """ % (quote(recipient_text), quote(recipient_text),
                        quote_like(recipient_text)))
 
         if omit_cancelled:
-            queries.append("ShippingRequest.cancelled = FALSE")
+            queries.append("ShippingRequest.cancelled IS FALSE")
 
         if status == ShippingRequestStatus.APPROVED:
             queries.append("ShippingRequest.approved IS TRUE")
@@ -401,7 +406,7 @@ class ShippingRequestSet:
         csv_file = StringIO()
         csv_writer = csv.writer(csv_file)
         header = ['Country', 'Shipped x86 CDs', 'Shipped AMD64 CDs',
-                  'Shipped PPC CDs', 'Normal-prio shipments', 
+                  'Shipped PPC CDs', 'Normal-prio shipments',
                   'High-prio shipments', 'Average request size',
                   'Percentage of requested CDs that were approved',
                   'Percentage of total shipped CDs', 'Continent']
@@ -423,12 +428,12 @@ class ShippingRequestSet:
                 country=country, approved=False)
 
             high_prio_orders = ShippingRequest.select(
-                base_query + " AND highpriority = TRUE",
+                base_query + " AND highpriority IS TRUE",
                 clauseTables=clauseTables)
             high_prio_count = intOrZero(high_prio_orders.count())
 
             normal_prio_orders = ShippingRequest.select(
-                base_query + " AND highpriority = FALSE",
+                base_query + " AND highpriority IS FALSE",
                 clauseTables=clauseTables)
             normal_prio_count = intOrZero(normal_prio_orders.count())
 

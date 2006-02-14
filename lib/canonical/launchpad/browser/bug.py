@@ -409,6 +409,12 @@ class BugTextView(LaunchpadView):
         text.append('bug: %d' % bug.id)
         text.append('title: %s' % bug.title)
         text.append('reporter: %s' % self.person_text(bug.owner))
+
+        if bug.duplicateof:
+            text.append('duplicate-of: %d' % bug.duplicateof.id)
+        else:
+            text.append('duplicate-of: ')
+
         text.append('subscribers: ')
 
         for subscription in bug.subscriptions:

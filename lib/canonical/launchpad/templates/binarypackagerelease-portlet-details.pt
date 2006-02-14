@@ -11,9 +11,6 @@
        tal:attributes="href context/distributionsourcepackagerelease/fmt:url"
        >apache2 2.1-3</a><br />
 
-    <b>Status:</b>
-    <span tal:replace="context/status" /><br />
-
     <b>Component:</b>
     <span tal:replace="context/component/name" /><br />
 

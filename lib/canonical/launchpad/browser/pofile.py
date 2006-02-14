@@ -236,10 +236,12 @@ This only needs to be done once per language. Thanks for helping Rosetta.
 
     @property
     def second_lang_code(self):
-        second_lang_code = self.form.get('alt', None)
-        if (second_lang_code is None and
+        second_lang_code = self.form.get('alt', '')
+        if (second_lang_code == '' and
             self.context.language.alt_suggestion_language is not None):
             return self.context.language.alt_suggestion_language.code
+        elif second_lang_code == '':
+            return None
         else:
             return second_lang_code
 
@@ -390,7 +392,7 @@ This only needs to be done once per language. Thanks for helping Rosetta.
 
         dispatch_table = {
             'pofile_upload': self._upload,
-            'pofile_translation_filter': self._empty,
+            'pofile_translation_filter': self._filter_translations,
             'submit_translations': self._store_translations
             }
         dispatch_to = [(key, method)
@@ -404,9 +406,10 @@ This only needs to be done once per language. Thanks for helping Rosetta.
         key, method = dispatch_to[0]
         method()
 
-    def _empty(self):
-        """Foo."""
-        raise AssertionError
+    def _filter_translations(self):
+        """Handle a form submission to filter translations."""
+        # We need to redirect to the new URL based on the new given arguments.
+        self.request.response.redirect(self.createURL())
 
     def _upload(self):
         """Handle a form submission to request a .po file upload."""
