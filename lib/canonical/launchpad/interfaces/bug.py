@@ -249,8 +249,11 @@ class IBugAddForm(IBug):
             vocabulary="BinaryAndSourcePackageName")
     distribution = Choice(
             title=_("Linux Distribution"), required=True,
-            description=_("""Ubuntu, Debian, Gentoo, etc."""),
-            vocabulary="Distribution")
+            description=_(
+                "Ubuntu, Debian, Gentoo, etc. You can file bugs only on "
+                "distrubutions using Malone as their primary bug "
+                "tracker."),
+            vocabulary="DistributionUsingMalone")
     owner = Int(title=_("Owner"), required=True)
     comment = Text(title=_('Description'), required=True,
             description=_("""A detailed description of the problem you are
