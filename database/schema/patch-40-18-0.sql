@@ -6,5 +6,9 @@ CREATE INDEX mirrorproberecord__date_created__idx
 CREATE INDEX mirrorproberecord__distribution_mirror__idx
     ON MirrorProbeRecord(distribution_mirror);
 
+DROP INDEX person_sorting_idx;
+
+CREATE INDEX person_sorting_idx ON Person(person_sort_key(displayname, name));
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (40, 18, 0);
 
