@@ -116,3 +116,46 @@ And check if the Hoary Distro Release is there on the Bug Task
   ...
   ...Ubuntu Hoary...
   ...
+
+
+At the same time we add a distribution task we can add a bug watch.
+
+  >>> print http(r"""
+  ... POST /products/ubuntu/+bug/2/+distrotask HTTP/1.1
+  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
+  ... Content-Type: multipart/form-data; boundary=----------LLLhDjs6zpGD97MukmFYsQ
+  ... 
+  ... ------------LLLhDjs6zpGD97MukmFYsQ
+  ... Content-Disposition: form-data; name="field.distribution"
+  ... 
+  ... debian
+  ... ------------LLLhDjs6zpGD97MukmFYsQ
+  ... Content-Disposition: form-data; name="field.distribution-empty-marker"
+  ... 
+  ... 1
+  ... ------------LLLhDjs6zpGD97MukmFYsQ
+  ... Content-Disposition: form-data; name="field.sourcepackagename"
+  ... 
+  ... evolution
+  ... ------------LLLhDjs6zpGD97MukmFYsQ
+  ... Content-Disposition: form-data; name="field.bugtracker"
+  ... 
+  ... 2
+  ... ------------LLLhDjs6zpGD97MukmFYsQ
+  ... Content-Disposition: form-data; name="field.bugtracker-empty-marker"
+  ... 
+  ... 1
+  ... ------------LLLhDjs6zpGD97MukmFYsQ
+  ... Content-Disposition: form-data; name="field.remotebug"
+  ... 
+  ... 12345
+  ... ------------LLLhDjs6zpGD97MukmFYsQ
+  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... 
+  ... Continue
+  ... ------------LLLhDjs6zpGD97MukmFYsQ--
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/distros/debian/+source/evolution/+bug/2
+  ...
