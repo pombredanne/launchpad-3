@@ -16,7 +16,7 @@ Test if a submit with a big msgid string breaks Rosetta
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate
+  Location: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?offset=30
   <BLANKLINE>
 
 

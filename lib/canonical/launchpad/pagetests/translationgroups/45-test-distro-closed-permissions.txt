@@ -45,7 +45,7 @@ POST and see that all goes well:
   HTTP/1.1 303 See Other
   Content-Length: 0
   ...
-  Location: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?offset=10
+  Location: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+translate?offset=10
   <BLANKLINE>
 
 And finally, let's take a look again, and we should have a translation or
