@@ -1,3 +1,9 @@
+== Upload processing queue with translations ==
+
+This test will check the upload of translations after a build.
+
+First, we do some needed imports.
+
   >>> from canonical.launchpad.database import (
   ...     ProcessorFamily, Component, GPGKey, Section, Manifest,
   ...     SecureSourcePackagePublishingHistory)
@@ -32,18 +38,28 @@
   >>> from canonical.launchpad.ftests import import_public_test_keys
   >>> import_public_test_keys()
 
+Login as an admin.
+
   >>> login('foo.bar@canonical.com')
+
+We need to setup our test environment and create the needed objects.
 
   >>> distro_release_set = getUtility(IDistroReleaseSet)
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
 
   >>> hoary = distro_release_set.queryByName(ubuntu, 'hoary')
 
+Create the Dapper distro release.
+
   >>> dapper = distro_release_set.new( ubuntu, 'dapper', 'Dapper', 'Dapper',
   ...     'Dapper', 'Dapper', '06.04', hoary, hoary.owner)
 
+And an AMD 64 arch release.
+
   >>> dapper_amd64 = dapper.newArch('amd64', ProcessorFamily.get(3), True,
   ...     dapper.owner)
+
+We are going to import the pmount build.
 
   >>> pmount_sourcepackagename = getUtility(ISourcePackageNameSet)['pmount']
   >>> source_package_release = dapper.createUploadedSourcePackageRelease(
@@ -61,6 +77,8 @@
   ...     datecreated=UTC_NOW,
   ...     pocket=PackagePublishingPocket.RELEASE,
   ...     embargo=False)
+
+Do the upload into the system.
 
   >>> pmount_upload = NascentUpload(findPolicyByName('buildd'),
   ...     datadir(''), "pmount_0.9.7-2ubuntu2_amd64.changes", MockLogger())
@@ -90,6 +108,8 @@
   DEBUG: pmount: (binary) NEW
   DEBUG: Finished checking upload.
 
+It was not rejected.
+
   >>> pmount_upload.rejected
   False
 
@@ -98,18 +118,33 @@
   DEBUG: Changes file is unsigned, skipping mails
   DEBUG: Creating a New queue entry
 
+And all things worked.
+
   >>> success
   True
+
+Check the import queue content, it should be empty.
+
+  >>> from canonical.launchpad.interfaces import ITranslationImportQueue
+  >>> translation_import_queue = getUtility(ITranslationImportQueue)
+  >>> len(translation_import_queue)
+  0
+
+We need to commit the transaction to be able to use the librarian files.
+
+  >>> import transaction
+  >>> transaction.commit()
+
+Do the publish. This is going to do the translation upload into the import
+queue.
 
   >>> from canonical.lp.dbschema import DistroReleaseQueueStatus
   >>> queue_item = dapper.getQueueItems(status=DistroReleaseQueueStatus.NEW)[0]
   >>> queue_item.customfiles[0].publish()
 
-  >>> from canonical.launchpad.interfaces import ITranslationImportQueue
-  >>> translation_import_queue = getUtility(ITranslationImportQueue)
-  >>> len(translation_import_queue)
+And now, we have exactly the 10 entries imported by pmount.
 
-  >>> import transaction
-  >>> transaction.abort()
+  >>> len(translation_import_queue)
+  10
 
   >>> LibrarianTestSetup().tearDown()
