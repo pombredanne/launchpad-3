@@ -281,7 +281,7 @@ Reason:
         """
         assert self.order is None
         self.orderCreated = True
-        all_fields = (self.shipping_fields + 
+        all_fields = (self.shipping_fields +
                       ['quantityx86', 'quantityamd64', 'quantityppc', 'reason'])
         kw = {}
         for field in all_fields:
@@ -694,7 +694,8 @@ class ShippingRequestAdminView:
         shipped_requests = self.context.recipient.shippedShipItRequests()
         if not shipped_requests:
             return False
-        elif len(shipped_requests) == 1 and shipped_requests[0] == self.context:
+        elif (shipped_requests.count() == 1 
+              and shipped_requests[0] == self.context):
             return False
         else:
             return True

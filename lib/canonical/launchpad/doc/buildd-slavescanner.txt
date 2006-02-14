@@ -11,7 +11,7 @@ automaticaly dispatch new jobs to idle slaves.
 The Master side of Buildd requires access to Launchpad Database, the
 user designed for this kind of access is 'fiera', as in all test the
 transaction should be retrieved.
- 
+
   >>> import transaction
 
 The master also requires an 'logging' instance to not compromise the
@@ -33,15 +33,15 @@ Select a sigle DistroArchRelease
   >>> archrelease = DistroArchRelease.get(1)
 
 Create an empty BuilderGroup object
-  
+
   >>> from canonical.launchpad.scripts.builddmaster import BuilderGroup
   >>> buildergroup = BuilderGroup(logging.getLogger(), transaction)
-  
+
 Mock Builder, a class to emulate the Builder behaviour:
 
   >>> class MockBuilder:
   ...     def __init__(self, name, slave):
-  ...         self.slave = slave 
+  ...         self.slave = slave
   ...         self.builderok = True
   ...         self.manual = False
   ...         self.url = 'http://fake:0000'
@@ -53,12 +53,12 @@ Mock Builder, a class to emulate the Builder behaviour:
 
 Let's play with a BuilderGroup method designed to rescue build slaves
 that are processing unknown jobs. In real conditions, this situation
-only happens if the slave is processing deleted or modified BuildQueue 
+only happens if the slave is processing deleted or modified BuildQueue
 entry, since Build entries are never removed. It might be caused by
-exceptions in slavescanner or queuebuilder scripts. 
+exceptions in slavescanner or queuebuilder scripts.
 
 When we figured this situation out, the procedure to rescue is to
-request the slave XMLRPC method 'clean', reseting the slave completely. 
+request the slave XMLRPC method 'clean', reseting the slave completely.
 
 We figured out if the building information is correct and sane by
 checking the job identifier field from status message information,
@@ -66,13 +66,13 @@ which consists of "<Build.id>-<BuildQueue.id>".
 
 First let's emulate a sane and a lost slave. The SaneSlave returns a
 job identifier that exists in our sampledata, but the LostSlave
-returns a completly bogus one. 
+returns a completly bogus one.
 
 The the mock slave.clean() method is modified to print a message for
-testing purposes.  
+testing purposes.
 
 Initializing the sane_builder. It was not rescued, since the job
-identifier is sane (Build.id == 2 and BuildQueue.id == 1 exist): 
+identifier is sane (Build.id == 2 and BuildQueue.id == 1 exist):
 
   >>> class SaneBuildingSlave:
   ...     def status(self):
@@ -80,7 +80,7 @@ identifier is sane (Build.id == 2 and BuildQueue.id == 1 exist):
   ...     def clean(self):
   ...         print 'Rescuing SaneSlave'
 
-  >>> sanebuilding_builder = MockBuilder('Sane Building Slave', 
+  >>> sanebuilding_builder = MockBuilder('Sane Building Slave',
   ...                                    SaneBuildingSlave())
 
   >>> assert buildergroup.rescueBuilderIfLost(sanebuilding_builder) is None
@@ -93,7 +93,7 @@ A sane WAITING slave:
   ...     def clean(self):
   ...         print 'Rescuing SaneSlave'
 
-  >>> sanewaiting_builder = MockBuilder('Sane Waiting Slave', 
+  >>> sanewaiting_builder = MockBuilder('Sane Waiting Slave',
   ...                                   SaneWaitingSlave())
 
   >>> assert buildergroup.rescueBuilderIfLost(sanewaiting_builder) is None
@@ -106,7 +106,7 @@ A sane WAITING slave but with wrong BuildQueue/Build relation:
   ...     def clean(self):
   ...         pass
 
-  >>> sanewaiting_builder = MockBuilder('Sane Waiting Slave', 
+  >>> sanewaiting_builder = MockBuilder('Sane Waiting Slave',
   ...                                   SaneWaitingSlave())
 
   >>> buildergroup.rescueBuilderIfLost(sanewaiting_builder)
@@ -124,7 +124,7 @@ Build/BuildQueue entries. first a lost slave in status 'BUILDING':
   ...     def clean(self):
   ...         pass
 
-  >>> lostbuilding_builder = MockBuilder('Lost Building Slave', 
+  >>> lostbuilding_builder = MockBuilder('Lost Building Slave',
   ...                                    LostBuildingSlave())
 
   >>> buildergroup.rescueBuilderIfLost(lostbuilding_builder)
@@ -138,7 +138,7 @@ Then a lost slave in status 'WAITING':
   ...     def clean(self):
   ...         pass
 
-  >>> lostwaiting_builder = MockBuilder('Lost Waiting Slave', 
+  >>> lostwaiting_builder = MockBuilder('Lost Waiting Slave',
   ...                                    LostWaitingSlave())
 
   >>> buildergroup.rescueBuilderIfLost(lostwaiting_builder)
@@ -207,16 +207,16 @@ slave has the requested file in cache.
 
   >>> builder2 = MockBuilder('Idle Slave', OkSlave())
 
-  >>> builder3 = MockBuilder('Package Failed', 
+  >>> builder3 = MockBuilder('Package Failed',
   ...                        WaitingSlave('BuildStatus.PACKAGEFAIL'))
 
-  >>> builder4 = MockBuilder('Missed Dependency build', 
+  >>> builder4 = MockBuilder('Missed Dependency build',
   ...                        WaitingSlave('BuildStatus.DEPFAIL'))
 
-  >>> builder5 = MockBuilder('Bad Chroot', 
+  >>> builder5 = MockBuilder('Bad Chroot',
   ...                        WaitingSlave('BuildStatus.CHROOTFAIL'))
 
-  >>> builder6 = MockBuilder('I am out of order', 
+  >>> builder6 = MockBuilder('I am out of order',
   ...                        WaitingSlave('BuildStatus.BUILDERFAIL'))
 
   >>> builder7 = MockBuilder('I am busy', BuildingSlave())
@@ -226,7 +226,7 @@ slave has the requested file in cache.
   >>> builder9 = MockBuilder('I am trying to terminate the child process',
   ...                        AbortingSlave())
 
-  >>> builder10 = MockBuilder('Package Successfully Built', 
+  >>> builder10 = MockBuilder('Package Successfully Built',
   ...                         WaitingSlave('BuildStatus.OK'))
 
 
@@ -243,12 +243,12 @@ slave has the requested file in cache.
   >>> class MockBuild:
   ...     def __init__(self):
   ...         self.id = None
-  ...         self.buildstate = None 
+  ...         self.buildstate = None
   ...         self.builder = None
   ...         self.datebuilt = None
   ...         self.buildduration = None
   ...         self.buildlog = None
-  
+
   >>> import datetime, pytz
   >>> UTC = pytz.timezone('UTC')
 
@@ -257,7 +257,7 @@ slave has the requested file in cache.
   ...         self.id = id
   ...         self.builder = builder
   ...         self.build = build
-  ...         self.buildstart = datetime.datetime(2005, 1, 1, 8, 0, 0, 
+  ...         self.buildstart = datetime.datetime(2005, 1, 1, 8, 0, 0,
   ...                                             tzinfo=UTC)
   ...         self.name = "unimportant-name"
   ...         self.files = []
@@ -282,7 +282,7 @@ available (single test running) setup one only for local use.
   >>> import socket
   >>> socket.setdefaulttimeout(1)
 
- 
+
   >>> LOCAL_LIBRARIAN = False
 
   >>> try:
@@ -299,7 +299,7 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
   We are not able to test succesfully built packages, but we can test
   all other states:
 
-  WAITING - PACKAGEFAIL -> Package has failed to build, notice from 
+  WAITING - PACKAGEFAIL -> Package has failed to build, notice from
   builder is stored, but Build.buildstate is mark as 'Failed to Build':
 
   >>> bqItem3 = MockBuildQueue(1, builder3, MockBuild())
@@ -338,7 +338,7 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
   'Chroot problem'
 
   WAITING - BUILDERFAIL -> builder has failed by internal error, job is
-  available for next build round:  
+  available for next build round:
 
   >>> bqItem6 = MockBuildQueue(1, builder6, MockBuild())
   >>> buildergroup.updateBuild(bqItem6, librarian)
@@ -369,7 +369,7 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
   >>> assert bqItem8.builder is None
 
   ABORTING -> builder is trying to terminate its children process, the
-  only action master can perform is polling the slave status until it gets 
+  only action master can perform is polling the slave status until it gets
   ABORTED
 
   >>> bqItem9 = MockBuildQueue(1, builder9, MockBuild())
@@ -395,9 +395,9 @@ Setup also a Librarian client to check indenpendent updateBuild() mechanism:
 The buildlog is collected and compressed locally using gzip algorithm,
 let's see how this method works:
 
-  >>> logfile_alias = buildergroup.getLogFromSlave(builder10.slave, 
+  >>> logfile_alias = buildergroup.getLogFromSlave(builder10.slave,
   ...                                              "1-1", librarian)
-  
+
   >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
 
   >>> logfile = getUtility(ILibraryFileAliasSet)[logfile_alias]
@@ -408,7 +408,7 @@ let's see how this method works:
   Force Librarian to write down the stuff
   XXX cprov 20051010: is this a bug on librarian_client API ?
   >>> transaction.commit()
- 
+
 Since LibrarianFileAlias does not implement required attributes for
 gzip.open() (like tell() or seek()) we are obligated to read it again
 in our filesystem.
@@ -440,7 +440,7 @@ filesystem before uncompress.
 BuilddMaster class:
 
   >>> bm = BuilddMaster(logging.getLogger(), transaction)
-  
+
 As we do when building the BuildQueue entries we need to recognise
 all available distroarchrelease and figure out which slave builder
 is able to build stuff properly for that one
@@ -459,7 +459,7 @@ is able to build stuff properly for that one
   WARNING:root:Disabling: No CHROOT found for The Hoary Hedgehog Release for i386 (x86) pocket 'Release'
   Unable to setup builder for ubuntu/hoary/i386.
   WARNING:root:Disabling: No CHROOT found for WOODY for i386 (x86) pocket 'Release'
-  Unable to setup builder for debian/woody/i386.              
+  Unable to setup builder for debian/woody/i386.
 
 Since we don't have any builder available yet and the ETA to have
 seems to be a little far, the next output are boring.
@@ -476,12 +476,12 @@ the Launchpad DB.
 Create a list of jobs separated by processor to turn the dispatch
 process easier, than ry to dispatch them according his processor and
 the available builder slaves at moment.
-  
-  >>> byproc = bm.sortAndSplitByProcessor()        
+
+  >>> byproc = bm.sortAndSplitByProcessor()
   >>> for proc, queueItems in byproc.iteritems():
   ...     bm.dispatchByProcessor(proc, queueItems)
 
-Create a totally bogus but usable Chroot 
+Create a totally bogus but usable Chroot
 
   >>> from canonical.lp import dbschema
   >>> from canonical.launchpad.database import LibraryFileAlias
@@ -491,7 +491,7 @@ Create a totally bogus but usable Chroot
   >>> p = PocketChroot(distroarchreleaseID=archrelease.id,
   ...                  pocket=pocket, chroot=chroot)
 
-Initialize BuildQueue missing attributes for building: 
+Initialize BuildQueue missing attributes for building:
 
   >>> bqItem3.version = 'Demo'
   >>> bqItem3.archrelease = archrelease
@@ -508,4 +508,4 @@ Remove locally installed Librarian server if necessary
 
   >>> if LOCAL_LIBRARIAN:
   ...     LibrarianTestSetup().tearDown()
-  ...     socket.setdefaulttimeout(None) 
+  ...     socket.setdefaulttimeout(None)

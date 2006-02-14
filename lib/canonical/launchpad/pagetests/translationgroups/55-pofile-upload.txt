@@ -1,5 +1,18 @@
 
-First make sure we can see the page.
+First, make sure we can see the page.
+
+Try to get the page when unauthenticated.
+
+  >>> print http(r"""
+  ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
+  ... """)
+  HTTP/1.1 303 See Other
+  ...
+  Location: http://localhost:9000/distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload/+login
+  ...
+  <BLANKLINE>
+
+And now with valid credentials.
 
   >>> print http(r"""
   ... GET /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
@@ -8,11 +21,33 @@ First make sure we can see the page.
   HTTP/1.1 200 Ok
   ...Afrikaans (af) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
 
+Now hit the upload button, but without giving a file for upload. We get an
+error message back.
+
+  >>> print http(r"""
+  ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
+  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
+  ... Content-Type: multipart/form-data; boundary=---------------------------210878615045361411296034445
+  ... 
+  ... -----------------------------210878615045361411296034445
+  ... Content-Disposition: form-data; name="file"; filename=""
+  ... Content-Type: application/octet-stream
+  ... 
+  ... 
+  ... -----------------------------210878615045361411296034445
+  ... Content-Disposition: form-data; name="pofile_upload"
+  ... 
+  ... Upload
+  ... -----------------------------210878615045361411296034445--
+  ... """)
+  HTTP/1.1 200 Ok
+  ...Ignored your upload because you didn't select a file to upload...
+  ...
+
 Now let's upload one that is published.
 
   >>> print http(r"""
   ... POST /distros/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.7,af;q=0.3
   ... Content-Length: 1452
   ... Content-Type: multipart/form-data; boundary=---------------------------107090301610607307082078743785
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
@@ -51,17 +86,9 @@ Now let's upload one that is published.
   ... 
   ... on
   ... -----------------------------107090301610607307082078743785
-  ... Content-Disposition: form-data; name="UPLOAD"
+  ... Content-Disposition: form-data; name="pofile_upload"
   ... 
   ... Upload
-  ... -----------------------------107090301610607307082078743785
-  ... Content-Disposition: form-data; name="pluralforms"
-  ... 
-  ... 2
-  ... -----------------------------107090301610607307082078743785
-  ... Content-Disposition: form-data; name="expression"
-  ... 
-  ... n != 1
   ... -----------------------------107090301610607307082078743785--
   ... """)
   HTTP/1.1 200 Ok
@@ -107,17 +134,9 @@ And one that is not published.
   ... msgstr "Hierdie program loop as prosesnommer %d."
   ... 
   ... -----------------------------14904033691485035791236536155
-  ... Content-Disposition: form-data; name="UPLOAD"
+  ... Content-Disposition: form-data; name="pofile_upload"
   ... 
   ... Upload
-  ... -----------------------------14904033691485035791236536155
-  ... Content-Disposition: form-data; name="pluralforms"
-  ... 
-  ... 2
-  ... -----------------------------14904033691485035791236536155
-  ... Content-Disposition: form-data; name="expression"
-  ... 
-  ... n != 1
   ... -----------------------------14904033691485035791236536155--
   ... """)
   HTTP/1.1 200 Ok

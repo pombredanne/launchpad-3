@@ -13,7 +13,8 @@ from zope.component import getUtility
 
 from canonical.lp import initZopeless, READ_COMMITTED_ISOLATION
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IRosettaApplication)
+    IDistributionSet, IRosettaApplication, IPersonSet
+    )
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, logger)
 from canonical.launchpad.scripts.lockfile import LockFile
@@ -69,6 +70,9 @@ def main(argv):
                 distrorelease.updateStatistics(ztm)
         rosetta_app = getUtility(IRosettaApplication)
         rosetta_app.updateStatistics(ztm)
+
+        getUtility(IPersonSet).updateStatistics(ztm)
+
         #ztm.commit() Content objects are responsible for committing.
         logger_object.debug('Finished the stats update')
         return 0

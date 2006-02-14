@@ -188,11 +188,11 @@ class SourcePackage:
             SourcePackageRelease.sourcepackagename = %d AND
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
-            DistroRelease.distribution = %d
+            DistroRelease.distribution = %d AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id
             ''' % (self.sourcepackagename.id, self.distribution.id),
-            clauseTables=['SourcePackagePublishingHistory'])
+            clauseTables=['DistroRelease', 'SourcePackagePublishingHistory'])
 
         # sort by debian version number
         return sorted(list(ret), key=lambda item: Version(item.version))
@@ -446,23 +446,35 @@ class SourcePackage:
 
     def getBuildRecords(self, status=None):
         """See IHasBuildRecords"""
-        query = """
-            Build.sourcepackagerelease = SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename = %s AND
-            SourcePackagePublishingHistory.distrorelease = %s AND
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id
-            """ % sqlvalues(self.sourcepackagename.id, self.distrorelease.id)
+        clauseTables=['SourcePackageRelease',
+                      'SourcePackagePublishingHistory']
+        orderBy = ["-datebuilt"]
+
+        condition_clauses = ["""
+        Build.sourcepackagerelease = SourcePackageRelease.id AND
+        SourcePackageRelease.sourcepackagename = %s AND
+        SourcePackagePublishingHistory.distrorelease = %s AND
+        SourcePackagePublishingHistory.sourcepackagerelease =
+        SourcePackageRelease.id
+        """ % sqlvalues(self.sourcepackagename.id, self.distrorelease.id)]
 
         # exclude gina-generated builds
         # buildstate == FULLYBUILT && datebuilt == null
-        query += (" AND NOT (Build.buildstate=%s AND Build.datebuilt is NULL)"
-                  % sqlvalues(BuildStatus.FULLYBUILT))
+        condition_clauses.append(
+            "NOT (Build.buildstate=%s AND Build.datebuilt is NULL)"
+            % sqlvalues(BuildStatus.FULLYBUILT))
 
         if status is not None:
-            query += "AND Build.buildstate=%s" % sqlvalues(status)
+            condition_clauses.append("Build.buildstate=%s"
+                                     % sqlvalues(status))
 
-        return Build.select(
-            query, clauseTables=['SourcePackageRelease',
-                                 'SourcePackagePublishingHistory'],
-            orderBy="-datebuilt")
+        # Order NEEDSBUILD by lastscore, it should present the build
+        # in a more natural order.
+        if status == BuildStatus.NEEDSBUILD:
+            orderBy = "BuildQueue.lastscore"
+            clauseTables.append('BuildQueue')
+            condition_clauses.append('BuildQueue.build = Build.id')
+
+
+        return Build.select(' AND '.join(condition_clauses),
+                            clauseTables=clauseTables, orderBy=orderBy)
