@@ -11,7 +11,7 @@ from sqlobject import StringCol, ForeignKey, IntCol, MultipleJoin, BoolCol
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues, quote_like
 
 from canonical.launchpad.interfaces import (
-    IBinaryPackageRelease, IBinaryPackageReleaseSet, NotFoundError)
+    IBinaryPackageRelease, IBinaryPackageReleaseSet)
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -108,23 +108,6 @@ class BinaryPackageRelease(SQLBase):
 
         return shortlist(BinaryPackageRelease.select(
             query, clauseTables=clauseTables, distinct=True))
-
-    @property
-    def status(self):
-        """Returns the BinaryPackageRelease Status."""
-        # XXX: dsilvers: 20050901: This entire method is a wrong. It shouldn't
-        # exist like this because a BinaryPackageRelease is likely to be in
-        # more than one DistroArchRelease as time goes by. In particular it
-        # may be inherited.
-        # This method should be considered for removal when BinaryPackage is
-        # reworked properly.
-        packagepublishing = BinaryPackagePublishing.selectOneBy(
-            binarypackagereleaseID=self.id,
-            distroarchreleaseID=self.build.distroarchrelease.id)
-        if packagepublishing is None:
-            raise NotFoundError('BinaryPackageRelease not found in '
-                                'PackagePublishing')
-        return packagepublishing.status.title
 
     def addFile(self, file):
         """See IBinaryPackageRelease."""

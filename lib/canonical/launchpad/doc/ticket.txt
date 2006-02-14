@@ -160,12 +160,13 @@ ITicket
 -------
 
 Now we take a look at a ticket and see what we can do with it.
-Sample Person was the one who filed the ticket, so he can close the
+Sample Person was the one who filed the ticket, so he can reject the
 ticket if he thinks it's not relevant anymore:
 
-    >>> firefox_ticket.mark_resolved(sample_person)
+    >>> firefox_ticket.reject(sample_person)
+    True
     >>> firefox_ticket.status.title
-    'Closed'
+    'Rejected'
 
 He can also reopen it:
 
@@ -174,15 +175,28 @@ He can also reopen it:
     >>> firefox_ticket.status.title
     'Open'
 
-Now let's log in as another, non admin, to show that anyone can edit a
+Now let's log in as another, non admin, user to show that anyone can edit a
 ticket. First of all the title and description don't say much about the
 problem, so let's ask Sample Person to clarify.
 
     >>> login('no-priv@canonical.com')
     >>> no_priv = getUtility(ILaunchBag).user
+
+    >>> import pytz
+    >>> from datetime import datetime, timedelta
+    >>> now_plus_one_hour = (
+    ...     datetime.now(pytz.timezone('UTC')) + timedelta(hours=1))
+
     >>> comment = firefox_ticket.newMessage(
     ...     no_priv, firefox_ticket.followup_subject,
-    ...     'Could you please describe what the problem is?')
+    ...     'Could you please describe what the problem is?',
+    ...     when=now_plus_one_hour)
+
+When some other Person than the submitter comments on a ticket,
+datelastresponse gets set to the comment's creation date.
+
+    >>> firefox_ticket.datelastresponse == now_plus_one_hour
+    True
 
 We also assign the ticket to ourselves to show that we're working on
 the issue.
@@ -191,12 +205,22 @@ the issue.
 
 Sample Person replies:
 
+    >>> now_plus_two_hours = now_plus_one_hour + timedelta(hours=1)
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(ILaunchBag).user
     >>> comment = firefox_ticket.newMessage(
     ...     sample_person, firefox_ticket.followup_subject,
     ...     'When I start Firefox, all I get is a blank page. I want to '
-    ...     'have a search page at start-up?')
+    ...     'have a search page at start-up?',
+    ...     when=now_plus_two_hours)
+
+When the submitter adds a comment, datelastquery gets set to the
+comment's date:
+
+    >>> firefox_ticket.datelastresponse == now_plus_one_hour
+    True
+    >>> firefox_ticket.datelastquery == now_plus_two_hours
+    True
 
 Now it's clear what the problem is, so let's edit the title and
 description to describe the problem:
@@ -213,15 +237,56 @@ Let's help Sample Person with his problem by providing an answer:
     ...     no_priv, firefox_ticket.followup_subject,
     ...     "Go to 'http://www.google.com', enter the preferences "
     ...     "dialog, and choose 'Use Current Page'.")
-    >>> firefox_ticket.mark_resolved(no_priv)
-    >>> firefox_ticket.status.title
-    'Answered'
 
 Sample Person is happy with the answer, so he closes the ticket:
 
     >>> login('test@canonical.com')
+    >>> now_plus_three_hours = now_plus_two_hours + timedelta(hours=1)
     >>> comment = firefox_ticket.newMessage(
-    ...     sample_person, firefox_ticket.followup_subject, 'Thanks!')
-    >>> firefox_ticket.mark_resolved(sample_person)
+    ...     sample_person, firefox_ticket.followup_subject, 'Thanks!',
+    ...     when=now_plus_three_hours)
+    >>> firefox_ticket.acceptAnswer(sample_person, when=now_plus_three_hours)
     >>> firefox_ticket.status.title
-    'Closed'
+    'Answered'
+
+Since No Privileges Person was the last, non-submitter, to comment on
+the ticket, he's considered as the one who answered it:
+
+    >>> print firefox_ticket.answerer.displayname
+    No Privileges Person
+    >>> firefox_ticket.dateanswered == now_plus_three_hours
+    True
+
+If we create a new ticket, datecreated gets set to the current time:
+
+    >>> from canonical.launchpad.interfaces import ITicketSet
+
+    >>> new_ticket = getUtility(ITicketSet).new(
+    ...     title='New ticket', description='Ticket description.',
+    ...     owner=sample_person, product=firefox, when=now_plus_three_hours)
+    >>> new_ticket.datecreated == now_plus_three_hours
+    True
+
+
+ITicketSet
+----------
+
+ITicketSet can be used to get a ticket with a specific id:
+
+    >>> from canonical.launchpad.interfaces import ITicketSet
+    >>> ticket_one = getUtility(ITicketSet).get(1)
+    >>> ticket_one.title
+    u'Firefox cannot render Bank Site'
+
+If no ticket exists, a default value is returned:
+
+    >>> default = object()
+    >>> ticket_nonexistant = getUtility(ITicketSet).get(
+    ...     123456, default=default)
+    >>> ticket_nonexistant is default
+    True
+
+If no default value is given, None is returned:
+
+    >>> getUtility(ITicketSet).get(123456) is None
+    True

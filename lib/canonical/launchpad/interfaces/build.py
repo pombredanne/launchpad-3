@@ -11,9 +11,9 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.i18nmessageid import MessageIDFactory
 
-_ = MessageIDFactory('launchpad')
+from canonical.launchpad import _
+
 
 class IBuild(Interface):
     """A Build interface"""
@@ -60,7 +60,7 @@ class IBuild(Interface):
 
     def getBinaryPackageRelease(name):
         """Return the binary package from this build with the given name, or
-        raise IndexError if no such package exists.
+        raise NotFoundError if no such package exists.
         """
 
 

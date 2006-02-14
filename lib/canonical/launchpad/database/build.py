@@ -16,7 +16,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.launchpad.interfaces import (
-    IBuild, IBuildSet)
+    IBuild, IBuildSet, NotFoundError)
 
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
@@ -135,7 +135,7 @@ class Build(SQLBase):
         for binpkg in self.binarypackages:
             if binpkg.name == name:
                 return binpkg
-        raise IndexError, 'No binary package "%s" in build' % name
+        raise NotFoundError, 'No binary package "%s" in build' % name
 
     def createBinaryPackageRelease(self, binarypackagename, version,
                                    summary, description,
