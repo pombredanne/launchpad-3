@@ -259,7 +259,7 @@ class SourcePackageRelease(SQLBase):
         """See ISourcePackageRelease."""
         client = getUtility(ILibrarianClient)
 
-        tarball_file = client.getFileByAlias(tarball_alias)
+        tarball_file = client.getFileByAlias(tarball_alias.id)
         tarball = tarfile.open('', 'r', StringIO(tarball_file.read()))
 
         # Get the list of files to attach.
