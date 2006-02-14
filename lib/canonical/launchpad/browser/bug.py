@@ -19,6 +19,7 @@ __all__ = [
 from zope.app.form.interfaces import WidgetsError
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
+from zope.event import notify
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.webapp import (
@@ -29,9 +30,10 @@ from canonical.launchpad.interfaces import (
     NotFoundError)
 from canonical.launchpad.browser.addview import SQLObjectAddView
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.webapp import GeneralFormView, stepthrough
+from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import check_permission
 from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.webapp import GeneralFormView, stepthrough
 
 
 class BugSetNavigation(Navigation):
@@ -285,6 +287,7 @@ class BugAlsoReportInView(GeneralFormView):
             bug_watch = getUtility(IBugWatchSet).createBugWatch(
                 bug=taskadded.bug, owner=user, bugtracker=bugtracker,
                 remotebug=remotebug)
+            notify(SQLObjectCreatedEvent(bug_watch))
             if product is not None:
                 target = product
             elif distribution is not None:
@@ -295,6 +298,7 @@ class BugAlsoReportInView(GeneralFormView):
             if not target.official_malone:
                 taskadded.bugwatch = bug_watch
 
+        notify(SQLObjectCreatedEvent(taskadded))
         self._nextURL = canonical_url(taskadded)
         return ''
 

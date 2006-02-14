@@ -46,17 +46,30 @@ that product is required:
     >>> add_task_view.errors
     MissingInputError: ('product', 'Product', 'the field is required')
 
+In order to order to show that all the events get fired off, let's
+create an event listener and register it:
 
-If we specify a valid product, no errors will occur:
+    >>> from zope.interface import Interface
+    >>> from canonical.launchpad.ftests.event import TestEventListener
+    >>> from canonical.launchpad.event.interfaces import ISQLObjectCreatedEvent
+    >>> def on_created_event(object, event):
+    ...     print "SQLObjectCreatedEvent: %r" % object
+    >>> on_created_listener = TestEventListener(
+    ...     Interface, ISQLObjectCreatedEvent, on_created_event)
+
+
+If we specify a valid product, no errors will occur, and a bugtask will
+be created:
 
     >>> request = LaunchpadTestRequest(
     ...     form={'FORM_SUBMIT': '', 'field.product': 'thunderbird'})
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+upstreamtask', request)
     >>> add_task_view.process_form()
+    SQLObjectCreatedEvent: <BugTask at ...>
     ''
 
-In fact, an Evolution bug task was added to the bug:
+The Evolution bug task was added to the bug:
 
     >>> for bugtask in bug_four.bugtasks:
     ...     print bugtask.targetname
@@ -93,7 +106,10 @@ watch will be added:
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+upstreamtask', request)
     >>> add_task_view.process_form()
+    SQLObjectCreatedEvent: <BugWatch at ...>
+    SQLObjectCreatedEvent: <BugTask at ...>
     ''
+
     >>> for bugtask in bug_four.bugtasks:
     ...     print bugtask.targetname
     evolution (upstream)
@@ -123,7 +139,10 @@ will use the watch to keep track of its status:
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+upstreamtask', request)
     >>> add_task_view.process_form()
+    SQLObjectCreatedEvent: <BugWatch at ...>
+    SQLObjectCreatedEvent: <BugTask at ...>
     ''
+
     >>> for bugtask in bug_four.bugtasks:
     ...     print bugtask.targetname
     evolution (upstream)
@@ -140,3 +159,5 @@ will use the watch to keep track of its status:
     False
     >>> thunderbird_task.bugwatch == bug_four.watches[1]
     True
+
+    >>> on_created_listener.unregister()
