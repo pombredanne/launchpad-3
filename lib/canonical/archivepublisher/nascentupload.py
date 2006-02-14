@@ -921,15 +921,18 @@ class NascentUpload:
                     uploaded_file.filename,
                     self.changes['version']))
         else:
+            found = False
+
             # Try and find the source in the distrorelease.
             dr = self.policy.distrorelease
             spn = getUtility(ISourcePackageNameSet).getOrCreateByName(source)
-            releases = dr.getPublishedReleases(spn, self.policy.pocket)
-            found = False
+            releases = dr.getPublishedReleases(spn, self.policy.pocket,
+                                               include_pending=True)
             for spr in releases:
                 if spr.sourcepackagerelease.version == source_version:
                     self.policy.sourcepackagerelease = spr.sourcepackagerelease
                     found = True
+
             # If we didn't find it, try to find it in the queues...
             if not found:
                 # Obtain the ACCEPTED queue
@@ -944,7 +947,7 @@ class NascentUpload:
                         self.policy.sourcepackagerelease = (
                             qitem.sourcepackagerelease )
                         found = True
-                        
+
             if not found:
                 # XXX: dsilvers: 20051012: Perhaps check the NEW queue too?
                 # bug 3138
@@ -1822,7 +1825,10 @@ class NascentUpload:
             format=BinaryPackageFormat.DEB
             if uploaded_file.type == "udeb":
                 format=BinaryPackageFormat.UDEB
-            build = self.find_build(uploaded_file.architecture)
+            archtag = uploaded_file.architecture
+            if archtag == 'all':
+                archtag = self.changes_filename_archtag
+            build = self.find_build(archtag)
             component = getUtility(IComponentSet)[uploaded_file.component].id
             section = getUtility(ISectionSet)[uploaded_file.section].id
             # Also remember the control data for the uploaded file

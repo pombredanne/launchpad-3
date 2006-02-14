@@ -45,7 +45,7 @@ class PoppyTestSetup:
         flags = fcntl.fcntl(self.process.stdout.fileno(), fcntl.F_GETFL, 0)
         flags |= os.O_NONBLOCK
         fcntl.fcntl(self.process.stdout.fileno(), fcntl.F_SETFL, flags)
-        
+
     def killPoppy(self):
         """Kill the poppy instance dead."""
         if not self.alive:
