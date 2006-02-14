@@ -144,7 +144,7 @@ Let's add an ITeam as one of the bug contacts:
     >>> debian_firefox.addBugContact(ubuntu_team)
 
     >>> sorted([pbc.bugcontact.name for pbc in debian_firefox.bugcontacts])
-    [u'name12', u'name17']
+    [u'name12', u'ubuntu-team']
 
 To remove a bug contact, use IDistributionSourcePackage.removeBugContact:
 

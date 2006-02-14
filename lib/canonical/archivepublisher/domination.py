@@ -5,9 +5,6 @@
 # related to the domination of old source and binary releases inside
 # the publishing tables.
 
-from sourcerer.deb.version import (
-    Version as DebianVersion, BadUpstreamError)
-
 from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.database.constants import UTC_NOW
@@ -17,9 +14,10 @@ from canonical.launchpad.database import (
      SecureBinaryPackagePublishingHistory)
 
 from canonical.database.sqlbase import (
-    sqlvalues, flush_database_updates, _clearCache)
+    sqlvalues, flush_database_updates, _clearCache, cursor)
 
 import gc
+import apt_pkg
 
 def clear_cache():
     """Flush SQLObject updates and clear the cache."""
@@ -37,34 +35,32 @@ PENDINGREMOVAL = PackagePublishingStatus.PENDINGREMOVAL
 # For stayofexecution processing in judgeSuperseded
 from datetime import timedelta
 
-def _compare_source_packages_by_version(p1, p2):
+# Ugly, but works
+apt_pkg.InitSystem()
+
+def _compare_source_packages_by_version_and_date(p1, p2):
     """Compare packages p1 and p2 by their version; using Debian rules.
     
-    If we're unable to parse the version number as a debian version (E.g.
-    if it does not comply with policy but we had to import it anyway,
-    then we compare it directly as strings.
+    If the comparison is the same sourcepackagerelease, compare by datecreated
+    instead. So later records beat earlier ones.
     """
-    try:
-        v1 = DebianVersion(p1.sourcepackagerelease.version)
-        v2 = DebianVersion(p2.sourcepackagerelease.version)
-        return cmp(v1, v2)
-    except BadUpstreamError:
-        return cmp(p1, p2)
+    if p1.sourcepackagerelease.id == p2.sourcepackagerelease.id:
+        return cmp(p1.datecreated, p2.datecreated)
     
-def _compare_binary_packages_by_version(p1, p2):
+    return apt_pkg.VersionCompare(p1.sourcepackagerelease.version,
+                                  p2.sourcepackagerelease.version)
+
+def _compare_binary_packages_by_version_and_date(p1, p2):
     """Compare packages p1 and p2 by their version; using Debian rules
     
-    If we're unable to parse the version number as a debian version (E.g.
-    if it does not comply with policy but we had to import it anyway,
-    then we compare it directly as strings.
+    If the comparison is the same binarypackagerelease, compare by datecreated
+    instead. So later records beat earlier ones.
     """
-    try:
-        v1 = DebianVersion(p1.binarypackagerelease.version)
-        v2 = DebianVersion(p2.binarypackagerelease.version)
-        return cmp(v1, v2)
-    except BadUpstreamError:
-        return cmp(p1, p2)
+    if p1.binarypackagerelease.id == p2.binarypackagerelease.id:
+        return cmp(p1.datecreated, p2.datecreated)
 
+    return apt_pkg.VersionCompare(p1.binarypackagerelease.version,
+                                  p2.binarypackagerelease.version)
 
 class Dominator(object):
     """
@@ -183,9 +179,9 @@ class Dominator(object):
         for pkgname in outpkgs:
             if len(outpkgs[pkgname]) > 1:
                 if isSource:
-                    outpkgs[pkgname].sort(_compare_source_packages_by_version)
+                    outpkgs[pkgname].sort(_compare_source_packages_by_version_and_date)
                 else:
-                    outpkgs[pkgname].sort(_compare_binary_packages_by_version)
+                    outpkgs[pkgname].sort(_compare_binary_packages_by_version_and_date)
                     
                 outpkgs[pkgname].reverse()
 
@@ -306,16 +302,45 @@ class Dominator(object):
         for distroarchrelease in dr.architectures:
             self.debug("Performing domination across %s/%s (%s)" % (
                 dr.name, pocket.title, distroarchrelease.architecturetag))
-            
-            binaries = SecureBinaryPackagePublishingHistory.selectBy(
-                distroarchreleaseID=distroarchrelease.id,
-                pocket=pocket,
-                status=PackagePublishingStatus.PUBLISHED)
+
+            # Here we go behind SQLObject's back to generate an assitance
+            # table which will seriously improve the performance of this
+            # part of the publisher.
+            # XXX: dsilvers: 20060204: It would be nice to not have to do this.
+            # Most of this methodology is stolen from person.py
+            flush_database_updates()
+            cur = cursor()
+            cur.execute("""SELECT bpn.id AS name, count(bpn.id) AS count INTO
+                temporary table PubDomHelper FROM BinaryPackageRelease bpr,
+                BinaryPackageName bpn, SecureBinaryPackagePublishingHistory
+                sbpph WHERE bpr.binarypackagename = bpn.id AND
+                sbpph.binarypackagerelease = bpr.id AND
+                sbpph.distroarchrelease = %s AND sbpph.status = %s
+                AND sbpph.pocket = %s
+                GROUP BY bpn.id""" % sqlvalues(
+                distroarchrelease.id, PackagePublishingStatus.PUBLISHED,
+                pocket))
+
+            binaries = SecureBinaryPackagePublishingHistory.select(
+                """
+                securebinarypackagepublishinghistory.distroarchrelease = %s
+                AND securebinarypackagepublishinghistory.pocket = %s
+                AND securebinarypackagepublishinghistory.status = %s AND
+                securebinarypackagepublishinghistory.binarypackagerelease =
+                    binarypackagerelease.id
+                AND binarypackagerelease.binarypackagename IN (
+                    SELECT name FROM PubDomHelper WHERE count > 1)"""
+                % sqlvalues (distroarchrelease.id, pocket,
+                             PackagePublishingStatus.PUBLISHED),
+                clauseTables=['BinaryPackageRelease'])
             
             self._dominateBinary(self._sortPackages(binaries, False))
             if do_clear_cache:
                 self.debug("Flushing SQLObject cache.")
                 clear_cache()
+
+            flush_database_updates()
+            cur.execute("DROP TABLE PubDomHelper")
         
         sources = SecureSourcePackagePublishingHistory.selectBy(
             distroreleaseID=dr.id, pocket=pocket,

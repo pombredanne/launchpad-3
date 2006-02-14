@@ -69,6 +69,7 @@ build jobs will be created.
   ...     bm.addDistroArchRelease(dar)
   ...
   WARNING:root:Disabling: No CHROOT found for The Hoary Hedgehog Release for i386 (x86) pocket 'Release'
+  WARNING:root:Disabling: No CHROOT found for Breezy Badger Autotest for i386 (x86) pocket 'Release'
 
 Only Ubuntu/Warty/i386 and Debian/Woody/i386 have an available CHROOT.
 
@@ -158,7 +159,7 @@ After sanitising the jobs, only the ones containing
 sourcepackagerelease files should remain:
 
   >>> new_jobs = bm.sanitiseAndScoreCandidates()
-  WARNING:root:MISSED DEP: [('foo', '1.0', '<<')] in warty i386
+  WARNING:root:MISSING DEP: [('foo', '1.0', '<<')] in warty i386
 
   >>> len(new_jobs)
   1
@@ -171,8 +172,8 @@ And we grant some score depending on: time pending on the buildqueue,
 component the package belongs to, and the urgency of the upload.
 There is still some work to do here, for further information see the
 launchpad/scripts/builddmaster.py code. The job presented should won
-exactly ** 995 ** points last turn (5 for the default urgency 'LOW'
-1000 for the 'Main' component and minus 10 for unsatisfied dependency,
+exactly ** 990 ** points last turn (5 for the default urgency 'LOW'
+1000 for the 'Main' component and -10 for one unsatisfied dependency,
 further tests for scoring are in buildd-scoring.txt)
 
   >>> job.lastscore
