@@ -1288,13 +1288,15 @@ class NascentUpload:
         # upload, go ahead and find it from the database.
         for sub_dsc_file in dsc_files:
             if not sub_dsc_file.present:
-                # The file is not present on disk, try downloading it.
-                library_file = self.distro.getFileByName(sub_dsc_file.filename,
-                                                         source=True,
-                                                         binary=False)
-                if library_file is None:
-                    self.reject("Unable to find %s in the distribution." % (
-                        sub_dsc_file.filename))
+                try:
+                    # The file is not present on disk, try downloading it.
+                    library_file = self.distro.getFileByName(
+                        sub_dsc_file.filename, source=True, binary=False)
+                except NotFoundError, info:
+                    self.reject("Unable to find %s in the distribution."
+                                % (sub_dsc_file.filename))
+                    # dismiss the source verification, it's already rejected
+                    return
                 else:
                     # Pump the file through.
                     self.logger.debug("Pumping %s out of the librarian" % (
