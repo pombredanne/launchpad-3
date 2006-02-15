@@ -17,50 +17,39 @@
 
       <h2>Current status</h2>
 
-      <table class="listing">
-        <tr class="thead">
-          <th>Build</th>
-          <th>Requested</th>
-          <th>Started</th>
-          <th colspan="2">Duration So Far</th>
-        </tr>
-        <tr tal:condition="job">
-          <td>
-            <a tal:attributes="href job/build/fmt:url">
-               <img alt="[package]" src="/++resource++package-binary" />
-               <span tal:replace="job/build/title">NAME</span>
-            </a>
-          </td>
-          <td tal:content="job/build/datecreated/fmt:datetime">CREATED</td>
-          <td tal:content="job/buildstart/fmt:datetime">STARTED</td>
-          <td>
-            <img alt="[progress]" src="/++resource++progress" />
-            <span tal:replace="job/buildduration/fmt:approximateduration" />
-          </td>
-        </tr>
-
-        <tr tal:condition="not: job">
-          <td>&#8212;</td>
-          <td>&#8212;</td>
-          <td>&#8212;</td>
-          <td>&#8212;</td>
-          <td>&#8212;</td>
-          <td>
-            <img alt="[idle]" src="" />
-            <span tal:replace="context/status">STATUS</span>
-          </td>
-        </tr>
-
-        <tal:block condition="job">
-        <tr tal:condition="job/logtail">
-          <td tal:content="structure job/logtail/fmt:nice_pre" colspan="5">
-              Things are crashing and burning all over the place.</td>
-        </tr>
-        </tal:block>
-
+      <table tal:condition="job" class="listing">
+        <tbody>
+          <tr>
+            <td class="left icon"><img alt="" src="/@@/progress" /></td>
+            <td>
+              <a tal:attributes="href job/build/fmt:url">
+                <span tal:replace="job/build/title">NAME</span>
+              </a>
+            </td>
+          </tr>
+          <tr class="secondary">
+            <td></td>
+            <td>
+              Requested
+              <tal:requested
+                content="job/build/datecreated/fmt:datetime"
+              />
+            </td>
+          </tr>
+          <tr class="secondary">
+            <td></td>
+            <td>
+              Started
+              <tal:built content="job/buildstart/fmt:datetime" />
+            </td>
+          </tr>
+        </tbody>
       </table>
+      <p tal:condition="not: job">
+        <tal:builder content="context/title" /> is idle.
+      </p>
 
-      <h2>Recent Builds</h2>
+      <h2>Recent builds</h2>
 
       <div tal:replace="structure context/@@+builds-list"/>
 

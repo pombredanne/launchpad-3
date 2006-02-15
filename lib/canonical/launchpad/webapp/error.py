@@ -69,7 +69,7 @@ class SystemErrorView:
         return ('<div class="highlighted" '
                 'style="font-family: monospace; font-size: smaller;">'
                 '%s'
-                '</div') % html
+                '</div>') % html
 
     def maybeShowTraceback(self):
         """Return a traceback, but only if it is appropriate to do so."""

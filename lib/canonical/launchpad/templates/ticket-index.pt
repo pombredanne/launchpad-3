@@ -44,7 +44,7 @@
 
   <tal:message repeat="message context/messages">
     <div class="boardComment"
-         tal:condition="python:context.description != message.contents">
+         tal:condition="python:context.description != message.text_contents">
 
       <div class="boardCommentDetails">
         <strong tal:content="message/title">$Message.title</strong>
@@ -58,7 +58,7 @@
 
       <div class="boardCommentBody">
         <tal:comment
-          content="structure message/contents/fmt:text-to-html"
+          content="structure message/text_contents/fmt:text-to-html"
         >
           Comment text.
         </tal:comment>
@@ -77,22 +77,10 @@
           <b>Comment:</b> <textarea name="field.content" rows="10"></textarea>
           <br />
           <tal:can_close_ticket condition="not: context/is_resolved">
-            <tal:is_not_owner condition="not: view/is_owner">
-              <label>
-                <input type="checkbox" name="field.resolved"
-                       value="answers">
-                Answered
-              </label>
-              <div class="discreet">
-                Check this box if you believe that this comment fully answers
-                the support request.
-              </div>
-            </tal:is_not_owner>
             <tal:is_owner condition="view/is_owner">
               <label>
-                <input type="checkbox" name="field.resolved"
-                       value="answers">
-                Closed
+                <input type="checkbox" name="field.resolved">
+                Support request is answered
               </label>
               <div class="discreet">
                 Check this box if the problem has been resolved. This will

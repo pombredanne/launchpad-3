@@ -35,14 +35,14 @@ handle, and register them for some domains:
     ...         self.handledMails.append(mail['Message-Id'])
     ...         return True
 
-    >>> from zope.app.tests import ztapi
+    >>> from canonical.launchpad.mail.handlers import mail_handlers
     >>> foo_handler = MockHandler()
     >>> bar_handler = MockHandler()
     >>> error_handler = MockHandler()
-    >>> ztapi.provideUtility(IMailHandler, foo_handler, 'foo.com')
-    >>> ztapi.provideUtility(IMailHandler, bar_handler, 'bar.com')
+    >>> mail_handlers.add('foo.com', foo_handler)
+    >>> mail_handlers.add('bar.com', bar_handler)
     >>> dummy, errors_domain = config.launchpad.errors_address.split('@')
-    >>> ztapi.provideUtility(IMailHandler, error_handler, errors_domain)
+    >>> mail_handlers.add(errors_domain, error_handler)
 
 We temporarily override the error mails' From address, so that they will
 pass through the authentication stage:
@@ -107,29 +107,6 @@ errors_address.
     >>> from canonical.launchpad.mail import stub
     >>> stub.test_emails = []
 
-Now let's send an email from Foo Bar, but signed with Sample Person's
-key:
-
-    >>> msg = read_test_message('signed_detached.txt')
-    >>> msg.replace_header('From', 'foo.bar@canonical.com')
-    >>> msgid = sendmail(msg)
-    >>> transaction.commit()
-    >>> handleMail(transaction)
-
-
-An error message was sent since the key didn't belong to Foo Bar:
-
-    >>> transaction.commit()
-    >>> from_addr, to_addr, raw_mail = stub.test_emails[-1]
-    >>> import email
-    >>> error_mail = email.message_from_string(raw_mail)
-    >>> print error_mail['Subject']
-    Unhandled Email: ...
-    >>> print error_mail.get_payload(decode=True)
-    The following email was unhandled:
-    ...
-    Invalid signature for foo.bar@canonical.com:
-        The key used to sign the email doesn't belong to the user.
 
 
 X-Original-To
@@ -147,7 +124,6 @@ address the email was sent to:
     ...     msg['From'], ['123@bar.com'], msg.as_string())
     >>> transaction.commit()
     >>> handleMail()
-    WARNING:canonical.launchpad.mail:No X-Original-To header was present in email: ...
     >>> msgid in bar_handler.handledMails
     True
 
@@ -174,7 +150,7 @@ Let's create and register a handler which violates a DB constraint:
     ...         firefox.name = 'invalid name'
     ...         flush_database_updates()
 
-    >>> ztapi.provideUtility(IMailHandler, DBExceptionRaiser(), 'except.com')
+    >>> mail_handlers.add('except.com', DBExceptionRaiser())
 
 Now we send a mail to the handler, which will cause an exception:
 
@@ -221,6 +197,32 @@ There are no mails left in the mail box:
     >>> len(stub.test_emails)
     0
 
+Librarian not running
+---------------------
+
+If for some reason the Librarian isn't up and running, we shouldn't
+loose any emails. All that should happen is that an error should get
+logged.
+
+    >>> LibrarianTestSetup().tearDown()
+    >>> msg = read_test_message('signed_detached.txt')
+    >>> msg.replace_header('To', '123@foo.com')
+    >>> msgid = '<%s>' % sendmail(msg)
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+
+    >>> handleMail(transaction)
+    ERROR:...:Upload to Librarian failed...
+    ...
+    UploadFailed: (111, 'Connection refused')
+
+    >>> len(stub.test_emails)
+    1
+
+    >>> LibrarianTestSetup().setUp()
+    >>> stub.test_emails = []
+
 Handling bounces
 ----------------
 
@@ -246,6 +248,7 @@ errors-list. This is to make it easier to detect any errors, and fine
 tune it. Later we might simply drop the email without noticing anyone
 about it.
 
+    >>> import email
     >>> from_addr, to_addr, raw_mail = stub.test_emails[-1]
     >>> error_mail = email.message_from_string(raw_mail)
     >>> error_mail['To'] == config.launchpad.errors_address
@@ -259,3 +262,7 @@ about it.
 
     >>> LibrarianTestSetup().tearDown()
     >>> config.malone.bugmail_error_from_address = old_error_from_address
+    >>> mail_handlers.add('foo.com', None)
+    >>> mail_handlers.add('bar.com', None)
+    >>> mail_handlers.add(errors_domain, None)
+    >>> mail_handlers.add('except.com', None)

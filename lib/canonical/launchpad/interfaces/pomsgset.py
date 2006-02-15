@@ -6,8 +6,8 @@ __metaclass__ = type
 
 __all__ = ['IPOMsgSet']
 
-
 class IPOMsgSet(Interface):
+
     sequence = Attribute("The ordering of this set within its file.")
 
     pofile = Attribute("The PO file this set is associated with.")

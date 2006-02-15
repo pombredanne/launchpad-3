@@ -81,6 +81,15 @@
     permission="zope.Public"
     />
 
+  <!-- FAQ -->
+
+  <browser:page
+    for="canonical.launchpad.interfaces.ILaunchpadRoot"
+    name="faq"
+    template="templates/launchpad-faq.pt"
+    permission="zope.Public"
+    />
+
   <!-- RDF downloadable documents -->
   <browser:page
     for="canonical.launchpad.interfaces.ILaunchpadRoot"

@@ -47,7 +47,7 @@ according the selected buildstate, by default All
 
 
 Since the other pages tends to present a similar result and use, in
-fact, the same mechanisms, we simplly check if they work with no
+fact, the same mechanisms, we simply check if they work with no
 tracebacks:
 
   >>> print http(r"""
@@ -72,3 +72,13 @@ tracebacks:
   HTTP/1.1 200 Ok
   Content-Length: ...
   ...
+
+Check Build home pages and friends:
+
+  >>> print http(r"""
+  ... GET /+builds/+build/7 HTTP/1.1
+  ... """)
+  HTTP/1.1 200 Ok
+  Content-Length: ...
+  ...
+

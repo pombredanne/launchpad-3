@@ -38,12 +38,12 @@ def getPerson(email, realname):
         logging.info('creating team for %s (%s)', email, realname)
         person = personset.newTeam(techboard, email[:-17], realname)
         email = getUtility(IEmailAddressSet).new(email, person.id)
-        person.preferredemail = email
+        person.setPreferredEmail(email)
     else:
         logging.info('creating person for %s (%s)', email, realname)
         person, email = personset.createPersonAndEmail(email,
                                                        displayname=realname)
-        person.preferredemail = email
+        person.setPreferredEmail(email)
 
     return person
 

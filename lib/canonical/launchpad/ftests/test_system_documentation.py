@@ -10,6 +10,7 @@ import os
 from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
 import sqlos.connection
 
+from canonical.config import config
 from canonical.functional import FunctionalDocFileSuite
 from canonical.launchpad.ftests.harness import \
         LaunchpadTestSetup, LaunchpadZopelessTestSetup, \
@@ -83,6 +84,17 @@ def importdSetUp(test):
 def importdTearDown(test):
     LaunchpadZopelessTestSetup().tearDown()
 
+def supportTrackerSetUp(test):
+    sqlos.connection.connCache = {}
+    LaunchpadZopelessTestSetup(dbuser=config.tickettracker.dbuser).setUp()
+    LibrarianTestSetup().setUp()
+    setGlobs(test)
+    login(ANONYMOUS)
+
+def supportTrackerTearDown(test):
+    LibrarianTestSetup().tearDown()
+    LaunchpadZopelessTestSetup().tearDown()
+
 
 # Files that have special needs can construct their own suite
 special = {
@@ -125,7 +137,10 @@ special = {
             ),
     'revision.txt': FunctionalDocFileSuite(
             '../doc/revision.txt',
-            setUp=importdSetUp, tearDown=importdTearDown)
+            setUp=importdSetUp, tearDown=importdTearDown),
+    'support-tracker-emailinterface.txt': FunctionalDocFileSuite(
+            '../doc/support-tracker-emailinterface.txt',
+            setUp=supportTrackerSetUp, tearDown=supportTrackerTearDown)
     }
 
 def test_suite():
@@ -158,7 +173,8 @@ def test_suite():
     for filename in filenames:
         path = os.path.join('../doc/', filename)
         suite.addTest(FunctionalDocFileSuite(
-            path, setUp=setUp, tearDown=tearDown
+            path, setUp=setUp, tearDown=tearDown,
+            optionflags=default_optionflags
             ))
 
     return suite
