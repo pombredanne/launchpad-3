@@ -41,8 +41,8 @@ class IBranch(IHasOwner):
         "displayed in most branch listings."))
     url = TextLine(
         title=_('Branch URL'), required=False,
-        description=_("The URL where the branch is hosted.  This is usually"
-            " the URL used to checkout the branch. Leave that empty  if the"
+        description=_("The URL where the branch is hosted. This is usually"
+            " the URL used to checkout the branch. Leave that empty if the"
             " branch is hosted on bazaar.launchpad.net."),
         constraint=valid_webref)
 
