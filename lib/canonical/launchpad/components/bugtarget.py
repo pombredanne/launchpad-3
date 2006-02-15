@@ -28,6 +28,14 @@ class BugTargetBase:
         return self.searchTasks(open_tasks_query)
 
     @property
+    def unconfirmed_bugtasks(self):
+        """See canonical.launchpad.interfaces.IBugTarget."""
+        open_tasks_query = BugTaskSearchParams(
+            user=getUtility(ILaunchBag).user, status=BugTaskStatus.UNCONFIRMED)
+
+        return self.searchTasks(open_tasks_query)
+
+    @property
     def critical_bugtasks(self):
         """See canonical.launchpad.interfaces.IBugTarget."""
         critical_tasks_query = BugTaskSearchParams(

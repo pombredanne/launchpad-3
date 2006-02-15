@@ -463,36 +463,59 @@ class BugTaskEditView(GeneralFormView):
 
 class BugListingPortletView(LaunchpadView):
     """Portlet containing all available bug listings."""
-
-    @property
-    def buglistings(self):
-        request = self.request
-        context = self.context
-        require_login = self.user is None
-        filter_links = []
-        filter_links.append({
-            'title': 'All open bugs',
-            'url': self.getOpenBugsURL(),
-            'count': self.context.open_bugtasks.count(),
-            'require_login': False})
-##         return [
-##             BugListing(context, 'All open bugs', '+bugs-open', request),
-##             BugListing(
-##                 context, 'Assigned to me', '+bugs-assigned-to', request,
-##                 require_login=require_login),
-##             BugListing(context, 'Critical', '+bugs-critical', request),
-##             BugListing(context, 'Untriaged', '+bugs-untriaged', request),
-##             BugListing(context, 'Unassigned', '+bugs-unassigned', request),
-##             BugListing(context, 'All bugs ever reported', '+bugs-all', request)
-##             ]
-
-        return filter_links
-
     def getOpenBugsURL(self):
-        status_titles = [status.title for status in UNRESOLVED_BUGTASK_STATUSES]
-        return str(self.request.URL) + "?search=Search&" + urllib.urlencode({
-            'field.status': status_titles})
+        """Return the URL for open bugs on this bug target."""
+        return self.getSearchFilterURL(
+            status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES])
 
+    def getBugsAssignedToMeURL(self):
+        """Return the URL for bugs assigned to the current user on this target."""
+        if self.user:
+            return self.getSearchFilterURL(assignee=self.user.name)
+        else:
+            return str(self.request.URL) + "/+login"
+
+    def getBugsAssignedToMeCount(self):
+        assert self.user, (
+            "Counting 'bugs assigned to me' requires a logged-in user")
+
+        search_params = BugTaskSearchParams(
+            user=self.user, assignee=self.user,
+            status=any(*UNRESOLVED_BUGTASK_STATUSES))
+
+        return self.context.searchTasks(search_params).count()
+
+    def getCriticalBugsURL(self):
+        """Return the URL for critical bugs on this bug target."""
+        return self.getSearchFilterURL(
+            status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES],
+            severity=dbschema.BugTaskSeverity.CRITICAL.title)
+
+    def getUnassignedBugsURL(self):
+        """Return the URL for critical bugs on this bug target."""
+        return self.getSearchFilterURL(
+            status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES],
+            unassigned='on')
+
+    def getUnconfirmedBugsURL(self):
+        """Return the URL for unconfirmed bugs on this bug target."""
+        return self.getSearchFilterURL(
+            status=dbschema.BugTaskStatus.UNCONFIRMED.title)
+
+    def getSearchFilterURL(self, **extra_params):
+        """Return a URL with search parameters."""
+        search_params = []
+        if extra_params:
+            for param_name, value in sorted(extra_params.items()):
+                search_params.append(('field.' + param_name, value))
+
+        query_string = urllib.urlencode(search_params, doseq=True)
+
+        search_filter_url = str(self.request.URL) + "?search=Search"
+        if query_string:
+            search_filter_url += "&" + query_string
+
+        return search_filter_url
 
 def getInitialValuesFromSearchParams(search_params, form_schema):
     """Build a dictionary that can be given as initial values to

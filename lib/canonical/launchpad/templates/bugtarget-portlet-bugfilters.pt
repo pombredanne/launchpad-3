@@ -2,23 +2,49 @@
 
 <ul class="bugs">
 
-  <li tal:repeat="buglisting view/buglistings">
-    <a tal:attributes="href buglisting/url"
-       tal:content="buglisting/title">
-      All open bugs
+  <li>
+    <a tal:attributes="href view/getOpenBugsURL">
+      Open
     </a>
-    <tal:count tal:condition="not:buglisting/require_login"
-               tal:replace="string:(${buglisting/count})">
-      (10)
-    </tal:count>
-    <tal:nocount tal:condition="buglisting/require_login">
-      <br />
-      (requires <a tal:attributes="href string:${request/URL}/+login">
-                  login
-                </a>)
-    </tal:nocount>
+    (<span tal:content="context/open_bugtasks/count">10</span>)
   </li>
-
+  <li>
+    <a href="#" tal:attributes="href view/getBugsAssignedToMeURL">
+      Assigned to me
+    </a>
+    <tal:loggedin condition="view/user">
+      (<span tal:content="view/getBugsAssignedToMeCount">50</span>)
+    </tal:loggedin>
+    <tal:notloggedin condition="not:view/user">
+      (requires
+      <a tal:attributes="href string:${request/URL}/+login">
+      login</a>)
+    </tal:notloggedin>
+  </li>
+  <li>
+    <a tal:attributes="href view/getCriticalBugsURL">
+      Critical
+    </a>
+    (<span tal:content="context/critical_bugtasks/count">42</span>)
+  </li>
+  <li>
+    <a tal:attributes="href view/getUnconfirmedBugsURL">
+      Unconfirmed
+    </a>
+    (<span tal:content="context/unconfirmed_bugtasks/count">42</span>)
+  </li>
+  <li>
+    <a tal:attributes="href view/getUnassignedBugsURL">
+      Unassigned
+    </a>
+    (<span tal:content="context/unassigned_bugtasks/count">42</span>)
+  </li>
+  <li>
+    <a tal:attributes="href view/getSearchFilterURL">
+      All bugs ever reported
+    </a>
+    (<span tal:content="python:len(context.bugtasks)">42</span>)
+  </li>
 </ul>
 
 </div>
