@@ -24,8 +24,8 @@
         for="canonical.launchpad.interfaces.IBugTarget"
         class="canonical.launchpad.browser.BugListingPortletView"
         permission="zope.Public"
-        name="+portlet-bugtasklist-mybugs"
-        template="../templates/bugtasklist-portlet-mybugs.pt"
+        name="+portlet-bugfilters"
+        template="../templates/bugtarget-portlet-bugfilters.pt"
         />
 
     <browser:page
@@ -35,6 +35,12 @@
         name="+bugs-text"
         attribute="__call__" />
 
+    <browser:page
+        for="canonical.launchpad.interfaces.IBugTarget"
+        class="canonical.launchpad.browser.BugTaskSearchListingView"
+        permission="zope.Public"
+        name="+bugs"
+        template="../templates/buglisting-default.pt"/>
   </facet>
 
 </configure>

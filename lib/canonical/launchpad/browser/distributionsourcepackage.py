@@ -14,8 +14,7 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IDistributionSourcePackage, ILaunchBag, DuplicateBugContactError,
     DeleteBugContactError, IPersonSet)
-from canonical.launchpad.browser.bugtask import (
-    BugTargetTraversalMixin, AdvancedBugTaskSearchView)
+from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu,
     GetitemNavigation, canonical_url, redirection)
@@ -77,7 +76,7 @@ class DistributionSourcePackageSupportMenu(ApplicationMenu):
         return Link('+addticket', 'Request Support', icon='add')
 
 
-class DistributionSourcePackageBugsView(AdvancedBugTaskSearchView):
+class DistributionSourcePackageBugsView:
     """View class for the buglist for an IDistributionSourcePackage."""
 
     def _distributionContext(self):

@@ -28,7 +28,7 @@
     </div>
     <div id="portal-column-two">
       <metal:macro use-macro="context/@@main_template/action-menu" />
-      <tal:block content="structure context/@@+portlet-bugtasklist-mybugs" />
+      <tal:block content="structure context/@@+portlet-bugfilters" />
       <tal:releasebugs
          tal:condition="context/@@+portlet-bugtasklist-releasebugs|nothing"
          tal:content="structure context/@@+portlet-bugtasklist-releasebugs" />

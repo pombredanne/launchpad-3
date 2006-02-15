@@ -72,8 +72,7 @@ from canonical.launchpad.interfaces import (
     IAdminRequestPeopleMerge, BugTaskSearchParams, NotFoundError,
     UNRESOLVED_BUGTASK_STATUSES, IDistributionSet)
 
-from canonical.launchpad.browser.bugtask import (
-    BugTaskSearchListingView, AdvancedBugTaskSearchView)
+from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.helpers import (
@@ -661,7 +660,7 @@ def userIsActiveTeamMember(team):
     return user in team.activemembers
 
 
-class BasePersonBugTaskSearchListingView(AdvancedBugTaskSearchView):
+class BasePersonBugTaskSearchListingView:
     """A Base view class to be used by all bug listings on a person page.
     
     All bug listings on a person page are in some way related to that person.

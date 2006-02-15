@@ -4,7 +4,7 @@
 
   <li tal:repeat="buglisting view/buglistings">
     <a tal:attributes="href buglisting/url"
-       tal:content="buglisting/displayname">
+       tal:content="buglisting/title">
       All open bugs
     </a>
     <tal:count tal:condition="not:buglisting/require_login"

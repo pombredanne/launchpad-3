@@ -12,8 +12,6 @@ __all__ = [
     'BugTaskEditView',
     'BugListingPortletView',
     'BugTaskSearchListingView',
-    'AssignedBugTasksView',
-    'BugTasksOldView',
     'BugTargetView',
     'BugTaskView',
     'BugTaskReleaseTargetingView',
@@ -471,16 +469,29 @@ class BugListingPortletView(LaunchpadView):
         request = self.request
         context = self.context
         require_login = self.user is None
-        return [
-            BugListing(context, 'All open bugs', '+bugs-open', request),
-            BugListing(
-                context, 'Assigned to me', '+bugs-assigned-to', request,
-                require_login=require_login),
-            BugListing(context, 'Critical', '+bugs-critical', request),
-            BugListing(context, 'Untriaged', '+bugs-untriaged', request),
-            BugListing(context, 'Unassigned', '+bugs-unassigned', request),
-            BugListing(context, 'All bugs ever reported', '+bugs-all', request)
-            ]
+        filter_links = []
+        filter_links.append({
+            'title': 'All open bugs',
+            'url': self.getOpenBugsURL(),
+            'count': self.context.open_bugtasks.count(),
+            'require_login': False})
+##         return [
+##             BugListing(context, 'All open bugs', '+bugs-open', request),
+##             BugListing(
+##                 context, 'Assigned to me', '+bugs-assigned-to', request,
+##                 require_login=require_login),
+##             BugListing(context, 'Critical', '+bugs-critical', request),
+##             BugListing(context, 'Untriaged', '+bugs-untriaged', request),
+##             BugListing(context, 'Unassigned', '+bugs-unassigned', request),
+##             BugListing(context, 'All bugs ever reported', '+bugs-all', request)
+##             ]
+
+        return filter_links
+
+    def getOpenBugsURL(self):
+        status_titles = [status.title for status in UNRESOLVED_BUGTASK_STATUSES]
+        return str(self.request.URL) + "?search=Search&" + urllib.urlencode({
+            'field.status': status_titles})
 
 
 def getInitialValuesFromSearchParams(search_params, form_schema):
@@ -731,9 +742,11 @@ class BugTaskSearchListingView(LaunchpadView):
         releases = getUtility(IDistroReleaseSet).search(
             distribution=distribution, orderBy="-datereleased")
 
-        return [
-            BugListing(release, release.displayname, '+bugs', self.request)
-            for release in releases]
+        return []
+
+##         return [
+##             BugListing(release, release.displayname, '+bugs', self.request)
+##             for release in releases]
 
     def getSortLink(self, colname):
         """Return a link that can be used to sort results by colname."""
