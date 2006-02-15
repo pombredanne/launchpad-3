@@ -50,6 +50,9 @@ True
 >>> productset = getUtility(IProductSet)
 >>> gterm_product = productset.get(6)
 
+>>> print branchset.get(-1)
+None
+
 >>> from canonical.launchpad.interfaces import IPersonSet
 >>> personset = getUtility(IPersonSet)
 >>> ddaa = personset.getByName('ddaa')
