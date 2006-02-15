@@ -23,7 +23,8 @@ class BugTargetBase:
         """See canonical.launchpad.interfaces.IBugTarget."""
         open_tasks_query = BugTaskSearchParams(
             user=getUtility(ILaunchBag).user,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES))
+            status=any(*UNRESOLVED_BUGTASK_STATUSES),
+            omit_dupes=True)
 
         return self.searchTasks(open_tasks_query)
 
@@ -31,7 +32,8 @@ class BugTargetBase:
     def unconfirmed_bugtasks(self):
         """See canonical.launchpad.interfaces.IBugTarget."""
         open_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user, status=BugTaskStatus.UNCONFIRMED)
+            user=getUtility(ILaunchBag).user, status=BugTaskStatus.UNCONFIRMED,
+            omit_dupes=True)
 
         return self.searchTasks(open_tasks_query)
 
@@ -39,7 +41,8 @@ class BugTargetBase:
     def critical_bugtasks(self):
         """See canonical.launchpad.interfaces.IBugTarget."""
         critical_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user, severity=BugTaskSeverity.CRITICAL)
+            user=getUtility(ILaunchBag).user, severity=BugTaskSeverity.CRITICAL,
+            omit_dupes=True)
 
         return self.searchTasks(critical_tasks_query)
 
@@ -47,7 +50,8 @@ class BugTargetBase:
     def inprogress_bugtasks(self):
         """See canonical.launchpad.interfaces.IBugTarget."""
         inprogress_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user, status=BugTaskStatus.INPROGRESS)
+            user=getUtility(ILaunchBag).user, status=BugTaskStatus.INPROGRESS,
+            omit_dupes=True)
 
         return self.searchTasks(inprogress_tasks_query)
 
@@ -55,6 +59,7 @@ class BugTargetBase:
     def unassigned_bugtasks(self):
         """See canonical.launchpad.interfaces.IBugTarget."""
         unassigned_tasks_query = BugTaskSearchParams(
-            user=getUtility(ILaunchBag).user, assignee=NULL)
+            user=getUtility(ILaunchBag).user, assignee=NULL,
+            omit_dupes=True)
 
         return self.searchTasks(unassigned_tasks_query)

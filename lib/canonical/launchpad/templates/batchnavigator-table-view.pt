@@ -6,7 +6,9 @@
     <tr>
       <th tal:condition="context/show_column/id|nothing">ID</th>
       <th width="60%" tal:condition="context/show_column/summary|nothing">Summary</th>
-      <th tal:condition="context/show_column/targetname|nothing">In</th>
+      <th tal:condition="context/show_column/targetname|context/show_column/packagename|nothing">
+        In
+      </th>
       <th tal:condition="context/show_column/importance|nothing">Importance</th>
       <th tal:condition="context/show_column/status|nothing">Status</th>
     </tr>
@@ -24,7 +26,10 @@
       </td>
       <td tal:content="bugtask/targetname"
           tal:condition="context/show_column/targetname|nothing"
-          nowrap>Critical</td>
+          nowrap>mozilla-firefox (Ubuntu)</td>
+      <td tal:content="bugtask/sourcepackagename/name"
+          tal:condition="context/show_column/packagename|nothing"
+          nowrap>mozilla-firefox (Ubuntu)</td>
       <td tal:content="bugtask/severity/title"
           tal:condition="context/show_column/importance|nothing">Critical</td>
       <td tal:content="bugtask/status/title"

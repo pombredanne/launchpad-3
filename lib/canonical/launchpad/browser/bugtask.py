@@ -568,16 +568,23 @@ class BugTaskSearchListingView(LaunchpadView):
     Subclasses should define getExtraSearchParams() to filter the
     search.
     """
-
-    # The names of columns to be shown for tabular bug listings. Subclasses
-    # should redefine this attribute, as needed.
-    columns_to_show = ["id", "summary", "importance", "status"]
-
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
         # The initial values to be used when setting up the widgets of this 
         # page.
         self.initial_values = {}
+
+    @property
+    def columns_to_show(self):
+        """Returns a sequence of column names to be shown in the listing."""
+        upstream_context = self._upstreamContext()
+        distribution_context = self._distributionContext()
+        distrorelease_context = self._distroReleaseContext()
+
+        if upstream_context:
+            return ["id", "summary", "importance", "status"]
+        elif distribution_context or distrorelease_context:
+            return ["id", "summary", "packagename", "importance", "status"]
 
     def initialize(self):
         #XXX: The base class should have a simple schema containing only
@@ -634,8 +641,10 @@ class BugTaskSearchListingView(LaunchpadView):
             form_values['assignee'] = NULL
             del form_values['unassigned']
 
-        search_params = BugTaskSearchParams(
-            user=self.user, omit_dupes=True, **form_values)
+        if form_values:
+            form_values["omit_dupes"] = True
+
+        search_params = BugTaskSearchParams(user=self.user, **form_values)
         search_params.orderby = get_sortorder_from_request(self.request)
 
         # Base classes can provide an explicit search context.
@@ -704,30 +713,6 @@ class BugTaskSearchListingView(LaunchpadView):
             self._upstreamContext() is not None and
             self.user is not None and self.user.inTeam(self.context.owner))
 
-    def task_columns(self):
-        """Returns a sequence of column names to be shown in the listing.
-
-        This list may be calculated on the fly, e.g. in the case of a
-        listing that allows the user to choose which columns to show
-        in the listing.
-        """
-        upstream_context = self._upstreamContext()
-        distribution_context = self._distributionContext()
-        distrorelease_context = self._distroReleaseContext()
-
-        if upstream_context:
-            upstream_columns = [
-                "id", "title", "milestone", "status", "severity", "priority",
-                "assignedto"]
-            if self.mass_edit_allowed():
-                return ["select"] + upstream_columns
-            else:
-                return upstream_columns
-        elif distribution_context or distrorelease_context:
-            return [
-                "id", "title", "package", "status", "severity", "priority",
-                "assignedto"]
-
     @property
     def release_buglistings(self):
         """Return a buglisting for each release.
@@ -751,11 +736,14 @@ class BugTaskSearchListingView(LaunchpadView):
         releases = getUtility(IDistroReleaseSet).search(
             distribution=distribution, orderBy="-datereleased")
 
-        return []
+        release_buglistings = []
+        for release in releases:
+            release_buglistings.append({
+                'title': release.displayname,
+                'url': canonical_url(release) + "/+bugs",
+                'count': release.open_bugtasks.count()})
 
-##         return [
-##             BugListing(release, release.displayname, '+bugs', self.request)
-##             for release in releases]
+        return release_buglistings
 
     def getSortLink(self, colname):
         """Return a link that can be used to sort results by colname."""
