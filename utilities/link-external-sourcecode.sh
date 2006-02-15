@@ -19,6 +19,6 @@ for f in $LAUNCHPAD_BASE/sourcecode/*; do
         echo "directory of your launchpad tree"
         exit 1
     fi
-    test ! -e $target && ln -sv $f $target;
+    test ! -e $target && ln -svf $f $target;
 done
 
