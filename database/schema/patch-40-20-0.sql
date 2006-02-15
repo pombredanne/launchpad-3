@@ -10,5 +10,5 @@ ALTER TABLE Build ALTER COLUMN pocket SET NOT NULL;
 -- proper handling code gets merged.
 ALTER TABLE Build ALTER COLUMN pocket SET DEFAULT 0;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (40, 18, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (40, 20, 0);
 

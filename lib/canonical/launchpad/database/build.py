@@ -84,11 +84,11 @@ class Build(SQLBase):
         """See IBuild"""
 
         icon_map = {
-            BuildStatus.NEEDSBUILD: "",
-            BuildStatus.FULLYBUILT: "/++resource++build-success",
-            BuildStatus.FAILEDTOBUILD: "/++resource++build-failure",
-            BuildStatus.MANUALDEPWAIT: "",
-            BuildStatus.CHROOTWAIT: "",
+            BuildStatus.NEEDSBUILD: "/@@/build-needed",
+            BuildStatus.FULLYBUILT: "/@@/build-success",
+            BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
+            BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
+            BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
             }
         return icon_map[self.buildstate]
 
@@ -218,7 +218,7 @@ class BuildSet:
             return None
 
         clauseTables = []
-        orderBy="-datebuilt"
+        orderBy=["-datebuilt"]
 
         # format clause according single/multiple architecture(s) form
         if len(arch_ids) == 1:
@@ -234,6 +234,10 @@ class BuildSet:
             "NOT (Build.buildstate = %s AND Build.datebuilt is NULL)"
             % sqlvalues(BuildStatus.FULLYBUILT))
 
+        # XXX cprov 20060214: still not ordering ALL results (empty status)
+        # properly, the pending builds will pre presented in the DESC
+        # 'datebuilt' order. bug # 31392
+
         # attempt to given status
         if status is not None:
             condition_clauses.append('buildstate=%s' % sqlvalues(status))
@@ -241,7 +245,7 @@ class BuildSet:
         # Order NEEDSBUILD by lastscore, it should present the build
         # in a more natural order.
         if status == BuildStatus.NEEDSBUILD:
-            orderBy = "BuildQueue.lastscore"
+            orderBy = ["-BuildQueue.lastscore"]
             clauseTables.append('BuildQueue')
             condition_clauses.append('BuildQueue.build = Build.id')
 
