@@ -10,7 +10,8 @@
 </metal:leftportlets>
 
 <metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-binaries" />
+<div tal:replace="structure context/@@+portlet-binaries" 
+     tal:condition="context/binarypackages"/>
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
