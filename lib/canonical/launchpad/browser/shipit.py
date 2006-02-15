@@ -281,7 +281,7 @@ Reason:
         """
         assert self.order is None
         self.orderCreated = True
-        all_fields = (self.shipping_fields + 
+        all_fields = (self.shipping_fields +
                       ['quantityx86', 'quantityamd64', 'quantityppc', 'reason'])
         kw = {}
         for field in all_fields:

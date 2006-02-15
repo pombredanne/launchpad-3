@@ -701,7 +701,7 @@ class FormattersAPI:
       ) |
       (?P<oops>
         oops\s*-?\s*
-        (?P<oopscode> [abcd0-9]+)
+        (?P<oopscode> \d* [a-z]+ \d+)
       )
     ''', re.IGNORECASE | re.VERBOSE)
 
