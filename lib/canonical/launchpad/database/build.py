@@ -86,11 +86,11 @@ class Build(SQLBase):
         """See IBuild"""
 
         icon_map = {
-            BuildStatus.NEEDSBUILD: "",
-            BuildStatus.FULLYBUILT: "/++resource++build-success",
-            BuildStatus.FAILEDTOBUILD: "/++resource++build-failure",
-            BuildStatus.MANUALDEPWAIT: "",
-            BuildStatus.CHROOTWAIT: "",
+            BuildStatus.NEEDSBUILD: "/@@/build-needed",
+            BuildStatus.FULLYBUILT: "/@@/build-success",
+            BuildStatus.FAILEDTOBUILD: "/@@/build-failure",
+            BuildStatus.MANUALDEPWAIT: "/@@/build-depwait",
+            BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
             }
         return icon_map[self.buildstate]
 
